@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGraphStore } from '../../store/graphStore';
+import { useExecutionStore } from '../../store/executionStore';
+import { useOutputStore } from '../../store/outputStore';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, IMAGE_MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { NODE_ICONS } from '../../utils/nodeIcons';
@@ -163,7 +165,7 @@ export default function ConfigPanel() {
           <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.bg, color: colors.text }}>{NODE_ICONS[node.data.subtype]?.() ?? def?.badge}</div>
           <div className="flex-1" style={{ font: '500 15px/20px var(--font-sans)', color: 'var(--cg-ink)' }}>{node.data.label}</div>
           <button className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--cg-surface)] transition" title="Delete node"
-            onClick={() => { useGraphStore.getState().removeNode(node.id); }}>
+            onClick={() => { useGraphStore.getState().removeNode(node.id); useExecutionStore.getState().resetNode(node.id); useOutputStore.getState().clearNode(node.id); }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
           </button>
         </div>

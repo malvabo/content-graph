@@ -91,7 +91,7 @@ export default function GraphCanvas() {
         deleteKeyCode={['Backspace', 'Delete']}
         fitView={false} panOnScroll={false} selectionOnDrag={false}
         proOptions={{ hideAttribution: true }}
-        style={{ background: 'var(--cg-surface)' }}>
+        style={{ background: 'transparent' }}>
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
       </ReactFlow>

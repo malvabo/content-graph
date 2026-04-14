@@ -57,9 +57,6 @@ export const useGraphStore = create<GraphState>()(
         addNode: (node) => set((s) => ({ nodes: [...s.nodes, node] })),
 
         removeNode: (id) => {
-          // Lazy import to avoid circular dependency
-          import('./executionStore').then(({ useExecutionStore }) => useExecutionStore.getState().resetNode(id));
-          import('./outputStore').then(({ useOutputStore }) => useOutputStore.getState().clearNode(id));
           set((s) => ({
             nodes: s.nodes.filter((n) => n.id !== id),
             edges: s.edges.filter((e) => e.source !== id && e.target !== id),

@@ -1,15 +1,13 @@
 import { useRef, useEffect } from 'react';
-import { useReactFlow } from '@xyflow/react';
 
 const GAP = 14;
 const RADIUS = 80;
-const BASE_COLOR = [213, 208, 200];
-const HOVER_COLOR = [40, 36, 32];
+const BASE = [213, 208, 200];
+const HOVER = [40, 36, 32];
 
 export default function DotBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef({ x: -999, y: -999 });
-  const { getViewport } = useReactFlow();
 
   const draw = () => {
     const canvas = canvasRef.current;
@@ -20,34 +18,28 @@ export default function DotBackground() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    const { x: panX, y: panY, zoom } = getViewport();
-    const scaledGap = GAP * zoom;
-    const offsetX = ((panX * zoom) % scaledGap + scaledGap) % scaledGap;
-    const offsetY = ((panY * zoom) % scaledGap + scaledGap) % scaledGap;
     const mx = mouseRef.current.x, my = mouseRef.current.y;
     const hasHover = mx > -RADIUS;
-
-    const cols = Math.ceil(w / scaledGap) + 1;
-    const rows = Math.ceil(h / scaledGap) + 1;
+    const cols = Math.ceil(w / GAP) + 1;
+    const rows = Math.ceil(h / GAP) + 1;
+    const baseStyle = `rgb(${BASE[0]},${BASE[1]},${BASE[2]})`;
 
     for (let r = 0; r < rows; r++) {
-      const y = offsetY + r * scaledGap;
+      const y = r * GAP;
       for (let c = 0; c < cols; c++) {
-        const x = offsetX + c * scaledGap;
+        const x = c * GAP;
         if (hasHover) {
-          const dist = Math.sqrt((x - mx) ** 2 + (y - my) ** 2);
+          const dx = x - mx, dy = y - my;
+          const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < RADIUS) {
             const t = 1 - dist / RADIUS;
-            const blend = t * t;
-            const cr = BASE_COLOR[0] + (HOVER_COLOR[0] - BASE_COLOR[0]) * blend;
-            const cg = BASE_COLOR[1] + (HOVER_COLOR[1] - BASE_COLOR[1]) * blend;
-            const cb = BASE_COLOR[2] + (HOVER_COLOR[2] - BASE_COLOR[2]) * blend;
-            ctx.fillStyle = `rgb(${cr|0},${cg|0},${cb|0})`;
+            const b = t * t;
+            ctx.fillStyle = `rgb(${BASE[0] + (HOVER[0] - BASE[0]) * b | 0},${BASE[1] + (HOVER[1] - BASE[1]) * b | 0},${BASE[2] + (HOVER[2] - BASE[2]) * b | 0})`;
           } else {
-            ctx.fillStyle = `rgb(${BASE_COLOR[0]},${BASE_COLOR[1]},${BASE_COLOR[2]})`;
+            ctx.fillStyle = baseStyle;
           }
         } else {
-          ctx.fillStyle = `rgb(${BASE_COLOR[0]},${BASE_COLOR[1]},${BASE_COLOR[2]})`;
+          ctx.fillStyle = baseStyle;
         }
         ctx.fillRect(x - 0.5, y - 0.5, 1, 1);
       }
@@ -68,14 +60,12 @@ export default function DotBackground() {
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
-
     const onMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       draw();
     };
     const onLeave = () => { mouseRef.current = { x: -999, y: -999 }; draw(); };
-
     canvas.addEventListener('mousemove', onMove);
     canvas.addEventListener('mouseleave', onLeave);
     return () => { ro.disconnect(); canvas.removeEventListener('mousemove', onMove); canvas.removeEventListener('mouseleave', onLeave); };
