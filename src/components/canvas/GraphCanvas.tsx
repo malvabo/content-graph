@@ -85,7 +85,7 @@ export default function GraphCanvas() {
         fitView={false} panOnScroll={false} selectionOnDrag={false}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'var(--cg-surface)' }}>
-        <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="#B8D8BE" />
+        <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="#D5D0C8" />
         <Controls showInteractive={false} position="bottom-right" />
       </ReactFlow>
 

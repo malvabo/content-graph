@@ -50,7 +50,7 @@ export default function ScriptSensePanel({ initialText }: Props) {
     <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--cg-canvas)' }}>
       {/* Header */}
       <div className="px-6 py-4 shrink-0" style={{ borderBottom: '1px solid var(--cg-border)' }}>
-        <div style={{ font: '500 15px/20px var(--font-mono)', color: 'var(--cg-ink)' }}>ScriptSense</div>
+        <div style={{ font: '500 15px/20px var(--font-sans)', color: 'var(--cg-ink)' }}>ScriptSense</div>
         <div style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--cg-ink-3)', marginTop: 4 }}>Improve, clarify, and refine text</div>
       </div>
 
