@@ -5,6 +5,7 @@ import NodePalette from './components/canvas/NodePalette';
 import IconNav from './components/canvas/IconNav';
 import VoicePanel from './components/canvas/VoicePanel';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
+import RunWaveOverlay from './components/canvas/RunWaveOverlay';
 import { useGraphStore, type ContentNode } from './store/graphStore';
 import { useCallback, useState } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -44,6 +45,7 @@ function AppInner() {
 
   return (
     <div className="h-screen flex flex-col" style={{ colorScheme: 'light' }}>
+      <RunWaveOverlay />
       <CanvasToolbar />
       <div className="flex flex-1 overflow-hidden">
         <IconNav activeView={activeView} onViewChange={setActiveView} />
