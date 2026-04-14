@@ -73,15 +73,16 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   return (
     <div className="group" style={{
       width: 240,
+      maxWidth: 240,
+      overflow: 'hidden',
       minHeight: isSource ? undefined : 160,
       background: 'var(--cg-card)',
       border: borderStyle,
       borderRadius: 12,
       padding: '14px 16px',
       position: 'relative',
-      transform: selected ? 'scale(1.04)' : 'scale(1)',
       opacity: dimmed ? 0.35 : 1,
-      transition: 'transform 200ms ease, opacity 200ms ease, box-shadow 200ms ease',
+      transition: 'opacity 200ms ease, box-shadow 200ms ease',
       boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.1)' : 'none',
     }}>
       {/* Delete button on hover */}
