@@ -1,7 +1,7 @@
 import {
   ReactFlow, Background, BackgroundVariant, Controls,
   type OnConnect, type OnNodesChange, type OnEdgesChange, type Node,
-  applyNodeChanges, applyEdgeChanges, addEdge, type Connection,
+  applyNodeChanges, applyEdgeChanges, addEdge, type Connection, useReactFlow,
 } from '@xyflow/react';
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
