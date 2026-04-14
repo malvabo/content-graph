@@ -3,7 +3,7 @@ import { useGraphLayout } from '../../hooks/useGraphLayout';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { exportGraph } from '../../utils/templates';
 
-export default function CanvasToolbar() {
+export default function CanvasToolbar({ activeView }: { activeView: string }) {
   const { graphName, setGraphName, clearGraph, nodes, edges } = useGraphStore();
   const { autoLayout } = useGraphLayout();
   const { runAll } = useNodeExecution();
@@ -51,11 +51,13 @@ export default function CanvasToolbar() {
         onChange={(e) => setGraphName(e.target.value)}
       />
       <div className="h-4 w-px" style={{ background: 'var(--cg-border)' }} />
-      <button className="btn-ghost btn-sm" onClick={autoLayout}>Auto-layout</button>
-      <button className="btn-ghost btn-sm" onClick={clearGraph}>Clear</button>
-      <button className="btn-ghost btn-sm" onClick={() => exportGraph(nodes, edges, graphName)}>Export</button>
+      {activeView === 'workflow' && <>
+        <button className="btn-ghost btn-sm" onClick={autoLayout}>Auto-layout</button>
+        <button className="btn-ghost btn-sm" onClick={clearGraph}>Clear</button>
+        <button className="btn-ghost btn-sm" onClick={() => exportGraph(nodes, edges, graphName)}>Export</button>
+      </>}
       <div className="flex-1" />
-      <button className="btn btn-primary" onClick={handleRunAll}>▶ Run All</button>
+      {activeView === 'workflow' && <button className="btn btn-primary" onClick={handleRunAll}>▶ Run All</button>}
     </div>
   );
 }

@@ -46,7 +46,7 @@ function AppInner() {
   return (
     <div className="h-screen flex flex-col" style={{ colorScheme: 'light' }}>
       <RunWaveOverlay />
-      <CanvasToolbar />
+      <CanvasToolbar activeView={activeView} />
       <div className="flex flex-1 overflow-hidden">
         <IconNav activeView={activeView} onViewChange={setActiveView} />
 
