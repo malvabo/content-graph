@@ -9,6 +9,7 @@ import { useGraphStore, type ContentNode } from './store/graphStore';
 import { useCallback, useState } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
+import type { NodeDef } from './utils/nodeDefs';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -58,6 +59,17 @@ function AppInner() {
     setActiveView('scriptsense');
   }, [addNode]);
 
+  const handleAddNode = useCallback((def: NodeDef) => {
+    const node: ContentNode = {
+      id: `${def.subtype}-${Date.now()}`,
+      type: 'contentNode',
+      position: { x: 200 + Math.random() * 200, y: 150 + Math.random() * 200 },
+      deletable: true,
+      data: { subtype: def.subtype, label: def.label, badge: def.badge, category: def.category, description: def.description, config: {} },
+    };
+    addNode(node);
+  }, [addNode]);
+
   return (
     <div className="h-screen flex flex-col" style={{ colorScheme: 'light' }}>
       <CanvasToolbar activeView={activeView} />
@@ -65,14 +77,12 @@ function AppInner() {
         <IconNav activeView={activeView} onViewChange={setActiveView} />
 
         {activeView === 'workflow' && (
-          <>
-            <NodePalette />
-            <div className="flex-1 relative">
-              <EmptyCanvasOverlay />
-              <GraphCanvas />
-              <ConfigPanel />
-            </div>
-          </>
+          <div className="flex-1 relative">
+            <EmptyCanvasOverlay />
+            <GraphCanvas />
+            <ConfigPanel />
+            <NodePalette onAddNode={handleAddNode} />
+          </div>
         )}
 
         {activeView === 'voice' && <VoicePanel onTranscriptReady={handleTranscript} />}
