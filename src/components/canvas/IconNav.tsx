@@ -16,7 +16,7 @@ function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: str
       }}
     >
       <div className="w-6 h-6 flex items-center justify-center">{icon}</div>
-      <span style={{ font: '500 14px/1 var(--font-sans)', letterSpacing: '.02em' }}>{label}</span>
+      <span style={{ font: '500 10px/1 var(--font-sans)', letterSpacing: '.03em' }}>{label}</span>
     </button>
   );
 }

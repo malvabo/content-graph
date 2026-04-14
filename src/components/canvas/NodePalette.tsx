@@ -32,7 +32,7 @@ function PaletteItem({ def }: { def: NodeDef }) {
 export default function NodePalette() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   return (
-    <aside className="w-[230px] shrink-0 overflow-y-auto" style={{ background: 'var(--cg-card)', borderRight: '1px solid var(--cg-border)' }}>
+    <aside className="w-[260px] shrink-0 overflow-y-auto" style={{ background: 'var(--cg-card)', borderRight: '1px solid var(--cg-border)' }}>
       <div className="px-4 pt-5 pb-3">
         <div style={{ font: '500 14px/1 var(--font-sans)', color: 'var(--cg-ink)' }}>Nodes</div>
       </div>

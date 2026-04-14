@@ -19,16 +19,16 @@ export function ExportInline({ id }: { id: string }) {
   return (
     <div className="mt-2">
       {upstream.length === 0 && imagePromptNodes.length === 0 ? (
-        <div className="text-[14px] text-[#a1a1aa]">Connect nodes to export</div>
+        <div className="text-[14px] text-[#78716c]">Connect nodes to export</div>
       ) : (
         <div className="flex flex-col gap-1">
           {upstream.map((u) => (
-            <div key={u!.id} className="text-[14px] text-[#71717a] flex items-center gap-1">
+            <div key={u!.id} className="text-[14px] text-[#57534e] flex items-center gap-1">
               <span className="text-[#22c55e]">✓</span> {u!.label}
             </div>
           ))}
           {imagePromptNodes.map((n) => (
-            <div key={n.id} className="text-[14px] text-[#71717a] flex items-center gap-1">
+            <div key={n.id} className="text-[14px] text-[#57534e] flex items-center gap-1">
               <span className="text-[#f97316]">✓</span> {n.data.label} (image)
             </div>
           ))}
