@@ -21,8 +21,8 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   }, [open]);
   return (
     <div ref={ref} className="relative">
-      <button className="w-full h-8 text-sm text-left border rounded-lg px-2 flex items-center justify-between"
-        style={{ borderColor: open ? 'var(--cg-green)' : 'var(--cg-border)', background: '#fff', color: 'var(--cg-ink)' }}
+      <button className="w-full h-8 text-sm text-left border rounded-lg px-2 flex items-center"
+        style={{ borderColor: open ? 'var(--cg-green)' : 'var(--cg-border)', background: '#fff', color: 'var(--cg-ink)', justifyContent: 'space-between' }}
         onClick={() => setOpen(!open)}>
         <span className="truncate">{value}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.4, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}><path d="m6 9 6 6 6-6"/></svg>
@@ -31,7 +31,7 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
         <div className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-50" style={{ background: '#F7F5F1', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd', maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'thin' }}>
           {options.map((o) => (
             <button key={o} className="w-full text-left px-3 py-2 text-sm transition-colors"
-              style={{ background: o === value ? 'var(--cg-surface)' : 'transparent', color: o === value ? 'var(--cg-ink)' : 'var(--cg-ink-2)', fontWeight: o === value ? 500 : 400 }}
+              style={{ background: o === value ? 'var(--cg-surface)' : 'transparent', color: o === value ? 'var(--cg-ink)' : 'var(--cg-ink-2)', fontWeight: o === value ? 500 : 400, justifyContent: 'flex-start' }}
               onMouseEnter={(e) => { if (o !== value) e.currentTarget.style.background = 'var(--cg-surface)'; }}
               onMouseLeave={(e) => { if (o !== value) e.currentTarget.style.background = 'transparent'; }}
               onClick={() => { onChange(o); setOpen(false); }}>
