@@ -6,12 +6,10 @@ export function useClaudeStream() {
   const stream = useCallback(
     async (nodeId: string, prompt: string, model = 'claude-sonnet-4', temperature = 0.7) => {
       const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-      const { setStatus, setError, setTokenCounts } = useExecutionStore.getState();
-      const { setOutput } = useOutputStore.getState();
 
-      if (!apiKey) { setError(nodeId, 'API key missing — set VITE_ANTHROPIC_API_KEY'); return ''; }
+      if (!apiKey) { useExecutionStore.getState().setError(nodeId, 'API key missing — set VITE_ANTHROPIC_API_KEY'); return ''; }
 
-      setStatus(nodeId, 'running');
+      useExecutionStore.getState().setStatus(nodeId, 'running');
       let accumulated = '';
 
       try {
