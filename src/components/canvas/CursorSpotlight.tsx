@@ -1,90 +1,42 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Panel } from '@xyflow/react';
 
-const GAP = 14;
-const RADIUS = 80;
-const DOT_R = 1;
-const DOT_COLOR = [90, 85, 78];
-
 export default function CursorSpotlight() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef = useRef({ x: -999, y: -999 });
-  const rafRef = useRef(0);
-  const sizeRef = useRef({ w: 0, h: 0 });
-
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d')!;
-    const { w, h } = sizeRef.current;
-    const mx = mouseRef.current.x, my = mouseRef.current.y;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (mx < -RADIUS || my < -RADIUS) { rafRef.current = requestAnimationFrame(draw); return; }
-
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const startCol = Math.max(0, Math.floor((mx - RADIUS) / GAP));
-    const endCol = Math.min(Math.ceil(w / GAP), Math.ceil((mx + RADIUS) / GAP));
-    const startRow = Math.max(0, Math.floor((my - RADIUS) / GAP));
-    const endRow = Math.min(Math.ceil(h / GAP), Math.ceil((my + RADIUS) / GAP));
-
-    for (let r = startRow; r <= endRow; r++) {
-      const y = r * GAP;
-      for (let c = startCol; c <= endCol; c++) {
-        const x = c * GAP;
-        const dist = Math.sqrt((x - mx) ** 2 + (y - my) ** 2);
-        if (dist > RADIUS) continue;
-        const t = 1 - dist / RADIUS;
-        const alpha = t * t * 0.7;
-        ctx.fillStyle = `rgba(${DOT_COLOR[0]},${DOT_COLOR[1]},${DOT_COLOR[2]},${alpha})`;
-        ctx.beginPath();
-        ctx.arc(x, y, DOT_R, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    rafRef.current = requestAnimationFrame(draw);
-  }, []);
+  const [pos, setPos] = useState({ x: -200, y: -200 });
+  const [visible, setVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      sizeRef.current = { w: rect.width, h: rect.height };
-    };
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(canvas);
+    const el = containerRef.current?.closest('.react-flow') as HTMLElement | null;
+    if (!el) return;
 
     const onMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const rect = el.getBoundingClientRect();
+      setPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      setVisible(true);
     };
-    const onLeave = () => { mouseRef.current = { x: -999, y: -999 }; };
+    const onLeave = () => setVisible(false);
 
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseleave', onLeave);
-
-    rafRef.current = requestAnimationFrame(draw);
+    el.addEventListener('mousemove', onMove);
+    el.addEventListener('mouseleave', onLeave);
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      ro.disconnect();
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseleave', onLeave);
+      el.removeEventListener('mousemove', onMove);
+      el.removeEventListener('mouseleave', onLeave);
     };
-  }, [draw]);
+  }, []);
 
   return (
-    <Panel position="top-left" style={{ margin: 0, padding: 0, inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}>
-      <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
+    <Panel position="top-left" style={{ margin: 0, padding: 0, inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+      <div ref={containerRef} style={{
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        background: visible
+          ? `radial-gradient(circle 80px at ${pos.x}px ${pos.y}px, rgba(0,0,0,0.06) 0%, transparent 100%)`
+          : 'transparent',
+        transition: 'opacity 150ms',
+        opacity: visible ? 1 : 0,
+      }} />
     </Panel>
   );
 }
