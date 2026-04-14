@@ -99,7 +99,7 @@ export default function GraphCanvas() {
         fitView={false} panOnScroll={false} selectionOnDrag={false}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'var(--cg-canvas)' }}>
-        <Background variant={BackgroundVariant.Dots} gap={14} size={1} color="#D5D0C8" />
+        <Background variant={BackgroundVariant.Dots} gap={14} size={1.5} color="#D5D0C8" />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
       </ReactFlow>
