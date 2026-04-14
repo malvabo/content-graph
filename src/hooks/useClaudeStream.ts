@@ -24,11 +24,11 @@ export function useClaudeStream() {
           body: JSON.stringify({ model, max_tokens: 4096, temperature, stream: true, messages: [{ role: 'user', content: prompt }] }),
         });
 
-        if (!res.ok) { setError(nodeId, `API error: ${res.status}`); return ''; }
+        if (!res.ok) { useExecutionStore.getState().setError(nodeId, `API error: ${res.status}`); return ''; }
 
         const reader = res.body?.getReader();
         const decoder = new TextDecoder();
-        if (!reader) { setError(nodeId, 'No response stream'); return ''; }
+        if (!reader) { useExecutionStore.getState().setError(nodeId, 'No response stream'); return ''; }
 
         while (true) {
           const { done, value } = await reader.read();
