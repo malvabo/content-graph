@@ -3,7 +3,6 @@ import { Panel } from '@xyflow/react';
 import { useExecutionStore } from '../../store/executionStore';
 
 const GAP = 14;
-const BASE_R = 1;
 const WAVE_R = 1.3;
 const PEAK_ALPHA = 0.35;
 const WAVE_WIDTH = 250;
@@ -17,29 +16,27 @@ function bezierEase(t: number): number {
 export default function RunWaveOverlay() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
-  const startRef = useRef(0);
-  const [visible, setVisible] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
+  const showUntilRef = useRef(0);
+  const [show, setShow] = useState(false);
   const isRunning = useExecutionStore((s) => s.runAllActive);
 
+  // Immediately show when running starts, keep for MIN_DISPLAY_MS after stop
   useEffect(() => {
     if (isRunning) {
-      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = undefined; }
-      setVisible(true);
-      startRef.current = performance.now();
-    } else if (visible) {
-      const elapsed = performance.now() - startRef.current;
-      const remaining = Math.max(0, MIN_DISPLAY_MS - elapsed);
-      timerRef.current = setTimeout(() => setVisible(false), remaining);
+      showUntilRef.current = performance.now() + MIN_DISPLAY_MS;
+      setShow(true);
+    } else if (show) {
+      const remaining = Math.max(0, showUntilRef.current - performance.now());
+      if (remaining <= 0) { setShow(false); return; }
+      const t = setTimeout(() => setShow(false), remaining);
+      return () => clearTimeout(t);
     }
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !visible) return;
-
+    if (!canvas || !show) return;
     const ctx = canvas.getContext('2d')!;
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
@@ -49,48 +46,40 @@ export default function RunWaveOverlay() {
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
-
-    const animStart = performance.now();
+    const start = performance.now();
 
     const draw = (now: number) => {
-      const elapsed = now - animStart;
+      const elapsed = now - start;
       const w = canvas.width, h = canvas.height;
       ctx.clearRect(0, 0, w, h);
-
-      const linearT = (elapsed % CYCLE_MS) / CYCLE_MS;
-      const easedT = bezierEase(linearT);
-      const totalTravel = h + WAVE_WIDTH * 2;
-      const waveY = -WAVE_WIDTH + easedT * totalTravel;
-
+      const t = (elapsed % CYCLE_MS) / CYCLE_MS;
+      const eased = bezierEase(t);
+      const travel = h + WAVE_WIDTH * 2;
+      const waveY = -WAVE_WIDTH + eased * travel;
       const cols = Math.ceil(w / GAP) + 1;
       const rows = Math.ceil(h / GAP) + 1;
-
       for (let r = 0; r < rows; r++) {
         const y = r * GAP;
         const dist = Math.abs(y - waveY);
-        const t = Math.max(0, 1 - dist / WAVE_WIDTH);
-        const ease = t * t * (3 - 2 * t);
+        const p = Math.max(0, 1 - dist / WAVE_WIDTH);
+        const ease = p * p * (3 - 2 * p);
         const alpha = PEAK_ALPHA * ease;
         if (alpha < 0.01) continue;
-
-        const radius = BASE_R + (WAVE_R - BASE_R) * ease;
-        ctx.fillStyle = `rgba(13, 191, 90, ${alpha})`;
-
+        const radius = 1 + (WAVE_R - 1) * ease;
+        ctx.fillStyle = `rgba(13,191,90,${alpha})`;
         for (let c = 0; c < cols; c++) {
           ctx.beginPath();
           ctx.arc(c * GAP, y, radius, 0, Math.PI * 2);
           ctx.fill();
         }
       }
-
       rafRef.current = requestAnimationFrame(draw);
     };
-
     rafRef.current = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
-  }, [visible]);
+  }, [show]);
 
-  if (!visible) return null;
+  if (!show) return null;
 
   return (
     <Panel position="top-left" style={{ margin: 0, padding: 0, inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}>
