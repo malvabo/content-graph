@@ -6,18 +6,36 @@ import { topologicalSort } from '../utils/topologicalSort';
 import { hashContent } from '../utils/hashContent';
 import type { Edge } from '@xyflow/react';
 
+// Generate image from prompt via Pollinations.ai (free, no API key needed)
+async function generateImage(prompt: string): Promise<string> {
+  const encoded = encodeURIComponent(prompt);
+  const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true`;
+
+  const response = await fetch(url);
+  const blob = await response.blob();
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 function getUpstreamText(nodeId: string, edges: Edge[], outputs: Record<string, { text?: string }>) {
   const upstream = edges.filter((e) => e.target === nodeId).map((e) => e.source);
   return upstream.map((id) => outputs[id]?.text ?? '').filter(Boolean).join('\n\n---\n\n');
 }
 
 export function useNodeExecution() {
-  const { nodes, edges } = useGraphStore();
-  const { setStatus, setError, resetAll } = useExecutionStore();
-  const { outputs, hashes, setOutput, setHash } = useOutputStore();
-
   const runNode = useCallback(
     async (nodeId: string, executor: (input: string, config: Record<string, unknown>) => Promise<string>) => {
+      // Read LIVE state at call time — not from closure
+      const { nodes, edges } = useGraphStore.getState();
+      const { outputs, hashes } = useOutputStore.getState();
+      const { setStatus, setError } = useExecutionStore.getState();
+      const { setOutput, setHash } = useOutputStore.getState();
+
       const node = nodes.find((n) => n.id === nodeId);
       if (!node) return;
 
@@ -39,31 +57,52 @@ export function useNodeExecution() {
       setStatus(nodeId, 'running');
       try {
         const result = await executor(input, node.data.config as Record<string, unknown>);
-        setOutput(nodeId, { text: result });
+
+        // image-prompt: two-phase — generate prompt text, then generate image
+        if (node.data.subtype === 'image-prompt') {
+          setOutput(nodeId, { text: result });
+          // Phase 2: generate image from prompt
+          const { setProgress } = useExecutionStore.getState();
+          setProgress(nodeId, 50);
+          const imageBase64 = await generateImage(result);
+          setOutput(nodeId, { text: result, imageBase64 });
+          setProgress(nodeId, 100);
+        } else {
+          setOutput(nodeId, { text: result });
+        }
+
         setHash(nodeId, hash);
         setStatus(nodeId, 'complete');
       } catch (err) {
         setError(nodeId, err instanceof Error ? err.message : 'Unknown error');
       }
     },
-    [nodes, edges, outputs, hashes, setStatus, setError, setOutput, setHash]
+    []
   );
 
   const runAll = useCallback(
     async (executor: (input: string, config: Record<string, unknown>, subtype: string) => Promise<string>) => {
-      resetAll();
+      const { nodes, edges } = useGraphStore.getState();
+      useExecutionStore.getState().resetAll();
+      useOutputStore.getState().clearAll();
+
       const nodeIds = nodes.map((n) => n.id);
       const order = topologicalSort(nodeIds, edges);
+      console.log('[RunAll] nodes:', nodeIds.length, 'order:', order.length, order);
 
       for (const id of order) {
         const node = nodes.find((n) => n.id === id);
         if (!node) continue;
 
-        // Source nodes: auto-complete if no Prepare, otherwise run executor
         if (node.data.category === 'source') {
           const prepare = node.data.config.prepare as string | undefined;
           if (!prepare?.trim()) {
-            setStatus(id, 'complete');
+            // Copy source content to outputStore so downstream nodes can read it
+            const sourceText = (node.data.config.text as string) ?? '';
+            if (sourceText) {
+              useOutputStore.getState().setOutput(id, { text: sourceText });
+            }
+            useExecutionStore.getState().setStatus(id, 'complete');
             continue;
           }
         }
@@ -71,7 +110,7 @@ export function useNodeExecution() {
         await runNode(id, (input, config) => executor(input, config, node.data.subtype));
       }
     },
-    [nodes, edges, resetAll, setStatus, runNode]
+    [runNode]
   );
 
   return { runNode, runAll };

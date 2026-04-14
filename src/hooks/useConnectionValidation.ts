@@ -20,23 +20,25 @@ function hasCycle(source: string, target: string, edges: Edge[]): boolean {
 
 export function useConnectionValidation(nodes: ContentNode[], edges: Edge[]) {
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const showTooltip = useCallback((msg: string) => {
     const el = document.querySelector('.react-flow__pane');
     const rect = el?.getBoundingClientRect();
     setTooltip({ x: (rect?.width ?? 400) / 2, y: 40, message: msg });
-    clearTimeout(timerRef.current);
+    if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setTooltip(null), 2000);
   }, []);
 
   const isValidConnection = useCallback(
-    (conn: Connection): boolean => {
-      if (!conn.source || !conn.target) return false;
-      if (conn.source === conn.target) { showTooltip('Cannot connect to self'); return false; }
+    (conn: Edge | Connection): boolean => {
+      const source = conn.source;
+      const target = conn.target;
+      if (!source || !target) return false;
+      if (source === target) { showTooltip('Cannot connect to self'); return false; }
 
-      const srcNode = nodes.find((n) => n.id === conn.source);
-      const tgtNode = nodes.find((n) => n.id === conn.target);
+      const srcNode = nodes.find((n) => n.id === source);
+      const tgtNode = nodes.find((n) => n.id === target);
       if (!srcNode || !tgtNode) return false;
 
       const srcDef = NODE_DEFS_BY_SUBTYPE[srcNode.data.subtype];
@@ -50,14 +52,14 @@ export function useConnectionValidation(nodes: ContentNode[], edges: Edge[]) {
 
       // Max inputs
       const maxInputs = tgtDef.maxInputs ?? 1;
-      const currentInputs = edges.filter((e) => e.target === conn.target).length;
+      const currentInputs = edges.filter((e) => e.target === target).length;
       if (currentInputs >= maxInputs) {
         showTooltip(maxInputs === 1 ? 'This node already has an input' : `Max ${maxInputs} inputs reached`);
         return false;
       }
 
       // Cycle
-      if (hasCycle(conn.source, conn.target, edges)) { showTooltip('Connection would create a cycle'); return false; }
+      if (hasCycle(source, target, edges)) { showTooltip('Connection would create a cycle'); return false; }
 
       return true;
     },

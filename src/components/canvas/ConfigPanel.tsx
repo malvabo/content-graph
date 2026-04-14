@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGraphStore } from '../../store/graphStore';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, IMAGE_MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
+import { useNodeExecution } from '../../hooks/useNodeExecution';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="flex flex-col gap-1"><label className="text-[10px] font-medium text-[#a1a1aa] uppercase tracking-wider">{label}</label>{children}</div>;
@@ -80,7 +81,7 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
     <ModelSelector value={c.model as string ?? DEFAULT_MODELS['image-prompt']} onChange={(v) => s('model', v)} />
     <Field label="Image model"><Select value={c.imageModel as string ?? 'FLUX.1 schnell'} onChange={(v) => s('imageModel', v)} options={IMAGE_MODEL_OPTIONS} /></Field>
   </>,
-  'refine': (c, s) => <></>,
+  'refine': () => <></>,
   'export': (c, s) => <>
     <Field label="Formats">
       <div className="flex flex-wrap gap-1">
@@ -101,6 +102,7 @@ export default function ConfigPanel() {
   const selectedId = useGraphStore((s) => s.selectedNodeId);
   const node = useGraphStore((s) => s.nodes.find((n) => n.id === selectedId));
   const updateConfig = useGraphStore((s) => s.updateNodeConfig);
+  const { runNode } = useNodeExecution();
   const [local, setLocal] = useState<Record<string, unknown>>({});
 
   useEffect(() => { setLocal(node?.data.config ?? {}); }, [selectedId, node?.data.config]);
@@ -132,7 +134,28 @@ export default function ConfigPanel() {
         {hasModel && <ModelSelector value={local.model as string ?? DEFAULT_MODELS[node.data.subtype]} onChange={(v) => set('model', v)} />}
       </div>
       <div className="p-4" style={{ borderTop: '1px solid var(--cg-border)' }}>
-        <button className="btn btn-primary w-full">▶ Run</button>
+        <button className="btn btn-primary w-full" onClick={() => {
+          if (!node) return;
+          const subtype = node.data.subtype;
+          runNode(node.id, async (input, _config) => {
+            await new Promise((r) => setTimeout(r, 600 + Math.random() * 600));
+            const firstSentence = input.split(/[.!?]\s/)[0]?.trim() || input.slice(0, 100);
+            const short = input.slice(0, 150).trim();
+            if (subtype === 'refine' || subtype === 'text-source') return input;
+            if (subtype === 'twitter-single') return firstSentence.length <= 280 ? firstSentence : firstSentence.slice(0, 277) + '...';
+            if (subtype === 'quote-card') {
+              const best = input.split(/[.!?]\s/).reduce((a, b) => b.length > a.length ? b : a, '');
+              return `QUOTE: "${best.trim()}"\nATTRIBUTION: Source material`;
+            }
+            const sentences = input.split(/[.!?]\s/).filter(Boolean);
+            if (subtype === 'linkedin-post') return `${firstSentence}.\n\nThis is what nobody talks about.\n\n${sentences.slice(1, 4).join('. ') || short}.\n\nWhat's your take? 👇`;
+            if (subtype === 'twitter-thread') return sentences.slice(0, 7).map((s, i) => `${i + 1}/ ${s.trim()}`).join('\n\n');
+            if (subtype === 'newsletter') return `Subject: ${firstSentence.slice(0, 60)}\n\n${sentences.slice(0, 5).join('. ')}.`;
+            if (subtype === 'blog-article') return `# ${firstSentence}\n\n${sentences.slice(1).join('. ')}.`;
+            if (subtype === 'image-prompt') return `A cinematic wide-angle photograph of ${firstSentence.toLowerCase()}, golden hour lighting, shallow depth of field, rich color palette, editorial style, 8k resolution`;
+            return `[${subtype}]\n\n${short}`;
+          });
+        }}>▶ Run</button>
       </div>
     </aside>
   );

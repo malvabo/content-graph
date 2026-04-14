@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
 import { useGraphStore } from '../store/graphStore';
+import type { ContentNode } from '../store/graphStore';
 
 export function useKeyboardShortcuts() {
-  const { selectedNodeId, duplicateNode, setSelectedNodeId, nodes, setNodes } = useGraphStore();
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey;
@@ -12,17 +11,24 @@ export function useKeyboardShortcuts() {
 
       if (meta && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
-        try { useGraphStore.temporal.getState().undo(); } catch {}
+        try { useGraphStore.temporal.getState().undo(); } catch { /* empty */ }
       }
       if (meta && e.key === 'z' && e.shiftKey) {
         e.preventDefault();
-        try { useGraphStore.temporal.getState().redo(); } catch {}
+        try { useGraphStore.temporal.getState().redo(); } catch { /* empty */ }
       }
-      if (meta && e.key === 'd' && selectedNodeId) { e.preventDefault(); duplicateNode(selectedNodeId); }
-      if (meta && e.key === 'a') { e.preventDefault(); setNodes(nodes.map((n) => ({ ...n, selected: true }))); }
-      if (e.key === 'Escape') { setSelectedNodeId(null); }
+      if (meta && e.key === 'd') {
+        const id = useGraphStore.getState().selectedNodeId;
+        if (id) { e.preventDefault(); useGraphStore.getState().duplicateNode(id); }
+      }
+      if (meta && e.key === 'a') {
+        e.preventDefault();
+        const { nodes, setNodes } = useGraphStore.getState();
+        setNodes(nodes.map((n) => ({ ...n, selected: true }) as ContentNode));
+      }
+      if (e.key === 'Escape') { useGraphStore.getState().setSelectedNodeId(null); }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [selectedNodeId, duplicateNode, setSelectedNodeId, nodes, setNodes]);
+  }, []);
 }

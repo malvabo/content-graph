@@ -37,7 +37,7 @@ export default function EmptyCanvasOverlay() {
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   onClick={() => loadTemplate(i)}>
                   <div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)' }}>{t.name}</div>
-                  <div style={{ font: '400 12px/1.6 var(--font-mono)', color: 'var(--cg-ink-3)' }}>{t.description}</div>
+                  <div style={{ font: '400 13px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)' }}>{t.description}</div>
                 </button>
               ))}
             </div>

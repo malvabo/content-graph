@@ -87,6 +87,7 @@ export const useGraphStore = create<GraphState>()(
             id: newId,
             deletable: true,
             position: { x: node.position.x + 40, y: node.position.y + 40 },
+            data: { ...node.data, config: { ...node.data.config } },
           };
           set((s) => ({ nodes: [...s.nodes, dup] }));
         },
@@ -100,7 +101,13 @@ export const useGraphStore = create<GraphState>()(
 
         clearGraph: () => set({ nodes: [], edges: [], selectedNodeId: null }),
       }),
-      { name: 'content-graph-store' }
+      { name: 'content-graph-store',
+        partialize: (state) => ({
+          nodes: state.nodes.map(n => ({ id: n.id, type: n.type, position: n.position, deletable: n.deletable, data: n.data })),
+          edges: state.edges,
+          graphName: state.graphName,
+        }),
+      }
     ),
     { limit: 50 }
   )

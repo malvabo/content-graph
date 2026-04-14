@@ -1,4 +1,5 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { useRef, useState, useEffect } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
 import type { ContentNode } from '../../store/graphStore';
@@ -16,6 +17,24 @@ const STATUS_COLORS: Record<string, string> = {
 export default function BaseNode({ id, data, selected }: NodeProps<ContentNode>) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
   const error = useExecutionStore((s) => s.errors[id]);
+  const prevStatus = useRef(status);
+  const [justDone, setJustDone] = useState(false);
+
+  useEffect(() => {
+    if (prevStatus.current === 'running' && status === 'complete') {
+      setJustDone(true);
+      const t = setTimeout(() => setJustDone(false), 500);
+      return () => clearTimeout(t);
+    }
+    prevStatus.current = status;
+  }, [status]);
+
+  const dotAnim = status === 'running'
+    ? 'pulse 1.2s ease-in-out infinite'
+    : justDone
+      ? 'done-pulse 0.5s ease-out 1'
+      : undefined;
+
   const def = NODE_DEFS_BY_SUBTYPE[data.subtype];
   const colors = BADGE_COLORS[data.category];
   const isError = status === 'error';
@@ -36,20 +55,24 @@ export default function BaseNode({ id, data, selected }: NodeProps<ContentNode>)
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
           <div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)', letterSpacing: '-.005em' }} className="truncate">{data.label}</div>
-          <div style={{ font: '400 12px/1.6 var(--font-mono)', color: 'var(--cg-ink-2)' }} className="truncate mt-0.5">{data.description}</div>
         </div>
         <div className="shrink-0 w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-mono)', backgroundColor: colors.bg, color: colors.text }}>
           {data.badge}
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 mt-2">
-        <div className="w-1.5 h-1.5 rounded-full shrink-0"
-          style={{ backgroundColor: STATUS_COLORS[status], animation: status === 'running' ? 'pulse 1.5s infinite' : undefined }} />
-        <span style={{ font: '400 11px/1 var(--font-mono)', letterSpacing: '.1em', textTransform: 'uppercase', color: status === 'complete' ? 'var(--cg-green)' : 'var(--cg-ink-3)' }}>{status}</span>
+      <div className="mt-1">
+        <span className="btn-pill" style={{ cursor: 'default', height: 20, fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)',
+          background: status === 'complete' ? 'var(--cg-green-tint)' : status === 'error' ? 'var(--cg-red-lt)' : status === 'running' ? 'var(--cg-amber-lt)' : 'var(--cg-surface)',
+          color: status === 'complete' ? '#0A5C2A' : status === 'error' ? 'var(--cg-red-text)' : status === 'running' ? 'var(--cg-amber-text)' : 'var(--cg-ink-3)',
+          borderColor: status === 'complete' ? '#B0D8B8' : status === 'error' ? '#ECC0C0' : status === 'running' ? 'var(--cg-amber-bdr)' : 'transparent',
+        }}>
+          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: STATUS_COLORS[status], animation: dotAnim }} />
+          {status}
+        </span>
       </div>
 
-      {isError && error && <div style={{ font: '400 12px/1.6 var(--font-mono)', color: 'var(--cg-red-text)' }} className="mt-2">{error}</div>}
+      {isError && error && <div style={{ font: '400 13px/1.5 var(--font-sans)', color: 'var(--cg-red-text)' }} className="mt-2">{error}</div>}
 
       {data.subtype === 'text-source' && <TextSourceInline id={id} />}
       {data.subtype === 'image-source' && <ImageSourceInline id={id} />}

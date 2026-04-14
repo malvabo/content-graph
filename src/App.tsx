@@ -2,14 +2,14 @@ import { ReactFlowProvider } from '@xyflow/react';
 import GraphCanvas from './components/canvas/GraphCanvas';
 import CanvasToolbar from './components/canvas/CanvasToolbar';
 import NodePalette from './components/canvas/NodePalette';
+import IconNav from './components/canvas/IconNav';
+import VoicePanel from './components/canvas/VoicePanel';
 import { useGraphStore, type ContentNode } from './store/graphStore';
-import { useCallback, useRef } from 'react';
+import { useCallback, useState } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import ConfigPanel from './components/canvas/ConfigPanel';
 import EmptyCanvasOverlay from './components/canvas/EmptyCanvasOverlay';
-import type { NodeDef } from './utils/nodeDefs';
 
-// Platform lock — must be outside component to avoid hook ordering issues
 const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
 
 function MobileBlock() {
@@ -22,45 +22,57 @@ function MobileBlock() {
 
 function AppInner() {
   const addNode = useGraphStore((s) => s.addNode);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [activeView, setActiveView] = useState('workflow');
   useKeyboardShortcuts();
 
-  const onDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }, []);
-
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const raw = e.dataTransfer.getData('application/content-graph-node');
-    if (!raw) return;
-    const def: NodeDef = JSON.parse(raw);
-    const bounds = wrapperRef.current?.getBoundingClientRect();
+  const handleTranscript = useCallback((text: string) => {
     const node: ContentNode = {
-      id: `${def.subtype}-${Date.now()}`,
+      id: `text-source-${Date.now()}`,
       type: 'contentNode',
-      position: { x: e.clientX - (bounds?.left ?? 0) - 120, y: e.clientY - (bounds?.top ?? 0) - 40 },
+      position: { x: 100, y: 100 },
       deletable: true,
-      data: { subtype: def.subtype, label: def.label, badge: def.badge, category: def.category, description: def.description, config: {} },
+      data: { subtype: 'text-source', label: 'Text', badge: 'Tx', category: 'source', description: 'Raw content, transcript, notes', config: { text } },
     };
     addNode(node);
+    setActiveView('workflow');
   }, [addNode]);
 
   return (
-    <ReactFlowProvider>
-      <div className="h-screen flex flex-col" style={{ colorScheme: 'light' }}>
-        <CanvasToolbar />
-        <div className="flex flex-1 overflow-hidden">
-          <NodePalette />
-          <div ref={wrapperRef} className="flex-1 relative" onDragOver={onDragOver} onDrop={onDrop}>
-            <EmptyCanvasOverlay />
-            <GraphCanvas />
+    <div className="h-screen flex flex-col" style={{ colorScheme: 'light' }}>
+      <CanvasToolbar />
+      <div className="flex flex-1 overflow-hidden">
+        <IconNav activeView={activeView} onViewChange={setActiveView} />
+
+        {activeView === 'workflow' && (
+          <>
+            <NodePalette />
+            <div className="flex-1 relative">
+              <EmptyCanvasOverlay />
+              <GraphCanvas />
+            </div>
+            <ConfigPanel />
+          </>
+        )}
+
+        {activeView === 'voice' && <VoicePanel onTranscriptReady={handleTranscript} />}
+
+        {activeView === 'chat' && (
+          <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--cg-canvas)' }}>
+            <span style={{ font: '400 14px/20px var(--font-sans)', color: 'var(--cg-ink-3)' }}>Chat — coming soon</span>
           </div>
-          <ConfigPanel />
-        </div>
+        )}
+
+        {activeView === 'recents' && (
+          <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--cg-canvas)' }}>
+            <span style={{ font: '400 14px/20px var(--font-sans)', color: 'var(--cg-ink-3)' }}>Recents — coming soon</span>
+          </div>
+        )}
       </div>
-    </ReactFlowProvider>
+    </div>
   );
 }
 
 export default function App() {
   if (isMobile) return <MobileBlock />;
-  return <AppInner />;
+  return <ReactFlowProvider><AppInner /></ReactFlowProvider>;
 }

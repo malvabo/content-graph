@@ -2,9 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { NODE_DEFS, BADGE_COLORS, type NodeDef } from '../../utils/nodeDefs';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 
-interface Props { x: number; y: number; onClose: () => void; onSelect: (def: NodeDef) => void }
+interface Props { x: number; y: number; flowX: number; flowY: number; onClose: () => void; onSelect: (def: NodeDef) => void }
 
-export default function NodeSpotlight({ x, y, onClose, onSelect }: Props) {
+export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }: Props) {
   const [query, setQuery] = useState('');
   const [idx, setIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -23,7 +23,7 @@ export default function NodeSpotlight({ x, y, onClose, onSelect }: Props) {
     const node: ContentNode = {
       id: `${def.subtype}-${Date.now()}`,
       type: 'contentNode',
-      position: { x: x - 120, y: y - 40 },
+      position: { x: flowX - 120, y: flowY - 40 },
       deletable: true,
       data: { subtype: def.subtype, label: def.label, badge: def.badge, category: def.category, description: def.description, config: {} },
     };

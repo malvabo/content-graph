@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 interface OutputAsset {
   type: 'text' | 'image' | 'file';
@@ -11,7 +10,6 @@ interface OutputAsset {
 interface OutputState {
   outputs: Record<string, { text?: string; imageBase64?: string; assets?: OutputAsset[] }>;
   hashes: Record<string, string>;
-  imageAccessOrder: string[]; // LRU tracking
 
   setOutput: (nodeId: string, output: { text?: string; imageBase64?: string; assets?: OutputAsset[] }) => void;
   setHash: (nodeId: string, hash: string) => void;
@@ -19,45 +17,24 @@ interface OutputState {
   clearAll: () => void;
 }
 
-const MAX_IMAGES = 3;
+export const useOutputStore = create<OutputState>()((set) => ({
+  outputs: {},
+  hashes: {},
 
-export const useOutputStore = create<OutputState>()(
-  persist(
-    (set) => ({
-      outputs: {},
-      hashes: {},
-      imageAccessOrder: [],
+  setOutput: (nodeId, output) =>
+    set((s) => ({ outputs: { ...s.outputs, [nodeId]: output } })),
 
-      setOutput: (nodeId, output) =>
-        set((s) => {
-          let order = [...s.imageAccessOrder];
-          const newOutputs = { ...s.outputs, [nodeId]: output };
+  setHash: (nodeId, hash) =>
+    set((s) => ({ hashes: { ...s.hashes, [nodeId]: hash } })),
 
-          if (output.imageBase64) {
-            order = order.filter((id) => id !== nodeId);
-            order.push(nodeId);
-            while (order.length > MAX_IMAGES) {
-              const evict = order.shift()!;
-              if (newOutputs[evict]) {
-                newOutputs[evict] = { ...newOutputs[evict], imageBase64: undefined };
-              }
-            }
-          }
-          return { outputs: newOutputs, imageAccessOrder: order };
-        }),
-
-      setHash: (nodeId, hash) =>
-        set((s) => ({ hashes: { ...s.hashes, [nodeId]: hash } })),
-
-      clearNode: (nodeId) =>
-        set((s) => {
-          const { [nodeId]: _, ...outputs } = s.outputs;
-          const { [nodeId]: __, ...hashes } = s.hashes;
-          return { outputs, hashes, imageAccessOrder: s.imageAccessOrder.filter((id) => id !== nodeId) };
-        }),
-
-      clearAll: () => set({ outputs: {}, hashes: {}, imageAccessOrder: [] }),
+  clearNode: (nodeId) =>
+    set((s) => {
+      const outputs = { ...s.outputs };
+      const hashes = { ...s.hashes };
+      delete outputs[nodeId];
+      delete hashes[nodeId];
+      return { outputs, hashes };
     }),
-    { name: 'content-graph-outputs' }
-  )
-);
+
+  clearAll: () => set({ outputs: {}, hashes: {} }),
+}));

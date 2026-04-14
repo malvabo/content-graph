@@ -38,9 +38,12 @@ export const useExecutionStore = create<ExecutionState>()((set) => ({
 
   resetNode: (nodeId) =>
     set((s) => {
-      const { [nodeId]: _s, ...status } = s.status;
-      const { [nodeId]: _e, ...errors } = s.errors;
-      const { [nodeId]: _p, ...progress } = s.progress;
+      const status = { ...s.status };
+      const errors = { ...s.errors };
+      const progress = { ...s.progress };
+      delete status[nodeId];
+      delete errors[nodeId];
+      delete progress[nodeId];
       return { status, errors, progress };
     }),
 

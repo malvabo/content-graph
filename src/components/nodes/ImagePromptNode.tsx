@@ -6,7 +6,9 @@ export function ImagePromptInline({ id }: { id: string }) {
   const progress = useExecutionStore((s) => s.progress[id] ?? 0);
   const output = useOutputStore((s) => s.outputs[id]);
 
-  if (status === 'idle' || status === 'stale') return null;
+  if (status === 'idle' || status === 'stale') {
+    return <div style={{ font: '400 13px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)' }} className="mt-2">Connect a text source, then Run</div>;
+  }
 
   if (status === 'running') {
     const phase = progress < 50 ? 'Writing prompt...' : 'Generating image...';
@@ -56,6 +58,6 @@ export function ImagePromptInline({ id }: { id: string }) {
     );
   }
 
-  if (status === 'warning') return <div className="text-[11px] text-[#f59e0b] mt-2">⚠ No input</div>;
+  if (status === 'warning') return <div style={{ font: '400 13px/1.5 var(--font-sans)', color: 'var(--cg-amber-text)', background: 'var(--cg-amber-lt)', padding: '6px 8px', borderRadius: 6 }} className="mt-2">⚠ No input — connect a text node upstream</div>;
   return null;
 }

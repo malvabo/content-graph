@@ -1,30 +1,65 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface OutputModalProps { title: string; text: string; wordCount: number; onClose: () => void }
 
 export function OutputModal({ title, text, wordCount, onClose }: OutputModalProps) {
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  const copy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const charCount = text.length;
+  const readTime = Math.max(1, Math.round(wordCount / 230));
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-[720px] w-[90%] max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-6" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-[960px] max-h-[90vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-8 py-5 shrink-0" style={{ borderBottom: '1px solid var(--cg-border)' }}>
           <div>
-            <div className="text-sm font-semibold text-[#18181b]">{title}</div>
-            <div className="text-[10px] text-[#a1a1aa]">{wordCount} words</div>
+            <div style={{ font: '500 16px/24px var(--font-sans)', color: 'var(--cg-ink)' }}>{title}</div>
+            <div className="flex gap-3 mt-0.5" style={{ font: '400 12px/1 var(--font-mono)', color: 'var(--cg-ink-3)' }}>
+              <span>{wordCount.toLocaleString()} words</span>
+              <span>·</span>
+              <span>{charCount.toLocaleString()} chars</span>
+              <span>·</span>
+              <span>{readTime} min read</span>
+            </div>
           </div>
-          <button className="text-[#a1a1aa] hover:text-[#18181b] text-lg" onClick={onClose}>✕</button>
+          <button className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--cg-surface)] transition" onClick={onClose}>
+            <span style={{ fontSize: 18, color: 'var(--cg-ink-3)' }}>✕</span>
+          </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-6 py-4 text-sm leading-[1.8] text-[#18181b] whitespace-pre-wrap">{text}</div>
-        <div className="flex gap-2 px-6 py-3 border-t border-[#e5e7eb]">
-          <button className="text-xs px-3 py-1.5 border border-[#e5e7eb] rounded-md hover:bg-[#f4f4f5]" onClick={() => navigator.clipboard.writeText(text)}>Copy</button>
-          <button className="text-xs px-3 py-1.5 border border-[#e5e7eb] rounded-md hover:bg-[#f4f4f5]" onClick={() => { const b = new Blob([text], { type: 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'output.txt'; a.click(); }}>Download .txt</button>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-8 py-6" style={{ scrollbarWidth: 'thin' }}>
+          <div style={{ font: '400 14px/1.9 var(--font-sans)', color: 'var(--cg-ink)', maxWidth: 720 }} className="whitespace-pre-wrap">{text}</div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center gap-2 px-8 py-4 shrink-0" style={{ borderTop: '1px solid var(--cg-border)' }}>
+          <button className={copied ? 'btn-sm btn-tonal' : 'btn-sm btn-outline'} onClick={copy}>
+            {copied ? '✓ Copied' : 'Copy'}
+          </button>
+          <button className="btn-sm btn-outline" onClick={() => {
+            const b = new Blob([text], { type: 'text/markdown' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${title.replace(/\s+/g, '-').toLowerCase()}.md`; a.click();
+          }}>Download .md</button>
+          <button className="btn-sm btn-outline" onClick={() => {
+            const b = new Blob([text], { type: 'text/plain' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${title.replace(/\s+/g, '-').toLowerCase()}.txt`; a.click();
+          }}>Download .txt</button>
           <div className="flex-1" />
-          <button className="text-xs px-3 py-1.5 bg-[#18181b] text-white rounded-md" onClick={onClose}>Close</button>
+          <button className="btn-sm btn-primary" onClick={onClose}>Done</button>
         </div>
       </div>
     </div>
@@ -34,20 +69,64 @@ export function OutputModal({ title, text, wordCount, onClose }: OutputModalProp
 interface ImageModalProps { src: string; info: string; onClose: () => void; onRegenerate?: () => void }
 
 export function ImageModal({ src, info, onClose, onRegenerate }: ImageModalProps) {
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  const copyImage = async () => {
+    try {
+      const res = await fetch(src);
+      const blob = await res.blob();
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* fallback: copy the data URL */
+      navigator.clipboard.writeText(src);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center gap-3" onClick={onClose}>
-      <img src={src} className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
-      <div className="text-[11px] text-white/70">{info}</div>
-      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-        <button className="text-xs px-3 py-1.5 bg-white/10 text-white rounded-md hover:bg-white/20" onClick={() => { const a = document.createElement('a'); a.href = src; a.download = 'image.png'; a.click(); }}>Download ↓</button>
-        {onRegenerate && <button className="text-xs px-3 py-1.5 bg-white/10 text-white rounded-md hover:bg-white/20" onClick={onRegenerate}>Regenerate</button>}
-        <button className="text-xs px-3 py-1.5 bg-white/10 text-white rounded-md hover:bg-white/20" onClick={onClose}>Close</button>
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6" onClick={onClose}>
+      <div className="bg-[#1a1a1f] rounded-2xl w-full max-w-[1080px] max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ font: '400 13px/1 var(--font-mono)', color: 'rgba(255,255,255,0.5)' }}>{info}</div>
+          <button className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition" onClick={onClose}>
+            <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)' }}>✕</span>
+          </button>
+        </div>
+
+        {/* Image */}
+        <div className="flex-1 flex items-center justify-center p-6 overflow-hidden min-h-0">
+          <img src={src} className="max-w-full max-h-full object-contain rounded-lg" style={{ boxShadow: '0 4px 40px rgba(0,0,0,0.4)' }} />
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center gap-2 px-6 py-4 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <button className="btn-sm" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.12)' }}
+            onClick={() => { const a = document.createElement('a'); a.href = src; a.download = 'image.png'; a.click(); }}>
+            ↓ Download
+          </button>
+          <button className="btn-sm" style={{ background: copied ? 'rgba(13,191,90,0.2)' : 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.12)' }}
+            onClick={copyImage}>
+            {copied ? '✓ Copied' : 'Copy image'}
+          </button>
+          {onRegenerate && (
+            <button className="btn-sm" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.12)' }}
+              onClick={onRegenerate}>
+              ↻ Regenerate
+            </button>
+          )}
+          <div className="flex-1" />
+          <button className="btn-sm" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }} onClick={onClose}>Close</button>
+        </div>
       </div>
     </div>
   );

@@ -22,7 +22,7 @@ function PaletteItem({ def }: { def: NodeDef }) {
       </div>
       <div className="min-w-0">
         <div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)', letterSpacing: '-.005em' }} className="truncate">{def.label}</div>
-        <div style={{ font: '400 12px/1.6 var(--font-mono)', color: 'var(--cg-ink-3)' }} className="truncate">{def.description}</div>
+        <div style={{ font: '400 13px/18px var(--font-sans)', color: 'var(--cg-ink-2)' }} className="truncate">{def.description}</div>
       </div>
     </div>
   );

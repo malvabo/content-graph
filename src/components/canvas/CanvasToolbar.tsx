@@ -9,11 +9,34 @@ export default function CanvasToolbar() {
   const { runAll } = useNodeExecution();
 
   const handleRunAll = () => {
-    runAll(async (input, config, subtype) => {
-      // If VITE_ANTHROPIC_API_KEY is set, real streaming would happen via useClaudeStream.
-      // For now, simulate a delay + mock output so the UI flow is visible.
-      await new Promise((r) => setTimeout(r, 800 + Math.random() * 400));
-      return `[${subtype}] Generated output for: "${input.slice(0, 80)}..."`;
+    runAll(async (input, _config, subtype) => {
+      await new Promise((r) => setTimeout(r, 600 + Math.random() * 600));
+      // Extract first sentence and key phrases from input for contextual output
+      const firstSentence = input.split(/[.!?]\s/)[0]?.trim() || input.slice(0, 100);
+      const words = input.split(/\s+/).filter(w => w.length > 4).slice(0, 5).join(', ');
+      const short = input.slice(0, 150).trim();
+
+      const formatters: Record<string, () => string> = {
+        'linkedin-post': () => `${firstSentence}.\n\nThis is what nobody talks about.\n\nAfter diving deep into this topic, here are the 3 things that stood out:\n\n1. ${input.split(/[.!?]\s/)[1]?.trim() || 'The core insight challenges conventional thinking.'}\n\n2. The implications go far beyond what most people realize — especially around ${words}.\n\n3. The practical takeaway: start small, iterate fast, and measure what matters.\n\nThe biggest misconception? That this is complicated. It's not. It just requires a shift in how you think about ${firstSentence.split(' ').slice(0, 4).join(' ')}.\n\nWhat's your take on this? Have you seen similar patterns? 👇`,
+        'twitter-thread': () => `1/ ${firstSentence}. A thread on why this matters:\n\n2/ ${input.split(/[.!?]\s/)[1]?.trim() || 'The key insight most people miss.'}\n\n3/ Think about it: ${words} — these aren't just buzzwords. They represent a fundamental shift.\n\n4/ ${input.split(/[.!?]\s/)[2]?.trim() || 'The data backs this up in ways that surprised me.'}\n\n5/ The practical framework: observe → hypothesize → test → iterate.\n\n6/ ${input.split(/[.!?]\s/)[3]?.trim() || 'What makes this different is the compounding effect over time.'}\n\n7/ TL;DR: ${firstSentence}. Save this thread for later.`,
+        'twitter-single': () => `${firstSentence.length <= 280 ? firstSentence : firstSentence.slice(0, 277) + '...'}`,
+        'blog-article': () => `# ${firstSentence}\n\n## Why This Matters\n\n${input.split(/[.!?]\s/).slice(0, 3).join('. ')}.\n\n## The Key Insight\n\n${input.split(/[.!?]\s/).slice(3, 6).join('. ') || short}.\n\nThis has implications for how we think about ${words}.\n\n## What To Do About It\n\n${input.split(/[.!?]\s/).slice(6, 9).join('. ') || 'Start by examining your current approach and identifying the gaps.'}\n\n## Conclusion\n\n${firstSentence}. The evidence is clear — and the time to act is now.`,
+        'newsletter': () => `Subject: ${firstSentence.slice(0, 60)}\nPreview: Here's what you need to know\n\nHey,\n\n${firstSentence}.\n\n${input.split(/[.!?]\s/).slice(1, 4).join('. ') || short}.\n\nWhy does this matter for you? Because ${words} are reshaping how we work.\n\nOne thing to try this week: take the core idea above and apply it to your current project. See what shifts.\n\nReply and let me know what you think.`,
+        'ig-carousel': () => {
+          const sentences = input.split(/[.!?]\s/).filter(Boolean);
+          const slides = sentences.slice(0, 6).map((s, i) => `---\nSLIDE ${i + 1}:\nHeadline: ${s.split(' ').slice(0, 5).join(' ')}\nBody: ${s.trim()}`);
+          return slides.join('\n') + `\n---\nSLIDE ${slides.length + 1}:\nHeadline: Key Takeaway\nBody: ${firstSentence}`;
+        },
+        'infographic': () => `TITLE: ${firstSentence.split(' ').slice(0, 6).join(' ')}\nSUBTITLE: Key insights visualized\n\n${input.split(/[.!?]\s/).filter(Boolean).slice(0, 4).map((s, i) => `SECTION ${i + 1}: ${s.split(' ').slice(0, 4).join(' ')}\nContent: ${s.trim()}\nVisual element: icon ${i + 1}`).join('\n\n')}\n\nDESIGN DIRECTION:\nLayout: vertical flow\nPalette: #0DBF5A, #1A2420, #F6F7F5\nMood: Clean, data-driven`,
+        'quote-card': () => {
+          const best = input.split(/[.!?]\s/).reduce((a, b) => b.length > a.length ? b : a, '');
+          return `QUOTE: "${best.trim()}"\nATTRIBUTION: Source material\nCONTEXT: Selected as the most impactful statement from the input.`;
+        },
+        'image-prompt': () => `A cinematic wide-angle photograph of ${firstSentence.toLowerCase()}, golden hour lighting, shallow depth of field, rich color palette, editorial style, 8k resolution`,
+        'refine': () => input,
+        'text-source': () => input,
+      };
+      return (formatters[subtype] ?? (() => `[${subtype}]\n\n${short}`))();
     });
   };
 
