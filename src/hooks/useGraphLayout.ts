@@ -7,7 +7,7 @@ export function useGraphLayout() {
     const { nodes, edges, setNodes } = useGraphStore.getState();
     const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
     g.setGraph({ rankdir: 'LR', nodesep: 80, ranksep: 120 });
-    nodes.forEach((n) => g.setNode(n.id, { width: 240, height: 160 }));
+    nodes.forEach((n) => g.setNode(n.id, { width: 480, height: 200 }));
     edges.forEach((e) => g.setEdge(e.source, e.target));
     Dagre.layout(g);
 

@@ -70,8 +70,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
 
   return (
     <div style={{
-      width: 240,
-      maxWidth: 240,
+      width: 480,
+      maxWidth: 480,
       overflow: 'hidden',
       background: 'var(--cg-card)',
       border: borderStyle,
