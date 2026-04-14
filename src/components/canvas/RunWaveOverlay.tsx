@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 
 const GAP = 22;
@@ -6,47 +6,56 @@ const BASE_R = 1;
 const WAVE_R = 2.4;
 const PEAK_ALPHA = 0.5;
 const WAVE_WIDTH = 220;
-const CYCLE_MS = 4000; // one full sweep top→bottom
+const CYCLE_MS = 8000;       // one full sweep top→bottom: 8 seconds
+const MIN_DISPLAY_MS = 5000; // always show for at least 5 seconds
 
-// cubic-bezier ease-in-out: slow start, fast middle, slow end
 function bezierEase(t: number): number {
-  return t * t * (3 - 2 * t); // smoothstep approximation of cubic-bezier(.4,0,.2,1)
+  // cubic-bezier(.4,0,.2,1) approximation — slow start, smooth middle, slow end
+  return t * t * (3 - 2 * t);
 }
 
 export default function RunWaveOverlay() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
   const startRef = useRef(0);
+  const [visible, setVisible] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
   const isRunning = useExecutionStore((s) => Object.values(s.status).some((v) => v === 'running'));
 
+  // Track visibility: show immediately when running starts, keep for MIN_DISPLAY_MS after it stops
+  useEffect(() => {
+    if (isRunning) {
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = undefined; }
+      setVisible(true);
+      startRef.current = performance.now();
+    } else if (visible) {
+      const elapsed = performance.now() - startRef.current;
+      const remaining = Math.max(0, MIN_DISPLAY_MS - elapsed);
+      timerRef.current = setTimeout(() => setVisible(false), remaining);
+    }
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Canvas animation
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (!isRunning) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-      cancelAnimationFrame(rafRef.current);
-      startRef.current = 0;
-      return;
-    }
+    if (!canvas || !visible) return;
 
     const ctx = canvas.getContext('2d')!;
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize();
     window.addEventListener('resize', resize);
 
-    startRef.current = performance.now();
+    const animStart = performance.now();
 
     const draw = (now: number) => {
-      const elapsed = now - startRef.current;
+      const elapsed = now - animStart;
       const w = canvas.width, h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
-      // linear progress 0→1 within cycle, then repeat
       const linearT = (elapsed % CYCLE_MS) / CYCLE_MS;
-      // apply bezier easing so it's slow at top, fast in middle, slow at bottom
       const easedT = bezierEase(linearT);
-      // wave center position: from -WAVE_WIDTH to h+WAVE_WIDTH
       const totalTravel = h + WAVE_WIDTH * 2;
       const waveY = -WAVE_WIDTH + easedT * totalTravel;
 
@@ -58,7 +67,6 @@ export default function RunWaveOverlay() {
         const dist = Math.abs(y - waveY);
         const t = Math.max(0, 1 - dist / WAVE_WIDTH);
         const ease = t * t * (3 - 2 * t);
-
         const alpha = PEAK_ALPHA * ease;
         if (alpha < 0.01) continue;
 
@@ -77,9 +85,9 @@ export default function RunWaveOverlay() {
 
     rafRef.current = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('resize', resize); };
-  }, [isRunning]);
+  }, [visible]);
 
-  if (!isRunning) return null;
+  if (!visible) return null;
 
   return (
     <canvas
