@@ -56,7 +56,7 @@ export default function NodePalette({ onAddNode }: Props) {
       {/* Popover */}
       {open && (
         <div className="absolute bottom-14 left-0 w-[280px] max-h-[420px] overflow-y-auto"
-          style={{ background: '#f2efe9', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd', scrollbarWidth: 'thin' }}>
+          style={{ background: '#F7F5F1', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd', scrollbarWidth: 'thin' }}>
           <div className="px-4 pt-4 pb-2">
             <div style={{ font: '500 11px/1 var(--font-mono)', color: '#6d6d6d', letterSpacing: '0.3em', textTransform: 'uppercase' }}>Add node</div>
           </div>

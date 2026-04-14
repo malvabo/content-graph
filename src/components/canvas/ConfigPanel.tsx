@@ -28,7 +28,7 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.4, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}><path d="m6 9 6 6 6-6"/></svg>
       </button>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-50" style={{ background: '#f2efe9', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd', maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'thin' }}>
+        <div className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-50" style={{ background: '#F7F5F1', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd', maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'thin' }}>
           {options.map((o) => (
             <button key={o} className="w-full text-left px-3 py-2 text-sm transition-colors"
               style={{ background: o === value ? 'var(--cg-surface)' : 'transparent', color: o === value ? 'var(--cg-ink)' : 'var(--cg-ink-2)', fontWeight: o === value ? 500 : 400 }}
@@ -158,7 +158,7 @@ export default function ConfigPanel() {
 
   return (
     <div className="absolute top-3 right-3 z-20 w-[280px] max-h-[calc(100%-24px)] overflow-y-auto"
-      style={{ background: '#f2efe9', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd', scrollbarWidth: 'thin' }}>
+      style={{ background: '#F7F5F1', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd', scrollbarWidth: 'thin' }}>
       {/* Header */}
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-2.5">

@@ -42,7 +42,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
   if (preview) {
     return (
       <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y }}>
-        <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2" style={{ background: '#f2efe9', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
+        <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2" style={{ background: '#F7F5F1', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
           <div style={{ font: '500 11px/1 var(--font-mono)', color: '#6d6d6d', letterSpacing: '0.3em', textTransform: 'uppercase' }}>AI edited text</div>
           <div className="text-sm leading-relaxed max-h-[80px] overflow-y-auto rounded-lg p-2" style={{ background: 'var(--cg-surface)', color: 'var(--cg-ink)', scrollbarWidth: 'thin' }}>{preview}</div>
           <div className="flex gap-1.5">
@@ -57,14 +57,14 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
   return (
     <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y }}>
       {!showPrompt ? (
-        <div className="flex items-center gap-0.5 rounded-xl px-1 py-1" style={{ background: '#f2efe9', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
+        <div className="flex items-center gap-0.5 rounded-xl px-1 py-1" style={{ background: '#F7F5F1', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
           <button className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--cg-surface)] transition" title="AI Edit"
             onClick={() => setShowPrompt(true)}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cg-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
           </button>
         </div>
       ) : (
-        <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2.5" style={{ background: '#f2efe9', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
+        <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2.5" style={{ background: '#F7F5F1', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
           <div style={{ font: '500 11px/1 var(--font-mono)', color: '#6d6d6d', letterSpacing: '0.3em', textTransform: 'uppercase' }}>Edit this text</div>
           <div className="flex gap-1.5">
             <input className="flex-1 h-8 text-sm rounded-lg border border-[var(--cg-border)] px-2 outline-none focus:border-[var(--cg-green)]"
