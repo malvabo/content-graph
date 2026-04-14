@@ -48,7 +48,7 @@ export default function NodePalette({ onAddNode }: Props) {
       {/* Floating + button */}
       <button onClick={() => setOpen(!open)}
         className="w-12 h-12 rounded-2xl flex items-center justify-center"
-        style={{ background: 'var(--cg-green)', color: '#061208', boxShadow: '0 4px 16px rgba(13,191,90,0.3)', fontSize: 24, fontWeight: 300, transition: 'transform 150ms' }}
+        style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', color: 'var(--cg-ink)', boxShadow: '0 2px 12px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)', fontSize: 26, fontWeight: 500, transition: 'transform 150ms' }}
       >
         <span style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 150ms', display: 'block' }}>+</span>
       </button>
