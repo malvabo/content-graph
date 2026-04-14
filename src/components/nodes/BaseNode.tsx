@@ -62,8 +62,6 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   else if (isError) borderStyle = '1px solid #E8BABA';
   else if (isStale) borderStyle = '1px solid var(--cg-amber-bdr)';
 
-  const isSource = data.category === 'source';
-
   // Compatibility: if another node is selected, dim this one if it can't connect
   const isOtherSelected = selectedId !== null && selectedId !== id;
   const isCompatible = !isOtherSelected || !selectedSubtype || 
@@ -75,7 +73,6 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       width: 240,
       maxWidth: 240,
       overflow: 'hidden',
-      minHeight: isSource ? undefined : 160,
       background: 'var(--cg-card)',
       border: borderStyle,
       borderRadius: 12,
@@ -118,7 +115,11 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {data.subtype === 'refine' && <RefineInline id={id} />}
       {data.subtype === 'image-prompt' && <ImagePromptInline id={id} />}
       {data.subtype === 'export' && <ExportInline id={id} />}
-      {data.category === 'generate' && data.subtype !== 'image-prompt' && <GenerateNodeInline id={id} subtype={data.subtype} />}
+      {data.category === 'generate' && data.subtype !== 'image-prompt' && (
+        <div style={{ height: 130, overflow: 'hidden' }}>
+          <GenerateNodeInline id={id} subtype={data.subtype} />
+        </div>
+      )}
 
       {def?.hasOutput && (
         <Handle type="source" position={Position.Right} id="text"
