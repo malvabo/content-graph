@@ -72,12 +72,12 @@ function AppInner() {
 
   return (
     <div className="h-screen flex flex-col" style={{ colorScheme: 'light' }}>
-      <CanvasToolbar activeView={activeView} />
       <div className="flex flex-1 overflow-hidden">
         <IconNav activeView={activeView} onViewChange={setActiveView} />
 
         {activeView === 'workflow' && (
           <div className="flex-1 relative">
+            <CanvasToolbar activeView={activeView} />
             <EmptyCanvasOverlay />
             <GraphCanvas />
             <ConfigPanel />
