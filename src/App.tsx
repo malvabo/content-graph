@@ -4,6 +4,7 @@ import CanvasToolbar from './components/canvas/CanvasToolbar';
 import NodePalette from './components/canvas/NodePalette';
 import IconNav from './components/canvas/IconNav';
 import VoicePanel from './components/canvas/VoicePanel';
+import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import { useGraphStore, type ContentNode } from './store/graphStore';
 import { useCallback, useState } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -23,9 +24,11 @@ function MobileBlock() {
 function AppInner() {
   const addNode = useGraphStore((s) => s.addNode);
   const [activeView, setActiveView] = useState('workflow');
+  const [voiceTranscript, setVoiceTranscript] = useState('');
   useKeyboardShortcuts();
 
   const handleTranscript = useCallback((text: string) => {
+    // Create a text-source node on the canvas
     const node: ContentNode = {
       id: `text-source-${Date.now()}`,
       type: 'contentNode',
@@ -34,7 +37,9 @@ function AppInner() {
       data: { subtype: 'text-source', label: 'Text', badge: 'Tx', category: 'source', description: 'Raw content, transcript, notes', config: { text } },
     };
     addNode(node);
-    setActiveView('workflow');
+    // Also send to ScriptSense
+    setVoiceTranscript(text);
+    setActiveView('scriptsense');
   }, [addNode]);
 
   return (
@@ -56,11 +61,7 @@ function AppInner() {
 
         {activeView === 'voice' && <VoicePanel onTranscriptReady={handleTranscript} />}
 
-        {activeView === 'chat' && (
-          <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--cg-canvas)' }}>
-            <span style={{ font: '400 14px/20px var(--font-sans)', color: 'var(--cg-ink-3)' }}>Chat — coming soon</span>
-          </div>
-        )}
+        {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
 
         {activeView === 'recents' && (
           <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--cg-canvas)' }}>
