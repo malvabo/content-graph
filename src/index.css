@@ -1,6 +1,4 @@
 @import "@xyflow/react/dist/style.css";
-@import url('https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/style.min.css');
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -32,8 +30,8 @@
   --cg-dark: #1A2420;
   --cg-dark-text: #A8C4B0;
   --cg-dark-bdr: #2E4038;
-  --font-sans: 'Geist', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
 body { margin: 0; font-family: var(--font-sans); color: var(--cg-ink); background: var(--cg-canvas); -webkit-font-smoothing: antialiased; }
