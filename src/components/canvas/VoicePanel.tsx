@@ -7,7 +7,6 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [interim, setInterim] = useState('');
-  const [showText, setShowText] = useState(false);
   const recRef = useRef<any>(null);
   const tRef = useRef(0);
   const fullRef = useRef('');
@@ -84,30 +83,32 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
   }, [stop, onTranscriptReady]);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden cursor-pointer"
+    <div className="flex-1 flex flex-col relative overflow-hidden cursor-pointer"
       onClick={() => !listening && start()}>
       {/* Full background shader */}
       <canvas ref={canvasRef} width={800} height={800} className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }} />
 
-      <div className={`relative z-10 flex flex-col items-center gap-4 ${showText ? '' : 'flex-1 justify-center'}`} style={{ padding: showText ? '32px 0 16px' : 0 }}>
+      <div className="relative z-10 flex flex-col items-center gap-4 pt-10">
         <div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink-3)' }}>
-          {listening ? 'Listening...' : 'Tap to start listening'}
+          {listening ? 'Listening...' : 'Tap anywhere to start'}
         </div>
       </div>
 
-      {showText && (
-        <div className="relative z-10 flex-1 w-full max-w-[720px] overflow-y-auto px-8">
-          <div style={{ font: '400 15px/1.7 var(--font-sans)', color: 'var(--cg-ink)' }} className="whitespace-pre-wrap">
-            {transcript}{interim && <span style={{ color: 'var(--cg-ink-3)' }}>{interim}</span>}
+      {/* Always visible transcript */}
+      {(transcript || interim) && (
+        <div className="relative z-10 flex-1 w-full max-w-[720px] mx-auto overflow-y-auto px-8 py-4">
+          <div style={{ font: '400 16px/1.8 var(--font-sans)', color: 'var(--cg-ink)' }} className="whitespace-pre-wrap">
+            {transcript}<span style={{ color: 'var(--cg-ink-3)' }}>{interim}</span>
           </div>
         </div>
       )}
 
-      <div className="relative z-10 flex gap-3 py-6">
-        <button className="btn btn-outline" onClick={() => setShowText(!showText)}>{showText ? 'Hide text' : 'Show text'}</button>
+      {!transcript && !interim && <div className="flex-1" />}
+
+      <div className="relative z-10 flex gap-3 py-6 justify-center">
         <button className="btn btn-primary" onClick={endSession}>End session</button>
       </div>
-      <div className="relative z-10" style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)', paddingBottom: 24 }}>
+      <div className="relative z-10" style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)', paddingBottom: 24, textAlign: 'center' }}>
         {listening ? 'Voice on' : 'Voice off'}
       </div>
     </div>
