@@ -72,8 +72,8 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
               value={prompt} onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') quickAction('custom'); }}
               autoFocus />
-            <button className="w-8 h-8 rounded-lg flex items-center justify-center" disabled={loading}
-              style={{ background: 'var(--cg-green)', color: '#061208' }}
+            <button className="w-8 h-8 rounded-lg flex items-center justify-center border" disabled={loading}
+              style={{ background: '#fff', color: 'var(--cg-ink)', borderColor: 'var(--cg-border)' }}
               onClick={() => quickAction('custom')}>→</button>
           </div>
           <div style={{ font: '500 11px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>Writing</div>

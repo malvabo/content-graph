@@ -58,11 +58,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 .btn-icon{height:32px;width:32px;padding:0;border-radius:10px;} .btn-icon-lg{height:36px;width:36px;padding:0;border-radius:10px;}
 
 /* Variants */
-.btn-primary { background:var(--cg-green);color:#061208; }
-.btn-primary:hover { background:var(--cg-green-hover); }
-.btn-primary:active:not(:disabled) { background:var(--cg-green-act); }
+.btn-primary { background:#fff;color:var(--cg-ink);border:1px solid var(--cg-border); }
+.btn-primary:hover { background:var(--cg-surface);border-color:var(--cg-border-2); }
+.btn-primary:active:not(:disabled) { background:#EBE8E2; }
 .btn-primary.loading { color:transparent;pointer-events:none;position:relative; }
-.btn-primary.loading::after { content:'';position:absolute;width:12px;height:12px;border:1.5px solid rgba(6,18,8,.2);border-top-color:#061208;border-radius:50%;animation:btn-spin .65s linear infinite; }
+.btn-primary.loading::after { content:'';position:absolute;width:12px;height:12px;border:1.5px solid rgba(0,0,0,.15);border-top-color:var(--cg-ink);border-radius:50%;animation:btn-spin .65s linear infinite; }
 @keyframes btn-spin { to { transform:rotate(360deg); } }
 
 .btn-outline { background:#fff;color:var(--cg-ink);border:1px solid var(--cg-border); }
