@@ -2,8 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { temporal } from 'zundo';
 import { type Node, type Edge } from '@xyflow/react';
-import { useExecutionStore } from './executionStore';
-import { useOutputStore } from './outputStore';
 
 export type NodeCategory = 'source' | 'transform' | 'generate' | 'output';
 export type NodeStatus = 'idle' | 'running' | 'complete' | 'error' | 'warning' | 'stale';
@@ -59,11 +57,9 @@ export const useGraphStore = create<GraphState>()(
         addNode: (node) => set((s) => ({ nodes: [...s.nodes, node] })),
 
         removeNode: (id) => {
-          // Clean up execution and output stores
-          const { resetNode } = useExecutionStore.getState();
-          const { clearNode } = useOutputStore.getState();
-          resetNode(id);
-          clearNode(id);
+          // Lazy import to avoid circular dependency
+          import('./executionStore').then(({ useExecutionStore }) => useExecutionStore.getState().resetNode(id));
+          import('./outputStore').then(({ useOutputStore }) => useOutputStore.getState().clearNode(id));
           set((s) => ({
             nodes: s.nodes.filter((n) => n.id !== id),
             edges: s.edges.filter((e) => e.source !== id && e.target !== id),
