@@ -13,7 +13,7 @@ export function RefineInline({ id }: { id: string }) {
   return (
     <div className="mt-2 flex flex-col gap-1.5">
       <textarea
-        className="w-full min-h-[80px] text-sm leading-relaxed border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] resize-y"
+        className="w-full min-h-[80px] text-sm leading-relaxed border border-[var(--cg-border)] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] resize-y"
         placeholder="e.g. Extract the 5 strongest arguments. Simplify to plain English."
         value={directive}
         onChange={(e) => updateConfig(id, { directive: e.target.value })}
@@ -21,12 +21,12 @@ export function RefineInline({ id }: { id: string }) {
       <div className="flex gap-1">
         {['List', 'Paragraph', 'JSON'].map((f) => (
           <button key={f}
-            className={`text-[14px] px-2 py-0.5 rounded ${format === f ? 'bg-[#4f46e5] text-white' : 'bg-[#f4f4f5] text-[#57534e]'}`}
+            className={`text-[14px] px-2 py-0.5 rounded ${format === f ? 'bg-[var(--cg-green)] text-white' : 'bg-[var(--cg-surface)] text-[#57534e]'}`}
             onClick={() => updateConfig(id, { output_format: f })}>{f}</button>
         ))}
       </div>
       {status === 'complete' && output && (
-        <div className="border-t border-[#e5e7eb] pt-1.5 mt-1 max-h-[120px] overflow-y-auto text-[14px] text-[#57534e] leading-relaxed" style={{ scrollbarWidth: 'thin' }}>
+        <div className="border-t border-[var(--cg-border)] pt-1.5 mt-1 max-h-[120px] overflow-y-auto text-[14px] text-[#57534e] leading-relaxed" style={{ scrollbarWidth: 'thin' }}>
           {output}
         </div>
       )}

@@ -76,16 +76,26 @@ export const TEMPLATES: Template[] = [
 export function exportGraph(nodes: ContentNode[], edges: Edge[], name: string) {
   const data = JSON.stringify({ name, nodes, edges }, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = url;
   a.download = `${name.replace(/\s+/g, '-').toLowerCase()}.json`;
   a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function importGraph(file: File): Promise<{ name: string; nodes: ContentNode[]; edges: Edge[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => { try { resolve(JSON.parse(reader.result as string)); } catch { reject(new Error('Invalid JSON')); } };
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result as string);
+        if (!parsed.nodes || !Array.isArray(parsed.nodes)) throw new Error('Missing nodes array');
+        if (!parsed.edges || !Array.isArray(parsed.edges)) throw new Error('Missing edges array');
+        resolve({ name: parsed.name || 'Imported Graph', nodes: parsed.nodes, edges: parsed.edges });
+      } catch (e) { reject(e instanceof Error ? e : new Error('Invalid JSON')); }
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsText(file);
   });
 }

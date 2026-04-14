@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 function cleanText(raw: string): string {
-  return raw.replace(/\n{3,}/g, '\n\n').trim();
+  return raw.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 interface OutputModalProps { title: string; text: string; wordCount: number; onClose: () => void }

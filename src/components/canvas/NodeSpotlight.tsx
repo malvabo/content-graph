@@ -41,10 +41,10 @@ export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }:
 
   return (
     <div className="absolute z-50" style={{ left: x - 130, top: y - 20 }} onClick={(e) => e.stopPropagation()}>
-      <div className="w-[260px] bg-white border border-[#e5e7eb] rounded-xl shadow-lg overflow-hidden">
+      <div className="w-[260px] bg-white border border-[var(--cg-border)] rounded-xl shadow-lg overflow-hidden">
         <input
           ref={inputRef}
-          className="w-full px-3 py-2.5 text-sm outline-none border-b border-[#e5e7eb] placeholder:text-[#78716c]"
+          className="w-full px-3 py-2.5 text-sm outline-none border-b border-[var(--cg-border)] placeholder:text-[#78716c]"
           placeholder="Search nodes..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -59,14 +59,14 @@ export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }:
             return (
               <button
                 key={def.subtype}
-                className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition ${i === idx ? 'bg-[#f4f4f5]' : 'hover:bg-[#fafafa]'}`}
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition ${i === idx ? 'bg-[var(--cg-surface)]' : 'hover:bg-[var(--cg-surface)]'}`}
                 onClick={() => place(def)}
                 onMouseEnter={() => setIdx(i)}
               >
                 <div className="w-5 h-5 rounded flex items-center justify-center shrink-0"
                   style={{ backgroundColor: colors.bg, color: colors.text }}>{NODE_ICONS[def.subtype]?.() ?? def.badge}</div>
                 <div className="min-w-0">
-                  <div className="text-xs font-medium text-[#18181b] truncate">{def.label}</div>
+                  <div className="text-xs font-medium text-[var(--cg-ink)] truncate">{def.label}</div>
                   <div className="text-[14px] text-[#78716c] truncate">{def.description}</div>
                 </div>
               </button>

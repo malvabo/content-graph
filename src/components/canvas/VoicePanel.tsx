@@ -45,6 +45,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
   }, [listening]);
 
   const start = useCallback(() => {
+    if (listeningRef.current) return;
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
     fullRef.current = '';
@@ -64,6 +65,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
       if (fin) { fullRef.current += fin; setTranscript(fullRef.current); }
       setInterim(int);
     };
+    rec.onerror = () => { setListening(false); listeningRef.current = false; };
     rec.onend = () => { if (listeningRef.current) try { rec.start(); } catch { /* empty */ } };
     rec.start();
     recRef.current = rec;

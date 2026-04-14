@@ -11,11 +11,11 @@ export function TextSourceInline({ id }: { id: string }) {
   const onChange = useCallback((val: string) => { updateConfig(id, { text: val }); setOutput(id, { text: val }); }, [id, updateConfig, setOutput]);
 
   const charCount = text.length;
-  const charColor = charCount > 50000 ? '#ef4444' : charCount > 40000 ? '#f59e0b' : '#78716c';
+  const charColor = charCount > 50000 ? 'var(--cg-red)' : charCount > 40000 ? '#f59e0b' : '#78716c';
 
   return (
     <div className="mt-2 flex flex-col gap-1.5">
-      <textarea className="w-full min-h-[120px] max-h-[300px] resize-y text-sm leading-relaxed border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] bg-white"
+      <textarea className="w-full min-h-[120px] max-h-[300px] resize-y text-sm leading-relaxed border border-[var(--cg-border)] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] bg-white"
         placeholder="Paste your article, transcript, or notes..." value={text} onChange={(e) => onChange(e.target.value)} />
       <div className="text-right text-[14px]" style={{ color: charColor }}>{charCount.toLocaleString()} / 50,000</div>
     </div>
@@ -39,12 +39,12 @@ export function FileSourceInline({ id }: { id: string }) {
   return (
     <div className="mt-2">
       {fileName ? (
-        <div className="flex items-center gap-1.5 text-[14px] text-[#57534e] bg-[#f4f4f5] rounded-lg px-2 py-1.5">
+        <div className="flex items-center gap-1.5 text-[14px] text-[#57534e] bg-[var(--cg-surface)] rounded-lg px-2 py-1.5">
           <span>{fileName}</span><span>·</span><span>{text.split(/\s+/).length.toLocaleString()} words</span>
-          <button className="ml-auto text-[#78716c] hover:text-[#ef4444]" onClick={() => updateConfig(id, { text: '', fileName: undefined })}>✕</button>
+          <button className="ml-auto text-[#78716c] hover:text-[var(--cg-red)]" onClick={() => updateConfig(id, { text: '', fileName: undefined })}>✕</button>
         </div>
       ) : (
-        <div className="border border-dashed border-[#a8a29e] rounded-lg h-20 flex flex-col items-center justify-center text-[14px] text-[#78716c] cursor-pointer hover:border-solid hover:bg-[#fafafa] transition"
+        <div className="border border-dashed border-[#a8a29e] rounded-lg h-20 flex flex-col items-center justify-center text-[14px] text-[#78716c] cursor-pointer hover:border-solid hover:bg-[var(--cg-surface)] transition"
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); }}>
@@ -89,7 +89,7 @@ export function ImageSourceInline({ id }: { id: string }) {
           <div className="text-[14px] text-[#78716c] mt-1">{fileName} · {config?.dimensions as string}</div>
         </div>
       ) : (
-        <div className="w-full h-[140px] border border-dashed border-[#a8a29e] rounded-lg flex flex-col items-center justify-center text-[14px] text-[#78716c] cursor-pointer hover:border-solid hover:bg-[#fafafa] transition"
+        <div className="w-full h-[140px] border border-dashed border-[#a8a29e] rounded-lg flex flex-col items-center justify-center text-[14px] text-[#78716c] cursor-pointer hover:border-solid hover:bg-[var(--cg-surface)] transition"
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); }}>

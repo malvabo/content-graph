@@ -41,14 +41,12 @@ export const CATEGORY_LABELS: Record<NodeCategory, string> = {
   output: 'Output',
 };
 
-export const BADGE_COLORS: Record<NodeCategory, { bg: string; text: string; className: string }> = {
-  source: { bg: '#EDEAE5', text: '#5C5347', className: 'badge-src' },
-  transform: { bg: '#EDE8EB', text: '#5C4753', className: 'badge-adv' },
-  generate: { bg: '#E8EDE5', text: '#475C3A', className: 'badge-gen' },
-  output: { bg: '#EDECE5', text: '#53573A', className: 'badge-out' },
+export const BADGE_COLORS: Record<NodeCategory, { bg: string; text: string }> = {
+  source: { bg: '#EDEAE5', text: '#5C5347' },
+  transform: { bg: '#EDE8EB', text: '#5C4753' },
+  generate: { bg: '#E8EDE5', text: '#475C3A' },
+  output: { bg: '#EDECE5', text: '#53573A' },
 };
-
-export const HANDLE_COLOR = '#94a3b8';
 
 export const MODEL_OPTIONS = ['claude-haiku-4', 'claude-sonnet-4', 'claude-opus-4'] as const;
 export const IMAGE_MODEL_OPTIONS = ['FLUX.1 schnell', 'FLUX.1 dev'] as const;

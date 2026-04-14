@@ -86,6 +86,10 @@ export function useNodeExecution() {
 
   const runAll = useCallback(
     async (executor: (input: string, config: Record<string, unknown>, subtype: string) => Promise<string>) => {
+      // Guard against double-invocation
+      const statuses = Object.values(useExecutionStore.getState().status);
+      if (statuses.some((s) => s === 'running')) return;
+
       const { nodes, edges } = useGraphStore.getState();
       useExecutionStore.getState().resetAll();
       useOutputStore.getState().clearAll();

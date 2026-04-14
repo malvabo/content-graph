@@ -3,26 +3,27 @@ import { useGraphStore } from '../../store/graphStore';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, IMAGE_MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { NODE_ICONS } from '../../utils/nodeIcons';
+import { mockExecute } from '../../utils/mockExecutor';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="flex flex-col gap-1"><label className="text-[11px] font-medium text-[#78716c] uppercase tracking-wider">{label}</label>{children}</div>;
 }
 function Select({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: readonly string[] }) {
-  return <select className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 bg-white outline-none focus:border-[var(--cg-green)]" value={value} onChange={(e) => onChange(e.target.value)}>{options.map((o) => <option key={o}>{o}</option>)}</select>;
+  return <select className="w-full h-8 text-sm border border-[var(--cg-border)] rounded-lg px-2 bg-white outline-none focus:border-[var(--cg-green)]" value={value} onChange={(e) => onChange(e.target.value)}>{options.map((o) => <option key={o}>{o}</option>)}</select>;
 }
 function NumberInput({ value, onChange, min, max, step = 1 }: { value: number; onChange: (v: number) => void; min: number; max: number; step?: number }) {
-  return <input type="number" className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 bg-white outline-none focus:border-[var(--cg-green)]" value={value} min={min} max={max} step={step} onChange={(e) => onChange(Number(e.target.value))} />;
+  return <input type="number" className="w-full h-8 text-sm border border-[var(--cg-border)] rounded-lg px-2 bg-white outline-none focus:border-[var(--cg-green)]" value={value} min={min} max={max} step={step} onChange={(e) => onChange(Number(e.target.value))} />;
 }
 function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
-  return <div className="flex items-center justify-between"><span className="text-xs text-[#57534e]">{label}</span><button className={`w-8 h-4.5 rounded-full transition ${value ? 'bg-[#4f46e5]' : 'bg-[#a8a29e]'} relative`} onClick={() => onChange(!value)}><div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${value ? 'left-4' : 'left-0.5'}`} /></button></div>;
+  return <div className="flex items-center justify-between"><span className="text-xs text-[#57534e]">{label}</span><button className={`w-8 h-4.5 rounded-full transition ${value ? 'bg-[var(--cg-green)]' : 'bg-[#a8a29e]'} relative`} onClick={() => onChange(!value)}><div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${value ? 'left-4' : 'left-0.5'}`} /></button></div>;
 }
 function Stepper({ value, onChange, min, max, label }: { value: number; onChange: (v: number) => void; min: number; max: number; label: string }) {
-  return <div className="flex items-center gap-2"><button className="w-6 h-6 text-sm border border-[#e5e7eb] rounded flex items-center justify-center hover:bg-[#f4f4f5]" onClick={() => onChange(Math.max(min, value - 1))}>−</button><span className="text-xs font-medium w-6 text-center">{value}</span><button className="w-6 h-6 text-sm border border-[#e5e7eb] rounded flex items-center justify-center hover:bg-[#f4f4f5]" onClick={() => onChange(Math.min(max, value + 1))}>+</button><span className="text-[11px] text-[#78716c]">{label}</span></div>;
+  return <div className="flex items-center gap-2"><button className="w-6 h-6 text-sm border border-[var(--cg-border)] rounded flex items-center justify-center hover:bg-[var(--cg-surface)]" onClick={() => onChange(Math.max(min, value - 1))}>−</button><span className="text-xs font-medium w-6 text-center">{value}</span><button className="w-6 h-6 text-sm border border-[var(--cg-border)] rounded flex items-center justify-center hover:bg-[var(--cg-surface)]" onClick={() => onChange(Math.min(max, value + 1))}>+</button><span className="text-[11px] text-[#78716c]">{label}</span></div>;
 }
 
 function ModelSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return <>
-    <div className="border-t border-[#e5e7eb] my-2" />
+    <div className="border-t border-[var(--cg-border)] my-2" />
     <Field label="Model">
       <Select value={value} onChange={onChange} options={MODEL_OPTIONS} />
       <div className="text-[11px] text-[#78716c] mt-0.5">Faster ↔ Smarter</div>
@@ -35,13 +36,13 @@ const GENERATE_NODES_WITH_QUANTITY = ['linkedin-post', 'twitter-thread', 'twitte
 const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unknown) => void) => React.ReactNode> = {
   'text-source': (c, s) => <>
     <Field label="Prepare (optional)">
-      <textarea className="w-full min-h-[80px] text-sm border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] resize-y" placeholder="e.g. Extract key arguments only. Remove all anecdotes." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
+      <textarea className="w-full min-h-[80px] text-sm border border-[var(--cg-border)] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] resize-y" placeholder="e.g. Extract key arguments only. Remove all anecdotes." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
     </Field>
     {(c.prepare as string)?.trim() ? <ModelSelector value={c.model as string ?? DEFAULT_MODELS['text-source']} onChange={(v) => s('model', v)} /> : <div className="text-[11px] text-[#78716c] italic mt-1">Add a Prepare instruction to enable model selection</div>}
   </>,
   'file-source': (c, s) => <>
     <Field label="Prepare (optional)">
-      <textarea className="w-full min-h-[80px] text-sm border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] resize-y" placeholder="e.g. Summarize the key points." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
+      <textarea className="w-full min-h-[80px] text-sm border border-[var(--cg-border)] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] resize-y" placeholder="e.g. Summarize the key points." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
     </Field>
     {(c.prepare as string)?.trim() ? <ModelSelector value={c.model as string ?? DEFAULT_MODELS['file-source']} onChange={(v) => s('model', v)} /> : <div className="text-[11px] text-[#78716c] italic mt-1">Add a Prepare instruction to enable model selection</div>}
   </>,
@@ -67,12 +68,12 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
   'blog-article': (c, s) => <>
     <Field label="Type"><Select value={c.type as string ?? 'How-to'} onChange={(v) => s('type', v)} options={['How-to', 'Opinion', 'Listicle', 'Deep dive', 'Case study', 'Explainer']} /></Field>
     <Field label="Length"><Select value={c.length as string ?? 'Medium 1000–1500w'} onChange={(v) => s('length', v)} options={['Short 600–800w', 'Medium 1000–1500w', 'Long 2000–2500w']} /></Field>
-    <Field label="SEO keyword"><input className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 outline-none focus:border-[var(--cg-green)]" value={c.keyword as string ?? ''} onChange={(e) => s('keyword', e.target.value)} placeholder="Optional" /></Field>
+    <Field label="SEO keyword"><input className="w-full h-8 text-sm border border-[var(--cg-border)] rounded-lg px-2 outline-none focus:border-[var(--cg-green)]" value={c.keyword as string ?? ''} onChange={(e) => s('keyword', e.target.value)} placeholder="Optional" /></Field>
     <Field label="Audience"><Select value={c.audience as string ?? 'Intermediate'} onChange={(v) => s('audience', v)} options={['Beginner', 'Intermediate', 'Expert']} /></Field>
   </>,
   'newsletter': (c, s) => <>
     <Field label="Section type"><Select value={c.type as string ?? 'Full issue'} onChange={(v) => s('type', v)} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} /></Field>
-    <Field label="Audience"><input className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 outline-none focus:border-[var(--cg-green)]" value={c.audience as string ?? ''} onChange={(e) => s('audience', e.target.value)} placeholder="e.g. B2B SaaS founders" /></Field>
+    <Field label="Audience"><input className="w-full h-8 text-sm border border-[var(--cg-border)] rounded-lg px-2 outline-none focus:border-[var(--cg-green)]" value={c.audience as string ?? ''} onChange={(e) => s('audience', e.target.value)} placeholder="e.g. B2B SaaS founders" /></Field>
     <Field label="Word count"><NumberInput value={c.words as number ?? 350} onChange={(v) => s('words', v)} min={100} max={1000} /></Field>
   </>,
   'infographic': (c, s) => <>
@@ -95,12 +96,12 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
         {['.txt', '.md', '.docx', '.pdf', '.json', '.zip'].map((f) => {
           const formats = (c.formats as string[]) ?? ['.zip'];
           const active = formats.includes(f);
-          return <button key={f} className={`text-[11px] px-2 py-0.5 rounded ${active ? 'bg-[#4f46e5] text-white' : 'bg-[#f4f4f5] text-[#57534e]'}`}
+          return <button key={f} className={`text-[11px] px-2 py-0.5 rounded ${active ? 'bg-[var(--cg-green)] text-white' : 'bg-[var(--cg-surface)] text-[#57534e]'}`}
             onClick={() => s('formats', active ? formats.filter((x: string) => x !== f) : [...formats, f])}>{f}</button>;
         })}
       </div>
     </Field>
-    <Field label="File prefix"><input className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 outline-none focus:border-[var(--cg-green)]" value={c.prefix as string ?? 'content-export'} onChange={(e) => s('prefix', e.target.value)} /></Field>
+    <Field label="File prefix"><input className="w-full h-8 text-sm border border-[var(--cg-border)] rounded-lg px-2 outline-none focus:border-[var(--cg-green)]" value={c.prefix as string ?? 'content-export'} onChange={(e) => s('prefix', e.target.value)} /></Field>
     <Toggle value={!!c.metadata} onChange={(v) => s('metadata', v)} label="Include metadata" />
   </>,
 };
@@ -149,29 +150,9 @@ export default function ConfigPanel() {
       <div className="px-5 pb-5">
         <button className="btn btn-primary w-full" onClick={() => {
           if (!node) return;
-          const subtype = node.data.subtype;
-          runNode(node.id, async (input, _config) => {
+          runNode(node.id, async (input) => {
             await new Promise((r) => setTimeout(r, 600 + Math.random() * 600));
-            const firstSentence = input.split(/[.!?]\s/)[0]?.trim() || input.slice(0, 100);
-            const short = input.slice(0, 150).trim();
-            if (subtype === 'refine' || subtype === 'text-source') return input;
-            if (subtype === 'twitter-single') return firstSentence.length <= 280 ? firstSentence : firstSentence.slice(0, 277) + '...';
-            if (subtype === 'quote-card') {
-              const best = input.split(/[.!?]\s/).reduce((a, b) => b.length > a.length ? b : a, '');
-              return `QUOTE: "${best.trim()}"\nATTRIBUTION: Source material`;
-            }
-            const sentences = input.split(/[.!?]\s/).filter(Boolean);
-            if (subtype === 'linkedin-post') return `${firstSentence}.\n\nThis is what nobody talks about.\n\n${sentences.slice(1, 4).join('. ') || short}.\n\nWhat's your take? 👇`;
-            if (subtype === 'twitter-thread') return sentences.slice(0, 7).map((s, i) => `${i + 1}/ ${s.trim()}`).join('\n\n');
-            if (subtype === 'newsletter') {
-              const paras = input.split(/\n\n+/).filter(Boolean);
-              const subject = firstSentence.slice(0, 50);
-              const body = paras.slice(0, 4).join('\n\n') || input.slice(0, 600);
-              return `SUBJECT: ${subject}\n\nHey there,\n\n${body}\n\nHit reply and let me know what you think.\n\nUntil next time.`;
-            }
-            if (subtype === 'blog-article') return `# ${firstSentence}\n\n${sentences.slice(1).join('. ')}.`;
-            if (subtype === 'image-prompt') return `A cinematic wide-angle photograph of ${firstSentence.toLowerCase()}, golden hour lighting, shallow depth of field, rich color palette, editorial style, 8k resolution`;
-            return `[${subtype}]\n\n${short}`;
+            return mockExecute(input, node.data.subtype);
           });
         }}>▶ Run</button>
       </div>

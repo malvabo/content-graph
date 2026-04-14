@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 
@@ -5,6 +6,7 @@ export function ImagePromptInline({ id }: { id: string }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
   const progress = useExecutionStore((s) => s.progress[id] ?? 0);
   const output = useOutputStore((s) => s.outputs[id]);
+  const [copied, setCopied] = useState(false);
 
   if (status === 'idle' || status === 'stale') {
     return <div style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)' }} className="mt-2">Connect a text source, then Run</div>;
@@ -15,11 +17,11 @@ export function ImagePromptInline({ id }: { id: string }) {
     return (
       <div className="mt-2">
         {progress < 50 ? (
-          <div className="h-3 bg-[#f4f4f5] rounded animate-pulse w-full" />
+          <div className="h-3 bg-[var(--cg-surface)] rounded animate-pulse w-full" />
         ) : (
           <>
-            <div className="w-full h-1 bg-[#f4f4f5] rounded-full overflow-hidden">
-              <div className="h-full bg-[#4f46e5] rounded-full transition-all" style={{ width: `${(progress - 50) * 2}%` }} />
+            <div className="w-full h-1 bg-[var(--cg-surface)] rounded-full overflow-hidden">
+              <div className="h-full bg-[var(--cg-green)] rounded-full transition-all" style={{ width: `${(progress - 50) * 2}%` }} />
             </div>
             <div className="text-[14px] text-[#78716c] mt-0.5">Generating... {Math.round((progress - 50) * 2)}%</div>
           </>
@@ -34,11 +36,11 @@ export function ImagePromptInline({ id }: { id: string }) {
       <div className="mt-2 flex flex-col gap-2">
         {output?.text && (
           <div className="relative">
-            <div className="text-[14px] text-[#57534e] leading-relaxed max-h-[60px] overflow-y-auto bg-[#f9fafb] rounded-md p-2" style={{ scrollbarWidth: 'thin' }}>
+            <div className="text-[14px] text-[#57534e] leading-relaxed max-h-[60px] overflow-y-auto bg-[var(--cg-surface)] rounded-md p-2" style={{ scrollbarWidth: 'thin' }}>
               {output.text}
             </div>
-            <button className="text-[14px] text-[#57534e] hover:text-[#18181b] mt-1"
-              onClick={() => navigator.clipboard.writeText(output.text!)}>Copy prompt</button>
+            <button className="text-[14px] text-[#57534e] hover:text-[var(--cg-ink)] mt-1"
+              onClick={() => { navigator.clipboard.writeText(output.text!); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? '✓ Copied' : 'Copy prompt'}</button>
           </div>
         )}
         {output?.imageBase64 && (
@@ -46,8 +48,8 @@ export function ImagePromptInline({ id }: { id: string }) {
             <img src={output.imageBase64} className="w-full max-h-[200px] object-cover rounded-lg" />
             <span className="absolute bottom-1.5 left-1.5 text-[14px] text-white bg-black/50 px-1.5 py-0.5 rounded">1024 × 1024</span>
             <div className="flex gap-2 mt-1.5">
-              <button className="text-[14px] text-[#57534e] hover:text-[#18181b]" onClick={() => window.open(output.imageBase64!, '_blank')}>Open full size</button>
-              <button className="text-[14px] text-[#57534e] hover:text-[#18181b]"
+              <button className="text-[14px] text-[#57534e] hover:text-[var(--cg-ink)]" onClick={() => window.open(output.imageBase64!, '_blank')}>Open full size</button>
+              <button className="text-[14px] text-[#57534e] hover:text-[var(--cg-ink)]"
                 onClick={() => { const a = document.createElement('a'); a.href = output.imageBase64!; a.download = 'image.png'; a.click(); }}>
                 Download ↓
               </button>

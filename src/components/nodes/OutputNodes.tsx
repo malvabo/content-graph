@@ -5,12 +5,13 @@ import { useOutputStore } from '../../store/outputStore';
 export function ExportInline({ id }: { id: string }) {
   const edges = useGraphStore((s) => s.edges);
   const nodes = useGraphStore((s) => s.nodes);
-  const status = useExecutionStore((s) => s.status[id] ?? 'idle');
+  const status = useExecutionStore((s) => s.status);
   const outputs = useOutputStore((s) => s.outputs);
 
   const upstream = edges.filter((e) => e.target === id).map((e) => {
     const n = nodes.find((n) => n.id === e.source);
-    return n ? { id: n.id, label: n.data.label } : null;
+    const st = n ? (status as Record<string, string>)[n.id] : undefined;
+    return n ? { id: n.id, label: n.data.label, done: st === 'complete' } : null;
   }).filter(Boolean);
 
   // Scan for completed image-prompt nodes (auto-included regardless of edges)
@@ -24,7 +25,7 @@ export function ExportInline({ id }: { id: string }) {
         <div className="flex flex-col gap-1">
           {upstream.map((u) => (
             <div key={u!.id} className="text-[14px] text-[#57534e] flex items-center gap-1">
-              <span className="text-[#22c55e]">✓</span> {u!.label}
+              <span style={{ color: u!.done ? 'var(--cg-green)' : '#a8a29e' }}>{u!.done ? '✓' : '○'}</span> {u!.label}
             </div>
           ))}
           {imagePromptNodes.map((n) => (
@@ -34,8 +35,8 @@ export function ExportInline({ id }: { id: string }) {
           ))}
         </div>
       )}
-      {status === 'complete' && (
-        <button className="w-full h-8 mt-2 text-sm font-medium bg-[#22c55e] text-white rounded-lg hover:bg-[#16a34a] transition">
+      {status[id] === 'complete' && (
+        <button className="w-full h-8 mt-2 text-sm font-medium bg-[var(--cg-green)] text-white rounded-lg hover:bg-[var(--cg-green-hover)] transition">
           ↓ Download content-export.zip
         </button>
       )}
