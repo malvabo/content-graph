@@ -1,5 +1,5 @@
 import {
-  ReactFlow, Background, BackgroundVariant, Controls,
+  ReactFlow, Controls,
   type OnConnect, type OnNodesChange, type OnEdgesChange, type Node,
   applyNodeChanges, applyEdgeChanges, addEdge, type Connection, useReactFlow,
 } from '@xyflow/react';
@@ -10,7 +10,7 @@ import { useOutputStore } from '../../store/outputStore';
 import BaseNode from '../nodes/BaseNode';
 import NodeSpotlight from './NodeSpotlight';
 import RunWaveOverlay from './RunWaveOverlay';
-import CursorSpotlight from './CursorSpotlight';
+import DotBackground from './DotBackground';
 import { useConnectionValidation } from '../../hooks/useConnectionValidation';
 import type { NodeDef } from '../../utils/nodeDefs';
 
@@ -81,6 +81,7 @@ export default function GraphCanvas() {
         if (!bounds) return;
         setSpotlight({ x: e.clientX - bounds.left, y: e.clientY - bounds.top, flowX: pos.x, flowY: pos.y });
       }}>
+      <DotBackground />
       <ReactFlow
         nodes={nodes} edges={styledEdges}
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
@@ -93,8 +94,6 @@ export default function GraphCanvas() {
         fitView={false} panOnScroll={false} selectionOnDrag={false}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'var(--cg-surface)' }}>
-        <Background variant={BackgroundVariant.Dots} gap={14} size={1} color="#D5D0C8" />
-        <CursorSpotlight />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
       </ReactFlow>
