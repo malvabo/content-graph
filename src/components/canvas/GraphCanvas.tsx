@@ -20,6 +20,7 @@ export default function GraphCanvas() {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId, addNode } = useGraphStore();
   const { screenToFlowPosition } = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const spotlightRef = useRef<HTMLDivElement>(null);
   const [spotlight, setSpotlight] = useState<{ x: number; y: number; flowX: number; flowY: number } | null>(null);
   const { isValidConnection, tooltip } = useConnectionValidation(nodes, edges);
   const executionStatus = useExecutionStore((s) => s.status);
@@ -71,6 +72,14 @@ export default function GraphCanvas() {
   return (
     <div ref={wrapperRef} className="flex-1 h-full outline-none relative" tabIndex={0}
       onDragOver={onDragOver} onDrop={onDrop}
+      onMouseMove={(e) => {
+        if (spotlightRef.current) {
+          const rect = wrapperRef.current!.getBoundingClientRect();
+          spotlightRef.current.style.transform = `translate(${e.clientX - rect.left - 80}px, ${e.clientY - rect.top - 80}px)`;
+          spotlightRef.current.style.opacity = '1';
+        }
+      }}
+      onMouseLeave={() => { if (spotlightRef.current) spotlightRef.current.style.opacity = '0'; }}
       onDoubleClick={(e) => {
         if ((e.target as HTMLElement).closest('.react-flow__node')) return;
         const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
@@ -103,6 +112,9 @@ export default function GraphCanvas() {
       )}
 
       {spotlight && <NodeSpotlight x={spotlight.x} y={spotlight.y} flowX={spotlight.flowX} flowY={spotlight.flowY} onClose={() => setSpotlight(null)} onSelect={() => setSpotlight(null)} />}
+
+      <div ref={spotlightRef} className="absolute pointer-events-none rounded-full"
+        style={{ width: 160, height: 160, background: 'radial-gradient(circle, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.12) 50%, transparent 100%)', mixBlendMode: 'color-burn', opacity: 0, transition: 'opacity 150ms', zIndex: 1 }} />
     </div>
   );
 }
