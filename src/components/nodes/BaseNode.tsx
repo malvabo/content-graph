@@ -47,7 +47,6 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   else if (isError) borderStyle = '1px solid #E8BABA';
   else if (isStale) borderStyle = '1px solid var(--cg-amber-bdr)';
 
-  const isGenerate = data.category === 'generate';
   const isSource = data.category === 'source';
 
   return (
