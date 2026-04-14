@@ -71,18 +71,24 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const dimmed = isOtherSelected && !isCompatible;
 
   return (
-    <div style={{
+    <div className="group" style={{
       width: 240,
       minHeight: isSource ? undefined : 160,
       background: 'var(--cg-card)',
       border: borderStyle,
       borderRadius: 12,
       padding: '14px 16px',
+      position: 'relative',
       transform: selected ? 'scale(1.04)' : 'scale(1)',
       opacity: dimmed ? 0.35 : 1,
       transition: 'transform 200ms ease, opacity 200ms ease, box-shadow 200ms ease',
       boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.1)' : 'none',
     }}>
+      {/* Delete button on hover */}
+      <button className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{ background: 'var(--cg-ink)', color: '#fff', fontSize: 10, zIndex: 10 }}
+        onClick={(e) => { e.stopPropagation(); useGraphStore.getState().removeNode(id); }}>✕</button>
+
       {def?.hasInput && (
         <Handle type="target" position={Position.Left} id="text"
           className="!w-2.5 !h-2.5 !border-[1.5px] !border-[#94a3b8] !bg-[var(--cg-card)] hover:!border-[var(--cg-green)] hover:!bg-[var(--cg-green-lt)]" />

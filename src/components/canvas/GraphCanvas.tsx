@@ -3,7 +3,7 @@ import {
   type OnConnect, type OnNodesChange, type OnEdgesChange, type Node,
   applyNodeChanges, applyEdgeChanges, addEdge, type Connection, useReactFlow,
 } from '@xyflow/react';
-import { useCallback, useRef, useEffect, useState } from 'react';
+import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
@@ -25,6 +25,12 @@ export default function GraphCanvas() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [spotlight, setSpotlight] = useState<{ x: number; y: number; flowX: number; flowY: number } | null>(null);
   const { isValidConnection, tooltip } = useConnectionValidation(nodes, edges);
+  const executionStatus = useExecutionStore((s) => s.status);
+
+  const styledEdges = useMemo(() => edges.map((e) => ({
+    ...e,
+    animated: executionStatus[e.target] === 'running',
+  })), [edges, executionStatus]);
 
   useEffect(() => { wrapperRef.current?.focus(); }, []);
 
@@ -76,7 +82,7 @@ export default function GraphCanvas() {
         setSpotlight({ x: e.clientX - bounds.left, y: e.clientY - bounds.top, flowX: pos.x, flowY: pos.y });
       }}>
       <ReactFlow
-        nodes={nodes} edges={edges}
+        nodes={nodes} edges={styledEdges}
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
         onConnect={onConnect} onNodesDelete={onNodesDelete}
         isValidConnection={isValidConnection}

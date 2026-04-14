@@ -113,6 +113,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 /* Status pulse */
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.6)} }
 @keyframes done-pulse { 0%{transform:scale(1);opacity:1} 40%{transform:scale(2.2);opacity:.7} 100%{transform:scale(1);opacity:1} }
+@keyframes flow-dash { to { stroke-dashoffset: -20; } }
+.react-flow__edge.animated path { animation: flow-dash 0.6s linear infinite; stroke: var(--cg-green) !important; stroke-width: 2 !important; }
 
 /* Badge colours */
 .badge-src { background:#EBEEF0;color:#3A5060; }
