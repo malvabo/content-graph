@@ -22,8 +22,15 @@ async function generateImage(prompt: string): Promise<string> {
 }
 
 function getUpstreamText(nodeId: string, edges: Edge[], outputs: Record<string, { text?: string }>) {
+  const nodes = useGraphStore.getState().nodes;
   const upstream = edges.filter((e) => e.target === nodeId).map((e) => e.source);
-  return upstream.map((id) => outputs[id]?.text ?? '').filter(Boolean).join('\n\n---\n\n');
+  return upstream.map((id) => {
+    if (outputs[id]?.text) return outputs[id].text;
+    // Fallback: read config.text from source nodes
+    const node = nodes.find((n) => n.id === id);
+    if (node?.data.category === 'source') return (node.data.config.text as string) || '';
+    return '';
+  }).filter(Boolean).join('\n\n---\n\n');
 }
 
 export function useNodeExecution() {
