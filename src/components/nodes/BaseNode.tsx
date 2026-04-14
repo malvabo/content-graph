@@ -11,14 +11,29 @@ import { ImagePromptInline } from './ImagePromptNode';
 
 import { NODE_ICONS } from '../../utils/nodeIcons';
 
+import { useGraphStore } from '../../store/graphStore';
+
 const STATUS_COLORS: Record<string, string> = {
   idle: '#C8D4CC', running: '#F0D8A0', complete: '#0DBF5A',
   error: '#C93030', warning: '#F0D8A0', stale: '#F0D8A0',
 };
 
+function canConnect(fromSubtype: string, toSubtype: string): boolean {
+  const from = NODE_DEFS_BY_SUBTYPE[fromSubtype];
+  const to = NODE_DEFS_BY_SUBTYPE[toSubtype];
+  if (!from || !to) return false;
+  if (!from.hasOutput || !to.hasInput) return false;
+  return true;
+}
+
 function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
   const error = useExecutionStore((s) => s.errors[id]);
+  const selectedId = useGraphStore((s) => s.selectedNodeId);
+  const selectedSubtype = useGraphStore((s) => {
+    const sel = s.nodes.find((n) => n.id === s.selectedNodeId);
+    return sel?.data.subtype ?? null;
+  });
   const prevStatus = useRef(status);
   const [justDone, setJustDone] = useState(false);
 
@@ -49,8 +64,25 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
 
   const isSource = data.category === 'source';
 
+  // Compatibility: if another node is selected, dim this one if it can't connect
+  const isOtherSelected = selectedId !== null && selectedId !== id;
+  const isCompatible = !isOtherSelected || !selectedSubtype || 
+    canConnect(selectedSubtype, data.subtype) || canConnect(data.subtype, selectedSubtype);
+  const dimmed = isOtherSelected && !isCompatible;
+
   return (
-    <div style={{ width: 240, minHeight: isSource ? undefined : 160, background: 'var(--cg-card)', border: borderStyle, borderRadius: 12, padding: '14px 16px' }}>
+    <div style={{
+      width: 240,
+      minHeight: isSource ? undefined : 160,
+      background: 'var(--cg-card)',
+      border: borderStyle,
+      borderRadius: 12,
+      padding: '14px 16px',
+      transform: selected ? 'scale(1.04)' : 'scale(1)',
+      opacity: dimmed ? 0.35 : 1,
+      transition: 'transform 200ms ease, opacity 200ms ease, box-shadow 200ms ease',
+      boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.1)' : 'none',
+    }}>
       {def?.hasInput && (
         <Handle type="target" position={Position.Left} id="text"
           className="!w-2.5 !h-2.5 !border-[1.5px] !border-[#94a3b8] !bg-[var(--cg-card)] hover:!border-[var(--cg-green)] hover:!bg-[var(--cg-green-lt)]" />
