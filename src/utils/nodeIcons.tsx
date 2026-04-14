@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react';
+
 const s = 'currentColor';
 const p = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: s, strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
-export const NODE_ICONS: Record<string, () => JSX.Element> = {
+export const NODE_ICONS: Record<string, () => ReactNode> = {
   'text-source': () => <svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>,
   'image-source': () => <svg {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>,
   'linkedin-post': () => <svg {...p}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>,
