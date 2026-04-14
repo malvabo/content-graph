@@ -42,6 +42,8 @@ export default function CanvasToolbar() {
 
   return (
     <div className="h-11 shrink-0 flex items-center px-4 gap-3" style={{ background: 'var(--cg-card)', borderBottom: '1px solid var(--cg-border)' }}>
+      <span style={{ font: '500 15px/20px var(--font-mono)', color: 'var(--cg-green)', letterSpacing: '-.02em', userSelect: 'none' }}>up200</span>
+      <div className="h-4 w-px" style={{ background: 'var(--cg-border)' }} />
       <input
         style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)', letterSpacing: '-.01em' }}
         className="bg-transparent border-none outline-none w-48"

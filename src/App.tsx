@@ -15,7 +15,7 @@ const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
 function MobileBlock() {
   return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif', fontSize: '15px', color: '#6b7280', textAlign: 'center', padding: '32px' }}>
-      ContentGraph requires a desktop browser.
+      up200 requires a desktop browser.
     </div>
   );
 }
