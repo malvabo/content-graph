@@ -121,7 +121,7 @@ export default function ConfigPanel() {
       <div className="p-4" style={{ borderBottom: '1px solid var(--cg-border)' }}>
         <div className="flex items-center gap-2">
           <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-mono)', backgroundColor: colors.bg, color: colors.text }}>{def?.badge}</div>
-          <div><div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)' }}>{node.data.label}</div><div className="text-eyebrow mt-0.5">{node.data.category}</div></div>
+          <div><div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)' }}>{node.data.label}</div></div>
         </div>
       </div>
       <div className="p-4 flex flex-col gap-3">
