@@ -66,7 +66,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
         </div>
         <div className="flex items-center justify-between mt-1">
           <span style={{ font: '400 14px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>{slides.length} slides</span>
-          <button className="btn-micro" onClick={() => setModalOpen(true)}>Read more</button>
+          <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Read more</button>
         </div>
         {modalOpen && <OutputModal title={label} text={text} wordCount={text.split(/\s+/).length} onClose={() => setModalOpen(false)} />}
       </div>
@@ -82,8 +82,8 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
       </div>
       <div className="flex items-center justify-end mt-1.5">
         <div className="flex gap-1.5">
-          <button className="btn-micro" onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? '✓ Copied' : 'Copy'}</button>
-          <button className="btn-micro" onClick={() => setModalOpen(true)}>Read more</button>
+          <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? '✓ Copied' : 'Copy'}</button>
+          <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Read more</button>
         </div>
       </div>
       {modalOpen && <OutputModal title={label} text={text} wordCount={words} onClose={() => setModalOpen(false)} />}
