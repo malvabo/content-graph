@@ -3,7 +3,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
 import type { ContentNode } from '../../store/graphStore';
-import { TextSourceInline, ImageSourceInline } from './SourceNodes';
+import { TextSourceInline, ImageSourceInline, FileSourceInline } from './SourceNodes';
 import { GenerateNodeInline } from './GenerateNodes';
 import { RefineInline } from './TransformNodes';
 import { ExportInline } from './OutputNodes';
@@ -77,6 +77,7 @@ export default function BaseNode({ id, data, selected }: NodeProps<ContentNode>)
       {isError && error && <div style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-red-text)' }} className="mt-2">{error}</div>}
 
       {data.subtype === 'text-source' && <TextSourceInline id={id} />}
+      {data.subtype === 'file-source' && <FileSourceInline id={id} />}
       {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
       {data.subtype === 'refine' && <RefineInline id={id} />}
       {data.subtype === 'image-prompt' && <ImagePromptInline id={id} />}

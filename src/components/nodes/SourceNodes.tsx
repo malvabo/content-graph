@@ -7,15 +7,8 @@ export function TextSourceInline({ id }: { id: string }) {
   const updateConfig = useGraphStore((s) => s.updateNodeConfig);
   const setOutput = useOutputStore((s) => s.setOutput);
   const text = (config?.text as string) ?? '';
-  const file = config?.fileName as string | undefined;
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const onChange = useCallback((val: string) => { updateConfig(id, { text: val }); setOutput(id, { text: val }); }, [id, updateConfig, setOutput]);
-  const onFile = useCallback((f: File) => {
-    const reader = new FileReader();
-    reader.onload = () => { const c = reader.result as string; updateConfig(id, { text: c, fileName: f.name }); setOutput(id, { text: c }); };
-    reader.readAsText(f);
-  }, [id, updateConfig, setOutput]);
 
   const charCount = text.length;
   const charColor = charCount > 50000 ? '#ef4444' : charCount > 40000 ? '#f59e0b' : '#a1a1aa';
@@ -25,13 +18,33 @@ export function TextSourceInline({ id }: { id: string }) {
       <textarea className="w-full min-h-[120px] max-h-[300px] resize-y text-sm leading-relaxed border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[#6366f1] bg-white"
         placeholder="Paste your article, transcript, or notes..." value={text} onChange={(e) => onChange(e.target.value)} />
       <div className="text-right text-[14px]" style={{ color: charColor }}>{charCount.toLocaleString()} / 50,000</div>
-      {file ? (
+    </div>
+  );
+}
+
+export function FileSourceInline({ id }: { id: string }) {
+  const config = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.config);
+  const updateConfig = useGraphStore((s) => s.updateNodeConfig);
+  const setOutput = useOutputStore((s) => s.setOutput);
+  const text = (config?.text as string) ?? '';
+  const fileName = config?.fileName as string | undefined;
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const onFile = useCallback((f: File) => {
+    const reader = new FileReader();
+    reader.onload = () => { const c = reader.result as string; updateConfig(id, { text: c, fileName: f.name }); setOutput(id, { text: c }); };
+    reader.readAsText(f);
+  }, [id, updateConfig, setOutput]);
+
+  return (
+    <div className="mt-2">
+      {fileName ? (
         <div className="flex items-center gap-1.5 text-[14px] text-[#71717a] bg-[#f4f4f5] rounded-lg px-2 py-1.5">
-          <span>{file}</span><span>·</span><span>{text.split(/\s+/).length.toLocaleString()} words</span>
+          <span>{fileName}</span><span>·</span><span>{text.split(/\s+/).length.toLocaleString()} words</span>
           <button className="ml-auto text-[#a1a1aa] hover:text-[#ef4444]" onClick={() => updateConfig(id, { text: '', fileName: undefined })}>✕</button>
         </div>
       ) : (
-        <div className="border border-dashed border-[#d1d5db] rounded-lg h-9 flex items-center justify-center text-[14px] text-[#a1a1aa] cursor-pointer hover:border-solid hover:bg-[#fafafa] transition"
+        <div className="border border-dashed border-[#d1d5db] rounded-lg h-20 flex flex-col items-center justify-center text-[14px] text-[#a1a1aa] cursor-pointer hover:border-solid hover:bg-[#fafafa] transition"
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); }}>
