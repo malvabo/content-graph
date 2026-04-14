@@ -81,8 +81,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
       <div className="max-h-[120px] overflow-y-auto" style={{ font: '400 14px/1.6 var(--font-sans)', color: 'var(--cg-ink)', scrollbarWidth: 'thin' }}>
         {text}
       </div>
-      <div className="flex items-center justify-between mt-1.5">
-        <span style={{ font: '400 14px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>{words} words</span>
+      <div className="flex items-center justify-end mt-1.5">
         <div className="flex gap-1.5">
           <button className="btn-micro" onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? '✓ Copied' : 'Copy'}</button>
           {isLong && <button className="btn-micro" onClick={() => setModalOpen(true)}>Read more</button>}
