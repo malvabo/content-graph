@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Panel } from '@xyflow/react';
 import { useExecutionStore } from '../../store/executionStore';
 
-const GAP = 22;
+const GAP = 14;
 const BASE_R = 1;
 const WAVE_R = 2.4;
 const PEAK_ALPHA = 0.25;

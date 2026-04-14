@@ -10,6 +10,7 @@ import { useOutputStore } from '../../store/outputStore';
 import BaseNode from '../nodes/BaseNode';
 import NodeSpotlight from './NodeSpotlight';
 import RunWaveOverlay from './RunWaveOverlay';
+import CursorSpotlight from './CursorSpotlight';
 import { useConnectionValidation } from '../../hooks/useConnectionValidation';
 import type { NodeDef } from '../../utils/nodeDefs';
 
@@ -86,7 +87,8 @@ export default function GraphCanvas() {
         fitView={false} panOnScroll={false} selectionOnDrag={false}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'var(--cg-surface)' }}>
-        <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="#D5D0C8" />
+        <Background variant={BackgroundVariant.Dots} gap={14} size={1} color="#D5D0C8" />
+        <CursorSpotlight />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
       </ReactFlow>
