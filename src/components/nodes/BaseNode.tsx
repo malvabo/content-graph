@@ -48,9 +48,10 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   else if (isStale) borderStyle = '1px solid var(--cg-amber-bdr)';
 
   const isGenerate = data.category === 'generate';
+  const isSource = data.category === 'source';
 
   return (
-    <div style={{ width: 240, minHeight: isGenerate ? 200 : undefined, background: 'var(--cg-card)', border: borderStyle, borderRadius: 12, padding: '14px 16px' }}>
+    <div style={{ width: 240, minHeight: isSource ? undefined : 160, background: 'var(--cg-card)', border: borderStyle, borderRadius: 12, padding: '14px 16px' }}>
       {def?.hasInput && (
         <Handle type="target" position={Position.Left} id="text"
           className="!w-2.5 !h-2.5 !border-[1.5px] !border-[#94a3b8] !bg-[var(--cg-card)] hover:!border-[var(--cg-green)] hover:!bg-[var(--cg-green-lt)]" />
