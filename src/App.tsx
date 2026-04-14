@@ -45,19 +45,9 @@ function AppInner() {
   useKeyboardShortcuts();
 
   const handleTranscript = useCallback((text: string) => {
-    // Create a text-source node on the canvas
-    const node: ContentNode = {
-      id: `text-source-${Date.now()}`,
-      type: 'contentNode',
-      position: { x: 100, y: 100 },
-      deletable: true,
-      data: { subtype: 'text-source', label: 'Text', badge: 'Tx', category: 'source', description: 'Raw content, transcript, notes', config: { text } },
-    };
-    addNode(node);
-    // Also send to ScriptSense
     setVoiceTranscript(text);
     setActiveView('scriptsense');
-  }, [addNode]);
+  }, []);
 
   const handleAddNode = useCallback((def: NodeDef) => {
     const node: ContentNode = {

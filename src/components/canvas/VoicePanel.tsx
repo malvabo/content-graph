@@ -94,8 +94,8 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
         </div>
       </div>
 
-      {/* Always visible transcript */}
-      {(transcript || interim) && (
+      {/* Show transcript only when not actively listening */}
+      {!listening && (transcript || interim) && (
         <div className="relative z-10 flex-1 w-full max-w-[720px] mx-auto overflow-y-auto px-8 py-4">
           <div style={{ font: '400 16px/1.8 var(--font-sans)', color: 'var(--cg-ink)' }} className="whitespace-pre-wrap">
             {transcript}<span style={{ color: 'var(--cg-ink-3)' }}>{interim}</span>
@@ -103,10 +103,10 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
         </div>
       )}
 
-      {!transcript && !interim && <div className="flex-1" />}
+      <div className="flex-1" />
 
-      <div className="relative z-10 flex gap-3 py-6 justify-center">
-        <button className="btn btn-primary" onClick={endSession}>End session</button>
+      <div className="relative z-10 flex gap-3 py-8 justify-center">
+        <button className="btn-lg btn-primary" style={{ minWidth: 160, fontSize: 15 }} onClick={endSession}>End session</button>
       </div>
       <div className="relative z-10" style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)', paddingBottom: 24, textAlign: 'center' }}>
         {listening ? 'Voice on' : 'Voice off'}
