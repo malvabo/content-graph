@@ -26,13 +26,14 @@ export default function CursorSpotlight() {
   }, []);
 
   return (
-    <Panel position="top-left" style={{ margin: 0, padding: 0, inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0, overflow: 'hidden', mixBlendMode: 'multiply' }}>
+    <Panel position="top-left" style={{ margin: 0, padding: 0, inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
       <div ref={containerRef} style={{
         position: 'absolute',
         width: '100%',
         height: '100%',
+        mixBlendMode: 'color-burn',
         background: visible
-          ? `radial-gradient(circle 80px at ${pos.x}px ${pos.y}px, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.15) 70%, transparent 100%)`
+          ? `radial-gradient(circle 80px at ${pos.x}px ${pos.y}px, rgba(80,75,68,0.08) 0%, rgba(80,75,68,0.08) 60%, transparent 100%)`
           : 'transparent',
         opacity: visible ? 1 : 0,
       }} />
