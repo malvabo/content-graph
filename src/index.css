@@ -111,6 +111,43 @@ button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
   .btn-primary.loading::after { animation:none;border:1.5px solid #061208;opacity:.5; }
 }
 
+/* Hover border gradient - Run button */
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes border-rotate { to { --border-angle: 360deg; } }
+.btn-run {
+  position: relative;
+  background: #fff;
+  color: var(--cg-ink);
+  border: none;
+  border-radius: 12px;
+  isolation: isolate;
+}
+.btn-run::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  background: conic-gradient(from var(--border-angle), transparent 40%, #0DBF5A 50%, transparent 60%);
+  animation: border-rotate 3s linear infinite;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 300ms;
+}
+.btn-run::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: #fff;
+  z-index: -1;
+}
+.btn-run:hover::before { opacity: 1; }
+.btn-run:hover { box-shadow: 0 0 16px rgba(13,191,90,0.2); }
+
 /* Status pulse */
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.6)} }
 @keyframes done-pulse { 0%{transform:scale(1);opacity:1} 40%{transform:scale(2.2);opacity:.7} 100%{transform:scale(1);opacity:1} }

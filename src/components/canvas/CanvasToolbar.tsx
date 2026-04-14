@@ -31,7 +31,7 @@ export default function CanvasToolbar({ activeView }: { activeView: string }) {
         <div className="flex items-center gap-1.5">
           <button className="btn-ghost btn-sm" style={{ borderRadius: 10 }} onClick={autoLayout}>Auto-layout</button>
           <button className="btn-ghost btn-sm" style={{ borderRadius: 10 }} onClick={() => { if (nodes.length === 0 || confirm('Clear all nodes?')) { clearGraph(); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); } }}>Clear</button>
-          <button className={`btn btn-primary ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>
+          <button className={`btn btn-run ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>
         </div>
       )}
     </div>
