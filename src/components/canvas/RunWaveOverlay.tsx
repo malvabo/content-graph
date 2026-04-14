@@ -4,10 +4,10 @@ import { useExecutionStore } from '../../store/executionStore';
 
 const GAP = 14;
 const BASE_R = 1;
-const WAVE_R = 2.4;
-const PEAK_ALPHA = 0.25;
-const WAVE_WIDTH = 220;
-const CYCLE_MS = 8000;
+const WAVE_R = 1;
+const PEAK_ALPHA = 0.12;
+const WAVE_WIDTH = 300;
+const CYCLE_MS = 10000;
 const MIN_DISPLAY_MS = 5000;
 
 function bezierEase(t: number): number {
