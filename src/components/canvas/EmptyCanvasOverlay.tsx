@@ -28,9 +28,10 @@ export default function EmptyCanvasOverlay() {
         <div className="text-eyebrow mb-1">Get started</div>
         <div className="flex gap-3">
           <button className="btn btn-outline" onClick={() => setGraphName('Untitled Graph')}>Start from scratch</button>
-          <div className="relative group">
+          <div className="relative group py-[10px] -my-[10px]">
             <button className="btn btn-outline">Load template</button>
-            <div className="hidden group-hover:block absolute top-full left-0 mt-1 rounded-xl shadow-lg py-1 min-w-[220px] z-10" style={{ background: 'var(--cg-card)', border: '1px solid var(--cg-border)' }}>
+            <div className="hidden group-hover:block absolute top-full left-0 pt-[10px] min-w-[220px] z-10">
+              <div className="rounded-xl shadow-lg py-1" style={{ background: '#f2efe9', border: '1px solid #e6e3dd' }}>
               {TEMPLATES.map((t, i) => (
                 <button key={t.name} className="w-full text-left px-3 py-2 transition" style={{ background: 'transparent' }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--cg-surface)')}
@@ -40,6 +41,7 @@ export default function EmptyCanvasOverlay() {
                   <div style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)' }}>{t.description}</div>
                 </button>
               ))}
+              </div>
             </div>
           </div>
           <button className="btn btn-outline" onClick={() => fileRef.current?.click()}>Import JSON</button>
