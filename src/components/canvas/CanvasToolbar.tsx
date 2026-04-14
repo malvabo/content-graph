@@ -20,8 +20,6 @@ export default function CanvasToolbar({ activeView }: { activeView: string }) {
 
   return (
     <div className="absolute top-0 left-0 right-0 h-11 flex items-center px-4 gap-2 z-10" style={{ background: 'transparent' }}>
-      <span style={{ font: '500 14px/1 var(--font-mono)', color: 'var(--cg-green)', letterSpacing: '-.02em', userSelect: 'none', whiteSpace: 'nowrap' }}>up200</span>
-      <div className="h-4 w-px shrink-0" style={{ background: 'var(--cg-border)' }} />
       <input
         style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)', letterSpacing: '-.01em' }}
         className="bg-transparent border-none outline-none min-w-0 flex-1 max-w-[200px]"
