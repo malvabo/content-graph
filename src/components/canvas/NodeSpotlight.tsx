@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NODE_DEFS, BADGE_COLORS, type NodeDef } from '../../utils/nodeDefs';
+import { NODE_ICONS } from '../../utils/nodeIcons';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 
 interface Props { x: number; y: number; flowX: number; flowY: number; onClose: () => void; onSelect: (def: NodeDef) => void }
@@ -62,8 +63,8 @@ export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }:
                 onClick={() => place(def)}
                 onMouseEnter={() => setIdx(i)}
               >
-                <div className="w-5 h-5 rounded text-[8px] font-bold flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: colors.bg, color: colors.text }}>{def.badge}</div>
+                <div className="w-5 h-5 rounded flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: colors.bg, color: colors.text }}>{NODE_ICONS[def.subtype]?.() ?? def.badge}</div>
                 <div className="min-w-0">
                   <div className="text-xs font-medium text-[#18181b] truncate">{def.label}</div>
                   <div className="text-[10px] text-[#a1a1aa] truncate">{def.description}</div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NODE_DEFS, CATEGORY_LABELS, BADGE_COLORS, type NodeDef } from '../../utils/nodeDefs';
+import { NODE_ICONS } from '../../utils/nodeIcons';
 import type { NodeCategory } from '../../store/graphStore';
 
 const PALETTE_ORDER: NodeCategory[] = ['source', 'generate', 'output', 'transform'];
@@ -17,8 +18,8 @@ function PaletteItem({ def }: { def: NodeDef }) {
       onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--cg-surface)')}
       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
       <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center shrink-0"
-        style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-mono)', backgroundColor: colors.bg, color: colors.text }}>
-        {def.badge}
+        style={{ backgroundColor: colors.bg, color: colors.text }}>
+        {NODE_ICONS[def.subtype]?.() ?? def.badge}
       </div>
       <div className="min-w-0">
         <div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)', letterSpacing: '-.005em' }} className="truncate">{def.label}</div>
