@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface OutputModalProps { title: string; text: string; wordCount: number; onClose: () => void }
 
@@ -20,10 +21,9 @@ export function OutputModal({ title, text, wordCount, onClose }: OutputModalProp
   const charCount = text.length;
   const readTime = Math.max(1, Math.round(wordCount / 230));
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-6" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-white rounded-2xl w-full max-w-[960px] max-h-[90vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div className="flex items-center justify-between px-8 py-5 shrink-0" style={{ borderBottom: '1px solid var(--cg-border)' }}>
           <div>
             <div style={{ font: '500 16px/24px var(--font-sans)', color: 'var(--cg-ink)' }}>{title}</div>
@@ -40,12 +40,10 @@ export function OutputModal({ title, text, wordCount, onClose }: OutputModalProp
           </button>
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto px-8 py-6" style={{ scrollbarWidth: 'thin' }}>
           <div style={{ font: '400 14px/1.9 var(--font-sans)', color: 'var(--cg-ink)', maxWidth: 720 }} className="whitespace-pre-wrap">{text}</div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center gap-2 px-8 py-4 shrink-0" style={{ borderTop: '1px solid var(--cg-border)' }}>
           <button className={copied ? 'btn-sm btn-tonal' : 'btn-sm btn-outline'} onClick={copy}>
             {copied ? '✓ Copied' : 'Copy'}
@@ -62,7 +60,8 @@ export function OutputModal({ title, text, wordCount, onClose }: OutputModalProp
           <button className="btn-sm btn-primary" onClick={onClose}>Done</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -85,17 +84,15 @@ export function ImageModal({ src, info, onClose, onRegenerate }: ImageModalProps
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* fallback: copy the data URL */
       navigator.clipboard.writeText(src);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-[#1a1a1f] rounded-2xl w-full max-w-[1080px] max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ font: '400 13px/1 var(--font-mono)', color: 'rgba(255,255,255,0.5)' }}>{info}</div>
           <button className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition" onClick={onClose}>
@@ -103,12 +100,10 @@ export function ImageModal({ src, info, onClose, onRegenerate }: ImageModalProps
           </button>
         </div>
 
-        {/* Image */}
         <div className="flex-1 flex items-center justify-center p-6 overflow-hidden min-h-0">
           <img src={src} className="max-w-full max-h-full object-contain rounded-lg" style={{ boxShadow: '0 4px 40px rgba(0,0,0,0.4)' }} />
         </div>
 
-        {/* Footer */}
         <div className="flex items-center gap-2 px-6 py-4 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <button className="btn-sm" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.12)' }}
             onClick={() => { const a = document.createElement('a'); a.href = src; a.download = 'image.png'; a.click(); }}>
@@ -128,6 +123,7 @@ export function ImageModal({ src, info, onClose, onRegenerate }: ImageModalProps
           <button className="btn-sm" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }} onClick={onClose}>Close</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
