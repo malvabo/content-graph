@@ -66,7 +66,7 @@ export default function BaseNode({ id, data, selected }: NodeProps<ContentNode>)
       <div className="mt-1">
         <span className="btn-pill" style={{ cursor: 'default', height: 20, fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)',
           background: status === 'complete' ? 'var(--cg-green-tint)' : status === 'error' ? 'var(--cg-red-lt)' : status === 'running' ? 'var(--cg-amber-lt)' : 'var(--cg-surface)',
-          color: status === 'complete' ? '#0A5C2A' : status === 'error' ? 'var(--cg-red-text)' : status === 'running' ? 'var(--cg-amber-text)' : 'var(--cg-ink-3)',
+          color: status === 'complete' ? '#52524e' : status === 'error' ? '#52524e' : status === 'running' ? '#52524e' : '#8a8a86',
           borderColor: status === 'complete' ? '#E0DCD6' : status === 'error' ? '#ECC0C0' : status === 'running' ? 'var(--cg-amber-bdr)' : 'transparent',
         }}>
           <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: STATUS_COLORS[status], animation: dotAnim }} />
