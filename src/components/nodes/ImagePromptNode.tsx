@@ -7,7 +7,7 @@ export function ImagePromptInline({ id }: { id: string }) {
   const output = useOutputStore((s) => s.outputs[id]);
 
   if (status === 'idle' || status === 'stale') {
-    return <div style={{ font: '400 13px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)' }} className="mt-2">Connect a text source, then Run</div>;
+    return <div style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)' }} className="mt-2">Connect a text source, then Run</div>;
   }
 
   if (status === 'running') {
@@ -21,10 +21,10 @@ export function ImagePromptInline({ id }: { id: string }) {
             <div className="w-full h-1 bg-[#f4f4f5] rounded-full overflow-hidden">
               <div className="h-full bg-[#4f46e5] rounded-full transition-all" style={{ width: `${(progress - 50) * 2}%` }} />
             </div>
-            <div className="text-[10px] text-[#a1a1aa] mt-0.5">Generating... {Math.round((progress - 50) * 2)}%</div>
+            <div className="text-[14px] text-[#a1a1aa] mt-0.5">Generating... {Math.round((progress - 50) * 2)}%</div>
           </>
         )}
-        <div className="text-[10px] text-[#f59e0b] mt-1">{phase}</div>
+        <div className="text-[14px] text-[#f59e0b] mt-1">{phase}</div>
       </div>
     );
   }
@@ -34,20 +34,20 @@ export function ImagePromptInline({ id }: { id: string }) {
       <div className="mt-2 flex flex-col gap-2">
         {output?.text && (
           <div className="relative">
-            <div className="font-mono text-[11px] text-[#71717a] leading-relaxed max-h-[60px] overflow-y-auto bg-[#f9fafb] rounded-md p-2" style={{ scrollbarWidth: 'thin' }}>
+            <div className="font-mono text-[14px] text-[#71717a] leading-relaxed max-h-[60px] overflow-y-auto bg-[#f9fafb] rounded-md p-2" style={{ scrollbarWidth: 'thin' }}>
               {output.text}
             </div>
-            <button className="text-[10px] text-[#71717a] hover:text-[#18181b] mt-1"
+            <button className="text-[14px] text-[#71717a] hover:text-[#18181b] mt-1"
               onClick={() => navigator.clipboard.writeText(output.text!)}>Copy prompt</button>
           </div>
         )}
         {output?.imageBase64 && (
           <div className="relative">
             <img src={output.imageBase64} className="w-full max-h-[200px] object-cover rounded-lg" />
-            <span className="absolute bottom-1.5 left-1.5 text-[10px] text-white bg-black/50 px-1.5 py-0.5 rounded">1024 × 1024</span>
+            <span className="absolute bottom-1.5 left-1.5 text-[14px] text-white bg-black/50 px-1.5 py-0.5 rounded">1024 × 1024</span>
             <div className="flex gap-2 mt-1.5">
-              <button className="text-[10px] text-[#71717a] hover:text-[#18181b]">Open full size</button>
-              <button className="text-[10px] text-[#71717a] hover:text-[#18181b]"
+              <button className="text-[14px] text-[#71717a] hover:text-[#18181b]">Open full size</button>
+              <button className="text-[14px] text-[#71717a] hover:text-[#18181b]"
                 onClick={() => { const a = document.createElement('a'); a.href = output.imageBase64!; a.download = 'image.png'; a.click(); }}>
                 Download ↓
               </button>
@@ -58,6 +58,6 @@ export function ImagePromptInline({ id }: { id: string }) {
     );
   }
 
-  if (status === 'warning') return <div style={{ font: '400 13px/1.5 var(--font-sans)', color: 'var(--cg-amber-text)', background: 'var(--cg-amber-lt)', padding: '6px 8px', borderRadius: 6 }} className="mt-2">⚠ No input — connect a text node upstream</div>;
+  if (status === 'warning') return <div style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-amber-text)', background: 'var(--cg-amber-lt)', padding: '6px 8px', borderRadius: 6 }} className="mt-2">⚠ No input — connect a text node upstream</div>;
   return null;
 }

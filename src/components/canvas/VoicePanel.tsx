@@ -105,7 +105,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
         <button className="btn btn-outline" onClick={() => setShowText(!showText)}>{showText ? 'Hide text' : 'Show text'}</button>
         <button className="btn btn-primary" onClick={endSession}>End session</button>
       </div>
-      <div style={{ font: '400 13px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)', paddingBottom: 24 }}>
+      <div style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)', paddingBottom: 24 }}>
         {listening ? 'Voice on' : 'Voice off'}
       </div>
     </div>

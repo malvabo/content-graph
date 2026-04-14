@@ -93,7 +93,7 @@ export default function GraphCanvas() {
 
       {tooltip && (
         <div className="absolute z-50 px-3 py-1.5 rounded-lg shadow-lg pointer-events-none"
-          style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%)', background: 'var(--cg-dark)', color: 'var(--cg-dark-text)', font: '400 13px/1.5 var(--font-sans)' }}>
+          style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%)', background: 'var(--cg-dark)', color: 'var(--cg-dark-text)', font: '400 14px/1.5 var(--font-sans)' }}>
           {tooltip.message}
         </div>
       )}

@@ -58,13 +58,13 @@ export default function BaseNode({ id, data, selected }: NodeProps<ContentNode>)
         <div className="flex-1 min-w-0">
           <div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)', letterSpacing: '-.005em' }} className="truncate">{data.label}</div>
         </div>
-        <div className="shrink-0 w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-mono)', backgroundColor: colors.bg, color: colors.text }}>
+        <div className="shrink-0 w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 14, fontWeight: 500, fontFamily: 'var(--font-mono)', backgroundColor: colors.bg, color: colors.text }}>
           {data.badge}
         </div>
       </div>
 
       <div className="mt-1">
-        <span className="btn-pill" style={{ cursor: 'default', height: 20, fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)',
+        <span className="btn-pill" style={{ cursor: 'default', height: 20, fontSize: 14, fontWeight: 500, fontFamily: 'var(--font-sans)',
           background: status === 'complete' ? 'var(--cg-green-tint)' : status === 'error' ? 'var(--cg-red-lt)' : status === 'running' ? 'var(--cg-amber-lt)' : 'var(--cg-surface)',
           color: status === 'complete' ? '#52524e' : status === 'error' ? '#52524e' : status === 'running' ? '#52524e' : '#8a8a86',
           borderColor: status === 'complete' ? '#E0DCD6' : status === 'error' ? '#ECC0C0' : status === 'running' ? 'var(--cg-amber-bdr)' : 'transparent',
@@ -74,7 +74,7 @@ export default function BaseNode({ id, data, selected }: NodeProps<ContentNode>)
         </span>
       </div>
 
-      {isError && error && <div style={{ font: '400 13px/1.5 var(--font-sans)', color: 'var(--cg-red-text)' }} className="mt-2">{error}</div>}
+      {isError && error && <div style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-red-text)' }} className="mt-2">{error}</div>}
 
       {data.subtype === 'text-source' && <TextSourceInline id={id} />}
       {data.subtype === 'image-source' && <ImageSourceInline id={id} />}

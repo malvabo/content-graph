@@ -33,7 +33,7 @@ export function OutputModal({ title, text, wordCount, onClose }: OutputModalProp
         <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: '1px solid var(--cg-border)' }}>
           <div>
             <div style={{ font: '500 15px/22px var(--font-sans)', color: 'var(--cg-ink)' }}>{title}</div>
-            <div className="flex gap-2 mt-0.5" style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>
+            <div className="flex gap-2 mt-0.5" style={{ font: '400 14px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>
               <span>{wordCount.toLocaleString()} words</span>
               <span>·</span>
               <span>{charCount.toLocaleString()} chars</span>
@@ -103,7 +103,7 @@ export function ImageModal({ src, info, onClose, onRegenerate }: ImageModalProps
       <div className="bg-[#1a1a1f] rounded-xl w-full max-w-[860px] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ font: '400 12px/1 var(--font-sans)', color: 'rgba(255,255,255,0.5)' }}>{info}</div>
+          <div style={{ font: '400 14px/1 var(--font-sans)', color: 'rgba(255,255,255,0.5)' }}>{info}</div>
           <button className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-white/10 transition" onClick={onClose}>
             <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)' }}>✕</span>
           </button>

@@ -11,7 +11,7 @@ function ConfigPills({ id }: { id: string }) {
   return (
     <div className="flex flex-wrap gap-1 mt-1">
       {vals.slice(0, 3).map((v, i) => (
-        <span key={i} className="btn-pill" style={{ cursor: 'default', height: 20, fontSize: 12 }}>{String(v)}</span>
+        <span key={i} className="btn-pill" style={{ cursor: 'default', height: 20, fontSize: 14 }}>{String(v)}</span>
       ))}
     </div>
   );
@@ -57,14 +57,14 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
       <div className="mt-2">
         <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
           {slides.map((s, i) => (
-            <div key={i} className="w-[80px] h-[80px] border rounded-md p-1.5 shrink-0 overflow-hidden" style={{ background: 'var(--cg-card)', borderColor: 'var(--cg-border)', fontSize: 10, lineHeight: '1.3' }}>
-              <div style={{ fontSize: 9, color: 'var(--cg-ink-3)' }}>{i + 1}</div>
+            <div key={i} className="w-[80px] h-[80px] border rounded-md p-1.5 shrink-0 overflow-hidden" style={{ background: 'var(--cg-card)', borderColor: 'var(--cg-border)', fontSize: 14, lineHeight: '1.3' }}>
+              <div style={{ fontSize: 14, color: 'var(--cg-ink-3)' }}>{i + 1}</div>
               {s.trim().slice(0, 60)}
             </div>
           ))}
         </div>
         <div className="flex items-center justify-between mt-1">
-          <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>{slides.length} slides</span>
+          <span style={{ font: '400 14px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>{slides.length} slides</span>
           <button className="btn-micro" onClick={() => setModalOpen(true)}>Read more</button>
         </div>
         {modalOpen && <OutputModal title={label} text={text} wordCount={text.split(/\s+/).length} onClose={() => setModalOpen(false)} />}
@@ -77,11 +77,11 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
 
   return (
     <div className="mt-2">
-      <div className="max-h-[120px] overflow-y-auto" style={{ font: '400 12px/1.6 var(--font-mono)', color: 'var(--cg-ink)', scrollbarWidth: 'thin' }}>
+      <div className="max-h-[120px] overflow-y-auto" style={{ font: '400 14px/1.6 var(--font-mono)', color: 'var(--cg-ink)', scrollbarWidth: 'thin' }}>
         {text}
       </div>
       <div className="flex items-center justify-between mt-1.5">
-        <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>{words} words</span>
+        <span style={{ font: '400 14px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>{words} words</span>
         <div className="flex gap-1.5">
           <button className="btn-micro" onClick={() => navigator.clipboard.writeText(text)}>Copy</button>
           {isLong && <button className="btn-micro" onClick={() => setModalOpen(true)}>Read more</button>}
@@ -98,6 +98,6 @@ export function GenerateNodeInline({ id, subtype }: { id: string; subtype: strin
   if (status === 'idle' || status === 'stale') return <ConfigPills id={id} />;
   if (status === 'running') return <Skeleton subtype={subtype} />;
   if (status === 'complete') return <OutputPreview id={id} subtype={subtype} />;
-  if (status === 'warning') return <div style={{ font: '400 13px/1.5 var(--font-sans)', color: 'var(--cg-amber-text)', background: 'var(--cg-amber-lt)', padding: '6px 8px', borderRadius: 6 }} className="mt-2">⚠ No input</div>;
+  if (status === 'warning') return <div style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-amber-text)', background: 'var(--cg-amber-lt)', padding: '6px 8px', borderRadius: 6 }} className="mt-2">⚠ No input</div>;
   return null;
 }

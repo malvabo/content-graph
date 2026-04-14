@@ -101,7 +101,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 .btn-link:hover { color:#087A36; }
 
 /* Typography */
-.text-eyebrow { font:500 11px/1 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--cg-green); }
+.text-eyebrow { font:500 14px/1 var(--font-sans);letter-spacing:.04em;text-transform:uppercase;color:var(--cg-green); }
 .text-mono { font:400 12px/1.6 var(--font-mono); }
 
 /* Reduced motion */

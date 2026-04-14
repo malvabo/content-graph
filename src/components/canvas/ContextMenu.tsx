@@ -29,7 +29,7 @@ export default function ContextMenu({ x, y, nodeId, onClose }: { x: number; y: n
   return (
     <div className="fixed z-50 bg-white border border-[#e5e7eb] rounded-lg shadow-lg py-1 min-w-[160px]" style={{ left: x, top: y }}>
       {items.map((item) => (
-        <button key={item.label} className="w-full text-left px-3 py-1.5 text-xs text-[#18181b] hover:bg-[#f4f4f5] transition"
+        <button key={item.label} className="w-full text-left px-3 py-1.5 text-sm text-[#18181b] hover:bg-[#f4f4f5] transition"
           onClick={() => { item.action(); onClose(); }}>
           {item.label}
         </button>

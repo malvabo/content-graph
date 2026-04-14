@@ -44,7 +44,7 @@ export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }:
       <div className="w-[260px] bg-white border border-[#e5e7eb] rounded-xl shadow-lg overflow-hidden">
         <input
           ref={inputRef}
-          className="w-full px-3 py-2.5 text-xs outline-none border-b border-[#e5e7eb] placeholder:text-[#a1a1aa]"
+          className="w-full px-3 py-2.5 text-sm outline-none border-b border-[#e5e7eb] placeholder:text-[#a1a1aa]"
           placeholder="Search nodes..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -52,7 +52,7 @@ export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }:
         />
         <div className="max-h-[280px] overflow-y-auto py-1">
           {filtered.length === 0 && (
-            <div className="px-3 py-2 text-[11px] text-[#a1a1aa]">No nodes found</div>
+            <div className="px-3 py-2 text-[14px] text-[#a1a1aa]">No nodes found</div>
           )}
           {filtered.map((def, i) => {
             const colors = BADGE_COLORS[def.category];
@@ -67,7 +67,7 @@ export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }:
                   style={{ backgroundColor: colors.bg, color: colors.text }}>{NODE_ICONS[def.subtype]?.() ?? def.badge}</div>
                 <div className="min-w-0">
                   <div className="text-xs font-medium text-[#18181b] truncate">{def.label}</div>
-                  <div className="text-[10px] text-[#a1a1aa] truncate">{def.description}</div>
+                  <div className="text-[14px] text-[#a1a1aa] truncate">{def.description}</div>
                 </div>
               </button>
             );
