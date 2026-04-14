@@ -4,9 +4,9 @@ import { useExecutionStore } from '../../store/executionStore';
 
 const GAP = 14;
 const BASE_R = 1;
-const WAVE_R = 1;
-const PEAK_ALPHA = 0.12;
-const WAVE_WIDTH = 300;
+const WAVE_R = 1.3;
+const PEAK_ALPHA = 0.35;
+const WAVE_WIDTH = 250;
 const CYCLE_MS = 10000;
 const MIN_DISPLAY_MS = 5000;
 
