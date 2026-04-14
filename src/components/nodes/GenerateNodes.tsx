@@ -58,9 +58,9 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
       <div className="mt-2">
         <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
           {slides.map((s, i) => (
-            <div key={i} className="w-[80px] h-[80px] border rounded-md p-1.5 shrink-0 overflow-hidden" style={{ background: 'var(--cg-card)', borderColor: 'var(--cg-border)', fontSize: 10, lineHeight: '1.3' }}>
+            <div key={i} className="w-[60px] h-[60px] border rounded-md p-1 shrink-0 overflow-hidden" style={{ background: 'var(--cg-card)', borderColor: 'var(--cg-border)', fontSize: 10, lineHeight: '1.3' }}>
               <div style={{ fontSize: 9, color: 'var(--cg-ink-3)' }}>{i + 1}</div>
-              {s.trim().slice(0, 60)}
+              {s.trim().slice(0, 30)}
             </div>
           ))}
         </div>
@@ -74,17 +74,16 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
   }
 
   const words = text.split(/\s+/).length;
-  const isLong = text.length > 300;
 
   return (
     <div className="mt-2">
-      <div className="max-h-[120px] overflow-y-auto" style={{ font: '400 14px/1.6 var(--font-sans)', color: 'var(--cg-ink)', scrollbarWidth: 'thin' }}>
+      <div className="max-h-[80px] overflow-y-auto" style={{ font: '400 14px/1.6 var(--font-sans)', color: 'var(--cg-ink)', scrollbarWidth: 'thin' }}>
         {text}
       </div>
       <div className="flex items-center justify-end mt-1.5">
         <div className="flex gap-1.5">
           <button className="btn-micro" onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? '✓ Copied' : 'Copy'}</button>
-          {isLong && <button className="btn-micro" onClick={() => setModalOpen(true)}>Read more</button>}
+          <button className="btn-micro" onClick={() => setModalOpen(true)}>Read more</button>
         </div>
       </div>
       {modalOpen && <OutputModal title={label} text={text} wordCount={words} onClose={() => setModalOpen(false)} />}
