@@ -21,7 +21,7 @@ export default function RunWaveOverlay() {
   const [visible, setVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const isRunning = useExecutionStore((s) => Object.values(s.status).some((v) => v === 'running'));
+  const isRunning = useExecutionStore((s) => s.runAllActive);
 
   useEffect(() => {
     if (isRunning) {

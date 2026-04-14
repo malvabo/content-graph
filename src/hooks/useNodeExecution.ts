@@ -92,6 +92,7 @@ export function useNodeExecution() {
 
       const { nodes, edges } = useGraphStore.getState();
       useExecutionStore.getState().resetAll();
+      useExecutionStore.getState().setRunAllActive(true);
       useOutputStore.getState().clearAll();
 
       const nodeIds = nodes.map((n) => n.id);
@@ -117,6 +118,7 @@ export function useNodeExecution() {
 
         await runNode(id, (input, config) => executor(input, config, node.data.subtype));
       }
+      useExecutionStore.getState().setRunAllActive(false);
     },
     [runNode]
   );

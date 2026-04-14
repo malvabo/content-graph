@@ -6,11 +6,13 @@ interface ExecutionState {
   errors: Record<string, string>;
   progress: Record<string, number>;
   tokenCounts: Record<string, { input: number; output: number }>;
+  runAllActive: boolean;
 
   setStatus: (nodeId: string, status: NodeStatus) => void;
   setError: (nodeId: string, error: string) => void;
   setProgress: (nodeId: string, progress: number) => void;
   setTokenCounts: (nodeId: string, counts: { input: number; output: number }) => void;
+  setRunAllActive: (active: boolean) => void;
   resetNode: (nodeId: string) => void;
   resetAll: () => void;
 }
@@ -20,6 +22,7 @@ export const useExecutionStore = create<ExecutionState>()((set) => ({
   errors: {},
   progress: {},
   tokenCounts: {},
+  runAllActive: false,
 
   setStatus: (nodeId, status) =>
     set((s) => ({ status: { ...s.status, [nodeId]: status } })),
@@ -35,6 +38,8 @@ export const useExecutionStore = create<ExecutionState>()((set) => ({
 
   setTokenCounts: (nodeId, counts) =>
     set((s) => ({ tokenCounts: { ...s.tokenCounts, [nodeId]: counts } })),
+
+  setRunAllActive: (active) => set({ runAllActive: active }),
 
   resetNode: (nodeId) =>
     set((s) => {
