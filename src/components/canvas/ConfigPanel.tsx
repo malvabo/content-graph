@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGraphStore } from '../../store/graphStore';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, IMAGE_MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
@@ -9,7 +9,37 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <div className="flex flex-col gap-1"><label className="text-[11px] font-medium text-[#78716c] uppercase tracking-wider">{label}</label>{children}</div>;
 }
 function Select({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: readonly string[] }) {
-  return <select className="w-full h-8 text-sm border border-[var(--cg-border)] rounded-lg px-2 bg-white outline-none focus:border-[var(--cg-green)]" value={value} onChange={(e) => onChange(e.target.value)}>{options.map((o) => <option key={o}>{o}</option>)}</select>;
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+  return (
+    <div ref={ref} className="relative">
+      <button className="w-full h-8 text-sm text-left border rounded-lg px-2 flex items-center justify-between"
+        style={{ borderColor: open ? 'var(--cg-green)' : 'var(--cg-border)', background: '#fff', color: 'var(--cg-ink)' }}
+        onClick={() => setOpen(!open)}>
+        <span className="truncate">{value}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.4, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-50" style={{ background: 'var(--cg-card)', boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)', maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'thin' }}>
+          {options.map((o) => (
+            <button key={o} className="w-full text-left px-3 py-2 text-sm transition-colors"
+              style={{ background: o === value ? 'var(--cg-surface)' : 'transparent', color: o === value ? 'var(--cg-ink)' : 'var(--cg-ink-2)', fontWeight: o === value ? 500 : 400 }}
+              onMouseEnter={(e) => { if (o !== value) e.currentTarget.style.background = 'var(--cg-surface)'; }}
+              onMouseLeave={(e) => { if (o !== value) e.currentTarget.style.background = 'transparent'; }}
+              onClick={() => { onChange(o); setOpen(false); }}>
+              {o}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 function NumberInput({ value, onChange, min, max, step = 1 }: { value: number; onChange: (v: number) => void; min: number; max: number; step?: number }) {
   return <input type="number" className="w-full h-8 text-sm border border-[var(--cg-border)] rounded-lg px-2 bg-white outline-none focus:border-[var(--cg-green)]" value={value} min={min} max={max} step={step} onChange={(e) => onChange(Number(e.target.value))} />;
