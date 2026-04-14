@@ -1,12 +1,15 @@
 import { useGraphStore } from '../../store/graphStore';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
+import { useExecutionStore } from '../../store/executionStore';
+import { useOutputStore } from '../../store/outputStore';
 import { exportGraph } from '../../utils/templates';
 
 export default function CanvasToolbar({ activeView }: { activeView: string }) {
   const { graphName, setGraphName, clearGraph, nodes, edges } = useGraphStore();
   const { autoLayout } = useGraphLayout();
   const { runAll } = useNodeExecution();
+  const isRunning = useExecutionStore((s) => Object.values(s.status).some((v) => v === 'running'));
 
   const handleRunAll = () => {
     runAll(async (input, _config, subtype) => {
@@ -43,6 +46,7 @@ export default function CanvasToolbar({ activeView }: { activeView: string }) {
         'image-prompt': () => `A cinematic wide-angle photograph of ${firstSentence.toLowerCase()}, golden hour lighting, shallow depth of field, rich color palette, editorial style, 8k resolution`,
         'refine': () => input,
         'text-source': () => input,
+        'file-source': () => input,
       };
       return (formatters[subtype] ?? (() => `[${subtype}]\n\n${short}`))();
     });
@@ -61,11 +65,11 @@ export default function CanvasToolbar({ activeView }: { activeView: string }) {
       <div className="h-4 w-px" style={{ background: 'var(--cg-border)' }} />
       {activeView === 'workflow' && <>
         <button className="btn-ghost btn-sm" onClick={autoLayout}>Auto-layout</button>
-        <button className="btn-ghost btn-sm" onClick={clearGraph}>Clear</button>
+        <button className="btn-ghost btn-sm" onClick={() => { if (nodes.length === 0 || confirm('Clear all nodes?')) { clearGraph(); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); } }}>Clear</button>
         <button className="btn-ghost btn-sm" onClick={() => exportGraph(nodes, edges, graphName)}>Export</button>
       </>}
       <div className="flex-1" />
-      {activeView === 'workflow' && <button className="btn btn-primary" onClick={handleRunAll}>▶ Run All</button>}
+      {activeView === 'workflow' && <button className={`btn btn-primary ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>}
     </div>
   );
 }

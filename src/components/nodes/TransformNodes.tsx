@@ -13,7 +13,7 @@ export function RefineInline({ id }: { id: string }) {
   return (
     <div className="mt-2 flex flex-col gap-1.5">
       <textarea
-        className="w-full min-h-[80px] text-sm leading-relaxed border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[#6366f1] resize-y"
+        className="w-full min-h-[80px] text-sm leading-relaxed border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] resize-y"
         placeholder="e.g. Extract the 5 strongest arguments. Simplify to plain English."
         value={directive}
         onChange={(e) => updateConfig(id, { directive: e.target.value })}

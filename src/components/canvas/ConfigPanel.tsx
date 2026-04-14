@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import { useGraphStore } from '../../store/graphStore';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, IMAGE_MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
+import { NODE_ICONS } from '../../utils/nodeIcons';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="flex flex-col gap-1"><label className="text-[11px] font-medium text-[#78716c] uppercase tracking-wider">{label}</label>{children}</div>;
 }
 function Select({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: readonly string[] }) {
-  return <select className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 bg-white outline-none focus:border-[#6366f1]" value={value} onChange={(e) => onChange(e.target.value)}>{options.map((o) => <option key={o}>{o}</option>)}</select>;
+  return <select className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 bg-white outline-none focus:border-[var(--cg-green)]" value={value} onChange={(e) => onChange(e.target.value)}>{options.map((o) => <option key={o}>{o}</option>)}</select>;
 }
 function NumberInput({ value, onChange, min, max, step = 1 }: { value: number; onChange: (v: number) => void; min: number; max: number; step?: number }) {
-  return <input type="number" className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 bg-white outline-none focus:border-[#6366f1]" value={value} min={min} max={max} step={step} onChange={(e) => onChange(Number(e.target.value))} />;
+  return <input type="number" className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 bg-white outline-none focus:border-[var(--cg-green)]" value={value} min={min} max={max} step={step} onChange={(e) => onChange(Number(e.target.value))} />;
 }
 function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
   return <div className="flex items-center justify-between"><span className="text-xs text-[#57534e]">{label}</span><button className={`w-8 h-4.5 rounded-full transition ${value ? 'bg-[#4f46e5]' : 'bg-[#a8a29e]'} relative`} onClick={() => onChange(!value)}><div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${value ? 'left-4' : 'left-0.5'}`} /></button></div>;
@@ -34,9 +35,15 @@ const GENERATE_NODES_WITH_QUANTITY = ['linkedin-post', 'twitter-thread', 'twitte
 const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unknown) => void) => React.ReactNode> = {
   'text-source': (c, s) => <>
     <Field label="Prepare (optional)">
-      <textarea className="w-full min-h-[80px] text-sm border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[#6366f1] resize-y" placeholder="e.g. Extract key arguments only. Remove all anecdotes." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
+      <textarea className="w-full min-h-[80px] text-sm border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] resize-y" placeholder="e.g. Extract key arguments only. Remove all anecdotes." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
     </Field>
     {(c.prepare as string)?.trim() ? <ModelSelector value={c.model as string ?? DEFAULT_MODELS['text-source']} onChange={(v) => s('model', v)} /> : <div className="text-[11px] text-[#78716c] italic mt-1">Add a Prepare instruction to enable model selection</div>}
+  </>,
+  'file-source': (c, s) => <>
+    <Field label="Prepare (optional)">
+      <textarea className="w-full min-h-[80px] text-sm border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] resize-y" placeholder="e.g. Summarize the key points." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
+    </Field>
+    {(c.prepare as string)?.trim() ? <ModelSelector value={c.model as string ?? DEFAULT_MODELS['file-source']} onChange={(v) => s('model', v)} /> : <div className="text-[11px] text-[#78716c] italic mt-1">Add a Prepare instruction to enable model selection</div>}
   </>,
   'linkedin-post': (c, s) => <>
     <Field label="Goal"><Select value={c.goal as string ?? 'Thought leadership'} onChange={(v) => s('goal', v)} options={['Thought leadership', 'Personal story', 'Industry insight', 'Announcement', 'Call to action']} /></Field>
@@ -60,12 +67,12 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
   'blog-article': (c, s) => <>
     <Field label="Type"><Select value={c.type as string ?? 'How-to'} onChange={(v) => s('type', v)} options={['How-to', 'Opinion', 'Listicle', 'Deep dive', 'Case study', 'Explainer']} /></Field>
     <Field label="Length"><Select value={c.length as string ?? 'Medium 1000–1500w'} onChange={(v) => s('length', v)} options={['Short 600–800w', 'Medium 1000–1500w', 'Long 2000–2500w']} /></Field>
-    <Field label="SEO keyword"><input className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 outline-none focus:border-[#6366f1]" value={c.keyword as string ?? ''} onChange={(e) => s('keyword', e.target.value)} placeholder="Optional" /></Field>
+    <Field label="SEO keyword"><input className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 outline-none focus:border-[var(--cg-green)]" value={c.keyword as string ?? ''} onChange={(e) => s('keyword', e.target.value)} placeholder="Optional" /></Field>
     <Field label="Audience"><Select value={c.audience as string ?? 'Intermediate'} onChange={(v) => s('audience', v)} options={['Beginner', 'Intermediate', 'Expert']} /></Field>
   </>,
   'newsletter': (c, s) => <>
     <Field label="Section type"><Select value={c.type as string ?? 'Full issue'} onChange={(v) => s('type', v)} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} /></Field>
-    <Field label="Audience"><input className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 outline-none focus:border-[#6366f1]" value={c.audience as string ?? ''} onChange={(e) => s('audience', e.target.value)} placeholder="e.g. B2B SaaS founders" /></Field>
+    <Field label="Audience"><input className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 outline-none focus:border-[var(--cg-green)]" value={c.audience as string ?? ''} onChange={(e) => s('audience', e.target.value)} placeholder="e.g. B2B SaaS founders" /></Field>
     <Field label="Word count"><NumberInput value={c.words as number ?? 350} onChange={(v) => s('words', v)} min={100} max={1000} /></Field>
   </>,
   'infographic': (c, s) => <>
@@ -93,7 +100,7 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
         })}
       </div>
     </Field>
-    <Field label="File prefix"><input className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 outline-none focus:border-[#6366f1]" value={c.prefix as string ?? 'content-export'} onChange={(e) => s('prefix', e.target.value)} /></Field>
+    <Field label="File prefix"><input className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 outline-none focus:border-[var(--cg-green)]" value={c.prefix as string ?? 'content-export'} onChange={(e) => s('prefix', e.target.value)} /></Field>
     <Toggle value={!!c.metadata} onChange={(v) => s('metadata', v)} label="Include metadata" />
   </>,
 };
@@ -120,7 +127,7 @@ export default function ConfigPanel() {
     <aside className="w-[270px] shrink-0 overflow-y-auto" style={{ background: 'var(--cg-card)', borderLeft: '1px solid var(--cg-border)' }}>
       <div className="p-4" style={{ borderBottom: '1px solid var(--cg-border)' }}>
         <div className="flex items-center gap-2">
-          <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 14, fontWeight: 500, fontFamily: 'var(--font-sans)', backgroundColor: colors.bg, color: colors.text }}>{def?.badge}</div>
+          <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 14, fontWeight: 500, fontFamily: 'var(--font-sans)', backgroundColor: colors.bg, color: colors.text }}>{NODE_ICONS[node.data.subtype]?.() ?? def?.badge}</div>
           <div><div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)' }}>{node.data.label}</div></div>
         </div>
       </div>

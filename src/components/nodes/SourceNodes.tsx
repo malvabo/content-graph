@@ -15,7 +15,7 @@ export function TextSourceInline({ id }: { id: string }) {
 
   return (
     <div className="mt-2 flex flex-col gap-1.5">
-      <textarea className="w-full min-h-[120px] max-h-[300px] resize-y text-sm leading-relaxed border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[#6366f1] bg-white"
+      <textarea className="w-full min-h-[120px] max-h-[300px] resize-y text-sm leading-relaxed border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] bg-white"
         placeholder="Paste your article, transcript, or notes..." value={text} onChange={(e) => onChange(e.target.value)} />
       <div className="text-right text-[14px]" style={{ color: charColor }}>{charCount.toLocaleString()} / 50,000</div>
     </div>
@@ -59,6 +59,7 @@ export function FileSourceInline({ id }: { id: string }) {
 export function ImageSourceInline({ id }: { id: string }) {
   const config = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.config);
   const updateConfig = useGraphStore((s) => s.updateNodeConfig);
+  const setOutput = useOutputStore((s) => s.setOutput);
   const preview = config?.imagePreview as string | undefined;
   const fileName = config?.fileName as string | undefined;
   const fileRef = useRef<HTMLInputElement>(null);
@@ -68,18 +69,22 @@ export function ImageSourceInline({ id }: { id: string }) {
     reader.onload = () => {
       const url = reader.result as string;
       const img = new Image();
-      img.onload = () => updateConfig(id, { imagePreview: url, fileName: f.name, dimensions: `${img.width} × ${img.height}` });
+      img.onload = () => {
+        const desc = `[Image: ${f.name}, ${img.width}×${img.height}]`;
+        updateConfig(id, { imagePreview: url, fileName: f.name, dimensions: `${img.width} × ${img.height}` });
+        setOutput(id, { text: desc });
+      };
       img.src = url;
     };
     reader.readAsDataURL(f);
-  }, [id, updateConfig]);
+  }, [id, updateConfig, setOutput]);
 
   return (
     <div className="mt-2">
       {preview ? (
         <div className="relative">
           <img src={preview} className="w-full h-[140px] object-cover rounded-lg" />
-          <button className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-black/50 text-white text-[14px] flex items-center justify-center"
+          <button className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/50 text-white text-[10px] flex items-center justify-center"
             onClick={() => updateConfig(id, { imagePreview: undefined, fileName: undefined, dimensions: undefined })}>✕</button>
           <div className="text-[14px] text-[#78716c] mt-1">{fileName} · {config?.dimensions as string}</div>
         </div>

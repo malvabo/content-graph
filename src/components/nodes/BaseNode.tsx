@@ -1,5 +1,5 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, memo } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
 import type { ContentNode } from '../../store/graphStore';
@@ -9,12 +9,14 @@ import { RefineInline } from './TransformNodes';
 import { ExportInline } from './OutputNodes';
 import { ImagePromptInline } from './ImagePromptNode';
 
+import { NODE_ICONS } from '../../utils/nodeIcons';
+
 const STATUS_COLORS: Record<string, string> = {
   idle: '#C8D4CC', running: '#F0D8A0', complete: '#0DBF5A',
   error: '#C93030', warning: '#F0D8A0', stale: '#F0D8A0',
 };
 
-export default function BaseNode({ id, data, selected }: NodeProps<ContentNode>) {
+function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
   const error = useExecutionStore((s) => s.errors[id]);
   const prevStatus = useRef(status);
@@ -59,7 +61,7 @@ export default function BaseNode({ id, data, selected }: NodeProps<ContentNode>)
           <div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)', letterSpacing: '-.005em' }} className="truncate">{data.label}</div>
         </div>
         <div className="shrink-0 w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 14, fontWeight: 500, fontFamily: 'var(--font-sans)', backgroundColor: colors.bg, color: colors.text }}>
-          {data.badge}
+          {NODE_ICONS[data.subtype]?.() ?? data.badge}
         </div>
       </div>
 
@@ -91,3 +93,5 @@ export default function BaseNode({ id, data, selected }: NodeProps<ContentNode>)
     </div>
   );
 }
+
+export default memo(BaseNodeInner);

@@ -46,7 +46,7 @@ export function ImagePromptInline({ id }: { id: string }) {
             <img src={output.imageBase64} className="w-full max-h-[200px] object-cover rounded-lg" />
             <span className="absolute bottom-1.5 left-1.5 text-[14px] text-white bg-black/50 px-1.5 py-0.5 rounded">1024 × 1024</span>
             <div className="flex gap-2 mt-1.5">
-              <button className="text-[14px] text-[#57534e] hover:text-[#18181b]">Open full size</button>
+              <button className="text-[14px] text-[#57534e] hover:text-[#18181b]" onClick={() => window.open(output.imageBase64!, '_blank')}>Open full size</button>
               <button className="text-[14px] text-[#57534e] hover:text-[#18181b]"
                 onClick={() => { const a = document.createElement('a'); a.href = output.imageBase64!; a.download = 'image.png'; a.click(); }}>
                 Download ↓

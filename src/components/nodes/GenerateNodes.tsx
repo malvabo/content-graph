@@ -49,6 +49,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
   const text = useOutputStore((s) => s.outputs[id]?.text);
   const label = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.label ?? subtype);
   const [modalOpen, setModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   if (!text) return null;
 
   if (subtype === 'ig-carousel') {
@@ -57,8 +58,8 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
       <div className="mt-2">
         <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
           {slides.map((s, i) => (
-            <div key={i} className="w-[80px] h-[80px] border rounded-md p-1.5 shrink-0 overflow-hidden" style={{ background: 'var(--cg-card)', borderColor: 'var(--cg-border)', fontSize: 14, lineHeight: '1.3' }}>
-              <div style={{ fontSize: 14, color: 'var(--cg-ink-3)' }}>{i + 1}</div>
+            <div key={i} className="w-[80px] h-[80px] border rounded-md p-1.5 shrink-0 overflow-hidden" style={{ background: 'var(--cg-card)', borderColor: 'var(--cg-border)', fontSize: 10, lineHeight: '1.3' }}>
+              <div style={{ fontSize: 9, color: 'var(--cg-ink-3)' }}>{i + 1}</div>
               {s.trim().slice(0, 60)}
             </div>
           ))}
@@ -83,7 +84,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
       <div className="flex items-center justify-between mt-1.5">
         <span style={{ font: '400 14px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>{words} words</span>
         <div className="flex gap-1.5">
-          <button className="btn-micro" onClick={() => navigator.clipboard.writeText(text)}>Copy</button>
+          <button className="btn-micro" onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? '✓ Copied' : 'Copy'}</button>
           {isLong && <button className="btn-micro" onClick={() => setModalOpen(true)}>Read more</button>}
         </div>
       </div>

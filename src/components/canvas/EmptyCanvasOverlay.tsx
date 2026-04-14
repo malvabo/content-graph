@@ -27,7 +27,7 @@ export default function EmptyCanvasOverlay() {
       <div className="pointer-events-auto flex flex-col items-center gap-5">
         <div className="text-eyebrow mb-1">Get started</div>
         <div className="flex gap-3">
-          <button className="btn btn-outline" onClick={() => {}}>Start from scratch</button>
+          <button className="btn btn-outline" onClick={() => setGraphName('Untitled Graph')}>Start from scratch</button>
           <div className="relative group">
             <button className="btn btn-outline">Load template</button>
             <div className="hidden group-hover:block absolute top-full left-0 mt-1 rounded-xl shadow-lg py-1 min-w-[220px] z-10" style={{ background: 'var(--cg-card)', border: '1px solid var(--cg-border)' }}>

@@ -47,6 +47,9 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
   const start = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
+    fullRef.current = '';
+    setTranscript('');
+    setInterim('');
     const rec = new SR();
     rec.continuous = true;
     rec.interimResults = true;

@@ -8,6 +8,22 @@ import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import { useGraphStore, type ContentNode } from './store/graphStore';
 import { useCallback, useState } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { Component, type ReactNode } from 'react';
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) return (
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, fontFamily: 'system-ui', color: '#57534e' }}>
+        <div style={{ fontSize: 15, fontWeight: 500 }}>Something went wrong</div>
+        <div style={{ fontSize: 13, maxWidth: 400, textAlign: 'center' }}>{this.state.error.message}</div>
+        <button onClick={() => { this.setState({ error: null }); window.location.reload(); }} style={{ marginTop: 8, padding: '8px 16px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', fontSize: 14 }}>Reload</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
 import ConfigPanel from './components/canvas/ConfigPanel';
 import EmptyCanvasOverlay from './components/canvas/EmptyCanvasOverlay';
 
@@ -62,12 +78,6 @@ function AppInner() {
         {activeView === 'voice' && <VoicePanel onTranscriptReady={handleTranscript} />}
 
         {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
-
-        {activeView === 'recents' && (
-          <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--cg-canvas)' }}>
-            <span style={{ font: '400 14px/20px var(--font-sans)', color: 'var(--cg-ink-3)' }}>Recents — coming soon</span>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -75,5 +85,5 @@ function AppInner() {
 
 export default function App() {
   if (isMobile) return <MobileBlock />;
-  return <ReactFlowProvider><AppInner /></ReactFlowProvider>;
+  return <ErrorBoundary><ReactFlowProvider><AppInner /></ReactFlowProvider></ErrorBoundary>;
 }

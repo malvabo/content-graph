@@ -42,10 +42,10 @@ export const CATEGORY_LABELS: Record<NodeCategory, string> = {
 };
 
 export const BADGE_COLORS: Record<NodeCategory, { bg: string; text: string; className: string }> = {
-  source: { bg: '#EBEEF0', text: '#3A5060', className: 'badge-src' },
-  transform: { bg: '#F0EBEE', text: '#503040', className: 'badge-adv' },
-  generate: { bg: '#EBF5EE', text: '#1A5C30', className: 'badge-gen' },
-  output: { bg: '#EEF0EB', text: '#3A4A28', className: 'badge-out' },
+  source: { bg: '#EDEAE5', text: '#5C5347', className: 'badge-src' },
+  transform: { bg: '#EDE8EB', text: '#5C4753', className: 'badge-adv' },
+  generate: { bg: '#E8EDE5', text: '#475C3A', className: 'badge-gen' },
+  output: { bg: '#EDECE5', text: '#53573A', className: 'badge-out' },
 };
 
 export const HANDLE_COLOR = '#94a3b8';
@@ -65,4 +65,5 @@ export const DEFAULT_MODELS: Record<string, string> = {
   'quote-card': 'claude-haiku-4',
   'image-prompt': 'claude-haiku-4',
   'text-source': 'claude-haiku-4',
+  'file-source': 'claude-haiku-4',
 };

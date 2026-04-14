@@ -38,7 +38,7 @@ export default function GraphCanvas() {
   const onConnect: OnConnect = useCallback(
     (conn: Connection) => {
       if (!isValidConnection(conn)) return;
-      setEdges(addEdge({ ...conn, id: `e-${conn.source}-${conn.target}` }, edges));
+      setEdges(addEdge({ ...conn, id: `e-${conn.source}-${conn.target}-${Date.now()}` }, edges));
     },
     [edges, setEdges, isValidConnection]
   );
