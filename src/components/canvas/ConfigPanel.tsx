@@ -107,7 +107,7 @@ export default function ConfigPanel() {
 
   useEffect(() => { setLocal(node?.data.config ?? {}); }, [selectedId, node?.data.config]);
 
-  if (!node) return <aside className="w-[240px] shrink-0 flex items-center justify-center" style={{ background: 'var(--cg-card)', borderLeft: '1px solid var(--cg-border)' }}><span style={{ font: '400 14px/20px var(--font-sans)', color: 'var(--cg-ink-3)' }}>Select a node to configure</span></aside>;
+  if (!node) return <aside className="w-[230px] shrink-0 flex items-center justify-center" style={{ background: 'var(--cg-card)', borderLeft: '1px solid var(--cg-border)' }}><span style={{ font: '400 14px/20px var(--font-sans)', color: 'var(--cg-ink-3)' }}>Select a node to configure</span></aside>;
 
   const def = NODE_DEFS_BY_SUBTYPE[node.data.subtype];
   const colors = BADGE_COLORS[node.data.category];
@@ -117,10 +117,10 @@ export default function ConfigPanel() {
   const hasModel = !!DEFAULT_MODELS[node.data.subtype] && node.data.subtype !== 'text-source' && node.data.subtype !== 'image-prompt';
 
   return (
-    <aside className="w-[240px] shrink-0 overflow-y-auto" style={{ background: 'var(--cg-card)', borderLeft: '1px solid var(--cg-border)' }}>
+    <aside className="w-[230px] shrink-0 overflow-y-auto" style={{ background: 'var(--cg-card)', borderLeft: '1px solid var(--cg-border)' }}>
       <div className="p-4" style={{ borderBottom: '1px solid var(--cg-border)' }}>
         <div className="flex items-center gap-2">
-          <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 14, fontWeight: 500, fontFamily: 'var(--font-mono)', backgroundColor: colors.bg, color: colors.text }}>{def?.badge}</div>
+          <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 14, fontWeight: 500, fontFamily: 'var(--font-sans)', backgroundColor: colors.bg, color: colors.text }}>{def?.badge}</div>
           <div><div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)' }}>{node.data.label}</div></div>
         </div>
       </div>

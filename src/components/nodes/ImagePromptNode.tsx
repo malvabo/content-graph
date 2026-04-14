@@ -34,7 +34,7 @@ export function ImagePromptInline({ id }: { id: string }) {
       <div className="mt-2 flex flex-col gap-2">
         {output?.text && (
           <div className="relative">
-            <div className="font-mono text-[14px] text-[#71717a] leading-relaxed max-h-[60px] overflow-y-auto bg-[#f9fafb] rounded-md p-2" style={{ scrollbarWidth: 'thin' }}>
+            <div className="text-[14px] text-[#71717a] leading-relaxed max-h-[60px] overflow-y-auto bg-[#f9fafb] rounded-md p-2" style={{ scrollbarWidth: 'thin' }}>
               {output.text}
             </div>
             <button className="text-[14px] text-[#71717a] hover:text-[#18181b] mt-1"

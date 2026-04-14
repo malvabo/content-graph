@@ -77,7 +77,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
 
   return (
     <div className="mt-2">
-      <div className="max-h-[120px] overflow-y-auto" style={{ font: '400 14px/1.6 var(--font-mono)', color: 'var(--cg-ink)', scrollbarWidth: 'thin' }}>
+      <div className="max-h-[120px] overflow-y-auto" style={{ font: '400 14px/1.6 var(--font-sans)', color: 'var(--cg-ink)', scrollbarWidth: 'thin' }}>
         {text}
       </div>
       <div className="flex items-center justify-between mt-1.5">
