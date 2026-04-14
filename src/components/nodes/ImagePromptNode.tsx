@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
+import { ImageModal } from '../modals/Modals';
 
 async function genImage(prompt: string, seed: number): Promise<string> {
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
@@ -23,6 +24,7 @@ export function ImagePromptInline({ id }: { id: string }) {
   const [images, setImages] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [viewImage, setViewImage] = useState<string | null>(null);
 
   const generate4 = useCallback(async (prompt: string) => {
     setGenerating(true);
@@ -111,10 +113,10 @@ export function ImagePromptInline({ id }: { id: string }) {
         {!generating && images.length > 0 && (
           <div className="grid grid-cols-2 gap-1.5">
             {images.map((img, i) => (
-              <div key={i} className="relative group cursor-pointer" onClick={() => {
+              <div key={i} className="relative group cursor-pointer" onMouseDown={(e) => e.stopPropagation()} onClick={() => {
                 useOutputStore.getState().setOutput(id, { text: editPrompt || output?.text || '', imageBase64: img });
               }}>
-                <img src={img} className="w-full aspect-square object-cover rounded-lg" />
+                <img src={img} className="w-full aspect-square object-cover rounded-lg" onDoubleClick={() => setViewImage(img)} />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition flex items-end justify-center pb-1.5 opacity-0 group-hover:opacity-100">
                   <span className="text-[11px] text-white bg-black/50 px-2 py-0.5 rounded">Use this</span>
                 </div>
@@ -125,13 +127,15 @@ export function ImagePromptInline({ id }: { id: string }) {
 
         {/* Single image fallback (from initial run) */}
         {!generating && images.length === 0 && output?.imageBase64 && (
-          <div className="relative">
+          <div className="relative cursor-pointer" onMouseDown={(e) => e.stopPropagation()} onClick={() => setViewImage(output.imageBase64!)}>
             <img src={output.imageBase64} className="w-full max-h-[200px] object-cover rounded-lg" />
             <div className="flex gap-2 mt-1">
               <button className="btn-micro" onClick={() => { const a = document.createElement('a'); a.href = output.imageBase64!; a.download = 'image.png'; a.click(); }}>Download ↓</button>
             </div>
           </div>
         )}
+        {/* Image modal */}
+        {viewImage && <ImageModal src={viewImage} prompt={editPrompt || output?.text} onClose={() => setViewImage(null)} onRegenerate={() => { setViewImage(null); generate4(editPrompt || output?.text || ''); }} />}
       </div>
     );
   }
