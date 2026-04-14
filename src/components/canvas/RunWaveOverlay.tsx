@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { Panel } from '@xyflow/react';
 import { useExecutionStore } from '../../store/executionStore';
 
 const GAP = 22;
@@ -6,11 +7,10 @@ const BASE_R = 1;
 const WAVE_R = 2.4;
 const PEAK_ALPHA = 0.25;
 const WAVE_WIDTH = 220;
-const CYCLE_MS = 8000;       // one full sweep top→bottom: 8 seconds
-const MIN_DISPLAY_MS = 5000; // always show for at least 5 seconds
+const CYCLE_MS = 8000;
+const MIN_DISPLAY_MS = 5000;
 
 function bezierEase(t: number): number {
-  // cubic-bezier(.4,0,.2,1) approximation — slow start, smooth middle, slow end
   return t * t * (3 - 2 * t);
 }
 
@@ -23,7 +23,6 @@ export default function RunWaveOverlay() {
 
   const isRunning = useExecutionStore((s) => Object.values(s.status).some((v) => v === 'running'));
 
-  // Track visibility: show immediately when running starts, keep for MIN_DISPLAY_MS after it stops
   useEffect(() => {
     if (isRunning) {
       if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = undefined; }
@@ -37,19 +36,18 @@ export default function RunWaveOverlay() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Canvas animation
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !visible) return;
 
     const ctx = canvas.getContext('2d')!;
     const resize = () => {
-      const parent = canvas.parentElement;
+      const parent = canvas.parentElement?.parentElement;
       if (parent) { canvas.width = parent.clientWidth; canvas.height = parent.clientHeight; }
     };
     resize();
     const ro = new ResizeObserver(resize);
-    ro.observe(canvas.parentElement!);
+    if (canvas.parentElement?.parentElement) ro.observe(canvas.parentElement.parentElement);
 
     const animStart = performance.now();
 
@@ -94,10 +92,8 @@ export default function RunWaveOverlay() {
   if (!visible) return null;
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 pointer-events-none"
-      style={{ zIndex: 1 }}
-    />
+    <Panel position="top-left" style={{ margin: 0, padding: 0, inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}>
+      <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
+    </Panel>
   );
 }

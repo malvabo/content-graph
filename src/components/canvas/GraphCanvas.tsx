@@ -74,7 +74,6 @@ export default function GraphCanvas() {
         if (!bounds) return;
         setSpotlight({ x: e.clientX - bounds.left, y: e.clientY - bounds.top, flowX: pos.x, flowY: pos.y });
       }}>
-      <RunWaveOverlay />
       <ReactFlow
         nodes={nodes} edges={edges}
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
@@ -88,6 +87,7 @@ export default function GraphCanvas() {
         proOptions={{ hideAttribution: true }}
         style={{ background: 'var(--cg-surface)' }}>
         <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="#D5D0C8" />
+        <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
       </ReactFlow>
 
