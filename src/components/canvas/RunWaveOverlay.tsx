@@ -42,12 +42,13 @@ export default function RunWaveOverlay() {
 
     const ctx = canvas.getContext('2d')!;
     const resize = () => {
-      const parent = canvas.parentElement?.parentElement;
-      if (parent) { canvas.width = parent.clientWidth; canvas.height = parent.clientHeight; }
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
     };
     resize();
     const ro = new ResizeObserver(resize);
-    if (canvas.parentElement?.parentElement) ro.observe(canvas.parentElement.parentElement);
+    ro.observe(canvas);
 
     const animStart = performance.now();
 
@@ -92,7 +93,7 @@ export default function RunWaveOverlay() {
   if (!visible) return null;
 
   return (
-    <Panel position="top-left" style={{ margin: 0, padding: 0, inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}>
+    <Panel position="top-left" style={{ margin: 0, padding: 0, inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}>
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
     </Panel>
   );
