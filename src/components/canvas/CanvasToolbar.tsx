@@ -5,6 +5,8 @@ import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { mockExecute } from '../../utils/mockExecutor';
 
+import { HoverBorderGradient } from '../ui/HoverBorderGradient';
+
 export default function CanvasToolbar({ activeView }: { activeView: string }) {
   const { graphName, setGraphName, clearGraph, nodes } = useGraphStore();
   const { autoLayout } = useGraphLayout();
@@ -31,7 +33,11 @@ export default function CanvasToolbar({ activeView }: { activeView: string }) {
         <div className="flex items-center gap-1.5">
           <button className="btn-ghost btn-sm" style={{ borderRadius: 10 }} onClick={autoLayout}>Auto-layout</button>
           <button className="btn-ghost btn-sm" style={{ borderRadius: 10 }} onClick={() => { if (nodes.length === 0 || confirm('Clear all nodes?')) { clearGraph(); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); } }}>Clear</button>
-          <button className={`btn btn-run ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>
+          <div onClick={isRunning ? undefined : handleRunAll} style={{ cursor: isRunning ? 'not-allowed' : 'pointer', opacity: isRunning ? 0.5 : 1 }}>
+            <HoverBorderGradient containerClassName="rounded-full" className="flex items-center gap-1.5">
+              <span>▶</span><span>Run All</span>
+            </HoverBorderGradient>
+          </div>
         </div>
       )}
     </div>
