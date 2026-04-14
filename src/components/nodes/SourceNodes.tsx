@@ -3,18 +3,19 @@ import { useGraphStore } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 
 function AiEditPopover({ selectedText, position, onApply, onClose }: {
-  selectedText: string; position: { x: number; y: number }; onApply: (newText: string) => void; onClose: () => void;
+  selectedText: string; position: { x: number; y: number }; onApply: (newText: string, preview?: boolean) => void; onClose: () => void;
 }) {
   const [showPrompt, setShowPrompt] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { if (preview) { onApply(selectedText); } onClose(); } };
     setTimeout(() => document.addEventListener('mousedown', handler), 10);
     return () => document.removeEventListener('mousedown', handler);
-  }, [onClose]);
+  }, [onClose, preview, onApply, selectedText]);
 
   const quickAction = (action: string) => {
     setLoading(true);
@@ -28,10 +29,30 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
       } else if (action === 'custom' && prompt) {
         result = `[${prompt}]: ${selectedText}`;
       }
-      onApply(result);
+      setPreview(result);
+      onApply(result, true); // apply as preview
       setLoading(false);
     }, 500);
   };
+
+  const accept = () => { if (preview) { onApply(preview, false); onClose(); } };
+  const revert = () => { onApply(selectedText, false); setPreview(null); setShowPrompt(true); };
+
+  // Preview state: show accept/revert
+  if (preview) {
+    return (
+      <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y }}>
+        <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--cg-card)', boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)' }}>
+          <div style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>AI edited text</div>
+          <div className="text-sm leading-relaxed max-h-[80px] overflow-y-auto rounded-lg p-2" style={{ background: 'var(--cg-surface)', color: 'var(--cg-ink)', scrollbarWidth: 'thin' }}>{preview}</div>
+          <div className="flex gap-1.5">
+            <button className="btn-xs btn-outline flex-1" onClick={revert}>↩ Revert</button>
+            <button className="btn-xs btn-primary flex-1" onClick={accept}>✓ Accept</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y }}>
@@ -91,11 +112,12 @@ export function TextSourceInline({ id }: { id: string }) {
     setPopover({ x: 0, y: rect.top - parentRect.top - 40, start, end, text: selected });
   }, [text]);
 
-  const handleApply = useCallback((newText: string) => {
+  const handleApply = useCallback((newText: string, preview?: boolean) => {
     if (!popover) return;
     const updated = text.slice(0, popover.start) + newText + text.slice(popover.end);
     onChange(updated);
-    setPopover(null);
+    if (!preview) setPopover(null);
+    else setPopover({ ...popover, end: popover.start + newText.length, text: newText });
   }, [popover, text, onChange]);
 
   const charCount = text.length;
