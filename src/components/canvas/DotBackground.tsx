@@ -60,16 +60,18 @@ export default function DotBackground() {
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
+    const parent = canvas.parentElement;
+    if (!parent) return;
     const onMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       draw();
     };
     const onLeave = () => { mouseRef.current = { x: -999, y: -999 }; draw(); };
-    canvas.addEventListener('mousemove', onMove);
-    canvas.addEventListener('mouseleave', onLeave);
-    return () => { ro.disconnect(); canvas.removeEventListener('mousemove', onMove); canvas.removeEventListener('mouseleave', onLeave); };
+    parent.addEventListener('mousemove', onMove);
+    parent.addEventListener('mouseleave', onLeave);
+    return () => { ro.disconnect(); parent.removeEventListener('mousemove', onMove); parent.removeEventListener('mouseleave', onLeave); };
   }, []);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-auto" style={{ zIndex: 0 }} />;
+  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }} />;
 }
