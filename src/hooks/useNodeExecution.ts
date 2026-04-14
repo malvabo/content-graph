@@ -68,7 +68,7 @@ export function useNodeExecution() {
           setOutput(nodeId, { text: result });
         }
 
-        setHash(nodeId, hash);
+        setHash(nodeId, '');
         setStatus(nodeId, 'complete');
       } catch (err) {
         setError(nodeId, err instanceof Error ? err.message : 'Unknown error');
