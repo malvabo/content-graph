@@ -4,7 +4,7 @@ import { useExecutionStore } from '../../store/executionStore';
 const GAP = 22;
 const BASE_R = 1;
 const WAVE_R = 2.4;
-const PEAK_ALPHA = 0.5;
+const PEAK_ALPHA = 0.25;
 const WAVE_WIDTH = 220;
 const CYCLE_MS = 8000;       // one full sweep top→bottom: 8 seconds
 const MIN_DISPLAY_MS = 5000; // always show for at least 5 seconds
@@ -93,7 +93,7 @@ export default function RunWaveOverlay() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none"
-      style={{ zIndex: 9 }}
+      style={{ zIndex: 0 }}
     />
   );
 }
