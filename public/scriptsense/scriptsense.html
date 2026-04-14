@@ -655,7 +655,11 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
 
 /* ─────────────────── Main App ─────────────────── */
 function ContentGraphEditor({ draft, onSave, onBack }) {
-  const [text, setText]               = useState(draft?.text ?? SAMPLE_TEXT);
+  const [text, setText]               = useState(() => {
+    const voice = localStorage.getItem('scriptsense-content');
+    if (voice) { localStorage.removeItem('scriptsense-content'); return voice; }
+    return draft?.text ?? SAMPLE_TEXT;
+  });
   const [country, setCountry]         = useState("US");
   const [ddOpen, setDdOpen]           = useState(false);
   const [activeTab, setActiveTab]     = useState("insights");
