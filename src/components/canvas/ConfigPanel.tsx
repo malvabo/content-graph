@@ -4,7 +4,7 @@ import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, IMAGE_MODEL_OPTIONS,
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="flex flex-col gap-1"><label className="text-[14px] font-medium text-[#a1a1aa] uppercase tracking-wider">{label}</label>{children}</div>;
+  return <div className="flex flex-col gap-1"><label className="text-[11px] font-medium text-[#a1a1aa] uppercase tracking-wider">{label}</label>{children}</div>;
 }
 function Select({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: readonly string[] }) {
   return <select className="w-full h-8 text-sm border border-[#e5e7eb] rounded-lg px-2 bg-white outline-none focus:border-[#6366f1]" value={value} onChange={(e) => onChange(e.target.value)}>{options.map((o) => <option key={o}>{o}</option>)}</select>;
@@ -16,7 +16,7 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
   return <div className="flex items-center justify-between"><span className="text-xs text-[#71717a]">{label}</span><button className={`w-8 h-4.5 rounded-full transition ${value ? 'bg-[#4f46e5]' : 'bg-[#d1d5db]'} relative`} onClick={() => onChange(!value)}><div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${value ? 'left-4' : 'left-0.5'}`} /></button></div>;
 }
 function Stepper({ value, onChange, min, max, label }: { value: number; onChange: (v: number) => void; min: number; max: number; label: string }) {
-  return <div className="flex items-center gap-2"><button className="w-6 h-6 text-sm border border-[#e5e7eb] rounded flex items-center justify-center hover:bg-[#f4f4f5]" onClick={() => onChange(Math.max(min, value - 1))}>−</button><span className="text-xs font-medium w-6 text-center">{value}</span><button className="w-6 h-6 text-sm border border-[#e5e7eb] rounded flex items-center justify-center hover:bg-[#f4f4f5]" onClick={() => onChange(Math.min(max, value + 1))}>+</button><span className="text-[14px] text-[#a1a1aa]">{label}</span></div>;
+  return <div className="flex items-center gap-2"><button className="w-6 h-6 text-sm border border-[#e5e7eb] rounded flex items-center justify-center hover:bg-[#f4f4f5]" onClick={() => onChange(Math.max(min, value - 1))}>−</button><span className="text-xs font-medium w-6 text-center">{value}</span><button className="w-6 h-6 text-sm border border-[#e5e7eb] rounded flex items-center justify-center hover:bg-[#f4f4f5]" onClick={() => onChange(Math.min(max, value + 1))}>+</button><span className="text-[11px] text-[#a1a1aa]">{label}</span></div>;
 }
 
 function ModelSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -24,7 +24,7 @@ function ModelSelector({ value, onChange }: { value: string; onChange: (v: strin
     <div className="border-t border-[#e5e7eb] my-2" />
     <Field label="Model">
       <Select value={value} onChange={onChange} options={MODEL_OPTIONS} />
-      <div className="text-[14px] text-[#a1a1aa] mt-0.5">Faster ↔ Smarter</div>
+      <div className="text-[11px] text-[#a1a1aa] mt-0.5">Faster ↔ Smarter</div>
     </Field>
   </>;
 }
@@ -36,7 +36,7 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
     <Field label="Prepare (optional)">
       <textarea className="w-full min-h-[80px] text-sm border border-[#e5e7eb] rounded-lg p-2 outline-none focus:border-[#6366f1] resize-y" placeholder="e.g. Extract key arguments only. Remove all anecdotes." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
     </Field>
-    {(c.prepare as string)?.trim() ? <ModelSelector value={c.model as string ?? DEFAULT_MODELS['text-source']} onChange={(v) => s('model', v)} /> : <div className="text-[14px] text-[#a1a1aa] italic mt-1">Add a Prepare instruction to enable model selection</div>}
+    {(c.prepare as string)?.trim() ? <ModelSelector value={c.model as string ?? DEFAULT_MODELS['text-source']} onChange={(v) => s('model', v)} /> : <div className="text-[11px] text-[#a1a1aa] italic mt-1">Add a Prepare instruction to enable model selection</div>}
   </>,
   'linkedin-post': (c, s) => <>
     <Field label="Goal"><Select value={c.goal as string ?? 'Thought leadership'} onChange={(v) => s('goal', v)} options={['Thought leadership', 'Personal story', 'Industry insight', 'Announcement', 'Call to action']} /></Field>
@@ -88,7 +88,7 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
         {['.txt', '.md', '.docx', '.pdf', '.json', '.zip'].map((f) => {
           const formats = (c.formats as string[]) ?? ['.zip'];
           const active = formats.includes(f);
-          return <button key={f} className={`text-[14px] px-2 py-0.5 rounded ${active ? 'bg-[#4f46e5] text-white' : 'bg-[#f4f4f5] text-[#71717a]'}`}
+          return <button key={f} className={`text-[11px] px-2 py-0.5 rounded ${active ? 'bg-[#4f46e5] text-white' : 'bg-[#f4f4f5] text-[#71717a]'}`}
             onClick={() => s('formats', active ? formats.filter((x: string) => x !== f) : [...formats, f])}>{f}</button>;
         })}
       </div>
