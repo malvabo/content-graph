@@ -114,7 +114,7 @@ export default function ConfigPanel() {
 
   useEffect(() => { setLocal(node?.data.config ?? {}); }, [selectedId, node?.data.config]);
 
-  if (!node) return <aside className="w-[270px] shrink-0 flex items-center justify-center" style={{ background: 'var(--cg-card)', borderLeft: '1px solid var(--cg-border)' }}><span style={{ font: '400 14px/20px var(--font-sans)', color: 'var(--cg-ink-3)' }}>Select a node to configure</span></aside>;
+  if (!node) return null;
 
   const def = NODE_DEFS_BY_SUBTYPE[node.data.subtype];
   const colors = BADGE_COLORS[node.data.category];
@@ -124,14 +124,18 @@ export default function ConfigPanel() {
   const hasModel = !!DEFAULT_MODELS[node.data.subtype] && node.data.subtype !== 'text-source' && node.data.subtype !== 'image-prompt';
 
   return (
-    <aside className="w-[270px] shrink-0 overflow-y-auto" style={{ background: 'var(--cg-card)', borderLeft: '1px solid var(--cg-border)' }}>
-      <div className="p-4" style={{ borderBottom: '1px solid var(--cg-border)' }}>
-        <div className="flex items-center gap-2">
-          <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 14, fontWeight: 500, fontFamily: 'var(--font-sans)', backgroundColor: colors.bg, color: colors.text }}>{NODE_ICONS[node.data.subtype]?.() ?? def?.badge}</div>
-          <div><div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)' }}>{node.data.label}</div></div>
+    <div className="absolute top-3 right-3 z-20 w-[280px] max-h-[calc(100%-24px)] overflow-y-auto"
+      style={{ background: 'var(--cg-card)', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)', scrollbarWidth: 'thin' }}>
+      {/* Header */}
+      <div className="px-5 pt-5 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.bg, color: colors.text }}>{NODE_ICONS[node.data.subtype]?.() ?? def?.badge}</div>
+          <div style={{ font: '500 15px/20px var(--font-sans)', color: 'var(--cg-ink)' }}>{node.data.label}</div>
         </div>
       </div>
-      <div className="p-4 flex flex-col gap-3">
+
+      {/* Settings */}
+      <div className="px-5 pb-4 flex flex-col gap-3">
         {hasQuantity && (
           <Field label="Number of outputs">
             <Stepper value={local.quantity as number ?? 1} onChange={(v) => set('quantity', v)} min={1} max={5} label="outputs" />
@@ -140,7 +144,9 @@ export default function ConfigPanel() {
         {configRenderer ? configRenderer(local, set) : <span className="text-[14px] text-[#78716c]">No configuration options</span>}
         {hasModel && <ModelSelector value={local.model as string ?? DEFAULT_MODELS[node.data.subtype]} onChange={(v) => set('model', v)} />}
       </div>
-      <div className="p-4" style={{ borderTop: '1px solid var(--cg-border)' }}>
+
+      {/* Run button */}
+      <div className="px-5 pb-5">
         <button className="btn btn-primary w-full" onClick={() => {
           if (!node) return;
           const subtype = node.data.subtype;
@@ -169,6 +175,6 @@ export default function ConfigPanel() {
           });
         }}>▶ Run</button>
       </div>
-    </aside>
+    </div>
   );
 }

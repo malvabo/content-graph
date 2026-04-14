@@ -70,8 +70,8 @@ function AppInner() {
             <div className="flex-1 relative">
               <EmptyCanvasOverlay />
               <GraphCanvas />
+              <ConfigPanel />
             </div>
-            <ConfigPanel />
           </>
         )}
 

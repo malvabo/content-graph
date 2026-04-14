@@ -27,7 +27,7 @@ const ChatIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="non
 
 export default function IconNav({ activeView, onViewChange }: Props) {
   return (
-    <nav className="w-[64px] shrink-0 flex flex-col items-center py-3 px-1 gap-1" style={{ background: 'var(--cg-card)', borderRight: '1px solid var(--cg-border)' }}>
+    <nav className="w-[64px] shrink-0 flex flex-col items-center py-3 px-1 gap-2.5" style={{ background: 'var(--cg-card)', borderRight: '1px solid var(--cg-border)' }}>
       <NavItem icon={<WorkflowIcon />} label="Workflow" active={activeView === 'workflow'} onClick={() => onViewChange('workflow')} />
       <NavItem icon={<VoiceIcon />} label="Voice" active={activeView === 'voice'} onClick={() => onViewChange('voice')} />
       <NavItem icon={<ChatIcon />} label="Script" active={activeView === 'scriptsense'} onClick={() => onViewChange('scriptsense')} />
