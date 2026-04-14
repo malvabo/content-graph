@@ -2,8 +2,8 @@ import { useRef, useEffect, useCallback } from 'react';
 import { Panel } from '@xyflow/react';
 
 const GAP = 14;
-const RADIUS = 100;
-const DOT_R = 1.2;
+const RADIUS = 80;
+const DOT_R = 1;
 const DOT_COLOR = [90, 85, 78]; // warm dark grey RGB
 
 export default function CursorSpotlight() {
