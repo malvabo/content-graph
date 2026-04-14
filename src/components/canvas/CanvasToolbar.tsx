@@ -21,7 +21,15 @@ export default function CanvasToolbar({ activeView }: { activeView: string }) {
         'twitter-thread': () => `1/ ${firstSentence}. A thread on why this matters:\n\n2/ ${input.split(/[.!?]\s/)[1]?.trim() || 'The key insight most people miss.'}\n\n3/ Think about it: ${words} — these aren't just buzzwords. They represent a fundamental shift.\n\n4/ ${input.split(/[.!?]\s/)[2]?.trim() || 'The data backs this up in ways that surprised me.'}\n\n5/ The practical framework: observe → hypothesize → test → iterate.\n\n6/ ${input.split(/[.!?]\s/)[3]?.trim() || 'What makes this different is the compounding effect over time.'}\n\n7/ TL;DR: ${firstSentence}. Save this thread for later.`,
         'twitter-single': () => `${firstSentence.length <= 280 ? firstSentence : firstSentence.slice(0, 277) + '...'}`,
         'blog-article': () => `# ${firstSentence}\n\n## Why This Matters\n\n${input.split(/[.!?]\s/).slice(0, 3).join('. ')}.\n\n## The Key Insight\n\n${input.split(/[.!?]\s/).slice(3, 6).join('. ') || short}.\n\nThis has implications for how we think about ${words}.\n\n## What To Do About It\n\n${input.split(/[.!?]\s/).slice(6, 9).join('. ') || 'Start by examining your current approach and identifying the gaps.'}\n\n## Conclusion\n\n${firstSentence}. The evidence is clear — and the time to act is now.`,
-        'newsletter': () => `Subject: ${firstSentence.slice(0, 60)}\nPreview: Here's what you need to know\n\nHey,\n\n${firstSentence}.\n\n${input.split(/[.!?]\s/).slice(1, 4).join('. ') || short}.\n\nWhy does this matter for you? Because ${words} are reshaping how we work.\n\nOne thing to try this week: take the core idea above and apply it to your current project. See what shifts.\n\nReply and let me know what you think.`,
+        'newsletter': () => {
+          const paras = input.split(/\n\n+/).filter(Boolean);
+          const subject = firstSentence.slice(0, 50);
+          const hook = paras[0] || firstSentence;
+          const body = paras.slice(1, 4).join('\n\n') || input.slice(0, 600);
+          const lastPara = paras[paras.length - 1] || '';
+          const takeaway = lastPara.length > 20 ? lastPara : `The key takeaway: ${firstSentence}`;
+          return `SUBJECT: ${subject}\n\nHey there,\n\n${hook}\n\n${body}\n\nHere's what this means for you:\n\n${takeaway}\n\nOne thing to try this week: take the core idea above and apply it to your current project. See what shifts.\n\nHit reply and let me know what you think — I read every response.\n\nUntil next time.`;
+        },
         'ig-carousel': () => {
           const sentences = input.split(/[.!?]\s/).filter(Boolean);
           const slides = sentences.slice(0, 6).map((s, i) => `---\nSLIDE ${i + 1}:\nHeadline: ${s.split(' ').slice(0, 5).join(' ')}\nBody: ${s.trim()}`);

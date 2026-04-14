@@ -150,7 +150,12 @@ export default function ConfigPanel() {
             const sentences = input.split(/[.!?]\s/).filter(Boolean);
             if (subtype === 'linkedin-post') return `${firstSentence}.\n\nThis is what nobody talks about.\n\n${sentences.slice(1, 4).join('. ') || short}.\n\nWhat's your take? 👇`;
             if (subtype === 'twitter-thread') return sentences.slice(0, 7).map((s, i) => `${i + 1}/ ${s.trim()}`).join('\n\n');
-            if (subtype === 'newsletter') return `Subject: ${firstSentence.slice(0, 60)}\n\n${sentences.slice(0, 5).join('. ')}.`;
+            if (subtype === 'newsletter') {
+              const paras = input.split(/\n\n+/).filter(Boolean);
+              const subject = firstSentence.slice(0, 50);
+              const body = paras.slice(0, 4).join('\n\n') || input.slice(0, 600);
+              return `SUBJECT: ${subject}\n\nHey there,\n\n${body}\n\nHit reply and let me know what you think.\n\nUntil next time.`;
+            }
             if (subtype === 'blog-article') return `# ${firstSentence}\n\n${sentences.slice(1).join('. ')}.`;
             if (subtype === 'image-prompt') return `A cinematic wide-angle photograph of ${firstSentence.toLowerCase()}, golden hour lighting, shallow depth of field, rich color palette, editorial style, 8k resolution`;
             return `[${subtype}]\n\n${short}`;
