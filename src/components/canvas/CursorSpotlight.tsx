@@ -4,22 +4,26 @@ import { Panel } from '@xyflow/react';
 const GAP = 14;
 const RADIUS = 80;
 const DOT_R = 1;
-const DOT_COLOR = [90, 85, 78]; // warm dark grey RGB
+const DOT_COLOR = [90, 85, 78];
 
 export default function CursorSpotlight() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef({ x: -999, y: -999 });
   const rafRef = useRef(0);
+  const sizeRef = useRef({ w: 0, h: 0 });
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
-    const w = canvas.width, h = canvas.height;
+    const { w, h } = sizeRef.current;
     const mx = mouseRef.current.x, my = mouseRef.current.y;
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (mx < -RADIUS || my < -RADIUS) { rafRef.current = requestAnimationFrame(draw); return; }
+
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const startCol = Math.max(0, Math.floor((mx - RADIUS) / GAP));
     const endCol = Math.min(Math.ceil(w / GAP), Math.ceil((mx + RADIUS) / GAP));
@@ -40,19 +44,25 @@ export default function CursorSpotlight() {
         ctx.fill();
       }
     }
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     rafRef.current = requestAnimationFrame(draw);
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     const resize = () => {
-      const p = canvas.parentElement?.parentElement;
-      if (p) { canvas.width = p.clientWidth; canvas.height = p.clientHeight; }
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      sizeRef.current = { w: rect.width, h: rect.height };
     };
     resize();
     const ro = new ResizeObserver(resize);
-    if (canvas.parentElement?.parentElement) ro.observe(canvas.parentElement.parentElement);
+    ro.observe(canvas);
 
     const onMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -60,15 +70,15 @@ export default function CursorSpotlight() {
     };
     const onLeave = () => { mouseRef.current = { x: -999, y: -999 }; };
 
-    canvas.parentElement?.parentElement?.addEventListener('mousemove', onMove);
-    canvas.parentElement?.parentElement?.addEventListener('mouseleave', onLeave);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseleave', onLeave);
 
     rafRef.current = requestAnimationFrame(draw);
     return () => {
       cancelAnimationFrame(rafRef.current);
       ro.disconnect();
-      canvas.parentElement?.parentElement?.removeEventListener('mousemove', onMove);
-      canvas.parentElement?.parentElement?.removeEventListener('mouseleave', onLeave);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseleave', onLeave);
     };
   }, [draw]);
 
