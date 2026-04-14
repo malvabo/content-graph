@@ -19,7 +19,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, fontFamily: 'system-ui', color: '#57534e' }}>
         <div style={{ fontSize: 15, fontWeight: 500 }}>Something went wrong</div>
         <div style={{ fontSize: 13, maxWidth: 400, textAlign: 'center' }}>{this.state.error.message}</div>
-        <button onClick={() => { this.setState({ error: null }); window.location.reload(); }} style={{ marginTop: 8, padding: '8px 16px', borderRadius: 8, border: '1px solid var(--cg-border)', background: '#fff', cursor: 'pointer', fontSize: 14 }}>Reload</button>
+        <button onClick={() => { localStorage.removeItem('content-graph-store'); window.location.reload(); }} style={{ marginTop: 8, padding: '8px 16px', borderRadius: 8, border: '1px solid #e6e3dd', background: '#fff', cursor: 'pointer', fontSize: 14 }}>Clear data &amp; reload</button>
       </div>
     );
     return this.props.children;

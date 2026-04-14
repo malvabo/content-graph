@@ -109,6 +109,9 @@ export const useGraphStore = create<GraphState>()(
           edges: state.edges,
           graphName: state.graphName,
         }),
+        onRehydrateStorage: () => (_state, error) => {
+          if (error) { localStorage.removeItem('content-graph-store'); }
+        },
       }
     ),
     { limit: 50 }
