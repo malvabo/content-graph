@@ -1,7 +1,7 @@
 import {
-  ReactFlow, Controls,
+  ReactFlow, Background, BackgroundVariant, Controls,
   type OnConnect, type OnNodesChange, type OnEdgesChange, type Node,
-  applyNodeChanges, applyEdgeChanges, addEdge, type Connection, useReactFlow,
+  applyNodeChanges, applyEdgeChanges, addEdge, type Connection,
 } from '@xyflow/react';
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
@@ -10,7 +10,6 @@ import { useOutputStore } from '../../store/outputStore';
 import BaseNode from '../nodes/BaseNode';
 import NodeSpotlight from './NodeSpotlight';
 import RunWaveOverlay from './RunWaveOverlay';
-import DotBackground from './DotBackground';
 import { useConnectionValidation } from '../../hooks/useConnectionValidation';
 import type { NodeDef } from '../../utils/nodeDefs';
 
@@ -79,7 +78,6 @@ export default function GraphCanvas() {
         if (!bounds) return;
         setSpotlight({ x: e.clientX - bounds.left, y: e.clientY - bounds.top, flowX: pos.x, flowY: pos.y });
       }}>
-      <DotBackground />
       <ReactFlow
         nodes={nodes} edges={styledEdges}
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
@@ -91,7 +89,8 @@ export default function GraphCanvas() {
         deleteKeyCode={['Backspace', 'Delete']}
         fitView={false} panOnScroll={false} selectionOnDrag={false}
         proOptions={{ hideAttribution: true }}
-        style={{ background: 'transparent' }}>
+        style={{ background: 'var(--cg-canvas)' }}>
+        <Background variant={BackgroundVariant.Dots} gap={14} size={1} color="#D5D0C8" />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
       </ReactFlow>
