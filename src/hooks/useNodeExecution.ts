@@ -3,7 +3,6 @@ import { useGraphStore } from '../store/graphStore';
 import { useExecutionStore } from '../store/executionStore';
 import { useOutputStore } from '../store/outputStore';
 import { topologicalSort } from '../utils/topologicalSort';
-import { hashContent } from '../utils/hashContent';
 import type { Edge } from '@xyflow/react';
 
 // Generate image from prompt via Pollinations.ai (free, no API key needed)
@@ -32,7 +31,7 @@ export function useNodeExecution() {
     async (nodeId: string, executor: (input: string, config: Record<string, unknown>) => Promise<string>) => {
       // Read LIVE state at call time — not from closure
       const { nodes, edges } = useGraphStore.getState();
-      const { outputs, hashes } = useOutputStore.getState();
+      const { outputs } = useOutputStore.getState();
       const { setStatus, setError } = useExecutionStore.getState();
       const { setOutput, setHash } = useOutputStore.getState();
 
@@ -40,19 +39,17 @@ export function useNodeExecution() {
       if (!node) return;
 
       const isSource = node.data.category === 'source';
-      const input = isSource ? (outputs[nodeId]?.text ?? '') : getUpstreamText(nodeId, edges, outputs);
+      const input = isSource
+        ? (outputs[nodeId]?.text || (node.data.config.text as string) || '')
+        : getUpstreamText(nodeId, edges, outputs);
 
       if (!isSource && !input) {
         setStatus(nodeId, 'warning');
         return;
       }
 
-      const cacheKey = JSON.stringify({ nodeId, config: node.data.config, input });
-      const hash = await hashContent(cacheKey);
-      if (hashes[nodeId] === hash && outputs[nodeId]?.text) {
-        setStatus(nodeId, 'complete');
-        return;
-      }
+      // Always re-execute on manual run — clear cached hash
+      setHash(nodeId, '');
 
       setStatus(nodeId, 'running');
       try {
