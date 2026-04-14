@@ -9,6 +9,7 @@ import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import BaseNode from '../nodes/BaseNode';
 import NodeSpotlight from './NodeSpotlight';
+import RunWaveOverlay from './RunWaveOverlay';
 import { useConnectionValidation } from '../../hooks/useConnectionValidation';
 import type { NodeDef } from '../../utils/nodeDefs';
 
@@ -73,6 +74,7 @@ export default function GraphCanvas() {
         if (!bounds) return;
         setSpotlight({ x: e.clientX - bounds.left, y: e.clientY - bounds.top, flowX: pos.x, flowY: pos.y });
       }}>
+      <RunWaveOverlay />
       <ReactFlow
         nodes={nodes} edges={edges}
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}

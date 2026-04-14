@@ -43,9 +43,13 @@ export default function RunWaveOverlay() {
     if (!canvas || !visible) return;
 
     const ctx = canvas.getContext('2d')!;
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    const resize = () => {
+      const parent = canvas.parentElement;
+      if (parent) { canvas.width = parent.clientWidth; canvas.height = parent.clientHeight; }
+    };
     resize();
-    window.addEventListener('resize', resize);
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas.parentElement!);
 
     const animStart = performance.now();
 
@@ -84,7 +88,7 @@ export default function RunWaveOverlay() {
     };
 
     rafRef.current = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('resize', resize); };
+    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect(); };
   }, [visible]);
 
   if (!visible) return null;
@@ -92,8 +96,8 @@ export default function RunWaveOverlay() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none"
-      style={{ zIndex: 0 }}
+      className="absolute inset-0 pointer-events-none"
+      style={{ zIndex: 1 }}
     />
   );
 }
