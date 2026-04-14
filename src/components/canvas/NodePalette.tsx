@@ -58,7 +58,7 @@ export default function NodePalette({ onAddNode }: Props) {
         <div className="absolute bottom-14 left-0 w-[280px] max-h-[420px] overflow-y-auto"
           style={{ background: 'var(--cg-card)', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)', scrollbarWidth: 'thin' }}>
           <div className="px-4 pt-4 pb-2">
-            <div style={{ font: '500 14px/1 var(--font-sans)', color: 'var(--cg-ink)' }}>Add node</div>
+            <div style={{ font: '500 11px/1 var(--font-mono)', color: '#6d6d6d', letterSpacing: '0.3em', textTransform: 'uppercase' }}>Add node</div>
           </div>
           {PALETTE_ORDER.map((cat) => {
             const nodes = NODE_DEFS.filter((n) => n.category === cat);
@@ -67,12 +67,12 @@ export default function NodePalette({ onAddNode }: Props) {
             return (
               <div key={cat} className="px-2 mb-3">
                 {isAdvanced ? (
-                  <button className="flex items-center gap-1.5 px-3 mb-1.5" style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }} onClick={() => setAdvancedOpen(!advancedOpen)}>
+                  <button className="flex items-center gap-1.5 px-3 mb-1.5" style={{ font: '500 11px/1 var(--font-mono)', color: '#6d6d6d', letterSpacing: '0.3em', textTransform: 'uppercase' as const }} onClick={() => setAdvancedOpen(!advancedOpen)}>
                     <span style={{ fontSize: 10 }}>{advancedOpen ? '▼' : '▶'}</span>
                     {CATEGORY_LABELS[cat]}
                   </button>
                 ) : (
-                  <div className="px-3 mb-1.5" style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--cg-ink-3)' }}>{CATEGORY_LABELS[cat]}</div>
+                  <div className="px-3 mb-1.5" style={{ font: '500 11px/1 var(--font-mono)', color: '#6d6d6d', letterSpacing: '0.3em', textTransform: 'uppercase' }}>{CATEGORY_LABELS[cat]}</div>
                 )}
                 {(!isAdvanced || advancedOpen) && (
                   <div className="flex flex-col gap-0.5">{nodes.map((def) => (

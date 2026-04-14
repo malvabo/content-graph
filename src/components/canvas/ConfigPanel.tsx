@@ -6,7 +6,7 @@ import { NODE_ICONS } from '../../utils/nodeIcons';
 import { mockExecute } from '../../utils/mockExecutor';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="flex flex-col gap-1"><label className="text-[11px] font-medium text-[#78716c] uppercase tracking-wider">{label}</label>{children}</div>;
+  return <div className="flex flex-col gap-1"><label style={{ font: '500 11px/1 var(--font-mono)', color: '#6d6d6d', letterSpacing: '0.3em', textTransform: 'uppercase' }}>{label}</label>{children}</div>;
 }
 function Select({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: readonly string[] }) {
   const [open, setOpen] = useState(false);
