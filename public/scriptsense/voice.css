@@ -1,0 +1,44 @@
+@import url('https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/style.min.css');
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Geist Sans','Geist',-apple-system,sans-serif;background:#f5f6fa;
+  color:#18181b;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
+
+#app{display:flex;flex-direction:column;height:100vh;align-items:center;justify-content:center}
+
+/* Orb */
+#orb-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#orb{width:200px;height:200px;border-radius:50%;overflow:hidden;cursor:pointer;
+  box-shadow:0 8px 40px rgba(0,0,0,.2);transition:transform .3s ease}
+#orb:hover{transform:scale(1.04)}
+#orb.listening{animation:orbPulse 2s ease-in-out infinite}
+#orb-canvas{width:100%;height:100%;display:block}
+#status{font-size:14px;color:#a1a1aa;font-weight:500;letter-spacing:.2px;min-height:20px}
+
+@keyframes orbPulse{
+  0%,100%{box-shadow:0 8px 40px rgba(0,0,0,.2)}
+  50%{box-shadow:0 8px 60px rgba(62,87,218,.3),0 0 80px rgba(124,58,237,.15)}
+}
+
+/* Transcript */
+#transcript-area{flex:1;width:100%;max-width:720px;overflow-y:auto;padding:0 32px;
+  transition:opacity .3s ease}
+#transcript-area.hidden{display:none}
+#transcript{font-size:16px;line-height:1.8;color:#18181b;white-space:pre-wrap}
+#transcript .interim{color:#a1a1aa}
+
+/* Controls */
+#controls{display:flex;gap:12px;padding:24px 0 12px}
+.ctrl-btn{padding:10px 32px;border-radius:24px;border:1px solid #e4e4e7;background:#fff;
+  font-size:14px;font-weight:500;font-family:inherit;color:#18181b;cursor:pointer;
+  transition:all .15s}
+.ctrl-btn:hover{background:#f4f4f5;border-color:#d4d4d8}
+.ctrl-btn.primary{background:#0d0f2c;color:#fff;border-color:#0d0f2c}
+.ctrl-btn.primary:hover{background:#3e57da}
+
+#voice-status{font-size:12px;color:#a1a1aa;padding:8px 0 24px;display:flex;align-items:center;gap:6px}
+
+/* Transition: orb shrinks when transcript shows */
+#app.showing-text #orb-area{flex:0;padding:32px 0 16px}
+#app.showing-text #orb{width:100px;height:100px}
+#app.showing-text #status{font-size:12px}
+#app.showing-text #transcript-area{flex:1}
