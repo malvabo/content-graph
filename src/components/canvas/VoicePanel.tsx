@@ -21,7 +21,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
     let raf: number;
     const draw = () => {
       const w = canvas.width, h = canvas.height, cx = w / 2, cy = h / 2;
-      ctx.fillStyle = '#0a0a0f';
+      ctx.fillStyle = '#f2efe9';
       ctx.fillRect(0, 0, w, h);
       for (let i = 0; i < 5; i++) {
         const angle = tRef.current * 0.8 + i * 1.3;
@@ -29,10 +29,10 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
         const x = cx + Math.cos(angle) * r * 0.5;
         const y = cy + Math.sin(angle) * r * 0.4;
         const grad = ctx.createRadialGradient(x, y, 0, x, y, 80 + Math.sin(tRef.current + i) * 20);
-        const hue = listening ? 140 + i * 15 : 220 + i * 10;
-        const alpha = listening ? 0.5 : 0.25;
-        grad.addColorStop(0, `hsla(${hue},80%,60%,${alpha})`);
-        grad.addColorStop(0.5, `hsla(${hue + 30},70%,40%,${alpha * 0.4})`);
+        const hue = listening ? 145 + i * 10 : 150 + i * 8;
+        const alpha = listening ? 0.35 : 0.15;
+        grad.addColorStop(0, `hsla(${hue},55%,65%,${alpha})`);
+        grad.addColorStop(0.5, `hsla(${hue + 20},45%,55%,${alpha * 0.4})`);
         grad.addColorStop(1, 'transparent');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
