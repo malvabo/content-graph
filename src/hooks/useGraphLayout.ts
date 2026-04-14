@@ -13,7 +13,7 @@ export function useGraphLayout() {
 
     const laid = nodes.map((n) => {
       const pos = g.node(n.id);
-      return { ...n, position: { x: pos.x - 120, y: pos.y - 80 } } as ContentNode;
+      return { ...n, position: { x: pos.x - 240, y: pos.y - 100 } } as ContentNode;
     });
     setNodes(laid);
   }, []);

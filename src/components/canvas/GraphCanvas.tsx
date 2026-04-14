@@ -15,12 +15,10 @@ import { useConnectionValidation } from '../../hooks/useConnectionValidation';
 import type { NodeDef } from '../../utils/nodeDefs';
 
 const nodeTypes = { contentNode: BaseNode };
-const defaultEdgeOptions = { type: 'default', style: { stroke: '#C8D4CC', strokeWidth: 1.5, strokeDasharray: '5 4' } };
+const defaultEdgeOptions = { type: 'default', style: { stroke: '#D5D0C8', strokeWidth: 1.5, strokeDasharray: '5 4' } };
 
 export default function GraphCanvas() {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId, addNode } = useGraphStore();
-  const resetNode = useExecutionStore((s) => s.resetNode);
-  const clearNodeOutput = useOutputStore((s) => s.clearNode);
   const { screenToFlowPosition } = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [spotlight, setSpotlight] = useState<{ x: number; y: number; flowX: number; flowY: number } | null>(null);
@@ -50,8 +48,8 @@ export default function GraphCanvas() {
     [edges, setEdges, isValidConnection]
   );
   const onNodesDelete = useCallback(
-    (deleted: Node[]) => { deleted.forEach((n) => { resetNode(n.id); clearNodeOutput(n.id); }); },
-    [resetNode, clearNodeOutput]
+    (deleted: Node[]) => { deleted.forEach((n) => { useExecutionStore.getState().resetNode(n.id); useOutputStore.getState().clearNode(n.id); }); },
+    []
   );
 
   const onDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }, []);

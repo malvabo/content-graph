@@ -1,6 +1,6 @@
 import { useCallback, useState, useRef } from 'react';
 import { type Connection, type Edge } from '@xyflow/react';
-import { type ContentNode } from '../store/graphStore';
+import { useGraphStore, type ContentNode } from '../store/graphStore';
 import { NODE_DEFS_BY_SUBTYPE } from '../utils/nodeDefs';
 
 interface Tooltip { x: number; y: number; message: string }
@@ -18,7 +18,7 @@ function hasCycle(source: string, target: string, edges: Edge[]): boolean {
   return false;
 }
 
-export function useConnectionValidation(nodes: ContentNode[], edges: Edge[]) {
+export function useConnectionValidation(_nodes: ContentNode[], _edges: Edge[]) {
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -32,6 +32,7 @@ export function useConnectionValidation(nodes: ContentNode[], edges: Edge[]) {
 
   const isValidConnection = useCallback(
     (conn: Edge | Connection): boolean => {
+      const { nodes, edges } = useGraphStore.getState();
       const source = conn.source;
       const target = conn.target;
       if (!source || !target) return false;
@@ -45,12 +46,9 @@ export function useConnectionValidation(nodes: ContentNode[], edges: Edge[]) {
       const tgtDef = NODE_DEFS_BY_SUBTYPE[tgtNode.data.subtype];
       if (!srcDef || !tgtDef) return false;
 
-      // Reject: source nodes cannot receive input
       if (!tgtDef.hasInput) { showTooltip('This node cannot receive connections'); return false; }
-      // Reject: connecting FROM a terminal node (image-prompt has no output)
       if (!srcDef.hasOutput) { showTooltip('This node has no output to connect from'); return false; }
 
-      // Max inputs
       const maxInputs = tgtDef.maxInputs ?? 1;
       const currentInputs = edges.filter((e) => e.target === target).length;
       if (currentInputs >= maxInputs) {
@@ -58,12 +56,11 @@ export function useConnectionValidation(nodes: ContentNode[], edges: Edge[]) {
         return false;
       }
 
-      // Cycle
       if (hasCycle(source, target, edges)) { showTooltip('Connection would create a cycle'); return false; }
 
       return true;
     },
-    [nodes, edges, showTooltip]
+    [showTooltip]
   );
 
   return { isValidConnection, tooltip };
