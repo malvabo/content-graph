@@ -36,8 +36,7 @@ const MoonIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="non
 function DarkModeToggle() {
   const [dark, setDark] = useState(() => {
     const saved = localStorage.getItem('dark-mode');
-    if (saved !== null) return saved === 'true';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return saved === 'true';
   });
   const [hover, setHover] = useState(false);
   useEffect(() => {

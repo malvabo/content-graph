@@ -21,7 +21,7 @@ function canConnect(fromSubtype: string, toSubtype: string): boolean {
 const HANDLE_CLS = "!w-3 !h-3 !border-[1.5px] border-[var(--color-border-handle)] bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)] !transition-colors";
 
 /* ── Chip-style MiniSelect ── */
-function MiniSelect({ value, options, onChange, label }: { value: string; options: readonly string[]; onChange: (v: string) => void; label?: string }) {
+function MiniSelect({ value, options, onChange }: { value: string; options: readonly string[]; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -35,14 +35,7 @@ function MiniSelect({ value, options, onChange, label }: { value: string; option
       onMouseLeave={() => { if (open) setTimeout(() => { if (!ref.current?.matches(':hover')) setOpen(false); }, 100); }}>
       <button onClick={() => setOpen(!open)} className="h-6 text-xs rounded-full px-3 flex items-center gap-1"
         style={{ background: 'var(--color-bg-surface)', border: 'none', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap' }}>
-        {label ? (
-          <>
-            <span style={{ color: 'var(--color-text-tertiary)' }}>{label}:</span>
-            <span style={{ color: 'var(--color-text-secondary)' }}>{value}</span>
-          </>
-        ) : (
-          <span style={{ color: 'var(--color-text-secondary)' }}>{value}</span>
-        )}
+        <span style={{ color: 'var(--color-text-secondary)' }}>{value}</span>
         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ opacity: 0.35, flexShrink: 0 }}><path d="m6 9 6 6 6-6"/></svg>
       </button>
       {open && (
@@ -64,49 +57,49 @@ function MiniSelect({ value, options, onChange, label }: { value: string; option
 /* ── Inline config per node type — vertical stack with labels ── */
 const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unknown) => void) => React.ReactNode> = {
   'linkedin-post': (c, s) => <>
-    <MiniSelect label="Goal" value={c.goal as string ?? 'Thought leadership'} options={['Thought leadership', 'Personal story', 'Industry insight', 'Announcement', 'Call to action']} onChange={v => s('goal', v)} />
-    <MiniSelect label="Tone" value={c.tone as string ?? 'Authoritative'} options={['Authoritative', 'Conversational', 'Vulnerable', 'Data-driven', 'Contrarian']} onChange={v => s('tone', v)} />
-    <MiniSelect label="Length" value={c.length as string ?? 'Medium ~280w'} options={['Short ~150w', 'Medium ~280w', 'Long ~450w']} onChange={v => s('length', v)} />
-    <MiniSelect label="Hook" value={c.hook as string ?? 'Bold statement'} options={['Bold statement', 'Surprising stat', 'Personal micro-story', 'Counter-intuitive claim', 'Question']} onChange={v => s('hook', v)} />
-    <MiniSelect label="Model" value={c.model as string ?? DEFAULT_MODELS['linkedin-post']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+    <MiniSelect value={c.goal as string ?? 'Thought leadership'} options={['Thought leadership', 'Personal story', 'Industry insight', 'Announcement', 'Call to action']} onChange={v => s('goal', v)} />
+    <MiniSelect value={c.tone as string ?? 'Authoritative'} options={['Authoritative', 'Conversational', 'Vulnerable', 'Data-driven', 'Contrarian']} onChange={v => s('tone', v)} />
+    <MiniSelect value={c.length as string ?? 'Medium ~280w'} options={['Short ~150w', 'Medium ~280w', 'Long ~450w']} onChange={v => s('length', v)} />
+    <MiniSelect value={c.hook as string ?? 'Bold statement'} options={['Bold statement', 'Surprising stat', 'Personal micro-story', 'Counter-intuitive claim', 'Question']} onChange={v => s('hook', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['linkedin-post']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'twitter-thread': (c, s) => <>
-    <MiniSelect label="Style" value={c.style as string ?? 'Numbered 1/ 2/ 3/'} options={['Numbered 1/ 2/ 3/', 'Hook + thread', 'Narrative']} onChange={v => s('style', v)} />
-    <MiniSelect label="Tone" value={c.tone as string ?? 'Analytical'} options={['Analytical', 'Personal', 'Educational', 'Provocative']} onChange={v => s('tone', v)} />
-    <MiniSelect label="Model" value={c.model as string ?? DEFAULT_MODELS['twitter-thread']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+    <MiniSelect value={c.style as string ?? 'Numbered 1/ 2/ 3/'} options={['Numbered 1/ 2/ 3/', 'Hook + thread', 'Narrative']} onChange={v => s('style', v)} />
+    <MiniSelect value={c.tone as string ?? 'Analytical'} options={['Analytical', 'Personal', 'Educational', 'Provocative']} onChange={v => s('tone', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['twitter-thread']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'twitter-single': (c, s) => <>
-    <MiniSelect label="Angle" value={c.angle as string ?? 'Most quotable insight'} options={['Most quotable insight', 'Strongest stat', 'Contrarian take', 'Call to action']} onChange={v => s('angle', v)} />
-    <MiniSelect label="Model" value={c.model as string ?? DEFAULT_MODELS['twitter-single']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+    <MiniSelect value={c.angle as string ?? 'Most quotable insight'} options={['Most quotable insight', 'Strongest stat', 'Contrarian take', 'Call to action']} onChange={v => s('angle', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['twitter-single']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'ig-carousel': (c, s) => <>
-    <MiniSelect label="Format" value={c.format as string ?? 'Headline + bullets'} options={['Headline + bullets', 'Single bold statement', 'Numbered list', 'Story arc']} onChange={v => s('format', v)} />
-    <MiniSelect label="Platform" value={c.platform as string ?? 'Instagram'} options={['Instagram', 'LinkedIn', 'TikTok']} onChange={v => s('platform', v)} />
-    <MiniSelect label="Model" value={c.model as string ?? DEFAULT_MODELS['ig-carousel']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+    <MiniSelect value={c.format as string ?? 'Headline + bullets'} options={['Headline + bullets', 'Single bold statement', 'Numbered list', 'Story arc']} onChange={v => s('format', v)} />
+    <MiniSelect value={c.platform as string ?? 'Instagram'} options={['Instagram', 'LinkedIn', 'TikTok']} onChange={v => s('platform', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['ig-carousel']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'blog-article': (c, s) => <>
-    <MiniSelect label="Type" value={c.type as string ?? 'How-to'} options={['How-to', 'Opinion', 'Listicle', 'Deep dive', 'Case study', 'Explainer']} onChange={v => s('type', v)} />
-    <MiniSelect label="Length" value={c.length as string ?? 'Medium 1000–1500w'} options={['Short 600–800w', 'Medium 1000–1500w', 'Long 2000–2500w']} onChange={v => s('length', v)} />
-    <MiniSelect label="Audience" value={c.audience as string ?? 'Intermediate'} options={['Beginner', 'Intermediate', 'Expert']} onChange={v => s('audience', v)} />
-    <MiniSelect label="Model" value={c.model as string ?? DEFAULT_MODELS['blog-article']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+    <MiniSelect value={c.type as string ?? 'How-to'} options={['How-to', 'Opinion', 'Listicle', 'Deep dive', 'Case study', 'Explainer']} onChange={v => s('type', v)} />
+    <MiniSelect value={c.length as string ?? 'Medium 1000–1500w'} options={['Short 600–800w', 'Medium 1000–1500w', 'Long 2000–2500w']} onChange={v => s('length', v)} />
+    <MiniSelect value={c.audience as string ?? 'Intermediate'} options={['Beginner', 'Intermediate', 'Expert']} onChange={v => s('audience', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['blog-article']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'newsletter': (c, s) => <>
-    <MiniSelect label="Type" value={c.type as string ?? 'Full issue'} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} onChange={v => s('type', v)} />
-    <MiniSelect label="Model" value={c.model as string ?? DEFAULT_MODELS['newsletter']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+    <MiniSelect value={c.type as string ?? 'Full issue'} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} onChange={v => s('type', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['newsletter']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'infographic': (c, s) => <>
-    <MiniSelect label="Type" value={c.type as string ?? 'Process'} options={['Process', 'Statistical', 'Comparison', 'Timeline', 'Listicle', 'Anatomy']} onChange={v => s('type', v)} />
-    <MiniSelect label="Style" value={c.style as string ?? 'Clean Corporate'} options={['Clean Corporate', 'Bold Editorial', 'Illustrated', 'Dark Premium', 'Minimalist']} onChange={v => s('style', v)} />
-    <MiniSelect label="Model" value={c.model as string ?? DEFAULT_MODELS['infographic']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+    <MiniSelect value={c.type as string ?? 'Process'} options={['Process', 'Statistical', 'Comparison', 'Timeline', 'Listicle', 'Anatomy']} onChange={v => s('type', v)} />
+    <MiniSelect value={c.style as string ?? 'Clean Corporate'} options={['Clean Corporate', 'Bold Editorial', 'Illustrated', 'Dark Premium', 'Minimalist']} onChange={v => s('style', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['infographic']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'quote-card': (c, s) => <>
-    <MiniSelect label="Format" value={c.format as string ?? 'Single quote'} options={['Single quote', 'Multiple options']} onChange={v => s('format', v)} />
-    <MiniSelect label="Model" value={c.model as string ?? DEFAULT_MODELS['quote-card']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+    <MiniSelect value={c.format as string ?? 'Single quote'} options={['Single quote', 'Multiple options']} onChange={v => s('format', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['quote-card']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'image-prompt': (c, s) => <>
-    <MiniSelect label="Purpose" value={c.purpose as string ?? 'Blog hero'} options={['Blog hero', 'LinkedIn post', 'Newsletter header', 'Instagram slide', 'Social concept']} onChange={v => s('purpose', v)} />
-    <MiniSelect label="Style" value={c.style as string ?? 'Photography'} options={['Photography', 'Flat illustration', '3D render', 'Abstract', 'Editorial graphic']} onChange={v => s('style', v)} />
-    <MiniSelect label="Ratio" value={c.aspect as string ?? '16:9'} options={['1:1', '4:5', '16:9', '9:16', '1.91:1']} onChange={v => s('aspect', v)} />
+    <MiniSelect value={c.purpose as string ?? 'Blog hero'} options={['Blog hero', 'LinkedIn post', 'Newsletter header', 'Instagram slide', 'Social concept']} onChange={v => s('purpose', v)} />
+    <MiniSelect value={c.style as string ?? 'Photography'} options={['Photography', 'Flat illustration', '3D render', 'Abstract', 'Editorial graphic']} onChange={v => s('style', v)} />
+    <MiniSelect value={c.aspect as string ?? '16:9'} options={['1:1', '4:5', '16:9', '9:16', '1.91:1']} onChange={v => s('aspect', v)} />
   </>,
 };
 
