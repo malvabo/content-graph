@@ -245,9 +245,6 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         </div>
         <div className="flex-1 min-w-0">
           <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', color: 'var(--color-text-primary)' }} className="truncate">{data.label}</div>
-          {data.description && (
-            <div title={data.description} style={{ fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-snug)', color: 'var(--color-text-tertiary)', marginTop: 2 }} className="truncate">{data.description}</div>
-          )}
         </div>
       </div>
 
