@@ -273,7 +273,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 /* ── Graph name input affordance ── */
 .graph-name-input { transition: border-color 150ms; }
 .graph-name-input:hover { border-bottom-color: var(--color-border-strong) !important; }
-.graph-name-input:focus { border-bottom-color: var(--color-accent) !important; }
+.graph-name-input:focus { border-bottom-color: var(--color-accent) !important; border-top-color: transparent !important; border-left-color: transparent !important; border-right-color: transparent !important; box-shadow: none !important; }
 
 /* ── Palette ── */
 .palette-item { transition: background var(--duration-base); }
