@@ -47,7 +47,7 @@ function MiniSelect({ value, options, onChange, label }: { value: string; option
       {open && (
         <div className="absolute top-full left-0 mt-1 rounded-lg z-50" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'thin', minWidth: 160, padding: 'var(--space-1) 0' }}>
           {options.map((o, i) => (
-            <button key={o} className="w-full text-left px-3 py-2" style={{ background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: o === value ? 500 : 400, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', borderBottom: i < options.length - 1 ? '1px solid var(--color-border-subtle)' : 'none' }}
+            <button key={o} className="w-full px-3 py-2" style={{ textAlign: 'left', display: 'block', background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: o === value ? 500 : 400, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', borderBottom: i < options.length - 1 ? '1px solid var(--color-border-subtle)' : 'none' }}
               onMouseEnter={e => { if (o !== value) e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
               onMouseLeave={e => { if (o !== value) e.currentTarget.style.background = 'transparent'; }}
               onClick={() => { onChange(o); setOpen(false); }}>{o}</button>
