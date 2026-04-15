@@ -115,7 +115,7 @@ const FONT_STYLE = `
   .draft-card { cursor:pointer; transition: box-shadow 0.15s, transform 0.15s; }
   .draft-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08), 0 0 0 1px ${C.border2} !important; transform: translateY(-1px); }
   .new-card   { cursor:pointer; transition: background 100ms, border-color 100ms; }
-  .new-card:hover { background: ${C.accentTint} !important; border-color: ${C.accent} !important; }
+  .new-card:hover { background: ${C.surface} !important; border-color: ${C.border2} !important; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
   .save-btn   { cursor:pointer; transition: background 100ms; }
   .save-btn:hover { background: ${C.accentHover} !important; }
   .back-btn   { cursor:pointer; transition: color 100ms; }
@@ -617,7 +617,7 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
           ) : (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:12 }}>
               {/* New talk card */}
-              <div className="new-card" onClick={onNew} style={{ background:"transparent", border:`2px dashed rgba(13,191,90,0.25)`, borderRadius:16, padding:"24px 20px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:10, minHeight:160 }}>
+              <div className="new-card" onClick={onNew} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:16, padding:"24px 20px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:10, minHeight:160 }}>
                 <div style={{ width:36, height:36, borderRadius:10, background:"#EEF8F2", display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <span style={{ fontSize:20, lineHeight:1, color:C.accent, fontWeight:300 }}>+</span>
                 </div>
