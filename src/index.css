@@ -263,6 +263,22 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   stroke-width: 2 !important;
 }
 
+/* ── Edge hover ── */
+.edge-delete-btn {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--color-warning-border); border: 2px solid var(--color-warning-border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; pointer-events: all; z-index: 10;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  opacity: 0; transition: opacity var(--duration-medium);
+}
+.edge-group:hover .edge-delete-btn { opacity: 1; }
+.edge-group:hover .edge-line path {
+  stroke: var(--p-amber-500) !important;
+  stroke-width: 2.5 !important;
+  stroke-dasharray: none !important;
+}
+
 /* end of styles */
 
 @layer base {
