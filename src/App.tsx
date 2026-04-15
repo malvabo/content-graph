@@ -27,6 +27,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 }
 import EmptyCanvasOverlay from './components/canvas/EmptyCanvasOverlay';
 import Intro from './components/Intro';
+import WorkflowLibraryView from './components/canvas/WorkflowLibrary';
 
 const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
 
@@ -79,12 +80,14 @@ function AppInner() {
 
         {activeView === 'workflow' && (
           <div className="flex-1 relative">
-            <CanvasToolbar activeView={activeView} />
+            <CanvasToolbar onBackToLibrary={() => setActiveView('library')} />
             <EmptyCanvasOverlay />
             <GraphCanvas />
             <NodePalette onAddNode={handleAddNode} />
           </div>
         )}
+
+        {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
         {activeView === 'voice' && <VoicePanel onTranscriptReady={handleTranscript} />}
 
