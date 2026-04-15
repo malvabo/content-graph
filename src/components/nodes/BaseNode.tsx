@@ -58,7 +58,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const isStale = status === 'stale';
 
   let borderStyle = '1px solid var(--cg-border)';
-  if (selected) borderStyle = '2px solid var(--cg-green)';
+  if (selected) borderStyle = '1px solid var(--cg-green)';
   else if (isError) borderStyle = '1px solid #E8BABA';
   else if (isStale) borderStyle = '1px solid var(--cg-amber-bdr)';
 
@@ -81,6 +81,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       opacity: dimmed ? 0.35 : 1,
       transition: 'opacity 200ms ease, box-shadow 200ms ease',
       boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.1)' : 'none',
+      outline: selected ? '2px solid var(--cg-green)' : 'none',
+      outlineOffset: -1,
     }}>
       {def?.hasInput && (
         <Handle type="target" position={Position.Left} id="text"
