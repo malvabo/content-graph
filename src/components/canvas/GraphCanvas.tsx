@@ -1,5 +1,5 @@
 import {
-  ReactFlow, Background, BackgroundVariant, Controls,
+  ReactFlow, Background, BackgroundVariant, Controls, MiniMap,
   type OnConnect, type OnNodesChange, type OnEdgesChange, type Node,
   applyNodeChanges, applyEdgeChanges, addEdge, type Connection, useReactFlow,
 } from '@xyflow/react';
@@ -106,6 +106,7 @@ export default function GraphCanvas() {
         <Background variant={BackgroundVariant.Dots} gap={14} size={1.5} color="var(--color-border-subtle)" />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
+        <MiniMap position="bottom-right" nodeColor="var(--color-border-strong)" maskColor="rgba(242,239,233,0.7)" style={{ borderRadius: 8, border: '1px solid var(--color-border-subtle)', bottom: 50 }} />
       </ReactFlow>
 
       {tooltip && (

@@ -38,6 +38,12 @@ function IntroInner({ onComplete }: { onComplete?: () => void }) {
     [playSoundDown, playSoundUp, setPressed, setReleased],
   );
 
+  const skip = useCallback(() => {
+    if (exiting) return;
+    setExiting(true);
+    setTimeout(() => onCompleteRef.current?.(), FADE_DURATION);
+  }, [exiting]);
+
   useEffect(() => {
     if (started.current) return;
     started.current = true;
@@ -62,7 +68,8 @@ function IntroInner({ onComplete }: { onComplete?: () => void }) {
 
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen gap-8"
+      onClick={skip}
+      className="flex flex-col items-center justify-center min-h-screen gap-8 cursor-pointer"
       style={{
         opacity: exiting ? 0 : 1,
         transform: exiting ? 'scale(0.97) translateY(-20px)' : 'scale(1) translateY(0)',
@@ -78,6 +85,7 @@ function IntroInner({ onComplete }: { onComplete?: () => void }) {
       <div style={{ zoom: 2 }}>
         <Keypad />
       </div>
+      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-2)' }}>Click anywhere to skip</p>
     </div>
   );
 }
