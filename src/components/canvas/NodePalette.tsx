@@ -63,7 +63,7 @@ export default function NodePalette({ onAddNode }: Props) {
       {open && (
         <div className="absolute bottom-14 left-0 w-[280px] max-h-[420px] overflow-y-auto"
           style={{ background: 'var(--color-bg-popover)', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid var(--color-border-subtle)', scrollbarWidth: 'thin' }}>
-          <div className="px-4 pt-4 pb-2">
+          <div className="px-5 pt-4 pb-2">
             <div style={{ font: '500 14px/1 var(--font-sans)', color: 'var(--color-text-primary)' }}>Add node</div>
           </div>
           {PALETTE_ORDER.map((cat) => {

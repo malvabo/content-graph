@@ -17,67 +17,66 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
-    const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#F2EFE9';
+    const BG = '#1a1a1a';
     let raf: number;
-    let collapse = 0; // 0 = fog, 1 = hard circle
+    let collapse = 0;
 
-    // Particle system — 40 particles that drift in fog and pull to center
-    const particles = Array.from({ length: 40 }, (_, i) => ({
+    const particles = Array.from({ length: 40 }, () => ({
       angle: Math.random() * Math.PI * 2,
-      dist: 80 + Math.random() * 200,
       speed: 0.3 + Math.random() * 0.5,
       size: 2 + Math.random() * 4,
-      hue: 140 + Math.random() * 30,
+      hue: 175 + Math.random() * 15,
       phase: Math.random() * Math.PI * 2,
-      homeDist: 80 + Math.random() * 200, // original distance
+      homeDist: 80 + Math.random() * 200,
     }));
 
     const FINAL_R = 60;
 
     const draw = () => {
       const target = listening ? 1 : 0;
-      // Much faster easing — reaches ~0.95 in ~2 seconds
       collapse += (target - collapse) * 0.06;
-      // Snap to endpoints to avoid asymptotic drift
       if (Math.abs(collapse - target) < 0.005) collapse = target;
 
-      const c3 = collapse * collapse * collapse; // cubic for aggressive pull
+      const c3 = collapse * collapse * collapse;
       const w = canvas.width, h = canvas.height, cx = w / 2, cy = h / 2;
 
-      // Clear
-      ctx.fillStyle = bgColor;
+      ctx.fillStyle = BG;
       ctx.fillRect(0, 0, w, h);
 
-      // --- Fog blobs (fade out as collapse increases) ---
+      // Clip to canvas bounds
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
+
+      // --- Fog blobs: even radial spread ---
       const fogAlpha = (1 - c3) * 0.25;
       if (fogAlpha > 0.01) {
         for (let i = 0; i < 5; i++) {
           const angle = tRef.current * 0.8 + i * 1.3;
           const spread = (160 + Math.sin(tRef.current * 0.5 + i) * 80) * (1 - c3);
-          const x = cx + Math.cos(angle) * spread * 0.7;
-          const y = cy + Math.sin(angle) * spread * 0.5;
+          const x = cx + Math.cos(angle) * spread;
+          const y = cy + Math.sin(angle) * spread;
           const size = (250 + Math.sin(tRef.current + i) * 60) * (1 - c3 * 0.85);
           const grad = ctx.createRadialGradient(x, y, 0, x, y, Math.max(size, 1));
-          const hue = 145 + i * 10;
-          grad.addColorStop(0, `hsla(${hue},55%,65%,${fogAlpha})`);
-          grad.addColorStop(0.6, `hsla(${hue + 15},45%,60%,${fogAlpha * 0.3})`);
+          const hue = 178 + i * 5;
+          grad.addColorStop(0, `hsla(${hue},80%,45%,${fogAlpha})`);
+          grad.addColorStop(0.6, `hsla(${hue + 5},70%,40%,${fogAlpha * 0.3})`);
           grad.addColorStop(1, 'transparent');
           ctx.fillStyle = grad;
           ctx.fillRect(0, 0, w, h);
         }
       }
 
-      // --- Particles: drift in fog, pull hard to center ---
+      // --- Particles: perfectly circular orbits ---
       for (const p of particles) {
         p.angle += p.speed * 0.01;
-        // Lerp distance from home (fog) to near-center (circle)
         const targetDist = FINAL_R * 0.6 + Math.sin(tRef.current * 2 + p.phase) * 8;
         const d = p.homeDist * (1 - c3) + targetDist * c3;
         const px = cx + Math.cos(p.angle + Math.sin(tRef.current * 0.3 + p.phase) * 0.5) * d;
-        const py = cy + Math.sin(p.angle + Math.cos(tRef.current * 0.4 + p.phase) * 0.5) * d * 0.7;
-        // Size shrinks as they converge, saturation increases
-        const sat = 50 + collapse * 40;
-        const light = 65 - collapse * 20;
+        const py = cy + Math.sin(p.angle + Math.cos(tRef.current * 0.4 + p.phase) * 0.5) * d;
+        const sat = 70 + collapse * 25;
+        const light = 50 - collapse * 15;
         const alpha = 0.15 + collapse * 0.6;
         const sz = p.size * (1 - collapse * 0.5);
         ctx.beginPath();
@@ -86,18 +85,14 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
         ctx.fill();
       }
 
-      // --- Central glow: grows and intensifies with collapse ---
+      // --- Central glow ---
       if (collapse > 0.1) {
-        const glowProgress = Math.min(1, (collapse - 0.1) / 0.9);
-        const gp3 = glowProgress * glowProgress;
-        // Shrinking radial gradient → hard circle
-        const outerR = 200 * (1 - gp3 * 0.7);
-        const innerR = FINAL_R * gp3;
-        const grad = ctx.createRadialGradient(cx, cy, innerR * 0.3, cx, cy, outerR);
-        const sat = 60 + gp3 * 30;
-        const light = 55 - gp3 * 15;
-        grad.addColorStop(0, `hsla(150,${sat}%,${light}%,${gp3 * 0.7})`);
-        grad.addColorStop(0.4, `hsla(155,${sat - 10}%,${light + 10}%,${gp3 * 0.35})`);
+        const gp = Math.min(1, (collapse - 0.1) / 0.9);
+        const gp2 = gp * gp;
+        const outerR = 200 * (1 - gp2 * 0.7);
+        const grad = ctx.createRadialGradient(cx, cy, FINAL_R * gp2 * 0.3, cx, cy, outerR);
+        grad.addColorStop(0, `hsla(180,90%,38%,${gp2 * 0.7})`);
+        grad.addColorStop(0.4, `hsla(178,80%,42%,${gp2 * 0.35})`);
         grad.addColorStop(1, 'transparent');
         ctx.fillStyle = grad;
         ctx.beginPath();
@@ -105,29 +100,27 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
         ctx.fill();
       }
 
-      // --- Hard circle fill at full collapse ---
+      // --- Hard circle ---
       if (collapse > 0.7) {
-        const hardProgress = (collapse - 0.7) / 0.3;
-        const hp = hardProgress * hardProgress;
+        const hp = ((collapse - 0.7) / 0.3) ** 2;
         ctx.beginPath();
         ctx.arc(cx, cy, FINAL_R, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(150,85%,42%,${hp * 0.5})`;
+        ctx.fillStyle = `hsla(180,90%,32%,${hp * 0.5})`;
         ctx.fill();
       }
 
-      // --- Stroke ring: draws on progressively ---
+      // --- Stroke ring: same center & radius as circle ---
       if (collapse > 0.5) {
-        const strokeProgress = Math.min(1, (collapse - 0.5) / 0.5);
-        const sp = strokeProgress * strokeProgress;
+        const sp = ((Math.min(1, (collapse - 0.5) / 0.5)) ** 2);
         ctx.beginPath();
-        // Draw partial arc that completes as collapse → 1
         ctx.arc(cx, cy, FINAL_R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * sp);
-        ctx.strokeStyle = `hsla(150,70%,40%,${sp * 0.9})`;
+        ctx.strokeStyle = `hsla(180,80%,35%,${sp * 0.9})`;
         ctx.lineWidth = 2.5;
         ctx.lineCap = 'round';
         ctx.stroke();
       }
 
+      ctx.restore();
       tRef.current += 0.015;
       raf = requestAnimationFrame(draw);
     };
@@ -176,6 +169,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden cursor-pointer"
+      style={{ background: '#1a1a1a' }}
       onClick={() => !listening && start()}>
       {/* Full background shader */}
       <canvas ref={canvasRef} width={800} height={800} className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }} />
