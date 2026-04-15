@@ -21,10 +21,7 @@ function canConnect(fromSubtype: string, toSubtype: string): boolean {
 const HANDLE_CLS = "!w-3 !h-3 !border-[1.5px] !border-[var(--color-border-handle)] !bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)] !transition-colors";
 
 const CATEGORY_COLORS: Record<string, string> = {
-  source: '#5C8A6C',
-  generate: '#0DBF5A',
-  output: '#7A8A5C',
-  transform: '#8A5C7A',
+  source: '#5C8A6C', generate: '#0DBF5A', output: '#7A8A5C', transform: '#8A5C7A',
 };
 
 /* ── Chip-style MiniSelect ── */
@@ -121,7 +118,6 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const colors = BADGE_COLORS[data.category];
   const isError = status === 'error';
   const isStale = status === 'stale';
-  const catColor = CATEGORY_COLORS[data.category] ?? 'var(--color-border-default)';
 
   const isOtherSelected = selectedId !== null && selectedId !== id;
   const isCompatible = !isOtherSelected || !selectedSubtype ||
