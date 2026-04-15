@@ -139,8 +139,7 @@ export default function EmptyCanvasOverlay() {
                   <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)' }}>{t.name}</div>
                   <div style={{
                     fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2,
-                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                  }}>{t.description}</div>
+                  }} className="desc-clamp">{t.description}</div>
                 </div>
               </button>
             );
@@ -165,6 +164,7 @@ export default function EmptyCanvasOverlay() {
       {/* focus-visible ring for all buttons */}
       <style>{`
         button:focus-visible { box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-text-tertiary) !important; }
+        .desc-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
     </div>
   );
