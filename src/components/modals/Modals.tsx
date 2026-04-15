@@ -52,8 +52,8 @@ function ModalHeader({ title, subtitle, onClose }: { title: string; subtitle?: s
   return (
     <div className="flex items-start justify-between shrink-0" style={{ padding: 'var(--space-5) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-        <div style={{ font: `var(--weight-medium) var(--text-md)/var(--leading-snug) var(--font-sans)`, color: 'var(--color-text-primary)' }}>{title}</div>
-        {subtitle && <div style={{ font: `var(--weight-normal) var(--text-xs)/var(--leading-none) var(--font-sans)`, color: 'var(--color-text-tertiary)' }}>{subtitle}</div>}
+        <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
+        {subtitle && <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{subtitle}</div>}
       </div>
       <button aria-label="Close" onMouseDown={(e) => e.stopPropagation()} onClick={onClose} style={{ width: 44, height: 44, minWidth: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', transition: `background var(--duration-base)`, marginTop: 'calc(var(--space-1) * -1)', marginRight: 'calc(var(--space-2) * -1)' }}
         onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-subtle)'; }}
@@ -111,9 +111,9 @@ export function OutputModal({ title, text, onClose, onTextChange }: OutputModalP
       <div className="flex-1 overflow-y-auto relative" style={{ padding: 'var(--space-5) var(--space-6)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <textarea ref={textareaRef} className="w-full outline-none"
-          style={{ minHeight: 300, resize: 'vertical', font: `var(--weight-normal) var(--text-sm)/var(--leading-loose) var(--font-sans)`, color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)' }}
+          style={{ minHeight: 300, resize: 'vertical', fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)' }}
           value={editedText} onChange={(e) => setEditedText(e.target.value)} onMouseUp={onMouseUp} />
-        <div style={{ font: `var(--weight-normal) var(--text-xs)/var(--leading-none) var(--font-sans)`, color: 'var(--color-text-tertiary)', marginTop: 'var(--space-2)' }}>Select text for AI actions</div>
+        <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-2)' }}>Select text for AI actions</div>
       </div>
 
       <ModalFooter>
@@ -188,12 +188,12 @@ export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalPro
           <ModalHeader title="Image Details" onClose={onClose} />
 
           <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: 'var(--space-4) var(--space-5)', gap: 'var(--space-4)', scrollbarWidth: 'thin' }}>
-            <div className="flex justify-between"><span className="text-label">Dimensions</span><span style={{ font: `var(--weight-normal) var(--text-sm)/1 var(--font-sans)`, color: 'var(--color-text-primary)' }}>1024 x 1024</span></div>
-            <div className="flex justify-between"><span className="text-label">Model</span><span style={{ font: `var(--weight-normal) var(--text-sm)/1 var(--font-sans)`, color: 'var(--color-text-primary)' }}>Pollinations</span></div>
+            <div className="flex justify-between"><span className="text-label">Dimensions</span><span style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 1, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>1024 x 1024</span></div>
+            <div className="flex justify-between"><span className="text-label">Model</span><span style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 1, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>Pollinations</span></div>
             {prompt && (
               <div>
                 <div className="text-label" style={{ marginBottom: 'var(--space-2)' }}>Prompt</div>
-                <div style={{ font: `var(--weight-normal) var(--text-sm)/var(--leading-normal) var(--font-sans)`, color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>{prompt}</div>
+                <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>{prompt}</div>
               </div>
             )}
           </div>

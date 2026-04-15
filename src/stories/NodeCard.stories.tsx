@@ -47,7 +47,7 @@ function NodeCard({
     }}>
       {/* Header: title + badge */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-        <div style={{ flex: 1, minWidth: 0, font: `var(--weight-medium) var(--text-sm)/var(--leading-fixed) var(--font-sans)`, color: 'var(--color-text-primary)', letterSpacing: 'var(--tracking-tight)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ flex: 1, minWidth: 0, fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: 'var(--tracking-tight)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {def.label}
         </div>
         <div style={{ flexShrink: 0, width: 'var(--size-badge)', height: 'var(--size-badge)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg, color: colors.text }}>
@@ -105,7 +105,7 @@ function NodeCard({
             )}
             {status === 'complete' && (
               <div>
-                <div style={{ maxHeight: 'calc(var(--space-10) * 2)', overflow: 'auto', font: `var(--weight-normal) var(--text-sm)/var(--leading-normal) var(--font-sans)`, color: 'var(--color-text-primary)', scrollbarWidth: 'thin', marginTop: 'var(--space-2)' }}>
+                <div style={{ maxHeight: 'calc(var(--space-10) * 2)', overflow: 'auto', fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin', marginTop: 'var(--space-2)' }}>
                   This is what nobody talks about. After diving deep into this topic, here are the 3 things that stood out...
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-1)', marginTop: 'var(--space-2)' }}>
@@ -115,7 +115,7 @@ function NodeCard({
               </div>
             )}
             {status === 'error' && (
-              <div style={{ font: `var(--weight-normal) var(--text-sm)/var(--leading-snug) var(--font-sans)`, color: 'var(--color-danger-text)', marginTop: 'var(--space-2)' }}>
+              <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)', marginTop: 'var(--space-2)' }}>
                 Unknown error occurred
               </div>
             )}

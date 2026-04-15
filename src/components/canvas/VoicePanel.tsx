@@ -114,7 +114,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
       <canvas ref={canvasRef} width={800} height={800} className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }} />
 
       <div className="relative z-10 flex flex-col items-center gap-4 pt-10">
-        <div style={{ font: 'var(--weight-medium) var(--text-sm)/var(--leading-fixed) var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
+        <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
           {listening ? 'Listening...' : 'Tap anywhere to start'}
         </div>
       </div>
@@ -122,7 +122,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
       {/* Show transcript only when not actively listening */}
       {!listening && (transcript || interim) && (
         <div className="relative z-10 flex-1 w-full max-w-[720px] mx-auto overflow-y-auto px-8 py-4">
-          <div style={{ font: 'var(--weight-normal) var(--text-md)/var(--leading-loose) var(--font-sans)', color: 'var(--color-text-primary)' }} className="whitespace-pre-wrap">
+          <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }} className="whitespace-pre-wrap">
             {transcript}<span style={{ color: 'var(--color-text-tertiary)' }}>{interim}</span>
           </div>
         </div>

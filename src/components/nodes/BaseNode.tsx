@@ -90,7 +90,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
 
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
-          <div style={{ font: 'var(--weight-medium) var(--text-sm)/var(--leading-fixed) var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.005em' }} className="truncate">{data.label}</div>
+          <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.005em' }} className="truncate">{data.label}</div>
         </div>
         <div className="shrink-0 w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', backgroundColor: colors.bg, color: colors.text }}>
           {NODE_ICONS[data.subtype]?.() ?? data.badge}
@@ -108,7 +108,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         </span>
       </div>
 
-      {isError && error && <div style={{ font: 'var(--weight-normal) var(--text-sm)/var(--leading-snug) var(--font-sans)', color: 'var(--color-danger-text)' }} className="mt-2">{error}</div>}
+      {isError && error && <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)' }} className="mt-2">{error}</div>}
 
       {data.subtype === 'text-source' && <TextSourceInline id={id} />}
       {data.subtype === 'file-source' && <FileSourceInline id={id} />}

@@ -65,7 +65,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
           ))}
         </div>
         <div className="flex items-center justify-between mt-1">
-          <span style={{ font: 'var(--weight-normal) var(--text-sm)/var(--leading-none) var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{slides.length} slides</span>
+          <span style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{slides.length} slides</span>
           <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Read more</button>
         </div>
         {modalOpen && <OutputModal title={label} text={text} wordCount={text.split(/\s+/).length} onClose={() => setModalOpen(false)} />}
@@ -77,7 +77,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
 
   return (
     <div className="mt-2">
-      <div className="max-h-[80px] overflow-y-auto" style={{ font: 'var(--weight-normal) var(--text-sm)/var(--leading-normal) var(--font-sans)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin' }}>
+      <div className="max-h-[80px] overflow-y-auto" style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin' }}>
         {text}
       </div>
       <div className="flex items-center justify-end mt-1.5">
@@ -97,6 +97,6 @@ export function GenerateNodeInline({ id, subtype }: { id: string; subtype: strin
   if (status === 'idle' || status === 'stale') return <ConfigPills id={id} />;
   if (status === 'running') return <Skeleton subtype={subtype} />;
   if (status === 'complete') return <OutputPreview id={id} subtype={subtype} />;
-  if (status === 'warning') return <div style={{ font: 'var(--weight-normal) var(--text-sm)/var(--leading-snug) var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', padding: 'var(--space-2) var(--space-2)', borderRadius: 'var(--radius-sm)' }} className="mt-2">⚠ No input</div>;
+  if (status === 'warning') return <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', padding: 'var(--space-2) var(--space-2)', borderRadius: 'var(--radius-sm)' }} className="mt-2">⚠ No input</div>;
   return null;
 }

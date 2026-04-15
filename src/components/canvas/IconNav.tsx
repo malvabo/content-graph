@@ -16,7 +16,7 @@ function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: str
       }}
     >
       <div className="w-6 h-6 flex items-center justify-center">{icon}</div>
-      <span style={{ font: 'var(--weight-medium) var(--text-xs)/var(--leading-none) var(--font-sans)', letterSpacing: '.03em' }}>{label}</span>
+      <span style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-sans)', letterSpacing: '.03em' }}>{label}</span>
     </button>
   );
 }
@@ -28,7 +28,7 @@ const ChatIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="non
 export default function IconNav({ activeView, onViewChange }: Props) {
   return (
     <nav aria-label="Main navigation" className="w-[64px] shrink-0 flex flex-col items-center py-3 px-1 gap-2.5" style={{ background: 'var(--color-bg-card)', borderRight: '1px solid var(--color-border-default)' }}>
-      <span style={{ font: 'var(--weight-medium) var(--text-sm)/var(--leading-none) var(--font-mono)', color: 'var(--color-text-primary)', letterSpacing: '-.02em', userSelect: 'none', marginBottom: 4 }}>up200</span>
+      <span style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', letterSpacing: '-.02em', userSelect: 'none', marginBottom: 4 }}>up200</span>
       <NavItem icon={<WorkflowIcon />} label="Workflow" active={activeView === 'workflow'} onClick={() => onViewChange('workflow')} />
       <NavItem icon={<VoiceIcon />} label="Voice" active={activeView === 'voice'} onClick={() => onViewChange('voice')} />
       <NavItem icon={<ChatIcon />} label="Script" active={activeView === 'scriptsense'} onClick={() => onViewChange('scriptsense')} />

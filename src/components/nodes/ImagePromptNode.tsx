@@ -40,7 +40,7 @@ export function ImagePromptInline({ id }: { id: string }) {
   }, [id]);
 
   if (status === 'idle' || status === 'stale') {
-    return <div style={{ font: 'var(--weight-normal) var(--text-sm)/var(--leading-snug) var(--font-sans)', color: 'var(--color-text-tertiary)' }} className="mt-2">Connect a text source, then Run</div>;
+    return <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }} className="mt-2">Connect a text source, then Run</div>;
   }
 
   if (status === 'running' && !generating) {
@@ -120,6 +120,6 @@ export function ImagePromptInline({ id }: { id: string }) {
     );
   }
 
-  if (status === 'warning') return <div style={{ font: 'var(--weight-normal) var(--text-sm)/var(--leading-snug) var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)' }} className="mt-2">⚠ No input — connect a text node upstream</div>;
+  if (status === 'warning') return <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)' }} className="mt-2">⚠ No input — connect a text node upstream</div>;
   return null;
 }
