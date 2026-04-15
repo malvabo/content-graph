@@ -51,7 +51,8 @@ function DeletableEdge({
         >
           <button
             aria-label="Delete connection"
-            onClick={onDelete}
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            onMouseDown={(e) => e.stopPropagation()}
             style={{
               width: 24, height: 24, borderRadius: '50%',
               background: 'var(--color-danger)', border: 'none',
