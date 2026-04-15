@@ -22,16 +22,16 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   return (
     <div ref={ref} className="relative">
       <button className="w-full h-8 text-sm text-left rounded-[10px] px-2.5 flex items-center"
-        style={{ borderColor: open ? 'var(--color-interactive-focus)' : 'var(--color-border-default)', background: 'var(--color-bg-card)', color: 'var(--color-text-primary)', justifyContent: 'space-between', border: `1px solid ${open ? 'var(--color-interactive-focus)' : 'var(--color-border-default)'}`, boxShadow: open ? '0 0 0 3px rgba(13,191,90,0.1)' : 'none', transition: 'border-color 150ms, box-shadow 150ms' }}
+        style={{ background: 'var(--color-bg-card)', color: 'var(--color-text-primary)', justifyContent: 'space-between', border: `1px solid ${open ? 'var(--color-border-strong)' : 'var(--color-border-default)'}`, boxShadow: open ? 'var(--shadow-sm)' : 'none', transition: 'border-color 150ms, box-shadow 150ms' }}
         onClick={() => setOpen(!open)}>
         <span className="truncate">{value}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.4, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}><path d="m6 9 6 6 6-6"/></svg>
       </button>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 rounded-[10px] overflow-hidden z-50" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'thin' }}>
-          {options.map((o) => (
-            <button key={o} className="w-full text-left px-3 py-2 text-sm transition-colors"
-              style={{ background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: o === value ? 500 : 400, justifyContent: 'flex-start' }}
+        <div className="absolute top-full left-0 right-0 mt-1 rounded-lg z-50" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'thin', padding: 'var(--space-1) 0' }}>
+          {options.map((o, i) => (
+            <button key={o} className="w-full text-left px-3 py-2 text-sm"
+              style={{ background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: o === value ? 500 : 400, borderBottom: i < options.length - 1 ? '1px solid var(--color-border-subtle)' : 'none' }}
               onMouseEnter={(e) => { if (o !== value) e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
               onMouseLeave={(e) => { if (o !== value) e.currentTarget.style.background = 'transparent'; }}
               onClick={() => { onChange(o); setOpen(false); }}>
