@@ -18,7 +18,7 @@ const Edge = ({ x1, y1, x2, y2 }: { x1: number; y1: number; x2: number; y2: numb
 
 function ArticleThumb() {
   return (
-    <svg viewBox="0 0 200 120" className="w-full h-full">
+    <svg viewBox="0 0 200 120" style={{ width: '100%', height: '100%' }}>
       <NodeBox x={10} y={49} label="Article" />
       <Edge x1={66} y1={60} x2={130} y2={18} />
       <Edge x1={66} y1={60} x2={130} y2={44} />
@@ -34,7 +34,7 @@ function ArticleThumb() {
 
 function TranscriptThumb() {
   return (
-    <svg viewBox="0 0 200 120" className="w-full h-full">
+    <svg viewBox="0 0 200 120" style={{ width: '100%', height: '100%' }}>
       <NodeBox x={10} y={49} label="Transcript" />
       <Edge x1={66} y1={60} x2={130} y2={24} />
       <Edge x1={66} y1={60} x2={130} y2={60} />
@@ -48,7 +48,7 @@ function TranscriptThumb() {
 
 function ResearchThumb() {
   return (
-    <svg viewBox="0 0 200 120" className="w-full h-full">
+    <svg viewBox="0 0 200 120" style={{ width: '100%', height: '100%' }}>
       <NodeBox x={20} y={49} label="Data" />
       <Edge x1={76} y1={60} x2={120} y2={60} />
       <NodeBox x={120} y={49} label="Infographic" />
@@ -57,6 +57,19 @@ function ResearchThumb() {
 }
 
 const THUMBS = [ArticleThumb, TranscriptThumb, ResearchThumb];
+
+/* Shared card style */
+const cardStyle: React.CSSProperties = {
+  background: 'var(--color-bg-card)',
+  border: '1px solid var(--color-border-subtle)',
+  borderRadius: 12,
+  overflow: 'hidden',
+  cursor: 'pointer',
+  display: 'flex',
+  flexDirection: 'column',
+  transition: 'box-shadow .2s, border-color .2s',
+  outline: 'none',
+};
 
 export default function EmptyCanvasOverlay() {
   const { nodes, setNodes, setEdges, setGraphName } = useGraphStore();
@@ -72,26 +85,37 @@ export default function EmptyCanvasOverlay() {
     setTimeout(autoLayout, 0);
   };
 
-  const startEmpty = () => setGraphName('Untitled Graph');
+  const hover = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.borderColor = 'var(--color-text-tertiary)';
+    e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,.08)';
+  };
+  const unhover = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.borderColor = 'var(--color-border-subtle)';
+    e.currentTarget.style.boxShadow = 'none';
+  };
 
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center" style={{ background: 'var(--color-bg)' }}>
-      {/* Dotted grid background */}
-      <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle, var(--color-border-subtle) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+    <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
+      {/* Dotted grid */}
+      <div style={{ position: 'absolute', inset: 0, opacity: .3, backgroundImage: 'radial-gradient(circle, var(--color-border-subtle) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
-      <div className="relative flex flex-col items-center gap-6 max-w-[640px] w-full px-6">
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, maxWidth: 640, width: '100%', padding: '0 24px' }}>
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', margin: 0 }}>
           Add a node to get started, or pick a template
         </p>
 
-        <div className="grid grid-cols-2 gap-4 w-full">
-          {/* Empty workflow card */}
-          <button onClick={startEmpty} className="group flex flex-col rounded-xl overflow-hidden transition-shadow hover:shadow-md" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)' }}
-            onMouseEnter={e => e.currentTarget.style.background = '#E6E3DD'}
-            onMouseLeave={e => e.currentTarget.style.background = 'var(--color-bg-card)'}>
-            <div className="flex-1 flex items-center justify-center" style={{ minHeight: 160 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '100%' }}>
+          {/* Empty workflow — dashed border placeholder */}
+          <button
+            onClick={() => setGraphName('Untitled Graph')}
+            onMouseEnter={hover}
+            onMouseLeave={unhover}
+            style={{ ...cardStyle, borderStyle: 'dashed' }}
+          >
+            <div style={{ flex: 1, minHeight: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', opacity: .5 }}>Blank canvas</span>
             </div>
-            <div className="px-4 pb-4">
+            <div style={{ padding: '0 16px 16px' }}>
               <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)' }}>Empty Workflow</div>
               <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>Start from a blank canvas</div>
             </div>
@@ -101,25 +125,47 @@ export default function EmptyCanvasOverlay() {
           {TEMPLATES.map((t, i) => {
             const Thumb = THUMBS[i];
             return (
-              <button key={t.name} onClick={() => loadTemplate(i)} className="group flex flex-col rounded-xl overflow-hidden transition-shadow hover:shadow-md" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#E6E3DD'}
-                onMouseLeave={e => e.currentTarget.style.background = 'var(--color-bg-card)'}>
-                <div className="flex items-center justify-center px-4 pt-4" style={{ minHeight: 160 }}>
+              <button
+                key={t.name}
+                onClick={() => loadTemplate(i)}
+                onMouseEnter={hover}
+                onMouseLeave={unhover}
+                style={cardStyle}
+              >
+                <div style={{ minHeight: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 16px 0' }}>
                   <Thumb />
                 </div>
-                <div className="px-4 pb-4 pt-2">
+                <div style={{ padding: '8px 16px 16px' }}>
                   <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)' }}>{t.name}</div>
-                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{t.description}</div>
+                  <div style={{
+                    fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2,
+                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                  }}>{t.description}</div>
                 </div>
               </button>
             );
           })}
         </div>
 
-        <button onClick={() => setDismissed(true)} className="mt-2 transition-colors" style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}>
+        {/* Dismiss as ghost button */}
+        <button
+          onClick={() => setDismissed(true)}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-border-subtle)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
+          style={{
+            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)',
+            background: 'transparent', border: '1px solid var(--color-border-subtle)', borderRadius: 8,
+            padding: '6px 20px', cursor: 'pointer', transition: 'background .15s, color .15s', outline: 'none',
+          }}
+        >
           Dismiss
         </button>
       </div>
+
+      {/* focus-visible ring for all buttons */}
+      <style>{`
+        button:focus-visible { box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-text-tertiary) !important; }
+      `}</style>
     </div>
   );
 }

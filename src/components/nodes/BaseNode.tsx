@@ -38,9 +38,9 @@ function MiniSelect({ value, options, onChange }: { value: string; options: read
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.4, flexShrink: 0 }}><path d="m6 9 6 6 6-6"/></svg>
       </button>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 rounded-lg overflow-hidden z-50" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 180, overflowY: 'auto', scrollbarWidth: 'thin' }}>
+        <div className="absolute top-full left-0 mt-1 rounded-lg z-50" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'thin', minWidth: 180, padding: 'var(--space-1) 0' }}>
           {options.map(o => (
-            <button key={o} className="w-full text-left px-2.5 py-1.5 text-xs" style={{ background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: 'var(--color-text-primary)', fontWeight: o === value ? 500 : 400, fontFamily: 'var(--font-sans)' }}
+            <button key={o} className="w-full text-left px-4 py-2.5" style={{ background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: 400, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', letterSpacing: '0.03em', textTransform: 'uppercase', borderBottom: '1px solid var(--color-border-subtle)' }}
               onMouseEnter={e => { if (o !== value) e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
               onMouseLeave={e => { if (o !== value) e.currentTarget.style.background = 'transparent'; }}
               onClick={() => { onChange(o); setOpen(false); }}>{o}</button>
