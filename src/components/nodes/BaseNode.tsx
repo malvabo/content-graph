@@ -104,17 +104,6 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
     const sel = s.nodes.find(n => n.id === s.selectedNodeId);
     return sel?.data.subtype ?? null;
   });
-  const prevStatus = useRef(status);
-  const [justDone, setJustDone] = useState(false);
-
-  useEffect(() => {
-    if (prevStatus.current === 'running' && status === 'complete') {
-      setJustDone(true);
-      const t = setTimeout(() => setJustDone(false), 500);
-      return () => clearTimeout(t);
-    }
-    prevStatus.current = status;
-  }, [status]);
 
   const def = NODE_DEFS_BY_SUBTYPE[data.subtype];
   const colors = BADGE_COLORS[data.category];
