@@ -11,7 +11,7 @@ function makeSourceNode(content: string): ContentNode {
     type: 'contentNode',
     position: { x: 200, y: 200 },
     deletable: true,
-    data: { subtype: 'text-source', label: def.label, badge: def.badge, category: def.category, description: def.description, config: { content } },
+    data: { subtype: 'text-source', label: def.label, badge: def.badge, category: def.category, description: def.description, config: { text: content } },
   };
 }
 
@@ -46,7 +46,7 @@ export default function EmptyCanvasOverlay() {
     const trimmed = text.trim();
     if (trimmed) {
       const src = n.find(nd => nd.data.subtype === 'text-source');
-      if (src) src.data.config = { ...src.data.config, content: trimmed };
+      if (src) src.data.config = { ...src.data.config, text: trimmed };
     }
     setNodes(n);
     setEdges(e);
