@@ -100,6 +100,7 @@ export default function GraphCanvas() {
         onConnectStart={(_, { nodeId }) => setConnectingNodeId(nodeId ?? null)}
         onConnectEnd={() => setConnectingNodeId(null)}
         isValidConnection={isValidConnection}
+        connectionRadius={80}
         nodeTypes={nodeTypes} edgeTypes={edgeTypes} defaultEdgeOptions={defaultEdgeOptions}
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
         onPaneClick={() => { setSelectedNodeId(null); setSpotlight(null); dismissFirstRun(); }}

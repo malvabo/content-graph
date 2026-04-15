@@ -179,7 +179,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const isDragging = connectingFrom !== null && connectingFrom !== id;
   const canReceive = isDragging && connectingSubtype ? canConnect(connectingSubtype, data.subtype) : false;
   const dragDimmed = isDragging && !canReceive;
-  const handleHi = (connectionState === 'compatible' || canReceive) ? ' !border-[var(--color-accent)] !bg-[var(--color-accent)] !scale-150' : '';
+  const handleHi = selected || connectionState === 'compatible' || canReceive;
 
   return (
     <div
@@ -237,7 +237,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
       </button>
 
-      {def?.hasInput && <Handle type="target" position={Position.Left} id="text" className={HANDLE_CLS + handleHi} />}
+      {def?.hasInput && <Handle type="target" position={Position.Left} id="text" className={HANDLE_CLS} style={handleHi ? { borderColor: 'var(--color-accent)', backgroundColor: 'var(--color-accent)' } : undefined} />}
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
@@ -271,7 +271,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {/* Inline config dropdowns */}
       <InlineConfig id={id} subtype={data.subtype} />
 
-      {def?.hasOutput && <Handle type="source" position={Position.Right} id="text" className={HANDLE_CLS + handleHi} />}
+      {def?.hasOutput && <Handle type="source" position={Position.Right} id="text" className={HANDLE_CLS} style={handleHi ? { borderColor: 'var(--color-accent)', backgroundColor: 'var(--color-accent)' } : undefined} />}
     </div>
   );
 }
