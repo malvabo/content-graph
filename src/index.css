@@ -166,7 +166,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 }
 .text-label {
   font: var(--weight-medium) var(--text-xs)/var(--leading-none) var(--font-sans);
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--color-text-tertiary);
 }
