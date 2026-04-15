@@ -33,7 +33,7 @@ function MiniSelect({ value, options, onChange }: { value: string; options: read
   return (
     <div ref={ref} className="relative" onMouseDown={e => e.stopPropagation()}
       onMouseLeave={() => { if (open) setTimeout(() => { if (!ref.current?.matches(':hover')) setOpen(false); }, 100); }}>
-      <button onClick={() => setOpen(!open)} className="h-6 text-xs rounded-full px-3 flex items-center gap-1"
+      <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="h-6 text-xs rounded-full px-3 flex items-center gap-1"
         style={{ background: 'var(--color-bg-surface)', border: 'none', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap' }}>
         <span style={{ color: 'var(--color-text-secondary)' }}>{value}</span>
         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ opacity: 0.35, flexShrink: 0 }}><path d="m6 9 6 6 6-6"/></svg>
@@ -45,7 +45,7 @@ function MiniSelect({ value, options, onChange }: { value: string; options: read
             <button key={o} className="w-full px-3 py-2" style={{ textAlign: 'left', display: 'block', background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: o === value ? 500 : 400, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', borderBottom: i < options.length - 1 ? '1px solid var(--color-border-subtle)' : 'none' }}
               onMouseEnter={e => { if (o !== value) e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
               onMouseLeave={e => { if (o !== value) e.currentTarget.style.background = 'transparent'; }}
-              onClick={() => { onChange(o); setOpen(false); }}>{o}</button>
+              onClick={(e) => { e.stopPropagation(); onChange(o); setOpen(false); }}>{o}</button>
           ))}
         </div>
         </div>
