@@ -1,6 +1,7 @@
 import { useGraphStore } from '../../store/graphStore';
 import { TEMPLATES } from '../../utils/templates';
 import { useState } from 'react';
+import { useGraphLayout } from '../../hooks/useGraphLayout';
 
 /* Minimal node-graph SVG thumbnails */
 const NodeBox = ({ x, y, label }: { x: number; y: number; label: string }) => (
@@ -59,6 +60,7 @@ const THUMBS = [ArticleThumb, TranscriptThumb, ResearchThumb];
 
 export default function EmptyCanvasOverlay() {
   const { nodes, setNodes, setEdges, setGraphName } = useGraphStore();
+  const { autoLayout } = useGraphLayout();
   const [dismissed, setDismissed] = useState(false);
   if (nodes.length > 0 || dismissed) return null;
 
@@ -67,6 +69,7 @@ export default function EmptyCanvasOverlay() {
     setNodes(nodes);
     setEdges(edges);
     setGraphName(TEMPLATES[idx].name);
+    setTimeout(autoLayout, 0);
   };
 
   const startEmpty = () => setGraphName('Untitled Graph');
@@ -76,18 +79,20 @@ export default function EmptyCanvasOverlay() {
       {/* Dotted grid background */}
       <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle, var(--color-border-subtle) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
-      <div className="relative flex flex-col items-center gap-6 max-w-[720px] w-full px-6">
+      <div className="relative flex flex-col items-center gap-6 max-w-[640px] w-full px-6">
         <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>
           Add a node to get started, or pick a template
         </p>
 
-        <div className="grid grid-cols-4 gap-3 w-full">
+        <div className="grid grid-cols-2 gap-4 w-full">
           {/* Empty workflow card */}
-          <button onClick={startEmpty} className="group flex flex-col rounded-xl overflow-hidden transition-shadow hover:shadow-md" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)' }}>
-            <div className="flex-1 flex items-center justify-center" style={{ minHeight: 100 }}>
-              <svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth={1.5} strokeLinecap="round"><line x1={12} y1={5} x2={12} y2={19} /><line x1={5} y1={12} x2={19} y2={12} /></svg>
+          <button onClick={startEmpty} className="group flex flex-col rounded-xl overflow-hidden transition-shadow hover:shadow-md" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#E6E3DD'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--color-bg-card)'}>
+            <div className="flex-1 flex items-center justify-center" style={{ minHeight: 160 }}>
+              <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth={1.5} strokeLinecap="round"><line x1={12} y1={5} x2={12} y2={19} /><line x1={5} y1={12} x2={19} y2={12} /></svg>
             </div>
-            <div className="px-3 pb-3">
+            <div className="px-4 pb-4">
               <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)' }}>Empty Workflow</div>
               <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>Start from a blank canvas</div>
             </div>
@@ -97,11 +102,13 @@ export default function EmptyCanvasOverlay() {
           {TEMPLATES.map((t, i) => {
             const Thumb = THUMBS[i];
             return (
-              <button key={t.name} onClick={() => loadTemplate(i)} className="group flex flex-col rounded-xl overflow-hidden transition-shadow hover:shadow-md" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)' }}>
-                <div className="flex items-center justify-center px-3 pt-3" style={{ minHeight: 100 }}>
+              <button key={t.name} onClick={() => loadTemplate(i)} className="group flex flex-col rounded-xl overflow-hidden transition-shadow hover:shadow-md" style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#E6E3DD'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--color-bg-card)'}>
+                <div className="flex items-center justify-center px-4 pt-4" style={{ minHeight: 160 }}>
                   <Thumb />
                 </div>
-                <div className="px-3 pb-3 pt-2">
+                <div className="px-4 pb-4 pt-2">
                   <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)' }}>{t.name}</div>
                   <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{t.description}</div>
                 </div>
