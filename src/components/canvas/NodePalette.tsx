@@ -47,10 +47,14 @@ export default function NodePalette({ onAddNode }: Props) {
     <div ref={ref} className="absolute bottom-4 left-4 z-20">
       {/* Floating + button */}
       <button onClick={() => setOpen(!open)}
-        className="w-12 h-12 rounded-2xl flex items-center justify-center"
-        style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', color: 'var(--cg-ink)', boxShadow: '0 2px 12px rgba(0,0,0,0.08), 0 0 0 1px var(--cg-border)', fontSize: 26, fontWeight: 500, transition: 'transform 150ms' }}
+        className="w-12 h-12 rounded-full flex items-center justify-center"
+        style={{ background: '#fff', color: 'var(--cg-ink)', boxShadow: '0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)', transition: 'transform 150ms, box-shadow 150ms' }}
+        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'scale(1)'; }}
       >
-        <span style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 150ms', display: 'block' }}>+</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 150ms' }}>
+          <path d="M12 5v14"/><path d="M5 12h14"/>
+        </svg>
       </button>
 
       {/* Popover */}

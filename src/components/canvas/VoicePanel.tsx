@@ -18,24 +18,48 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
     let raf: number;
+    let collapse = 0; // 0 = fog, 1 = circle
     const draw = () => {
+      const target = listening ? 1 : 0;
+      collapse += (target - collapse) * 0.025;
       const w = canvas.width, h = canvas.height, cx = w / 2, cy = h / 2;
       ctx.fillStyle = '#f2efe9';
       ctx.fillRect(0, 0, w, h);
+
       for (let i = 0; i < 5; i++) {
         const angle = tRef.current * 0.8 + i * 1.3;
-        const r = 160 + Math.sin(tRef.current * 0.5 + i) * 80;
+        // Fog: blobs spread wide. Circle: all converge to center
+        const spreadR = 160 + Math.sin(tRef.current * 0.5 + i) * 80;
+        const r = spreadR * (1 - collapse * 0.92);
         const x = cx + Math.cos(angle) * r * 0.7;
         const y = cy + Math.sin(angle) * r * 0.5;
-        const grad = ctx.createRadialGradient(x, y, 0, x, y, 250 + Math.sin(tRef.current + i) * 60);
-        const hue = listening ? 145 + i * 10 : 150 + i * 8;
-        const alpha = listening ? 0.35 : 0.15;
-        grad.addColorStop(0, `hsla(${hue},55%,65%,${alpha})`);
-        grad.addColorStop(0.5, `hsla(${hue + 20},45%,55%,${alpha * 0.4})`);
+        // Fog: large soft radius. Circle: tight small radius
+        const fogSize = 250 + Math.sin(tRef.current + i) * 60;
+        const size = fogSize * (1 - collapse * 0.7);
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, size);
+        const hue = 145 + i * 10;
+        // Saturation and alpha increase as it collapses
+        const sat = 55 + collapse * 30;
+        const light = 65 - collapse * 20;
+        const alpha = 0.15 + collapse * 0.45;
+        grad.addColorStop(0, `hsla(${hue},${sat}%,${light}%,${alpha})`);
+        grad.addColorStop(0.5, `hsla(${hue + 20},${sat - 10}%,${light + 5}%,${alpha * 0.4})`);
         grad.addColorStop(1, 'transparent');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
       }
+
+      // Stroke ring appears as it collapses into circle
+      if (collapse > 0.3) {
+        const ringAlpha = (collapse - 0.3) / 0.7;
+        const ringR = 60 + (1 - collapse) * 40;
+        ctx.beginPath();
+        ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+        ctx.strokeStyle = `hsla(150,60%,45%,${ringAlpha * 0.8})`;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      }
+
       tRef.current += 0.015;
       raf = requestAnimationFrame(draw);
     };
@@ -106,10 +130,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
       <div className="flex-1" />
 
       <div className="relative z-10 flex gap-3 py-8 justify-center">
-        <button className="btn-lg btn-primary" style={{ minWidth: 160, fontSize: 15 }} onClick={endSession}>End session</button>
-      </div>
-      <div className="relative z-10" style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)', paddingBottom: 24, textAlign: 'center' }}>
-        {listening ? 'Voice on' : 'Voice off'}
+        <button className="btn-xl btn-primary" style={{ minWidth: 200, fontSize: 16 }} onClick={endSession}>End session</button>
       </div>
     </div>
   );

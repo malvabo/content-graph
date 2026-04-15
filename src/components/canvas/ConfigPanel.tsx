@@ -21,14 +21,14 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   }, [open]);
   return (
     <div ref={ref} className="relative">
-      <button className="w-full h-8 text-sm text-left border rounded-lg px-2 flex items-center"
-        style={{ borderColor: open ? 'var(--cg-green)' : 'var(--cg-border)', background: '#fff', color: 'var(--cg-ink)', justifyContent: 'space-between' }}
+      <button className="w-full h-8 text-sm text-left rounded-[10px] px-2.5 flex items-center"
+        style={{ borderColor: open ? 'var(--cg-green)' : 'var(--cg-border)', background: '#fff', color: 'var(--cg-ink)', justifyContent: 'space-between', border: `1px solid ${open ? 'var(--cg-green)' : 'var(--cg-border)'}`, boxShadow: open ? '0 0 0 3px rgba(13,191,90,0.1)' : 'none', transition: 'border-color 150ms, box-shadow 150ms' }}
         onClick={() => setOpen(!open)}>
         <span className="truncate">{value}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.4, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}><path d="m6 9 6 6 6-6"/></svg>
       </button>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-50" style={{ background: '#F7F5F1', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd', maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'thin' }}>
+        <div className="absolute top-full left-0 right-0 mt-1 rounded-[10px] overflow-hidden z-50" style={{ background: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', border: '1px solid var(--cg-border)', maxHeight: 200, overflowY: 'auto', scrollbarWidth: 'thin' }}>
           {options.map((o) => (
             <button key={o} className="w-full text-left px-3 py-2 text-sm transition-colors"
               style={{ background: o === value ? 'var(--cg-surface)' : 'transparent', color: o === value ? 'var(--cg-ink)' : 'var(--cg-ink-2)', fontWeight: o === value ? 500 : 400, justifyContent: 'flex-start' }}
@@ -44,13 +44,14 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   );
 }
 function NumberInput({ value, onChange, min, max, step = 1 }: { value: number; onChange: (v: number) => void; min: number; max: number; step?: number }) {
-  return <input type="number" className="w-full h-8 text-sm border border-[var(--cg-border)] rounded-lg px-2 bg-white outline-none focus:border-[var(--cg-green)]" value={value} min={min} max={max} step={step} onChange={(e) => onChange(Number(e.target.value))} />;
+  return <input type="number" className="w-full h-8 text-sm rounded-[10px] px-2.5" value={value} min={min} max={max} step={step} onChange={(e) => onChange(Number(e.target.value))} />;
 }
 function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
-  return <div className="flex items-center justify-between"><span className="text-xs text-[#57534e]">{label}</span><button className={`w-8 h-4.5 rounded-full transition ${value ? 'bg-[var(--cg-green)]' : 'bg-[#a8a29e]'} relative`} onClick={() => onChange(!value)}><div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${value ? 'left-4' : 'left-0.5'}`} /></button></div>;
+  return <div className="flex items-center justify-between"><span className="text-xs text-[#57534e]">{label}</span><button className={`rounded-full transition relative`} style={{ width: 32, height: 18, background: value ? 'var(--cg-green)' : '#a8a29e' }} onClick={() => onChange(!value)}><div className={`rounded-full bg-white absolute transition-all`} style={{ width: 14, height: 14, top: 2, left: value ? 16 : 2 }} /></button></div>;
 }
 function Stepper({ value, onChange, min, max, label }: { value: number; onChange: (v: number) => void; min: number; max: number; label: string }) {
-  return <div className="flex items-center gap-2"><button className="w-6 h-6 text-sm border border-[var(--cg-border)] rounded flex items-center justify-center hover:bg-[var(--cg-surface)]" onClick={() => onChange(Math.max(min, value - 1))}>−</button><span className="text-xs font-medium w-6 text-center">{value}</span><button className="w-6 h-6 text-sm border border-[var(--cg-border)] rounded flex items-center justify-center hover:bg-[var(--cg-surface)]" onClick={() => onChange(Math.min(max, value + 1))}>+</button><span className="text-[11px] text-[#78716c]">{label}</span></div>;
+  const btnStyle = "w-7 h-7 text-sm rounded-lg flex items-center justify-center bg-white border border-[var(--cg-border)] text-[var(--cg-ink)] hover:bg-[var(--cg-surface)] hover:border-[var(--cg-border-2)]";
+  return <div className="flex items-center gap-2"><button className={btnStyle} onClick={() => onChange(Math.max(min, value - 1))}>−</button><span className="text-sm font-medium w-6 text-center text-[var(--cg-ink)]">{value}</span><button className={btnStyle} onClick={() => onChange(Math.min(max, value + 1))}>+</button><span className="text-xs text-[#78716c]">{label}</span></div>;
 }
 
 function ModelSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {

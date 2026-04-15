@@ -69,7 +69,7 @@ export function ImagePromptInline({ id }: { id: string }) {
           <div>
             {expanded ? (
               <textarea
-                className="w-full min-h-[60px] text-[14px] text-[#57534e] leading-relaxed bg-[var(--cg-surface)] rounded-lg p-2 outline-none resize-y border-none"
+                className="w-full min-h-[60px] text-[14px] text-[#57534e] leading-relaxed rounded-[10px] p-2.5 resize-y"
                 value={editPrompt || output.text}
                 onChange={(e) => setEditPrompt(e.target.value)}
                 style={{ scrollbarWidth: 'thin' }}

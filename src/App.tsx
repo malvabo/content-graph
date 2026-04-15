@@ -27,6 +27,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 }
 import ConfigPanel from './components/canvas/ConfigPanel';
 import EmptyCanvasOverlay from './components/canvas/EmptyCanvasOverlay';
+import Intro from './components/Intro';
 
 const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
 
@@ -67,7 +68,7 @@ function AppInner() {
 
         {activeView === 'intro' && (
           <div className="flex-1 overflow-auto">
-            
+            <Intro />
           </div>
         )}
 

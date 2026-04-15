@@ -8,13 +8,15 @@ import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import BaseNode from '../nodes/BaseNode';
+import DeletableEdge from './DeletableEdge';
 import NodeSpotlight from './NodeSpotlight';
 import RunWaveOverlay from './RunWaveOverlay';
 import { useConnectionValidation } from '../../hooks/useConnectionValidation';
 import type { NodeDef } from '../../utils/nodeDefs';
 
 const nodeTypes = { contentNode: BaseNode };
-const defaultEdgeOptions = { type: 'default', style: { stroke: '#D5D0C8', strokeWidth: 1.5, strokeDasharray: '5 4' } };
+const edgeTypes = { deletable: DeletableEdge };
+const defaultEdgeOptions = { type: 'deletable', style: { stroke: '#D5D0C8', strokeWidth: 1.5, strokeDasharray: '5 4' } };
 
 export default function GraphCanvas() {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId, addNode } = useGraphStore();
@@ -92,7 +94,7 @@ export default function GraphCanvas() {
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
         onConnect={onConnect} onNodesDelete={onNodesDelete}
         isValidConnection={isValidConnection}
-        nodeTypes={nodeTypes} defaultEdgeOptions={defaultEdgeOptions}
+        nodeTypes={nodeTypes} edgeTypes={edgeTypes} defaultEdgeOptions={defaultEdgeOptions}
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
         onPaneClick={() => { setSelectedNodeId(null); setSpotlight(null); }}
         deleteKeyCode={['Backspace', 'Delete']}

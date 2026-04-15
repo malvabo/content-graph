@@ -67,7 +67,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
         <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2.5" style={{ background: '#F7F5F1', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
           <div className="text-label">Edit this text</div>
           <div className="flex gap-1.5">
-            <input className="flex-1 h-8 text-sm rounded-lg border border-[var(--cg-border)] px-2 outline-none focus:border-[var(--cg-green)]"
+            <input className="flex-1 h-8 text-sm rounded-[10px] px-2.5"
               placeholder="How to edit this text?"
               value={prompt} onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') quickAction('custom'); }}
@@ -133,7 +133,7 @@ export function TextSourceInline({ id }: { id: string }) {
           onClose={() => setPopover(null)}
         />
       )}
-      <textarea ref={textareaRef} className="w-full min-h-[120px] max-h-[300px] resize-y text-sm leading-relaxed border border-[var(--cg-border)] rounded-lg p-2 outline-none focus:border-[var(--cg-green)] bg-white"
+      <textarea ref={textareaRef} className="w-full min-h-[120px] max-h-[300px] resize-y text-sm leading-relaxed rounded-[10px] p-2.5"
         placeholder="Paste your article, transcript, or notes..." value={text} onChange={(e) => onChange(e.target.value)} onMouseUp={onMouseUp} />
       <div className="text-right text-[14px]" style={{ color: charColor }}>{charCount.toLocaleString()} / 50,000</div>
     </div>
