@@ -13,17 +13,14 @@ function PaletteItem({ def, onClick }: { def: NodeDef; onClick: () => void }) {
   };
   return (
     <div draggable onDragStart={onDragStart} onClick={onClick}
-      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-grab active:cursor-grabbing"
-      style={{ transition: 'background 100ms' }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
-      <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0"
+      className="palette-item flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-grab active:cursor-grabbing active:opacity-80">
+      <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
         style={{ backgroundColor: colors.bg, color: colors.text }}>
         {NODE_ICONS[def.subtype]?.() ?? def.badge}
       </div>
       <div className="min-w-0">
-        <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: '18px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }} className="truncate">{def.label}</div>
-        <div style={{ fontWeight: 400, fontSize: 'var(--text-xs)', lineHeight: '16px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 1 }} className="truncate">{def.description}</div>
+        <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }} className="truncate">{def.label}</div>
+        <div style={{ fontSize: 'var(--text-xs)', lineHeight: '16px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 2 }} className="truncate">{def.description}</div>
       </div>
     </div>
   );
@@ -48,79 +45,78 @@ export default function NodePalette({ onAddNode }: Props) {
   }, [open]);
 
   const q = search.toLowerCase().trim();
+  const allFiltered = PALETTE_ORDER.flatMap(cat => NODE_DEFS.filter(n => n.category === cat && (!q || n.label.toLowerCase().includes(q) || n.description.toLowerCase().includes(q))));
+  const hasResults = allFiltered.length > 0;
 
   return (
     <div ref={ref} className="absolute bottom-4 left-4 z-20">
-      {/* Floating + button — iOS fluid style */}
+      {/* Floating + button */}
       <button onClick={() => setOpen(!open)}
-        aria-label="Add node"
-        aria-expanded={open}
+        aria-label="Add node" aria-expanded={open}
         className="w-12 h-12 rounded-full flex items-center justify-center"
         style={{
-          background: 'var(--color-bg-card)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          color: 'var(--color-text-secondary)',
-          boxShadow: 'var(--shadow-sm)',
+          background: 'var(--color-bg-card)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+          color: 'var(--color-text-secondary)', boxShadow: 'var(--shadow-sm)',
           border: '1px solid var(--color-border-default)',
           transition: 'transform 200ms ease, box-shadow 200ms ease, background 200ms ease, border-color 200ms ease',
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'var(--color-interactive-hover)';
-          e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-          e.currentTarget.style.transform = 'scale(1.06)';
-          e.currentTarget.style.borderColor = 'var(--color-border-strong)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'var(--color-bg-card)';
-          e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.borderColor = 'var(--color-border-default)';
-        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'scale(1.06)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-bg-card)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#plus-grad)" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 200ms ease' }}>
-          <defs><linearGradient id="plus-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stopColor="var(--color-text-tertiary)" /><stop offset="1" stopColor="var(--color-text-disabled)" /></linearGradient></defs>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 200ms ease' }}>
           <path d="M12 5v14"/><path d="M5 12h14"/>
         </svg>
       </button>
 
       {/* Popover */}
       {open && (
-        <div className="absolute bottom-14 left-0 w-[280px] max-h-[420px] overflow-y-auto"
-          style={{ background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)', scrollbarWidth: 'thin' }}>
-          <div className="px-4 pt-3 pb-2">
+        <div className="absolute bottom-14 left-0 w-[280px] max-h-[420px] flex flex-col"
+          style={{ background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)' }}>
+          {/* Search */}
+          <div style={{ padding: 'var(--space-3) var(--space-3) var(--space-2)' }}>
             <input
               ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search nodes…"
-              style={{ width: '100%', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: '6px 10px', outline: 'none' }}
+              className="w-full"
+              style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)', outline: 'none' }}
             />
           </div>
-          {PALETTE_ORDER.map((cat, catIdx) => {
-            const nodes = NODE_DEFS.filter((n) => n.category === cat && (!q || n.label.toLowerCase().includes(q) || n.description.toLowerCase().includes(q) || n.subtype.toLowerCase().includes(q)));
-            if (!nodes.length) return null;
-            if (!nodes.length) return null;
-            const isAdvanced = cat === 'transform';
-            return (
-              <div key={cat} className="px-2 mb-3">
-                {catIdx > 0 && <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: '4px 12px 10px' }} />}
-                {isAdvanced ? (
-                  <button className="flex items-center gap-1.5 px-3 mb-1.5" style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-xs)', lineHeight: 1, fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }} onClick={() => setAdvancedOpen(!advancedOpen)}>
-                    <span style={{ fontSize: 10 }}>{advancedOpen ? '▼' : '▶'}</span>
-                    {CATEGORY_LABELS[cat]}
-                  </button>
-                ) : (
-                  <div className="px-3 mb-1.5" style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-xs)', lineHeight: 1, fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{CATEGORY_LABELS[cat]}</div>
-                )}
-                {(!isAdvanced || advancedOpen) && (
-                  <div className="flex flex-col gap-0.5">{nodes.map((def) => (
-                    <PaletteItem key={def.subtype} def={def} onClick={() => { onAddNode(def); setOpen(false); }} />
-                  ))}</div>
-                )}
+
+          {/* List */}
+          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', padding: '0 var(--space-2) var(--space-3)' }}>
+            {!hasResults && (
+              <div style={{ padding: 'var(--space-6) var(--space-3)', textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
+                No nodes found
               </div>
-            );
-          })}
+            )}
+            {PALETTE_ORDER.map((cat, catIdx) => {
+              const nodes = NODE_DEFS.filter(n => n.category === cat && (!q || n.label.toLowerCase().includes(q) || n.description.toLowerCase().includes(q)));
+              if (!nodes.length) return null;
+              const isAdvanced = cat === 'transform';
+              return (
+                <div key={cat}>
+                  {catIdx > 0 && hasResults && <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: 'var(--space-2) var(--space-3)' }} />}
+                  {isAdvanced ? (
+                    <button className="palette-cat-btn flex items-center gap-1.5 px-3 py-1.5 mb-1 rounded-md w-full text-left"
+                      style={{ fontWeight: 500, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}
+                      onClick={() => setAdvancedOpen(!advancedOpen)}>
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ transform: advancedOpen ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }}><path d="m9 18 6-6-6-6"/></svg>
+                      {CATEGORY_LABELS[cat]}
+                    </button>
+                  ) : (
+                    <div className="px-3 mb-1 mt-1" style={{ fontWeight: 500, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{CATEGORY_LABELS[cat]}</div>
+                  )}
+                  {(!isAdvanced || advancedOpen) && (
+                    <div className="flex flex-col gap-0.5">{nodes.map(def => (
+                      <PaletteItem key={def.subtype} def={def} onClick={() => { onAddNode(def); setOpen(false); }} />
+                    ))}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
