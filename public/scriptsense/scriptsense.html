@@ -43,30 +43,28 @@ const C = {
   pageBg:  "#F2EFE9",
   surface: "#F7F5F1",
   white:   "#FFFFFF",
-  border:  "#E0E4E0",
-  border2: "#C8D4CC",
-  text:    "#1A2420",
-  sub:     "#6d6d6d",
-  mute:    "#78716c",
-  accent:  "#0DBF5A",
-  accentHover: "#0BAF52",
-  accentAct: "#0A9F4A",
+  border:  "#e6e3dd",
+  border2: "#d4d1cb",
+  text:    "#1b1917",
+  sub:     "#78716c",
+  mute:    "#a8a29e",
+  accent:  "#44403c",
+  accentHover: "#3b3835",
+  accentAct: "#33302d",
   accentLt: "#F7F5F1",
-  accentTint: "#F9F8F5",
-  accentText: "#0A5C2A",
-  accentDark: "#061208",
+  accentTint: "#F7F5F1",
+  accentText: "#1b1917",
+  accentDark: "#0c0a09",
   red:     "#C93030",
   redLt:   "#FEF4F4",
   redText: "#A83030",
   amberText: "#6A4A10",
   amberLt: "#FEF8E8",
   amberBdr: "#F0D8A0",
-  // Tag colors — mapped to ContentGraph palette
-  tagIndigo: { text:"#0A5C2A", bg:"#D6EEE0" },  // science → green tonal
-  tagEmerald:{ text:"#1A5048", bg:"#EBF4F0" },   // metaphor → teal tint
-  tagAmber:  { text:"#6A4A10", bg:"#FEF8E8" },   // logic → amber
-  // Editor highlight underlines
-  hlIndigo:  { bg:"rgba(13,191,90,0.06)",  activeBg:"rgba(13,191,90,0.15)", line:"rgba(13,191,90,0.35)"  },
+  tagIndigo: { text:"#3b3070", bg:"#ede9f6" },
+  tagEmerald:{ text:"#1A5048", bg:"#EBF4F0" },
+  tagAmber:  { text:"#6A4A10", bg:"#FEF8E8" },
+  hlIndigo:  { bg:"rgba(59,48,112,0.06)",  activeBg:"rgba(59,48,112,0.15)", line:"rgba(59,48,112,0.35)"  },
   hlEmerald: { bg:"rgba(26,80,72,0.06)",   activeBg:"rgba(26,80,72,0.15)",  line:"rgba(26,80,72,0.35)"   },
   hlAmber:   { bg:"rgba(106,74,16,0.06)",  activeBg:"rgba(106,74,16,0.15)", line:"rgba(106,74,16,0.35)"  },
 };
@@ -84,7 +82,7 @@ const TAG = {
 };
 
 const FONT_STYLE = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body, input, button, select, textarea { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   textarea { resize: none; letter-spacing: -0.01em; scrollbar-width: none; }
@@ -588,14 +586,14 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
       <style>{FONT_STYLE}</style>
       <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.pageBg, color:C.text }}>
         {/* Top bar */}
-        <div style={{ background:C.white, borderBottom:`1px solid rgba(0,0,0,0.06)`, padding:"0 32px", height:52, display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+        <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, padding:"0 32px", height:52, display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:26, height:26, background:C.accent, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 2px 6px rgba(13,191,90,0.35)` }}>
+            <div style={{ width:26, height:26, background:C.text, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}>
               <FileText size={12} color="#fff" />
             </div>
             <span style={{ fontWeight:700, fontSize:14, letterSpacing:"-0.02em" }}>ContentGraph</span>
           </div>
-          <button onClick={onNew} style={{ background:C.accent, color:"#061208", border:"none", borderRadius:10, padding:"7px 16px", fontSize:12, fontWeight:600, cursor:"pointer", boxShadow:`0 2px 8px rgba(13,191,90,0.3)` }}>
+          <button onClick={onNew} style={{ background:C.white, color:C.text, border:`1px solid ${C.border2}`, borderRadius:8, padding:"7px 16px", fontSize:12, fontWeight:600, cursor:"pointer" }}>
             + New talk
           </button>
         </div>
@@ -605,23 +603,23 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
           {drafts.length === 0 ? (
             /* Empty state — centred in remaining viewport */
             <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
-              <div style={{ width:52, height:52, borderRadius:14, background:C.white, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", border:"1px solid "+C.border, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
-                <FileText size={22} color={C.accent} />
+              <div style={{ width:52, height:52, borderRadius:14, background:C.surface, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", border:"1px dashed "+C.border2 }}>
+                <FileText size={22} color={C.mute} />
               </div>
-              <p style={{ fontSize:16, fontWeight:600, marginBottom:8 }}>No talks yet</p>
+              <p style={{ fontSize:15, fontWeight:600, marginBottom:6 }}>No talks yet</p>
               <p style={{ fontSize:13, color:C.sub, marginBottom:24 }}>Create your first talk to get started</p>
-              <button onClick={onNew} style={{ background:C.accent, color:"#061208", border:"none", borderRadius:10, padding:"9px 20px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+              <button onClick={onNew} style={{ background:C.text, color:C.white, border:"none", borderRadius:8, padding:"9px 20px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
                 + New talk
               </button>
             </div>
           ) : (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:12 }}>
               {/* New talk card */}
-              <div className="new-card" onClick={onNew} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8, minHeight:140 }}>
+              <div className="new-card" onClick={onNew} style={{ background:C.white, border:`1px dashed ${C.border2}`, borderRadius:12, padding:"16px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8, minHeight:140 }}>
                 <div style={{ width:32, height:32, borderRadius:8, background:C.surface, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <span style={{ fontSize:18, lineHeight:1, color:C.sub, fontWeight:300 }}>+</span>
+                  <span style={{ fontSize:18, lineHeight:1, color:C.mute, fontWeight:300 }}>+</span>
                 </div>
-                <span style={{ fontSize:14, fontWeight:500, color:C.sub }}>New talk</span>
+                <span style={{ fontSize:13, fontWeight:500, color:C.mute }}>New talk</span>
               </div>
 
               {/* Draft cards */}
