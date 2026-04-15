@@ -60,7 +60,7 @@ export default function EmptyCanvasOverlay() {
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
       {/* Dot grid */}
-      <div style={{ position: 'absolute', inset: 0, opacity: .25, backgroundImage: 'radial-gradient(circle, var(--color-border-subtle) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+      <div style={{ position: 'absolute', inset: 0, opacity: .25, backgroundImage: 'radial-gradient(circle, var(--color-dot) var(--dot-size), transparent var(--dot-size))', backgroundSize: 'var(--dot-gap) var(--dot-gap)' }} />
 
       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, maxWidth: 520, width: '100%', padding: '0 24px' }}>
         {/* Headline */}

@@ -110,7 +110,7 @@ export default function GraphCanvas() {
         <DotSpotlight />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
-        <MiniMap position="bottom-left" pannable zoomable nodeColor="var(--color-border-strong)" /* maskColor requires raw rgba value */ maskColor="rgba(242,239,233,0.7)" style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', bottom: 10, left: 70 }} />
+        <MiniMap position="bottom-left" pannable zoomable nodeColor="var(--color-border-strong)" maskColor="rgba(17,17,20,0.7)" style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', bottom: 10, left: 70 }} />
       </ReactFlow>
 
       {tooltip && (
