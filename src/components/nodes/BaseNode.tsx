@@ -77,7 +77,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       transition: 'opacity 200ms ease, box-shadow 200ms ease',
       boxShadow: selected ? 'var(--shadow-md)' : 'none',
       outline: selected ? '2px solid var(--color-accent)' : 'none',
-      outlineOffset: 1,
+      outlineOffset: -2,
     }}>
       {/* Input handle */}
       {def?.hasInput && <Handle type="target" position={Position.Left} id="text" className={HANDLE_CLS} />}
