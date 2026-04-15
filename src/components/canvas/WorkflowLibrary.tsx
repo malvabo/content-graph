@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
+import { BADGE_COLORS, CATEGORY_LABELS } from '../../utils/nodeDefs';
 import type { Edge } from '@xyflow/react';
+import type { NodeCategory } from '../../store/graphStore';
 
 interface SavedWorkflow {
   id: string;
@@ -11,24 +13,49 @@ interface SavedWorkflow {
 }
 
 const STORAGE_KEY = 'workflow-library';
+function load(): SavedWorkflow[] { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } }
+function persist(items: SavedWorkflow[]) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
 
-function load(): SavedWorkflow[] {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+/* SVG icons */
+const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
+const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>;
+const SaveIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
+
+/* Node breakdown badges */
+function NodeBreakdown({ nodes }: { nodes: ContentNode[] }) {
+  const counts: Partial<Record<NodeCategory, number>> = {};
+  nodes.forEach(n => { const c = n.data.category; counts[c] = (counts[c] || 0) + 1; });
+  return (
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+      {(Object.entries(counts) as [NodeCategory, number][]).map(([cat, count]) => {
+        const c = BADGE_COLORS[cat];
+        return (
+          <span key={cat} style={{
+            fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)',
+            padding: '2px 8px', borderRadius: 'var(--radius-full)',
+            background: c.bg, color: c.text,
+          }}>{count} {CATEGORY_LABELS[cat]}</span>
+        );
+      })}
+    </div>
+  );
 }
-function save(items: SavedWorkflow[]) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
 
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<SavedWorkflow[]>([]);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const { nodes, edges, graphName, setNodes, setEdges, setGraphName } = useGraphStore();
 
   useEffect(() => { setItems(load()); }, []);
 
+  const canSave = nodes.length > 0;
+
   const handleSave = () => {
-    if (nodes.length === 0) return;
+    if (!canSave) return;
     const name = graphName || 'Untitled';
     const item: SavedWorkflow = { id: Date.now().toString(), name, nodes, edges, savedAt: new Date().toISOString() };
     const updated = [item, ...items];
-    save(updated);
+    persist(updated);
     setItems(updated);
   };
 
@@ -39,10 +66,12 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
     onOpen();
   };
 
-  const handleDelete = (id: string) => {
-    const updated = items.filter(i => i.id !== id);
-    save(updated);
+  const confirmDelete = () => {
+    if (!deleteId) return;
+    const updated = items.filter(i => i.id !== deleteId);
+    persist(updated);
     setItems(updated);
+    setDeleteId(null);
   };
 
   const handleNew = () => {
@@ -52,59 +81,115 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
     onOpen();
   };
 
-  const fmt = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
   return (
-    <div className="flex-1 overflow-auto" style={{ background: 'var(--color-bg)' }}>
-      <div className="max-w-[720px] mx-auto py-12 px-6">
+    <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px' }}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 style={{ fontWeight: 600, fontSize: 'var(--text-xl)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)' }}>Workflows</h1>
-          <div className="flex gap-2">
-            {nodes.length > 0 && (
-              <button className="btn btn-outline" onClick={handleSave}>Save current</button>
-            )}
-            <button className="btn btn-primary" onClick={handleNew}>+ New workflow</button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+          <h1 style={{ fontWeight: 600, fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-outline" onClick={handleSave} disabled={!canSave} title={canSave ? 'Save current workflow' : 'Add nodes to your workflow first'}>
+              <SaveIcon /> Save current
+            </button>
+            <button className="btn btn-primary" onClick={handleNew}>
+              <PlusIcon /> New workflow
+            </button>
           </div>
         </div>
 
-        {/* Grid */}
+        {/* Empty state */}
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20" style={{ color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
-            <div style={{ fontSize: 'var(--text-md)', fontWeight: 500, marginBottom: 4 }}>No saved workflows</div>
-            <div style={{ fontSize: 'var(--text-sm)' }}>Create a workflow and save it here</div>
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            padding: '80px 24px', borderRadius: 16,
+            border: '1px dashed var(--color-border-subtle)',
+            background: 'var(--color-bg-card)',
+          }}>
+            {/* Workflow graph icon */}
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ marginBottom: 16, opacity: 0.35 }}>
+              <rect x="4" y="18" width="14" height="12" rx="3" stroke="var(--color-text-tertiary)" strokeWidth="1.5"/>
+              <rect x="30" y="6" width="14" height="10" rx="3" stroke="var(--color-text-tertiary)" strokeWidth="1.5"/>
+              <rect x="30" y="20" width="14" height="10" rx="3" stroke="var(--color-text-tertiary)" strokeWidth="1.5"/>
+              <rect x="30" y="34" width="14" height="10" rx="3" stroke="var(--color-text-tertiary)" strokeWidth="1.5"/>
+              <path d="M18 22C24 22 24 11 30 11" stroke="var(--color-text-tertiary)" strokeWidth="1.5" fill="none"/>
+              <path d="M18 24C24 24 24 25 30 25" stroke="var(--color-text-tertiary)" strokeWidth="1.5" fill="none"/>
+              <path d="M18 26C24 26 24 39 30 39" stroke="var(--color-text-tertiary)" strokeWidth="1.5" fill="none"/>
+            </svg>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: 4 }}>
+              No saved workflows yet
+            </div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginBottom: 20 }}>
+              Build a content pipeline and save it for reuse
+            </div>
+            <button className="btn btn-primary" onClick={handleNew}>
+              <PlusIcon /> Create your first workflow
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          /* Card grid */
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 12 }}>
             {items.map(item => (
               <button key={item.id} onClick={() => handleLoad(item)}
-                className="text-left rounded-xl p-4 transition-all"
-                style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', fontFamily: 'var(--font-sans)' }}
+                style={{
+                  textAlign: 'left', borderRadius: 12, padding: 16,
+                  background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
+                  fontFamily: 'var(--font-sans)', cursor: 'pointer', outline: 'none',
+                  transition: 'border-color .15s, box-shadow .15s',
+                }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }} className="truncate">{item.name}</div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 4 }}>
-                      {item.nodes.length} nodes · {fmt(item.savedAt)}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 4 }}>
+                      {item.nodes.length} node{item.nodes.length !== 1 ? 's' : ''} · {item.edges.length} edge{item.edges.length !== 1 ? 's' : ''} · {fmt(item.savedAt)}
                     </div>
                   </div>
-                  <button
-                    className="w-6 h-6 rounded flex items-center justify-center shrink-0 ml-2"
-                    style={{ color: 'var(--color-text-disabled)', background: 'transparent', border: 'none' }}
+                  <div
+                    role="button" tabIndex={0} aria-label="Delete workflow"
+                    style={{
+                      width: 28, height: 28, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0, marginLeft: 8, color: 'var(--color-text-disabled)', background: 'transparent',
+                      transition: 'color .15s, background .15s', cursor: 'pointer',
+                    }}
                     onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)'; e.currentTarget.style.background = 'var(--color-danger-bg)'; }}
                     onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'transparent'; }}
-                    onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                    aria-label="Delete workflow">✕</button>
+                    onClick={e => { e.stopPropagation(); setDeleteId(item.id); }}>
+                    <TrashIcon />
+                  </div>
                 </div>
+                <NodeBreakdown nodes={item.nodes} />
               </button>
             ))}
           </div>
         )}
       </div>
+
+      {/* Delete confirmation overlay */}
+      {deleteId && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'var(--color-overlay-backdrop)',
+        }} onClick={() => setDeleteId(null)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--color-bg-card)', borderRadius: 12, padding: 24,
+            boxShadow: 'var(--shadow-lg)', maxWidth: 340, width: '100%',
+            fontFamily: 'var(--font-sans)',
+          }}>
+            <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', marginBottom: 8 }}>Delete workflow?</div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 20 }}>
+              This will permanently remove "{items.find(i => i.id === deleteId)?.name}" from your library. This can't be undone.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>
+              <button className="btn btn-destructive" onClick={confirmDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
