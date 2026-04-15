@@ -90,7 +90,6 @@ export default function EmptyCanvasOverlay() {
             onMouseEnter={e => e.currentTarget.style.background = '#E6E3DD'}
             onMouseLeave={e => e.currentTarget.style.background = 'var(--color-bg-card)'}>
             <div className="flex-1 flex items-center justify-center" style={{ minHeight: 160 }}>
-              <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth={1.5} strokeLinecap="round"><line x1={12} y1={5} x2={12} y2={19} /><line x1={5} y1={12} x2={19} y2={12} /></svg>
             </div>
             <div className="px-4 pb-4">
               <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)' }}>Empty Workflow</div>
