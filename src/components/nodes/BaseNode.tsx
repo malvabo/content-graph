@@ -200,14 +200,14 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         outlineOffset: -2,
       }}
     >
-      {/* Delete button (top-right, hover only) */}
+      {/* Delete button (inside top-right, hover only) */}
       <button
         onMouseDown={e => e.stopPropagation()}
         onClick={() => useGraphStore.getState().removeNode(id)}
         style={{
-          position: 'absolute', top: -10, right: -10,
-          width: 24, height: 24, borderRadius: '50%',
-          background: 'var(--color-danger)', border: 'none',
+          position: 'absolute', top: 8, right: 8,
+          width: 20, height: 20, borderRadius: 'var(--radius-sm)',
+          background: 'transparent', border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', opacity: hovered ? 1 : 0,
           transition: 'opacity 150ms ease',
@@ -215,7 +215,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
           zIndex: 10,
         }}
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
 
       {/* Run button (bottom-right, hover only) */}
@@ -239,7 +239,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {def?.hasInput && <Handle type="target" position={Position.Left} id="text" className={HANDLE_CLS} />}
 
       {/* Header */}
-      <div className="flex items-start gap-3 mb-2">
+      <div className="flex items-center gap-3 mb-2">
         <div className="shrink-0 w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ backgroundColor: colors.bg, color: colors.text }}>
           {NODE_ICONS[data.subtype]?.() ?? data.badge}
         </div>
