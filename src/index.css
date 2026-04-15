@@ -12,7 +12,7 @@ body {
   font-size: var(--text-sm);
   color: var(--color-text-primary);
   background: var(--color-bg);
-  color-scheme: light;
+  color-scheme: light dark;
   -webkit-font-smoothing: antialiased;
 }
 .dark body, .dark { color-scheme: dark; }
@@ -260,9 +260,14 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 
 /* ── Edge animation ── */
 .react-flow__edge.animated path {
-  animation: flow-dash 0.6s linear infinite;
+  animation: edge-pulse 1.5s ease-in-out infinite;
   stroke: var(--color-accent) !important;
   stroke-width: 2 !important;
+  stroke-dasharray: none !important;
+}
+@keyframes edge-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
 /* ── Graph name input affordance ── */
