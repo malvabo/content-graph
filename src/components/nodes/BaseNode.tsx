@@ -146,7 +146,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       }}
     >
       {/* Category left bar */}
-      {/* category stripe removed */}
+      <div style={{ position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: '0 3px 3px 0', background: CATEGORY_COLORS[data.category] || 'var(--color-border-default)', opacity: 0.6 }} />
 
       {def?.hasInput && <Handle type="target" position={Position.Left} id="text" className={HANDLE_CLS} />}
 

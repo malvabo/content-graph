@@ -64,6 +64,7 @@ const cardStyle: React.CSSProperties = {
   border: '1px solid var(--color-border-subtle)',
   borderRadius: 12,
   overflow: 'hidden',
+  minWidth: 0,
   cursor: 'pointer',
   display: 'flex',
   flexDirection: 'column',
@@ -138,11 +139,12 @@ export default function EmptyCanvasOverlay() {
                 <div style={{ minHeight: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 16px 0' }}>
                   <Thumb />
                 </div>
-                <div style={{ padding: '8px 16px 16px' }}>
-                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)' }}>{t.name}</div>
+                <div style={{ padding: '8px 16px 16px', overflow: 'hidden' }}>
+                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
                   <div style={{
                     fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2,
-                  }} className="desc-clamp">{t.description}</div>
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{t.description}</div>
                 </div>
               </button>
             );
