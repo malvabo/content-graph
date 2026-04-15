@@ -113,29 +113,39 @@ export function OutputModal({ title, text, onClose, onTextChange }: OutputModalP
     setAiPopover(null);
   }, [editedText, aiPopover, onTextChange]);
 
-  return (
-    <ModalShell onClose={onClose} maxWidth={720}>
-      <ModalHeader title={title} subtitle={`${wc} words · ${cc} chars · ${readMin} min read`} onClose={onClose} />
+  const [expanded, setExpanded] = useState(false);
 
-      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: '0 var(--space-6)', scrollbarWidth: 'thin' }}>
+  return (
+    <ModalShell onClose={onClose} maxWidth={expanded ? 1100 : 720}>
+      {/* Custom header with icon actions */}
+      <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-5) var(--space-6) var(--space-2)' }}>
+        <div>
+          <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-tight)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
+          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{wc} words · {cc} chars · {readMin} min read</div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button aria-label={copied ? 'Copied' : 'Copy'} onClick={copy} className="btn-icon-sm btn-ghost" style={{ color: copied ? 'var(--color-accent)' : 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
+            {copied
+              ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+              : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            }
+          </button>
+          <button aria-label="Expand" onClick={() => setExpanded(!expanded)} className="btn-icon-sm btn-ghost" style={{ color: 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">{expanded ? <><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="m14 10 7-7"/><path d="m3 21 7-7"/></> : <><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/></>}</svg>
+          </button>
+          <button aria-label="Close" onClick={onClose} className="btn-icon-sm btn-ghost" style={{ color: 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: '0 var(--space-6) var(--space-5)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <textarea ref={textareaRef} className="w-full outline-none"
           style={{ minHeight: 320, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)' }}
           value={editedText} onChange={(e) => setEditedText(e.target.value)} onMouseUp={onMouseUp} />
         <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-2)' }}>Select text for AI actions</div>
       </div>
-
-      <ModalFooter>
-        <button className={copied ? 'btn-sm btn-tonal' : 'btn-sm btn-ghost'} onClick={copy}>{copied ? 'Copied ✓' : 'Copy'}</button>
-        <button className="btn-sm btn-ghost" onClick={() => {
-          const b = new Blob([editedText], { type: 'text/plain' });
-          const url = URL.createObjectURL(b);
-          const a = document.createElement('a'); a.href = url; a.download = `${title.replace(/\s+/g, '-').toLowerCase()}.txt`; a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }}>Download</button>
-        <div className="flex-1" />
-        <button className="btn-sm btn-primary" onClick={onClose}>Done</button>
-      </ModalFooter>
     </ModalShell>
   );
 }
