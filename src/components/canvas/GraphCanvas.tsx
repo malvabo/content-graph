@@ -27,6 +27,18 @@ export default function GraphCanvas() {
   const { isValidConnection, tooltip } = useConnectionValidation(nodes, edges);
   const executionStatus = useExecutionStore((s) => s.status);
 
+  // First-run tooltip: show once when nodes appear for the first time
+  const [showFirstRun, setShowFirstRun] = useState(false);
+  useEffect(() => {
+    if (nodes.length > 0 && !localStorage.getItem('cg-first-run-seen')) {
+      setShowFirstRun(true);
+    }
+  }, [nodes.length]);
+  const dismissFirstRun = useCallback(() => {
+    setShowFirstRun(false);
+    localStorage.setItem('cg-first-run-seen', '1');
+  }, []);
+
   const styledEdges = useMemo(() => edges.map((e) => ({
     ...e,
     animated: executionStatus[e.target] === 'running',
@@ -90,7 +102,7 @@ export default function GraphCanvas() {
         isValidConnection={isValidConnection}
         nodeTypes={nodeTypes} edgeTypes={edgeTypes} defaultEdgeOptions={defaultEdgeOptions}
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-        onPaneClick={() => { setSelectedNodeId(null); setSpotlight(null); }}
+        onPaneClick={() => { setSelectedNodeId(null); setSpotlight(null); dismissFirstRun(); }}
         deleteKeyCode={['Backspace', 'Delete']}
         fitView={false} panOnScroll={false} selectionOnDrag={false}
         proOptions={{ hideAttribution: true }}
@@ -109,6 +121,17 @@ export default function GraphCanvas() {
       )}
 
       {spotlight && <NodeSpotlight x={spotlight.x} y={spotlight.y} flowX={spotlight.flowX} flowY={spotlight.flowY} onClose={() => setSpotlight(null)} onSelect={() => setSpotlight(null)} />}
+
+      {showFirstRun && (
+        <div onClick={dismissFirstRun} style={{
+          position: 'absolute', bottom: 64, left: '50%', transform: 'translateX(-50%)',
+          background: 'var(--color-text-primary)', color: '#fff', borderRadius: 'var(--radius-md)',
+          padding: '8px 16px', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
+          boxShadow: 'var(--shadow-md)', cursor: 'pointer', zIndex: 50, whiteSpace: 'nowrap',
+        }}>
+          {nodes.some(n => n.data.category === 'generate') ? 'Hit ▶ Run All to generate everything' : 'Add nodes with the + button below'}
+        </div>
+      )}
     </div>
   );
 }

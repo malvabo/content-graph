@@ -41,7 +41,7 @@ function MobileBlock() {
 
 function AppInner() {
   const addNode = useGraphStore((s) => s.addNode);
-  const [activeView, setActiveView] = useState('intro');
+  const [activeView, setActiveView] = useState('workflow');
   const [voiceTranscript, setVoiceTranscript] = useState('');
   useKeyboardShortcuts();
 
