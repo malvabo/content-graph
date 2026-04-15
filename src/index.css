@@ -173,8 +173,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 
 /* ── Form controls ── */
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
-textarea {
-  font-family: var(--font-sans);
+textarea,
+select {
+  font-family: var(--font-sans) !important;
   font-size: var(--text-sm);
   line-height: var(--leading-fixed);
   color: var(--color-text-primary);
@@ -183,10 +184,12 @@ textarea {
   border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-3);
   outline: none;
+  box-sizing: border-box;
   transition: border-color var(--duration-medium), box-shadow var(--duration-medium);
 }
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   border-color: var(--color-interactive-focus);
   box-shadow: 0 0 0 3px rgba(13,191,90,0.1);
 }
