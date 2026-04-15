@@ -64,11 +64,17 @@ function AppInner() {
   return (
     <div className="h-screen flex flex-col" style={{ colorScheme: 'light' }}>
       <div className="flex flex-1 overflow-hidden">
-        <IconNav activeView={activeView} onViewChange={setActiveView} />
+        {activeView !== 'intro' && <IconNav activeView={activeView} onViewChange={setActiveView} />}
 
         {activeView === 'intro' && (
           <div className="flex-1 overflow-auto">
-            <Intro onComplete={() => { useGraphStore.getState().setNodes([]); useGraphStore.getState().setEdges([]); useGraphStore.getState().setGraphName(''); setActiveView('workflow'); }} />
+            <Intro onComplete={() => {
+              const s = useGraphStore.getState();
+              s.setNodes([]);
+              s.setEdges([]);
+              s.setGraphName('');
+              setActiveView('workflow');
+            }} />
           </div>
         )}
 

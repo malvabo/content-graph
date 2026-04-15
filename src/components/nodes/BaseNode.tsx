@@ -71,7 +71,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
     <div style={{
       width: 'var(--size-node)',
       maxWidth: 'var(--size-node)',
-      overflow: (data.subtype === 'image-prompt' || selected) ? 'visible' : 'hidden',
+      overflow: 'visible',
       background: 'var(--color-bg-card)',
       border: borderStyle,
       borderRadius: 'var(--radius-lg)',
