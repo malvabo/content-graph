@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Keypad, KeyboardProvider, useKeyboardSound } from "@/components/ui/keyboard";
-import { cn } from "@/lib/utils";
+import { Keypad, KeyboardProvider, useKeyboardSound } from "../components/ui/keyboard";
+import { cn } from "../lib/utils";
 
 const TEXT = "What should I write about today?";
 const TYPE_SPEED = 80;
