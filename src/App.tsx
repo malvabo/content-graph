@@ -41,6 +41,7 @@ function MobileBlock() {
 
 function AppInner() {
   const addNode = useGraphStore((s) => s.addNode);
+  const nodes = useGraphStore((s) => s.nodes);
   const [activeView, setActiveView] = useState('workflow');
   const [voiceTranscript, setVoiceTranscript] = useState('');
   useKeyboardShortcuts();
@@ -79,7 +80,7 @@ function AppInner() {
             <CanvasToolbar onBackToLibrary={() => setActiveView('library')} />
             <EmptyCanvasOverlay />
             <GraphCanvas />
-            <NodePalette onAddNode={handleAddNode} />
+            {nodes.length > 0 && <NodePalette onAddNode={handleAddNode} />}
           </div>
         )}
 
