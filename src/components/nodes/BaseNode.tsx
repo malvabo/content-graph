@@ -196,8 +196,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         position: 'relative',
         opacity: (connectionState === 'incompatible' || dragDimmed) ? 0.4 : 1,
         transition: 'opacity 200ms ease, box-shadow 200ms ease, border-color 150ms ease, outline-color 150ms ease',
-        boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : canReceive ? 'var(--shadow-glow)' : 'none',
-        outline: selected ? '2px solid var(--color-accent)' : canReceive ? '2px solid var(--color-accent)' : connectionState === 'compatible' ? '2px solid var(--color-accent)' : connectionState === 'incompatible' ? '2px solid var(--color-warning-border)' : 'none',
+        boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : 'none',
+        outline: selected ? '2px solid var(--color-accent)' : 'none',
         outlineOffset: -2,
       }}
     >
