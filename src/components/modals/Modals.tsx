@@ -19,7 +19,7 @@ function AiPopover({ x, y, selectedText, onApply, onClose }: { x: number; y: num
 
   return (
     <div ref={ref} style={{ position: 'absolute', left: x, top: y, zIndex: 10 }}>
-      <div style={{ background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', display: 'flex', gap: 'var(--space-1)' }}>
+      <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', display: 'flex', gap: 'var(--space-1)' }}>
         {AI_ACTIONS.map((a) => (
           <button key={a.label} className="btn-xs btn-ghost" onMouseDown={(e) => e.stopPropagation()} onClick={() => { onApply(a.action(selectedText)); onClose(); }}>
             {a.label}
@@ -39,8 +39,10 @@ function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.Rea
   }, [onClose]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ padding: 'var(--space-6)', background: 'var(--color-overlay-backdrop)' }} onClick={onClose}>
-      <div role="dialog" aria-modal="true" className="flex flex-col w-full overflow-hidden" style={{ maxWidth, maxHeight: '85vh', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)' }} onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ padding: 'var(--space-8)', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div role="dialog" aria-modal="true" className="flex flex-col w-full overflow-hidden"
+        style={{ maxWidth, maxHeight: '85vh', background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', boxShadow: '0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px var(--color-border-default)' }}
+        onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>,
@@ -50,15 +52,14 @@ function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.Rea
 
 function ModalHeader({ title, subtitle, onClose }: { title: string; subtitle?: string; onClose: () => void }) {
   return (
-    <div className="flex items-start justify-between shrink-0" style={{ padding: 'var(--space-5) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-        <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
-        {subtitle && <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{subtitle}</div>}
+    <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-5) var(--space-6) var(--space-2)' }}>
+      <div>
+        <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-tight)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
+        {subtitle && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{subtitle}</div>}
       </div>
-      <button aria-label="Close" onMouseDown={(e) => e.stopPropagation()} onClick={onClose} style={{ width: 44, height: 44, minWidth: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', transition: `background var(--duration-base)`, marginTop: 'calc(var(--space-1) * -1)', marginRight: 'calc(var(--space-2) * -1)' }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-subtle)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      <button aria-label="Close" onClick={onClose}
+        className="btn-icon-sm btn-ghost" style={{ color: 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
     </div>
   );
@@ -66,13 +67,13 @@ function ModalHeader({ title, subtitle, onClose }: { title: string; subtitle?: s
 
 function ModalFooter({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 shrink-0" style={{ padding: 'var(--space-4) var(--space-6)', borderTop: '1px solid var(--color-border-subtle)' }}>
+    <div className="flex items-center gap-2 shrink-0" style={{ padding: 'var(--space-2) var(--space-6) var(--space-5)' }}>
       {children}
     </div>
   );
 }
 
-/* ── Output Modal (edit-only) ── */
+/* ── Output Modal ── */
 interface OutputModalProps { title: string; text: string; wordCount: number; onClose: () => void; onTextChange?: (text: string) => void }
 
 export function OutputModal({ title, text, onClose, onTextChange }: OutputModalProps) {
@@ -81,9 +82,9 @@ export function OutputModal({ title, text, onClose, onTextChange }: OutputModalP
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const computedWordCount = editedText.trim().split(/\s+/).filter(Boolean).length;
-  const charCount = editedText.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().length;
-  const readTime = Math.max(1, Math.round(computedWordCount / 230));
+  const wc = editedText.trim().split(/\s+/).filter(Boolean).length;
+  const cc = editedText.length;
+  const readMin = Math.max(1, Math.round(wc / 230));
   const copy = () => { navigator.clipboard.writeText(editedText); setCopied(true); setTimeout(() => setCopied(false), 1500); };
 
   const onMouseUp = useCallback(() => {
@@ -105,33 +106,33 @@ export function OutputModal({ title, text, onClose, onTextChange }: OutputModalP
   }, [editedText, aiPopover, onTextChange]);
 
   return (
-    <ModalShell onClose={onClose} maxWidth={780}>
-      <ModalHeader title={title} subtitle={`${computedWordCount} words / ${charCount} chars / ${readTime} min read`} onClose={onClose} />
+    <ModalShell onClose={onClose} maxWidth={720}>
+      <ModalHeader title={title} subtitle={`${wc} words · ${cc} chars · ${readMin} min read`} onClose={onClose} />
 
-      <div className="flex-1 overflow-y-auto relative" style={{ padding: 'var(--space-5) var(--space-6)', scrollbarWidth: 'thin' }}>
+      <div className="flex-1 overflow-y-auto relative" style={{ padding: '0 var(--space-6)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <textarea ref={textareaRef} className="w-full outline-none"
-          style={{ minHeight: 300, resize: 'vertical', fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)' }}
+          style={{ minHeight: 320, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)' }}
           value={editedText} onChange={(e) => setEditedText(e.target.value)} onMouseUp={onMouseUp} />
-        <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-2)' }}>Select text for AI actions</div>
+        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-2)' }}>Select text for AI actions</div>
       </div>
 
       <ModalFooter>
-        <button className={copied ? 'btn-xs btn-tonal' : 'btn-xs btn-ghost'} onMouseDown={(e) => e.stopPropagation()} onClick={copy}>{copied ? 'Copied' : 'Copy'}</button>
-        <button className="btn-xs btn-ghost" onMouseDown={(e) => e.stopPropagation()} onClick={() => {
+        <button className={copied ? 'btn-sm btn-tonal' : 'btn-sm btn-ghost'} onClick={copy}>{copied ? 'Copied ✓' : 'Copy'}</button>
+        <button className="btn-sm btn-ghost" onClick={() => {
           const b = new Blob([editedText], { type: 'text/plain' });
           const url = URL.createObjectURL(b);
           const a = document.createElement('a'); a.href = url; a.download = `${title.replace(/\s+/g, '-').toLowerCase()}.txt`; a.click();
           setTimeout(() => URL.revokeObjectURL(url), 1000);
         }}>Download</button>
         <div className="flex-1" />
-        <button className="btn-xs btn-primary" onMouseDown={(e) => e.stopPropagation()} onClick={onClose}>Done</button>
+        <button className="btn-sm btn-primary" onClick={onClose}>Done</button>
       </ModalFooter>
     </ModalShell>
   );
 }
 
-/* ── Image Modal (wide, split) ── */
+/* ── Image Modal ── */
 interface ImageModalProps { src: string; prompt?: string; onClose: () => void; onRegenerate?: () => void }
 
 export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalProps) {
@@ -163,50 +164,51 @@ export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalPro
   };
 
   return (
-    <ModalShell onClose={onClose} maxWidth={1100}>
+    <ModalShell onClose={onClose} maxWidth={1000}>
       <div className="flex flex-1 min-h-0">
-        {/* Left: Image + variants */}
+        {/* Left: Image */}
         <div className="flex-1 flex flex-col min-w-0" style={{ background: 'var(--color-bg-dark)' }}>
           <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-6)' }}>
             <img src={activeSrc} alt={prompt || 'Generated image'} className="max-w-full max-h-[60vh] object-contain" style={{ borderRadius: 'var(--radius-md)' }} />
           </div>
-          {/* 2x2 variant grid */}
           {(variants.length > 0 || genLoading) && (
             <div style={{ padding: '0 var(--space-6) var(--space-4)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
               {genLoading ? [0,1,2,3].map((i) => (
                 <div key={i} className="skeleton-bar" style={{ aspectRatio: '1', borderRadius: 'var(--radius-md)' }} />
               )) : variants.map((img, i) => (
                 <img key={i} src={img} alt={`Variant ${i + 1}`} onClick={() => setActiveSrc(img)}
-                  style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 'var(--radius-md)', cursor: 'pointer', border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent', transition: 'border-color var(--duration-base)' }} />
+                  style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 'var(--radius-md)', cursor: 'pointer', border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent' }} />
               ))}
             </div>
           )}
         </div>
 
         {/* Right: Details */}
-        <div className="flex flex-col shrink-0" style={{ width: 320, borderLeft: '1px solid var(--color-border-subtle)' }}>
-          <ModalHeader title="Image Details" onClose={onClose} />
+        <div className="flex flex-col shrink-0" style={{ width: 300, borderLeft: '1px solid var(--color-border-subtle)' }}>
+          <ModalHeader title="Details" onClose={onClose} />
 
-          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: 'var(--space-4) var(--space-5)', gap: 'var(--space-4)', scrollbarWidth: 'thin' }}>
-            <div className="flex justify-between"><span className="text-label">Dimensions</span><span style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 1, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>1024 x 1024</span></div>
-            <div className="flex justify-between"><span className="text-label">Model</span><span style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 1, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>Pollinations</span></div>
+          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-5)', gap: 'var(--space-4)', scrollbarWidth: 'thin' }}>
+            <div className="flex justify-between"><span className="text-label">Size</span><span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>1024 × 1024</span></div>
+            <div className="flex justify-between"><span className="text-label">Model</span><span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>Pollinations</span></div>
             {prompt && (
               <div>
                 <div className="text-label" style={{ marginBottom: 'var(--space-2)' }}>Prompt</div>
-                <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>{prompt}</div>
+                <div style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>{prompt}</div>
               </div>
             )}
           </div>
 
-          <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-5)', gap: 'var(--space-2)', borderTop: '1px solid var(--color-border-subtle)' }}>
-            {prompt && <button className="btn btn-outline w-full" disabled={genLoading} onMouseDown={(e) => e.stopPropagation()} onClick={generate4}>{genLoading ? 'Generating...' : variants.length ? 'Regenerate 4' : 'Generate 4 options'}</button>}
-            {onRegenerate && <button className="btn btn-outline w-full" onMouseDown={(e) => e.stopPropagation()} onClick={onRegenerate}>Regenerate single</button>}
-            <button className={`btn w-full ${copied ? 'btn-tonal' : 'btn-outline'}`} onMouseDown={(e) => e.stopPropagation()} onClick={() => {
-              navigator.clipboard.writeText(src); setCopied(true); setTimeout(() => setCopied(false), 1500);
-            }}>{copied ? 'Copied' : 'Copy to Clipboard'}</button>
-            <button className="btn btn-primary w-full" onMouseDown={(e) => e.stopPropagation()} onClick={() => {
-              const a = document.createElement('a'); a.href = src; a.download = 'image.png'; a.click();
-            }}>Download</button>
+          <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-5)', gap: 'var(--space-2)' }}>
+            {prompt && <button className="btn-sm btn-outline w-full" disabled={genLoading} onClick={generate4}>{genLoading ? 'Generating…' : variants.length ? 'Regenerate 4' : 'Generate 4 options'}</button>}
+            {onRegenerate && <button className="btn-sm btn-outline w-full" onClick={onRegenerate}>Regenerate</button>}
+            <div className="flex gap-2">
+              <button className={`btn-sm flex-1 ${copied ? 'btn-tonal' : 'btn-ghost'}`} onClick={() => {
+                navigator.clipboard.writeText(src); setCopied(true); setTimeout(() => setCopied(false), 1500);
+              }}>{copied ? 'Copied ✓' : 'Copy'}</button>
+              <button className="btn-sm btn-primary flex-1" onClick={() => {
+                const a = document.createElement('a'); a.href = src; a.download = 'image.png'; a.click();
+              }}>Download</button>
+            </div>
           </div>
         </div>
       </div>
@@ -214,5 +216,4 @@ export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalPro
   );
 }
 
-/* ── Exports for design system ── */
 export { ModalShell, ModalHeader, ModalFooter, AiPopover };
