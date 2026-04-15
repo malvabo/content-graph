@@ -22,6 +22,8 @@ function IntroInner({ onComplete }: { onComplete?: () => void }) {
   const [exiting, setExiting] = useState(false);
   const idx = useRef(0);
   const started = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   const pressKey = useCallback(
     (code: string) => {
@@ -42,9 +44,8 @@ function IntroInner({ onComplete }: { onComplete?: () => void }) {
 
     const tick = () => {
       if (idx.current >= TEXT.length) {
-        // Typing done — pause, then animate out
         setTimeout(() => setExiting(true), PAUSE_AFTER_TYPE);
-        setTimeout(() => onComplete?.(), PAUSE_AFTER_TYPE + FADE_DURATION);
+        setTimeout(() => onCompleteRef.current?.(), PAUSE_AFTER_TYPE + FADE_DURATION);
         return;
       }
       const ch = TEXT[idx.current];
@@ -55,7 +56,7 @@ function IntroInner({ onComplete }: { onComplete?: () => void }) {
     };
 
     setTimeout(tick, 600);
-  }, [pressKey, onComplete]);
+  }, [pressKey]);
 
   const done = displayed.length >= TEXT.length;
 
