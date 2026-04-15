@@ -2,8 +2,6 @@ import { useRef, useEffect, useState } from 'react';
 import { Panel } from '@xyflow/react';
 import { useExecutionStore } from '../../store/executionStore';
 
-const GAP = 14;
-const WAVE_R = 1.3;
 const PEAK_ALPHA = 0.35;
 const WAVE_WIDTH = 250;
 const CYCLE_MS = 10000;
@@ -47,6 +45,9 @@ export default function RunWaveOverlay() {
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
     const start = performance.now();
+    const s = getComputedStyle(document.documentElement);
+    const GAP = parseFloat(s.getPropertyValue('--dot-gap')) || 24;
+    const BASE_R = parseFloat(s.getPropertyValue('--dot-size')) || 1;
 
     const draw = (now: number) => {
       const elapsed = now - start;
@@ -65,11 +66,10 @@ export default function RunWaveOverlay() {
         const ease = p * p * (3 - 2 * p);
         const alpha = PEAK_ALPHA * ease;
         if (alpha < 0.01) continue;
-        const radius = 1 + (WAVE_R - 1) * ease;
         ctx.fillStyle = `rgba(13,191,90,${alpha})`;
         for (let c = 0; c < cols; c++) {
           ctx.beginPath();
-          ctx.arc(c * GAP, y, radius, 0, Math.PI * 2);
+          ctx.arc(c * GAP, y, BASE_R, 0, Math.PI * 2);
           ctx.fill();
         }
       }

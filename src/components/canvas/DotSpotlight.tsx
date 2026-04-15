@@ -1,10 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Panel, useViewport } from '@xyflow/react';
 
-const GAP = 14;
-const DOT_R = 1.5;
 const SPOT_R = 20;
-const SPOT_DOT_R = 2.5;
 
 export default function DotSpotlight() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -51,6 +48,10 @@ export default function DotSpotlight() {
       const mx = mouseRef.current.x, my = mouseRef.current.y;
       ctx.clearRect(0, 0, w, h);
 
+      const s = getComputedStyle(document.documentElement);
+      const GAP = parseFloat(s.getPropertyValue('--dot-gap')) || 24;
+      const DOT_R = parseFloat(s.getPropertyValue('--dot-size')) || 1;
+
       // Calculate dot grid based on viewport transform
       const { x: vx, y: vy, zoom } = viewport;
       const scaledGap = GAP * zoom;
@@ -66,7 +67,7 @@ export default function DotSpotlight() {
           const inSpot = dist < SPOT_R;
 
           ctx.beginPath();
-          ctx.arc(x, y, inSpot ? SPOT_DOT_R * zoom : DOT_R * zoom, 0, Math.PI * 2);
+          ctx.arc(x, y, DOT_R * zoom, 0, Math.PI * 2);
           ctx.fillStyle = inSpot ? darkColor : lightColor;
           ctx.fill();
         }
