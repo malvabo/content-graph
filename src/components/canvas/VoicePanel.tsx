@@ -136,9 +136,16 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
     analyserRef.current = null;
   }, []);
 
+  const [emptyMsg, setEmptyMsg] = useState(false);
+
   const endSession = useCallback(() => {
     stop();
-    if (fullRef.current.trim()) onTranscriptReady(fullRef.current.trim());
+    if (fullRef.current.trim()) {
+      onTranscriptReady(fullRef.current.trim());
+    } else {
+      setEmptyMsg(true);
+      setTimeout(() => setEmptyMsg(false), 2000);
+    }
   }, [stop, onTranscriptReady]);
 
   return (
@@ -206,6 +213,11 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
         >
           End session
         </button>
+        {emptyMsg && (
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+            No speech detected
+          </span>
+        )}
       </div>
 
       {/* Animated dots CSS */}

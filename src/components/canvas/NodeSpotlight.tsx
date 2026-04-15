@@ -67,7 +67,7 @@ export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }:
                   style={{ backgroundColor: colors.bg, color: colors.text }}>{NODE_ICONS[def.subtype]?.() ?? def.badge}</div>
                 <div className="min-w-0">
                   <div className="text-xs font-medium text-[var(--color-text-primary)] truncate">{def.label}</div>
-                  <div className="text-[11px] text-[var(--color-text-placeholder)] truncate">{def.description}</div>
+                  <div className="text-xs text-[var(--color-text-placeholder)] truncate">{def.description}</div>
                 </div>
               </button>
             );

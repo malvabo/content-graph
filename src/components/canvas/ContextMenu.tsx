@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useGraphStore } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
+import { useExecutionStore } from '../../store/executionStore';
 
 interface MenuPos { x: number; y: number; nodeId: string }
 
@@ -21,7 +22,7 @@ export default function ContextMenu({ x, y, nodeId, onClose }: { x: number; y: n
 
   const items = [
     { label: 'Duplicate', action: () => duplicateNode(nodeId) },
-    { label: 'Delete', action: () => removeNode(nodeId) },
+    { label: 'Delete', action: () => { removeNode(nodeId); useExecutionStore.getState().resetNode(nodeId); useOutputStore.getState().clearNode(nodeId); } },
     { label: 'Disconnect all', action: () => disconnectAllEdges(nodeId) },
     ...(output ? [{ label: 'Copy output', action: () => navigator.clipboard.writeText(output) }] : []),
   ];

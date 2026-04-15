@@ -82,7 +82,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
       </div>
       <div className="flex items-center justify-end mt-1.5">
         <div className="flex gap-1.5">
-          <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? '✓ Copied' : 'Copy'}</button>
+          <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? '✓ Copied' : 'Copy'}</button>
           <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Read more</button>
         </div>
       </div>

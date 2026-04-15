@@ -110,12 +110,12 @@ export default function GraphCanvas() {
         <DotSpotlight />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
-        <MiniMap position="bottom-left" pannable zoomable nodeColor="var(--color-border-strong)" maskColor="rgba(242,239,233,0.7)" style={{ width: 120, height: 80, borderRadius: 8, border: '1px solid var(--color-border-subtle)', bottom: 10, left: 70 }} />
+        <MiniMap position="bottom-left" pannable zoomable nodeColor="var(--color-border-strong)" /* maskColor requires raw rgba value */ maskColor="rgba(242,239,233,0.7)" style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', bottom: 10, left: 70 }} />
       </ReactFlow>
 
       {tooltip && (
         <div className="absolute z-50 px-3 py-1.5 rounded-lg shadow-lg pointer-events-none"
-          style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%)', background: 'var(--color-bg-tooltip)', color: 'var(--color-text-inverse)', font: '400 14px/1.5 var(--font-sans)' }}>
+          style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%)', background: 'var(--color-bg-tooltip)', color: 'var(--color-text-inverse)', fontWeight: 400, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)' }}>
           {tooltip.message}
         </div>
       )}

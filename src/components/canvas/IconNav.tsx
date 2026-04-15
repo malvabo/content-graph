@@ -51,7 +51,7 @@ function DarkModeToggle() {
 export default function IconNav({ activeView, onViewChange }: Props) {
   return (
     <nav aria-label="Main navigation" className="w-[52px] shrink-0 flex flex-col items-center py-3 gap-1" style={{ background: 'var(--color-bg-card)', boxShadow: '1px 0 0 0 var(--color-border-subtle)' }}>
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', fontWeight: 600, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
 
       <NavItem icon={<LibraryIcon />} label="Library" active={activeView === 'library'} onClick={() => onViewChange('library')} />
       <NavItem icon={<WorkflowIcon />} label="Workflow" active={activeView === 'workflow'} onClick={() => onViewChange('workflow')} />

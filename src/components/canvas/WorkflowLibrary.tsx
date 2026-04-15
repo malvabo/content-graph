@@ -31,7 +31,7 @@ function NodeBreakdown({ nodes }: { nodes: ContentNode[] }) {
         const c = BADGE_COLORS[cat];
         return (
           <span key={cat} style={{
-            fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)',
+            fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)',
             padding: '2px 8px', borderRadius: 'var(--radius-full)',
             background: c.bg, color: c.text,
           }}>{count} {CATEGORY_LABELS[cat]}</span>
@@ -44,6 +44,7 @@ function NodeBreakdown({ nodes }: { nodes: ContentNode[] }) {
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<SavedWorkflow[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const { nodes, edges, graphName, setNodes, setEdges, setGraphName } = useGraphStore();
 
   useEffect(() => { setItems(load()); }, []);
@@ -57,6 +58,8 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
     const updated = [item, ...items];
     persist(updated);
     setItems(updated);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
   };
 
   const handleLoad = (item: SavedWorkflow) => {
@@ -88,11 +91,12 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-          <h1 style={{ fontWeight: 600, fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
+          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-outline" onClick={handleSave} disabled={!canSave} title={canSave ? 'Save current workflow' : 'Add nodes to your workflow first'}>
               <SaveIcon /> Save current
             </button>
+            {saved && <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-accent-subtle)', alignSelf: 'center' }}>Saved!</span>}
             <button className="btn btn-primary" onClick={handleNew}>
               <PlusIcon /> New workflow
             </button>
@@ -143,7 +147,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 4 }}>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 4 }}>
                       {item.nodes.length} node{item.nodes.length !== 1 ? 's' : ''} · {item.edges.length} edge{item.edges.length !== 1 ? 's' : ''} · {fmt(item.savedAt)}
                     </div>
                   </div>
@@ -179,7 +183,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             boxShadow: 'var(--shadow-lg)', maxWidth: 340, width: '100%',
             fontFamily: 'var(--font-sans)',
           }}>
-            <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', marginBottom: 8 }}>Delete workflow?</div>
+            <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', marginBottom: 8 }}>Delete workflow?</div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 20 }}>
               This will permanently remove "{items.find(i => i.id === deleteId)?.name}" from your library. This can't be undone.
             </div>

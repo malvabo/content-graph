@@ -69,11 +69,7 @@ function AppInner() {
         {activeView === 'intro' && (
           <div className="flex-1 overflow-auto">
             <Intro onComplete={() => {
-              const s = useGraphStore.getState();
-              s.setNodes([]);
-              s.setEdges([]);
-              s.setGraphName('');
-              setActiveView('workflow');
+              setActiveView('library');
             }} />
           </div>
         )}

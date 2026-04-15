@@ -36,8 +36,16 @@ export function ExportInline({ id }: { id: string }) {
         </div>
       )}
       {status[id] === 'complete' && (
-        <button className="w-full h-8 mt-2 text-sm font-medium bg-[var(--color-accent)] text-[var(--p-white)] rounded-lg hover:bg-[var(--color-accent-hover)] transition">
-          ↓ Download content-export.zip
+        <button className="w-full h-8 mt-2 text-sm font-medium bg-[var(--color-accent)] text-[var(--p-white)] rounded-lg hover:bg-[var(--color-accent-hover)] transition"
+          onClick={() => {
+            const allText = upstream.filter(u => u?.done).map(u => outputs[u!.id]?.text || '').filter(Boolean).join('\n\n---\n\n');
+            if (!allText) return;
+            const blob = new Blob([allText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'content-export.txt'; a.click();
+            URL.revokeObjectURL(url);
+          }}>
+          ↓ Download content-export.txt
         </button>
       )}
     </div>

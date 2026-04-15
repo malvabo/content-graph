@@ -22,6 +22,7 @@ function IntroInner({ onComplete }: { onComplete?: () => void }) {
   const [exiting, setExiting] = useState(false);
   const idx = useRef(0);
   const started = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
@@ -50,7 +51,7 @@ function IntroInner({ onComplete }: { onComplete?: () => void }) {
 
     const tick = () => {
       if (idx.current >= TEXT.length) {
-        setTimeout(() => setExiting(true), PAUSE_AFTER_TYPE);
+        timerRef.current = setTimeout(() => setExiting(true), PAUSE_AFTER_TYPE);
         setTimeout(() => onCompleteRef.current?.(), PAUSE_AFTER_TYPE + FADE_DURATION);
         return;
       }
@@ -58,10 +59,11 @@ function IntroInner({ onComplete }: { onComplete?: () => void }) {
       setDisplayed(TEXT.slice(0, idx.current + 1));
       pressKey(charToKeyCode(ch));
       idx.current++;
-      setTimeout(tick, TYPE_SPEED);
+      timerRef.current = setTimeout(tick, TYPE_SPEED);
     };
 
-    setTimeout(tick, 600);
+    timerRef.current = setTimeout(tick, 600);
+    return () => clearTimeout(timerRef.current);
   }, [pressKey]);
 
   const done = displayed.length >= TEXT.length;
