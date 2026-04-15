@@ -86,7 +86,7 @@ const TAG = {
 const FONT_STYLE = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body, input, button, select, textarea { font-family: 'DM Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body, input, button, select, textarea { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   textarea { resize: none; letter-spacing: -0.01em; scrollbar-width: none; }
   textarea::-webkit-scrollbar { display: none; }
   textarea::placeholder { color: ${C.mute}; }
@@ -840,7 +840,7 @@ ${text}`
           <div style={{ width:"50%", borderRight:`1px solid rgba(0,0,0,0.06)`, position:"relative", display:"flex", flexDirection:"column", background:C.white }}>
 
             {/* highlight overlay */}
-            <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"DM Sans, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
+            <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
               {paras.map((p,pi) => (
                 <p key={pi} style={{ marginBottom:28 }}>
                   {tokenize(p, aiInsights || []).map((s,i) =>
@@ -853,7 +853,7 @@ ${text}`
             </div>
 
             {/* click layer */}
-            <div style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"DM Sans, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
+            <div style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
               {paras.map((p,pi) => (
                 <p key={pi} style={{ marginBottom:28 }}>
                   {tokenize(p, aiInsights || []).map((s,i) =>

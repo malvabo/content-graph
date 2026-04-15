@@ -107,7 +107,7 @@ export default function EmptyCanvasOverlay() {
           Add a node to get started, or pick a template
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '100%' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16, width: '100%' }}>
           {/* Empty workflow — dashed border placeholder */}
           <button
             onClick={() => setGraphName('Untitled Graph')}

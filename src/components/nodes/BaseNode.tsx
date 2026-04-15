@@ -140,11 +140,40 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const isStale = status === 'stale';
 
   const isOtherSelected = selectedId !== null && selectedId !== id;
-  const isCompatible = !isOtherSelected || !selectedSubtype ||
-    canConnect(selectedSubtype, data.subtype) || canConnect(data.subtype, selectedSubtype);
-  const dimmed = isOtherSelected && !isCompatible;
 
-  // Connection validation highlighting
+  // Check full compatibility: can connect in either direction, respecting maxInputs and existing edges
+  const edges = useGraphStore(s => s.edges);
+  const selectedDef = selectedSubtype ? NODE_DEFS_BY_SUBTYPE[selectedSubtype] : null;
+  const thisDef = def;
+
+  let connectionState: 'none' | 'compatible' | 'incompatible' = 'none';
+  if (isOtherSelected && selectedSubtype && selectedId) {
+    const canSendToThis = selectedDef?.hasOutput && thisDef?.hasInput && canConnect(selectedSubtype, data.subtype);
+    const canReceiveFromThis = thisDef?.hasOutput && selectedDef?.hasInput && canConnect(data.subtype, selectedSubtype);
+
+    if (canSendToThis || canReceiveFromThis) {
+      // Check maxInputs constraint
+      let blocked = false;
+      if (canSendToThis) {
+        const maxIn = thisDef?.maxInputs ?? 1;
+        const currentIn = edges.filter(e => e.target === id).length;
+        if (currentIn >= maxIn) blocked = true;
+        // Check if already connected
+        if (edges.some(e => e.source === selectedId && e.target === id)) blocked = true;
+      }
+      if (canReceiveFromThis && !canSendToThis) {
+        const maxIn = selectedDef?.maxInputs ?? 1;
+        const currentIn = edges.filter(e => e.target === selectedId).length;
+        if (currentIn >= maxIn) blocked = true;
+        if (edges.some(e => e.source === id && e.target === selectedId)) blocked = true;
+      }
+      connectionState = blocked ? 'incompatible' : 'compatible';
+    } else {
+      connectionState = 'incompatible';
+    }
+  }
+
+  // Connection drag highlighting (separate from selection)
   const connectingFrom = useGraphStore(s => s.connectingNodeId);
   const connectingSubtype = useGraphStore(s => {
     if (!s.connectingNodeId) return null;
@@ -169,10 +198,10 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         padding: 'var(--space-4)',
         paddingLeft: 'calc(var(--space-4) + 4px)',
         position: 'relative',
-        opacity: (dimmed || dragDimmed) ? 0.3 : 1,
-        transition: 'opacity 200ms ease, box-shadow 200ms ease, border-color 150ms ease',
-        boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : canReceive ? 'var(--shadow-glow)' : 'none',
-        outline: selected ? '2px solid var(--color-accent)' : canReceive ? '2px solid var(--color-accent)' : 'none',
+        opacity: (connectionState === 'incompatible' || dragDimmed) ? 0.4 : 1,
+        transition: 'opacity 200ms ease, box-shadow 200ms ease, border-color 150ms ease, outline-color 150ms ease',
+        boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : (canReceive || connectionState === 'compatible') ? 'var(--shadow-glow)' : connectionState === 'incompatible' ? '0 0 0 0 transparent' : 'none',
+        outline: selected ? '2px solid var(--color-accent)' : connectionState === 'compatible' ? '2px solid var(--color-accent)' : connectionState === 'incompatible' ? '2px solid var(--p-amber-600)' : canReceive ? '2px solid var(--color-accent)' : 'none',
         outlineOffset: -2,
       }}
     >
