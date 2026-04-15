@@ -50,9 +50,9 @@ export default function NodePalette({ onAddNode }: Props) {
         aria-label="Add node"
         aria-expanded={open}
         className="w-12 h-12 rounded-full flex items-center justify-center"
-        style={{ background: '#fff', color: 'var(--color-text-primary)', boxShadow: '0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)', transition: 'transform 150ms, box-shadow 150ms' }}
-        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'scale(1)'; }}
+        style={{ background: open ? 'var(--color-bg-hover)' : '#fff', color: 'var(--color-text-primary)', boxShadow: '0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)', transition: 'transform 150ms, box-shadow 150ms, background 150ms' }}
+        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.background = 'var(--color-bg-hover)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = open ? 'var(--color-bg-hover)' : '#fff'; }}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 150ms' }}>
           <path d="M12 5v14"/><path d="M5 12h14"/>
@@ -64,21 +64,22 @@ export default function NodePalette({ onAddNode }: Props) {
         <div className="absolute bottom-14 left-0 w-[280px] max-h-[420px] overflow-y-auto"
           style={{ background: 'var(--color-bg-popover)', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid var(--color-border-subtle)', scrollbarWidth: 'thin' }}>
           <div className="px-5 pt-4 pb-2">
-            <div style={{ font: '500 14px/1 var(--font-sans)', color: 'var(--color-text-primary)' }}>Add node</div>
+            <div style={{ font: '600 15px/1 var(--font-sans)', color: 'var(--color-text-primary)' }}>Add node</div>
           </div>
-          {PALETTE_ORDER.map((cat) => {
+          {PALETTE_ORDER.map((cat, catIdx) => {
             const nodes = NODE_DEFS.filter((n) => n.category === cat);
             if (!nodes.length) return null;
             const isAdvanced = cat === 'transform';
             return (
               <div key={cat} className="px-2 mb-3">
+                {catIdx > 0 && <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: '4px 12px 10px' }} />}
                 {isAdvanced ? (
-                  <button className="flex items-center gap-1.5 px-3 mb-1.5" style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--color-text-tertiary)' }} onClick={() => setAdvancedOpen(!advancedOpen)}>
+                  <button className="flex items-center gap-1.5 px-3 mb-1.5" style={{ font: '600 11px/1 var(--font-sans)', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }} onClick={() => setAdvancedOpen(!advancedOpen)}>
                     <span style={{ fontSize: 10 }}>{advancedOpen ? '▼' : '▶'}</span>
                     {CATEGORY_LABELS[cat]}
                   </button>
                 ) : (
-                  <div className="px-3 mb-1.5" style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{CATEGORY_LABELS[cat]}</div>
+                  <div className="px-3 mb-1.5" style={{ font: '600 11px/1 var(--font-sans)', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{CATEGORY_LABELS[cat]}</div>
                 )}
                 {(!isAdvanced || advancedOpen) && (
                   <div className="flex flex-col gap-0.5">{nodes.map((def) => (
