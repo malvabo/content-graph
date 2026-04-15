@@ -20,7 +20,9 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
-    const BG = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#F2EFE9';
+    const BG = { current: getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#F2EFE9' };
+    const obs = new MutationObserver(() => { BG.current = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#F2EFE9'; });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     let raf: number;
     let collapse = 0;
 
@@ -40,7 +42,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
       const rect = canvas.getBoundingClientRect();
       const w = rect.width, h = rect.height, cx = w / 2, cy = h / 2;
 
-      ctx.fillStyle = BG;
+      ctx.fillStyle = BG.current;
       ctx.fillRect(0, 0, w, h);
 
       /* Warm-toned blobs — no harsh dark edges */
@@ -70,7 +72,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
       raf = requestAnimationFrame(draw);
     };
     draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); obs.disconnect(); };
   }, [listening]);
 
   /* Audio amplitude from mic */

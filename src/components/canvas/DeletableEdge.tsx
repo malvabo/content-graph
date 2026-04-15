@@ -56,7 +56,7 @@ function DeletableEdge({
               width: 24, height: 24, borderRadius: '50%',
               background: 'var(--color-danger)', border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+              cursor: 'pointer', boxShadow: 'var(--shadow-sm)',
               color: 'white',
             }}
           >
