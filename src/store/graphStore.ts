@@ -26,8 +26,10 @@ export interface GraphState {
   edges: Edge[];
   graphName: string;
   selectedNodeId: string | null;
+  connectingNodeId: string | null;
 
   setGraphName: (name: string) => void;
+  setConnectingNodeId: (id: string | null) => void;
   setSelectedNodeId: (id: string | null) => void;
   addNode: (node: ContentNode) => void;
   removeNode: (id: string) => void;
@@ -50,8 +52,10 @@ export const useGraphStore = create<GraphState>()(
         edges: [],
         graphName: 'Untitled Graph',
         selectedNodeId: null,
+        connectingNodeId: null,
 
         setGraphName: (name) => set({ graphName: name }),
+        setConnectingNodeId: (id) => set({ connectingNodeId: id }),
         setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 
         addNode: (node) => set((s) => ({ nodes: [...s.nodes, node] })),

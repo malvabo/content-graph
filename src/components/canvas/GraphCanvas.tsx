@@ -19,7 +19,7 @@ const edgeTypes = { deletable: DeletableEdge };
 const defaultEdgeOptions = { type: 'deletable', style: { stroke: 'var(--color-edge)', strokeWidth: 1.5, strokeDasharray: '5 4' } };
 
 export default function GraphCanvas() {
-  const { nodes, edges, setNodes, setEdges, setSelectedNodeId, addNode } = useGraphStore();
+  const { nodes, edges, setNodes, setEdges, setSelectedNodeId, setConnectingNodeId, addNode } = useGraphStore();
   const { screenToFlowPosition } = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const spotlightRef = useRef<HTMLDivElement>(null);
@@ -93,6 +93,8 @@ export default function GraphCanvas() {
         nodes={nodes} edges={styledEdges}
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
         onConnect={onConnect} onNodesDelete={onNodesDelete}
+        onConnectStart={(_, { nodeId }) => setConnectingNodeId(nodeId ?? null)}
+        onConnectEnd={() => setConnectingNodeId(null)}
         isValidConnection={isValidConnection}
         nodeTypes={nodeTypes} edgeTypes={edgeTypes} defaultEdgeOptions={defaultEdgeOptions}
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
