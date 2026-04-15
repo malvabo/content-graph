@@ -86,11 +86,13 @@ export default function EmptyCanvasOverlay() {
   };
 
   const hover = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.borderColor = 'var(--color-text-tertiary)';
-    e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,.08)';
+    e.currentTarget.style.borderColor = 'var(--color-border-strong)';
+    e.currentTarget.style.borderStyle = 'solid';
+    e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
   };
   const unhover = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.borderColor = 'var(--color-border-subtle)';
+    e.currentTarget.style.borderStyle = e.currentTarget.dataset.border || 'solid';
     e.currentTarget.style.boxShadow = 'none';
   };
 
@@ -111,6 +113,7 @@ export default function EmptyCanvasOverlay() {
             onMouseEnter={hover}
             onMouseLeave={unhover}
             style={{ ...cardStyle, borderStyle: 'dashed' }}
+            data-border="dashed"
           >
             <div style={{ flex: 1, minHeight: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', opacity: .5 }}>Blank canvas</span>
