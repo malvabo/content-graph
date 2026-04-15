@@ -1,7 +1,7 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useRef, useState, useEffect, memo } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
-import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
+import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
 import type { ContentNode } from '../../store/graphStore';
 import { TextSourceInline, ImageSourceInline, FileSourceInline } from './SourceNodes';
 import { GenerateNodeInline } from './GenerateNodes';
@@ -61,29 +61,42 @@ const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string,
     <MiniSelect value={c.goal as string ?? 'Thought leadership'} options={['Thought leadership', 'Personal story', 'Industry insight', 'Announcement', 'Call to action']} onChange={v => s('goal', v)} />
     <MiniSelect value={c.tone as string ?? 'Authoritative'} options={['Authoritative', 'Conversational', 'Vulnerable', 'Data-driven', 'Contrarian']} onChange={v => s('tone', v)} />
     <MiniSelect value={c.length as string ?? 'Medium ~280w'} options={['Short ~150w', 'Medium ~280w', 'Long ~450w']} onChange={v => s('length', v)} />
+    <MiniSelect value={c.hook as string ?? 'Bold statement'} options={['Bold statement', 'Surprising stat', 'Personal micro-story', 'Counter-intuitive claim', 'Question']} onChange={v => s('hook', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['linkedin-post']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'twitter-thread': (c, s) => <>
     <MiniSelect value={c.style as string ?? 'Numbered 1/ 2/ 3/'} options={['Numbered 1/ 2/ 3/', 'Hook + thread', 'Narrative']} onChange={v => s('style', v)} />
     <MiniSelect value={c.tone as string ?? 'Analytical'} options={['Analytical', 'Personal', 'Educational', 'Provocative']} onChange={v => s('tone', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['twitter-thread']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
-  'twitter-single': (c, s) =>
-    <MiniSelect value={c.angle as string ?? 'Most quotable insight'} options={['Most quotable insight', 'Strongest stat', 'Contrarian take', 'Call to action']} onChange={v => s('angle', v)} />,
+  'twitter-single': (c, s) => <>
+    <MiniSelect value={c.angle as string ?? 'Most quotable insight'} options={['Most quotable insight', 'Strongest stat', 'Contrarian take', 'Call to action']} onChange={v => s('angle', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['twitter-single']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+  </>,
   'ig-carousel': (c, s) => <>
     <MiniSelect value={c.format as string ?? 'Headline + bullets'} options={['Headline + bullets', 'Single bold statement', 'Numbered list', 'Story arc']} onChange={v => s('format', v)} />
     <MiniSelect value={c.platform as string ?? 'Instagram'} options={['Instagram', 'LinkedIn', 'TikTok']} onChange={v => s('platform', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['ig-carousel']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'blog-article': (c, s) => <>
     <MiniSelect value={c.type as string ?? 'How-to'} options={['How-to', 'Opinion', 'Listicle', 'Deep dive', 'Case study', 'Explainer']} onChange={v => s('type', v)} />
     <MiniSelect value={c.length as string ?? 'Medium 1000–1500w'} options={['Short 600–800w', 'Medium 1000–1500w', 'Long 2000–2500w']} onChange={v => s('length', v)} />
+    <MiniSelect value={c.audience as string ?? 'Intermediate'} options={['Beginner', 'Intermediate', 'Expert']} onChange={v => s('audience', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['blog-article']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
-  'newsletter': (c, s) =>
-    <MiniSelect value={c.type as string ?? 'Full issue'} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} onChange={v => s('type', v)} />,
+  'newsletter': (c, s) => <>
+    <MiniSelect value={c.type as string ?? 'Full issue'} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} onChange={v => s('type', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['newsletter']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+  </>,
   'infographic': (c, s) => <>
     <MiniSelect value={c.type as string ?? 'Process'} options={['Process', 'Statistical', 'Comparison', 'Timeline', 'Listicle', 'Anatomy']} onChange={v => s('type', v)} />
     <MiniSelect value={c.style as string ?? 'Clean Corporate'} options={['Clean Corporate', 'Bold Editorial', 'Illustrated', 'Dark Premium', 'Minimalist']} onChange={v => s('style', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['infographic']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
-  'quote-card': (c, s) =>
-    <MiniSelect value={c.format as string ?? 'Single quote'} options={['Single quote', 'Multiple options']} onChange={v => s('format', v)} />,
+  'quote-card': (c, s) => <>
+    <MiniSelect value={c.format as string ?? 'Single quote'} options={['Single quote', 'Multiple options']} onChange={v => s('format', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['quote-card']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+  </>,
   'image-prompt': (c, s) => <>
     <MiniSelect value={c.purpose as string ?? 'Blog hero'} options={['Blog hero', 'LinkedIn post', 'Newsletter header', 'Instagram slide', 'Social concept']} onChange={v => s('purpose', v)} />
     <MiniSelect value={c.style as string ?? 'Photography'} options={['Photography', 'Flat illustration', '3D render', 'Abstract', 'Editorial graphic']} onChange={v => s('style', v)} />

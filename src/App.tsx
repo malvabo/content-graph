@@ -25,7 +25,6 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
     return this.props.children;
   }
 }
-import ConfigPanel from './components/canvas/ConfigPanel';
 import EmptyCanvasOverlay from './components/canvas/EmptyCanvasOverlay';
 import Intro from './components/Intro';
 
@@ -83,7 +82,6 @@ function AppInner() {
             <CanvasToolbar activeView={activeView} />
             <EmptyCanvasOverlay />
             <GraphCanvas />
-            <ConfigPanel />
             <NodePalette onAddNode={handleAddNode} />
           </div>
         )}
