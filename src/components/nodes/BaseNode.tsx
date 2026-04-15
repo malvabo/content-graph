@@ -20,8 +20,15 @@ function canConnect(fromSubtype: string, toSubtype: string): boolean {
 
 const HANDLE_CLS = "!w-3 !h-3 !border-[1.5px] !border-[var(--color-border-handle)] !bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)] !transition-colors";
 
-/* ── Inline mini-select for node config ── */
-function MiniSelect({ value, options, onChange }: { value: string; options: readonly string[]; onChange: (v: string) => void }) {
+const CATEGORY_COLORS: Record<string, string> = {
+  source: '#5C8A6C',
+  generate: '#0DBF5A',
+  output: '#7A8A5C',
+  transform: '#8A5C7A',
+};
+
+/* ── Labeled MiniSelect ── */
+function MiniSelect({ label, value, options, onChange }: { label: string; value: string; options: readonly string[]; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -32,15 +39,16 @@ function MiniSelect({ value, options, onChange }: { value: string; options: read
   }, [open]);
   return (
     <div ref={ref} className="relative" onMouseDown={e => e.stopPropagation()}>
+      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginBottom: 3, fontFamily: 'var(--font-sans)' }}>{label}</div>
       <button onClick={() => setOpen(!open)} className="h-7 text-xs rounded-lg px-2.5 flex items-center gap-1.5 w-full"
         style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border-default)', fontFamily: 'var(--font-sans)', justifyContent: 'space-between' }}>
         <span className="truncate">{value}</span>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.4, flexShrink: 0 }}><path d="m6 9 6 6 6-6"/></svg>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.4, flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}><path d="m6 9 6 6 6-6"/></svg>
       </button>
       {open && (
         <div className="absolute top-full left-0 mt-1 rounded-lg z-50" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'thin', minWidth: 180, padding: 'var(--space-1) 0' }}>
-          {options.map(o => (
-            <button key={o} className="w-full text-left px-4 py-2.5" style={{ background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: 400, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', letterSpacing: '0.03em', textTransform: 'uppercase', borderBottom: '1px solid var(--color-border-subtle)' }}
+          {options.map((o, i) => (
+            <button key={o} className="w-full text-left px-4 py-2.5" style={{ background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: o === value ? 500 : 400, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', letterSpacing: '0.03em', textTransform: 'uppercase', borderBottom: i < options.length - 1 ? '1px solid var(--color-border-subtle)' : 'none' }}
               onMouseEnter={e => { if (o !== value) e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
               onMouseLeave={e => { if (o !== value) e.currentTarget.style.background = 'transparent'; }}
               onClick={() => { onChange(o); setOpen(false); }}>{o}</button>
@@ -51,39 +59,39 @@ function MiniSelect({ value, options, onChange }: { value: string; options: read
   );
 }
 
-/* ── Inline config per node type (top 2-3 fields) ── */
+/* ── Inline config per node type — vertical stack with labels ── */
 const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unknown) => void) => React.ReactNode> = {
   'linkedin-post': (c, s) => <>
-    <MiniSelect value={c.goal as string ?? 'Thought leadership'} options={['Thought leadership', 'Personal story', 'Industry insight', 'Announcement', 'Call to action']} onChange={v => s('goal', v)} />
-    <MiniSelect value={c.tone as string ?? 'Authoritative'} options={['Authoritative', 'Conversational', 'Vulnerable', 'Data-driven', 'Contrarian']} onChange={v => s('tone', v)} />
-    <MiniSelect value={c.length as string ?? 'Medium ~280w'} options={['Short ~150w', 'Medium ~280w', 'Long ~450w']} onChange={v => s('length', v)} />
+    <MiniSelect label="Goal" value={c.goal as string ?? 'Thought leadership'} options={['Thought leadership', 'Personal story', 'Industry insight', 'Announcement', 'Call to action']} onChange={v => s('goal', v)} />
+    <MiniSelect label="Tone" value={c.tone as string ?? 'Authoritative'} options={['Authoritative', 'Conversational', 'Vulnerable', 'Data-driven', 'Contrarian']} onChange={v => s('tone', v)} />
+    <MiniSelect label="Length" value={c.length as string ?? 'Medium ~280w'} options={['Short ~150w', 'Medium ~280w', 'Long ~450w']} onChange={v => s('length', v)} />
   </>,
   'twitter-thread': (c, s) => <>
-    <MiniSelect value={c.style as string ?? 'Numbered 1/ 2/ 3/'} options={['Numbered 1/ 2/ 3/', 'Hook + thread', 'Narrative']} onChange={v => s('style', v)} />
-    <MiniSelect value={c.tone as string ?? 'Analytical'} options={['Analytical', 'Personal', 'Educational', 'Provocative']} onChange={v => s('tone', v)} />
+    <MiniSelect label="Style" value={c.style as string ?? 'Numbered 1/ 2/ 3/'} options={['Numbered 1/ 2/ 3/', 'Hook + thread', 'Narrative']} onChange={v => s('style', v)} />
+    <MiniSelect label="Tone" value={c.tone as string ?? 'Analytical'} options={['Analytical', 'Personal', 'Educational', 'Provocative']} onChange={v => s('tone', v)} />
   </>,
   'twitter-single': (c, s) =>
-    <MiniSelect value={c.angle as string ?? 'Most quotable insight'} options={['Most quotable insight', 'Strongest stat', 'Contrarian take', 'Call to action']} onChange={v => s('angle', v)} />,
+    <MiniSelect label="Angle" value={c.angle as string ?? 'Most quotable insight'} options={['Most quotable insight', 'Strongest stat', 'Contrarian take', 'Call to action']} onChange={v => s('angle', v)} />,
   'ig-carousel': (c, s) => <>
-    <MiniSelect value={c.format as string ?? 'Headline + bullets'} options={['Headline + bullets', 'Single bold statement', 'Numbered list', 'Story arc']} onChange={v => s('format', v)} />
-    <MiniSelect value={c.platform as string ?? 'Instagram'} options={['Instagram', 'LinkedIn', 'TikTok']} onChange={v => s('platform', v)} />
+    <MiniSelect label="Format" value={c.format as string ?? 'Headline + bullets'} options={['Headline + bullets', 'Single bold statement', 'Numbered list', 'Story arc']} onChange={v => s('format', v)} />
+    <MiniSelect label="Platform" value={c.platform as string ?? 'Instagram'} options={['Instagram', 'LinkedIn', 'TikTok']} onChange={v => s('platform', v)} />
   </>,
   'blog-article': (c, s) => <>
-    <MiniSelect value={c.type as string ?? 'How-to'} options={['How-to', 'Opinion', 'Listicle', 'Deep dive', 'Case study', 'Explainer']} onChange={v => s('type', v)} />
-    <MiniSelect value={c.length as string ?? 'Medium 1000–1500w'} options={['Short 600–800w', 'Medium 1000–1500w', 'Long 2000–2500w']} onChange={v => s('length', v)} />
+    <MiniSelect label="Type" value={c.type as string ?? 'How-to'} options={['How-to', 'Opinion', 'Listicle', 'Deep dive', 'Case study', 'Explainer']} onChange={v => s('type', v)} />
+    <MiniSelect label="Length" value={c.length as string ?? 'Medium 1000–1500w'} options={['Short 600–800w', 'Medium 1000–1500w', 'Long 2000–2500w']} onChange={v => s('length', v)} />
   </>,
   'newsletter': (c, s) =>
-    <MiniSelect value={c.type as string ?? 'Full issue'} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} onChange={v => s('type', v)} />,
+    <MiniSelect label="Section" value={c.type as string ?? 'Full issue'} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} onChange={v => s('type', v)} />,
   'infographic': (c, s) => <>
-    <MiniSelect value={c.type as string ?? 'Process'} options={['Process', 'Statistical', 'Comparison', 'Timeline', 'Listicle', 'Anatomy']} onChange={v => s('type', v)} />
-    <MiniSelect value={c.style as string ?? 'Clean Corporate'} options={['Clean Corporate', 'Bold Editorial', 'Illustrated', 'Dark Premium', 'Minimalist']} onChange={v => s('style', v)} />
+    <MiniSelect label="Type" value={c.type as string ?? 'Process'} options={['Process', 'Statistical', 'Comparison', 'Timeline', 'Listicle', 'Anatomy']} onChange={v => s('type', v)} />
+    <MiniSelect label="Style" value={c.style as string ?? 'Clean Corporate'} options={['Clean Corporate', 'Bold Editorial', 'Illustrated', 'Dark Premium', 'Minimalist']} onChange={v => s('style', v)} />
   </>,
   'quote-card': (c, s) =>
-    <MiniSelect value={c.format as string ?? 'Single quote'} options={['Single quote', 'Multiple options']} onChange={v => s('format', v)} />,
+    <MiniSelect label="Format" value={c.format as string ?? 'Single quote'} options={['Single quote', 'Multiple options']} onChange={v => s('format', v)} />,
   'image-prompt': (c, s) => <>
-    <MiniSelect value={c.purpose as string ?? 'Blog hero'} options={['Blog hero', 'LinkedIn post', 'Newsletter header', 'Instagram slide', 'Social concept']} onChange={v => s('purpose', v)} />
-    <MiniSelect value={c.style as string ?? 'Photography'} options={['Photography', 'Flat illustration', '3D render', 'Abstract', 'Editorial graphic']} onChange={v => s('style', v)} />
-    <MiniSelect value={c.aspect as string ?? '16:9'} options={['1:1', '4:5', '16:9', '9:16', '1.91:1']} onChange={v => s('aspect', v)} />
+    <MiniSelect label="Purpose" value={c.purpose as string ?? 'Blog hero'} options={['Blog hero', 'LinkedIn post', 'Newsletter header', 'Instagram slide', 'Social concept']} onChange={v => s('purpose', v)} />
+    <MiniSelect label="Style" value={c.style as string ?? 'Photography'} options={['Photography', 'Flat illustration', '3D render', 'Abstract', 'Editorial graphic']} onChange={v => s('style', v)} />
+    <MiniSelect label="Aspect" value={c.aspect as string ?? '16:9'} options={['1:1', '4:5', '16:9', '9:16', '1.91:1']} onChange={v => s('aspect', v)} />
   </>,
 };
 
@@ -93,7 +101,11 @@ function InlineConfig({ id, subtype }: { id: string; subtype: string }) {
   const render = INLINE_CONFIGS[subtype];
   if (!render) return null;
   const set = (k: string, v: unknown) => updateConfig(id, { [k]: v });
-  return <div className="flex flex-wrap gap-1.5 mt-2">{render(config as Record<string, unknown>, set)}</div>;
+  return (
+    <div className="flex flex-col gap-2 mt-3 pt-3" style={{ borderTop: '1px solid var(--color-border-subtle)' }}>
+      {render(config as Record<string, unknown>, set)}
+    </div>
+  );
 }
 
 function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
@@ -104,15 +116,13 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
     const sel = s.nodes.find(n => n.id === s.selectedNodeId);
     return sel?.data.subtype ?? null;
   });
+  const [hovered, setHovered] = useState(false);
 
   const def = NODE_DEFS_BY_SUBTYPE[data.subtype];
   const colors = BADGE_COLORS[data.category];
   const isError = status === 'error';
   const isStale = status === 'stale';
-
-  let borderStyle = '1px solid var(--color-border-default)';
-  if (isError) borderStyle = '1px solid var(--color-danger-border)';
-  else if (isStale) borderStyle = '1px solid var(--color-warning-border)';
+  const catColor = CATEGORY_COLORS[data.category] ?? 'var(--color-border-default)';
 
   const isOtherSelected = selectedId !== null && selectedId !== id;
   const isCompatible = !isOtherSelected || !selectedSubtype ||
@@ -120,32 +130,40 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const dimmed = isOtherSelected && !isCompatible;
 
   return (
-    <div style={{
-      width: 'var(--size-node)',
-      maxWidth: 'var(--size-node)',
-      overflow: 'visible',
-      background: 'var(--color-bg-card)',
-      border: borderStyle,
-      borderRadius: 'var(--radius-lg)',
-      padding: 'var(--space-4)',
-      position: 'relative',
-      opacity: dimmed ? 0.4 : 1,
-      transition: 'opacity 200ms ease, box-shadow 200ms ease',
-      boxShadow: selected ? 'var(--shadow-md)' : 'none',
-      outline: selected ? '2px solid var(--color-accent)' : 'none',
-      outlineOffset: -2,
-    }}>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: 'var(--size-node)',
+        maxWidth: 'var(--size-node)',
+        overflow: 'visible',
+        background: 'var(--color-bg-card)',
+        border: `1px solid ${isError ? 'var(--color-danger-border)' : isStale ? 'var(--color-warning-border)' : hovered ? 'var(--color-border-strong)' : 'var(--color-border-default)'}`,
+        borderRadius: 'var(--radius-lg)',
+        padding: 'var(--space-4)',
+        paddingLeft: 'calc(var(--space-4) + 4px)',
+        position: 'relative',
+        opacity: dimmed ? 0.5 : 1,
+        transition: 'opacity 200ms ease, box-shadow 200ms ease, border-color 150ms ease',
+        boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : 'none',
+        outline: selected ? '2px solid var(--color-accent)' : 'none',
+        outlineOffset: -2,
+      }}
+    >
+      {/* Category left bar */}
+      <div style={{ position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: '0 3px 3px 0', background: catColor, opacity: 0.6 }} />
+
       {def?.hasInput && <Handle type="target" position={Position.Left} id="text" className={HANDLE_CLS} />}
 
       {/* Header */}
       <div className="flex items-start gap-3 mb-2">
-        <div className="shrink-0 w-[30px] h-[30px] rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.bg, color: colors.text }}>
+        <div className="shrink-0 w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ backgroundColor: colors.bg, color: colors.text }}>
           {NODE_ICONS[data.subtype]?.() ?? data.badge}
         </div>
         <div className="flex-1 min-w-0">
           <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', color: 'var(--color-text-primary)' }} className="truncate">{data.label}</div>
           {data.description && (
-            <div style={{ fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-snug)', color: 'var(--color-text-tertiary)', marginTop: 2 }} className="truncate">{data.description}</div>
+            <div title={data.description} style={{ fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-snug)', color: 'var(--color-text-tertiary)', marginTop: 2 }} className="truncate">{data.description}</div>
           )}
         </div>
       </div>

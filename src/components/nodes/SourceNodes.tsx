@@ -151,7 +151,7 @@ export function FileSourceInline({ id }: { id: string }) {
 
   const onFile = useCallback((f: File) => {
     const reader = new FileReader();
-    reader.onload = () => { const c = reader.result as string; updateConfig(id, { text: c, fileName: f.name }); setOutput(id, { text: c }); };
+    reader.onload = () => { const c = reader.result as string; updateConfig(id, { text: c, fileName: f.name, fileSize: f.size }); setOutput(id, { text: c }); };
     reader.readAsText(f);
   }, [id, updateConfig, setOutput]);
 
@@ -159,7 +159,7 @@ export function FileSourceInline({ id }: { id: string }) {
     <div className="mt-2">
       {fileName ? (
         <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-surface)] rounded-lg px-2 py-1.5">
-          <span>{fileName}</span><span>·</span><span>{text.split(/\s+/).length.toLocaleString()} words</span>
+          <span>{fileName}</span><span>·</span><span>{text.split(/\s+/).length.toLocaleString()} words</span><span>·</span><span>{((config?.fileSize as number ?? 0) / 1024).toFixed(0)} KB</span>
           <button className="ml-auto w-6 h-6 flex items-center justify-center rounded text-[var(--color-text-placeholder)] hover:text-[var(--color-danger)]" aria-label="Remove file" onClick={() => updateConfig(id, { text: '', fileName: undefined })}>✕</button>
         </div>
       ) : (
@@ -205,7 +205,7 @@ export function ImageSourceInline({ id }: { id: string }) {
     <div className="mt-2">
       {preview ? (
         <div className="relative">
-          <img src={preview} alt={fileName || 'Uploaded image'} className="w-full h-[140px] object-cover rounded-lg" />
+          <img src={preview} alt={fileName || 'Uploaded image'} className="w-full h-[140px] object-contain rounded-lg" style={{ background: 'var(--color-bg-surface)' }} />
           <button className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-[var(--color-overlay-backdrop)] text-white text-xs flex items-center justify-center"
             onClick={() => updateConfig(id, { imagePreview: undefined, fileName: undefined, dimensions: undefined })}>✕</button>
           <div className="text-sm text-[var(--color-text-placeholder)] mt-1">{fileName} · {config?.dimensions as string}</div>
