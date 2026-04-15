@@ -34,14 +34,20 @@ interface Props { onAddNode: (def: NodeDef) => void }
 export default function NodePalette({ onAddNode }: Props) {
   const [open, setOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
+    setSearch('');
+    setTimeout(() => searchRef.current?.focus(), 50);
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
+
+  const q = search.toLowerCase().trim();
 
   return (
     <div ref={ref} className="absolute bottom-4 left-4 z-20">
@@ -82,11 +88,18 @@ export default function NodePalette({ onAddNode }: Props) {
       {open && (
         <div className="absolute bottom-14 left-0 w-[280px] max-h-[420px] overflow-y-auto"
           style={{ background: 'var(--color-bg-popover)', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid var(--color-border-subtle)', scrollbarWidth: 'thin' }}>
-          <div className="px-5 pt-4 pb-2">
-            <div style={{ font: '600 15px/1 var(--font-sans)', color: 'var(--color-text-primary)' }}>Add node</div>
+          <div className="px-4 pt-3 pb-2">
+            <input
+              ref={searchRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search nodes…"
+              style={{ width: '100%', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: '6px 10px', outline: 'none' }}
+            />
           </div>
           {PALETTE_ORDER.map((cat, catIdx) => {
-            const nodes = NODE_DEFS.filter((n) => n.category === cat);
+            const nodes = NODE_DEFS.filter((n) => n.category === cat && (!q || n.label.toLowerCase().includes(q) || n.description.toLowerCase().includes(q) || n.subtype.toLowerCase().includes(q)));
+            if (!nodes.length) return null;
             if (!nodes.length) return null;
             const isAdvanced = cat === 'transform';
             return (

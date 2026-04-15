@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useGraphStore } from '../../store/graphStore';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
@@ -10,6 +11,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
   const { autoLayout } = useGraphLayout();
   const { runAll } = useNodeExecution();
   const isRunning = useExecutionStore((s) => Object.values(s.status).some((v) => v === 'running'));
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const handleRunAll = () => {
     runAll(async (input, _config, subtype) => {
@@ -31,8 +33,8 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
         </button>
         <input
           aria-label="Graph name"
-          className="bg-transparent border-none outline-none"
-          style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.01em', background: 'none', border: 'none', padding: 0 }}
+          className="graph-name-input outline-none"
+          style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0' }}
           value={graphName}
           placeholder="Untitled"
           onChange={(e) => setGraphName(e.target.value)}
@@ -42,7 +44,15 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
       {/* Top-right: floating action buttons */}
       <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
         <button className="btn-ghost btn-sm" style={{ borderRadius: 10, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)' }} onClick={autoLayout}>Auto-layout</button>
-        <button className="btn-ghost btn-sm" style={{ borderRadius: 10, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)' }} onClick={() => { if (nodes.length === 0 || confirm('Clear all nodes?')) { clearGraph(); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); } }}>Clear</button>
+          {confirmClear ? (
+            <>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>Clear all?</span>
+              <button className="btn-ghost btn-sm" style={{ borderRadius: 10, color: 'var(--color-danger)' }} onClick={() => { clearGraph(); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); setConfirmClear(false); }}>Yes</button>
+              <button className="btn-ghost btn-sm" style={{ borderRadius: 10 }} onClick={() => setConfirmClear(false)}>No</button>
+            </>
+          ) : (
+            <button className="btn-ghost btn-sm" style={{ borderRadius: 10, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)' }} onClick={() => { if (nodes.length === 0) { clearGraph(); } else { setConfirmClear(true); } }}>Clear</button>
+          )}
         <button className={`btn btn-run ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>
       </div>
     </>
