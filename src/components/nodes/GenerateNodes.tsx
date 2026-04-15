@@ -4,19 +4,6 @@ import { useOutputStore } from '../../store/outputStore';
 import { useGraphStore } from '../../store/graphStore';
 import { OutputModal } from '../modals/Modals';
 
-function ConfigPills({ id }: { id: string }) {
-  const config = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.config);
-  const vals = Object.values(config ?? {}).filter((v) => typeof v === 'string' && v);
-  if (!vals.length) return null;
-  return (
-    <div className="flex flex-wrap gap-1 mt-1">
-      {vals.slice(0, 3).map((v, i) => (
-        <span key={i} className="btn-pill" style={{ cursor: 'default', height: 20, fontSize: 'var(--text-sm)' }}>{String(v)}</span>
-      ))}
-    </div>
-  );
-}
-
 const SKELETON_LINES: Record<string, number[]> = {
   'linkedin-post': [100, 85, 95, 70, 90, 60],
   'twitter-thread': [90, 80, 90, 75],
@@ -94,7 +81,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
 export function GenerateNodeInline({ id, subtype }: { id: string; subtype: string }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
 
-  if (status === 'idle' || status === 'stale') return <ConfigPills id={id} />;
+  if (status === 'idle' || status === 'stale') return null;
   if (status === 'running') return <Skeleton subtype={subtype} />;
   if (status === 'complete') return <OutputPreview id={id} subtype={subtype} />;
   if (status === 'warning') return <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', padding: 'var(--space-2) var(--space-2)', borderRadius: 'var(--radius-sm)' }} className="mt-2">⚠ No input</div>;

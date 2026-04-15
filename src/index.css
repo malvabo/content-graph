@@ -192,8 +192,8 @@ select {
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):focus,
 textarea:focus,
 select:focus {
-  border-color: var(--color-interactive-focus);
-  box-shadow: 0 0 0 3px rgba(13,191,90,0.1);
+  border-color: var(--color-border-strong);
+  box-shadow: none;
 }
 input::placeholder, textarea::placeholder { color: var(--color-text-placeholder); }
 
