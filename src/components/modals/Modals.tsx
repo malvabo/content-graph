@@ -40,7 +40,7 @@ function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.Rea
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ padding: 'var(--space-6)', background: 'var(--color-overlay-backdrop)' }} onClick={onClose}>
-      <div className="flex flex-col w-full overflow-hidden" style={{ maxWidth, maxHeight: '85vh', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)' }} onClick={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" className="flex flex-col w-full overflow-hidden" style={{ maxWidth, maxHeight: '85vh', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)' }} onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>,
@@ -55,7 +55,7 @@ function ModalHeader({ title, subtitle, onClose }: { title: string; subtitle?: s
         <div style={{ font: `var(--weight-medium) var(--text-md)/var(--leading-snug) var(--font-sans)`, color: 'var(--color-text-primary)' }}>{title}</div>
         {subtitle && <div style={{ font: `var(--weight-normal) var(--text-xs)/var(--leading-none) var(--font-sans)`, color: 'var(--color-text-tertiary)' }}>{subtitle}</div>}
       </div>
-      <button onMouseDown={(e) => e.stopPropagation()} onClick={onClose} style={{ width: 44, height: 44, minWidth: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', transition: `background var(--duration-base)`, marginTop: 'calc(var(--space-1) * -1)', marginRight: 'calc(var(--space-2) * -1)' }}
+      <button aria-label="Close" onMouseDown={(e) => e.stopPropagation()} onClick={onClose} style={{ width: 44, height: 44, minWidth: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', transition: `background var(--duration-base)`, marginTop: 'calc(var(--space-1) * -1)', marginRight: 'calc(var(--space-2) * -1)' }}
         onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-subtle)'; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -75,14 +75,15 @@ function ModalFooter({ children }: { children: React.ReactNode }) {
 /* ── Output Modal (edit-only) ── */
 interface OutputModalProps { title: string; text: string; wordCount: number; onClose: () => void; onTextChange?: (text: string) => void }
 
-export function OutputModal({ title, text, wordCount, onClose, onTextChange }: OutputModalProps) {
+export function OutputModal({ title, text, onClose, onTextChange }: OutputModalProps) {
   const [copied, setCopied] = useState(false);
   const [editedText, setEditedText] = useState(text);
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const computedWordCount = editedText.trim().split(/\s+/).filter(Boolean).length;
   const charCount = editedText.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().length;
-  const readTime = Math.max(1, Math.round(wordCount / 230));
+  const readTime = Math.max(1, Math.round(computedWordCount / 230));
   const copy = () => { navigator.clipboard.writeText(editedText); setCopied(true); setTimeout(() => setCopied(false), 1500); };
 
   const onMouseUp = useCallback(() => {
@@ -105,12 +106,12 @@ export function OutputModal({ title, text, wordCount, onClose, onTextChange }: O
 
   return (
     <ModalShell onClose={onClose} maxWidth={780}>
-      <ModalHeader title={title} subtitle={`${wordCount} words / ${charCount} chars / ${readTime} min read`} onClose={onClose} />
+      <ModalHeader title={title} subtitle={`${computedWordCount} words / ${charCount} chars / ${readTime} min read`} onClose={onClose} />
 
       <div className="flex-1 overflow-y-auto relative" style={{ padding: 'var(--space-5) var(--space-6)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <textarea ref={textareaRef} className="w-full outline-none"
-          style={{ minHeight: 300, resize: 'none', font: `var(--weight-normal) 15px/var(--leading-loose) var(--font-sans)`, color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)' }}
+          style={{ minHeight: 300, resize: 'vertical', font: `var(--weight-normal) var(--text-sm)/var(--leading-loose) var(--font-sans)`, color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)' }}
           value={editedText} onChange={(e) => setEditedText(e.target.value)} onMouseUp={onMouseUp} />
         <div style={{ font: `var(--weight-normal) var(--text-xs)/var(--leading-none) var(--font-sans)`, color: 'var(--color-text-tertiary)', marginTop: 'var(--space-2)' }}>Select text for AI actions</div>
       </div>
@@ -142,18 +143,23 @@ export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalPro
   const generate4 = async () => {
     if (!prompt) return;
     setGenLoading(true);
-    const baseSeed = Date.now();
-    const encoded = encodeURIComponent(prompt);
-    const results = await Promise.all(
-      [0,1,2,3].map(async (i) => {
-        const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${baseSeed + i}`;
-        const res = await fetch(url);
-        const blob = await res.blob();
-        return new Promise<string>((resolve) => { const r = new FileReader(); r.onloadend = () => resolve(r.result as string); r.readAsDataURL(blob); });
-      })
-    );
-    setVariants(results);
-    setGenLoading(false);
+    try {
+      const baseSeed = Date.now();
+      const encoded = encodeURIComponent(prompt);
+      const results = await Promise.all(
+        [0,1,2,3].map(async (i) => {
+          const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${baseSeed + i}`;
+          const res = await fetch(url);
+          const blob = await res.blob();
+          return new Promise<string>((resolve) => { const r = new FileReader(); r.onloadend = () => resolve(r.result as string); r.readAsDataURL(blob); });
+        })
+      );
+      setVariants(results);
+    } catch (error) {
+      console.error('Failed to generate variants:', error);
+    } finally {
+      setGenLoading(false);
+    }
   };
 
   return (
@@ -162,7 +168,7 @@ export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalPro
         {/* Left: Image + variants */}
         <div className="flex-1 flex flex-col min-w-0" style={{ background: 'var(--color-bg-dark)' }}>
           <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-6)' }}>
-            <img src={activeSrc} className="max-w-full max-h-[60vh] object-contain" style={{ borderRadius: 'var(--radius-md)' }} />
+            <img src={activeSrc} alt={prompt || 'Generated image'} className="max-w-full max-h-[60vh] object-contain" style={{ borderRadius: 'var(--radius-md)' }} />
           </div>
           {/* 2x2 variant grid */}
           {(variants.length > 0 || genLoading) && (
@@ -170,7 +176,7 @@ export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalPro
               {genLoading ? [0,1,2,3].map((i) => (
                 <div key={i} className="skeleton-bar" style={{ aspectRatio: '1', borderRadius: 'var(--radius-md)' }} />
               )) : variants.map((img, i) => (
-                <img key={i} src={img} onClick={() => setActiveSrc(img)}
+                <img key={i} src={img} alt={`Variant ${i + 1}`} onClick={() => setActiveSrc(img)}
                   style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 'var(--radius-md)', cursor: 'pointer', border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent', transition: 'border-color var(--duration-base)' }} />
               ))}
             </div>

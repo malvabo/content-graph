@@ -19,9 +19,10 @@ export default function CanvasToolbar({ activeView }: { activeView: string }) {
   };
 
   return (
-    <div className="absolute top-0 left-0 right-0 h-11 flex items-center px-4 gap-2 z-10" style={{ background: 'transparent' }}>
+    <div className="absolute top-0 left-0 right-0 h-11 flex items-center px-4 gap-2 z-10" style={{ background: 'var(--color-overlay-light)', backdropFilter: 'blur(12px)' }}>
       <input
-        style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)', letterSpacing: '-.01em' }}
+        aria-label="Graph name"
+        style={{ font: '500 var(--font-size-sm)/var(--line-height-sm) var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.01em' }}
         className="bg-transparent border-none outline-none min-w-0 flex-1 max-w-[200px]"
         value={graphName}
         onChange={(e) => setGraphName(e.target.value)}

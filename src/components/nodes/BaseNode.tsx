@@ -57,10 +57,9 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const isError = status === 'error';
   const isStale = status === 'stale';
 
-  let borderStyle = '1px solid var(--cg-border)';
-  if (selected) borderStyle = '1px solid var(--cg-green)';
-  else if (isError) borderStyle = '1px solid #E8BABA';
-  else if (isStale) borderStyle = '1px solid var(--cg-amber-bdr)';
+  let borderStyle = '1px solid var(--color-border-default)';
+  if (isError) borderStyle = '1px solid #E8BABA';
+  else if (isStale) borderStyle = '1px solid var(--color-warning-border)';
 
   // Compatibility: if another node is selected, dim this one if it can't connect
   const isOtherSelected = selectedId !== null && selectedId !== id;
@@ -70,46 +69,46 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
 
   return (
     <div style={{
-      width: 480,
-      maxWidth: 480,
+      width: 'var(--size-node)',
+      maxWidth: 'var(--size-node)',
       overflow: data.subtype === 'image-prompt' ? 'visible' : 'hidden',
-      background: 'var(--cg-card)',
+      background: 'var(--color-bg-card)',
       border: borderStyle,
-      borderRadius: 12,
-      padding: '14px 16px',
+      borderRadius: 'var(--radius-lg)',
+      padding: 'var(--space-4) var(--space-4)',
       position: 'relative',
-      opacity: dimmed ? 0.35 : 1,
+      opacity: dimmed ? 0.4 : 1,
       transition: 'opacity 200ms ease, box-shadow 200ms ease',
-      boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.1)' : 'none',
-      outline: selected ? '2px solid var(--cg-green)' : 'none',
-      outlineOffset: -1,
+      boxShadow: selected ? 'var(--shadow-md)' : 'none',
+      outline: selected ? '2px solid var(--color-accent)' : 'none',
+      outlineOffset: 1,
     }}>
       {def?.hasInput && (
         <Handle type="target" position={Position.Left} id="text"
-          className="!w-2.5 !h-2.5 !border-[1.5px] !border-[#94a3b8] !bg-[var(--cg-card)] hover:!border-[var(--cg-green)] hover:!bg-[var(--cg-green-lt)]" />
+          className="!w-2.5 !h-2.5 !border-[1.5px] !border-[var(--color-border-handle)] !bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)]" />
       )}
 
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
-          <div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)', letterSpacing: '-.005em' }} className="truncate">{data.label}</div>
+          <div style={{ font: 'var(--weight-medium) var(--text-sm)/var(--leading-fixed) var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.005em' }} className="truncate">{data.label}</div>
         </div>
-        <div className="shrink-0 w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 14, fontWeight: 500, fontFamily: 'var(--font-sans)', backgroundColor: colors.bg, color: colors.text }}>
+        <div className="shrink-0 w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', backgroundColor: colors.bg, color: colors.text }}>
           {NODE_ICONS[data.subtype]?.() ?? data.badge}
         </div>
       </div>
 
       <div className="mt-1">
-        <span className="btn-pill" style={{ cursor: 'default', height: 20, fontSize: 14, fontWeight: 500, fontFamily: 'var(--font-sans)',
-          background: status === 'complete' ? 'var(--cg-green-tint)' : status === 'error' ? 'var(--cg-red-lt)' : status === 'running' ? 'var(--cg-amber-lt)' : 'var(--cg-surface)',
+        <span className="btn-pill" style={{ cursor: 'default', height: 20, fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)',
+          background: status === 'complete' ? 'var(--color-bg-subtle)' : status === 'error' ? 'var(--color-danger-bg)' : status === 'running' ? 'var(--color-warning-bg)' : 'var(--color-bg-surface)',
           color: status === 'complete' ? '#52524e' : status === 'error' ? '#52524e' : status === 'running' ? '#52524e' : '#8a8a86',
-          borderColor: status === 'complete' ? '#E0DCD6' : status === 'error' ? '#ECC0C0' : status === 'running' ? 'var(--cg-amber-bdr)' : 'transparent',
+          borderColor: status === 'complete' ? '#E0DCD6' : status === 'error' ? '#ECC0C0' : status === 'running' ? 'var(--color-warning-border)' : 'transparent',
         }}>
           <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: STATUS_COLORS[status], animation: dotAnim }} />
           {status}
         </span>
       </div>
 
-      {isError && error && <div style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-red-text)' }} className="mt-2">{error}</div>}
+      {isError && error && <div style={{ font: 'var(--weight-normal) var(--text-sm)/var(--leading-snug) var(--font-sans)', color: 'var(--color-danger-text)' }} className="mt-2">{error}</div>}
 
       {data.subtype === 'text-source' && <TextSourceInline id={id} />}
       {data.subtype === 'file-source' && <FileSourceInline id={id} />}
@@ -118,14 +117,15 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {data.subtype === 'image-prompt' && <ImagePromptInline id={id} />}
       {data.subtype === 'export' && <ExportInline id={id} />}
       {data.category === 'generate' && data.subtype !== 'image-prompt' && (
-        <div style={{ height: 130, overflow: 'hidden' }}>
+        <div style={{ height: 'var(--size-node-content)', overflow: 'hidden', position: 'relative' }}>
           <GenerateNodeInline id={id} subtype={data.subtype} />
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 24, background: 'linear-gradient(transparent, var(--color-bg-card))', pointerEvents: 'none' }} />
         </div>
       )}
 
       {def?.hasOutput && (
         <Handle type="source" position={Position.Right} id="text"
-          className="!w-2.5 !h-2.5 !border-[1.5px] !border-[#94a3b8] !bg-[var(--cg-card)] hover:!border-[var(--cg-green)] hover:!bg-[var(--cg-green-lt)]" />
+          className="!w-2.5 !h-2.5 !border-[1.5px] !border-[var(--color-border-handle)] !bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)]" />
       )}
     </div>
   );

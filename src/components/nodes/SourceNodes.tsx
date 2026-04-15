@@ -42,9 +42,9 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
   if (preview) {
     return (
       <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y }}>
-        <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2" style={{ background: '#F7F5F1', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
+        <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--color-bg-popover)', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid var(--color-border-subtle)' }}>
           <div className="text-label">AI edited text</div>
-          <div className="text-sm leading-relaxed max-h-[80px] overflow-y-auto rounded-lg p-2" style={{ background: 'var(--cg-surface)', color: 'var(--cg-ink)', scrollbarWidth: 'thin' }}>{preview}</div>
+          <div className="text-sm leading-relaxed max-h-[80px] overflow-y-auto rounded-lg p-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin' }}>{preview}</div>
           <div className="flex gap-1.5">
             <button className="btn-xs btn-outline flex-1" onClick={revert}>↩ Revert</button>
             <button className="btn-xs btn-primary flex-1" onClick={accept}>✓ Accept</button>
@@ -57,14 +57,14 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
   return (
     <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y }}>
       {!showPrompt ? (
-        <div className="flex items-center gap-0.5 rounded-xl px-1 py-1" style={{ background: '#F7F5F1', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
-          <button className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--cg-surface)] transition" title="AI Edit"
+        <div className="flex items-center gap-0.5 rounded-xl px-1 py-1" style={{ background: 'var(--color-bg-popover)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid var(--color-border-subtle)' }}>
+          <button className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-surface)] transition" title="AI Edit"
             onClick={() => setShowPrompt(true)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cg-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
           </button>
         </div>
       ) : (
-        <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2.5" style={{ background: '#F7F5F1', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
+        <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2.5" style={{ background: 'var(--color-bg-popover)', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid var(--color-border-subtle)' }}>
           <div className="text-label">Edit this text</div>
           <div className="flex gap-1.5">
             <input className="flex-1 h-8 text-sm rounded-[10px] px-2.5"
@@ -73,7 +73,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
               onKeyDown={(e) => { if (e.key === 'Enter') quickAction('custom'); }}
               autoFocus />
             <button className="w-8 h-8 rounded-lg flex items-center justify-center border" disabled={loading}
-              style={{ background: '#fff', color: 'var(--cg-ink)', borderColor: 'var(--cg-border)' }}
+              style={{ background: 'var(--color-bg-card)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-default)' }}
               onClick={() => quickAction('custom')}>→</button>
           </div>
           <div className="text-label">Writing</div>
@@ -121,7 +121,7 @@ export function TextSourceInline({ id }: { id: string }) {
   }, [popover, text, onChange]);
 
   const charCount = text.length;
-  const charColor = charCount > 50000 ? 'var(--cg-red)' : charCount > 40000 ? '#f59e0b' : '#78716c';
+  const charColor = charCount > 50000 ? 'var(--color-danger)' : charCount > 40000 ? 'var(--p-amber-600)' : 'var(--color-text-placeholder)';
 
   return (
     <div className="mt-2 flex flex-col gap-1.5 relative">
@@ -135,7 +135,7 @@ export function TextSourceInline({ id }: { id: string }) {
       )}
       <textarea ref={textareaRef} className="w-full min-h-[120px] max-h-[300px] resize-y text-sm leading-relaxed rounded-[10px] p-2.5"
         placeholder="Paste your article, transcript, or notes..." value={text} onChange={(e) => onChange(e.target.value)} onMouseUp={onMouseUp} />
-      <div className="text-right text-[14px]" style={{ color: charColor }}>{charCount.toLocaleString()} / 50,000</div>
+      <div className="text-right text-sm" style={{ color: charColor }}>{charCount.toLocaleString()} / 50,000</div>
     </div>
   );
 }
@@ -147,6 +147,7 @@ export function FileSourceInline({ id }: { id: string }) {
   const text = (config?.text as string) ?? '';
   const fileName = config?.fileName as string | undefined;
   const fileRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const onFile = useCallback((f: File) => {
     const reader = new FileReader();
@@ -157,15 +158,17 @@ export function FileSourceInline({ id }: { id: string }) {
   return (
     <div className="mt-2">
       {fileName ? (
-        <div className="flex items-center gap-1.5 text-[14px] text-[#57534e] bg-[var(--cg-surface)] rounded-lg px-2 py-1.5">
+        <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-surface)] rounded-lg px-2 py-1.5">
           <span>{fileName}</span><span>·</span><span>{text.split(/\s+/).length.toLocaleString()} words</span>
-          <button className="ml-auto text-[#78716c] hover:text-[var(--cg-red)]" onClick={() => updateConfig(id, { text: '', fileName: undefined })}>✕</button>
+          <button className="ml-auto w-6 h-6 flex items-center justify-center rounded text-[var(--color-text-placeholder)] hover:text-[var(--color-danger)]" aria-label="Remove file" onClick={() => updateConfig(id, { text: '', fileName: undefined })}>✕</button>
         </div>
       ) : (
-        <div className="border border-dashed border-[#a8a29e] rounded-lg h-20 flex flex-col items-center justify-center text-[14px] text-[#78716c] cursor-pointer hover:border-solid hover:bg-[var(--cg-surface)] transition"
+        <div className={`border border-dashed border-[var(--color-text-disabled)] rounded-lg h-20 flex flex-col items-center justify-center text-sm text-[var(--color-text-placeholder)] cursor-pointer hover:border-solid hover:bg-[var(--color-bg-surface)] transition ${dragOver ? 'border-solid bg-[var(--color-bg-surface)]' : ''}`}
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); }}>
+          onDragEnter={() => setDragOver(true)}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); }}>
           ↑ Drop .txt .md .docx or click
           <input ref={fileRef} type="file" accept=".txt,.md,.docx" hidden onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
         </div>
@@ -181,6 +184,7 @@ export function ImageSourceInline({ id }: { id: string }) {
   const preview = config?.imagePreview as string | undefined;
   const fileName = config?.fileName as string | undefined;
   const fileRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const onFile = useCallback((f: File) => {
     const reader = new FileReader();
@@ -201,16 +205,18 @@ export function ImageSourceInline({ id }: { id: string }) {
     <div className="mt-2">
       {preview ? (
         <div className="relative">
-          <img src={preview} className="w-full h-[140px] object-cover rounded-lg" />
-          <button className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/50 text-white text-[10px] flex items-center justify-center"
+          <img src={preview} alt={fileName || 'Uploaded image'} className="w-full h-[140px] object-cover rounded-lg" />
+          <button className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-[var(--color-overlay-backdrop)] text-white text-xs flex items-center justify-center"
             onClick={() => updateConfig(id, { imagePreview: undefined, fileName: undefined, dimensions: undefined })}>✕</button>
-          <div className="text-[14px] text-[#78716c] mt-1">{fileName} · {config?.dimensions as string}</div>
+          <div className="text-sm text-[var(--color-text-placeholder)] mt-1">{fileName} · {config?.dimensions as string}</div>
         </div>
       ) : (
-        <div className="w-full h-[140px] border border-dashed border-[#a8a29e] rounded-lg flex flex-col items-center justify-center text-[14px] text-[#78716c] cursor-pointer hover:border-solid hover:bg-[var(--cg-surface)] transition"
+        <div className={`w-full h-[140px] border border-dashed border-[var(--color-text-disabled)] rounded-lg flex flex-col items-center justify-center text-sm text-[var(--color-text-placeholder)] cursor-pointer hover:border-solid hover:bg-[var(--color-bg-surface)] transition ${dragOver ? 'border-solid bg-[var(--color-bg-surface)]' : ''}`}
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); }}>
+          onDragEnter={() => setDragOver(true)}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); }}>
           ↑ Drop image or click
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
         </div>

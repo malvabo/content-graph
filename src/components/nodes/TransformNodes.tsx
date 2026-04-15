@@ -21,12 +21,12 @@ export function RefineInline({ id }: { id: string }) {
       <div className="flex gap-1">
         {['List', 'Paragraph', 'JSON'].map((f) => (
           <button key={f}
-            className={`text-[14px] px-2 py-0.5 rounded ${format === f ? 'bg-[var(--cg-green)] text-white' : 'bg-[var(--cg-surface)] text-[#57534e]'}`}
+            className={`text-sm px-2.5 py-1 rounded ${format === f ? 'bg-[var(--color-accent-subtle)] text-[var(--color-bg-card)]' : 'bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)]'}`}
             onClick={() => updateConfig(id, { output_format: f })}>{f}</button>
         ))}
       </div>
       {status === 'complete' && output && (
-        <div className="border-t border-[var(--cg-border)] pt-1.5 mt-1 max-h-[120px] overflow-y-auto text-[14px] text-[#57534e] leading-relaxed" style={{ scrollbarWidth: 'thin' }}>
+        <div className="border-t border-[var(--color-border-default)] pt-1.5 mt-1 max-h-[120px] overflow-y-auto text-sm text-[var(--color-text-secondary)] leading-relaxed" style={{ scrollbarWidth: 'thin' }}>
           {output}
         </div>
       )}

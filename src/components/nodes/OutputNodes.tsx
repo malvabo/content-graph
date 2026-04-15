@@ -20,23 +20,23 @@ export function ExportInline({ id }: { id: string }) {
   return (
     <div className="mt-2">
       {upstream.length === 0 && imagePromptNodes.length === 0 ? (
-        <div className="text-[14px] text-[#78716c]">Connect nodes to export</div>
+        <div className="text-sm text-[var(--color-text-placeholder)]">Connect nodes to export</div>
       ) : (
         <div className="flex flex-col gap-1">
           {upstream.map((u) => (
-            <div key={u!.id} className="text-[14px] text-[#57534e] flex items-center gap-1">
-              <span style={{ color: u!.done ? 'var(--cg-green)' : '#a8a29e' }}>{u!.done ? '✓' : '○'}</span> {u!.label}
+            <div key={u!.id} className="text-sm text-[var(--color-text-secondary)] flex items-center gap-1">
+              <span style={{ color: u!.done ? 'var(--color-accent)' : 'var(--color-text-disabled)' }}>{u!.done ? '✓' : '○'}</span> {u!.label}
             </div>
           ))}
           {imagePromptNodes.map((n) => (
-            <div key={n.id} className="text-[14px] text-[#57534e] flex items-center gap-1">
-              <span className="text-[#f97316]">✓</span> {n.data.label} (image)
+            <div key={n.id} className="text-sm text-[var(--color-text-secondary)] flex items-center gap-1">
+              <span className="text-[var(--p-amber-600)]">✓</span> {n.data.label} (image)
             </div>
           ))}
         </div>
       )}
       {status[id] === 'complete' && (
-        <button className="w-full h-8 mt-2 text-sm font-medium bg-[var(--cg-green)] text-white rounded-lg hover:bg-[var(--cg-green-hover)] transition">
+        <button className="w-full h-8 mt-2 text-sm font-medium bg-[var(--color-accent)] text-[var(--p-white)] rounded-lg hover:bg-[var(--color-accent-hover)] transition">
           ↓ Download content-export.zip
         </button>
       )}

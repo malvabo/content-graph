@@ -17,13 +17,14 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
+    const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#F2EFE9';
     let raf: number;
     let collapse = 0; // 0 = fog, 1 = circle
     const draw = () => {
       const target = listening ? 1 : 0;
       collapse += (target - collapse) * 0.025;
       const w = canvas.width, h = canvas.height, cx = w / 2, cy = h / 2;
-      ctx.fillStyle = '#f2efe9';
+      ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, w, h);
 
       for (let i = 0; i < 5; i++) {
@@ -113,7 +114,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
       <canvas ref={canvasRef} width={800} height={800} className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }} />
 
       <div className="relative z-10 flex flex-col items-center gap-4 pt-10">
-        <div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink-3)' }}>
+        <div style={{ font: 'var(--weight-medium) var(--text-sm)/var(--leading-fixed) var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
           {listening ? 'Listening...' : 'Tap anywhere to start'}
         </div>
       </div>
@@ -121,8 +122,8 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
       {/* Show transcript only when not actively listening */}
       {!listening && (transcript || interim) && (
         <div className="relative z-10 flex-1 w-full max-w-[720px] mx-auto overflow-y-auto px-8 py-4">
-          <div style={{ font: '400 16px/1.8 var(--font-sans)', color: 'var(--cg-ink)' }} className="whitespace-pre-wrap">
-            {transcript}<span style={{ color: 'var(--cg-ink-3)' }}>{interim}</span>
+          <div style={{ font: 'var(--weight-normal) var(--text-md)/var(--leading-loose) var(--font-sans)', color: 'var(--color-text-primary)' }} className="whitespace-pre-wrap">
+            {transcript}<span style={{ color: 'var(--color-text-tertiary)' }}>{interim}</span>
           </div>
         </div>
       )}

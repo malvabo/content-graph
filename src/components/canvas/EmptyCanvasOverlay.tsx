@@ -31,14 +31,14 @@ export default function EmptyCanvasOverlay() {
           <div className="relative group py-[10px] -my-[10px]">
             <button className="btn btn-outline">Load template</button>
             <div className="hidden group-hover:block absolute top-full left-0 pt-[10px] min-w-[220px] z-10">
-              <div className="rounded-xl shadow-lg py-1" style={{ background: '#F7F5F1', border: '1px solid #e6e3dd' }}>
+              <div className="rounded-xl shadow-lg py-1" style={{ background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-subtle)' }}>
               {TEMPLATES.map((t, i) => (
                 <button key={t.name} className="w-full text-left px-3 py-2 transition" style={{ background: 'transparent' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--cg-surface)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   onClick={() => loadTemplate(i)}>
-                  <div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--cg-ink)' }}>{t.name}</div>
-                  <div style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--cg-ink-3)' }}>{t.description}</div>
+                  <div style={{ font: '500 14px/20px var(--font-sans)', color: 'var(--color-text-primary)' }}>{t.name}</div>
+                  <div style={{ font: '400 14px/1.5 var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{t.description}</div>
                 </button>
               ))}
               </div>

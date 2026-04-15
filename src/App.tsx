@@ -11,15 +11,15 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
 import type { NodeDef } from './utils/nodeDefs';
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
-  state = { error: null as Error | null };
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; btnHover: boolean }> {
+  state = { error: null as Error | null, btnHover: false };
   static getDerivedStateFromError(error: Error) { return { error }; }
   render() {
     if (this.state.error) return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, fontFamily: 'system-ui', color: '#57534e' }}>
-        <div style={{ fontSize: 15, fontWeight: 500 }}>Something went wrong</div>
-        <div style={{ fontSize: 13, maxWidth: 400, textAlign: 'center' }}>{this.state.error.message}</div>
-        <button onClick={() => { localStorage.removeItem('content-graph-store'); window.location.reload(); }} style={{ marginTop: 8, padding: '8px 16px', borderRadius: 8, border: '1px solid #e6e3dd', background: '#fff', cursor: 'pointer', fontSize: 14 }}>Clear data &amp; reload</button>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)' }}>
+        <div style={{ fontSize: 'var(--text-md)', fontWeight: 500 }}>Something went wrong</div>
+        <div style={{ fontSize: 'var(--text-sm)', maxWidth: 400, textAlign: 'center' }}>{this.state.error.message}</div>
+        <button onMouseEnter={() => this.setState({ btnHover: true })} onMouseLeave={() => this.setState({ btnHover: false })} onClick={() => { localStorage.removeItem('content-graph-store'); window.location.reload(); }} style={{ marginTop: 'var(--space-2)', padding: '8px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', background: this.state.btnHover ? 'var(--color-bg-card-hover, #f5f5f4)' : 'var(--color-bg-card)', cursor: 'pointer', fontSize: 'var(--text-sm)' }}>Clear data &amp; reload</button>
       </div>
     );
     return this.props.children;
@@ -33,7 +33,7 @@ const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
 
 function MobileBlock() {
   return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif', fontSize: '15px', color: '#6b7280', textAlign: 'center', padding: '32px' }}>
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', color: 'var(--color-text-tertiary)', textAlign: 'center', padding: 'var(--space-8)' }}>
       up200 requires a desktop browser.
     </div>
   );

@@ -53,13 +53,15 @@ function IntroInner() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8">
-      <h1 className="text-4xl md:text-5xl font-semibold text-center" style={{ color: "var(--cg-ink)" }}>
+      <h1 className="text-[36px] font-semibold text-center" style={{ color: 'var(--color-text-primary)' }}>
         {displayed}
         {!done && (
           <span className={cn("inline-block ml-0.5 w-[3px] h-[1em] bg-current align-middle animate-blink-cursor")} />
         )}
       </h1>
-      <Keypad />
+      <div style={{ zoom: 2 }}>
+        <Keypad />
+      </div>
     </div>
   );
 }

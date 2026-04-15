@@ -26,10 +26,12 @@ export default function ContextMenu({ x, y, nodeId, onClose }: { x: number; y: n
     ...(output ? [{ label: 'Copy output', action: () => navigator.clipboard.writeText(output) }] : []),
   ];
 
+  const isDanger = (label: string) => label.toLowerCase().includes('delete');
+
   return (
-    <div className="fixed z-50 bg-white border border-[var(--cg-border)] rounded-lg shadow-lg py-1 min-w-[160px]" style={{ left: x, top: y }}>
+    <div className="fixed z-50 bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-lg shadow-lg py-1 min-w-[160px]" style={{ left: x, top: y }}>
       {items.map((item) => (
-        <button key={item.label} className="w-full text-left px-3 py-1.5 text-sm text-[var(--cg-ink)] hover:bg-[var(--cg-surface)] transition"
+        <button key={item.label} className={`w-full text-left px-3 py-1.5 text-sm transition ${isDanger(item.label) ? 'text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)]' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'}`}
           onClick={() => { item.action(); onClose(); }}>
           {item.label}
         </button>

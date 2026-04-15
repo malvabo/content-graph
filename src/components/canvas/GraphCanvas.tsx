@@ -16,7 +16,7 @@ import type { NodeDef } from '../../utils/nodeDefs';
 
 const nodeTypes = { contentNode: BaseNode };
 const edgeTypes = { deletable: DeletableEdge };
-const defaultEdgeOptions = { type: 'deletable', style: { stroke: '#D5D0C8', strokeWidth: 1.5, strokeDasharray: '5 4' } };
+const defaultEdgeOptions = { type: 'deletable', style: { stroke: 'var(--color-edge)', strokeWidth: 1.5, strokeDasharray: '5 4' } };
 
 export default function GraphCanvas() {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId, addNode } = useGraphStore();
@@ -100,15 +100,15 @@ export default function GraphCanvas() {
         deleteKeyCode={['Backspace', 'Delete']}
         fitView={false} panOnScroll={false} selectionOnDrag={false}
         proOptions={{ hideAttribution: true }}
-        style={{ background: 'var(--cg-canvas)' }}>
-        <Background variant={BackgroundVariant.Dots} gap={14} size={1.5} color="#D5D0C8" />
+        style={{ background: 'var(--color-bg-canvas)' }}>
+        <Background variant={BackgroundVariant.Dots} gap={14} size={1.5} color="var(--color-edge)" />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
       </ReactFlow>
 
       {tooltip && (
         <div className="absolute z-50 px-3 py-1.5 rounded-lg shadow-lg pointer-events-none"
-          style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%)', background: 'var(--cg-dark)', color: 'var(--cg-dark-text)', font: '400 14px/1.5 var(--font-sans)' }}>
+          style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%)', background: 'var(--color-bg-tooltip)', color: 'var(--color-text-inverse)', font: '400 14px/1.5 var(--font-sans)' }}>
           {tooltip.message}
         </div>
       )}
@@ -116,7 +116,7 @@ export default function GraphCanvas() {
       {spotlight && <NodeSpotlight x={spotlight.x} y={spotlight.y} flowX={spotlight.flowX} flowY={spotlight.flowY} onClose={() => setSpotlight(null)} onSelect={() => setSpotlight(null)} />}
 
       <div ref={spotlightRef} className="absolute pointer-events-none rounded-full"
-        style={{ width: 160, height: 160, background: 'radial-gradient(circle, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.12) 50%, transparent 100%)', mixBlendMode: 'color-burn', opacity: 0, transition: 'opacity 150ms', zIndex: 1 }} />
+        style={{ width: 160, height: 160, background: 'radial-gradient(circle, var(--color-overlay-dark) 0%, var(--color-overlay-dark) 50%, transparent 100%)', mixBlendMode: 'color-burn', opacity: 0, transition: 'opacity 150ms', zIndex: 1 }} />
     </div>
   );
 }

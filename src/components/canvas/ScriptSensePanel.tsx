@@ -13,7 +13,7 @@ export default function ScriptSensePanel({ initialText }: Props) {
   }, [initialText]);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--cg-canvas)' }}>
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)' }}>
       <iframe
         key={iframeKey}
         src="/scriptsense/scriptsense.html"

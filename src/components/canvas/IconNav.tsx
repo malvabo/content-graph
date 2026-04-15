@@ -11,12 +11,12 @@ function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: str
       onClick={onClick}
       className="flex flex-col items-center gap-1 w-full py-2 rounded-lg transition-colors"
       style={{
-        background: active ? 'var(--cg-green-lt)' : 'transparent',
-        color: active ? '#0A5C2A' : 'var(--cg-ink-3)',
+        background: active ? 'var(--color-bg-surface)' : 'transparent',
+        color: active ? '#0A5C2A' : 'var(--color-text-tertiary)',
       }}
     >
       <div className="w-6 h-6 flex items-center justify-center">{icon}</div>
-      <span style={{ font: '500 10px/1 var(--font-sans)', letterSpacing: '.03em' }}>{label}</span>
+      <span style={{ font: 'var(--weight-medium) var(--text-xs)/var(--leading-none) var(--font-sans)', letterSpacing: '.03em' }}>{label}</span>
     </button>
   );
 }
@@ -27,8 +27,8 @@ const ChatIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="non
 
 export default function IconNav({ activeView, onViewChange }: Props) {
   return (
-    <nav className="w-[64px] shrink-0 flex flex-col items-center py-3 px-1 gap-2.5" style={{ background: 'var(--cg-card)', borderRight: '1px solid var(--cg-border)' }}>
-      <span style={{ font: '500 13px/1 var(--font-mono)', color: 'var(--cg-ink)', letterSpacing: '-.02em', userSelect: 'none', marginBottom: 4 }}>up200</span>
+    <nav aria-label="Main navigation" className="w-[64px] shrink-0 flex flex-col items-center py-3 px-1 gap-2.5" style={{ background: 'var(--color-bg-card)', borderRight: '1px solid var(--color-border-default)' }}>
+      <span style={{ font: 'var(--weight-medium) var(--text-sm)/var(--leading-none) var(--font-mono)', color: 'var(--color-text-primary)', letterSpacing: '-.02em', userSelect: 'none', marginBottom: 4 }}>up200</span>
       <NavItem icon={<WorkflowIcon />} label="Workflow" active={activeView === 'workflow'} onClick={() => onViewChange('workflow')} />
       <NavItem icon={<VoiceIcon />} label="Voice" active={activeView === 'voice'} onClick={() => onViewChange('voice')} />
       <NavItem icon={<ChatIcon />} label="Script" active={activeView === 'scriptsense'} onClick={() => onViewChange('scriptsense')} />
