@@ -88,7 +88,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
           aria-label="Delete node"
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); if (confirm('Delete this node?')) useGraphStore.getState().removeNode(id); }}
-          className="absolute -top-2.5 -right-2.5 w-5 h-5 rounded-full bg-[var(--color-danger)] text-white flex items-center justify-center z-10 hover:bg-[var(--color-danger-hover)]"
+          className="absolute -top-3 -right-3 w-7 h-7 rounded-full bg-[var(--color-danger)] text-white flex items-center justify-center z-10 hover:bg-[var(--color-danger-hover)]"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
