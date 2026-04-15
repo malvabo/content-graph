@@ -152,10 +152,10 @@
   --radius-full: 9999px;
 
   /* ── Shadows (elevation levels) ── */
-  --shadow-sm: 0 2px 12px rgba(0,0,0,0.4);
-  --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-  --shadow-glow: 0 0 16px rgba(13,191,90,0.25);
+  --shadow-sm: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+  --shadow-glow: 0 0 16px rgba(13,191,90,0.2);
 
   /* ── Transitions ── */
   --duration-fast: 80ms;
