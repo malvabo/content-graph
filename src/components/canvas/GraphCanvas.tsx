@@ -77,7 +77,7 @@ export default function GraphCanvas() {
       onMouseMove={(e) => {
         if (spotlightRef.current) {
           const rect = wrapperRef.current!.getBoundingClientRect();
-          spotlightRef.current.style.transform = `translate(${e.clientX - rect.left - 80}px, ${e.clientY - rect.top - 80}px)`;
+          spotlightRef.current.style.transform = `translate(${e.clientX - rect.left - 20}px, ${e.clientY - rect.top - 20}px)`;
           spotlightRef.current.style.opacity = '1';
         }
       }}
@@ -118,7 +118,7 @@ export default function GraphCanvas() {
       {spotlight && <NodeSpotlight x={spotlight.x} y={spotlight.y} flowX={spotlight.flowX} flowY={spotlight.flowY} onClose={() => setSpotlight(null)} onSelect={() => setSpotlight(null)} />}
 
       <div ref={spotlightRef} className="absolute pointer-events-none rounded-full"
-        style={{ width: 160, height: 160, background: 'radial-gradient(circle, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.04) 40%, transparent 70%)', mixBlendMode: 'multiply', opacity: 0, transition: 'opacity 150ms', zIndex: 5 }} />
+        style={{ width: 40, height: 40, background: 'radial-gradient(circle, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.12) 50%, transparent 100%)', mixBlendMode: 'multiply', opacity: 0, transition: 'opacity 100ms', zIndex: 5 }} />
     </div>
   );
 }
