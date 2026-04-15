@@ -18,7 +18,7 @@ function canConnect(fromSubtype: string, toSubtype: string): boolean {
   return from.hasOutput && to.hasInput;
 }
 
-const HANDLE_CLS = "!w-3 !h-3 !border-[1.5px] !border-[var(--color-border-handle)] !bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)] !transition-colors";
+const HANDLE_CLS = "!w-3 !h-3 !border-[1.5px] border-[var(--color-border-handle)] bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)] !transition-colors";
 
 /* ── Chip-style MiniSelect ── */
 function MiniSelect({ value, options, onChange, label }: { value: string; options: readonly string[]; onChange: (v: string) => void; label?: string }) {
