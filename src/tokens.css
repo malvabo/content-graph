@@ -193,7 +193,7 @@
 
   /* ── Edge/dot ── */
   --color-dot: var(--p-neutral-400);
-  --color-edge: var(--p-neutral-400);
+  --color-edge: var(--p-neutral-500);
   --dot-gap: 14px;
   --dot-size: 1.5px;
 
