@@ -80,7 +80,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 .btn-outline:active:not(:disabled) { background: var(--color-bg-surface); }
 
 .btn-ghost { background: transparent; color: var(--color-text-primary); }
-.btn-ghost:hover { background: var(--color-bg-surface); }
+.btn-ghost:hover { background: rgba(255,255,255,0.08); }
 .btn-ghost:active:not(:disabled) { background: var(--color-interactive-active); }
 
 .btn-tonal { background: var(--color-bg-surface); color: var(--color-accent-subtle); }
