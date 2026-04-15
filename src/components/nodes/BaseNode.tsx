@@ -20,10 +20,6 @@ function canConnect(fromSubtype: string, toSubtype: string): boolean {
 
 const HANDLE_CLS = "!w-3 !h-3 !border-[1.5px] !border-[var(--color-border-handle)] !bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)] !transition-colors";
 
-const CATEGORY_COLORS: Record<string, string> = {
-  source: '#5C8A6C', generate: '#0DBF5A', output: '#7A8A5C', transform: '#8A5C7A',
-};
-
 /* ── Chip-style MiniSelect ── */
 function MiniSelect({ value, options, onChange, label }: { value: string; options: readonly string[]; onChange: (v: string) => void; label?: string }) {
   const [open, setOpen] = useState(false);
@@ -196,7 +192,6 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         border: `1px solid ${isError ? 'var(--color-danger-border)' : isStale ? 'var(--color-warning-border)' : hovered ? 'var(--color-border-strong)' : 'var(--color-border-default)'}`,
         borderRadius: 'var(--radius-lg)',
         padding: 'var(--space-4)',
-        paddingLeft: 'calc(var(--space-4) + 4px)',
         position: 'relative',
         opacity: (connectionState === 'incompatible' || dragDimmed) ? 0.4 : 1,
         transition: 'opacity 200ms ease, box-shadow 200ms ease, border-color 150ms ease, outline-color 150ms ease',
@@ -205,9 +200,6 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         outlineOffset: -2,
       }}
     >
-      {/* Category left bar */}
-      <div style={{ position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: '0 3px 3px 0', background: CATEGORY_COLORS[data.category] || 'var(--color-border-default)', opacity: 0.6 }} />
-
       {/* Delete button (top-right, hover only) */}
       <button
         onMouseDown={e => e.stopPropagation()}
