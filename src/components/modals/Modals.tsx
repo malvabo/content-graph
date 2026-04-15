@@ -13,15 +13,15 @@ function AiPopover({ x, y, selectedText, onApply, onClose }: { x: number; y: num
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
-    setTimeout(() => document.addEventListener('mousedown', handler), 10);
-    return () => document.removeEventListener('mousedown', handler);
+    const t = setTimeout(() => document.addEventListener('mousedown', handler), 100);
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
   }, [onClose]);
 
   return (
-    <div ref={ref} style={{ position: 'absolute', left: x, top: y, zIndex: 10 }}>
+    <div ref={ref} style={{ position: 'absolute', left: x, top: y, zIndex: 20, transform: 'translateY(-100%)' }}>
       <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', display: 'flex', gap: 'var(--space-1)' }}>
         {AI_ACTIONS.map((a) => (
-          <button key={a.label} className="btn-xs btn-ghost" onMouseDown={(e) => e.stopPropagation()} onClick={() => { onApply(a.action(selectedText)); onClose(); }}>
+          <button key={a.label} className="btn-xs btn-ghost" onMouseDown={(e) => e.preventDefault()} onClick={() => { onApply(a.action(selectedText)); onClose(); }}>
             {a.label}
           </button>
         ))}
@@ -82,6 +82,8 @@ export function OutputModal({ title, text, onClose, onTextChange }: OutputModalP
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const contentRef = useRef<HTMLDivElement>(null);
+
   const wc = editedText.trim().split(/\s+/).filter(Boolean).length;
   const cc = editedText.length;
   const readMin = Math.max(1, Math.round(wc / 230));
@@ -89,10 +91,16 @@ export function OutputModal({ title, text, onClose, onTextChange }: OutputModalP
 
   const onMouseUp = useCallback(() => {
     const ta = textareaRef.current;
-    if (!ta) return;
+    const container = contentRef.current;
+    if (!ta || !container) return;
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
-    setAiPopover({ x: 0, y: -40, text: editedText.slice(start, end) });
+    // Position popover above the textarea, horizontally centered
+    const taRect = ta.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const x = (taRect.width / 2);
+    const y = taRect.top - containerRect.top;
+    setAiPopover({ x, y, text: editedText.slice(start, end) });
   }, [editedText]);
 
   const handleAiApply = useCallback((newText: string) => {
@@ -109,7 +117,7 @@ export function OutputModal({ title, text, onClose, onTextChange }: OutputModalP
     <ModalShell onClose={onClose} maxWidth={720}>
       <ModalHeader title={title} subtitle={`${wc} words · ${cc} chars · ${readMin} min read`} onClose={onClose} />
 
-      <div className="flex-1 overflow-y-auto relative" style={{ padding: '0 var(--space-6)', scrollbarWidth: 'thin' }}>
+      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: '0 var(--space-6)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <textarea ref={textareaRef} className="w-full outline-none"
           style={{ minHeight: 320, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)' }}
