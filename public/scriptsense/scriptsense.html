@@ -40,19 +40,19 @@ const RotateCcw = ({size,...p}) => <I size={size} {...p}><path d="M3 12a9 9 0 1 
    • Cards: shadow-only elevation, no borders
 ───────────────────────────────────────────── */
 const C = {
-  pageBg:  "#F6F7F5",
-  surface: "#F0F2F0",
+  pageBg:  "#F2EFE9",
+  surface: "#F7F5F1",
   white:   "#FFFFFF",
   border:  "#E0E4E0",
   border2: "#C8D4CC",
   text:    "#1A2420",
-  sub:     "#526858",
-  mute:    "#4A6A52",
+  sub:     "#6d6d6d",
+  mute:    "#78716c",
   accent:  "#0DBF5A",
   accentHover: "#0BAF52",
   accentAct: "#0A9F4A",
-  accentLt: "#D6EEE0",
-  accentTint: "#EEF8F2",
+  accentLt: "#F7F5F1",
+  accentTint: "#F9F8F5",
   accentText: "#0A5C2A",
   accentDark: "#061208",
   red:     "#C93030",
@@ -113,7 +113,7 @@ const FONT_STYLE = `
   @keyframes fadeUp  { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
 
   .draft-card { cursor:pointer; transition: box-shadow 0.15s, transform 0.15s; }
-  .draft-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08), 0 0 0 1px ${C.border2} !important; transform: translateY(-1px); }
+  .draft-card:hover { border-color: ${C.border2} !important; box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important; transform: translateY(-1px); }
   .new-card   { cursor:pointer; transition: background 100ms, border-color 100ms; }
   .new-card:hover { background: ${C.surface} !important; border-color: ${C.border2} !important; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
   .save-btn   { cursor:pointer; transition: background 100ms; }
@@ -397,7 +397,7 @@ ${paras.map((p,i)=>`[${i+1}] "${p}"`).join("\n\n")}`
   const engStroke = (score) => 1.5 + (Math.max(0, score - 20) / 80) * 2.5;
 
   if (loading) return (
-    <div style={{ background:C.white, borderRadius:12, padding:20, boxShadow:"0 2px 8px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.04)", display:"flex", alignItems:"center", gap:8, color:C.mute, fontSize:13 }}>
+    <div style={{ background:C.white, borderRadius:12, padding:20, border:"1px solid "+C.border, display:"flex", alignItems:"center", gap:8, color:C.mute, fontSize:13 }}>
       <Loader size={13} style={{ animation:"spin 1s linear infinite" }} /> Analyzing engagement arc…
     </div>
   );
@@ -428,7 +428,7 @@ ${paras.map((p,i)=>`[${i+1}] "${p}"`).join("\n\n")}`
 
       {/* ── Summary card (collapsible) ── */}
       {summary && (
-        <div style={{ background:C.white, borderRadius:12, boxShadow:"0 2px 8px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.04)", animation:"fadeUp 0.18s ease", overflow:"hidden" }}>
+        <div style={{ background:C.white, borderRadius:12, border:"1px solid "+C.border, animation:"fadeUp 0.18s ease", overflow:"hidden" }}>
           <div onClick={() => setSummaryOpen(o => !o)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:16, cursor:"pointer", userSelect:"none" }}>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
               <Tag type="science" label="Overall analysis" />
@@ -455,7 +455,7 @@ ${paras.map((p,i)=>`[${i+1}] "${p}"`).join("\n\n")}`
       )}
 
       {/* ── Chart card ── */}
-      <div style={{ background:C.white, borderRadius:12, padding:20, boxShadow:"0 2px 8px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.04)" }}>
+      <div style={{ background:C.white, borderRadius:12, padding:20, border:"1px solid "+C.border }}>
 
         {/* Header */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
@@ -605,7 +605,7 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
           {drafts.length === 0 ? (
             /* Empty state — centred in remaining viewport */
             <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
-              <div style={{ width:52, height:52, borderRadius:14, background:C.white, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)" }}>
+              <div style={{ width:52, height:52, borderRadius:14, background:C.white, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", border:"1px solid "+C.border, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
                 <FileText size={22} color={C.accent} />
               </div>
               <p style={{ fontSize:16, fontWeight:600, marginBottom:8 }}>No talks yet</p>
@@ -617,19 +617,19 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
           ) : (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:12 }}>
               {/* New talk card */}
-              <div className="new-card" onClick={onNew} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 20px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:10, minHeight:160 }}>
-                <div style={{ width:36, height:36, borderRadius:10, background:C.surface, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <span style={{ fontSize:20, lineHeight:1, color:C.sub, fontWeight:300 }}>+</span>
+              <div className="new-card" onClick={onNew} style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8, minHeight:140 }}>
+                <div style={{ width:32, height:32, borderRadius:8, background:C.surface, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ fontSize:18, lineHeight:1, color:C.sub, fontWeight:300 }}>+</span>
                 </div>
-                <span style={{ fontSize:13, fontWeight:600, color:C.sub }}>New talk</span>
+                <span style={{ fontSize:14, fontWeight:500, color:C.sub }}>New talk</span>
               </div>
 
               {/* Draft cards */}
               {drafts.map(draft => (
                 <div key={draft.id} className="draft-card" onClick={() => onOpen(draft)}
-                  style={{ background:C.white, borderRadius:12, padding:"20px", boxShadow:"0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)", display:"flex", flexDirection:"column", gap:10, minHeight:160 }}>
+                  style={{ background:C.white, borderRadius:12, padding:"16px", border:"1px solid "+C.border, display:"flex", flexDirection:"column", gap:10, minHeight:140 }}>
                   <div style={{ flex:1 }}>
-                    <p style={{ fontSize:14, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                    <p style={{ fontSize:14, fontWeight:500, color:C.text, lineHeight:1.4, marginBottom:6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
                       {getTitle(draft.text)}
                     </p>
                     <p style={{ fontSize:12, color:C.mute, lineHeight:1.6, display:"-webkit-box", WebkitLineClamp:3, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
@@ -637,7 +637,7 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
                     </p>
                   </div>
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:11, color:C.mute }}>{draft.wordCount} words · {fmt(draft.updatedAt)}</span>
+                    <span style={{ fontSize:12, color:C.mute }}>{draft.wordCount} words · {fmt(draft.updatedAt)}</span>
                     <button onClick={(e) => { e.stopPropagation(); onDelete(draft.id); }}
                       style={{ background:"transparent", border:"none", cursor:"pointer", padding:"4px", borderRadius:6, color:C.mute, display:"flex", alignItems:"center" }}>
                       <X size={13} />
@@ -881,7 +881,7 @@ ${text}`
               {/* ── Empty / loading / results states ── */}
               {analysisVersion === 0 && (
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flex:1, gap:16, padding:40, textAlign:"center" }}>
-                  <div style={{ width:48, height:48, borderRadius:14, background:C.white, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)" }}>
+                  <div style={{ width:48, height:48, borderRadius:14, background:C.white, display:"flex", alignItems:"center", justifyContent:"center", border:"1px solid "+C.border, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
                     <FileText size={22} color={C.accent} />
                   </div>
                   <div>
