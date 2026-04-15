@@ -45,16 +45,35 @@ export default function NodePalette({ onAddNode }: Props) {
 
   return (
     <div ref={ref} className="absolute bottom-4 left-4 z-20">
-      {/* Floating + button */}
+      {/* Floating + button — iOS fluid style */}
       <button onClick={() => setOpen(!open)}
         aria-label="Add node"
         aria-expanded={open}
         className="w-12 h-12 rounded-full flex items-center justify-center"
-        style={{ background: open ? 'var(--color-bg-hover)' : '#fff', color: 'var(--color-text-primary)', boxShadow: '0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)', transition: 'transform 150ms, box-shadow 150ms, background 150ms' }}
-        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.background = 'var(--color-bg-hover)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = open ? 'var(--color-bg-hover)' : '#fff'; }}
+        style={{
+          background: 'rgba(255,255,255,0.65)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          color: 'var(--color-text-secondary)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(255,255,255,0.5)',
+          border: '1px solid rgba(0,0,0,0.06)',
+          transition: 'transform 200ms ease, box-shadow 200ms ease, background 200ms ease, border-color 200ms ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.85)';
+          e.currentTarget.style.boxShadow = '0 6px 28px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.7)';
+          e.currentTarget.style.transform = 'scale(1.06)';
+          e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.65)';
+          e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(255,255,255,0.5)';
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)';
+        }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 150ms' }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#plus-grad)" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 200ms ease' }}>
+          <defs><linearGradient id="plus-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stopColor="var(--color-text-tertiary)" /><stop offset="1" stopColor="var(--color-text-disabled)" /></linearGradient></defs>
           <path d="M12 5v14"/><path d="M5 12h14"/>
         </svg>
       </button>
