@@ -12,116 +12,117 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
   const fullRef = useRef('');
   const listeningRef = useRef(false);
 
-  // Orb animation
+  // Orb animation — dark sphere with aurora ring
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
-    const BG = '#1a1a1a';
+    const BG = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#F2EFE9';
     let raf: number;
     let collapse = 0;
-
-    const particles = Array.from({ length: 40 }, () => ({
-      angle: Math.random() * Math.PI * 2,
-      speed: 0.3 + Math.random() * 0.5,
-      size: 2 + Math.random() * 4,
-      hue: 175 + Math.random() * 15,
-      phase: Math.random() * Math.PI * 2,
-      homeDist: 80 + Math.random() * 200,
-    }));
-
-    const FINAL_R = 60;
+    const R = 120; // sphere radius
 
     const draw = () => {
       const target = listening ? 1 : 0;
-      collapse += (target - collapse) * 0.06;
-      if (Math.abs(collapse - target) < 0.005) collapse = target;
+      collapse += (target - collapse) * 0.04;
+      if (Math.abs(collapse - target) < 0.003) collapse = target;
 
-      const c3 = collapse * collapse * collapse;
+      const t = tRef.current;
       const w = canvas.width, h = canvas.height, cx = w / 2, cy = h / 2;
+      const c = collapse;
 
+      // Clear with page background
       ctx.fillStyle = BG;
       ctx.fillRect(0, 0, w, h);
 
-      // Clip to canvas bounds
       ctx.save();
       ctx.beginPath();
       ctx.rect(0, 0, w, h);
       ctx.clip();
 
-      // --- Fog blobs: even radial spread ---
-      const fogAlpha = (1 - c3) * 0.25;
-      if (fogAlpha > 0.01) {
+      // --- Fog state (collapse = 0): soft teal blobs ---
+      const fogAlpha = (1 - c) * 0.22;
+      if (fogAlpha > 0.005) {
         for (let i = 0; i < 5; i++) {
-          const angle = tRef.current * 0.8 + i * 1.3;
-          const spread = (160 + Math.sin(tRef.current * 0.5 + i) * 80) * (1 - c3);
-          const x = cx + Math.cos(angle) * spread;
-          const y = cy + Math.sin(angle) * spread;
-          const size = (250 + Math.sin(tRef.current + i) * 60) * (1 - c3 * 0.85);
-          const grad = ctx.createRadialGradient(x, y, 0, x, y, Math.max(size, 1));
-          const hue = 178 + i * 5;
-          grad.addColorStop(0, `hsla(${hue},80%,45%,${fogAlpha})`);
-          grad.addColorStop(0.6, `hsla(${hue + 5},70%,40%,${fogAlpha * 0.3})`);
+          const a = t * 0.8 + i * 1.3;
+          const spread = (160 + Math.sin(t * 0.5 + i) * 80) * (1 - c);
+          const x = cx + Math.cos(a) * spread;
+          const y = cy + Math.sin(a) * spread;
+          const sz = (250 + Math.sin(t + i) * 60) * (1 - c * 0.85);
+          const grad = ctx.createRadialGradient(x, y, 0, x, y, Math.max(sz, 1));
+          grad.addColorStop(0, `hsla(${178 + i * 5},80%,45%,${fogAlpha})`);
+          grad.addColorStop(0.6, `hsla(${183 + i * 5},70%,40%,${fogAlpha * 0.3})`);
           grad.addColorStop(1, 'transparent');
           ctx.fillStyle = grad;
           ctx.fillRect(0, 0, w, h);
         }
       }
 
-      // --- Particles: perfectly circular orbits ---
-      for (const p of particles) {
-        p.angle += p.speed * 0.01;
-        const targetDist = FINAL_R * 0.6 + Math.sin(tRef.current * 2 + p.phase) * 8;
-        const d = p.homeDist * (1 - c3) + targetDist * c3;
-        const px = cx + Math.cos(p.angle + Math.sin(tRef.current * 0.3 + p.phase) * 0.5) * d;
-        const py = cy + Math.sin(p.angle + Math.cos(tRef.current * 0.4 + p.phase) * 0.5) * d;
-        const sat = 70 + collapse * 25;
-        const light = 50 - collapse * 15;
-        const alpha = 0.15 + collapse * 0.6;
-        const sz = p.size * (1 - collapse * 0.5);
-        ctx.beginPath();
-        ctx.arc(px, py, Math.max(sz, 0.5), 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue},${sat}%,${light}%,${alpha})`;
-        ctx.fill();
-      }
+      // --- Collapsed state: dark sphere with aurora ---
+      if (c > 0.05) {
+        const p = Math.min(1, (c - 0.05) / 0.95);
+        const p2 = p * p;
 
-      // --- Central glow ---
-      if (collapse > 0.1) {
-        const gp = Math.min(1, (collapse - 0.1) / 0.9);
-        const gp2 = gp * gp;
-        const outerR = 200 * (1 - gp2 * 0.7);
-        const grad = ctx.createRadialGradient(cx, cy, FINAL_R * gp2 * 0.3, cx, cy, outerR);
-        grad.addColorStop(0, `hsla(180,90%,38%,${gp2 * 0.7})`);
-        grad.addColorStop(0.4, `hsla(178,80%,42%,${gp2 * 0.35})`);
-        grad.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad;
+        // Subtle tinted sphere body (not dark/opaque)
+        const sphereGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+        sphereGrad.addColorStop(0, `rgba(0,40,50,${p2 * 0.25})`);
+        sphereGrad.addColorStop(0.7, `rgba(0,30,40,${p2 * 0.18})`);
+        sphereGrad.addColorStop(1, `rgba(0,20,30,${p2 * 0.1})`);
         ctx.beginPath();
-        ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+        ctx.arc(cx, cy, R, 0, Math.PI * 2);
+        ctx.fillStyle = sphereGrad;
         ctx.fill();
-      }
 
-      // --- Hard circle ---
-      if (collapse > 0.7) {
-        const hp = ((collapse - 0.7) / 0.3) ** 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, FINAL_R, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(180,90%,32%,${hp * 0.5})`;
-        ctx.fill();
-      }
+        // Aurora ring — 3 overlapping glowing arcs that orbit
+        for (let i = 0; i < 3; i++) {
+          const baseAngle = t * (0.4 + i * 0.15) + i * 2.1;
+          const wobble = Math.sin(t * 0.7 + i * 1.5) * 0.3;
+          const ringR = R * (0.55 + Math.sin(t * 0.3 + i) * 0.08);
+          const arcLen = Math.PI * (0.8 + Math.sin(t * 0.5 + i * 2) * 0.3);
 
-      // --- Stroke ring: same center & radius as circle ---
-      if (collapse > 0.5) {
-        const sp = ((Math.min(1, (collapse - 0.5) / 0.5)) ** 2);
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(wobble);
+
+          // Each arc: teal → purple gradient feel via hue shift
+          const hue = 190 + i * 40 + Math.sin(t + i) * 20;
+          const light = 65 + Math.sin(t * 0.8 + i) * 10;
+
+          // Outer glow
+          ctx.beginPath();
+          ctx.arc(0, 0, ringR, baseAngle, baseAngle + arcLen);
+          ctx.strokeStyle = `hsla(${hue},70%,${light}%,${p2 * 0.15})`;
+          ctx.lineWidth = 20;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+
+          // Mid glow
+          ctx.beginPath();
+          ctx.arc(0, 0, ringR, baseAngle, baseAngle + arcLen);
+          ctx.strokeStyle = `hsla(${hue},80%,${light + 10}%,${p2 * 0.35})`;
+          ctx.lineWidth = 8;
+          ctx.stroke();
+
+          // Core bright line
+          ctx.beginPath();
+          ctx.arc(0, 0, ringR, baseAngle, baseAngle + arcLen);
+          ctx.strokeStyle = `hsla(${hue - 10},60%,${light + 25}%,${p2 * 0.7})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.restore();
+        }
+
+        // Subtle sphere edge highlight
         ctx.beginPath();
-        ctx.arc(cx, cy, FINAL_R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * sp);
-        ctx.strokeStyle = `hsla(180,80%,35%,${sp * 0.9})`;
-        ctx.lineWidth = 2.5;
-        ctx.lineCap = 'round';
+        ctx.arc(cx, cy, R, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(0,80,80,${p2 * 0.15})`;
+        ctx.lineWidth = 1;
         ctx.stroke();
       }
 
       ctx.restore();
-      tRef.current += 0.015;
+      tRef.current += 0.012;
       raf = requestAnimationFrame(draw);
     };
     draw();
@@ -169,7 +170,6 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden cursor-pointer"
-      style={{ background: '#1a1a1a' }}
       onClick={() => !listening && start()}>
       {/* Full background shader */}
       <canvas ref={canvasRef} width={800} height={800} className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }} />

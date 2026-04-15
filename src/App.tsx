@@ -68,7 +68,7 @@ function AppInner() {
 
         {activeView === 'intro' && (
           <div className="flex-1 overflow-auto">
-            <Intro />
+            <Intro onComplete={() => setActiveView('workflow')} />
           </div>
         )}
 

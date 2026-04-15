@@ -5,6 +5,8 @@ import { cn } from "../lib/utils";
 const TEXT = "What should I write about today?";
 const TYPE_SPEED = 80;
 const KEY_HOLD_MS = 100;
+const PAUSE_AFTER_TYPE = 800;
+const FADE_DURATION = 600;
 
 function charToKeyCode(ch: string): string {
   if (ch === " ") return "Space";
@@ -14,9 +16,10 @@ function charToKeyCode(ch: string): string {
   return "";
 }
 
-function IntroInner() {
+function IntroInner({ onComplete }: { onComplete?: () => void }) {
   const { setPressed, setReleased, playSoundDown, playSoundUp } = useKeyboardSound();
   const [displayed, setDisplayed] = useState("");
+  const [exiting, setExiting] = useState(false);
   const idx = useRef(0);
   const started = useRef(false);
 
@@ -38,7 +41,12 @@ function IntroInner() {
     started.current = true;
 
     const tick = () => {
-      if (idx.current >= TEXT.length) return;
+      if (idx.current >= TEXT.length) {
+        // Typing done — pause, then animate out
+        setTimeout(() => setExiting(true), PAUSE_AFTER_TYPE);
+        setTimeout(() => onComplete?.(), PAUSE_AFTER_TYPE + FADE_DURATION);
+        return;
+      }
       const ch = TEXT[idx.current];
       setDisplayed(TEXT.slice(0, idx.current + 1));
       pressKey(charToKeyCode(ch));
@@ -47,12 +55,19 @@ function IntroInner() {
     };
 
     setTimeout(tick, 600);
-  }, [pressKey]);
+  }, [pressKey, onComplete]);
 
   const done = displayed.length >= TEXT.length;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-8">
+    <div
+      className="flex flex-col items-center justify-center min-h-screen gap-8"
+      style={{
+        opacity: exiting ? 0 : 1,
+        transform: exiting ? 'scale(0.97) translateY(-20px)' : 'scale(1) translateY(0)',
+        transition: `opacity ${FADE_DURATION}ms ease, transform ${FADE_DURATION}ms ease`,
+      }}
+    >
       <h1 className="text-[36px] font-semibold text-center" style={{ color: 'var(--color-text-primary)' }}>
         {displayed}
         {!done && (
@@ -66,12 +81,12 @@ function IntroInner() {
   );
 }
 
-export default function Intro() {
+export default function Intro({ onComplete }: { onComplete?: () => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   return (
     <div ref={containerRef}>
       <KeyboardProvider enableSound containerRef={containerRef}>
-        <IntroInner />
+        <IntroInner onComplete={onComplete} />
       </KeyboardProvider>
     </div>
   );
