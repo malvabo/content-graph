@@ -96,7 +96,7 @@ export default function EmptyCanvasOverlay() {
             <button onClick={handleGo}
               style={{
                 position: 'absolute', bottom: 12, right: 12,
-                background: 'var(--color-accent)', color: '#fff', border: 'none',
+                background: 'var(--color-accent)', color: 'var(--p-white)', border: 'none',
                 borderRadius: 'var(--radius-md)', padding: '6px 16px',
                 fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500,
                 cursor: 'pointer',

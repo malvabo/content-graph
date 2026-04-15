@@ -12,8 +12,10 @@ body {
   font-size: var(--text-sm);
   color: var(--color-text-primary);
   background: var(--color-bg);
+  color-scheme: light;
   -webkit-font-smoothing: antialiased;
 }
+.dark body, .dark { color-scheme: dark; }
 
 /* ── Button reset ── */
 button, [role="button"] {

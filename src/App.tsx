@@ -62,7 +62,7 @@ function AppInner() {
   }, [addNode]);
 
   return (
-    <div className="h-screen flex flex-col" style={{ colorScheme: 'dark' }}>
+    <div className="h-screen flex flex-col">
       <div className="flex flex-1 overflow-hidden">
         {activeView !== 'intro' && <IconNav activeView={activeView} onViewChange={setActiveView} />}
 

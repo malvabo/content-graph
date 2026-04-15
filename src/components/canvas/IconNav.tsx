@@ -34,10 +34,15 @@ const SunIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none
 const MoonIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>;
 
 function DarkModeToggle() {
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [dark, setDark] = useState(() => {
+    const saved = localStorage.getItem('dark-mode');
+    if (saved !== null) return saved === 'true';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   const [hover, setHover] = useState(false);
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
+    localStorage.setItem('dark-mode', String(dark));
   }, [dark]);
   return (
     <button onClick={() => setDark(!dark)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}

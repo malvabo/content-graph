@@ -155,21 +155,6 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
 
       {/* Centered label + orb group */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-6">
-        {/* Animated "Listening..." / tap prompt */}
-        <div style={{
-          fontWeight: 300,
-          fontSize: 18,
-          letterSpacing: '0.02em',
-          fontFamily: 'var(--font-sans)',
-          color: 'var(--color-text-tertiary)',
-        }}>
-          {listening ? (
-            <span>Listening<span className="voice-dots" /></span>
-          ) : (
-            'Tap anywhere to start'
-          )}
-        </div>
-
         {/* Transcript while listening */}
         {listening && (transcript || interim) && (
           <div style={{

@@ -31,7 +31,8 @@ function MiniSelect({ value, options, onChange, label }: { value: string; option
     return () => document.removeEventListener('mousedown', h);
   }, [open]);
   return (
-    <div ref={ref} className="relative" onMouseDown={e => e.stopPropagation()} onMouseLeave={() => setOpen(false)}>
+    <div ref={ref} className="relative" onMouseDown={e => e.stopPropagation()}
+      onMouseLeave={() => { if (open) setTimeout(() => { if (!ref.current?.matches(':hover')) setOpen(false); }, 100); }}>
       <button onClick={() => setOpen(!open)} className="h-6 text-xs rounded-full px-3 flex items-center gap-1"
         style={{ background: 'var(--color-bg-surface)', border: 'none', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap' }}>
         {label ? (
@@ -45,13 +46,15 @@ function MiniSelect({ value, options, onChange, label }: { value: string; option
         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ opacity: 0.35, flexShrink: 0 }}><path d="m6 9 6 6 6-6"/></svg>
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 rounded-lg z-50" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'thin', minWidth: 160, padding: 'var(--space-1) 0' }}>
+        <div className="absolute top-full left-0 pt-1 z-50">
+        <div className="rounded-lg" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'thin', minWidth: 160, padding: 'var(--space-1) 0' }}>
           {options.map((o, i) => (
             <button key={o} className="w-full px-3 py-2" style={{ textAlign: 'left', display: 'block', background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: o === value ? 500 : 400, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', borderBottom: i < options.length - 1 ? '1px solid var(--color-border-subtle)' : 'none' }}
               onMouseEnter={e => { if (o !== value) e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
               onMouseLeave={e => { if (o !== value) e.currentTarget.style.background = 'transparent'; }}
               onClick={() => { onChange(o); setOpen(false); }}>{o}</button>
           ))}
+        </div>
         </div>
       )}
     </div>

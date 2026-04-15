@@ -126,7 +126,7 @@ export default function GraphCanvas() {
       {showFirstRun && (
         <div onClick={dismissFirstRun} style={{
           position: 'absolute', bottom: 64, left: '50%', transform: 'translateX(-50%)',
-          background: 'var(--color-text-primary)', color: '#fff', borderRadius: 'var(--radius-md)',
+          background: 'var(--color-text-primary)', color: 'var(--color-text-inverse)', borderRadius: 'var(--radius-md)',
           padding: '8px 16px', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
           boxShadow: 'var(--shadow-md)', cursor: 'pointer', zIndex: 50, whiteSpace: 'nowrap',
         }}>
