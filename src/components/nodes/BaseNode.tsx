@@ -31,7 +31,7 @@ function MiniSelect({ value, options, onChange, label }: { value: string; option
     return () => document.removeEventListener('mousedown', h);
   }, [open]);
   return (
-    <div ref={ref} className="relative" onMouseDown={e => e.stopPropagation()}>
+    <div ref={ref} className="relative" onMouseDown={e => e.stopPropagation()} onMouseLeave={() => setOpen(false)}>
       <button onClick={() => setOpen(!open)} className="h-6 text-xs rounded-full px-3 flex items-center gap-1"
         style={{ background: 'var(--color-bg-surface)', border: 'none', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap' }}>
         {label ? (
