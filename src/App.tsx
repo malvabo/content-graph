@@ -40,7 +40,7 @@ function MobileBlock() {
 
 function AppInner() {
   const addNode = useGraphStore((s) => s.addNode);
-  const [activeView, setActiveView] = useState('workflow');
+  const [activeView, setActiveView] = useState('intro');
   const [voiceTranscript, setVoiceTranscript] = useState('');
   useKeyboardShortcuts();
 
@@ -64,6 +64,12 @@ function AppInner() {
     <div className="h-screen flex flex-col" style={{ colorScheme: 'light' }}>
       <div className="flex flex-1 overflow-hidden">
         <IconNav activeView={activeView} onViewChange={setActiveView} />
+
+        {activeView === 'intro' && (
+          <div className="flex-1 overflow-auto">
+            
+          </div>
+        )}
 
         {activeView === 'workflow' && (
           <div className="flex-1 relative">

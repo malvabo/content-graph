@@ -94,47 +94,26 @@ export function ImagePromptInline({ id }: { id: string }) {
           </div>
         )}
 
-        {/* Generate / Regenerate button */}
+        {/* Generate single image */}
         <button className="btn-sm btn-primary w-full" disabled={generating}
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={() => generate4(editPrompt || output?.text || '')}>
-          {generating ? 'Generating 4 options...' : images.length ? '↻ Regenerate 4' : '⚡ Generate 4 options'}
+          {generating ? 'Generating...' : output?.imageBase64 ? 'Regenerate' : 'Generate image'}
         </button>
 
         {/* Generating skeleton */}
         {generating && (
-          <div className="grid grid-cols-2 gap-1.5">
-            {[0,1,2,3].map((i) => (
-              <div key={i} className="aspect-square rounded-lg animate-pulse" style={{ background: 'var(--cg-surface)' }} />
-            ))}
+          <div className="aspect-video rounded-lg skeleton-bar" />
+        )}
+
+        {/* Single image */}
+        {!generating && (images.length > 0 || output?.imageBase64) && (
+          <div className="relative cursor-pointer" onMouseDown={(e) => e.stopPropagation()} onClick={() => setViewImage(images[0] || output?.imageBase64!)}>
+            <img src={images[0] || output?.imageBase64} className="w-full max-h-[200px] object-cover rounded-lg" />
           </div>
         )}
 
-        {/* 2×2 image grid */}
-        {!generating && images.length > 0 && (
-          <div className="grid grid-cols-2 gap-1.5">
-            {images.map((img, i) => (
-              <div key={i} className="relative group cursor-pointer" onMouseDown={(e) => e.stopPropagation()} onClick={() => {
-                useOutputStore.getState().setOutput(id, { text: editPrompt || output?.text || '', imageBase64: img });
-              }}>
-                <img src={img} className="w-full aspect-square object-cover rounded-lg" onDoubleClick={() => setViewImage(img)} />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition flex items-end justify-center pb-1.5 opacity-0 group-hover:opacity-100">
-                  <span className="text-[11px] text-white bg-black/50 px-2 py-0.5 rounded">Use this</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Single image fallback (from initial run) */}
-        {!generating && images.length === 0 && output?.imageBase64 && (
-          <div className="relative cursor-pointer" onMouseDown={(e) => e.stopPropagation()} onClick={() => setViewImage(output.imageBase64!)}>
-            <img src={output.imageBase64} className="w-full max-h-[200px] object-cover rounded-lg" />
-            <div className="flex gap-2 mt-1">
-              <button className="btn-micro" onClick={() => { const a = document.createElement('a'); a.href = output.imageBase64!; a.download = 'image.png'; a.click(); }}>Download ↓</button>
-            </div>
-          </div>
-        )}
-        {/* Image modal */}
+        {/* Image modal with generate 4 */}
         {viewImage && <ImageModal src={viewImage} prompt={editPrompt || output?.text} onClose={() => setViewImage(null)} onRegenerate={() => { setViewImage(null); generate4(editPrompt || output?.text || ''); }} />}
       </div>
     );

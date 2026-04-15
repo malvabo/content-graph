@@ -1,0 +1,222 @@
+/* ============================================
+   up200 Design Tokens
+   Base unit: 4px
+   ============================================ */
+
+:root {
+  /* ── Primitive Colors ── */
+  --p-white: #FFFFFF;
+  --p-black: #1A2420;
+  --p-green-500: #0DBF5A;
+  --p-green-600: #0BAF52;
+  --p-green-700: #0A9F4A;
+  --p-red-500: #C93030;
+  --p-red-600: #B52828;
+  --p-red-700: #A02020;
+  --p-amber-500: #F0D8A0;
+  --p-amber-600: #f59e0b;
+
+  --p-neutral-50: #F9F8F5;
+  --p-neutral-100: #F7F5F1;
+  --p-neutral-200: #F2EFE9;
+  --p-neutral-300: #E0E4E0;
+  --p-neutral-350: #e6e3dd;
+  --p-neutral-400: #D5D0C8;
+  --p-neutral-450: #C8D4CC;
+  --p-neutral-500: #a8a29e;
+  --p-neutral-600: #8a8a86;
+  --p-neutral-650: #78716c;
+  --p-neutral-700: #6d6d6d;
+  --p-neutral-750: #57534e;
+  --p-neutral-800: #52524e;
+  --p-neutral-900: #1A2420;
+  --p-neutral-950: #1a1a1f;
+
+  /* Badge primitives */
+  --p-badge-source-bg: #EDEAE5;
+  --p-badge-source-text: #5C5347;
+  --p-badge-generate-bg: #E8EDE5;
+  --p-badge-generate-text: #475C3A;
+  --p-badge-output-bg: #EDECE5;
+  --p-badge-output-text: #53573A;
+  --p-badge-transform-bg: #EDE8EB;
+  --p-badge-transform-text: #5C4753;
+
+  /* Status primitives */
+  --p-status-idle: #C8D4CC;
+  --p-status-running: #F0D8A0;
+  --p-status-complete: #0DBF5A;
+  --p-status-error: #C93030;
+
+  /* ── Semantic Colors ── */
+
+  /* Backgrounds */
+  --color-bg: var(--p-neutral-200);
+  --color-bg-surface: var(--p-neutral-100);
+  --color-bg-card: var(--p-white);
+  --color-bg-popover: var(--p-neutral-100);
+  --color-bg-subtle: var(--p-neutral-50);
+  --color-bg-dark: var(--p-neutral-950);
+
+  /* Text */
+  --color-text-primary: var(--p-neutral-900);
+  --color-text-secondary: var(--p-neutral-750);
+  --color-text-tertiary: var(--p-neutral-700);
+  --color-text-disabled: var(--p-neutral-600);
+  --color-text-placeholder: var(--p-neutral-650);
+  --color-text-on-dark: var(--p-neutral-500);
+
+  /* Borders */
+  --color-border-default: var(--p-neutral-300);
+  --color-border-subtle: var(--p-neutral-350);
+  --color-border-strong: var(--p-neutral-450);
+  --color-border-handle: #94a3b8;
+
+  /* Interactive */
+  --color-interactive-default: var(--p-white);
+  --color-interactive-hover: var(--p-neutral-100);
+  --color-interactive-active: #EBE8E2;
+  --color-interactive-focus: var(--p-green-500);
+
+  /* Accent */
+  --color-accent: var(--p-green-500);
+  --color-accent-hover: var(--p-green-600);
+  --color-accent-active: var(--p-green-700);
+  --color-accent-subtle: #0A5C2A;
+
+  /* Status: Success */
+  --color-success-bg: var(--p-neutral-50);
+  --color-success-border: #E0DCD6;
+  --color-success-text: var(--p-neutral-800);
+
+  /* Status: Warning */
+  --color-warning-bg: #FEF8E8;
+  --color-warning-border: var(--p-amber-500);
+  --color-warning-text: #6A4A10;
+
+  /* Status: Danger */
+  --color-danger-bg: #FEF4F4;
+  --color-danger-border: #ECC0C0;
+  --color-danger-text: #A83030;
+  --color-danger: var(--p-red-500);
+  --color-danger-hover: var(--p-red-600);
+  --color-danger-active: var(--p-red-700);
+
+  /* ── Typography ── */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Type scale (4px grid) */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+
+  /* Line heights */
+  --leading-none: 1;
+  --leading-tight: 1.3;
+  --leading-snug: 1.5;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.75;
+  --leading-loose: 1.8;
+  --leading-fixed: 20px;
+
+  /* Font weights */
+  --weight-normal: 400;
+  --weight-medium: 500;
+
+  /* Letter spacing */
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.1em;
+  --tracking-wider: 0.3em;
+
+  /* ── Spacing (4px base) ── */
+  --space-0: 0px;
+  --space-1: 4px;    /* xs */
+  --space-2: 8px;    /* sm */
+  --space-3: 12px;   /* md */
+  --space-4: 16px;   /* lg */
+  --space-5: 20px;   /* xl */
+  --space-6: 24px;   /* 2xl */
+  --space-8: 32px;   /* 3xl */
+  --space-10: 40px;  /* 4xl */
+  --space-12: 48px;  /* 5xl */
+
+  /* ── Border Radius ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ── Shadows (elevation levels) ── */
+  --shadow-sm: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+  --shadow-glow: 0 0 16px rgba(13,191,90,0.2);
+
+  /* ── Transitions ── */
+  --duration-fast: 80ms;
+  --duration-base: 100ms;
+  --duration-medium: 150ms;
+  --duration-slow: 200ms;
+  --duration-enter: 300ms;
+  --ease-default: ease;
+
+  /* ── Component sizes ── */
+  --size-icon-sm: 16px;
+  --size-icon-md: 20px;
+  --size-icon-lg: 24px;
+
+  --size-control-xs: 24px;
+  --size-control-sm: 28px;
+  --size-control-md: 32px;
+  --size-control-lg: 36px;
+
+  --size-badge: 28px;
+  --size-fab: 48px;
+  --size-nav: 64px;
+  --size-node: 480px;
+  --size-panel: 280px;
+  --size-modal-sm: 780px;
+  --size-modal-lg: 1100px;
+  --size-status-dot: 6px;
+  --size-node-content: 130px;
+  --size-swatch: 24px;
+
+  /* ── Overlay ── */
+  --color-overlay-light: rgba(255,255,255,0.85);
+  --color-overlay-dark: rgba(0,0,0,0.06);
+  --color-overlay-backdrop: rgba(0,0,0,0.40);
+
+  /* ── Edge/dot ── */
+  --color-dot: var(--p-neutral-400);
+  --color-edge: var(--p-neutral-400);
+  --dot-gap: 14px;
+  --dot-size: 1.5px;
+
+  /* ── Legacy aliases (backward compat) ── */
+  --cg-green: var(--color-accent);
+  --cg-green-hover: var(--color-accent-hover);
+  --cg-green-act: var(--color-accent-active);
+  --cg-green-lt: var(--color-bg-surface);
+  --cg-green-tint: var(--color-bg-subtle);
+  --cg-ink: var(--color-text-primary);
+  --cg-ink-2: var(--color-text-secondary);
+  --cg-ink-3: var(--color-text-tertiary);
+  --cg-canvas: var(--color-bg);
+  --cg-surface: var(--color-bg-surface);
+  --cg-card: var(--color-bg-card);
+  --cg-border: var(--color-border-default);
+  --cg-border-2: var(--color-border-strong);
+  --cg-red: var(--color-danger);
+  --cg-red-lt: var(--color-danger-bg);
+  --cg-red-text: var(--color-danger-text);
+  --cg-amber-text: var(--color-warning-text);
+  --cg-amber-lt: var(--color-warning-bg);
+  --cg-amber-bdr: var(--color-warning-border);
+  --cg-dark: var(--color-text-primary);
+  --cg-dark-text: var(--color-text-on-dark);
+}

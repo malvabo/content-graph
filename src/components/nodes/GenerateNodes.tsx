@@ -34,13 +34,13 @@ function Skeleton({ subtype }: { subtype: string }) {
   if (subtype === 'ig-carousel') {
     return (
       <div className="flex gap-1.5 mt-2 overflow-hidden">
-        {lines.map((_, i) => <div key={i} className="w-[50px] h-[50px] rounded-md shrink-0 animate-pulse" style={{ background: 'var(--cg-surface)' }} />)}
+        {lines.map((_, i) => <div key={i} className="w-[50px] h-[50px] rounded-md shrink-0 skeleton-bar" />)}
       </div>
     );
   }
   return (
     <div className="flex flex-col gap-1.5 mt-2">
-      {lines.map((w, i) => <div key={i} className="h-2.5 rounded animate-pulse" style={{ width: `${w}%`, background: 'var(--cg-surface)' }} />)}
+      {lines.map((w, i) => <div key={i} className="h-2.5 rounded skeleton-bar" style={{ width: `${w}%`, animationDelay: `${i * 0.15}s` }} />)}
     </div>
   );
 }

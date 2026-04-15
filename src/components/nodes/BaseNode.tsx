@@ -82,6 +82,15 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       transition: 'opacity 200ms ease, box-shadow 200ms ease',
       boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.1)' : 'none',
     }}>
+      {/* Delete button - shown when selected */}
+      {selected && (
+        <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); useGraphStore.getState().removeNode(id); }}
+          style={{ position: 'absolute', top: 'var(--space-2)', right: 'var(--space-2)', width: 28, height: 28, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 5, transition: `background var(--duration-base)` }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-danger-bg)'; e.currentTarget.style.borderColor = 'var(--color-danger-border)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-bg-card)'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      )}
       {def?.hasInput && (
         <Handle type="target" position={Position.Left} id="text"
           className="!w-2.5 !h-2.5 !border-[1.5px] !border-[#94a3b8] !bg-[var(--cg-card)] hover:!border-[var(--cg-green)] hover:!bg-[var(--cg-green-lt)]" />

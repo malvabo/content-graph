@@ -43,7 +43,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
     return (
       <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y }}>
         <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2" style={{ background: '#F7F5F1', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
-          <div style={{ font: '500 11px/1 var(--font-mono)', color: '#6d6d6d', letterSpacing: '0.3em', textTransform: 'uppercase' }}>AI edited text</div>
+          <div className="text-label">AI edited text</div>
           <div className="text-sm leading-relaxed max-h-[80px] overflow-y-auto rounded-lg p-2" style={{ background: 'var(--cg-surface)', color: 'var(--cg-ink)', scrollbarWidth: 'thin' }}>{preview}</div>
           <div className="flex gap-1.5">
             <button className="btn-xs btn-outline flex-1" onClick={revert}>↩ Revert</button>
@@ -65,7 +65,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
         </div>
       ) : (
         <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2.5" style={{ background: '#F7F5F1', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e6e3dd' }}>
-          <div style={{ font: '500 11px/1 var(--font-mono)', color: '#6d6d6d', letterSpacing: '0.3em', textTransform: 'uppercase' }}>Edit this text</div>
+          <div className="text-label">Edit this text</div>
           <div className="flex gap-1.5">
             <input className="flex-1 h-8 text-sm rounded-lg border border-[var(--cg-border)] px-2 outline-none focus:border-[var(--cg-green)]"
               placeholder="How to edit this text?"
@@ -76,7 +76,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
               style={{ background: '#fff', color: 'var(--cg-ink)', borderColor: 'var(--cg-border)' }}
               onClick={() => quickAction('custom')}>→</button>
           </div>
-          <div style={{ font: '500 11px/1 var(--font-mono)', color: '#6d6d6d', letterSpacing: '0.3em', textTransform: 'uppercase' }}>Writing</div>
+          <div className="text-label">Writing</div>
           <div className="flex flex-wrap gap-1.5">
             <button className="btn-xs btn-outline" disabled={loading} onClick={() => quickAction('engaging')}>✨ More engaging</button>
             <button className="btn-xs btn-outline" disabled={loading} onClick={() => quickAction('expand')}>↕ Expand</button>
