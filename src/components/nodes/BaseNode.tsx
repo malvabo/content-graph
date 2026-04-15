@@ -207,7 +207,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         onClick={() => useGraphStore.getState().removeNode(id)}
         style={{
           position: 'absolute', top: 8, right: 8,
-          width: 20, height: 20, borderRadius: 'var(--radius-sm)',
+          width: 24, height: 24, borderRadius: 'var(--radius-sm)',
           background: 'transparent', border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', opacity: hovered ? 1 : 0,
@@ -216,7 +216,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
           zIndex: 10,
         }}
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
 
       {/* Run button (bottom-right, hover only) */}
