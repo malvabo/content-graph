@@ -35,15 +35,21 @@ export default function DotSpotlight() {
     canvas.parentElement?.addEventListener('mousemove', onMove);
     canvas.parentElement?.addEventListener('mouseleave', onLeave);
 
+    let lightColor = '';
+    let darkColor = '';
+    const updateColors = () => {
+      const s = getComputedStyle(document.documentElement);
+      lightColor = s.getPropertyValue('--color-border-subtle').trim() || '#333338';
+      darkColor = s.getPropertyValue('--color-text-primary').trim() || '#1A2420';
+    };
+    updateColors();
+    const observer = new MutationObserver(updateColors);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
     const draw = () => {
       const w = canvas.width, h = canvas.height;
       const mx = mouseRef.current.x, my = mouseRef.current.y;
       ctx.clearRect(0, 0, w, h);
-
-      // Get computed colors
-      const style = getComputedStyle(document.documentElement);
-      const lightColor = style.getPropertyValue('--color-border-subtle').trim() || '#333338';
-      const darkColor = style.getPropertyValue('--color-text-primary').trim() || '#1A2420';
 
       // Calculate dot grid based on viewport transform
       const { x: vx, y: vy, zoom } = viewport;
@@ -73,6 +79,7 @@ export default function DotSpotlight() {
     return () => {
       cancelAnimationFrame(rafRef.current);
       ro.disconnect();
+      observer.disconnect();
       canvas.parentElement?.removeEventListener('mousemove', onMove);
       canvas.parentElement?.removeEventListener('mouseleave', onLeave);
     };
