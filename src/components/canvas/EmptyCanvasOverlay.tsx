@@ -15,10 +15,11 @@ function makeSourceNode(content: string): ContentNode {
   };
 }
 
-const PILL_ICONS: Record<string, string> = {
-  'Article → Everywhere': '📄',
-  'Transcript → Social Pack': '🎙',
-  'Research → Visual': '📊',
+const PillIcon = ({ name }: { name: string }) => {
+  const s = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (name.startsWith('Article')) return <svg {...s}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>;
+  if (name.startsWith('Transcript')) return <svg {...s}><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>;
+  return <svg {...s}><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>;
 };
 
 export default function EmptyCanvasOverlay() {
@@ -122,7 +123,7 @@ export default function EmptyCanvasOverlay() {
                   padding: '6px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
                   transition: 'border-color 150ms, box-shadow 150ms',
                 }}>
-                <span>{PILL_ICONS[t.name] ?? '📄'}</span>
+                <PillIcon name={t.name} />
                 {t.name}
               </button>
             ))}
