@@ -179,6 +179,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const isDragging = connectingFrom !== null && connectingFrom !== id;
   const canReceive = isDragging && connectingSubtype ? canConnect(connectingSubtype, data.subtype) : false;
   const dragDimmed = isDragging && !canReceive;
+  const handleHi = (connectionState === 'compatible' || canReceive) ? ' !border-[var(--color-accent)] !bg-[var(--color-accent)] !scale-150' : '';
 
   return (
     <div
@@ -195,8 +196,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         position: 'relative',
         opacity: (connectionState === 'incompatible' || dragDimmed) ? 0.4 : 1,
         transition: 'opacity 200ms ease, box-shadow 200ms ease, border-color 150ms ease, outline-color 150ms ease',
-        boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : (canReceive || connectionState === 'compatible') ? 'var(--shadow-glow)' : connectionState === 'incompatible' ? '0 0 0 0 transparent' : 'none',
-        outline: selected ? '2px solid var(--color-accent)' : connectionState === 'compatible' ? '2px solid var(--color-accent)' : connectionState === 'incompatible' ? '2px solid var(--p-amber-600)' : canReceive ? '2px solid var(--color-accent)' : 'none',
+        boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : 'none',
+        outline: selected ? '2px solid var(--color-accent)' : 'none',
         outlineOffset: -2,
       }}
     >
@@ -221,7 +222,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {/* Run button (bottom-right, hover only) */}
       <button
         onMouseDown={e => e.stopPropagation()}
-        onClick={() => useExecutionStore.getState().setStatus(id, 'running')}
+        onClick={() => { useExecutionStore.getState().setStatus(id, 'running'); setTimeout(() => { useExecutionStore.getState().setStatus(id, 'complete'); }, 1500); }}
         style={{
           position: 'absolute', bottom: 12, right: 12,
           width: 28, height: 28, borderRadius: '50%',
@@ -236,7 +237,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
       </button>
 
-      {def?.hasInput && <Handle type="target" position={Position.Left} id="text" className={HANDLE_CLS} />}
+      {def?.hasInput && <Handle type="target" position={Position.Left} id="text" className={HANDLE_CLS + handleHi} />}
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
@@ -270,7 +271,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {/* Inline config dropdowns */}
       <InlineConfig id={id} subtype={data.subtype} />
 
-      {def?.hasOutput && <Handle type="source" position={Position.Right} id="text" className={HANDLE_CLS} />}
+      {def?.hasOutput && <Handle type="source" position={Position.Right} id="text" className={HANDLE_CLS + handleHi} />}
     </div>
   );
 }
