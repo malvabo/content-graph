@@ -100,7 +100,7 @@ export default function GraphCanvas() {
         deleteKeyCode={['Backspace', 'Delete']}
         fitView={false} panOnScroll={false} selectionOnDrag={false}
         proOptions={{ hideAttribution: true }}
-        style={{ background: 'var(--color-bg-canvas)' }}>
+        style={{ background: 'var(--color-bg)' }}>
         <Background variant={BackgroundVariant.Dots} gap={14} size={1.5} color="var(--color-edge)" />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
@@ -116,7 +116,7 @@ export default function GraphCanvas() {
       {spotlight && <NodeSpotlight x={spotlight.x} y={spotlight.y} flowX={spotlight.flowX} flowY={spotlight.flowY} onClose={() => setSpotlight(null)} onSelect={() => setSpotlight(null)} />}
 
       <div ref={spotlightRef} className="absolute pointer-events-none rounded-full"
-        style={{ width: 160, height: 160, background: 'radial-gradient(circle, var(--color-overlay-dark) 0%, var(--color-overlay-dark) 50%, transparent 100%)', mixBlendMode: 'color-burn', opacity: 0, transition: 'opacity 150ms', zIndex: 1 }} />
+        style={{ width: 160, height: 160, background: 'radial-gradient(circle, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.04) 40%, transparent 70%)', mixBlendMode: 'multiply', opacity: 0, transition: 'opacity 150ms', zIndex: 5 }} />
     </div>
   );
 }
