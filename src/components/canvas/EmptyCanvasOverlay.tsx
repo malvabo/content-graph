@@ -110,7 +110,7 @@ export default function EmptyCanvasOverlay() {
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16, width: '100%' }}>
           {/* Empty workflow — dashed border placeholder */}
           <button
-            onClick={() => setGraphName('Untitled Graph')}
+            onClick={() => { setGraphName('Untitled Graph'); setDismissed(true); }}
             onMouseEnter={hover}
             onMouseLeave={unhover}
             style={{ ...cardStyle, borderStyle: 'dashed' }}
@@ -143,27 +143,13 @@ export default function EmptyCanvasOverlay() {
                   <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
                   <div style={{
                     fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                   }}>{t.description}</div>
                 </div>
               </button>
             );
           })}
         </div>
-
-        {/* Dismiss as ghost button */}
-        <button
-          onClick={() => setDismissed(true)}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-border-subtle)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
-          style={{
-            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)',
-            background: 'transparent', border: '1px solid var(--color-border-subtle)', borderRadius: 8,
-            padding: '6px 20px', cursor: 'pointer', transition: 'background .15s, color .15s', outline: 'none',
-          }}
-        >
-          Dismiss
-        </button>
       </div>
 
       {/* focus-visible ring for all buttons */}

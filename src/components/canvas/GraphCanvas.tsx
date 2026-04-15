@@ -1,5 +1,5 @@
 import {
-  ReactFlow, Background, BackgroundVariant, Controls, MiniMap,
+  ReactFlow, Controls, MiniMap,
   type OnConnect, type OnNodesChange, type OnEdgesChange, type Node,
   applyNodeChanges, applyEdgeChanges, addEdge, type Connection, useReactFlow,
 } from '@xyflow/react';
@@ -10,6 +10,7 @@ import { useOutputStore } from '../../store/outputStore';
 import BaseNode from '../nodes/BaseNode';
 import DeletableEdge from './DeletableEdge';
 import NodeSpotlight from './NodeSpotlight';
+import DotSpotlight from './DotSpotlight';
 import RunWaveOverlay from './RunWaveOverlay';
 import { useConnectionValidation } from '../../hooks/useConnectionValidation';
 import type { NodeDef } from '../../utils/nodeDefs';
@@ -94,7 +95,7 @@ export default function GraphCanvas() {
         fitView={false} panOnScroll={false} selectionOnDrag={false}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'var(--color-bg)' }}>
-        <Background variant={BackgroundVariant.Dots} gap={14} size={1.5} color="var(--color-border-subtle)" />
+        <DotSpotlight />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
         <MiniMap position="bottom-left" pannable zoomable nodeColor="var(--color-border-strong)" maskColor="rgba(242,239,233,0.7)" style={{ width: 120, height: 80, borderRadius: 8, border: '1px solid var(--color-border-subtle)', bottom: 10, left: 70 }} />
