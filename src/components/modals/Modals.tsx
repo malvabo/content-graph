@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { getDims, RATIO_DIMS } from '../../utils/imageDims';
 
 /* ── AI Selection Popover ── */
 const AI_ACTIONS = [
@@ -159,9 +160,9 @@ export function OutputModal({ title, text, onClose, onTextChange, onRegenerate }
 }
 
 /* ── Image Modal ── */
-interface ImageModalProps { src: string; prompt?: string; onClose: () => void; nodeLabel?: string }
+interface ImageModalProps { src: string; prompt?: string; onClose: () => void; nodeLabel?: string; aspect?: string; imgWidth?: number; imgHeight?: number }
 
-export function ImageModal({ src, prompt, onClose, nodeLabel }: ImageModalProps) {
+export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, imgWidth, imgHeight }: ImageModalProps) {
   const [variants, setVariants] = useState<string[]>([]);
   const [genLoading, setGenLoading] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
@@ -170,6 +171,10 @@ export function ImageModal({ src, prompt, onClose, nodeLabel }: ImageModalProps)
   const [zoomed, setZoomed] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [ratio, setRatio] = useState(aspect || '16:9');
+
+  const w = imgWidth || getDims(ratio).w;
+  const h = imgHeight || getDims(ratio).h;
 
   const promptChanged = editPrompt.trim() !== (prompt || '').trim();
   const charCount = editPrompt.length;
@@ -179,12 +184,13 @@ export function ImageModal({ src, prompt, onClose, nodeLabel }: ImageModalProps)
     if (!editPrompt) return;
     setGenLoading(true);
     setGenError(null);
+    const d = getDims(ratio);
     try {
       const baseSeed = Date.now();
       const encoded = encodeURIComponent(editPrompt);
       const results = await Promise.all(
         [0,1,2,3].map(async (i) => {
-          const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${baseSeed + i}`;
+          const url = `https://image.pollinations.ai/prompt/${encoded}?width=${d.w}&height=${d.h}&nologo=true&seed=${baseSeed + i}`;
           const res = await fetch(url);
           if (!res.ok) throw new Error(`Failed (${res.status})`);
           const blob = await res.blob();
@@ -217,7 +223,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel }: ImageModalProps)
     const name = (nodeLabel || 'image').replace(/\s+/g, '-').toLowerCase();
     const a = document.createElement('a');
     a.href = activeSrc;
-    a.download = `${name}-1024x1024.png`;
+    a.download = `${name}-${w}x${h}.png`;
     a.click();
   };
 
@@ -261,11 +267,11 @@ export function ImageModal({ src, prompt, onClose, nodeLabel }: ImageModalProps)
           {(variants.length > 0 || genLoading) && (
             <div style={{ padding: '0 var(--space-6) var(--space-4)', display: 'flex', gap: 'var(--space-2)', overflowX: 'auto' }}>
               {genLoading ? [0,1,2,3].map((i) => (
-                <div key={i} className="skeleton-bar shrink-0" style={{ width: 64, height: 64, borderRadius: 'var(--radius-md)' }} />
+                <div key={i} className="skeleton-bar shrink-0" style={{ width: 64, height: Math.round(64 * h / w), borderRadius: 'var(--radius-md)' }} />
               )) : variants.map((img, i) => (
-                <div key={i} className="shrink-0 relative" style={{ width: 64, height: 64 }}>
+                <div key={i} className="shrink-0 relative" style={{ width: 64, height: Math.round(64 * h / w) }}>
                   <img src={img} alt={`Variant ${i + 1}`} onClick={() => { setActiveSrc(img); setZoomed(false); }}
-                    style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                    style={{ width: 64, height: Math.round(64 * h / w), objectFit: 'cover', borderRadius: 'var(--radius-md)', cursor: 'pointer',
                       border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent',
                       opacity: img === activeSrc ? 1 : 0.7,
                       transition: 'opacity 150ms, border-color 150ms',
@@ -288,8 +294,17 @@ export function ImageModal({ src, prompt, onClose, nodeLabel }: ImageModalProps)
           <ModalHeader title={nodeLabel || 'Image'} onClose={onClose} />
 
           <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-5)', gap: 'var(--space-4)', scrollbarWidth: 'thin' }}>
-            {/* #8: show actual dimensions */}
-            <div className="flex justify-between"><span className="text-label">Size</span><span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>1024 × 1024</span></div>
+            <div className="flex justify-between"><span className="text-label">Size</span><span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{w} × {h}</span></div>
+            <div>
+              <div className="text-label" style={{ marginBottom: 'var(--space-2)' }}>Ratio</div>
+              <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
+                {Object.keys(RATIO_DIMS).map(r => (
+                  <button key={r} className={`btn-xs ${r === ratio ? 'btn-tonal' : 'btn-ghost'}`}
+                    style={{ fontSize: 'var(--text-xs)', padding: '0 8px' }}
+                    onClick={() => setRatio(r)}>{r}</button>
+                ))}
+              </div>
+            </div>
 
             {editPrompt && (
               <div>

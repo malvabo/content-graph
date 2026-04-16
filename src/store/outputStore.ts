@@ -8,10 +8,10 @@ interface OutputAsset {
 }
 
 interface OutputState {
-  outputs: Record<string, { text?: string; imageBase64?: string; assets?: OutputAsset[] }>;
+  outputs: Record<string, { text?: string; imageBase64?: string; imgWidth?: number; imgHeight?: number; assets?: OutputAsset[] }>;
   hashes: Record<string, string>;
 
-  setOutput: (nodeId: string, output: { text?: string; imageBase64?: string; assets?: OutputAsset[] }) => void;
+  setOutput: (nodeId: string, output: { text?: string; imageBase64?: string; imgWidth?: number; imgHeight?: number; assets?: OutputAsset[] }) => void;
   setHash: (nodeId: string, hash: string) => void;
   clearNode: (nodeId: string) => void;
   clearAll: () => void;

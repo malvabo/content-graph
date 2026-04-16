@@ -1,6 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { ModalShell, ModalHeader, AiPopover } from './Modals';
+import { useState } from 'react';
+import { ModalShell } from './Modals';
 
 /* ── Shared types ── */
 interface ContentModalProps {

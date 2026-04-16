@@ -30,7 +30,10 @@ export function mockExecute(input: string, subtype: string): string {
       return slides.join('\n') + `\n---\nSLIDE ${slides.length + 1}:\nHeadline: Key Takeaway\nBody: ${firstSentence}`;
     },
     'infographic': () => `TITLE: ${firstSentence.split(' ').slice(0, 6).join(' ')}\nSUBTITLE: Key insights visualized\n\n${sentences.slice(0, 4).map((s, i) => `SECTION ${i + 1}: ${s.split(' ').slice(0, 4).join(' ')}\nContent: ${s.trim()}\nVisual element: icon ${i + 1}`).join('\n\n')}\n\nDESIGN DIRECTION:\nLayout: vertical flow\nMood: Clean, data-driven`,
-    'image-prompt': () => `A cinematic wide-angle photograph of ${firstSentence.toLowerCase()}, golden hour lighting, shallow depth of field, rich color palette, editorial style, 8k resolution`,
+    'image-prompt': () => {
+      const orientation = input.includes('9:16') || input.includes('portrait') ? 'vertical portrait' : input.includes('1:1') || input.includes('square') ? 'square' : 'wide landscape';
+      return `A cinematic ${orientation} photograph of ${firstSentence.toLowerCase()}, golden hour lighting, shallow depth of field, rich color palette, editorial style, 8k resolution`;
+    },
   };
 
   return (formatters[subtype] ?? (() => `[${subtype}]\n\n${short}`))();

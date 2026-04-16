@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useGraphStore } from '../../store/graphStore';
-import { OutputModal } from '../modals/Modals';
+import ContentModal from '../modals/ContentModal';
 
 const SKELETON_LINES: Record<string, number[]> = {
   'linkedin-post': [100, 85, 95, 70, 90, 60],
@@ -55,12 +55,10 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
           <span style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{slides.length} slides</span>
           <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Expand</button>
         </div>
-        {modalOpen && <OutputModal title={label} text={text} wordCount={text.split(/\s+/).length} onClose={() => setModalOpen(false)} onRegenerate={rerun} />}
+        {modalOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => setModalOpen(false)} onRegenerate={rerun} />}
       </div>
     );
   }
-
-  const words = text.split(/\s+/).length;
 
   return (
     <div className="mt-2">
@@ -70,7 +68,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
       <div className="flex items-center justify-end mt-1.5">
         <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Expand</button>
       </div>
-      {modalOpen && <OutputModal title={label} text={text} wordCount={words} onClose={() => setModalOpen(false)} onRegenerate={rerun} />}
+      {modalOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => setModalOpen(false)} onRegenerate={rerun} />}
     </div>
   );
 }

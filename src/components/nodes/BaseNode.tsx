@@ -13,6 +13,8 @@ import { ImagePromptInline } from './ImagePromptNode';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import { useGraphStore } from '../../store/graphStore';
 
+import { PURPOSE_RATIO } from '../../utils/imageDims';
+
 function canConnect(fromSubtype: string, toSubtype: string): boolean {
   const from = NODE_DEFS_BY_SUBTYPE[fromSubtype];
   const to = NODE_DEFS_BY_SUBTYPE[toSubtype];
@@ -99,7 +101,7 @@ const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string,
     <MiniSelect value={c.model as string ?? DEFAULT_MODELS['quote-card']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'image-prompt': (c, s) => <>
-    <MiniSelect value={c.purpose as string ?? 'Blog hero'} options={['Blog hero', 'LinkedIn post', 'Newsletter header', 'Instagram slide', 'Social concept']} onChange={v => s('purpose', v)} />
+    <MiniSelect value={c.purpose as string ?? 'Blog hero'} options={['Blog hero', 'LinkedIn post', 'Newsletter header', 'Instagram slide', 'Social concept']} onChange={v => { s('purpose', v); if (PURPOSE_RATIO[v]) s('aspect', PURPOSE_RATIO[v]); }} />
     <MiniSelect value={c.style as string ?? 'Photography'} options={['Photography', 'Flat illustration', '3D render', 'Abstract', 'Editorial graphic']} onChange={v => s('style', v)} />
     <MiniSelect value={c.aspect as string ?? '16:9'} options={['1:1', '4:5', '16:9', '9:16', '1.91:1']} onChange={v => s('aspect', v)} />
   </>,
