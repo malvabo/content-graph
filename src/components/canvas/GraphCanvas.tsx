@@ -41,7 +41,7 @@ export default function GraphCanvas() {
 
   const styledEdges = useMemo(() => edges.map((e) => ({
     ...e,
-    animated: executionStatus[e.target] === 'running',
+    animated: executionStatus[e.source] === 'running' || executionStatus[e.target] === 'running',
   })), [edges, executionStatus]);
 
   useEffect(() => { wrapperRef.current?.focus(); }, []);

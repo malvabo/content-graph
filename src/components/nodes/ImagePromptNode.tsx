@@ -31,6 +31,16 @@ export function ImagePromptInline({ id }: { id: string }) {
     setGenerating(false);
   }, [id]);
 
+  // Clear old image when re-running so auto-generate triggers
+  useEffect(() => {
+    if (status === 'running') {
+      const cur = useOutputStore.getState().outputs[id];
+      if (cur?.imageBase64) {
+        useOutputStore.getState().setOutput(id, { text: cur.text, imageBase64: undefined });
+      }
+    }
+  }, [status, id]);
+
   // Auto-generate image when prompt is ready and no image exists yet
   useEffect(() => {
     if (status === 'complete' && output?.text && !output?.imageBase64 && !generating) {

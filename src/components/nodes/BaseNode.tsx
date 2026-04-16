@@ -197,7 +197,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         borderRadius: 'var(--radius-lg)',
         padding: 'var(--space-4)',
         position: 'relative',
-        opacity: (connectionState === 'incompatible' || dragDimmed) ? 0.4 : 1,
+        opacity: dragDimmed ? 0.4 : 1,
         transition: 'opacity 200ms ease, box-shadow 200ms ease, border-color 150ms ease, outline-color 150ms ease',
         boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : 'none',
         outline: selected ? '2px solid var(--color-accent)' : 'none',
