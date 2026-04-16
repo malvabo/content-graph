@@ -133,7 +133,7 @@ export function TextSourceInline({ id }: { id: string }) {
           onClose={() => setPopover(null)}
         />
       )}
-      <textarea ref={textareaRef} className="nowheel form-textarea min-h-[120px] max-h-[300px]"
+      <textarea ref={textareaRef} className="nowheel form-textarea min-h-[200px]"
         placeholder="Paste your article, transcript, or notes..." value={text} onChange={(e) => onChange(e.target.value)} onMouseUp={onMouseUp} />
       <div className="text-right text-sm" style={{ color: charColor }}>{charCount.toLocaleString()} / 50,000</div>
     </div>
