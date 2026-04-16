@@ -90,7 +90,18 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
 function ConnectionLine({ running }: { running?: boolean }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0' }}>
-      <div style={{ width: 1.5, height: 20, borderRadius: 1, background: running ? 'var(--color-accent)' : 'var(--color-border-default)', animation: running ? 'pulse-line 1s ease-in-out infinite' : 'none' }} />
+      <div style={{
+        width: 2, height: 24, borderRadius: 1, overflow: 'hidden',
+        background: running ? 'transparent' : 'var(--color-border-default)',
+      }}>
+        {running && (
+          <div style={{
+            width: '100%', height: '200%',
+            background: 'linear-gradient(to bottom, transparent 0%, var(--color-accent) 30%, var(--color-accent) 50%, transparent 100%)',
+            animation: 'flow-down 0.8s ease-in-out infinite',
+          }} />
+        )}
+      </div>
     </div>
   );
 }
