@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { temporal } from 'zundo';
 import { type Node, type Edge } from '@xyflow/react';
+import { useExecutionStore } from './executionStore';
+import { useOutputStore } from './outputStore';
 
 export type NodeCategory = 'source' | 'transform' | 'generate' | 'output';
 export type NodeStatus = 'idle' | 'running' | 'complete' | 'error' | 'warning' | 'stale';
@@ -66,6 +68,8 @@ export const useGraphStore = create<GraphState>()(
             edges: s.edges.filter((e) => e.source !== id && e.target !== id),
             selectedNodeId: s.selectedNodeId === id ? null : s.selectedNodeId,
           }));
+          useExecutionStore.getState().resetNode(id);
+          useOutputStore.getState().clearNode(id);
         },
 
         updateNodeConfig: (id, config) => set((s) => ({
@@ -105,7 +109,11 @@ export const useGraphStore = create<GraphState>()(
         setNodes: (nodes) => set({ nodes }),
         setEdges: (edges) => set({ edges }),
 
-        clearGraph: () => set({ nodes: [], edges: [], selectedNodeId: null }),
+        clearGraph: () => {
+          set({ nodes: [], edges: [], selectedNodeId: null });
+          useExecutionStore.getState().resetAll();
+          useOutputStore.getState().clearAll();
+        },
       }),
       { name: 'content-graph-store',
         partialize: (state) => ({
@@ -118,6 +126,6 @@ export const useGraphStore = create<GraphState>()(
         },
       }
     ),
-    { limit: 50 }
+    { limit: 50, partialize: (state) => ({ nodes: state.nodes, edges: state.edges, graphName: state.graphName }) }
   )
 );

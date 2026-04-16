@@ -3,6 +3,8 @@ import { NODE_DEFS, CATEGORY_LABELS, BADGE_COLORS, type NodeDef } from '../../ut
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import type { NodeCategory } from '../../store/graphStore';
 
+import { motion } from 'motion/react';
+
 const PALETTE_ORDER: NodeCategory[] = ['source', 'generate', 'output', 'transform'];
 
 function PaletteItem({ def, onClick }: { def: NodeDef; onClick: () => void }) {
@@ -56,23 +58,34 @@ export default function NodePalette({ onAddNode }: Props) {
 
   return (
     <div ref={ref} className="absolute bottom-4 left-4 z-20">
-      {/* Floating + button */}
-      <button onClick={() => setOpen(!open)}
+      {/* Fluid iOS + button */}
+      <motion.button
+        onClick={() => setOpen(!open)}
         aria-label="Add node" aria-expanded={open}
-        className="w-12 h-12 rounded-full flex items-center justify-center"
-        style={{
-          background: 'var(--color-bg-card)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-          color: 'var(--color-text-secondary)', boxShadow: 'var(--shadow-sm)',
-          border: '1px solid var(--color-border-default)',
-          transition: 'transform 200ms ease, box-shadow 200ms ease, background 200ms ease, border-color 200ms ease',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'scale(1.06)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-bg-card)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+        whileHover={{ scale: 1.02, translateY: -1 }}
+        whileTap={{ scale: 0.94 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 28, mass: 0.5 }}
+        className="relative w-12 h-12 rounded-[14px] flex items-center justify-center
+          bg-white/60 dark:bg-white/10 backdrop-blur-xl saturate-150
+          border-hairline border-white/20
+          shadow-fluid-glass active:shadow-fluid-pressed
+          active:brightness-90 active:contrast-110
+          transition-shadow duration-300 ease-fluid-spring
+          overflow-hidden group"
+        style={{ color: 'var(--color-text-secondary)' }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 200ms ease' }}>
+        {/* Refraction highlight */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
+        {/* Icon */}
+        <motion.svg
+          width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+          animate={{ rotate: open ? 45 : 0 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+          className="relative z-10"
+        >
           <path d="M12 5v14"/><path d="M5 12h14"/>
-        </svg>
-      </button>
+        </motion.svg>
+      </motion.button>
 
       {/* Popover */}
       {open && (
