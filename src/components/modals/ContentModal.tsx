@@ -162,13 +162,15 @@ function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentM
       <div className="flex-1 overflow-y-auto" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
         <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); resize(); }}
           style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+        {subtype === 'linkedin-post' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', margin: 'var(--space-4) 0' }}>
           <div style={{ flex: 1, borderTop: '1px dashed var(--color-border-subtle)' }} />
           <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', whiteSpace: 'nowrap' }}>
-            "see more" fold · ~210 chars
+            LinkedIn "see more" fold · ~210 chars
           </span>
           <div style={{ flex: 1, borderTop: '1px dashed var(--color-border-subtle)' }} />
         </div>
+        )}
       </div>
       <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
     </ModalShell>

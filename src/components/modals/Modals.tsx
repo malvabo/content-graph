@@ -41,7 +41,7 @@ function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.Rea
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ padding: 'var(--space-8)', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms ease' }} onClick={onClose}>
       <div role="dialog" aria-modal="true" className="flex flex-col w-full overflow-hidden"
-        style={{ maxWidth, maxHeight: 'min(85vh, calc(100vh - 64px))', background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', boxShadow: '0 16px 48px rgba(0,0,0,0.18), 0 0 0 1px var(--color-border-default)', transform: visible ? 'scale(1)' : 'scale(0.98)', opacity: visible ? 1 : 0, transition: 'transform 150ms ease, opacity 150ms ease' }}
+        style={{ maxWidth, maxHeight: 'min(92vh, calc(100vh - 48px))', background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', boxShadow: '0 16px 48px rgba(0,0,0,0.18), 0 0 0 1px var(--color-border-default)', transform: visible ? 'scale(1)' : 'scale(0.98)', opacity: visible ? 1 : 0, transition: 'transform 150ms ease, opacity 150ms ease' }}
         onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
@@ -91,7 +91,6 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
   const [zoomed, setZoomed] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [copiedImg, setCopiedImg] = useState(false);
-  const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [ratio, setRatio] = useState(aspect || '16:9');
   const abortRef = useRef<AbortController | null>(null);
   const origPrompt = useRef(prompt || '');
@@ -142,7 +141,6 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
     setTimeout(() => setCopiedImg(false), 1500);
   };
   const downloadImage = () => { const a = document.createElement('a'); a.href = activeSrc; a.download = `${(nodeLabel || 'image').replace(/\s+/g, '-').toLowerCase()}-${d.w}x${d.h}.png`; a.click(); };
-  const copyPrompt = () => { navigator.clipboard.writeText(editPrompt); setCopiedPrompt(true); setTimeout(() => setCopiedPrompt(false), 1500); };
 
   /* #19: image viewer toolbar uses consistent token-based styling */
   const toolBtn: React.CSSProperties = { width: 'var(--size-control-sm)', height: 'var(--size-control-sm)', borderRadius: 'var(--radius-sm)', background: 'var(--color-overlay-dark)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-disabled)' };
@@ -226,14 +224,10 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
               <div>
                 <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
                   <span className="text-field-label">Prompt</span>
-                  <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
-                    {/* #11/#13: properly sized action buttons at minimum 24px */}
-                    {promptChanged && <button className="btn-xs btn-ghost" style={{ color: 'var(--color-text-disabled)' }} onClick={() => setEditPrompt(origPrompt.current)}>Reset</button>}
-                    <button className="btn-xs btn-ghost" onClick={copyPrompt}>{copiedPrompt ? '✓ Copied' : 'Copy'}</button>
-                  </div>
+                  {promptChanged && <button className="btn-xs btn-ghost" style={{ color: 'var(--color-text-disabled)' }} onClick={() => setEditPrompt(origPrompt.current)}>Reset</button>}
                 </div>
                 <textarea value={editPrompt} onChange={(e) => setEditPrompt(e.target.value)}
-                  style={{ width: '100%', minHeight: 100, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', outline: 'none', scrollbarWidth: 'thin', transition: 'border-color 150ms' }}
+                  style={{ width: '100%', minHeight: 160, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', outline: 'none', scrollbarWidth: 'thin', transition: 'border-color 150ms' }}
                   onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
                   onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}
                 />
@@ -245,8 +239,8 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
             )}
           </div>
 
-          {/* #5/#7: actions with consistent padding matching header horizontal */}
-          <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', gap: 'var(--space-2)', borderTop: '1px solid var(--color-border-subtle)' }}>
+          {/* Actions — no top border */}
+          <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', gap: 'var(--space-2)' }}>
             {genError && (
               <div className="flex items-center justify-between" style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-sm)' }}>
                 <span>{genError}</span>
