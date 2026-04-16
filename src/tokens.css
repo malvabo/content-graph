@@ -192,7 +192,7 @@
   --color-overlay-backdrop: rgba(0,0,0,0.40);
 
   /* ── Hover / Tooltip ── */
-  --color-bg-hover: var(--p-neutral-100);
+  --color-bg-hover: #EDEBE5;
   --color-bg-tooltip: var(--p-neutral-900);
   --color-text-inverse: var(--p-white);
 
