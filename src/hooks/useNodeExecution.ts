@@ -1,12 +1,12 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useExecutionStore } from '../store/executionStore';
 import { useOutputStore } from '../store/outputStore';
 import { topologicalSort } from '../utils/topologicalSort';
-import type { Edge } from '@xyflow/react';
 
-function getUpstreamText(nodeId: string, edges: Edge[], outputs: Record<string, { text?: string }>) {
-  const nodes = useGraphStore.getState().nodes;
+function getUpstreamText(nodeId: string) {
+  const { nodes } = useGraphStore.getState();
+  const outputs = useOutputStore.getState().outputs;
   const upstream = edges.filter((e) => e.target === nodeId).map((e) => e.source);
   return upstream.map((id) => {
     if (outputs[id]?.text) return outputs[id].text;
@@ -17,36 +17,43 @@ function getUpstreamText(nodeId: string, edges: Edge[], outputs: Record<string, 
 }
 
 export function useNodeExecution() {
+  const abortRef = useRef<AbortController | null>(null);
+
   const runNode = useCallback(
-    async (nodeId: string, executor: (input: string, config: Record<string, unknown>) => Promise<string>) => {
-      const { nodes, edges } = useGraphStore.getState();
-      const { outputs } = useOutputStore.getState();
+    async (nodeId: string, executor: (input: string, config: Record<string, unknown>) => Promise<string>, signal?: AbortSignal) => {
+      const { nodes } = useGraphStore.getState();
       const { setStatus, setError } = useExecutionStore.getState();
-      const { setOutput, setHash } = useOutputStore.getState();
+      const { setOutput } = useOutputStore.getState();
 
       const node = nodes.find((n) => n.id === nodeId);
       if (!node) return;
+      if (signal?.aborted) return;
 
       const isSource = node.data.category === 'source';
       const input = isSource
-        ? (outputs[nodeId]?.text || (node.data.config.text as string) || '')
-        : getUpstreamText(nodeId, edges, outputs);
+        ? (useOutputStore.getState().outputs[nodeId]?.text || (node.data.config.text as string) || '')
+        : getUpstreamText(nodeId);
 
       if (!isSource && !input) {
         setStatus(nodeId, 'warning');
         return;
       }
 
-      setHash(nodeId, '');
+      // Clear previous errors before re-running
+      const { errors } = useExecutionStore.getState();
+      if (errors[nodeId]) {
+        useExecutionStore.getState().setStatus(nodeId, 'idle');
+      }
+
       setStatus(nodeId, 'running');
       try {
+        if (signal?.aborted) return;
         const result = await executor(input, node.data.config as Record<string, unknown>);
-
+        if (signal?.aborted) return;
         setOutput(nodeId, { text: result });
-
-        setHash(nodeId, '');
         setStatus(nodeId, 'complete');
       } catch (err) {
+        if (signal?.aborted) return;
         setError(nodeId, err instanceof Error ? err.message : 'Unknown error');
       }
     },
@@ -55,10 +62,13 @@ export function useNodeExecution() {
 
   const runAll = useCallback(
     async (executor: (input: string, config: Record<string, unknown>, subtype: string) => Promise<string>) => {
-      const statuses = Object.values(useExecutionStore.getState().status);
-      if (statuses.some((s) => s === 'running')) return;
+      // Race guard — abort any existing run
+      if (abortRef.current) abortRef.current.abort();
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
 
-      const { nodes, edges } = useGraphStore.getState();
+      // Read fresh state
+      const { nodes } = useGraphStore.getState();
       useExecutionStore.getState().resetAll();
       useExecutionStore.getState().setRunAllActive(true);
       useOutputStore.getState().clearAll();
@@ -68,7 +78,10 @@ export function useNodeExecution() {
 
       try {
         for (const id of order) {
-          const node = nodes.find((n) => n.id === id);
+          if (ctrl.signal.aborted) break;
+
+          // Read fresh node state each iteration
+          const node = useGraphStore.getState().nodes.find((n) => n.id === id);
           if (!node) continue;
 
           if (node.data.category === 'source') {
@@ -83,14 +96,33 @@ export function useNodeExecution() {
             }
           }
 
-          await runNode(id, (input, config) => executor(input, config, node.data.subtype));
+          // Check if upstream failed — skip this node
+          const upstreamIds = edges.filter(e => e.target === id).map(e => e.source);
+          const upstreamFailed = upstreamIds.some(uid => useExecutionStore.getState().status[uid] === 'error');
+          if (upstreamFailed) {
+            useExecutionStore.getState().setStatus(id, 'error');
+            useExecutionStore.getState().setError(id, 'Upstream node failed');
+            continue;
+          }
+
+          await runNode(id, (input, config) => executor(input, config, node.data.subtype), ctrl.signal);
         }
       } finally {
-        useExecutionStore.getState().setRunAllActive(false);
+        if (!ctrl.signal.aborted) {
+          useExecutionStore.getState().setRunAllActive(false);
+        }
       }
     },
     [runNode]
   );
 
-  return { runNode, runAll };
+  const cancelAll = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    useExecutionStore.getState().setRunAllActive(false);
+  }, []);
+
+  return { runNode, runAll, cancelAll };
 }

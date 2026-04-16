@@ -151,6 +151,8 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
 
         {/* ── Left: image viewer ── */}
         <div className="flex-1 flex flex-col min-w-0 relative" style={{ background: 'var(--color-bg-dark)', borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)' }}>
+          {/* Vignette */}
+          <div style={{ position: 'absolute', inset: 0, borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)', background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%)', pointerEvents: 'none', zIndex: 1 }} />
           <div style={{ position: 'absolute', top: 'var(--space-3)', left: 'var(--space-3)', zIndex: 3, display: 'flex', gap: 'var(--space-1)' }}>
             <button onClick={() => setFullscreen(!fullscreen)} style={toolBtn}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -163,20 +165,23 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
           <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-8) var(--space-6)', overflow: zoomed ? 'auto' : 'hidden' }}>
             <img src={activeSrc} alt={editPrompt || 'Generated image'}
               onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}
-              style={{ maxWidth: zoomed ? 'none' : '100%', maxHeight: zoomed ? 'none' : '62vh', width: zoomed ? `${Math.max(d.w, 800)}px` : undefined, objectFit: 'contain', borderRadius: 'var(--radius-md)', cursor: zoomed ? 'zoom-out' : 'zoom-in' }} />
+              style={{ maxWidth: zoomed ? 'none' : '100%', maxHeight: zoomed ? 'none' : '62vh', width: zoomed ? `${Math.max(d.w, 800)}px` : undefined, objectFit: 'contain', borderRadius: 'var(--radius-md)', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'opacity 150ms ease' }} />
           </div>
 
           {(variants.length > 0 || genLoading) && (
             <div style={{ padding: '0 var(--space-6) var(--space-4)', display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', scrollbarWidth: 'thin' }}>
               {variants.map((img, i) => (
-                <div key={i} className="shrink-0 relative" style={{ width: 56, height: thumbH }}>
-                  <img src={img} onClick={() => { setActiveSrc(img); setZoomed(false); }}
-                    style={{ width: 56, height: thumbH, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent', opacity: img === activeSrc ? 1 : 0.6, transition: 'opacity 150ms' }} />
-                  {img === activeSrc && (
-                    <div style={{ position: 'absolute', top: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
-                    </div>
-                  )}
+                <div key={i} className="shrink-0 flex flex-col items-center" style={{ gap: 3 }}>
+                  <div className="relative" style={{ width: 56, height: thumbH }}>
+                    <img src={img} onClick={() => { setActiveSrc(img); setZoomed(false); }}
+                      style={{ width: 56, height: thumbH, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent', opacity: img === activeSrc ? 1 : 0.6, transition: 'opacity 150ms' }} />
+                    {img === activeSrc && (
+                      <div style={{ position: 'absolute', top: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: img === activeSrc ? 'var(--color-text-secondary)' : 'var(--color-text-disabled)' }}>{i + 1}</span>
                 </div>
               ))}
               {genLoading && Array.from({ length: 4 - variants.length }).map((_, i) => (
@@ -235,6 +240,12 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
                   <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: editPrompt.length > 500 ? 'var(--color-warning-text)' : 'var(--color-text-disabled)' }}>{editPrompt.length}</span>
                   {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
                 </div>
+                <div className="flex flex-wrap gap-1" style={{ marginTop: 'var(--space-2)' }}>
+                  {['cinematic', 'minimal', 'editorial', 'vibrant', 'moody'].map(s => (
+                    <button key={s} className="btn-xs btn-ghost" style={{ fontSize: 'var(--text-xs)', textTransform: 'lowercase' }}
+                      onClick={() => setEditPrompt(p => p.includes(s) ? p : `${p.trimEnd()}, ${s}`)}>+{s}</button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -250,9 +261,9 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
             {/* #17: "Use this" is primary when variants exist, generate is secondary */}
             {onUse && variants.length > 0 ? (
               <>
-                <button className="btn-sm btn-primary w-full" onClick={() => { onUse(activeSrc); onClose(); }}>Use this image</button>
+                <button className="btn-sm btn-primary w-full" onClick={() => { onUse(activeSrc); onClose(); }}>Use variant {variants.indexOf(activeSrc) + 1}</button>
                 <button className="btn-sm btn-ghost w-full" disabled={genLoading} onClick={generate4}>
-                  {genLoading ? `Generating ${variants.length}/4…` : 'Regenerate 4'}
+                {genLoading ? `Generating ${variants.length}/4…` : 'Regenerate 4'}
                 </button>
               </>
             ) : (
