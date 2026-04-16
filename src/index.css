@@ -173,11 +173,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
   color: var(--color-text-tertiary);
 }
 .text-field-label {
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
   font-weight: var(--weight-medium);
-  line-height: var(--leading-fixed);
+  line-height: var(--leading-snug);
   font-family: var(--font-sans);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+  display: block;
 }
 
 /* ── Form controls ── */
