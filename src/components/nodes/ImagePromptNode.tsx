@@ -24,8 +24,6 @@ export function ImagePromptInline({ id }: { id: string }) {
   const [generating, setGenerating] = useState(false);
   const [viewImage, setViewImage] = useState<string | null>(null);
 
-  const dims = getDims(aspect);
-
   const generate = useCallback(async (prompt: string) => {
     setGenerating(true);
     try {
@@ -73,7 +71,8 @@ export function ImagePromptInline({ id }: { id: string }) {
         <button className="btn-micro mt-1.5" onMouseDown={(e) => e.stopPropagation()} onClick={() => generate(output.text || '')}>
           {generating ? 'Generating…' : 'Regenerate'}
         </button>
-        {viewImage && <ImageModal src={viewImage} prompt={output.text} nodeLabel="Image Prompt" onClose={() => setViewImage(null)} aspect={aspect} imgWidth={dims.w} imgHeight={dims.h} />}
+        {viewImage && <ImageModal src={viewImage} prompt={output.text} nodeLabel="Image Prompt" onClose={() => setViewImage(null)} aspect={aspect}
+          onUse={(img) => { useOutputStore.getState().setOutput(id, { ...output, imageBase64: img }); setViewImage(null); }} />}
       </div>
     );
   }
