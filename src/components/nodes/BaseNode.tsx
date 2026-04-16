@@ -32,12 +32,12 @@ function MiniSelect({ value, options, onChange }: { value: string; options: read
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    const h = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('pointerdown', h);
+    return () => document.removeEventListener('pointerdown', h);
   }, [open]);
   return (
-    <div ref={ref} className="relative" onMouseDown={e => e.stopPropagation()}
+    <div ref={ref} className="relative"
       onMouseLeave={() => { if (open) setTimeout(() => { if (!ref.current?.matches(':hover')) setOpen(false); }, 100); }}>
       <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="h-6 text-xs rounded-full px-3 flex items-center gap-1"
         style={{ background: 'var(--color-bg-surface)', border: 'none', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap' }}>

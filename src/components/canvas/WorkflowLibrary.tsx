@@ -1,20 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { BADGE_COLORS, CATEGORY_LABELS } from '../../utils/nodeDefs';
-import type { Edge } from '@xyflow/react';
 import type { NodeCategory } from '../../store/graphStore';
-
-interface SavedWorkflow {
-  id: string;
-  name: string;
-  nodes: ContentNode[];
-  edges: Edge[];
-  savedAt: string;
-}
-
-const STORAGE_KEY = 'workflow-library';
-function load(): SavedWorkflow[] { try { const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
-function persist(items: SavedWorkflow[]) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+import { loadWorkflows, saveWorkflow, deleteWorkflow, type SavedWorkflow } from '../../utils/workflowApi';
+import type { Edge } from '@xyflow/react';
 
 /* SVG icons */
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
@@ -80,19 +69,18 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   const [saved, setSaved] = useState(false);
   const { nodes, edges, graphName, setNodes, setEdges, setGraphName } = useGraphStore();
 
-  useEffect(() => { setItems(load()); }, []);
+  useEffect(() => { loadWorkflows().then(setItems); }, []);
 
   const canSave = nodes.length > 0;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!canSave) return;
     const name = graphName || 'Untitled';
     const item: SavedWorkflow = { id: Date.now().toString(), name, nodes, edges, savedAt: new Date().toISOString() };
-    const updated = [item, ...items];
-    persist(updated);
-    setItems(updated);
+    setItems(prev => [item, ...prev]);
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
+    await saveWorkflow(item);
   };
 
   const handleLoad = (item: SavedWorkflow) => {
@@ -102,12 +90,11 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
     onOpen();
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteId) return;
-    const updated = items.filter(i => i.id !== deleteId);
-    persist(updated);
-    setItems(updated);
+    setItems(prev => prev.filter(i => i.id !== deleteId));
     setDeleteId(null);
+    await deleteWorkflow(deleteId);
   };
 
   const handleNew = () => {
