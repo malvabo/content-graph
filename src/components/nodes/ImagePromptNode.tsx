@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
+import { useGraphStore } from '../../store/graphStore';
 import { ImageModal } from '../modals/Modals';
+import { getDims, cssAspect } from '../../utils/imageDims';
 
-async function genImage(prompt: string, seed: number): Promise<string> {
-  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+async function genImage(prompt: string, seed: number, w: number, h: number): Promise<string> {
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
   const res = await fetch(url);
   const blob = await res.blob();
   return new Promise((resolve, reject) => {
@@ -18,19 +20,22 @@ async function genImage(prompt: string, seed: number): Promise<string> {
 export function ImagePromptInline({ id }: { id: string }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
   const output = useOutputStore((s) => s.outputs[id]);
+  const aspect = useGraphStore((s) => s.nodes.find(n => n.id === id)?.data.config.aspect as string | undefined);
   const [generating, setGenerating] = useState(false);
   const [viewImage, setViewImage] = useState<string | null>(null);
+
+  const dims = getDims(aspect);
 
   const generate = useCallback(async (prompt: string) => {
     setGenerating(true);
     try {
-      const img = await genImage(prompt, Date.now());
-      useOutputStore.getState().setOutput(id, { text: prompt, imageBase64: img });
+      const d = getDims(aspect);
+      const img = await genImage(prompt, Date.now(), d.w, d.h);
+      useOutputStore.getState().setOutput(id, { text: prompt, imageBase64: img, imgWidth: d.w, imgHeight: d.h });
     } catch { /* silent */ }
     setGenerating(false);
-  }, [id]);
+  }, [id, aspect]);
 
-  // Clear old image when re-running so auto-generate triggers
   useEffect(() => {
     if (status === 'running') {
       const cur = useOutputStore.getState().outputs[id];
@@ -40,7 +45,6 @@ export function ImagePromptInline({ id }: { id: string }) {
     }
   }, [status, id]);
 
-  // Auto-generate image when prompt is ready and no image exists yet
   useEffect(() => {
     if (status === 'complete' && output?.text && !output?.imageBase64 && !generating) {
       generate(output.text);
@@ -54,7 +58,7 @@ export function ImagePromptInline({ id }: { id: string }) {
   if ((status === 'running' && !generating) || generating) {
     return (
       <div className="mt-2">
-        <div className="aspect-video rounded-lg skeleton-bar" />
+        <div className="rounded-lg skeleton-bar" style={{ aspectRatio: cssAspect(aspect), maxHeight: 200 }} />
       </div>
     );
   }
@@ -63,12 +67,13 @@ export function ImagePromptInline({ id }: { id: string }) {
     return (
       <div className="mt-2">
         <div className="relative cursor-pointer" onMouseDown={(e) => e.stopPropagation()} onClick={() => setViewImage(output.imageBase64!)}>
-          <img src={output.imageBase64} alt="Generated" className="w-full max-h-[200px] object-cover rounded-lg" />
+          <img src={output.imageBase64} alt="Generated" className="w-full rounded-lg"
+            style={{ aspectRatio: cssAspect(aspect), maxHeight: 200, objectFit: 'cover' }} />
         </div>
         <button className="btn-micro mt-1.5" onMouseDown={(e) => e.stopPropagation()} onClick={() => generate(output.text || '')}>
           {generating ? 'Generating…' : 'Regenerate'}
         </button>
-        {viewImage && <ImageModal src={viewImage} prompt={output.text} nodeLabel="Image Prompt" onClose={() => setViewImage(null)} />}
+        {viewImage && <ImageModal src={viewImage} prompt={output.text} nodeLabel="Image Prompt" onClose={() => setViewImage(null)} aspect={aspect} imgWidth={dims.w} imgHeight={dims.h} />}
       </div>
     );
   }

@@ -39,7 +39,9 @@ const RotateCcw = ({size,...p}) => <I size={size} {...p}><path d="M3 12a9 9 0 1 
    • 3 tag colors: indigo, emerald, amber tints
    • Cards: shadow-only elevation, no borders
 ───────────────────────────────────────────── */
-const C = {
+const isDark = localStorage.getItem('dark-mode') === 'true';
+
+const LIGHT = {
   pageBg:  "#F2EFE9",
   surface: "#F7F5F1",
   white:   "#FFFFFF",
@@ -67,6 +69,39 @@ const C = {
   hlIndigo:  { bg:"rgba(59,48,112,0.06)",  activeBg:"rgba(59,48,112,0.15)", line:"rgba(59,48,112,0.35)"  },
   hlEmerald: { bg:"rgba(26,80,72,0.06)",   activeBg:"rgba(26,80,72,0.15)",  line:"rgba(26,80,72,0.35)"   },
   hlAmber:   { bg:"rgba(106,74,16,0.06)",  activeBg:"rgba(106,74,16,0.15)", line:"rgba(106,74,16,0.35)"  },
+};
+
+const DARK = {
+  pageBg:  "#1a1a1f",
+  surface: "#202024",
+  white:   "#242428",
+  border:  "#3a3a40",
+  border2: "#4a4a52",
+  text:    "#e8e6e3",
+  sub:     "#78766f",
+  mute:    "#5a5850",
+  accent:  "#a8a6a2",
+  accentHover: "#c0beb8",
+  accentAct: "#d0cec8",
+  accentLt: "#2a2a30",
+  accentTint: "#2a2a30",
+  accentText: "#e8e6e3",
+  accentDark: "#e8e6e3",
+  red:     "#f08080",
+  redLt:   "#3a2020",
+  redText: "#f08080",
+  amberText: "#f0c860",
+  amberLt: "#3a3420",
+  amberBdr: "#5a4a20",
+  tagIndigo: { text:"#a090d0", bg:"#2a2840" },
+  tagEmerald:{ text:"#80c0a0", bg:"#1a3028" },
+  tagAmber:  { text:"#f0c860", bg:"#3a3420" },
+  hlIndigo:  { bg:"rgba(160,144,208,0.08)", activeBg:"rgba(160,144,208,0.2)", line:"rgba(160,144,208,0.4)" },
+  hlEmerald: { bg:"rgba(128,192,160,0.08)", activeBg:"rgba(128,192,160,0.2)", line:"rgba(128,192,160,0.4)" },
+  hlAmber:   { bg:"rgba(240,200,96,0.08)",  activeBg:"rgba(240,200,96,0.2)",  line:"rgba(240,200,96,0.4)"  },
+};
+
+const C = isDark ? DARK : LIGHT;
 };
 
 const HL = {

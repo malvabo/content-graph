@@ -12,6 +12,13 @@ export default function ScriptSensePanel({ initialText }: Props) {
     }
   }, [initialText]);
 
+  // Reload iframe when dark mode toggles
+  useEffect(() => {
+    const obs = new MutationObserver(() => setIframeKey(k => k + 1));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)' }}>
       <iframe
