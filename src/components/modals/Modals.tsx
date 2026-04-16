@@ -36,14 +36,15 @@ function AiPopover({ x, y, selectedText, onApply, onClose }: { x: number; y: num
     const t = setTimeout(() => document.addEventListener('mousedown', handler), 100);
     return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
   }, [onClose]);
-  return (
-    <div ref={ref} style={{ position: 'absolute', left: x, top: y, zIndex: 9999, transform: 'translateY(-100%)' }}>
+  return createPortal(
+    <div ref={ref} style={{ position: 'fixed', left: x, top: y, zIndex: 99999, transform: 'translate(-50%, -100%)', paddingBottom: 4 }}>
       <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', display: 'flex', gap: 'var(--space-1)' }}>
         {AI_ACTIONS.map((a) => (
           <button key={a.label} className="btn-xs btn-ghost" onMouseDown={(e) => e.preventDefault()} onClick={() => { onApply(a.action(selectedText)); onClose(); }}>{a.label}</button>
         ))}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

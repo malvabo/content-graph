@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ModalShell, AiPopover } from './Modals';
 
-/* ── Measure Y offset of selection within a textarea, relative to a container ── */
-function getSelectionY(ta: HTMLTextAreaElement, container: HTMLElement, selStart: number): number {
+/* ── Measure viewport Y of selection start within a textarea ── */
+function getSelectionY(ta: HTMLTextAreaElement, selStart: number): number {
   const mirror = document.createElement('div');
   const cs = getComputedStyle(ta);
   mirror.style.cssText = `position:absolute;visibility:hidden;white-space:pre-wrap;word-wrap:break-word;overflow:hidden;width:${ta.clientWidth}px;font:${cs.font};font-size:${cs.fontSize};font-family:${cs.fontFamily};line-height:${cs.lineHeight};padding:${cs.padding};border:${cs.border};letter-spacing:${cs.letterSpacing};`;
@@ -10,8 +10,8 @@ function getSelectionY(ta: HTMLTextAreaElement, container: HTMLElement, selStart
   document.body.appendChild(mirror);
   const h = mirror.scrollHeight;
   document.body.removeChild(mirror);
-  // Y relative to container: textarea's offset within container + measured height - container scroll
-  return ta.offsetTop + h - ta.scrollTop - container.scrollTop;
+  const taRect = ta.getBoundingClientRect();
+  return taRect.top + h - ta.scrollTop;
 }
 
 interface ContentModalProps {
@@ -113,8 +113,8 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
   return (
     <ModalShell onClose={onClose} maxWidth={560}>
       <Header title={title} subtitle={`${tweets.length} tweets · ${totalChars} chars`} onClose={onClose} />
-      <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-4) 0', scrollbarWidth: 'thin' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           {tweets.map((tweet, i) => {
             const len = tweet.length;
             const over = len > 280;
@@ -122,15 +122,15 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
               <div key={i} style={{
                 background: 'var(--color-bg-surface)',
                 border: `1px solid ${over ? 'var(--color-danger-border)' : 'var(--color-border-subtle)'}`,
-                borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+                borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)',
                 transition: 'border-color 150ms',
               }}>
-                <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
-                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{i + 1}/</span>
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-1)' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{i + 1}/</span>
+                  <div className="flex items-center gap-1.5">
                     <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: over ? 'var(--color-danger)' : 'var(--color-text-disabled)' }}>{len}/280</span>
                     {tweets.length > 1 && (
-                      <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 4, display: 'flex', borderRadius: 'var(--radius-sm)', transition: 'color 100ms, background 100ms' }}
+                      <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 2, display: 'flex', borderRadius: 'var(--radius-sm)', transition: 'color 100ms, background 100ms' }}
                         onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)'; e.currentTarget.style.background = 'var(--color-danger-bg)'; }}
                         onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'none'; }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -139,12 +139,12 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
                   </div>
                 </div>
                 <textarea ref={el => { refs.current[i] = el; }} value={tweet} onChange={e => update(i, e.target.value)}
-                  style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+                  style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
               </div>
             );
           })}
         </div>
-        <button onClick={add} style={{ width: '100%', padding: 'var(--space-3)', margin: 'var(--space-3) 0', background: 'none', border: '1px dashed var(--color-border-default)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', transition: 'background 100ms' }}
+        <button onClick={add} style={{ width: '100%', padding: 'var(--space-2)', margin: 'var(--space-2) 0', background: 'none', border: '1px dashed var(--color-border-default)', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', transition: 'background 100ms' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
           + Add tweet
@@ -168,12 +168,12 @@ function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps
 
   const onMouseUp = useCallback(() => {
     const ta = ref.current;
-    const container = contentRef.current;
-    if (!ta || !container) return;
+    if (!ta) return;
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
-    const y = getSelectionY(ta, container, start);
-    setAiPopover({ x: ta.offsetLeft + ta.offsetWidth / 2, y, text: content.slice(start, end) });
+    const taRect = ta.getBoundingClientRect();
+    const y = getSelectionY(ta, start);
+    setAiPopover({ x: taRect.left + taRect.width / 2, y, text: content.slice(start, end) });
   }, [content]);
 
   const handleAiApply = useCallback((newText: string) => {
@@ -331,12 +331,12 @@ function GenericTextModal({ title, text, onClose, onRegenerate }: ContentModalPr
 
   const onMouseUp = useCallback(() => {
     const ta = textareaRef.current;
-    const container = contentRef.current;
-    if (!ta || !container) return;
+    if (!ta) return;
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
-    const y = getSelectionY(ta, container, start);
-    setAiPopover({ x: ta.offsetLeft + ta.offsetWidth / 2, y, text: content.slice(start, end) });
+    const taRect = ta.getBoundingClientRect();
+    const y = getSelectionY(ta, start);
+    setAiPopover({ x: taRect.left + taRect.width / 2, y, text: content.slice(start, end) });
   }, [content]);
 
   const handleAiApply = useCallback((newText: string) => {

@@ -5,7 +5,7 @@ function Input({ label = 'Label', placeholder = 'Placeholder', type = 'text', di
   const cls = error ? (type === 'textarea' ? 'form-textarea form-error' : 'form-input form-error') : (type === 'textarea' ? 'form-textarea' : 'form-input');
   return (
     <div style={{ fontFamily: 'var(--font-sans)', maxWidth: 'var(--size-panel)' }}>
-      <div className="text-field-label" style={{ marginBottom: 'var(--space-1)' }}>{label}</div>
+      <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>{label}</div>
       {type === 'textarea'
         ? <textarea disabled={disabled} className={cls} style={{ minHeight: 'var(--space-10)' }} placeholder={placeholder} />
         : <input disabled={disabled} className={cls} placeholder={placeholder} />
