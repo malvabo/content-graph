@@ -36,6 +36,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
   const text = useOutputStore((s) => s.outputs[id]?.text);
   const label = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.label ?? subtype);
   const [modalOpen, setModalOpen] = useState(false);
+  const rerun = () => { useExecutionStore.getState().setStatus(id, 'running'); setTimeout(() => useExecutionStore.getState().setStatus(id, 'complete'), 1500); };
   if (!text) return null;
 
   if (subtype === 'ig-carousel') {
@@ -54,7 +55,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
           <span style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{slides.length} slides</span>
           <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Expand</button>
         </div>
-        {modalOpen && <OutputModal title={label} text={text} wordCount={text.split(/\s+/).length} onClose={() => setModalOpen(false)} />}
+        {modalOpen && <OutputModal title={label} text={text} wordCount={text.split(/\s+/).length} onClose={() => setModalOpen(false)} onRegenerate={rerun} />}
       </div>
     );
   }
@@ -69,7 +70,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
       <div className="flex items-center justify-end mt-1.5">
         <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Expand</button>
       </div>
-      {modalOpen && <OutputModal title={label} text={text} wordCount={words} onClose={() => setModalOpen(false)} />}
+      {modalOpen && <OutputModal title={label} text={text} wordCount={words} onClose={() => setModalOpen(false)} onRegenerate={rerun} />}
     </div>
   );
 }

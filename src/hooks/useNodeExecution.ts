@@ -5,28 +5,6 @@ import { useOutputStore } from '../store/outputStore';
 import { topologicalSort } from '../utils/topologicalSort';
 import type { Edge } from '@xyflow/react';
 
-async function generateImage(prompt: string): Promise<string> {
-  const encoded = encodeURIComponent(prompt);
-  const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true`;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
-
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) throw new Error(`Image generation failed: ${response.status}`);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 function getUpstreamText(nodeId: string, edges: Edge[], outputs: Record<string, { text?: string }>) {
   const nodes = useGraphStore.getState().nodes;
   const upstream = edges.filter((e) => e.target === nodeId).map((e) => e.source);
@@ -64,16 +42,7 @@ export function useNodeExecution() {
       try {
         const result = await executor(input, node.data.config as Record<string, unknown>);
 
-        if (node.data.subtype === 'image-prompt') {
-          setOutput(nodeId, { text: result });
-          const { setProgress } = useExecutionStore.getState();
-          setProgress(nodeId, 50);
-          const imageBase64 = await generateImage(result);
-          setOutput(nodeId, { text: result, imageBase64 });
-          setProgress(nodeId, 100);
-        } else {
-          setOutput(nodeId, { text: result });
-        }
+        setOutput(nodeId, { text: result });
 
         setHash(nodeId, '');
         setStatus(nodeId, 'complete');

@@ -74,9 +74,9 @@ function ModalFooter({ children }: { children: React.ReactNode }) {
 }
 
 /* ── Output Modal ── */
-interface OutputModalProps { title: string; text: string; wordCount: number; onClose: () => void; onTextChange?: (text: string) => void }
+interface OutputModalProps { title: string; text: string; wordCount: number; onClose: () => void; onTextChange?: (text: string) => void; onRegenerate?: () => void }
 
-export function OutputModal({ title, text, onClose, onTextChange }: OutputModalProps) {
+export function OutputModal({ title, text, onClose, onTextChange, onRegenerate }: OutputModalProps) {
   const [copied, setCopied] = useState(false);
   const [editedText, setEditedText] = useState(text);
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
@@ -138,12 +138,20 @@ export function OutputModal({ title, text, onClose, onTextChange }: OutputModalP
       <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: '0 var(--space-6)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <textarea ref={textareaRef} className="w-full outline-none"
-          style={{ minHeight: 320, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)' }}
+          style={{ minHeight: 320, resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'transparent', border: 'none', padding: 0 }}
           value={editedText} onChange={(e) => setEditedText(e.target.value)} onMouseUp={onMouseUp} />
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-end shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)' }}>
+      <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)' }}>
+        <div>
+          {onRegenerate && (
+            <button className="btn btn-outline" onClick={() => { onRegenerate(); onClose(); }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              Regenerate
+            </button>
+          )}
+        </div>
         <button className="btn btn-lg btn-primary" onClick={onClose}>Done</button>
       </div>
     </ModalShell>
