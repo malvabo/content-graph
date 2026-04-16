@@ -87,10 +87,10 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
   );
 }
 
-function ConnectionLine() {
+function ConnectionLine({ running }: { running?: boolean }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0' }}>
-      <div style={{ width: 1.5, height: 20, background: 'var(--color-border-default)', borderRadius: 1 }} />
+      <div style={{ width: 1.5, height: 20, borderRadius: 1, background: running ? 'var(--color-accent)' : 'var(--color-border-default)', animation: running ? 'pulse-line 1s ease-in-out infinite' : 'none' }} />
     </div>
   );
 }
@@ -172,7 +172,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {sorted.map((node, i) => (
               <div key={node.id}>
-                {i > 0 && <ConnectionLine />}
+                {i > 0 && <ConnectionLine running={useExecutionStore.getState().status[sorted[i - 1].id] === 'running' || useExecutionStore.getState().status[node.id] === 'running'} />}
                 <MobileNodeCard node={node} onExpand={() => setExpandId(node.id)} onDelete={() => handleDelete(node.id)} />
               </div>
             ))}
