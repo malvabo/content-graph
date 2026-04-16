@@ -36,7 +36,6 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
   const text = useOutputStore((s) => s.outputs[id]?.text);
   const label = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.label ?? subtype);
   const [modalOpen, setModalOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   if (!text) return null;
 
   if (subtype === 'ig-carousel') {
@@ -53,7 +52,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
         </div>
         <div className="flex items-center justify-between mt-1">
           <span style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{slides.length} slides</span>
-          <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Read more</button>
+          <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Expand</button>
         </div>
         {modalOpen && <OutputModal title={label} text={text} wordCount={text.split(/\s+/).length} onClose={() => setModalOpen(false)} />}
       </div>
@@ -68,10 +67,7 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
         {text}
       </div>
       <div className="flex items-center justify-end mt-1.5">
-        <div className="flex gap-1.5">
-          <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>{copied ? '✓ Copied' : 'Copy'}</button>
-          <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Read more</button>
-        </div>
+        <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Expand</button>
       </div>
       {modalOpen && <OutputModal title={label} text={text} wordCount={words} onClose={() => setModalOpen(false)} />}
     </div>
