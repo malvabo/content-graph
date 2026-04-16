@@ -247,19 +247,20 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         <div style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', color: 'var(--color-danger-text)' }} className="mt-2">{error}</div>
       )}
 
-      {/* Inline content — fills remaining space */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', scrollbarWidth: 'thin' }}>
-        {data.subtype === 'text-source' && <TextSourceInline id={id} />}
-        {data.subtype === 'file-source' && <FileSourceInline id={id} />}
-        {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
-        {data.subtype === 'refine' && <RefineInline id={id} />}
-        {data.subtype === 'image-prompt' && <ImagePromptInline id={id} />}
-        {data.subtype === 'video' && <ImagePromptInline id={id} />}
-        {data.subtype === 'export' && <ExportInline id={id} />}
-        {data.category === 'generate' && !['image-prompt', 'video'].includes(data.subtype) && (
+      {/* Inline content */}
+      {data.subtype === 'text-source' && <TextSourceInline id={id} />}
+      {data.subtype === 'file-source' && <FileSourceInline id={id} />}
+      {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
+      {data.subtype === 'refine' && <RefineInline id={id} />}
+      {data.subtype === 'image-prompt' && <ImagePromptInline id={id} />}
+      {data.subtype === 'video' && <ImagePromptInline id={id} />}
+      {data.subtype === 'export' && <ExportInline id={id} />}
+      {data.category === 'generate' && !['image-prompt', 'video'].includes(data.subtype) && (
+        <div style={{ maxHeight: 160, overflow: 'hidden', position: 'relative' }}>
           <GenerateNodeInline id={id} subtype={data.subtype} expandOpen={expandOpen} onExpandClose={() => setExpandOpen(false)} />
-        )}
-      </div>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 24, background: 'linear-gradient(transparent, var(--color-bg-card))', pointerEvents: 'none' }} />
+        </div>
+      )}
 
       {/* Inline config dropdowns — pinned to bottom */}
       <div style={{ marginTop: 'auto' }}>
