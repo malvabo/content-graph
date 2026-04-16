@@ -3,7 +3,7 @@ import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useGraphStore } from '../../store/graphStore';
 import { ImageModal } from '../modals/Modals';
-import { getDims, cssAspect } from '../../utils/imageDims';
+import { getDims } from '../../utils/imageDims';
 
 async function genImage(prompt: string, seed: number, w: number, h: number): Promise<string> {
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
@@ -16,6 +16,8 @@ async function genImage(prompt: string, seed: number, w: number, h: number): Pro
     reader.readAsDataURL(blob);
   });
 }
+
+const BOX_H = 160;
 
 export function ImagePromptInline({ id }: { id: string }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
@@ -49,34 +51,45 @@ export function ImagePromptInline({ id }: { id: string }) {
     }
   }, [status, output?.text, output?.imageBase64, generating, generate]);
 
-  if (status === 'idle' || status === 'stale') {
-    return <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }} className="mt-2">Connect a text source, then Run</div>;
-  }
-
-  if ((status === 'running' && !generating) || generating) {
-    return (
-      <div className="mt-2">
-        <div className="rounded-lg skeleton-bar" style={{ aspectRatio: cssAspect(aspect), maxHeight: 200 }} />
-      </div>
-    );
-  }
-
-  if (status === 'complete' && output?.imageBase64) {
-    return (
-      <div className="mt-2">
-        <div className="relative cursor-pointer" onMouseDown={(e) => e.stopPropagation()} onClick={() => setViewImage(output.imageBase64!)}>
-          <img src={output.imageBase64} alt="Generated" className="w-full rounded-lg"
-            style={{ aspectRatio: cssAspect(aspect), maxHeight: 200, objectFit: 'cover' }} />
+  const content = (() => {
+    if (status === 'idle' || status === 'stale') {
+      return (
+        <div style={{ height: BOX_H, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
+          Connect a text source, then Run
         </div>
-        <button className="btn-micro mt-1.5" onMouseDown={(e) => e.stopPropagation()} onClick={() => generate(output.text || '')}>
-          {generating ? 'Generating…' : 'Regenerate'}
-        </button>
-        {viewImage && <ImageModal src={viewImage} prompt={output.text} nodeLabel="Image Prompt" onClose={() => setViewImage(null)} aspect={aspect}
-          onUse={(img) => { useOutputStore.getState().setOutput(id, { ...output, imageBase64: img }); setViewImage(null); }} />}
-      </div>
-    );
-  }
+      );
+    }
 
-  if (status === 'warning') return <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)' }} className="mt-2">No input — connect a text node upstream</div>;
-  return null;
+    if ((status === 'running' && !generating) || generating) {
+      return <div className="rounded-lg skeleton-bar" style={{ height: BOX_H }} />;
+    }
+
+    if (status === 'complete' && output?.imageBase64) {
+      return (
+        <>
+          <div className="relative cursor-pointer" onMouseDown={(e) => e.stopPropagation()} onClick={() => setViewImage(output.imageBase64!)}>
+            <img src={output.imageBase64} alt="Generated" className="w-full rounded-lg"
+              style={{ height: BOX_H, objectFit: 'cover' }} />
+          </div>
+          <button className="btn-micro mt-1.5" onMouseDown={(e) => e.stopPropagation()} onClick={() => generate(output.text || '')}>
+            {generating ? 'Generating…' : 'Regenerate'}
+          </button>
+          {viewImage && <ImageModal src={viewImage} prompt={output.text} nodeLabel="Image Prompt" onClose={() => setViewImage(null)} aspect={aspect}
+            onUse={(img: string) => { useOutputStore.getState().setOutput(id, { ...output, imageBase64: img }); setViewImage(null); }} />}
+        </>
+      );
+    }
+
+    if (status === 'warning') {
+      return (
+        <div style={{ height: BOX_H, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', borderRadius: 'var(--radius-sm)' }}>
+          No input — connect a text node upstream
+        </div>
+      );
+    }
+
+    return null;
+  })();
+
+  return <div className="mt-2">{content}</div>;
 }
