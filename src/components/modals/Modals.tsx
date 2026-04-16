@@ -4,10 +4,29 @@ import { getDims, RATIO_DIMS } from '../../utils/imageDims';
 
 /* ── AI Selection Popover ── */
 const AI_ACTIONS = [
-  { label: 'Shorter', action: (t: string) => { const s = t.split(/[.!?]\s+/).filter(Boolean); return s.slice(0, Math.max(1, Math.ceil(s.length / 2))).join('. ') + '.'; } },
-  { label: 'Longer', action: (t: string) => t + ' Furthermore, this point deserves deeper exploration as it connects to broader themes that impact the overall narrative.' },
-  { label: 'More engaging', action: (t: string) => t.replace(/\.\s/g, '! ').replace(/^(.)/,(_: string,c: string)=>c.toUpperCase()) },
-  { label: 'Rephrase', action: (t: string) => t.split('. ').reverse().join('. ') },
+  { label: 'Shorter', action: (t: string) => {
+    const sentences = t.match(/[^.!?]+[.!?]+/g) || [t];
+    if (sentences.length <= 1) return t.split(/,\s*/).slice(0, Math.ceil(t.split(/,\s*/).length / 2)).join(', ');
+    return sentences.slice(0, Math.ceil(sentences.length / 2)).join(' ').trim();
+  }},
+  { label: 'Longer', action: (t: string) => {
+    const sentences = t.match(/[^.!?]+[.!?]+/g) || [t];
+    const last = sentences[sentences.length - 1]?.trim() || t;
+    return t + ` To elaborate on this further — ${last.charAt(0).toLowerCase() + last.slice(1).replace(/[.!?]+$/, '')} has broader implications worth exploring.`;
+  }},
+  { label: 'More engaging', action: (t: string) => {
+    let result = t;
+    // Strengthen weak verbs
+    result = result.replace(/\bis\b/g, 'becomes').replace(/\bwas\b/g, 'proved to be');
+    // Add emphasis to first sentence
+    const first = result.match(/^[^.!?]+/);
+    if (first) result = result.replace(first[0], first[0].replace(/^(\w)/, (_, c) => c.toUpperCase()));
+    return result;
+  }},
+  { label: 'Rephrase', action: (t: string) => {
+    // Swap clause order within sentences where possible
+    return t.replace(/([^,]+),\s*([^.!?]+)([.!?])/g, '$2, $1$3').trim();
+  }},
 ];
 
 function AiPopover({ x, y, selectedText, onApply, onClose }: { x: number; y: number; selectedText: string; onApply: (text: string) => void; onClose: () => void }) {

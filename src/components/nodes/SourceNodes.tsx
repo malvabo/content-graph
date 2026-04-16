@@ -21,16 +21,20 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
     setLoading(true);
     setTimeout(() => {
       let result = selectedText;
-      if (action === 'engaging') result = selectedText.replace(/\.\s/g, '! ').replace(/^(.)/,(_,c)=>c.toUpperCase());
-      else if (action === 'expand') result = selectedText + ' Furthermore, this point deserves deeper exploration as it connects to broader themes that impact the overall narrative.';
-      else if (action === 'condense') {
-        const sentences = selectedText.split(/[.!?]\s+/).filter(Boolean);
-        result = sentences.slice(0, Math.max(1, Math.ceil(sentences.length / 2))).join('. ') + '.';
+      if (action === 'engaging') {
+        result = selectedText.replace(/\bis\b/g, 'becomes').replace(/\bwas\b/g, 'proved to be');
+      } else if (action === 'expand') {
+        const sentences = selectedText.match(/[^.!?]+[.!?]+/g) || [selectedText];
+        const last = sentences[sentences.length - 1]?.trim() || selectedText;
+        result = selectedText + ` To elaborate — ${last.charAt(0).toLowerCase() + last.slice(1).replace(/[.!?]+$/, '')} has broader implications worth exploring.`;
+      } else if (action === 'condense') {
+        const sentences = selectedText.match(/[^.!?]+[.!?]+/g) || [selectedText];
+        result = sentences.length <= 1 ? selectedText.split(/,\s*/).slice(0, Math.ceil(selectedText.split(/,\s*/).length / 2)).join(', ') : sentences.slice(0, Math.ceil(sentences.length / 2)).join(' ').trim();
       } else if (action === 'custom' && prompt) {
         result = `[${prompt}]: ${selectedText}`;
       }
       setPreview(result);
-      onApply(result, true); // apply as preview
+      onApply(result, true);
       setLoading(false);
     }, 500);
   };
@@ -41,7 +45,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
   // Preview state: show accept/revert
   if (preview) {
     return (
-      <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y }}>
+      <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y, transform: 'translate(-50%, -100%)' }}>
         <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--color-bg-popover)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)' }}>
           <div className="text-field-label">AI edited text</div>
           <div className="nowheel text-sm leading-relaxed max-h-[80px] overflow-y-auto rounded-lg p-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin' }}>{preview}</div>
@@ -55,7 +59,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
   }
 
   return (
-    <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y }}>
+    <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y, transform: 'translate(-50%, -100%)' }}>
       {!showPrompt ? (
         <div className="flex items-center gap-0.5 rounded-xl px-1 py-1" style={{ background: 'var(--color-bg-popover)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)' }}>
           <button className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-surface)] transition" title="AI Edit"
@@ -106,10 +110,16 @@ export function TextSourceInline({ id }: { id: string }) {
     if (start === end) { setPopover(null); return; }
     const selected = text.slice(start, end);
     if (selected.trim().length < 3) { setPopover(null); return; }
-    const rect = ta.getBoundingClientRect();
-    const parentRect = ta.parentElement?.getBoundingClientRect();
-    if (!parentRect) return;
-    setPopover({ x: 0, y: rect.top - parentRect.top - 40, start, end, text: selected });
+    // Measure Y of selection within textarea using a mirror div
+    const mirror = document.createElement('div');
+    const cs = getComputedStyle(ta);
+    mirror.style.cssText = `position:absolute;visibility:hidden;white-space:pre-wrap;word-wrap:break-word;overflow:hidden;width:${ta.clientWidth}px;font-size:${cs.fontSize};font-family:${cs.fontFamily};line-height:${cs.lineHeight};padding:${cs.padding};border:${cs.border};letter-spacing:${cs.letterSpacing};`;
+    mirror.textContent = ta.value.slice(0, start);
+    document.body.appendChild(mirror);
+    const h = mirror.scrollHeight;
+    document.body.removeChild(mirror);
+    const y = ta.offsetTop + h - ta.scrollTop;
+    setPopover({ x: ta.offsetWidth / 2, y, start, end, text: selected });
   }, [text]);
 
   const handleApply = useCallback((newText: string, preview?: boolean) => {
