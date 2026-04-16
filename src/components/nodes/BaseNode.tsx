@@ -253,7 +253,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {data.subtype === 'video' && <ImagePromptInline id={id} />}
       {data.subtype === 'export' && <ExportInline id={id} />}
       {data.category === 'generate' && !['image-prompt', 'video'].includes(data.subtype) && (
-        <div style={{ maxHeight: 200, overflow: 'auto', scrollbarWidth: 'thin' }}>
+        <div style={{ minHeight: 'var(--size-node-content)', maxHeight: 200, overflow: 'auto', scrollbarWidth: 'thin' }}>
           <GenerateNodeInline id={id} subtype={data.subtype} expandOpen={expandOpen} onExpandClose={() => setExpandOpen(false)} />
         </div>
       )}
