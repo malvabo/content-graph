@@ -226,7 +226,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate, subtype }: Conten
       <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         {/* Subject line — extra bottom gap to separate from sections */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
-          <div className="text-label" style={{ marginBottom: 'var(--space-2)' }}>Subject line</div>
+          <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>Subject line</div>
           <div style={{ position: 'relative' }}>
             <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Keep under 50 chars for mobile"
               style={{ width: '100%', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', paddingRight: 48, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', outline: 'none', transition: 'border-color 150ms' }}
@@ -238,7 +238,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate, subtype }: Conten
 
         {sections.map((sec, i) => (
           <div key={i} style={{ marginBottom: 'var(--space-4)' }}>
-            <div className="text-label" style={{ marginBottom: 'var(--space-2)' }}>{sec.label}</div>
+            <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>{sec.label}</div>
             <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
               onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
               onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>

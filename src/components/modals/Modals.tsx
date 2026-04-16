@@ -198,7 +198,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
             {/* #9: visual ratio picker with shape previews */}
             <div>
               <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
-                <span className="text-label">Ratio</span>
+                <span className="text-field-label">Ratio</span>
                 <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)' }}>{d.w}×{d.h}</span>
               </div>
               <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
@@ -225,7 +225,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
             {editPrompt !== undefined && (
               <div>
                 <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
-                  <span className="text-label">Prompt</span>
+                  <span className="text-field-label">Prompt</span>
                   <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
                     {/* #11/#13: properly sized action buttons at minimum 24px */}
                     {promptChanged && <button className="btn-xs btn-ghost" style={{ color: 'var(--color-text-disabled)' }} onClick={() => setEditPrompt(origPrompt.current)}>Reset</button>}

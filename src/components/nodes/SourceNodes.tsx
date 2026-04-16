@@ -43,7 +43,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
     return (
       <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y }}>
         <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--color-bg-popover)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)' }}>
-          <div className="text-label">AI edited text</div>
+          <div className="text-field-label">AI edited text</div>
           <div className="nowheel text-sm leading-relaxed max-h-[80px] overflow-y-auto rounded-lg p-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin' }}>{preview}</div>
           <div className="flex gap-1.5">
             <button className="btn-xs btn-outline flex-1" onClick={revert}>↩ Revert</button>
@@ -65,7 +65,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
         </div>
       ) : (
         <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2.5" style={{ background: 'var(--color-bg-popover)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)' }}>
-          <div className="text-label">Edit this text</div>
+          <div className="text-field-label">Edit this text</div>
           <div className="flex gap-1.5">
             <input className="flex-1 h-8 text-sm rounded-[10px] px-2.5"
               placeholder="How to edit this text?"
@@ -76,7 +76,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
               style={{ background: 'var(--color-bg-card)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border-default)' }}
               onClick={() => quickAction('custom')}>→</button>
           </div>
-          <div className="text-label">Writing</div>
+          <div className="text-field-label">Writing</div>
           <div className="flex flex-wrap gap-1.5">
             <button className="btn-xs btn-outline" disabled={loading} onClick={() => quickAction('engaging')}>✨ More engaging</button>
             <button className="btn-xs btn-outline" disabled={loading} onClick={() => quickAction('expand')}>↕ Expand</button>
