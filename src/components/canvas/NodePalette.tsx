@@ -66,13 +66,13 @@ export default function NodePalette({ onAddNode }: Props) {
         whileTap={{ scale: 0.94 }}
         transition={{ type: 'spring', stiffness: 400, damping: 28, mass: 0.5 }}
         className="relative w-12 h-12 rounded-[14px] flex items-center justify-center
-          bg-white/60 dark:bg-white/10 backdrop-blur-xl saturate-150
-          border-hairline border-white/20
+          bg-white/60 dark:bg-white/15 backdrop-blur-xl saturate-150
+          border-hairline border-white/20 dark:border-white/10
           shadow-fluid-glass active:shadow-fluid-pressed
           active:brightness-90 active:contrast-110
           transition-shadow duration-300 ease-fluid-spring
           overflow-hidden group"
-        style={{ color: 'var(--color-text-secondary)' }}
+        style={{ color: 'var(--color-text-primary)' }}
       >
         {/* Refraction highlight */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
