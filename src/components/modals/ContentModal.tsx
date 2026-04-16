@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ModalShell, AiPopover } from './Modals';
-import { NODE_ICONS } from '../../utils/nodeIcons';
 
 interface ContentModalProps {
   subtype: string;
@@ -33,16 +32,12 @@ function useAutoResize(ref: React.RefObject<HTMLTextAreaElement | null>) {
 }
 
 /* ── Header: icon + title + subtitle ── */
-function Header({ title, subtitle, subtype, onClose }: { title: string; subtitle?: string; subtype?: string; onClose: () => void }) {
-  const icon = subtype ? NODE_ICONS[subtype] : null;
+function Header({ title, subtitle, onClose }: { title: string; subtitle?: string; onClose: () => void }) {
   return (
     <div className="flex items-center justify-between shrink-0" style={{ padding: HP }}>
-      <div className="flex items-center gap-3">
-        {icon && <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}>{icon()}</div>}
-        <div>
-          <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
-          {subtitle && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{subtitle}</div>}
-        </div>
+      <div>
+        <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
+        {subtitle && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{subtitle}</div>}
       </div>
       <button aria-label="Close" onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms' }}
         onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
@@ -104,7 +99,7 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate, subtype }: Con
 
   return (
     <ModalShell onClose={onClose} maxWidth={560}>
-      <Header title={title} subtitle={`${tweets.length} tweets · ${totalChars} chars`} subtype={subtype} onClose={onClose} />
+      <Header title={title} subtitle={`${tweets.length} tweets · ${totalChars} chars`} onClose={onClose} />
       <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           {tweets.map((tweet, i) => {
@@ -178,7 +173,7 @@ function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentM
 
   return (
     <ModalShell onClose={onClose} maxWidth={620}>
-      <Header title={title} subtype={subtype} onClose={onClose} />
+      <Header title={title} onClose={onClose} />
       <div className="flex-1 overflow-y-auto relative" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}
@@ -209,7 +204,7 @@ function QuoteCardModal({ title, text, onClose, onRegenerate, subtype }: Content
 
   return (
     <ModalShell onClose={onClose} maxWidth={520}>
-      <Header title={title} subtype={subtype} onClose={onClose} />
+      <Header title={title} onClose={onClose} />
       <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-4) var(--space-6)' }}>
         <div style={{ width: '100%', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-8)', textAlign: 'center', cursor: 'text' }}>
           <svg width="32" height="24" viewBox="0 0 32 24" fill="none" style={{ margin: '0 auto var(--space-4)', display: 'block', opacity: 0.2 }}>
@@ -245,7 +240,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate, subtype }: Conten
 
   return (
     <ModalShell onClose={onClose} maxWidth={640}>
-      <Header title={title} subtype={subtype} onClose={onClose} />
+      <Header title={title} onClose={onClose} />
       <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         {/* Subject line — extra bottom gap to separate from sections */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
@@ -288,7 +283,7 @@ function TwitterSingleModal({ title, text, onClose, onRegenerate, subtype }: Con
 
   return (
     <ModalShell onClose={onClose} maxWidth={520}>
-      <Header title={title} subtitle={`${len}/280 characters`} subtype={subtype} onClose={onClose} />
+      <Header title={title} subtitle={`${len}/280 characters`} onClose={onClose} />
       <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         <div style={{
           width: '100%', background: 'var(--color-bg-surface)',
@@ -335,7 +330,7 @@ function GenericTextModal({ title, text, onClose, onRegenerate, subtype }: Conte
 
   return (
     <ModalShell onClose={onClose} maxWidth={720}>
-      <Header title={title} subtype={subtype} onClose={onClose} />
+      <Header title={title} onClose={onClose} />
       <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <textarea ref={textareaRef} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}

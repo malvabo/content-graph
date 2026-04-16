@@ -17,7 +17,6 @@ async function genImage(prompt: string, seed: number, w: number, h: number): Pro
   });
 }
 
-const BOX_H = 160;
 
 export function ImagePromptInline({ id }: { id: string }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
@@ -59,22 +58,22 @@ export function ImagePromptInline({ id }: { id: string }) {
   const showWarning = status === 'warning';
 
   return (
-    <div className="mt-2" style={{ height: BOX_H }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: 8 }}>
       {showIdle && (
-        <div style={{ height: BOX_H, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
           Connect a text source, then Run
         </div>
       )}
 
       {showSkeleton && (
-        <div className="rounded-lg skeleton-bar" style={{ height: BOX_H }} />
+        <div className="rounded-lg skeleton-bar" style={{ flex: 1 }} />
       )}
 
       {showImage && (
-        <div className="relative" style={{ height: BOX_H }}>
-          <div className="cursor-pointer" onMouseDown={(e) => e.stopPropagation()} onClick={() => setViewImage(output!.imageBase64!)}>
-            <img src={output!.imageBase64} alt="Generated" className="w-full rounded-lg"
-              style={{ height: BOX_H, objectFit: 'cover' }} />
+        <div className="relative" style={{ flex: 1 }}>
+          <div className="cursor-pointer h-full" onMouseDown={(e) => e.stopPropagation()} onClick={() => setViewImage(output!.imageBase64!)}>
+            <img src={output!.imageBase64} alt="Generated" className="w-full h-full rounded-lg"
+              style={{ objectFit: 'cover' }} />
           </div>
           <button className="btn-micro absolute bottom-2 right-2" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-sm)' }}
             onMouseDown={(e) => e.stopPropagation()} onClick={() => generate(output!.text || '')}>
@@ -86,7 +85,7 @@ export function ImagePromptInline({ id }: { id: string }) {
       )}
 
       {showWarning && (
-        <div style={{ height: BOX_H, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', borderRadius: 'var(--radius-sm)' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', borderRadius: 'var(--radius-sm)' }}>
           No input — connect a text node upstream
         </div>
       )}

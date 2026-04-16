@@ -124,7 +124,7 @@ export function TextSourceInline({ id }: { id: string }) {
   const charColor = charCount > 50000 ? 'var(--color-danger)' : charCount > 40000 ? 'var(--p-amber-600)' : 'var(--color-text-placeholder)';
 
   return (
-    <div className="mt-2 flex flex-col gap-1.5 relative flex-1">
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8, position: 'relative' }}>
       {popover && (
         <AiEditPopover
           selectedText={popover.text}
@@ -133,7 +133,7 @@ export function TextSourceInline({ id }: { id: string }) {
           onClose={() => setPopover(null)}
         />
       )}
-      <textarea ref={textareaRef} className="nowheel form-textarea min-h-[200px] flex-1"
+      <textarea ref={textareaRef} className="nowheel form-textarea" style={{ flex: 1, minHeight: 0 }}
         placeholder="Paste your article, transcript, or notes..." value={text} onChange={(e) => onChange(e.target.value)} onMouseUp={onMouseUp} />
       <div className="text-right text-sm" style={{ color: charColor }}>{charCount.toLocaleString()} / 50,000</div>
     </div>
@@ -156,14 +156,14 @@ export function FileSourceInline({ id }: { id: string }) {
   }, [id, updateConfig, setOutput]);
 
   return (
-    <div className="mt-2">
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: 8 }}>
       {fileName ? (
         <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-surface)] rounded-lg px-2 py-1.5">
           <span>{fileName}</span><span>·</span><span>{text.split(/\s+/).length.toLocaleString()} words</span><span>·</span><span>{((config?.fileSize as number ?? 0) / 1024).toFixed(0)} KB</span>
           <button className="ml-auto w-6 h-6 flex items-center justify-center rounded text-[var(--color-text-placeholder)] hover:text-[var(--color-danger)]" aria-label="Remove file" onClick={() => updateConfig(id, { text: '', fileName: undefined })}>✕</button>
         </div>
       ) : (
-        <div className={`border border-dashed border-[var(--color-text-disabled)] rounded-lg h-20 flex flex-col items-center justify-center text-sm text-[var(--color-text-placeholder)] cursor-pointer hover:border-solid hover:bg-[var(--color-bg-surface)] transition ${dragOver ? 'border-solid bg-[var(--color-bg-surface)]' : ''}`}
+        <div className={`border border-dashed border-[var(--color-text-disabled)] rounded-lg flex-1 flex flex-col items-center justify-center text-sm text-[var(--color-text-placeholder)] cursor-pointer hover:border-solid hover:bg-[var(--color-bg-surface)] transition ${dragOver ? 'border-solid bg-[var(--color-bg-surface)]' : ''}`}
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDragEnter={() => setDragOver(true)}
@@ -202,16 +202,16 @@ export function ImageSourceInline({ id }: { id: string }) {
   }, [id, updateConfig, setOutput]);
 
   return (
-    <div className="mt-2">
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: 8 }}>
       {preview ? (
-        <div className="relative">
-          <img src={preview} alt={fileName || 'Uploaded image'} className="w-full h-[140px] object-contain rounded-lg" style={{ background: 'var(--color-bg-surface)' }} />
+        <div className="relative flex-1">
+          <img src={preview} alt={fileName || 'Uploaded image'} className="w-full h-full object-contain rounded-lg" style={{ background: 'var(--color-bg-surface)' }} />
           <button className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-[var(--color-overlay-backdrop)] text-white text-xs flex items-center justify-center"
             onClick={() => updateConfig(id, { imagePreview: undefined, fileName: undefined, dimensions: undefined })}>✕</button>
           <div className="text-sm text-[var(--color-text-placeholder)] mt-1">{fileName} · {config?.dimensions as string}</div>
         </div>
       ) : (
-        <div className={`w-full h-[140px] border border-dashed border-[var(--color-text-disabled)] rounded-lg flex flex-col items-center justify-center text-sm text-[var(--color-text-placeholder)] cursor-pointer hover:border-solid hover:bg-[var(--color-bg-surface)] transition ${dragOver ? 'border-solid bg-[var(--color-bg-surface)]' : ''}`}
+        <div className={`w-full flex-1 border border-dashed border-[var(--color-text-disabled)] rounded-lg flex flex-col items-center justify-center text-sm text-[var(--color-text-placeholder)] cursor-pointer hover:border-solid hover:bg-[var(--color-bg-surface)] transition ${dragOver ? 'border-solid bg-[var(--color-bg-surface)]' : ''}`}
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDragEnter={() => setDragOver(true)}

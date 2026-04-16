@@ -18,7 +18,7 @@ export function ExportInline({ id }: { id: string }) {
   const imagePromptNodes = nodes.filter((n) => n.data.subtype === 'image-prompt' && outputs[n.id]?.imageBase64);
 
   return (
-    <div className="mt-2">
+    <div style={{ flex: 1, marginTop: 8 }}>
       {upstream.length === 0 && imagePromptNodes.length === 0 ? (
         <div className="text-sm text-[var(--color-text-placeholder)]">Connect nodes to export</div>
       ) : (
