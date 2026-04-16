@@ -159,18 +159,26 @@ export function OutputModal({ title, text, onClose, onTextChange, onRegenerate }
 }
 
 /* ── Image Modal ── */
-interface ImageModalProps { src: string; prompt?: string; onClose: () => void; onRegenerate?: () => void }
+interface ImageModalProps { src: string; prompt?: string; onClose: () => void; nodeLabel?: string }
 
-export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalProps) {
-  const [copied, setCopied] = useState(false);
+export function ImageModal({ src, prompt, onClose, nodeLabel }: ImageModalProps) {
   const [variants, setVariants] = useState<string[]>([]);
   const [genLoading, setGenLoading] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
   const [activeSrc, setActiveSrc] = useState(src);
   const [editPrompt, setEditPrompt] = useState(prompt || '');
+  const [zoomed, setZoomed] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
 
+  const promptChanged = editPrompt.trim() !== (prompt || '').trim();
+  const charCount = editPrompt.length;
+
+  // #13: single generate action, always 4 variants
   const generate4 = async () => {
     if (!editPrompt) return;
     setGenLoading(true);
+    setGenError(null);
     try {
       const baseSeed = Date.now();
       const encoded = encodeURIComponent(editPrompt);
@@ -178,33 +186,97 @@ export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalPro
         [0,1,2,3].map(async (i) => {
           const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${baseSeed + i}`;
           const res = await fetch(url);
+          if (!res.ok) throw new Error(`Failed (${res.status})`);
           const blob = await res.blob();
           return new Promise<string>((resolve) => { const r = new FileReader(); r.onloadend = () => resolve(r.result as string); r.readAsDataURL(blob); });
         })
       );
       setVariants(results);
+      setActiveSrc(results[0]);
     } catch (error) {
-      console.error('Failed to generate variants:', error);
+      setGenError(error instanceof Error ? error.message : 'Generation failed');
     } finally {
       setGenLoading(false);
     }
   };
 
+  // #14: copy image as blob
+  const copyImage = async () => {
+    try {
+      const res = await fetch(activeSrc);
+      const blob = await res.blob();
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+    } catch {
+      // Fallback: copy prompt instead
+      await navigator.clipboard.writeText(editPrompt);
+    }
+  };
+
+  // #15: meaningful download filename
+  const downloadImage = () => {
+    const name = (nodeLabel || 'image').replace(/\s+/g, '-').toLowerCase();
+    const a = document.createElement('a');
+    a.href = activeSrc;
+    a.download = `${name}-1024x1024.png`;
+    a.click();
+  };
+
+  // #16: copy prompt
+  const copyPrompt = () => {
+    navigator.clipboard.writeText(editPrompt);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 1500);
+  };
+
   return (
-    <ModalShell onClose={onClose} maxWidth={1000}>
+    <ModalShell onClose={onClose} maxWidth={fullscreen ? 1400 : 1000}>
       <div className="flex flex-1 min-h-0">
-        {/* Left: Image */}
+        {/* Left: Image + variant strip */}
         <div className="flex-1 flex flex-col min-w-0" style={{ background: 'var(--color-bg-dark)' }}>
-          <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-6)' }}>
-            <img src={activeSrc} alt={prompt || 'Generated image'} className="max-w-full max-h-[60vh] object-contain" style={{ borderRadius: 'var(--radius-md)' }} />
+          {/* #2: fullscreen toggle in top-right of image area */}
+          <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 2, display: 'flex', gap: 4 }}>
+            <button className="btn-icon-sm btn-ghost" onClick={() => setFullscreen(!fullscreen)}
+              style={{ background: 'rgba(0,0,0,0.4)', color: '#fff', borderRadius: 'var(--radius-sm)' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                {fullscreen ? <><path d="M4 14h6v6"/><path d="M20 10h-6V4"/></> : <><path d="M15 3h6v6"/><path d="M9 21H3v-6"/></>}
+              </svg>
+            </button>
           </div>
+
+          {/* #1: click to zoom */}
+          <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-6)', cursor: zoomed ? 'zoom-out' : 'zoom-in', overflow: zoomed ? 'auto' : 'hidden' }}
+            onClick={() => setZoomed(!zoomed)}>
+            <img src={activeSrc} alt={editPrompt || 'Generated image'}
+              style={{
+                maxWidth: zoomed ? 'none' : '100%',
+                maxHeight: zoomed ? 'none' : '60vh',
+                width: zoomed ? '200%' : undefined,
+                objectFit: 'contain',
+                borderRadius: 'var(--radius-md)',
+                transition: 'width 200ms ease, max-width 200ms ease',
+              }} />
+          </div>
+
+          {/* #3: horizontal variant strip */}
           {(variants.length > 0 || genLoading) && (
-            <div style={{ padding: '0 var(--space-6) var(--space-4)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+            <div style={{ padding: '0 var(--space-6) var(--space-4)', display: 'flex', gap: 'var(--space-2)', overflowX: 'auto' }}>
               {genLoading ? [0,1,2,3].map((i) => (
-                <div key={i} className="skeleton-bar" style={{ aspectRatio: '1', borderRadius: 'var(--radius-md)' }} />
+                <div key={i} className="skeleton-bar shrink-0" style={{ width: 64, height: 64, borderRadius: 'var(--radius-md)' }} />
               )) : variants.map((img, i) => (
-                <img key={i} src={img} alt={`Variant ${i + 1}`} onClick={() => setActiveSrc(img)}
-                  style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 'var(--radius-md)', cursor: 'pointer', border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent' }} />
+                <div key={i} className="shrink-0 relative" style={{ width: 64, height: 64 }}>
+                  <img src={img} alt={`Variant ${i + 1}`} onClick={() => { setActiveSrc(img); setZoomed(false); }}
+                    style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                      border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent',
+                      opacity: img === activeSrc ? 1 : 0.7,
+                      transition: 'opacity 150ms, border-color 150ms',
+                    }} />
+                  {/* #4: checkmark on selected */}
+                  {img === activeSrc && (
+                    <div style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -212,30 +284,52 @@ export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalPro
 
         {/* Right: Details */}
         <div className="flex flex-col shrink-0" style={{ width: 300, borderLeft: '1px solid var(--color-border-subtle)' }}>
-          <ModalHeader title="Details" onClose={onClose} />
+          {/* #9: contextual title */}
+          <ModalHeader title={nodeLabel || 'Image'} onClose={onClose} />
 
           <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-5)', gap: 'var(--space-4)', scrollbarWidth: 'thin' }}>
+            {/* #8: show actual dimensions */}
             <div className="flex justify-between"><span className="text-label">Size</span><span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>1024 × 1024</span></div>
-            <div className="flex justify-between"><span className="text-label">Model</span><span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>Pollinations</span></div>
+
             {editPrompt && (
               <div>
-                <div className="text-label" style={{ marginBottom: 'var(--space-2)' }}>Prompt</div>
+                <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
+                  <span className="text-label">Prompt</span>
+                  {/* #16: copy prompt button */}
+                  <button className="btn-xs btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '0 6px', height: 20 }} onClick={copyPrompt}>
+                    {copiedPrompt ? '✓' : 'Copy'}
+                  </button>
+                </div>
+                {/* #12: taller textarea */}
                 <textarea value={editPrompt} onChange={(e) => setEditPrompt(e.target.value)}
-                  style={{ width: '100%', minHeight: 80, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', outline: 'none', scrollbarWidth: 'thin' }} />
+                  style={{ width: '100%', minHeight: 120, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', outline: 'none', scrollbarWidth: 'thin' }} />
+                {/* #10: char count + #11: prompt changed hint */}
+                <div className="flex justify-between mt-1">
+                  <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: charCount > 500 ? 'var(--color-warning-text)' : 'var(--color-text-disabled)' }}>{charCount} chars</span>
+                  {promptChanged && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Edited — regenerate to apply</span>}
+                </div>
               </div>
             )}
           </div>
 
+          {/* #13 + #17 + #18: unified action area */}
           <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-5)', gap: 'var(--space-2)' }}>
-            {editPrompt && <button className="btn-sm btn-outline w-full" disabled={genLoading} onClick={generate4}>{genLoading ? 'Generating…' : variants.length ? 'Regenerate 4' : 'Generate 4 options'}</button>}
-            {onRegenerate && <button className="btn-sm btn-outline w-full" onClick={onRegenerate}>Regenerate</button>}
+            {/* #18: error state */}
+            {genError && (
+              <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-1)' }}>
+                {genError}
+              </div>
+            )}
+            {/* #13: single generate button */}
+            {editPrompt && (
+              <button className="btn-sm btn-primary w-full" disabled={genLoading} onClick={generate4}>
+                {genLoading ? 'Generating…' : promptChanged ? 'Generate with new prompt' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}
+              </button>
+            )}
+            {/* #17: consistent row layout for secondary actions */}
             <div className="flex gap-2">
-              <button className={`btn-sm flex-1 ${copied ? 'btn-tonal' : 'btn-ghost'}`} onClick={() => {
-                navigator.clipboard.writeText(src); setCopied(true); setTimeout(() => setCopied(false), 1500);
-              }}>{copied ? 'Copied ✓' : 'Copy'}</button>
-              <button className="btn-sm btn-primary flex-1" onClick={() => {
-                const a = document.createElement('a'); a.href = src; a.download = 'image.png'; a.click();
-              }}>Download</button>
+              <button className="btn-sm btn-ghost flex-1" onClick={copyImage}>Copy image</button>
+              <button className="btn-sm btn-outline flex-1" onClick={downloadImage}>Download</button>
             </div>
           </div>
         </div>

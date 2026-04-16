@@ -68,7 +68,7 @@ export function ImagePromptInline({ id }: { id: string }) {
         <button className="btn-micro mt-1.5" onMouseDown={(e) => e.stopPropagation()} onClick={() => generate(output.text || '')}>
           {generating ? 'Generating…' : 'Regenerate'}
         </button>
-        {viewImage && <ImageModal src={viewImage} prompt={output.text} onClose={() => setViewImage(null)} onRegenerate={() => { setViewImage(null); generate(output.text || ''); }} />}
+        {viewImage && <ImageModal src={viewImage} prompt={output.text} nodeLabel="Image Prompt" onClose={() => setViewImage(null)} />}
       </div>
     );
   }
