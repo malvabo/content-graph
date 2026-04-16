@@ -83,7 +83,7 @@ function useCopy(getText: () => string) {
 /* ════════════════════════════════════════════
    TWITTER THREAD
    ════════════════════════════════════════════ */
-function TwitterThreadModal({ title, text, onClose, onRegenerate, subtype }: ContentModalProps) {
+function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
   const parseTweets = (t: string) => t.split(/\n\n+/).filter(s => s.trim()).map(s => s.replace(/^\d+\/\s*/, ''));
   const [tweets, setTweets] = useState(() => parseTweets(text));
   const refs = useRef<(HTMLTextAreaElement | null)[]>([]);
@@ -145,7 +145,7 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate, subtype }: Con
 /* ════════════════════════════════════════════
    LINKEDIN POST
    ════════════════════════════════════════════ */
-function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentModalProps) {
+function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
   const [content, setContent] = useState(text);
   const ref = useRef<HTMLTextAreaElement>(null);
   const resize = useAutoResize(ref);
@@ -196,7 +196,7 @@ function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentM
 /* ════════════════════════════════════════════
    QUOTE CARD
    ════════════════════════════════════════════ */
-function QuoteCardModal({ title, text, onClose, onRegenerate, subtype }: ContentModalProps) {
+function QuoteCardModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
   const [quote, setQuote] = useState(text);
   const ref = useRef<HTMLTextAreaElement>(null);
   const resize = useAutoResize(ref);
@@ -222,7 +222,7 @@ function QuoteCardModal({ title, text, onClose, onRegenerate, subtype }: Content
 /* ════════════════════════════════════════════
    NEWSLETTER
    ════════════════════════════════════════════ */
-function NewsletterModal({ title, text, onClose, onRegenerate, subtype }: ContentModalProps) {
+function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
   const parseSections = (t: string) => {
     const parts = t.split(/\n---\n|\n##\s+/);
     if (parts.length <= 1) return [{ label: 'Content', text: t }];
@@ -273,7 +273,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate, subtype }: Conten
 /* ════════════════════════════════════════════
    TWITTER SINGLE — no duplicate counter
    ════════════════════════════════════════════ */
-function TwitterSingleModal({ title, text, onClose, onRegenerate, subtype }: ContentModalProps) {
+function TwitterSingleModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
   const [tweet, setTweet] = useState(text.replace(/^\d+\/\s*/, '').trim());
   const ref = useRef<HTMLTextAreaElement>(null);
   const resize = useAutoResize(ref);
@@ -302,7 +302,7 @@ function TwitterSingleModal({ title, text, onClose, onRegenerate, subtype }: Con
 /* ════════════════════════════════════════════
    GENERIC TEXT — with AI popover
    ════════════════════════════════════════════ */
-function GenericTextModal({ title, text, onClose, onRegenerate, subtype }: ContentModalProps) {
+function GenericTextModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
   const [content, setContent] = useState(text);
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
