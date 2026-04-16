@@ -20,20 +20,53 @@ function persist(items: SavedWorkflow[]) { localStorage.setItem(STORAGE_KEY, JSO
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>;
 const SaveIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
+const GraphIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="9" width="7" height="6" rx="1.5"/>
+    <rect x="15" y="3" width="7" height="5" rx="1.5"/>
+    <rect x="15" y="10" width="7" height="5" rx="1.5"/>
+    <rect x="15" y="17" width="7" height="5" rx="1.5"/>
+    <path d="M9 11C12 11 12 5.5 15 5.5"/>
+    <path d="M9 12C12 12 12 12.5 15 12.5"/>
+    <path d="M9 13C12 13 12 19.5 15 19.5"/>
+  </svg>
+);
+
+/* Mini node graph preview for cards */
+function MiniGraph({ nodes, edges }: { nodes: ContentNode[]; edges: Edge[] }) {
+  const cats = nodes.map(n => n.data.category);
+  const uniq = [...new Set(cats)];
+  const total = Math.min(nodes.length, 6);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3, height: 16 }}>
+      {Array.from({ length: total }).map((_, i) => {
+        const cat = cats[i] || uniq[0];
+        const c = BADGE_COLORS[cat];
+        return <div key={i} style={{ width: 6, height: 6, borderRadius: 2, background: c.text, opacity: 0.6 }} />;
+      })}
+      {edges.length > 0 && (
+        <svg width="12" height="8" viewBox="0 0 12 8" style={{ marginLeft: 2, opacity: 0.3 }}>
+          <path d="M0 4h12M8 1l4 3-4 3" fill="none" stroke="var(--color-text-disabled)" strokeWidth="1.2"/>
+        </svg>
+      )}
+      {nodes.length > 6 && <span style={{ fontSize: 10, color: 'var(--color-text-disabled)', fontFamily: 'var(--font-sans)' }}>+{nodes.length - 6}</span>}
+    </div>
+  );
+}
 
 /* Node breakdown badges */
 function NodeBreakdown({ nodes }: { nodes: ContentNode[] }) {
   const counts: Partial<Record<NodeCategory, number>> = {};
   nodes.forEach(n => { const c = n.data.category; counts[c] = (counts[c] || 0) + 1; });
   return (
-    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
       {(Object.entries(counts) as [NodeCategory, number][]).map(([cat, count]) => {
         const c = BADGE_COLORS[cat];
         return (
           <span key={cat} style={{
-            fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)',
-            padding: '2px 8px', borderRadius: 'var(--radius-full)',
-            background: c.bg, color: c.text,
+            fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)',
+            padding: '1px 6px', borderRadius: 'var(--radius-full)',
+            background: c.bg, color: c.text, lineHeight: '16px',
           }}>{count} {CATEGORY_LABELS[cat]}</span>
         );
       })}
@@ -84,78 +117,91 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
     onOpen();
   };
 
-  const fmt = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const fmt = (iso: string) => {
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
 
   return (
     <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-outline" onClick={handleSave} disabled={!canSave} title={canSave ? 'Save current workflow' : 'Add nodes to your workflow first'}>
+      {/* Full-width layout with horizontal padding */}
+      <div style={{ padding: 'var(--space-6) var(--space-8)' }}>
+
+        {/* Header row — compact, full-width */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
+            {items.length > 0 && (
+              <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', background: 'var(--color-bg-surface)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                {items.length}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+            {saved && <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-accent-subtle)' }}>Saved ✓</span>}
+            <button className="btn btn-outline" onClick={handleSave} disabled={!canSave} title={canSave ? 'Save current workflow' : 'Add nodes first'}>
               <SaveIcon /> Save current
             </button>
-            {saved && <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-accent-subtle)', alignSelf: 'center' }}>Saved!</span>}
             <button className="btn btn-primary" onClick={handleNew}>
               <PlusIcon /> New workflow
             </button>
           </div>
         </div>
 
-        {/* Empty state */}
+        {/* Empty state — compact, not oversized */}
         {items.length === 0 ? (
           <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            padding: '80px 24px', borderRadius: 16,
+            display: 'flex', alignItems: 'center', gap: 'var(--space-6)',
+            padding: 'var(--space-8) var(--space-6)',
+            borderRadius: 'var(--radius-lg)',
             border: '1px dashed var(--color-border-subtle)',
             background: 'var(--color-bg-card)',
           }}>
-            {/* Workflow graph icon */}
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ marginBottom: 16, opacity: 0.35 }}>
-              <rect x="4" y="18" width="14" height="12" rx="3" stroke="var(--color-text-tertiary)" strokeWidth="1.5"/>
-              <rect x="30" y="6" width="14" height="10" rx="3" stroke="var(--color-text-tertiary)" strokeWidth="1.5"/>
-              <rect x="30" y="20" width="14" height="10" rx="3" stroke="var(--color-text-tertiary)" strokeWidth="1.5"/>
-              <rect x="30" y="34" width="14" height="10" rx="3" stroke="var(--color-text-tertiary)" strokeWidth="1.5"/>
-              <path d="M18 22C24 22 24 11 30 11" stroke="var(--color-text-tertiary)" strokeWidth="1.5" fill="none"/>
-              <path d="M18 24C24 24 24 25 30 25" stroke="var(--color-text-tertiary)" strokeWidth="1.5" fill="none"/>
-              <path d="M18 26C24 26 24 39 30 39" stroke="var(--color-text-tertiary)" strokeWidth="1.5" fill="none"/>
-            </svg>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: 4 }}>
-              No saved workflows yet
+            <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--color-text-disabled)' }}>
+              <GraphIcon />
             </div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginBottom: 20 }}>
-              Build a content pipeline and save it for reuse
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: 2 }}>
+                No saved workflows yet
+              </div>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                Build a content pipeline and save it here for reuse
+              </div>
             </div>
-            <button className="btn btn-primary" onClick={handleNew}>
-              <PlusIcon /> Create your first workflow
+            <button className="btn btn-primary" onClick={handleNew} style={{ flexShrink: 0 }}>
+              <PlusIcon /> Create workflow
             </button>
           </div>
         ) : (
-          /* Card grid */
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 12 }}>
+          /* Card grid — 3 columns, full-width, tight cards */
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)' }}>
             {items.map(item => (
               <button key={item.id} onClick={() => handleLoad(item)}
                 style={{
-                  textAlign: 'left', borderRadius: 12, padding: 16,
+                  textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
                   background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                   fontFamily: 'var(--font-sans)', cursor: 'pointer', outline: 'none',
                   transition: 'border-color .15s, box-shadow .15s',
+                  display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 4 }}>
-                      {item.nodes.length} node{item.nodes.length !== 1 ? 's' : ''} · {item.edges.length} edge{item.edges.length !== 1 ? 's' : ''} · {fmt(item.savedAt)}
-                    </div>
+
+                {/* Row 1: name + delete */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
+                  <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                    {item.name}
                   </div>
                   <div
                     role="button" tabIndex={0} aria-label="Delete workflow"
                     style={{
-                      width: 28, height: 28, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0, marginLeft: 8, color: 'var(--color-text-disabled)', background: 'transparent',
+                      width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0, color: 'var(--color-text-disabled)', background: 'transparent',
                       transition: 'color .15s, background .15s', cursor: 'pointer',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)'; e.currentTarget.style.background = 'var(--color-danger-bg)'; }}
@@ -164,6 +210,16 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     <TrashIcon />
                   </div>
                 </div>
+
+                {/* Row 2: meta line — nodes, edges, time + mini graph */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                    {item.nodes.length} node{item.nodes.length !== 1 ? 's' : ''} · {item.edges.length} edge{item.edges.length !== 1 ? 's' : ''} · {fmt(item.savedAt)}
+                  </div>
+                  <MiniGraph nodes={item.nodes} edges={item.edges} />
+                </div>
+
+                {/* Row 3: category badges */}
                 <NodeBreakdown nodes={item.nodes} />
               </button>
             ))}
@@ -180,14 +236,14 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           animation: 'fadeIn 150ms ease',
         }} onClick={() => setDeleteId(null)}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)',
+            background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
             boxShadow: '0 16px 48px rgba(0,0,0,0.18)', border: '1px solid var(--color-border-default)',
             maxWidth: 340, width: '100%', fontFamily: 'var(--font-sans)',
             animation: 'scaleIn 150ms ease',
           }}>
             <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>Delete workflow?</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 'var(--space-5)' }}>
-              This will permanently remove "{items.find(i => i.id === deleteId)?.name}" from your library. This can't be undone.
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 'var(--space-4)' }}>
+              This will permanently remove "{items.find(i => i.id === deleteId)?.name}" from your library.
             </div>
             <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>

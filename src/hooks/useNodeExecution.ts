@@ -5,7 +5,7 @@ import { useOutputStore } from '../store/outputStore';
 import { topologicalSort } from '../utils/topologicalSort';
 
 function getUpstreamText(nodeId: string) {
-  const { nodes } = useGraphStore.getState();
+  const { nodes, edges } = useGraphStore.getState();
   const outputs = useOutputStore.getState().outputs;
   const upstream = edges.filter((e) => e.target === nodeId).map((e) => e.source);
   return upstream.map((id) => {
@@ -68,7 +68,7 @@ export function useNodeExecution() {
       abortRef.current = ctrl;
 
       // Read fresh state
-      const { nodes } = useGraphStore.getState();
+      const { nodes, edges } = useGraphStore.getState();
       useExecutionStore.getState().resetAll();
       useExecutionStore.getState().setRunAllActive(true);
       useOutputStore.getState().clearAll();

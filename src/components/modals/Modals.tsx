@@ -271,10 +271,14 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
                 {genLoading ? `Generating ${variants.length}/4…` : needsRegen ? 'Generate with changes' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}
               </button>
             )}
+            {genLoading && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', textAlign: 'center' }}>~15s per image</div>}
             <div className="flex gap-2">
               <button className={`btn-sm flex-1 ${copiedImg ? 'btn-tonal' : 'btn-ghost'}`} onClick={copyImage}>{copiedImg ? 'Copied ✓' : 'Copy image'}</button>
               <button className="btn-sm btn-ghost flex-1" onClick={downloadImage}>Download</button>
             </div>
+            {variants.length > 1 && (
+              <button className="btn-sm btn-ghost w-full" onClick={() => { const name = (nodeLabel || 'image').replace(/\s+/g, '-').toLowerCase(); variants.forEach((v, i) => { const a = document.createElement('a'); a.href = v; a.download = `${name}-v${i + 1}-${d.w}x${d.h}.png`; a.click(); }); }}>Download all {variants.length}</button>
+            )}
           </div>
         </div>
       </div>
