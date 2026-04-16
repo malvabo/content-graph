@@ -185,6 +185,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       style={{
         width: 'var(--size-node)',
         maxWidth: 'var(--size-node)',
+        minHeight: 280,
         overflow: 'visible',
         background: 'var(--color-bg-card)',
         border: `1px solid ${isError ? 'var(--color-danger-border)' : isStale ? 'var(--color-warning-border)' : hovered ? 'var(--color-border-strong)' : 'var(--color-border-default)'}`,
