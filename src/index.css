@@ -172,6 +172,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
   text-transform: uppercase;
   color: var(--color-text-tertiary);
 }
+.text-field-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-fixed);
+  font-family: var(--font-sans);
+  color: var(--color-text-secondary);
+}
 
 /* ── Form controls ── */
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),

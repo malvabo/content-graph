@@ -53,7 +53,7 @@ function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.Rea
 /* #1: consistent header padding 20 24 12 */
 function ModalHeader({ title, subtitle, onClose, extra }: { title: string; subtitle?: string; onClose: () => void; extra?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-5) var(--space-6) var(--space-3)' }}>
+    <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-5) var(--space-6) var(--space-4)' }}>
       <div>
         <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-tight)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
         {subtitle && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>{subtitle}</div>}
