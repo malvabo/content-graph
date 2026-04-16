@@ -66,17 +66,18 @@ export function ImagePromptInline({ id }: { id: string }) {
 
     if (status === 'complete' && output?.imageBase64) {
       return (
-        <>
-          <div className="relative cursor-pointer" onMouseDown={(e) => e.stopPropagation()} onClick={() => setViewImage(output.imageBase64!)}>
+        <div className="relative" style={{ height: BOX_H }}>
+          <div className="cursor-pointer" onMouseDown={(e) => e.stopPropagation()} onClick={() => setViewImage(output.imageBase64!)}>
             <img src={output.imageBase64} alt="Generated" className="w-full rounded-lg"
               style={{ height: BOX_H, objectFit: 'cover' }} />
           </div>
-          <button className="btn-micro mt-1.5" onMouseDown={(e) => e.stopPropagation()} onClick={() => generate(output.text || '')}>
+          <button className="btn-micro absolute bottom-2 right-2" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-sm)' }}
+            onMouseDown={(e) => e.stopPropagation()} onClick={() => generate(output.text || '')}>
             {generating ? 'Generating…' : 'Regenerate'}
           </button>
           {viewImage && <ImageModal src={viewImage} prompt={output.text} nodeLabel="Image Prompt" onClose={() => setViewImage(null)} aspect={aspect}
             onUse={(img: string) => { useOutputStore.getState().setOutput(id, { ...output, imageBase64: img }); setViewImage(null); }} />}
-        </>
+        </div>
       );
     }
 

@@ -29,8 +29,8 @@ function OutputPreview({ id, subtype, expandOpen, onExpandClose }: { id: string;
   if (!text) return null;
 
   return (
-    <div className="mt-2">
-      <div className="nowheel max-h-[80px] overflow-y-auto" style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin' }}>
+    <div className="mt-2 flex-1 flex flex-col min-h-0">
+      <div className="nowheel flex-1 overflow-y-auto" style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin' }}>
         {text}
       </div>
       {expandOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => onExpandClose?.()} onRegenerate={rerun} />}

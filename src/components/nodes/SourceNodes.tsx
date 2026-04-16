@@ -124,7 +124,7 @@ export function TextSourceInline({ id }: { id: string }) {
   const charColor = charCount > 50000 ? 'var(--color-danger)' : charCount > 40000 ? 'var(--p-amber-600)' : 'var(--color-text-placeholder)';
 
   return (
-    <div className="mt-2 flex flex-col gap-1.5 relative">
+    <div className="mt-2 flex flex-col gap-1.5 relative flex-1">
       {popover && (
         <AiEditPopover
           selectedText={popover.text}
@@ -133,7 +133,7 @@ export function TextSourceInline({ id }: { id: string }) {
           onClose={() => setPopover(null)}
         />
       )}
-      <textarea ref={textareaRef} className="nowheel form-textarea min-h-[200px]"
+      <textarea ref={textareaRef} className="nowheel form-textarea min-h-[200px] flex-1"
         placeholder="Paste your article, transcript, or notes..." value={text} onChange={(e) => onChange(e.target.value)} onMouseUp={onMouseUp} />
       <div className="text-right text-sm" style={{ color: charColor }}>{charCount.toLocaleString()} / 50,000</div>
     </div>
