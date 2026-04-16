@@ -32,9 +32,9 @@ function MiniSelect({ value, options, onChange }: { value: string; options: read
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const h = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('pointerdown', h);
-    return () => document.removeEventListener('pointerdown', h);
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as globalThis.Node)) setOpen(false); };
+    window.addEventListener('mousedown', h, true);
+    return () => window.removeEventListener('mousedown', h, true);
   }, [open]);
   return (
     <div ref={ref} className="relative"
@@ -185,7 +185,6 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       style={{
         width: 'var(--size-node)',
         maxWidth: 'var(--size-node)',
-        minHeight: 280,
         overflow: 'visible',
         background: 'var(--color-bg-card)',
         border: `1px solid ${isError ? 'var(--color-danger-border)' : isStale ? 'var(--color-warning-border)' : hovered ? 'var(--color-border-strong)' : 'var(--color-border-default)'}`,
