@@ -6,18 +6,22 @@ import IconNav from './components/canvas/IconNav';
 import VoicePanel from './components/canvas/VoicePanel';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import { useGraphStore, type ContentNode } from './store/graphStore';
-import { useCallback, useState, useSyncExternalStore } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
 import type { NodeDef } from './utils/nodeDefs';
 import MobileWorkflow from './components/canvas/MobileWorkflow';
 
 function useIsMobile() {
-  return useSyncExternalStore(
-    (cb) => { window.addEventListener('resize', cb); return () => window.removeEventListener('resize', cb); },
-    () => window.innerWidth < 768,
-    () => false,
-  );
+  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
+    setMobile(mq.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return mobile;
 }
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; btnHover: boolean }> {
