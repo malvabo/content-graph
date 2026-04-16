@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { getDims, RATIO_DIMS } from '../../utils/imageDims';
 
@@ -31,15 +31,17 @@ function AiPopover({ x, y, selectedText, onApply, onClose }: { x: number; y: num
 /* ── Shared Modal Shell ── */
 /* #1/#2: consistent padding on shell backdrop */
 function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.ReactNode; onClose: () => void; maxWidth?: number }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ padding: 'var(--space-8)', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ padding: 'var(--space-8)', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms ease' }} onClick={onClose}>
       <div role="dialog" aria-modal="true" className="flex flex-col w-full overflow-hidden"
-        style={{ maxWidth, maxHeight: '85vh', background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', boxShadow: '0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px var(--color-border-default)' }}
+        style={{ maxWidth, maxHeight: 'min(85vh, calc(100vh - 64px))', background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', boxShadow: '0 16px 48px rgba(0,0,0,0.18), 0 0 0 1px var(--color-border-default)', transform: visible ? 'scale(1)' : 'scale(0.98)', opacity: visible ? 1 : 0, transition: 'transform 150ms ease, opacity 150ms ease' }}
         onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
@@ -72,89 +74,6 @@ function ModalFooter({ children }: { children: React.ReactNode }) {
     <div className="flex items-center gap-2 shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)' }}>
       {children}
     </div>
-  );
-}
-
-/* ── Output Modal ── */
-interface OutputModalProps { title: string; text: string; wordCount: number; onClose: () => void; onTextChange?: (text: string) => void; onRegenerate?: () => void }
-
-export function OutputModal({ title, text, onClose, onTextChange, onRegenerate }: OutputModalProps) {
-  const [copied, setCopied] = useState(false);
-  const [editedText, setEditedText] = useState(text);
-  const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [expanded, setExpanded] = useState(false);
-
-  /* #15: word count for subtitle */
-  const wc = editedText.trim().split(/\s+/).filter(Boolean).length;
-
-  const copy = () => { navigator.clipboard.writeText(editedText); setCopied(true); setTimeout(() => setCopied(false), 1500); };
-
-  const onMouseUp = useCallback(() => {
-    const ta = textareaRef.current;
-    const container = contentRef.current;
-    if (!ta || !container) return;
-    const start = ta.selectionStart, end = ta.selectionEnd;
-    if (start === end || end - start < 3) { setAiPopover(null); return; }
-    const taRect = ta.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    setAiPopover({ x: taRect.width / 2, y: taRect.top - containerRect.top, text: editedText.slice(start, end) });
-  }, [editedText]);
-
-  const handleAiApply = useCallback((newText: string) => {
-    const ta = textareaRef.current;
-    if (!ta || !aiPopover) return;
-    const start = ta.selectionStart, end = ta.selectionEnd;
-    const updated = editedText.slice(0, start) + newText + editedText.slice(end);
-    setEditedText(updated);
-    if (onTextChange) onTextChange(updated);
-    setAiPopover(null);
-  }, [editedText, aiPopover, onTextChange]);
-
-  /* #16: header icons — copy is secondary (dimmer), expand and close are equal */
-  const headerExtra = (
-    <>
-      <button aria-label={copied ? 'Copied' : 'Copy'} onClick={copy} className="btn-icon-sm btn-ghost" style={{ color: copied ? 'var(--color-accent)' : 'var(--color-text-disabled)', borderRadius: 'var(--radius-md)' }}>
-        {copied
-          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
-          : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        }
-      </button>
-      <button aria-label="Expand" onClick={() => setExpanded(!expanded)} className="btn-icon-sm btn-ghost" style={{ color: 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">{expanded ? <><path d="M4 14h6v6"/><path d="M20 10h-6V4"/></> : <><path d="M15 3h6v6"/><path d="M9 21H3v-6"/></>}</svg>
-      </button>
-    </>
-  );
-
-  return (
-    <ModalShell onClose={onClose} maxWidth={expanded ? 1100 : 720}>
-      <ModalHeader title={title} subtitle={`${wc} words`} onClose={onClose} extra={headerExtra} />
-
-      {/* #3/#20: content area with top padding and subtle bg on textarea */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: 'var(--space-3) var(--space-6) var(--space-4)', scrollbarWidth: 'thin' }}>
-        {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
-        <textarea ref={textareaRef} className="w-full outline-none"
-          style={{ minHeight: 280, resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
-          onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-          onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}
-          value={editedText} onChange={(e) => setEditedText(e.target.value)} onMouseUp={onMouseUp} />
-        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-2)' }}>Select text for AI actions</div>
-      </div>
-
-      {/* #4: footer with consistent padding */}
-      <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)' }}>
-        <div>
-          {onRegenerate && (
-            <button className="btn btn-ghost" onClick={() => { onRegenerate(); onClose(); }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-              Regenerate
-            </button>
-          )}
-        </div>
-        <button className="btn btn-primary" onClick={onClose}>Done</button>
-      </div>
-    </ModalShell>
   );
 }
 
