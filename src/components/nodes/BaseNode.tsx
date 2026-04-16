@@ -2,6 +2,8 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useRef, useState, useEffect, memo } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
+import { mockExecute } from '../../utils/mockExecutor';
+import { useNodeExecution } from '../../hooks/useNodeExecution';
 import type { ContentNode } from '../../store/graphStore';
 import { TextSourceInline, ImageSourceInline, FileSourceInline } from './SourceNodes';
 import { GenerateNodeInline } from './GenerateNodes';
@@ -119,6 +121,7 @@ function InlineConfig({ id, subtype }: { id: string; subtype: string }) {
 function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const status = useExecutionStore(s => s.status[id] ?? 'idle');
   const error = useExecutionStore(s => s.errors[id]);
+  const { runNode } = useNodeExecution();
   const selectedId = useGraphStore(s => s.selectedNodeId);
   const selectedSubtype = useGraphStore(s => {
     const sel = s.nodes.find(n => n.id === s.selectedNodeId);
@@ -222,7 +225,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {/* Run button (bottom-right, hover only) */}
       <button
         onMouseDown={e => e.stopPropagation()}
-        onClick={() => { useExecutionStore.getState().setStatus(id, 'running'); setTimeout(() => { useExecutionStore.getState().setStatus(id, 'complete'); }, 1500); }}
+        onClick={() => runNode(id, async (input) => { await new Promise(r => setTimeout(r, 600 + Math.random() * 600)); return mockExecute(input, data.subtype); })}
         style={{
           position: 'absolute', bottom: 12, right: 12,
           width: 28, height: 28, borderRadius: '50%',

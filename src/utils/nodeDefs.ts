@@ -42,10 +42,10 @@ export const CATEGORY_LABELS: Record<NodeCategory, string> = {
 };
 
 export const BADGE_COLORS: Record<NodeCategory, { bg: string; text: string }> = {
-  source: { bg: '#EDEAE5', text: '#5C5347' },
-  transform: { bg: '#EDE8EB', text: '#5C4753' },
-  generate: { bg: '#E8EDE5', text: '#475C3A' },
-  output: { bg: '#EDECE5', text: '#53573A' },
+  source: { bg: 'var(--color-badge-source-bg)', text: 'var(--color-badge-source-text)' },
+  transform: { bg: 'var(--color-badge-transform-bg)', text: 'var(--color-badge-transform-text)' },
+  generate: { bg: 'var(--color-badge-generate-bg)', text: 'var(--color-badge-generate-text)' },
+  output: { bg: 'var(--color-badge-output-bg)', text: 'var(--color-badge-output-text)' },
 };
 
 export const MODEL_OPTIONS = ['claude-haiku-4', 'claude-sonnet-4', 'claude-opus-4'] as const;
