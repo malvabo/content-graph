@@ -244,7 +244,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate, subtype }: Conten
               onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
               <textarea value={sec.text} onChange={e => updateSection(i, e.target.value)}
                 rows={Math.max(3, Math.ceil(sec.text.length / 60))}
-                style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }} />
+                style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
             </div>
           </div>
         ))}
