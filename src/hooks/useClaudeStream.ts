@@ -1,14 +1,15 @@
 import { useCallback } from 'react';
 import { useExecutionStore } from '../store/executionStore';
 import { useOutputStore } from '../store/outputStore';
+import { useSettingsStore } from '../store/settingsStore';
 
 export function useClaudeStream() {
   const stream = useCallback(
     async (nodeId: string, prompt: string, model = 'claude-sonnet-4', temperature = 0.7, signal?: AbortSignal) => {
-      const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+      const apiKey = useSettingsStore.getState().anthropicKey || import.meta.env.VITE_ANTHROPIC_API_KEY;
 
       if (!apiKey) {
-        useExecutionStore.getState().setError(nodeId, 'No API key — VITE_ANTHROPIC_API_KEY must be set at build time in .env');
+        useExecutionStore.getState().setError(nodeId, 'No API key — add one in Settings');
         return '';
       }
 

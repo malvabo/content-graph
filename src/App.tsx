@@ -37,6 +37,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 import EmptyCanvasOverlay from './components/canvas/EmptyCanvasOverlay';
 import Intro from './components/Intro';
 import WorkflowLibraryView from './components/canvas/WorkflowLibrary';
+import SettingsPanel from './components/canvas/SettingsPanel';
 
 export default function App() {
   return <ErrorBoundary><ReactFlowProvider><AppInner /></ReactFlowProvider></ErrorBoundary>;
@@ -95,6 +96,8 @@ function AppInner() {
         {activeView === 'voice' && <VoicePanel onTranscriptReady={handleTranscript} />}
 
         {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
+
+        {activeView === 'settings' && <SettingsPanel />}
       </div>
     </div>
   );
