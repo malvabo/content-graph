@@ -160,9 +160,9 @@ export function OutputModal({ title, text, onClose, onTextChange, onRegenerate }
 }
 
 /* ── Image Modal ── */
-interface ImageModalProps { src: string; prompt?: string; onClose: () => void; nodeLabel?: string; aspect?: string; imgWidth?: number; imgHeight?: number }
+interface ImageModalProps { src: string; prompt?: string; onClose: () => void; nodeLabel?: string; aspect?: string; imgWidth?: number; imgHeight?: number; onUse?: (src: string) => void }
 
-export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, imgWidth, imgHeight }: ImageModalProps) {
+export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: ImageModalProps) {
   const [variants, setVariants] = useState<string[]>([]);
   const [genLoading, setGenLoading] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
@@ -170,182 +170,214 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, imgWidth, 
   const [editPrompt, setEditPrompt] = useState(prompt || '');
   const [zoomed, setZoomed] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [copiedImg, setCopiedImg] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [ratio, setRatio] = useState(aspect || '16:9');
+  const abortRef = useRef<AbortController | null>(null);
+  const origPrompt = useRef(prompt || '');
 
-  const w = imgWidth || getDims(ratio).w;
-  const h = imgHeight || getDims(ratio).h;
+  const d = getDims(ratio);
+  const promptChanged = editPrompt.trim() !== origPrompt.current.trim();
+  const ratioChanged = ratio !== (aspect || '16:9');
+  const needsRegen = promptChanged || ratioChanged;
 
-  const promptChanged = editPrompt.trim() !== (prompt || '').trim();
-  const charCount = editPrompt.length;
+  // Cleanup fetches on unmount (#20)
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
 
-  // #13: single generate action, always 4 variants
+  // Incremental variant generation (#16)
   const generate4 = async () => {
-    if (!editPrompt) return;
+    if (!editPrompt.trim()) return;
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
     setGenLoading(true);
     setGenError(null);
-    const d = getDims(ratio);
+    setVariants([]);
+    const dims = getDims(ratio);
+    const baseSeed = Date.now();
+    const cleanPrompt = editPrompt.trim().replace(/\n+/g, ' ');
+    const encoded = encodeURIComponent(cleanPrompt);
     try {
-      const baseSeed = Date.now();
-      const encoded = encodeURIComponent(editPrompt);
-      const results = await Promise.all(
-        [0,1,2,3].map(async (i) => {
-          const url = `https://image.pollinations.ai/prompt/${encoded}?width=${d.w}&height=${d.h}&nologo=true&seed=${baseSeed + i}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`Failed (${res.status})`);
+      for (let i = 0; i < 4; i++) {
+        if (ctrl.signal.aborted) return;
+        try {
+          const url = `https://image.pollinations.ai/prompt/${encoded}?width=${dims.w}&height=${dims.h}&nologo=true&seed=${baseSeed + i}`;
+          const res = await fetch(url, { signal: ctrl.signal });
+          if (!res.ok) continue;
           const blob = await res.blob();
-          return new Promise<string>((resolve) => { const r = new FileReader(); r.onloadend = () => resolve(r.result as string); r.readAsDataURL(blob); });
-        })
-      );
-      setVariants(results);
-      setActiveSrc(results[0]);
+          if (!blob.type.startsWith('image/')) continue;
+          const b64: string = await new Promise((resolve) => { const r = new FileReader(); r.onloadend = () => resolve(r.result as string); r.readAsDataURL(blob); });
+          if (ctrl.signal.aborted) return;
+          setVariants(prev => { const next = [...prev, b64]; if (next.length === 1) setActiveSrc(b64); return next; });
+        } catch (e) {
+          if (ctrl.signal.aborted) return;
+          // Skip this variant, continue to next
+        }
+      }
     } catch (error) {
-      setGenError(error instanceof Error ? error.message : 'Generation failed');
+      if (!ctrl.signal.aborted) setGenError(error instanceof Error ? error.message : 'Generation failed');
     } finally {
-      setGenLoading(false);
+      if (!ctrl.signal.aborted) setGenLoading(false);
     }
   };
 
-  // #14: copy image as blob
   const copyImage = async () => {
     try {
       const res = await fetch(activeSrc);
       const blob = await res.blob();
-      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      setCopiedImg(true);
     } catch {
-      // Fallback: copy prompt instead
       await navigator.clipboard.writeText(editPrompt);
+      setCopiedImg(true);
     }
+    setTimeout(() => setCopiedImg(false), 1500);
   };
 
-  // #15: meaningful download filename
   const downloadImage = () => {
     const name = (nodeLabel || 'image').replace(/\s+/g, '-').toLowerCase();
-    const a = document.createElement('a');
-    a.href = activeSrc;
-    a.download = `${name}-${w}x${h}.png`;
-    a.click();
+    const a = document.createElement('a'); a.href = activeSrc; a.download = `${name}-${d.w}x${d.h}.png`; a.click();
   };
 
-  // #16: copy prompt
-  const copyPrompt = () => {
-    navigator.clipboard.writeText(editPrompt);
-    setCopiedPrompt(true);
-    setTimeout(() => setCopiedPrompt(false), 1500);
-  };
+  const copyPrompt = () => { navigator.clipboard.writeText(editPrompt); setCopiedPrompt(true); setTimeout(() => setCopiedPrompt(false), 1500); };
+
+  const handleUse = () => { onUse?.(activeSrc); onClose(); };
+
+  const thumbH = Math.round(56 * d.h / d.w);
 
   return (
     <ModalShell onClose={onClose} maxWidth={fullscreen ? 1400 : 1000}>
       <div className="flex flex-1 min-h-0">
-        {/* Left: Image + variant strip */}
-        <div className="flex-1 flex flex-col min-w-0" style={{ background: 'var(--color-bg-dark)' }}>
-          {/* #2: fullscreen toggle in top-right of image area */}
-          <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 2, display: 'flex', gap: 4 }}>
-            <button className="btn-icon-sm btn-ghost" onClick={() => setFullscreen(!fullscreen)}
-              style={{ background: 'rgba(0,0,0,0.4)', color: '#fff', borderRadius: 'var(--radius-sm)' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+
+        {/* ── Left: image viewer ── */}
+        <div className="flex-1 flex flex-col min-w-0 relative" style={{ background: 'var(--color-bg-dark)', borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)' }}>
+
+          {/* Toolbar overlay */}
+          <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 3, display: 'flex', gap: 4 }}>
+            <button onClick={() => setFullscreen(!fullscreen)}
+              style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.08)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 {fullscreen ? <><path d="M4 14h6v6"/><path d="M20 10h-6V4"/></> : <><path d="M15 3h6v6"/><path d="M9 21H3v-6"/></>}
               </svg>
             </button>
+            {zoomed && (
+              <button onClick={() => setZoomed(false)}
+                style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.08)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: 11, fontFamily: 'var(--font-sans)' }}>
+                Fit
+              </button>
+            )}
           </div>
 
-          {/* #1: click to zoom */}
-          <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-6)', cursor: zoomed ? 'zoom-out' : 'zoom-in', overflow: zoomed ? 'auto' : 'hidden' }}
-            onClick={() => setZoomed(!zoomed)}>
+          {/* Image — zoom only on img click (#6) */}
+          <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-8) var(--space-6)', overflow: zoomed ? 'auto' : 'hidden' }}>
             <img src={activeSrc} alt={editPrompt || 'Generated image'}
+              onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}
               style={{
                 maxWidth: zoomed ? 'none' : '100%',
-                maxHeight: zoomed ? 'none' : '60vh',
-                width: zoomed ? '200%' : undefined,
+                maxHeight: zoomed ? 'none' : '62vh',
+                width: zoomed ? `${Math.max(d.w, 800)}px` : undefined,
                 objectFit: 'contain',
                 borderRadius: 'var(--radius-md)',
-                transition: 'width 200ms ease, max-width 200ms ease',
+                cursor: zoomed ? 'zoom-out' : 'zoom-in',
+                transition: 'opacity 150ms',
               }} />
           </div>
 
-          {/* #3: horizontal variant strip */}
+          {/* Variant strip */}
           {(variants.length > 0 || genLoading) && (
-            <div style={{ padding: '0 var(--space-6) var(--space-4)', display: 'flex', gap: 'var(--space-2)', overflowX: 'auto' }}>
-              {genLoading ? [0,1,2,3].map((i) => (
-                <div key={i} className="skeleton-bar shrink-0" style={{ width: 64, height: Math.round(64 * h / w), borderRadius: 'var(--radius-md)' }} />
-              )) : variants.map((img, i) => (
-                <div key={i} className="shrink-0 relative" style={{ width: 64, height: Math.round(64 * h / w) }}>
-                  <img src={img} alt={`Variant ${i + 1}`} onClick={() => { setActiveSrc(img); setZoomed(false); }}
-                    style={{ width: 64, height: Math.round(64 * h / w), objectFit: 'cover', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+            <div style={{ padding: '0 var(--space-6) var(--space-4)', display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', scrollbarWidth: 'thin' }}>
+              {variants.map((img, i) => (
+                <div key={i} className="shrink-0 relative" style={{ width: 56, height: thumbH }}>
+                  <img src={img} onClick={() => { setActiveSrc(img); setZoomed(false); }}
+                    style={{ width: 56, height: thumbH, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
                       border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent',
-                      opacity: img === activeSrc ? 1 : 0.7,
-                      transition: 'opacity 150ms, border-color 150ms',
+                      opacity: img === activeSrc ? 1 : 0.6, transition: 'opacity 150ms, border-color 150ms',
                     }} />
-                  {/* #4: checkmark on selected */}
                   {img === activeSrc && (
-                    <div style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    <div style={{ position: 'absolute', top: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
                     </div>
                   )}
                 </div>
+              ))}
+              {/* Loading placeholders for remaining */}
+              {genLoading && Array.from({ length: 4 - variants.length }).map((_, i) => (
+                <div key={`skel-${i}`} className="skeleton-bar shrink-0" style={{ width: 56, height: thumbH, borderRadius: 'var(--radius-sm)' }} />
               ))}
             </div>
           )}
         </div>
 
-        {/* Right: Details */}
-        <div className="flex flex-col shrink-0" style={{ width: 300, borderLeft: '1px solid var(--color-border-subtle)' }}>
-          {/* #9: contextual title */}
+        {/* ── Right: controls ── */}
+        <div className="flex flex-col shrink-0" style={{ width: 300 }}>
           <ModalHeader title={nodeLabel || 'Image'} onClose={onClose} />
 
-          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-5)', gap: 'var(--space-4)', scrollbarWidth: 'thin' }}>
-            <div className="flex justify-between"><span className="text-label">Size</span><span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{w} × {h}</span></div>
+          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-5) var(--space-4)', gap: 'var(--space-5)', scrollbarWidth: 'thin' }}>
+
+            {/* Ratio */}
             <div>
-              <div className="text-label" style={{ marginBottom: 'var(--space-2)' }}>Ratio</div>
-              <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
-                {Object.keys(RATIO_DIMS).map(r => (
-                  <button key={r} className={`btn-xs ${r === ratio ? 'btn-tonal' : 'btn-ghost'}`}
-                    style={{ fontSize: 'var(--text-xs)', padding: '0 8px' }}
-                    onClick={() => setRatio(r)}>{r}</button>
-                ))}
+              <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
+                <span className="text-label">Ratio</span>
+                <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)' }}>{d.w}×{d.h}</span>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {Object.entries(RATIO_DIMS).map(([r, dims]) => {
+                  const active = r === ratio;
+                  const bw = 18, bh = Math.round(18 * dims.h / dims.w);
+                  return (
+                    <button key={r} onClick={() => setRatio(r)}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px',
+                        background: active ? 'var(--color-interactive-active)' : 'transparent', border: active ? '1px solid var(--color-border-strong)' : '1px solid transparent',
+                        borderRadius: 'var(--radius-md)', cursor: 'pointer', transition: 'background 100ms' }}>
+                      <div style={{ width: bw, height: bh, borderRadius: 2, border: `1.5px solid ${active ? 'var(--color-accent)' : 'var(--color-text-disabled)'}` }} />
+                      <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: active ? 'var(--color-text-primary)' : 'var(--color-text-disabled)' }}>{r}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {editPrompt && (
+            {/* Prompt */}
+            {editPrompt !== undefined && (
               <div>
                 <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
                   <span className="text-label">Prompt</span>
-                  {/* #16: copy prompt button */}
-                  <button className="btn-xs btn-ghost" style={{ fontSize: 'var(--text-xs)', padding: '0 6px', height: 20 }} onClick={copyPrompt}>
-                    {copiedPrompt ? '✓' : 'Copy'}
-                  </button>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {promptChanged && <button className="btn-xs btn-ghost" style={{ fontSize: 10, height: 22, padding: '0 6px', color: 'var(--color-text-disabled)' }} onClick={() => setEditPrompt(origPrompt.current)}>Reset</button>}
+                    <button className="btn-xs btn-ghost" style={{ fontSize: 10, height: 22, padding: '0 6px' }} onClick={copyPrompt}>{copiedPrompt ? '✓ Copied' : 'Copy'}</button>
+                  </div>
                 </div>
-                {/* #12: taller textarea */}
                 <textarea value={editPrompt} onChange={(e) => setEditPrompt(e.target.value)}
-                  style={{ width: '100%', minHeight: 120, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', outline: 'none', scrollbarWidth: 'thin' }} />
-                {/* #10: char count + #11: prompt changed hint */}
-                <div className="flex justify-between mt-1">
-                  <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: charCount > 500 ? 'var(--color-warning-text)' : 'var(--color-text-disabled)' }}>{charCount} chars</span>
-                  {promptChanged && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Edited — regenerate to apply</span>}
+                  style={{ width: '100%', minHeight: 100, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', outline: 'none', scrollbarWidth: 'thin', transition: 'border-color 150ms' }}
+                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}
+                />
+                <div className="flex justify-between" style={{ marginTop: 4 }}>
+                  <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: editPrompt.length > 500 ? 'var(--color-warning-text)' : 'var(--color-text-disabled)' }}>{editPrompt.length}</span>
+                  {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
                 </div>
               </div>
             )}
           </div>
 
-          {/* #13 + #17 + #18: unified action area */}
-          <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-5)', gap: 'var(--space-2)' }}>
-            {/* #18: error state */}
+          {/* Actions */}
+          <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-5)', gap: 'var(--space-2)', borderTop: '1px solid var(--color-border-subtle)' }}>
             {genError && (
-              <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-1)' }}>
-                {genError}
+              <div className="flex items-center justify-between" style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-sm)' }}>
+                <span>{genError}</span>
+                <button className="btn-xs btn-ghost" style={{ color: 'var(--color-danger-text)', fontSize: 10, height: 20, padding: '0 6px' }} onClick={generate4}>Retry</button>
               </div>
             )}
-            {/* #13: single generate button */}
-            {editPrompt && (
-              <button className="btn-sm btn-primary w-full" disabled={genLoading} onClick={generate4}>
-                {genLoading ? 'Generating…' : promptChanged ? 'Generate with new prompt' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}
-              </button>
-            )}
-            {/* #17: consistent row layout for secondary actions */}
+            <button className="btn-sm btn-primary w-full" disabled={genLoading} onClick={generate4}>
+              {genLoading ? `Generating ${variants.length}/4…` : needsRegen ? 'Generate with changes' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}
+            </button>
             <div className="flex gap-2">
-              <button className="btn-sm btn-ghost flex-1" onClick={copyImage}>Copy image</button>
-              <button className="btn-sm btn-outline flex-1" onClick={downloadImage}>Download</button>
+              <button className={`btn-sm flex-1 ${copiedImg ? 'btn-tonal' : 'btn-ghost'}`} onClick={copyImage}>{copiedImg ? 'Copied ✓' : 'Copy image'}</button>
+              <button className="btn-sm btn-ghost flex-1" onClick={downloadImage}>Download</button>
             </div>
+            {onUse && variants.length > 0 && (
+              <button className="btn-sm btn-outline w-full" onClick={handleUse}>Use this image</button>
+            )}
           </div>
         </div>
       </div>
