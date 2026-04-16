@@ -57,7 +57,7 @@ export default function GraphCanvas() {
   const onConnect: OnConnect = useCallback(
     (conn: Connection) => {
       if (!isValidConnection(conn)) return;
-      setEdges(addEdge({ ...conn, id: `e-${conn.source}-${conn.target}-${Date.now()}` }, edges));
+      setEdges(addEdge({ ...conn, id: `e-${conn.source}-${conn.target}-${Date.now()}-${Math.random().toString(36).slice(2,7)}` }, edges));
     },
     [edges, setEdges, isValidConnection]
   );
@@ -71,16 +71,18 @@ export default function GraphCanvas() {
     e.preventDefault();
     const raw = e.dataTransfer.getData('application/content-graph-node');
     if (!raw) return;
-    const def: NodeDef = JSON.parse(raw);
-    const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-    const node: ContentNode = {
-      id: `${def.subtype}-${Date.now()}`,
-      type: 'contentNode',
-      position: { x: position.x - 120, y: position.y - 40 },
-      deletable: true,
-      data: { subtype: def.subtype, label: def.label, badge: def.badge, category: def.category, description: def.description, config: {} },
-    };
-    addNode(node);
+    try {
+      const def: NodeDef = JSON.parse(raw);
+      const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      const node: ContentNode = {
+        id: `${def.subtype}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+        type: 'contentNode',
+        position: { x: position.x - 120, y: position.y - 40 },
+        deletable: true,
+        data: { subtype: def.subtype, label: def.label, badge: def.badge, category: def.category, description: def.description, config: {} },
+      };
+      addNode(node);
+    } catch { return; }
   }, [addNode, screenToFlowPosition]);
 
   return (

@@ -22,37 +22,36 @@ export interface Template { name: string; description: string; build: () => { no
 export const TEMPLATES: Template[] = [
   {
     name: 'Article → Everywhere',
-    description: 'One article repurposed to LinkedIn, newsletter, Twitter, and blog',
+    description: 'One article repurposed to LinkedIn, newsletter, and Twitter',
     build: () => {
       const src = makeNode('text-source', 0, 0, { prepare: 'Extract the 5 strongest arguments' });
       const li = makeNode('linkedin-post', 300, -120, { quantity: 2 });
       const nl = makeNode('newsletter', 300, 0);
       const tw = makeNode('twitter-thread', 300, 120);
-      const bl = makeNode('blog-article', 300, 240);
       const ex = makeNode('export', 600, 60);
       return {
-        nodes: [src, li, nl, tw, bl, ex],
+        nodes: [src, li, nl, tw, ex],
         edges: [
-          makeEdge(src.id, li.id), makeEdge(src.id, nl.id), makeEdge(src.id, tw.id), makeEdge(src.id, bl.id),
-          makeEdge(li.id, ex.id), makeEdge(nl.id, ex.id), makeEdge(tw.id, ex.id), makeEdge(bl.id, ex.id),
+          makeEdge(src.id, li.id), makeEdge(src.id, nl.id), makeEdge(src.id, tw.id),
+          makeEdge(li.id, ex.id), makeEdge(nl.id, ex.id), makeEdge(tw.id, ex.id),
         ],
       };
     },
   },
   {
     name: 'Transcript → Social Pack',
-    description: 'Transcript simplified then split into carousel, thread, and post',
+    description: 'Transcript simplified then split into thread, post, and quote',
     build: () => {
       const src = makeNode('text-source', 0, 0, { prepare: 'Simplify to plain English, remove all jargon' });
-      const ig = makeNode('ig-carousel', 300, -80, { quantity: 3 });
+      const qc = makeNode('quote-card', 300, -80);
       const tw = makeNode('twitter-thread', 300, 40, { quantity: 2 });
       const li = makeNode('linkedin-post', 300, 160);
       const ex = makeNode('export', 600, 0);
       return {
-        nodes: [src, ig, tw, li, ex],
+        nodes: [src, qc, tw, li, ex],
         edges: [
-          makeEdge(src.id, ig.id), makeEdge(src.id, tw.id), makeEdge(src.id, li.id),
-          makeEdge(ig.id, ex.id),
+          makeEdge(src.id, qc.id), makeEdge(src.id, tw.id), makeEdge(src.id, li.id),
+          makeEdge(qc.id, ex.id),
         ],
       };
     },

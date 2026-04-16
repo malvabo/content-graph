@@ -55,8 +55,6 @@ export const DEFAULT_MODELS: Record<string, string> = {
   'linkedin-post': 'claude-haiku-4',
   'twitter-thread': 'claude-haiku-4',
   'twitter-single': 'claude-haiku-4',
-  'ig-carousel': 'claude-haiku-4',
-  'blog-article': 'claude-sonnet-4',
   'newsletter': 'claude-haiku-4',
   'infographic': 'claude-haiku-4',
   'quote-card': 'claude-haiku-4',

@@ -1,6 +1,7 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useRef, useState, useEffect, memo } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
+import { useOutputStore } from '../../store/outputStore';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
 import { mockExecute } from '../../utils/mockExecutor';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
@@ -75,17 +76,6 @@ const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string,
   'twitter-single': (c, s) => <>
     <MiniSelect value={c.angle as string ?? 'Most quotable insight'} options={['Most quotable insight', 'Strongest stat', 'Contrarian take', 'Call to action']} onChange={v => s('angle', v)} />
     <MiniSelect value={c.model as string ?? DEFAULT_MODELS['twitter-single']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
-  </>,
-  'ig-carousel': (c, s) => <>
-    <MiniSelect value={c.format as string ?? 'Headline + bullets'} options={['Headline + bullets', 'Single bold statement', 'Numbered list', 'Story arc']} onChange={v => s('format', v)} />
-    <MiniSelect value={c.platform as string ?? 'Instagram'} options={['Instagram', 'LinkedIn', 'TikTok']} onChange={v => s('platform', v)} />
-    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['ig-carousel']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
-  </>,
-  'blog-article': (c, s) => <>
-    <MiniSelect value={c.type as string ?? 'How-to'} options={['How-to', 'Opinion', 'Listicle', 'Deep dive', 'Case study', 'Explainer']} onChange={v => s('type', v)} />
-    <MiniSelect value={c.length as string ?? 'Medium 1000–1500w'} options={['Short 600–800w', 'Medium 1000–1500w', 'Long 2000–2500w']} onChange={v => s('length', v)} />
-    <MiniSelect value={c.audience as string ?? 'Intermediate'} options={['Beginner', 'Intermediate', 'Expert']} onChange={v => s('audience', v)} />
-    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['blog-article']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'newsletter': (c, s) => <>
     <MiniSelect value={c.type as string ?? 'Full issue'} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} onChange={v => s('type', v)} />
@@ -241,7 +231,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
             style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
           </button>
-          <button onMouseDown={e => e.stopPropagation()} onClick={() => useGraphStore.getState().removeNode(id)}
+          <button onMouseDown={e => e.stopPropagation()} onClick={() => { useGraphStore.getState().removeNode(id); useExecutionStore.getState().resetNode(id); useOutputStore.getState().clearNode(id); }}
             style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </button>

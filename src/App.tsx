@@ -53,7 +53,7 @@ function AppInner() {
 
   const handleAddNode = useCallback((def: NodeDef) => {
     const node: ContentNode = {
-      id: `${def.subtype}-${Date.now()}`,
+      id: `${def.subtype}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
       type: 'contentNode',
       position: { x: 200 + Math.random() * 200, y: 150 + Math.random() * 200 },
       deletable: true,

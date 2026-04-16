@@ -87,7 +87,7 @@ export const useGraphStore = create<GraphState>()(
         duplicateNode: (id) => {
           const node = get().nodes.find((n) => n.id === id);
           if (!node) return;
-          const newId = `${node.data.subtype}-${Date.now()}`;
+          const newId = `${node.data.subtype}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
           const dup: ContentNode = {
             ...node,
             id: newId,

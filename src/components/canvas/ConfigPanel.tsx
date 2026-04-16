@@ -64,7 +64,7 @@ function ModelSelector({ value, onChange }: { value: string; onChange: (v: strin
   </>;
 }
 
-const GENERATE_NODES_WITH_QUANTITY = ['linkedin-post', 'twitter-thread', 'twitter-single', 'ig-carousel', 'blog-article', 'newsletter', 'infographic', 'quote-card'];
+const GENERATE_NODES_WITH_QUANTITY = ['linkedin-post', 'twitter-thread', 'twitter-single', 'newsletter', 'infographic', 'quote-card'];
 
 const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unknown) => void) => React.ReactNode> = {
   'text-source': (c, s) => <>
@@ -93,17 +93,6 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
     <Field label="Tone"><Select value={c.tone as string ?? 'Analytical'} onChange={(v) => s('tone', v)} options={['Analytical', 'Personal', 'Educational', 'Provocative']} /></Field>
   </>,
   'twitter-single': (c, s) => <Field label="Angle"><Select value={c.angle as string ?? 'Most quotable insight'} onChange={(v) => s('angle', v)} options={['Most quotable insight', 'Strongest stat', 'Contrarian take', 'Call to action']} /></Field>,
-  'ig-carousel': (c, s) => <>
-    <Field label="Slides"><NumberInput value={c.slides as number ?? 7} onChange={(v) => s('slides', v)} min={5} max={10} /></Field>
-    <Field label="Format"><Select value={c.format as string ?? 'Headline + bullets'} onChange={(v) => s('format', v)} options={['Headline + bullets', 'Single bold statement', 'Numbered list', 'Story arc']} /></Field>
-    <Field label="Platform"><Select value={c.platform as string ?? 'Instagram'} onChange={(v) => s('platform', v)} options={['Instagram', 'LinkedIn', 'TikTok']} /></Field>
-  </>,
-  'blog-article': (c, s) => <>
-    <Field label="Type"><Select value={c.type as string ?? 'How-to'} onChange={(v) => s('type', v)} options={['How-to', 'Opinion', 'Listicle', 'Deep dive', 'Case study', 'Explainer']} /></Field>
-    <Field label="Length"><Select value={c.length as string ?? 'Medium 1000–1500w'} onChange={(v) => s('length', v)} options={['Short 600–800w', 'Medium 1000–1500w', 'Long 2000–2500w']} /></Field>
-    <Field label="SEO keyword"><input className="w-full h-8 text-sm border border-[var(--color-border-default)] rounded-lg px-2 outline-none focus:border-[var(--color-interactive-focus)]" value={c.keyword as string ?? ''} onChange={(e) => s('keyword', e.target.value)} placeholder="Optional" /></Field>
-    <Field label="Audience"><Select value={c.audience as string ?? 'Intermediate'} onChange={(v) => s('audience', v)} options={['Beginner', 'Intermediate', 'Expert']} /></Field>
-  </>,
   'newsletter': (c, s) => <>
     <Field label="Section type"><Select value={c.type as string ?? 'Full issue'} onChange={(v) => s('type', v)} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} /></Field>
     <Field label="Audience"><input className="w-full h-8 text-sm border border-[var(--color-border-default)] rounded-lg px-2 outline-none focus:border-[var(--color-interactive-focus)]" value={c.audience as string ?? ''} onChange={(e) => s('audience', e.target.value)} placeholder="e.g. B2B SaaS founders" /></Field>

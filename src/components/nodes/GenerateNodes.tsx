@@ -7,23 +7,14 @@ const SKELETON_LINES: Record<string, number[]> = {
   'linkedin-post': [100, 85, 95, 70, 90, 60],
   'twitter-thread': [90, 80, 90, 75],
   'twitter-single': [95],
-  'blog-article': [100, 80, 90, 85, 75, 95, 80],
   'newsletter': [60, 95, 50, 90, 40],
   'quote-card': [95, 50],
-  'ig-carousel': [20, 20, 20, 20, 20],
   'infographic': [90, 80, 85, 75, 90],
   'image-prompt': [100, 90, 80],
 };
 
 function Skeleton({ subtype }: { subtype: string }) {
   const lines = SKELETON_LINES[subtype] ?? [90, 80, 70];
-  if (subtype === 'ig-carousel') {
-    return (
-      <div className="flex gap-1.5 mt-2 overflow-hidden">
-        {lines.map((_, i) => <div key={i} className="w-[50px] h-[50px] rounded-md shrink-0 skeleton-bar" />)}
-      </div>
-    );
-  }
   return (
     <div className="flex flex-col gap-1.5 mt-2">
       {lines.map((w, i) => <div key={i} className="h-2.5 rounded skeleton-bar" style={{ width: `${w}%`, animationDelay: `${i * 0.15}s` }} />)}
@@ -36,26 +27,6 @@ function OutputPreview({ id, subtype, expandOpen, onExpandClose }: { id: string;
   const label = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.label ?? subtype);
   const rerun = () => { useExecutionStore.getState().setStatus(id, 'running'); setTimeout(() => useExecutionStore.getState().setStatus(id, 'complete'), 1500); };
   if (!text) return null;
-
-  if (subtype === 'ig-carousel') {
-    const slides = text.split(/---/).filter(Boolean);
-    return (
-      <div className="mt-2">
-        <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
-          {slides.map((s, i) => (
-            <div key={i} className="w-[60px] h-[60px] border rounded-md p-1 shrink-0 overflow-hidden" style={{ background: 'var(--color-bg-card)', borderColor: 'var(--color-border-default)', fontSize: 'var(--text-xs)', lineHeight: '1.3' }}>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>{i + 1}</div>
-              {s.trim().slice(0, 30)}
-            </div>
-          ))}
-        </div>
-        <div className="mt-1">
-          <span style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{slides.length} slides</span>
-        </div>
-        {expandOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => onExpandClose?.()} onRegenerate={rerun} />}
-      </div>
-    );
-  }
 
   return (
     <div className="mt-2">

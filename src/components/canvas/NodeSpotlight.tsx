@@ -22,7 +22,7 @@ export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }:
 
   const place = (def: NodeDef) => {
     const node: ContentNode = {
-      id: `${def.subtype}-${Date.now()}`,
+      id: `${def.subtype}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
       type: 'contentNode',
       position: { x: flowX - 120, y: flowY - 40 },
       deletable: true,

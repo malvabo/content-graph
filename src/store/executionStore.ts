@@ -52,5 +52,5 @@ export const useExecutionStore = create<ExecutionState>()((set) => ({
       return { status, errors, progress };
     }),
 
-  resetAll: () => set({ status: {}, errors: {}, progress: {}, tokenCounts: {} }),
+  resetAll: () => set({ status: {}, errors: {}, progress: {}, tokenCounts: {}, runAllActive: false }),
 }));

@@ -13,7 +13,7 @@ interface SavedWorkflow {
 }
 
 const STORAGE_KEY = 'workflow-library';
-function load(): SavedWorkflow[] { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } }
+function load(): SavedWorkflow[] { try { const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
 function persist(items: SavedWorkflow[]) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
 
 /* SVG icons */

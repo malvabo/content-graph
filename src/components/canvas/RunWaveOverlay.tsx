@@ -35,7 +35,8 @@ export default function RunWaveOverlay() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !show) return;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       canvas.width = rect.width;

@@ -22,7 +22,7 @@ export const useOutputStore = create<OutputState>()((set) => ({
   hashes: {},
 
   setOutput: (nodeId, output) =>
-    set((s) => ({ outputs: { ...s.outputs, [nodeId]: output } })),
+    set((s) => ({ outputs: { ...s.outputs, [nodeId]: { ...s.outputs[nodeId], ...output } } })),
 
   setHash: (nodeId, hash) =>
     set((s) => ({ hashes: { ...s.hashes, [nodeId]: hash } })),

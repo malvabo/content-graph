@@ -13,8 +13,8 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
 
   useEffect(() => {
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { if (preview) { onApply(selectedText); } onClose(); } };
-    setTimeout(() => document.addEventListener('mousedown', handler), 10);
-    return () => document.removeEventListener('mousedown', handler);
+    const tid = setTimeout(() => document.addEventListener('mousedown', handler), 10);
+    return () => { clearTimeout(tid); document.removeEventListener('mousedown', handler); };
   }, [onClose, preview, onApply, selectedText]);
 
   const quickAction = (action: string) => {
