@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useGraphStore } from '../../store/graphStore';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
@@ -12,12 +12,6 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
   const { runAll } = useNodeExecution();
   const isRunning = useExecutionStore((s) => Object.values(s.status).some((v) => v === 'running'));
   const [confirmClear, setConfirmClear] = useState(false);
-  const [runDone, setRunDone] = useState(false);
-  const prevRunning = useRef(isRunning);
-
-  // Show "✓ Done" for 2s after run completes
-  if (prevRunning.current && !isRunning) { setRunDone(true); setTimeout(() => setRunDone(false), 2000); }
-  prevRunning.current = isRunning;
 
   const handleRunAll = () => {
     runAll(async (input, _config, subtype) => {
@@ -59,7 +53,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
           ) : (
             <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)' }} onClick={() => { if (nodes.length === 0) { clearGraph(); } else { setConfirmClear(true); } }}>Clear</button>
           )}
-        <button className={`btn btn-run ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>{runDone ? '✓ Done' : '▶ Run All'}</button>
+        <button className={`btn btn-run ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>
       </div>
     </>
   );
