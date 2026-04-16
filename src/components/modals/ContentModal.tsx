@@ -145,20 +145,22 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
 /* ════════════════════════════════════════════
    LINKEDIN POST
    ════════════════════════════════════════════ */
-function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
+function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentModalProps) {
   const [content, setContent] = useState(text);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const resize = useAutoResize(ref);
   const { copied, copy } = useCopy(() => content);
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const onMouseUp = useCallback(() => {
     const ta = ref.current;
-    if (!ta) return;
+    const container = contentRef.current;
+    if (!ta || !container) return;
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
-    const rect = ta.getBoundingClientRect();
-    setAiPopover({ x: rect.left + rect.width / 2, y: rect.top, text: content.slice(start, end) });
+    const y = getSelectionY(ta, container, start);
+    setAiPopover({ x: ta.offsetLeft + ta.offsetWidth / 2, y, text: content.slice(start, end) });
   }, [content]);
 
   const handleAiApply = useCallback((newText: string) => {
@@ -174,10 +176,14 @@ function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps
   return (
     <ModalShell onClose={onClose} maxWidth={620}>
       <Header title={title} onClose={onClose} />
-      <div className="flex-1 overflow-y-auto relative" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
+      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
-        <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}
-          style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
+          onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
+          <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}
+            style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+        </div>
         {(
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', margin: 'var(--space-4) 0' }}>
           <div style={{ flex: 1, borderTop: '1px dashed var(--color-border-subtle)' }} />
@@ -244,7 +250,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalPro
       <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         {/* Subject line — extra bottom gap to separate from sections */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
-          <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>Subject line</div>
+          <div className="text-field-label" style={{ marginBottom: 'var(--space-1)' }}>Subject line</div>
           <div style={{ position: 'relative' }}>
             <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Keep under 50 chars for mobile"
               className="form-input" style={{ paddingRight: 48 }} />
@@ -254,7 +260,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalPro
 
         {sections.map((sec, i) => (
           <div key={i} style={{ marginBottom: 'var(--space-4)' }}>
-            <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>{sec.label}</div>
+            <div className="text-field-label" style={{ marginBottom: 'var(--space-1)' }}>{sec.label}</div>
             <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
               onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
               onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
@@ -333,8 +339,12 @@ function GenericTextModal({ title, text, onClose, onRegenerate }: ContentModalPr
       <Header title={title} onClose={onClose} />
       <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
-        <textarea ref={textareaRef} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}
-          style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
+          onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
+          <textarea ref={textareaRef} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}
+            style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+        </div>
       </div>
       <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
     </ModalShell>
