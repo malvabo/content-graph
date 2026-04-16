@@ -84,9 +84,6 @@ export function OutputModal({ title, text, onClose, onTextChange }: OutputModalP
 
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const wc = editedText.trim().split(/\s+/).filter(Boolean).length;
-  const cc = editedText.length;
-  const readMin = Math.max(1, Math.round(wc / 230));
   const copy = () => { navigator.clipboard.writeText(editedText); setCopied(true); setTimeout(() => setCopied(false), 1500); };
 
   const onMouseUp = useCallback(() => {
@@ -121,7 +118,6 @@ export function OutputModal({ title, text, onClose, onTextChange }: OutputModalP
       <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-5) var(--space-6) var(--space-2)' }}>
         <div>
           <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-tight)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
-          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{wc} words · {cc} chars · {readMin} min read</div>
         </div>
         <div className="flex items-center gap-1">
           <button aria-label={copied ? 'Copied' : 'Copy'} onClick={copy} className="btn-icon-sm btn-ghost" style={{ color: copied ? 'var(--color-accent)' : 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
@@ -139,12 +135,16 @@ export function OutputModal({ title, text, onClose, onTextChange }: OutputModalP
         </div>
       </div>
 
-      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: '0 var(--space-6) var(--space-5)', scrollbarWidth: 'thin' }}>
+      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: '0 var(--space-6)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <textarea ref={textareaRef} className="w-full outline-none"
           style={{ minHeight: 320, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)' }}
           value={editedText} onChange={(e) => setEditedText(e.target.value)} onMouseUp={onMouseUp} />
-        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-2)' }}>Select text for AI actions</div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-end shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)' }}>
+        <button className="btn btn-lg btn-primary" onClick={onClose}>Done</button>
       </div>
     </ModalShell>
   );
