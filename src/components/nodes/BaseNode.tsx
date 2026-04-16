@@ -192,6 +192,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         borderRadius: 'var(--radius-lg)',
         padding: 'var(--space-4)',
         position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
         opacity: dragDimmed ? 0.4 : 1,
         transition: 'opacity 200ms ease, box-shadow 200ms ease, border-color 150ms ease, outline-color 150ms ease',
         boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : 'none',
@@ -245,22 +247,24 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         <div style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', color: 'var(--color-danger-text)' }} className="mt-2">{error}</div>
       )}
 
-      {/* Inline content */}
-      {data.subtype === 'text-source' && <TextSourceInline id={id} />}
-      {data.subtype === 'file-source' && <FileSourceInline id={id} />}
-      {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
-      {data.subtype === 'refine' && <RefineInline id={id} />}
-      {data.subtype === 'image-prompt' && <ImagePromptInline id={id} />}
-      {data.subtype === 'video' && <ImagePromptInline id={id} />}
-      {data.subtype === 'export' && <ExportInline id={id} />}
-      {data.category === 'generate' && !['image-prompt', 'video'].includes(data.subtype) && (
-        <div style={{ flex: 1, overflow: 'auto', scrollbarWidth: 'thin' }}>
+      {/* Inline content — fills remaining space */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', scrollbarWidth: 'thin' }}>
+        {data.subtype === 'text-source' && <TextSourceInline id={id} />}
+        {data.subtype === 'file-source' && <FileSourceInline id={id} />}
+        {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
+        {data.subtype === 'refine' && <RefineInline id={id} />}
+        {data.subtype === 'image-prompt' && <ImagePromptInline id={id} />}
+        {data.subtype === 'video' && <ImagePromptInline id={id} />}
+        {data.subtype === 'export' && <ExportInline id={id} />}
+        {data.category === 'generate' && !['image-prompt', 'video'].includes(data.subtype) && (
           <GenerateNodeInline id={id} subtype={data.subtype} expandOpen={expandOpen} onExpandClose={() => setExpandOpen(false)} />
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Inline config dropdowns */}
-      <InlineConfig id={id} subtype={data.subtype} />
+      {/* Inline config dropdowns — pinned to bottom */}
+      <div style={{ marginTop: 'auto' }}>
+        <InlineConfig id={id} subtype={data.subtype} />
+      </div>
 
       {/* Expand modal for source/transform nodes */}
       {expandOpen && ["text-source", "file-source", "refine"].includes(data.subtype) && (
