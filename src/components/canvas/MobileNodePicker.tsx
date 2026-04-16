@@ -35,7 +35,7 @@ export default function MobileNodePicker({ onAdd, onClose }: { onAdd: (def: Node
         {/* Search */}
         <div style={{ padding: '0 var(--space-4) var(--space-3)' }}>
           <input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder="Search nodes…"
-            style={{ width: '100%', height: 44, borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-surface)', padding: '0 var(--space-4)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', outline: 'none' }} />
+            className="form-input" style={{ height: 44, borderRadius: 'var(--radius-lg)', fontSize: 'var(--text-md)' }} />
         </div>
 
         {/* Node list */}

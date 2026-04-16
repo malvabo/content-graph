@@ -233,7 +233,9 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)', padding: 'var(--space-1) var(--space-2)',
                         background: active ? 'var(--color-interactive-active)' : 'transparent', border: active ? '1px solid var(--color-border-strong)' : '1px solid transparent',
                         borderRadius: 'var(--radius-md)', cursor: 'pointer', transition: 'background 100ms' }}>
-                      <div style={{ width: bw, height: bh, borderRadius: 2, border: `1.5px solid ${active ? 'var(--color-accent)' : 'var(--color-text-disabled)'}` }} />
+                      <div style={{ width: bw, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: bw, height: bh, borderRadius: 2, border: `1.5px solid ${active ? 'var(--color-accent)' : 'var(--color-text-disabled)'}` }} />
+                      </div>
                       <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: active ? 'var(--color-text-primary)' : 'var(--color-text-disabled)' }}>{r}</span>
                     </button>
                   );
