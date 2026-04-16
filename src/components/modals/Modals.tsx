@@ -166,13 +166,14 @@ export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalPro
   const [variants, setVariants] = useState<string[]>([]);
   const [genLoading, setGenLoading] = useState(false);
   const [activeSrc, setActiveSrc] = useState(src);
+  const [editPrompt, setEditPrompt] = useState(prompt || '');
 
   const generate4 = async () => {
-    if (!prompt) return;
+    if (!editPrompt) return;
     setGenLoading(true);
     try {
       const baseSeed = Date.now();
-      const encoded = encodeURIComponent(prompt);
+      const encoded = encodeURIComponent(editPrompt);
       const results = await Promise.all(
         [0,1,2,3].map(async (i) => {
           const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${baseSeed + i}`;
@@ -216,16 +217,17 @@ export function ImageModal({ src, prompt, onClose, onRegenerate }: ImageModalPro
           <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-5)', gap: 'var(--space-4)', scrollbarWidth: 'thin' }}>
             <div className="flex justify-between"><span className="text-label">Size</span><span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>1024 × 1024</span></div>
             <div className="flex justify-between"><span className="text-label">Model</span><span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>Pollinations</span></div>
-            {prompt && (
+            {editPrompt && (
               <div>
                 <div className="text-label" style={{ marginBottom: 'var(--space-2)' }}>Prompt</div>
-                <div style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>{prompt}</div>
+                <textarea value={editPrompt} onChange={(e) => setEditPrompt(e.target.value)}
+                  style={{ width: '100%', minHeight: 80, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', outline: 'none', scrollbarWidth: 'thin' }} />
               </div>
             )}
           </div>
 
           <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-5)', gap: 'var(--space-2)' }}>
-            {prompt && <button className="btn-sm btn-outline w-full" disabled={genLoading} onClick={generate4}>{genLoading ? 'Generating…' : variants.length ? 'Regenerate 4' : 'Generate 4 options'}</button>}
+            {editPrompt && <button className="btn-sm btn-outline w-full" disabled={genLoading} onClick={generate4}>{genLoading ? 'Generating…' : variants.length ? 'Regenerate 4' : 'Generate 4 options'}</button>}
             {onRegenerate && <button className="btn-sm btn-outline w-full" onClick={onRegenerate}>Regenerate</button>}
             <div className="flex gap-2">
               <button className={`btn-sm flex-1 ${copied ? 'btn-tonal' : 'btn-ghost'}`} onClick={() => {

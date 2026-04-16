@@ -17,7 +17,6 @@ async function genImage(prompt: string, seed: number): Promise<string> {
 
 export function ImagePromptInline({ id }: { id: string }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
-  const progress = useExecutionStore((s) => s.progress[id] ?? 0);
   const output = useOutputStore((s) => s.outputs[id]);
   const [generating, setGenerating] = useState(false);
   const [viewImage, setViewImage] = useState<string | null>(null);
@@ -53,11 +52,9 @@ export function ImagePromptInline({ id }: { id: string }) {
   }
 
   if ((status === 'running' && !generating) || generating) {
-    const phase = generating ? 'Generating image…' : progress < 50 ? 'Writing prompt…' : 'Generating image…';
     return (
       <div className="mt-2">
         <div className="aspect-video rounded-lg skeleton-bar" />
-        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>{phase}</div>
       </div>
     );
   }
