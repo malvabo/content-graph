@@ -133,7 +133,7 @@ export function TextSourceInline({ id }: { id: string }) {
           onClose={() => setPopover(null)}
         />
       )}
-      <textarea ref={textareaRef} className="w-full min-h-[120px] max-h-[300px] resize-y text-sm leading-relaxed rounded-[10px] p-2.5"
+      <textarea ref={textareaRef} className="nowheel w-full min-h-[120px] max-h-[300px] resize-y text-sm leading-relaxed rounded-[10px] p-2.5"
         placeholder="Paste your article, transcript, or notes..." value={text} onChange={(e) => onChange(e.target.value)} onMouseUp={onMouseUp} />
       <div className="text-right text-sm" style={{ color: charColor }}>{charCount.toLocaleString()} / 50,000</div>
     </div>

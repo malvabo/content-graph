@@ -43,7 +43,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
 
       {/* Top-right: floating action buttons */}
       <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
-        <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)', background: 'var(--color-bg-card)', backdropFilter: 'blur(12px)' }} onClick={autoLayout}>Auto-layout</button>
+        <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)' }} onClick={autoLayout}>Auto-layout</button>
           {confirmClear ? (
             <>
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>Clear all?</span>
@@ -51,7 +51,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
               <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)' }} onClick={() => setConfirmClear(false)}>No</button>
             </>
           ) : (
-            <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)', background: 'var(--color-bg-card)', backdropFilter: 'blur(12px)' }} onClick={() => { if (nodes.length === 0) { clearGraph(); } else { setConfirmClear(true); } }}>Clear</button>
+            <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)' }} onClick={() => { if (nodes.length === 0) { clearGraph(); } else { setConfirmClear(true); } }}>Clear</button>
           )}
         <button className={`btn btn-run ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>
       </div>
