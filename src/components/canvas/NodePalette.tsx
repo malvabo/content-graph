@@ -96,8 +96,7 @@ export default function NodePalette({ onAddNode }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search nodes…"
-              className="w-full"
-              style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)', outline: 'none' }}
+              className="form-input"
             />
           </div>
 

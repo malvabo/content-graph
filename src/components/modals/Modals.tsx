@@ -232,9 +232,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
                   {promptChanged && <button className="btn-xs btn-ghost" style={{ color: 'var(--color-text-disabled)' }} onClick={() => setEditPrompt(origPrompt.current)}>Reset</button>}
                 </div>
                 <textarea value={editPrompt} onChange={(e) => setEditPrompt(e.target.value)}
-                  style={{ width: '100%', minHeight: 160, resize: 'vertical', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', outline: 'none', scrollbarWidth: 'thin', transition: 'border-color 150ms' }}
-                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}
+                  className="form-textarea" style={{ minHeight: 160, scrollbarWidth: 'thin' }}
                 />
                 <div className="flex justify-between" style={{ marginTop: 'var(--space-1)' }}>
                   <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: editPrompt.length > 500 ? 'var(--color-warning-text)' : 'var(--color-text-disabled)' }}>{editPrompt.length}</span>

@@ -162,11 +162,8 @@ function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentM
     if (!ta) return;
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) { setAiPopover(null); return; }
-    const range = sel.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-    setAiPopover({ x: rect.left + rect.width / 2, y: rect.top - 8, text: content.slice(start, end) });
+    const rect = ta.getBoundingClientRect();
+    setAiPopover({ x: rect.left + rect.width / 2, y: rect.top, text: content.slice(start, end) });
   }, [content]);
 
   const handleAiApply = useCallback((newText: string) => {
@@ -323,10 +320,8 @@ function GenericTextModal({ title, text, onClose, onRegenerate, subtype }: Conte
     if (!ta) return;
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) { setAiPopover(null); return; }
-    const rect = sel.getRangeAt(0).getBoundingClientRect();
-    setAiPopover({ x: rect.left + rect.width / 2, y: rect.top - 8, text: content.slice(start, end) });
+    const rect = ta.getBoundingClientRect();
+    setAiPopover({ x: rect.left + rect.width / 2, y: rect.top, text: content.slice(start, end) });
   }, [content]);
 
   const handleAiApply = useCallback((newText: string) => {

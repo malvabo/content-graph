@@ -44,7 +44,7 @@ export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }:
       <div className="w-[260px] bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl shadow-lg overflow-hidden">
         <input
           ref={inputRef}
-          className="w-full px-3 py-2.5 text-sm outline-none border-b border-[var(--color-border-subtle)] placeholder:text-[var(--color-text-placeholder)]"
+          className="form-input" style={{ borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none' }}
           placeholder="Search nodes..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
