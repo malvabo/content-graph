@@ -286,14 +286,6 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 .react-flow__controls-button:last-child { border-bottom: none !important; }
 .react-flow__controls-button svg { fill: var(--color-text-secondary) !important; }
 
-/* ── Cursor: canvas pan ── */
-.react-flow__pane { cursor: grab !important; }
-.react-flow__pane:active { cursor: grabbing !important; }
-
-/* ── Cursor: node drag ── */
-.react-flow__node { cursor: grab !important; }
-.react-flow__node:active { cursor: grabbing !important; }
-
 /* ── Cursor: handles ── */
 .react-flow__handle { cursor: crosshair !important; }
 

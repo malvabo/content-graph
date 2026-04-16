@@ -155,12 +155,35 @@ function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentM
   const ref = useRef<HTMLTextAreaElement>(null);
   const resize = useAutoResize(ref);
   const { copied, copy } = useCopy(() => content);
+  const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
+
+  const onMouseUp = useCallback(() => {
+    const ta = ref.current;
+    if (!ta) return;
+    const start = ta.selectionStart, end = ta.selectionEnd;
+    if (start === end || end - start < 3) { setAiPopover(null); return; }
+    const taRect = ta.getBoundingClientRect();
+    const containerRect = ta.parentElement?.getBoundingClientRect();
+    if (!containerRect) return;
+    setAiPopover({ x: taRect.width / 2, y: taRect.top - containerRect.top, text: content.slice(start, end) });
+  }, [content]);
+
+  const handleAiApply = useCallback((newText: string) => {
+    const ta = ref.current;
+    if (!ta || !aiPopover) return;
+    const start = ta.selectionStart, end = ta.selectionEnd;
+    const updated = content.slice(0, start) + newText + content.slice(end);
+    setContent(updated);
+    setAiPopover(null);
+    setTimeout(() => resize(), 0);
+  }, [content, aiPopover, resize]);
 
   return (
     <ModalShell onClose={onClose} maxWidth={620}>
       <Header title={title} subtype={subtype} onClose={onClose} />
-      <div className="flex-1 overflow-y-auto" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
-        <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); resize(); }}
+      <div className="flex-1 overflow-y-auto relative" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
+        {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
+        <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}
           style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
         {subtype === 'linkedin-post' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', margin: 'var(--space-4) 0' }}>

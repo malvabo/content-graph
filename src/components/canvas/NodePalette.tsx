@@ -15,7 +15,7 @@ function PaletteItem({ def, onClick }: { def: NodeDef; onClick: () => void }) {
   };
   return (
     <div draggable onDragStart={onDragStart} onClick={onClick}
-      className="palette-item flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-grab active:cursor-grabbing active:opacity-80">
+      className="palette-item flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer active:opacity-80">
       <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
         style={{ backgroundColor: colors.bg, color: colors.text }}>
         {NODE_ICONS[def.subtype]?.() ?? def.badge}
