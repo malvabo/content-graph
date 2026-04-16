@@ -155,11 +155,10 @@ function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentM
   const ref = useRef<HTMLTextAreaElement>(null);
   const resize = useAutoResize(ref);
   const { copied, copy } = useCopy(() => content);
-  const words = content.trim().split(/\s+/).length;
 
   return (
     <ModalShell onClose={onClose} maxWidth={620}>
-      <Header title={title} subtitle={`${words} words`} subtype={subtype} onClose={onClose} />
+      <Header title={title} subtype={subtype} onClose={onClose} />
       <div className="flex-1 overflow-y-auto" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
         <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); resize(); }}
           style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
