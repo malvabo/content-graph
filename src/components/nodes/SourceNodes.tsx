@@ -44,7 +44,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
       <div ref={ref} className="absolute z-50" style={{ left: position.x, top: position.y }}>
         <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--color-bg-popover)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)' }}>
           <div className="text-label">AI edited text</div>
-          <div className="text-sm leading-relaxed max-h-[80px] overflow-y-auto rounded-lg p-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin' }}>{preview}</div>
+          <div className="nowheel text-sm leading-relaxed max-h-[80px] overflow-y-auto rounded-lg p-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin' }}>{preview}</div>
           <div className="flex gap-1.5">
             <button className="btn-xs btn-outline flex-1" onClick={revert}>↩ Revert</button>
             <button className="btn-xs btn-primary flex-1" onClick={accept}>✓ Accept</button>
