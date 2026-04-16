@@ -252,7 +252,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {data.subtype === 'file-source' && <FileSourceInline id={id} />}
       {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
       {data.subtype === 'refine' && <RefineInline id={id} />}
-      {data.subtype === 'image-prompt' && <ImagePromptInline id={id} />}
+      {data.subtype === 'image-prompt' && <div style={{ minHeight: 160 }}><ImagePromptInline id={id} /></div>}
       {data.subtype === 'video' && <ImagePromptInline id={id} />}
       {data.subtype === 'export' && <ExportInline id={id} />}
       {data.category === 'generate' && !['image-prompt', 'video'].includes(data.subtype) && (
