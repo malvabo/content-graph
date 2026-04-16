@@ -2,6 +2,7 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useRef, useState, useEffect, memo } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
+import { OutputModal } from '../modals/Modals';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
 import { mockExecute } from '../../utils/mockExecutor';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
@@ -260,6 +261,17 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
 
       {/* Inline config dropdowns */}
       <InlineConfig id={id} subtype={data.subtype} />
+
+      {/* Expand modal for source/transform nodes */}
+      {expandOpen && ['text-source', 'file-source', 'refine'].includes(data.subtype) && (
+        <OutputModal
+          title={data.label}
+          text={(data.config?.text as string) || ''}
+          wordCount={((data.config?.text as string) || '').split(/\s+/).filter(Boolean).length}
+          onClose={() => setExpandOpen(false)}
+          onTextChange={(t) => { useGraphStore.getState().updateNodeConfig(id, { text: t }); useOutputStore.getState().setOutput(id, { text: t }); }}
+        />
+      )}
 
       {def?.hasOutput && <Handle type="source" position={Position.Right} id="text" className={HANDLE_CLS} style={hiSource ? { borderColor: 'var(--color-accent)', backgroundColor: 'var(--color-accent)' } : undefined} />}
     </div>
