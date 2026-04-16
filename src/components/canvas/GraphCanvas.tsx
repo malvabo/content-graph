@@ -13,6 +13,7 @@ import NodeSpotlight from './NodeSpotlight';
 import DotSpotlight from './DotSpotlight';
 import RunWaveOverlay from './RunWaveOverlay';
 import { useConnectionValidation } from '../../hooks/useConnectionValidation';
+import ContextMenu, { useContextMenu } from './ContextMenu';
 import type { NodeDef } from '../../utils/nodeDefs';
 
 const nodeTypes = { contentNode: BaseNode };
@@ -25,6 +26,7 @@ export default function GraphCanvas() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [spotlight, setSpotlight] = useState<{ x: number; y: number; flowX: number; flowY: number } | null>(null);
   const { isValidConnection, tooltip } = useConnectionValidation(nodes, edges);
+  const { menu, onNodeContextMenu, close: closeMenu } = useContextMenu();
   const executionStatus = useExecutionStore((s) => s.status);
 
   // First-run tooltip: show once when nodes appear for the first time
@@ -105,15 +107,16 @@ export default function GraphCanvas() {
         connectionRadius={80}
         nodeTypes={nodeTypes} edgeTypes={edgeTypes} defaultEdgeOptions={defaultEdgeOptions}
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-        onPaneClick={() => { setSelectedNodeId(null); setSpotlight(null); dismissFirstRun(); }}
+        onNodeContextMenu={(e, node) => onNodeContextMenu(e, node.id)}
+        onPaneClick={() => { setSelectedNodeId(null); setSpotlight(null); dismissFirstRun(); closeMenu(); }}
         deleteKeyCode={['Backspace', 'Delete']}
-        fitView={false} panOnScroll={false} selectionOnDrag={false}
+        fitView={false} panOnScroll selectionOnDrag={false}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'var(--color-bg)' }}>
         <DotSpotlight />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
-        <MiniMap position="bottom-right" pannable zoomable nodeColor="var(--color-border-strong)" maskColor="rgba(242,239,233,0.7)" style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', bottom: 50 }} />
+        <MiniMap position="bottom-left" pannable zoomable nodeColor="var(--color-border-strong)" maskColor="rgba(17,17,20,0.7)" style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', bottom: 10, left: 10 }} />
       </ReactFlow>
 
       {tooltip && (
@@ -135,6 +138,8 @@ export default function GraphCanvas() {
           {nodes.some(n => n.data.category === 'generate') ? 'Hit ▶ Run All to generate everything' : 'Add nodes with the + button below'}
         </div>
       )}
+
+      {menu && <ContextMenu x={menu.x} y={menu.y} nodeId={menu.nodeId} onClose={closeMenu} />}
     </div>
   );
 }

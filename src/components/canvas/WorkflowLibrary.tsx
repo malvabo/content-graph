@@ -176,22 +176,28 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
         <div style={{
           position: 'fixed', inset: 0, zIndex: 100,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'var(--color-overlay-backdrop)',
+          background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)',
+          animation: 'fadeIn 150ms ease',
         }} onClick={() => setDeleteId(null)}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'var(--color-bg-card)', borderRadius: 12, padding: 24,
-            boxShadow: 'var(--shadow-lg)', maxWidth: 340, width: '100%',
-            fontFamily: 'var(--font-sans)',
+            background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.18)', border: '1px solid var(--color-border-default)',
+            maxWidth: 340, width: '100%', fontFamily: 'var(--font-sans)',
+            animation: 'scaleIn 150ms ease',
           }}>
-            <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', marginBottom: 8 }}>Delete workflow?</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 20 }}>
+            <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>Delete workflow?</div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 'var(--space-5)' }}>
               This will permanently remove "{items.find(i => i.id === deleteId)?.name}" from your library. This can't be undone.
             </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>
               <button className="btn btn-destructive" onClick={confirmDelete}>Delete</button>
             </div>
           </div>
+          <style>{`
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes scaleIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+          `}</style>
         </div>
       )}
     </div>

@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { ModalShell, AiPopover } from './Modals';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 
-/* ── Shared types ── */
 interface ContentModalProps {
   subtype: string;
   title: string;
@@ -16,7 +15,12 @@ const CopyIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="non
 const CheckIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>;
 const RegenIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>;
 
-/* ── Auto-resize textarea hook ── */
+/* ── Standardized padding constants ── */
+const HP = 'var(--space-5) var(--space-6) var(--space-4)';   // header: 20 24 16
+const CP = 'var(--space-2) var(--space-6) 0';                // content: 8 24 0
+const FP = 'var(--space-4) var(--space-6) var(--space-5)';   // footer: 16 24 20
+
+/* ── Auto-resize textarea ── */
 function useAutoResize(ref: React.RefObject<HTMLTextAreaElement | null>) {
   const resize = useCallback(() => {
     const el = ref.current;
@@ -28,16 +32,16 @@ function useAutoResize(ref: React.RefObject<HTMLTextAreaElement | null>) {
   return resize;
 }
 
-/* ── Shared header with icon + subtitle ── */
+/* ── Header: icon + title + subtitle ── */
 function Header({ title, subtitle, subtype, onClose }: { title: string; subtitle?: string; subtype?: string; onClose: () => void }) {
   const icon = subtype ? NODE_ICONS[subtype] : null;
   return (
-    <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-5) var(--space-6) var(--space-3)' }}>
+    <div className="flex items-center justify-between shrink-0" style={{ padding: HP }}>
       <div className="flex items-center gap-3">
         {icon && <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}>{icon()}</div>}
         <div>
           <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
-          {subtitle && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 1 }}>{subtitle}</div>}
+          {subtitle && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{subtitle}</div>}
         </div>
       </div>
       <button aria-label="Close" onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms' }}
@@ -49,7 +53,7 @@ function Header({ title, subtitle, subtype, onClose }: { title: string; subtitle
   );
 }
 
-/* ── Shared footer: regenerate stays open with loading ── */
+/* ── Footer: regenerate (loading), copy (icon), done ── */
 function Footer({ onClose, onRegenerate, onCopy, copied }: { onClose: () => void; onRegenerate?: () => void; onCopy: () => void; copied: boolean }) {
   const [loading, setLoading] = useState(false);
   const regen = () => {
@@ -59,7 +63,7 @@ function Footer({ onClose, onRegenerate, onCopy, copied }: { onClose: () => void
     setTimeout(() => { setLoading(false); onClose(); }, 1600);
   };
   return (
-    <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', borderTop: '1px solid var(--color-border-subtle)' }}>
+    <div className="flex items-center justify-between shrink-0" style={{ padding: FP, borderTop: '1px solid var(--color-border-subtle)' }}>
       <div>
         {onRegenerate && (
           <button className="btn btn-outline" onClick={regen} disabled={loading}>
@@ -68,7 +72,7 @@ function Footer({ onClose, onRegenerate, onCopy, copied }: { onClose: () => void
         )}
       </div>
       <div className="flex items-center gap-2">
-        <button className="btn btn-ghost" onClick={onCopy}>{copied ? <><CheckIcon /> Copied</> : <><CopyIcon /> Copy</>}</button>
+        <button className="btn btn-sm btn-ghost" onClick={onCopy}>{copied ? <><CheckIcon /> Copied</> : <><CopyIcon /> Copy</>}</button>
         <button className="btn btn-lg btn-primary" onClick={onClose}>Done</button>
       </div>
     </div>
@@ -96,13 +100,12 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate, subtype }: Con
   const totalChars = tweets.reduce((s, t) => s + t.length, 0);
   const { copied, copy } = useCopy(() => tweets.map((t, i) => `${i + 1}/ ${t}`).join('\n\n'));
 
-  // Auto-resize all textareas
   useEffect(() => { refs.current.forEach(el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }); }, [tweets]);
 
   return (
     <ModalShell onClose={onClose} maxWidth={560}>
       <Header title={title} subtitle={`${tweets.length} tweets · ${totalChars} chars`} subtype={subtype} onClose={onClose} />
-      <div className="flex-1 overflow-y-auto" style={{ padding: '0 var(--space-6)', scrollbarWidth: 'thin' }}>
+      <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           {tweets.map((tweet, i) => {
             const len = tweet.length;
@@ -112,15 +115,16 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate, subtype }: Con
                 background: 'var(--color-bg-surface)',
                 border: `1px solid ${over ? 'var(--color-danger-border)' : 'var(--color-border-subtle)'}`,
                 borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+                transition: 'border-color 150ms',
               }}>
                 <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
-                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{i + 1}/</span>
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{i + 1}/</span>
                   <div className="flex items-center gap-2">
                     <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: over ? 'var(--color-danger)' : 'var(--color-text-disabled)' }}>{len}/280</span>
                     {tweets.length > 1 && (
-                      <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 2, display: 'flex', borderRadius: 4, transition: 'color 100ms' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-disabled)'; }}>
+                      <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 4, display: 'flex', borderRadius: 'var(--radius-sm)', transition: 'color 100ms, background 100ms' }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)'; e.currentTarget.style.background = 'var(--color-danger-bg)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'none'; }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                       </button>
                     )}
@@ -132,7 +136,9 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate, subtype }: Con
             );
           })}
         </div>
-        <button onClick={add} style={{ width: '100%', padding: 'var(--space-3)', marginTop: 'var(--space-3)', marginBottom: 'var(--space-4)', background: 'none', border: '1px dashed var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
+        <button onClick={add} style={{ width: '100%', padding: 'var(--space-3)', margin: 'var(--space-3) 0', background: 'none', border: '1px dashed var(--color-border-default)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', transition: 'background 100ms' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
           + Add tweet
         </button>
       </div>
@@ -154,10 +160,10 @@ function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentM
   return (
     <ModalShell onClose={onClose} maxWidth={620}>
       <Header title={title} subtitle={`${words} words`} subtype={subtype} onClose={onClose} />
-      <div className="flex-1 overflow-y-auto" style={{ padding: '0 var(--space-6)', scrollbarWidth: 'thin' }}>
+      <div className="flex-1 overflow-y-auto" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
         <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); resize(); }}
           style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', margin: 'var(--space-3) 0 var(--space-4)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', margin: 'var(--space-4) 0' }}>
           <div style={{ flex: 1, borderTop: '1px dashed var(--color-border-subtle)' }} />
           <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', whiteSpace: 'nowrap' }}>
             "see more" fold · ~210 chars
@@ -182,13 +188,13 @@ function QuoteCardModal({ title, text, onClose, onRegenerate, subtype }: Content
   return (
     <ModalShell onClose={onClose} maxWidth={520}>
       <Header title={title} subtype={subtype} onClose={onClose} />
-      <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-6)' }}>
-        <div style={{ width: '100%', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-8)', textAlign: 'center' }}>
-          <svg width="32" height="24" viewBox="0 0 32 24" fill="none" style={{ margin: '0 auto var(--space-3)', display: 'block', opacity: 0.2 }}>
+      <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-4) var(--space-6)' }}>
+        <div style={{ width: '100%', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-8)', textAlign: 'center', cursor: 'text' }}>
+          <svg width="32" height="24" viewBox="0 0 32 24" fill="none" style={{ margin: '0 auto var(--space-4)', display: 'block', opacity: 0.2 }}>
             <path d="M0 24V14.4C0 6.4 4.8 1.6 14.4 0l1.6 4.8C10.4 6.4 8 9.6 8 14.4h6.4V24H0zm17.6 0V14.4C17.6 6.4 22.4 1.6 32 0l-1.6 4.8C24 6.4 25.6 9.6 25.6 14.4H32V24H17.6z" fill="var(--color-text-disabled)"/>
           </svg>
           <textarea ref={ref} value={quote} onChange={e => { setQuote(e.target.value); resize(); }}
-            style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', textAlign: 'center', fontSize: 'var(--text-lg)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', fontStyle: 'italic', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+            style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', textAlign: 'center', cursor: 'text', fontSize: 'var(--text-lg)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', fontStyle: 'italic', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
         </div>
       </div>
       <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
@@ -218,19 +224,25 @@ function NewsletterModal({ title, text, onClose, onRegenerate, subtype }: Conten
   return (
     <ModalShell onClose={onClose} maxWidth={640}>
       <Header title={title} subtype={subtype} onClose={onClose} />
-      <div className="flex-1 overflow-y-auto" style={{ padding: '0 var(--space-6)', scrollbarWidth: 'thin' }}>
-        <div style={{ marginBottom: 'var(--space-4)' }}>
+      <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
+        {/* Subject line — extra bottom gap to separate from sections */}
+        <div style={{ marginBottom: 'var(--space-6)' }}>
           <div className="text-label" style={{ marginBottom: 'var(--space-2)' }}>Subject line</div>
           <div style={{ position: 'relative' }}>
             <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Keep under 50 chars for mobile"
-              style={{ width: '100%', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', paddingRight: 48, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', outline: 'none' }} />
+              style={{ width: '100%', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', paddingRight: 48, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', outline: 'none', transition: 'border-color 150ms' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }} />
             <span style={{ position: 'absolute', right: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: subject.length > 60 ? 'var(--color-danger)' : 'var(--color-text-disabled)' }}>{subject.length}/60</span>
           </div>
         </div>
+
         {sections.map((sec, i) => (
           <div key={i} style={{ marginBottom: 'var(--space-4)' }}>
             <div className="text-label" style={{ marginBottom: 'var(--space-2)' }}>{sec.label}</div>
-            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)' }}>
+            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
               <textarea value={sec.text} onChange={e => updateSection(i, e.target.value)}
                 rows={Math.max(3, Math.ceil(sec.text.length / 60))}
                 style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }} />
@@ -244,7 +256,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate, subtype }: Conten
 }
 
 /* ════════════════════════════════════════════
-   TWITTER SINGLE
+   TWITTER SINGLE — no duplicate counter
    ════════════════════════════════════════════ */
 function TwitterSingleModal({ title, text, onClose, onRegenerate, subtype }: ContentModalProps) {
   const [tweet, setTweet] = useState(text.replace(/^\d+\/\s*/, '').trim());
@@ -257,17 +269,14 @@ function TwitterSingleModal({ title, text, onClose, onRegenerate, subtype }: Con
   return (
     <ModalShell onClose={onClose} maxWidth={520}>
       <Header title={title} subtitle={`${len}/280 characters`} subtype={subtype} onClose={onClose} />
-      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-4) var(--space-6)' }}>
+      <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         <div style={{
           width: '100%', background: 'var(--color-bg-surface)',
           border: `1px solid ${over ? 'var(--color-danger-border)' : 'var(--color-border-subtle)'}`,
-          borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)',
+          borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', transition: 'border-color 150ms',
         }}>
           <textarea ref={ref} value={tweet} onChange={e => { setTweet(e.target.value); resize(); }}
             style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
-          <div style={{ textAlign: 'right', marginTop: 'var(--space-2)' }}>
-            <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: over ? 'var(--color-danger)' : 'var(--color-text-disabled)' }}>{len}/280</span>
-          </div>
         </div>
       </div>
       <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
@@ -309,7 +318,7 @@ function GenericTextModal({ title, text, onClose, onRegenerate, subtype }: Conte
   return (
     <ModalShell onClose={onClose} maxWidth={720}>
       <Header title={title} subtype={subtype} onClose={onClose} />
-      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: '0 var(--space-6)', scrollbarWidth: 'thin' }}>
+      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <textarea ref={textareaRef} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}
           style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />

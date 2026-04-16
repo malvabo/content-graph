@@ -36,6 +36,12 @@ export default function NodePalette({ onAddNode }: Props) {
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const toggle = () => setOpen(o => !o);
+    window.addEventListener('toggle-palette', toggle);
+    return () => window.removeEventListener('toggle-palette', toggle);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
     setSearch('');
     setTimeout(() => searchRef.current?.focus(), 50);

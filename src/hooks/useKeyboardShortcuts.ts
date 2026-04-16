@@ -27,6 +27,7 @@ export function useKeyboardShortcuts() {
         setNodes(nodes.map((n) => ({ ...n, selected: true }) as ContentNode));
       }
       if (e.key === 'Escape') { useGraphStore.getState().setSelectedNodeId(null); }
+      if (meta && e.key === 'k') { e.preventDefault(); window.dispatchEvent(new CustomEvent('toggle-palette')); }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);

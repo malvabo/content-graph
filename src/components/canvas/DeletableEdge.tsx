@@ -21,7 +21,6 @@ function DeletableEdge({
           ...style,
           stroke: hovered ? 'var(--color-border-strong)' : style?.stroke,
           strokeWidth: hovered ? 2 : style?.strokeWidth,
-          strokeDasharray: hovered ? 'none' : style?.strokeDasharray,
           transition: 'stroke 150ms, stroke-width 150ms',
         }}
         interactionWidth={24}
