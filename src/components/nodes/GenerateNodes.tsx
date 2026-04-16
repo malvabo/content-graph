@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useGraphStore } from '../../store/graphStore';
@@ -32,10 +31,9 @@ function Skeleton({ subtype }: { subtype: string }) {
   );
 }
 
-function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
+function OutputPreview({ id, subtype, expandOpen, onExpandClose }: { id: string; subtype: string; expandOpen?: boolean; onExpandClose?: () => void }) {
   const text = useOutputStore((s) => s.outputs[id]?.text);
   const label = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.label ?? subtype);
-  const [modalOpen, setModalOpen] = useState(false);
   const rerun = () => { useExecutionStore.getState().setStatus(id, 'running'); setTimeout(() => useExecutionStore.getState().setStatus(id, 'complete'), 1500); };
   if (!text) return null;
 
@@ -51,11 +49,10 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-between mt-1">
+        <div className="mt-1">
           <span style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-none)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{slides.length} slides</span>
-          <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Expand</button>
         </div>
-        {modalOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => setModalOpen(false)} onRegenerate={rerun} />}
+        {expandOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => onExpandClose?.()} onRegenerate={rerun} />}
       </div>
     );
   }
@@ -65,20 +62,17 @@ function OutputPreview({ id, subtype }: { id: string; subtype: string }) {
       <div className="max-h-[80px] overflow-y-auto" style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin' }}>
         {text}
       </div>
-      <div className="flex items-center justify-end mt-1.5">
-        <button className="btn-micro" onMouseDown={(e) => e.stopPropagation()} onClick={() => setModalOpen(true)}>Expand</button>
-      </div>
-      {modalOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => setModalOpen(false)} onRegenerate={rerun} />}
+      {expandOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => onExpandClose?.()} onRegenerate={rerun} />}
     </div>
   );
 }
 
-export function GenerateNodeInline({ id, subtype }: { id: string; subtype: string }) {
+export function GenerateNodeInline({ id, subtype, expandOpen, onExpandClose }: { id: string; subtype: string; expandOpen?: boolean; onExpandClose?: () => void }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
 
   if (status === 'idle' || status === 'stale') return null;
   if (status === 'running') return <Skeleton subtype={subtype} />;
-  if (status === 'complete') return <OutputPreview id={id} subtype={subtype} />;
+  if (status === 'complete') return <OutputPreview id={id} subtype={subtype} expandOpen={expandOpen} onExpandClose={onExpandClose} />;
   if (status === 'warning') return <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', padding: 'var(--space-2) var(--space-2)', borderRadius: 'var(--radius-sm)' }} className="mt-2">⚠ No input</div>;
   return null;
 }

@@ -130,6 +130,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
     return sel?.data.subtype ?? null;
   });
   const [hovered, setHovered] = useState(false);
+  const [expandOpen, setExpandOpen] = useState(false);
 
   const def = NODE_DEFS_BY_SUBTYPE[data.subtype];
   const colors = BADGE_COLORS[data.category];
@@ -236,13 +237,13 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         </div>
         {/* Expand + Close — visible on hover */}
         <div className="flex items-center gap-0.5 shrink-0" style={{ opacity: hovered ? 1 : 0, transition: 'opacity 150ms', pointerEvents: hovered ? 'auto' : 'none' }}>
-          <button onMouseDown={e => e.stopPropagation()} onClick={() => { /* expand handled by OutputModal in generate nodes */ }}
-            style={{ width: 20, height: 20, borderRadius: 'var(--radius-sm)', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+          <button onMouseDown={e => e.stopPropagation()} onClick={() => setExpandOpen(true)}
+            style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
           </button>
           <button onMouseDown={e => e.stopPropagation()} onClick={() => useGraphStore.getState().removeNode(id)}
-            style={{ width: 20, height: 20, borderRadius: 'var(--radius-sm)', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </button>
         </div>
       </div>
@@ -261,7 +262,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {data.subtype === 'export' && <ExportInline id={id} />}
       {data.category === 'generate' && data.subtype !== 'image-prompt' && (
         <div style={{ height: 'var(--size-node-content)', overflow: 'hidden', position: 'relative' }}>
-          <GenerateNodeInline id={id} subtype={data.subtype} />
+          <GenerateNodeInline id={id} subtype={data.subtype} expandOpen={expandOpen} onExpandClose={() => setExpandOpen(false)} />
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 24, background: 'linear-gradient(transparent, var(--color-bg-card))', pointerEvents: 'none' }} />
         </div>
       )}
