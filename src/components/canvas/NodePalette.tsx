@@ -48,8 +48,8 @@ export default function NodePalette({ onAddNode }: Props) {
     setSearch('');
     setTimeout(() => searchRef.current?.focus(), 50);
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('pointerdown', handler, true);
+    return () => document.removeEventListener('pointerdown', handler, true);
   }, [open]);
 
   const q = search.toLowerCase().trim();
@@ -89,7 +89,7 @@ export default function NodePalette({ onAddNode }: Props) {
 
       {/* Popover */}
       {open && (
-        <div className="absolute bottom-14 left-0 w-[280px] max-h-[420px] flex flex-col"
+        <div className="palette-popover absolute bottom-14 left-0 w-[280px] max-h-[420px] flex flex-col"
           style={{ background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)' }}>
           {/* Search */}
           <div style={{ padding: 'var(--space-3) var(--space-3) var(--space-2)' }}>
