@@ -1,6 +1,19 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ModalShell, AiPopover } from './Modals';
 
+/* ── Measure Y offset of selection within a textarea, relative to a container ── */
+function getSelectionY(ta: HTMLTextAreaElement, container: HTMLElement, selStart: number): number {
+  const mirror = document.createElement('div');
+  const cs = getComputedStyle(ta);
+  mirror.style.cssText = `position:absolute;visibility:hidden;white-space:pre-wrap;word-wrap:break-word;overflow:hidden;width:${ta.clientWidth}px;font:${cs.font};font-size:${cs.fontSize};font-family:${cs.fontFamily};line-height:${cs.lineHeight};padding:${cs.padding};border:${cs.border};letter-spacing:${cs.letterSpacing};`;
+  mirror.textContent = ta.value.slice(0, selStart);
+  document.body.appendChild(mirror);
+  const h = mirror.scrollHeight;
+  document.body.removeChild(mirror);
+  // Y relative to container: textarea's offset within container + measured height - container scroll
+  return ta.offsetTop + h - ta.scrollTop - container.scrollTop;
+}
+
 interface ContentModalProps {
   subtype: string;
   title: string;
@@ -145,7 +158,7 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
 /* ════════════════════════════════════════════
    LINKEDIN POST
    ════════════════════════════════════════════ */
-function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentModalProps) {
+function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
   const [content, setContent] = useState(text);
   const ref = useRef<HTMLTextAreaElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -318,11 +331,12 @@ function GenericTextModal({ title, text, onClose, onRegenerate }: ContentModalPr
 
   const onMouseUp = useCallback(() => {
     const ta = textareaRef.current;
-    if (!ta) return;
+    const container = contentRef.current;
+    if (!ta || !container) return;
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
-    const rect = ta.getBoundingClientRect();
-    setAiPopover({ x: rect.left + rect.width / 2, y: rect.top, text: content.slice(start, end) });
+    const y = getSelectionY(ta, container, start);
+    setAiPopover({ x: ta.offsetLeft + ta.offsetWidth / 2, y, text: content.slice(start, end) });
   }, [content]);
 
   const handleAiApply = useCallback((newText: string) => {
