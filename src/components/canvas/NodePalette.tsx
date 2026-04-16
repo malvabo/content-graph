@@ -62,26 +62,24 @@ export default function NodePalette({ onAddNode }: Props) {
       <motion.button
         onClick={() => setOpen(!open)}
         aria-label="Add node" aria-expanded={open}
-        whileHover={{ scale: 1.02, translateY: -1 }}
+        whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.94 }}
         transition={{ type: 'spring', stiffness: 400, damping: 28, mass: 0.5 }}
-        className="relative w-12 h-12 rounded-[14px] flex items-center justify-center
-          bg-white/60 dark:bg-white/15 backdrop-blur-xl saturate-150
-          border-hairline border-white/20 dark:border-white/10
-          shadow-fluid-glass active:shadow-fluid-pressed
-          active:brightness-90 active:contrast-110
-          transition-shadow duration-300 ease-fluid-spring
-          overflow-hidden group"
-        style={{ color: 'var(--color-text-primary)' }}
+        className="relative w-12 h-12 rounded-full flex items-center justify-center overflow-hidden"
+        style={{
+          background: 'var(--color-bg-card)',
+          border: '1px solid var(--color-border-subtle)',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.03)',
+          color: 'var(--color-text-primary)',
+          transition: 'box-shadow 200ms, border-color 200ms',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.03)'; e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}
       >
-        {/* Refraction highlight */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
-        {/* Icon */}
         <motion.svg
-          width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+          width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
           animate={{ rotate: open ? 45 : 0 }}
           transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-          className="relative z-10"
         >
           <path d="M12 5v14"/><path d="M5 12h14"/>
         </motion.svg>
