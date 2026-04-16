@@ -167,7 +167,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
 
   return (
     <ModalShell onClose={onClose} maxWidth={fullscreen ? 1400 : 1000}>
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0">
 
         {/* ── Left: image viewer ── */}
         <div className="flex-1 flex flex-col min-w-0 relative" style={{ background: 'var(--color-bg-dark)', borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)' }}>
@@ -185,7 +185,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
           <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-8) var(--space-6)', overflow: zoomed ? 'auto' : 'hidden' }}>
             <img src={activeSrc} alt={editPrompt || 'Generated image'}
               onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}
-              style={{ maxWidth: zoomed ? 'none' : '100%', maxHeight: zoomed ? 'none' : '62vh', width: zoomed ? `${Math.max(d.w, 800)}px` : undefined, objectFit: 'contain', borderRadius: 'var(--radius-md)', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'opacity 150ms ease' }} />
+              style={{ maxWidth: zoomed ? 'none' : '100%', maxHeight: zoomed ? 'none' : typeof window !== 'undefined' && window.innerWidth < 768 ? '40vh' : '62vh', width: zoomed ? `${Math.max(d.w, 800)}px` : undefined, objectFit: 'contain', borderRadius: 'var(--radius-md)', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'opacity 150ms ease' }} />
           </div>
 
           {(variants.length > 0 || genLoading) && (
@@ -213,7 +213,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
 
         {/* ── Right panel ── */}
         {/* #6/#7: consistent horizontal padding var(--space-6) everywhere */}
-        <div className="flex flex-col shrink-0" style={{ width: 300 }}>
+        <div className="flex flex-col shrink-0 w-full md:w-[300px]">
           <ModalHeader title={nodeLabel || 'Image'} onClose={onClose} />
 
           <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-6) var(--space-4)', gap: 'var(--space-5)', scrollbarWidth: 'thin' }}>

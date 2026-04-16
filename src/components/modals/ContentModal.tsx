@@ -161,7 +161,6 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
 function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
   const [content, setContent] = useState(text);
   const ref = useRef<HTMLTextAreaElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
   const resize = useAutoResize(ref);
   const { copied, copy } = useCopy(() => content);
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
@@ -189,7 +188,7 @@ function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps
   return (
     <ModalShell onClose={onClose} maxWidth={620}>
       <Header title={title} onClose={onClose} />
-      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
+      <div className="flex-1 overflow-y-auto relative" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
           onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
@@ -325,7 +324,6 @@ function GenericTextModal({ title, text, onClose, onRegenerate }: ContentModalPr
   const [content, setContent] = useState(text);
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
   const resize = useAutoResize(textareaRef);
   const { copied, copy } = useCopy(() => content);
 
@@ -351,7 +349,7 @@ function GenericTextModal({ title, text, onClose, onRegenerate }: ContentModalPr
   return (
     <ModalShell onClose={onClose} maxWidth={720}>
       <Header title={title} onClose={onClose} />
-      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: CP, scrollbarWidth: 'thin' }}>
+      <div className="flex-1 overflow-y-auto relative" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
           onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
