@@ -17,14 +17,11 @@ function AiPopover({ x, y, selectedText, onApply, onClose }: { x: number; y: num
     const t = setTimeout(() => document.addEventListener('mousedown', handler), 100);
     return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
   }, [onClose]);
-
   return (
     <div ref={ref} style={{ position: 'absolute', left: x, top: y, zIndex: 20, transform: 'translateY(-100%)' }}>
       <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', display: 'flex', gap: 'var(--space-1)' }}>
         {AI_ACTIONS.map((a) => (
-          <button key={a.label} className="btn-xs btn-ghost" onMouseDown={(e) => e.preventDefault()} onClick={() => { onApply(a.action(selectedText)); onClose(); }}>
-            {a.label}
-          </button>
+          <button key={a.label} className="btn-xs btn-ghost" onMouseDown={(e) => e.preventDefault()} onClick={() => { onApply(a.action(selectedText)); onClose(); }}>{a.label}</button>
         ))}
       </div>
     </div>
@@ -32,13 +29,13 @@ function AiPopover({ x, y, selectedText, onApply, onClose }: { x: number; y: num
 }
 
 /* ── Shared Modal Shell ── */
+/* #1/#2: consistent padding on shell backdrop */
 function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.ReactNode; onClose: () => void; maxWidth?: number }) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
-
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ padding: 'var(--space-8)', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
       <div role="dialog" aria-modal="true" className="flex flex-col w-full overflow-hidden"
@@ -51,24 +48,28 @@ function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.Rea
   );
 }
 
-function ModalHeader({ title, subtitle, onClose }: { title: string; subtitle?: string; onClose: () => void }) {
+/* #1: consistent header padding 20 24 12 */
+function ModalHeader({ title, subtitle, onClose, extra }: { title: string; subtitle?: string; onClose: () => void; extra?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-5) var(--space-6) var(--space-2)' }}>
+    <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-5) var(--space-6) var(--space-3)' }}>
       <div>
         <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-tight)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{subtitle}</div>}
+        {subtitle && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>{subtitle}</div>}
       </div>
-      <button aria-label="Close" onClick={onClose}
-        className="btn-icon-sm btn-ghost" style={{ color: 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-      </button>
+      <div className="flex items-center gap-1">
+        {extra}
+        <button aria-label="Close" onClick={onClose} className="btn-icon-sm btn-ghost" style={{ color: 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
     </div>
   );
 }
 
+/* #2: consistent footer padding 16 24 20 */
 function ModalFooter({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 shrink-0" style={{ padding: 'var(--space-2) var(--space-6) var(--space-5)' }}>
+    <div className="flex items-center gap-2 shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)' }}>
       {children}
     </div>
   );
@@ -82,8 +83,11 @@ export function OutputModal({ title, text, onClose, onTextChange, onRegenerate }
   const [editedText, setEditedText] = useState(text);
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   const contentRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  /* #15: word count for subtitle */
+  const wc = editedText.trim().split(/\s+/).filter(Boolean).length;
 
   const copy = () => { navigator.clipboard.writeText(editedText); setCopied(true); setTimeout(() => setCopied(false), 1500); };
 
@@ -93,12 +97,9 @@ export function OutputModal({ title, text, onClose, onTextChange, onRegenerate }
     if (!ta || !container) return;
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
-    // Position popover above the textarea, horizontally centered
     const taRect = ta.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
-    const x = (taRect.width / 2);
-    const y = taRect.top - containerRect.top;
-    setAiPopover({ x, y, text: editedText.slice(start, end) });
+    setAiPopover({ x: taRect.width / 2, y: taRect.top - containerRect.top, text: editedText.slice(start, end) });
   }, [editedText]);
 
   const handleAiApply = useCallback((newText: string) => {
@@ -111,49 +112,47 @@ export function OutputModal({ title, text, onClose, onTextChange, onRegenerate }
     setAiPopover(null);
   }, [editedText, aiPopover, onTextChange]);
 
-  const [expanded, setExpanded] = useState(false);
+  /* #16: header icons — copy is secondary (dimmer), expand and close are equal */
+  const headerExtra = (
+    <>
+      <button aria-label={copied ? 'Copied' : 'Copy'} onClick={copy} className="btn-icon-sm btn-ghost" style={{ color: copied ? 'var(--color-accent)' : 'var(--color-text-disabled)', borderRadius: 'var(--radius-md)' }}>
+        {copied
+          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+          : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        }
+      </button>
+      <button aria-label="Expand" onClick={() => setExpanded(!expanded)} className="btn-icon-sm btn-ghost" style={{ color: 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">{expanded ? <><path d="M4 14h6v6"/><path d="M20 10h-6V4"/></> : <><path d="M15 3h6v6"/><path d="M9 21H3v-6"/></>}</svg>
+      </button>
+    </>
+  );
 
   return (
     <ModalShell onClose={onClose} maxWidth={expanded ? 1100 : 720}>
-      {/* Custom header with icon actions */}
-      <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-5) var(--space-6) var(--space-2)' }}>
-        <div>
-          <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-tight)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
-        </div>
-        <div className="flex items-center gap-1">
-          <button aria-label={copied ? 'Copied' : 'Copy'} onClick={copy} className="btn-icon-sm btn-ghost" style={{ color: copied ? 'var(--color-accent)' : 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
-            {copied
-              ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
-              : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            }
-          </button>
-          <button aria-label="Expand" onClick={() => setExpanded(!expanded)} className="btn-icon-sm btn-ghost" style={{ color: 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">{expanded ? <><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="m14 10 7-7"/><path d="m3 21 7-7"/></> : <><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/></>}</svg>
-          </button>
-          <button aria-label="Close" onClick={onClose} className="btn-icon-sm btn-ghost" style={{ color: 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-          </button>
-        </div>
-      </div>
+      <ModalHeader title={title} subtitle={`${wc} words`} onClose={onClose} extra={headerExtra} />
 
-      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: '0 var(--space-6)', scrollbarWidth: 'thin' }}>
+      {/* #3/#20: content area with top padding and subtle bg on textarea */}
+      <div ref={contentRef} className="flex-1 overflow-y-auto relative" style={{ padding: 'var(--space-3) var(--space-6) var(--space-4)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
         <textarea ref={textareaRef} className="w-full outline-none"
-          style={{ minHeight: 320, resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'transparent', border: 'none', padding: 0 }}
+          style={{ minHeight: 280, resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
+          onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}
           value={editedText} onChange={(e) => setEditedText(e.target.value)} onMouseUp={onMouseUp} />
+        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-2)' }}>Select text for AI actions</div>
       </div>
 
-      {/* Footer */}
+      {/* #4: footer with consistent padding */}
       <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)' }}>
         <div>
           {onRegenerate && (
-            <button className="btn btn-outline" onClick={() => { onRegenerate(); onClose(); }}>
+            <button className="btn btn-ghost" onClick={() => { onRegenerate(); onClose(); }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
               Regenerate
             </button>
           )}
         </div>
-        <button className="btn btn-lg btn-primary" onClick={onClose}>Done</button>
+        <button className="btn btn-primary" onClick={onClose}>Done</button>
       </div>
     </ModalShell>
   );
@@ -180,11 +179,10 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
   const promptChanged = editPrompt.trim() !== origPrompt.current.trim();
   const ratioChanged = ratio !== (aspect || '16:9');
   const needsRegen = promptChanged || ratioChanged;
+  const thumbH = Math.round(56 * d.h / d.w);
 
-  // Cleanup fetches on unmount (#20)
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
-  // Incremental variant generation (#16)
   const generate4 = async () => {
     if (!editPrompt.trim()) return;
     abortRef.current?.abort();
@@ -195,8 +193,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
     setVariants([]);
     const dims = getDims(ratio);
     const baseSeed = Date.now();
-    const cleanPrompt = editPrompt.trim().replace(/\n+/g, ' ');
-    const encoded = encodeURIComponent(cleanPrompt);
+    const encoded = encodeURIComponent(editPrompt.trim().replace(/\n+/g, ' '));
     try {
       for (let i = 0; i < 4; i++) {
         if (ctrl.signal.aborted) return;
@@ -209,10 +206,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
           const b64: string = await new Promise((resolve) => { const r = new FileReader(); r.onloadend = () => resolve(r.result as string); r.readAsDataURL(blob); });
           if (ctrl.signal.aborted) return;
           setVariants(prev => { const next = [...prev, b64]; if (next.length === 1) setActiveSrc(b64); return next; });
-        } catch (e) {
-          if (ctrl.signal.aborted) return;
-          // Skip this variant, continue to next
-        }
+        } catch { if (ctrl.signal.aborted) return; }
       }
     } catch (error) {
       if (!ctrl.signal.aborted) setGenError(error instanceof Error ? error.message : 'Generation failed');
@@ -222,28 +216,15 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
   };
 
   const copyImage = async () => {
-    try {
-      const res = await fetch(activeSrc);
-      const blob = await res.blob();
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      setCopiedImg(true);
-    } catch {
-      await navigator.clipboard.writeText(editPrompt);
-      setCopiedImg(true);
-    }
+    try { const res = await fetch(activeSrc); const blob = await res.blob(); await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); setCopiedImg(true); }
+    catch { await navigator.clipboard.writeText(editPrompt); setCopiedImg(true); }
     setTimeout(() => setCopiedImg(false), 1500);
   };
-
-  const downloadImage = () => {
-    const name = (nodeLabel || 'image').replace(/\s+/g, '-').toLowerCase();
-    const a = document.createElement('a'); a.href = activeSrc; a.download = `${name}-${d.w}x${d.h}.png`; a.click();
-  };
-
+  const downloadImage = () => { const a = document.createElement('a'); a.href = activeSrc; a.download = `${(nodeLabel || 'image').replace(/\s+/g, '-').toLowerCase()}-${d.w}x${d.h}.png`; a.click(); };
   const copyPrompt = () => { navigator.clipboard.writeText(editPrompt); setCopiedPrompt(true); setTimeout(() => setCopiedPrompt(false), 1500); };
 
-  const handleUse = () => { onUse?.(activeSrc); onClose(); };
-
-  const thumbH = Math.round(56 * d.h / d.w);
+  /* #19: image viewer toolbar uses consistent token-based styling */
+  const toolBtn: React.CSSProperties = { width: 'var(--size-control-sm)', height: 'var(--size-control-sm)', borderRadius: 'var(--radius-sm)', background: 'var(--color-overlay-dark)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-disabled)' };
 
   return (
     <ModalShell onClose={onClose} maxWidth={fullscreen ? 1400 : 1000}>
@@ -251,48 +232,27 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
 
         {/* ── Left: image viewer ── */}
         <div className="flex-1 flex flex-col min-w-0 relative" style={{ background: 'var(--color-bg-dark)', borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)' }}>
-
-          {/* Toolbar overlay */}
-          <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 3, display: 'flex', gap: 4 }}>
-            <button onClick={() => setFullscreen(!fullscreen)}
-              style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.08)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}>
+          <div style={{ position: 'absolute', top: 'var(--space-3)', left: 'var(--space-3)', zIndex: 3, display: 'flex', gap: 'var(--space-1)' }}>
+            <button onClick={() => setFullscreen(!fullscreen)} style={toolBtn}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 {fullscreen ? <><path d="M4 14h6v6"/><path d="M20 10h-6V4"/></> : <><path d="M15 3h6v6"/><path d="M9 21H3v-6"/></>}
               </svg>
             </button>
-            {zoomed && (
-              <button onClick={() => setZoomed(false)}
-                style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.08)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: 11, fontFamily: 'var(--font-sans)' }}>
-                Fit
-              </button>
-            )}
+            {zoomed && <button onClick={() => setZoomed(false)} style={{ ...toolBtn, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>Fit</button>}
           </div>
 
-          {/* Image — zoom only on img click (#6) */}
           <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-8) var(--space-6)', overflow: zoomed ? 'auto' : 'hidden' }}>
             <img src={activeSrc} alt={editPrompt || 'Generated image'}
               onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}
-              style={{
-                maxWidth: zoomed ? 'none' : '100%',
-                maxHeight: zoomed ? 'none' : '62vh',
-                width: zoomed ? `${Math.max(d.w, 800)}px` : undefined,
-                objectFit: 'contain',
-                borderRadius: 'var(--radius-md)',
-                cursor: zoomed ? 'zoom-out' : 'zoom-in',
-                transition: 'opacity 150ms',
-              }} />
+              style={{ maxWidth: zoomed ? 'none' : '100%', maxHeight: zoomed ? 'none' : '62vh', width: zoomed ? `${Math.max(d.w, 800)}px` : undefined, objectFit: 'contain', borderRadius: 'var(--radius-md)', cursor: zoomed ? 'zoom-out' : 'zoom-in' }} />
           </div>
 
-          {/* Variant strip */}
           {(variants.length > 0 || genLoading) && (
             <div style={{ padding: '0 var(--space-6) var(--space-4)', display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', scrollbarWidth: 'thin' }}>
               {variants.map((img, i) => (
                 <div key={i} className="shrink-0 relative" style={{ width: 56, height: thumbH }}>
                   <img src={img} onClick={() => { setActiveSrc(img); setZoomed(false); }}
-                    style={{ width: 56, height: thumbH, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                      border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent',
-                      opacity: img === activeSrc ? 1 : 0.6, transition: 'opacity 150ms, border-color 150ms',
-                    }} />
+                    style={{ width: 56, height: thumbH, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent', opacity: img === activeSrc ? 1 : 0.6, transition: 'opacity 150ms' }} />
                   {img === activeSrc && (
                     <div style={{ position: 'absolute', top: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
@@ -300,51 +260,55 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
                   )}
                 </div>
               ))}
-              {/* Loading placeholders for remaining */}
               {genLoading && Array.from({ length: 4 - variants.length }).map((_, i) => (
-                <div key={`skel-${i}`} className="skeleton-bar shrink-0" style={{ width: 56, height: thumbH, borderRadius: 'var(--radius-sm)' }} />
+                <div key={`s${i}`} className="skeleton-bar shrink-0" style={{ width: 56, height: thumbH, borderRadius: 'var(--radius-sm)' }} />
               ))}
             </div>
           )}
         </div>
 
-        {/* ── Right: controls ── */}
+        {/* ── Right panel ── */}
+        {/* #6/#7: consistent horizontal padding var(--space-6) everywhere */}
         <div className="flex flex-col shrink-0" style={{ width: 300 }}>
           <ModalHeader title={nodeLabel || 'Image'} onClose={onClose} />
 
-          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-5) var(--space-4)', gap: 'var(--space-5)', scrollbarWidth: 'thin' }}>
+          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-6) var(--space-4)', gap: 'var(--space-5)', scrollbarWidth: 'thin' }}>
 
-            {/* Ratio */}
+            {/* #9: visual ratio picker with shape previews */}
             <div>
               <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
                 <span className="text-label">Ratio</span>
                 <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)' }}>{d.w}×{d.h}</span>
               </div>
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                 {Object.entries(RATIO_DIMS).map(([r, dims]) => {
                   const active = r === ratio;
                   const bw = 18, bh = Math.round(18 * dims.h / dims.w);
                   return (
                     <button key={r} onClick={() => setRatio(r)}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 8px',
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)', padding: 'var(--space-1) var(--space-2)',
                         background: active ? 'var(--color-interactive-active)' : 'transparent', border: active ? '1px solid var(--color-border-strong)' : '1px solid transparent',
                         borderRadius: 'var(--radius-md)', cursor: 'pointer', transition: 'background 100ms' }}>
                       <div style={{ width: bw, height: bh, borderRadius: 2, border: `1.5px solid ${active ? 'var(--color-accent)' : 'var(--color-text-disabled)'}` }} />
-                      <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: active ? 'var(--color-text-primary)' : 'var(--color-text-disabled)' }}>{r}</span>
+                      <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: active ? 'var(--color-text-primary)' : 'var(--color-text-disabled)' }}>{r}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
+            {/* #18: divider between sections */}
+            <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: '0 calc(var(--space-1) * -1)' }} />
+
             {/* Prompt */}
             {editPrompt !== undefined && (
               <div>
                 <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
                   <span className="text-label">Prompt</span>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {promptChanged && <button className="btn-xs btn-ghost" style={{ fontSize: 10, height: 22, padding: '0 6px', color: 'var(--color-text-disabled)' }} onClick={() => setEditPrompt(origPrompt.current)}>Reset</button>}
-                    <button className="btn-xs btn-ghost" style={{ fontSize: 10, height: 22, padding: '0 6px' }} onClick={copyPrompt}>{copiedPrompt ? '✓ Copied' : 'Copy'}</button>
+                  <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                    {/* #11/#13: properly sized action buttons at minimum 24px */}
+                    {promptChanged && <button className="btn-xs btn-ghost" style={{ color: 'var(--color-text-disabled)' }} onClick={() => setEditPrompt(origPrompt.current)}>Reset</button>}
+                    <button className="btn-xs btn-ghost" onClick={copyPrompt}>{copiedPrompt ? '✓ Copied' : 'Copy'}</button>
                   </div>
                 </div>
                 <textarea value={editPrompt} onChange={(e) => setEditPrompt(e.target.value)}
@@ -352,7 +316,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
                   onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
                   onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}
                 />
-                <div className="flex justify-between" style={{ marginTop: 4 }}>
+                <div className="flex justify-between" style={{ marginTop: 'var(--space-1)' }}>
                   <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: editPrompt.length > 500 ? 'var(--color-warning-text)' : 'var(--color-text-disabled)' }}>{editPrompt.length}</span>
                   {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
                 </div>
@@ -360,24 +324,31 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
             )}
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-5)', gap: 'var(--space-2)', borderTop: '1px solid var(--color-border-subtle)' }}>
+          {/* #5/#7: actions with consistent padding matching header horizontal */}
+          <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', gap: 'var(--space-2)', borderTop: '1px solid var(--color-border-subtle)' }}>
             {genError && (
               <div className="flex items-center justify-between" style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-sm)' }}>
                 <span>{genError}</span>
-                <button className="btn-xs btn-ghost" style={{ color: 'var(--color-danger-text)', fontSize: 10, height: 20, padding: '0 6px' }} onClick={generate4}>Retry</button>
+                <button className="btn-xs btn-ghost" style={{ color: 'var(--color-danger-text)' }} onClick={generate4}>Retry</button>
               </div>
             )}
-            <button className="btn-sm btn-primary w-full" disabled={genLoading} onClick={generate4}>
-              {genLoading ? `Generating ${variants.length}/4…` : needsRegen ? 'Generate with changes' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}
-            </button>
+            {/* #17: "Use this" is primary when variants exist, generate is secondary */}
+            {onUse && variants.length > 0 ? (
+              <>
+                <button className="btn-sm btn-primary w-full" onClick={() => { onUse(activeSrc); onClose(); }}>Use this image</button>
+                <button className="btn-sm btn-ghost w-full" disabled={genLoading} onClick={generate4}>
+                  {genLoading ? `Generating ${variants.length}/4…` : 'Regenerate 4'}
+                </button>
+              </>
+            ) : (
+              <button className="btn-sm btn-primary w-full" disabled={genLoading} onClick={generate4}>
+                {genLoading ? `Generating ${variants.length}/4…` : needsRegen ? 'Generate with changes' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}
+              </button>
+            )}
             <div className="flex gap-2">
               <button className={`btn-sm flex-1 ${copiedImg ? 'btn-tonal' : 'btn-ghost'}`} onClick={copyImage}>{copiedImg ? 'Copied ✓' : 'Copy image'}</button>
               <button className="btn-sm btn-ghost flex-1" onClick={downloadImage}>Download</button>
             </div>
-            {onUse && variants.length > 0 && (
-              <button className="btn-sm btn-outline w-full" onClick={handleUse}>Use this image</button>
-            )}
           </div>
         </div>
       </div>
