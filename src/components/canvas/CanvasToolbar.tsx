@@ -24,7 +24,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
   return (
     <>
       {/* Top-left: back + inline name */}
-      <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+      <div className="absolute top-2 left-2 md:top-3 md:left-3 z-10 flex items-center gap-2">
         <button onClick={onBackToLibrary} className="w-8 h-8 rounded-lg flex items-center justify-center"
           style={{ background: 'var(--color-bg-card)', backdropFilter: 'blur(12px)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', transition: 'background 150ms' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; }}
@@ -43,16 +43,16 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
       </div>
 
       {/* Top-right: floating action buttons */}
-      <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
-        <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)' }} onClick={autoLayout}>Auto-layout</button>
+      <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 flex items-center gap-1 md:gap-1.5">
+        <button className="btn-ghost btn-sm hidden md:inline-flex" style={{ borderRadius: 'var(--radius-md)' }} onClick={autoLayout}>Auto-layout</button>
           {confirmClear ? (
-            <>
+            <span className="hidden md:contents">
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>Clear all?</span>
               <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)', color: 'var(--color-danger)' }} onClick={() => { clearGraph(); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); setConfirmClear(false); }}>Yes</button>
               <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)' }} onClick={() => setConfirmClear(false)}>No</button>
-            </>
+            </span>
           ) : (
-            <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)' }} onClick={() => { if (nodes.length === 0) { clearGraph(); } else { setConfirmClear(true); } }}>Clear</button>
+            <button className="btn-ghost btn-sm hidden md:inline-flex" style={{ borderRadius: 'var(--radius-md)' }} onClick={() => { if (nodes.length === 0) { clearGraph(); } else { setConfirmClear(true); } }}>Clear</button>
           )}
         <button className={`btn btn-run ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>
         <button className="btn btn-outline" disabled={nodes.length === 0} onClick={() => { setPublished(true); setTimeout(() => setPublished(false), 2000); }}>{published ? '✓ Published' : 'Publish'}</button>

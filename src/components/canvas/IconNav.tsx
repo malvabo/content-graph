@@ -12,8 +12,8 @@ function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: str
   const enter = () => { setHover(true); timerRef.current = setTimeout(() => setShowTip(true), 200); };
   const leave = () => { setHover(false); setShowTip(false); clearTimeout(timerRef.current); };
   return (
-    <div className="relative w-full flex justify-center">
-      {active && <div className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full" style={{ background: 'var(--color-accent)' }} />}
+    <div className="relative flex justify-center md:w-full">
+      {active && <div className="absolute bottom-0 left-1 right-1 h-[3px] rounded-t-full md:bottom-auto md:top-1 md:left-0 md:right-auto md:h-auto md:w-[3px] md:rounded-r-full md:rounded-t-none" style={{ background: 'var(--color-accent)' }} />}
       <button onClick={onClick} onMouseEnter={enter} onMouseLeave={leave}
         className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
         style={{ background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-accent-subtle)' : 'var(--color-text-tertiary)' }}>
@@ -58,8 +58,11 @@ function DarkModeToggle() {
 
 export default function IconNav({ activeView, onViewChange }: Props) {
   return (
-    <nav aria-label="Main navigation" className="w-[52px] shrink-0 flex flex-col items-center py-3 gap-1" style={{ background: 'var(--color-bg-card)', boxShadow: '1px 0 0 0 var(--color-border-subtle)' }}>
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
+    <nav aria-label="Main navigation" className="
+      w-full h-[52px] flex flex-row items-center px-2 gap-1 shrink-0 order-last
+      md:w-[52px] md:h-auto md:flex-col md:py-3 md:px-0 md:order-first
+    " style={{ background: 'var(--color-bg-card)', boxShadow: '0 -1px 0 0 var(--color-border-subtle)' }}>
+      <div className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center mb-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
 
       <NavItem icon={<LibraryIcon />} label="Library" active={activeView === 'library'} onClick={() => onViewChange('library')} />
       <NavItem icon={<WorkflowIcon />} label="Workflow" active={activeView === 'workflow'} onClick={() => onViewChange('workflow')} />

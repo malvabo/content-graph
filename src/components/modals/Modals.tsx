@@ -39,9 +39,9 @@ function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.Rea
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ padding: 'var(--space-8)', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms ease' }} onClick={onClose}>
+    <div className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center" style={{ padding: 0, background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms ease' }} onClick={onClose}>
       <div role="dialog" aria-modal="true" className="flex flex-col w-full overflow-hidden"
-        style={{ maxWidth, maxHeight: 'min(92vh, calc(100vh - 48px))', background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', boxShadow: '0 16px 48px rgba(0,0,0,0.18), 0 0 0 1px var(--color-border-default)', transform: visible ? 'scale(1)' : 'scale(0.98)', opacity: visible ? 1 : 0, transition: 'transform 150ms ease, opacity 150ms ease' }}
+        style={{ maxWidth: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : maxWidth, maxHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? '95vh' : 'min(92vh, calc(100vh - 48px))', background: 'var(--color-bg-card)', borderRadius: typeof window !== 'undefined' && window.innerWidth < 768 ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl)', boxShadow: '0 16px 48px rgba(0,0,0,0.18), 0 0 0 1px var(--color-border-default)', transform: visible ? 'translateY(0)' : 'translateY(16px)', opacity: visible ? 1 : 0, transition: 'transform 150ms ease, opacity 150ms ease' }}
         onClick={(e) => e.stopPropagation()}>
         {children}
       </div>

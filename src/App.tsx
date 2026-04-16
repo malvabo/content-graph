@@ -29,14 +29,8 @@ import EmptyCanvasOverlay from './components/canvas/EmptyCanvasOverlay';
 import Intro from './components/Intro';
 import WorkflowLibraryView from './components/canvas/WorkflowLibrary';
 
-const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-
-function MobileBlock() {
-  return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', color: 'var(--color-text-tertiary)', textAlign: 'center', padding: 'var(--space-8)' }}>
-      up200 requires a desktop browser.
-    </div>
-  );
+export default function App() {
+  return <ErrorBoundary><ReactFlowProvider><AppInner /></ReactFlowProvider></ErrorBoundary>;
 }
 
 function AppInner() {
@@ -64,7 +58,7 @@ function AppInner() {
 
   return (
     <div className="h-screen flex flex-col">
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col-reverse md:flex-row flex-1 overflow-hidden">
         {activeView !== 'intro' && <IconNav activeView={activeView} onViewChange={setActiveView} />}
 
         {activeView === 'intro' && (
@@ -92,9 +86,4 @@ function AppInner() {
       </div>
     </div>
   );
-}
-
-export default function App() {
-  if (isMobile) return <MobileBlock />;
-  return <ErrorBoundary><ReactFlowProvider><AppInner /></ReactFlowProvider></ErrorBoundary>;
 }

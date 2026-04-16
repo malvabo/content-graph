@@ -103,10 +103,10 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   return (
     <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
       {/* Full-width layout with horizontal padding */}
-      <div style={{ padding: 'var(--space-6) var(--space-8)' }}>
+      <div className="p-4 md:px-8 md:py-6">
 
         {/* Header row — compact, full-width */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
             {items.length > 0 && (
@@ -148,7 +148,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         ) : (
           /* Card grid — 3 columns, full-width, tight cards */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)' }}>
+          <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(280px,1fr))]" style={{ gap: 'var(--space-3)' }}>
             {items.map(item => (
               <button key={item.id} onClick={() => handleLoad(item)}
                 style={{
