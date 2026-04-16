@@ -67,7 +67,7 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
         <div className="w-[240px] rounded-xl p-3 flex flex-col gap-2.5" style={{ background: 'var(--color-bg-popover)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)' }}>
           <div className="text-field-label">Edit this text</div>
           <div className="flex gap-1.5">
-            <input className="flex-1 h-8 text-sm rounded-[10px] px-2.5"
+            <input className="form-input flex-1"
               placeholder="How to edit this text?"
               value={prompt} onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') quickAction('custom'); }}
@@ -133,7 +133,7 @@ export function TextSourceInline({ id }: { id: string }) {
           onClose={() => setPopover(null)}
         />
       )}
-      <textarea ref={textareaRef} className="nowheel w-full min-h-[120px] max-h-[300px] resize-y text-sm leading-relaxed rounded-[10px] p-2.5"
+      <textarea ref={textareaRef} className="nowheel form-textarea min-h-[120px] max-h-[300px]"
         placeholder="Paste your article, transcript, or notes..." value={text} onChange={(e) => onChange(e.target.value)} onMouseUp={onMouseUp} />
       <div className="text-right text-sm" style={{ color: charColor }}>{charCount.toLocaleString()} / 50,000</div>
     </div>

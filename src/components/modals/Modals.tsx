@@ -4,9 +4,9 @@ import { getDims, RATIO_DIMS } from '../../utils/imageDims';
 
 /* ── AI Selection Popover ── */
 const AI_ACTIONS = [
+  { label: 'Shorter', action: (t: string) => { const s = t.split(/[.!?]\s+/).filter(Boolean); return s.slice(0, Math.max(1, Math.ceil(s.length / 2))).join('. ') + '.'; } },
+  { label: 'Longer', action: (t: string) => t + ' Furthermore, this point deserves deeper exploration as it connects to broader themes that impact the overall narrative.' },
   { label: 'More engaging', action: (t: string) => t.replace(/\.\s/g, '! ').replace(/^(.)/,(_: string,c: string)=>c.toUpperCase()) },
-  { label: 'Expand', action: (t: string) => t + ' Furthermore, this point deserves deeper exploration as it connects to broader themes.' },
-  { label: 'Condense', action: (t: string) => { const s = t.split(/[.!?]\s+/).filter(Boolean); return s.slice(0, Math.max(1, Math.ceil(s.length / 2))).join('. ') + '.'; } },
   { label: 'Rephrase', action: (t: string) => t.split('. ').reverse().join('. ') },
 ];
 

@@ -162,8 +162,11 @@ function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentM
     if (!ta) return;
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
-    const taRect = ta.getBoundingClientRect();
-    setAiPopover({ x: taRect.left + taRect.width / 2, y: taRect.top + (start / content.length) * taRect.height, text: content.slice(start, end) });
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) { setAiPopover(null); return; }
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    setAiPopover({ x: rect.left + rect.width / 2, y: rect.top - 8, text: content.slice(start, end) });
   }, [content]);
 
   const handleAiApply = useCallback((newText: string) => {
@@ -252,9 +255,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate, subtype }: Conten
           <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>Subject line</div>
           <div style={{ position: 'relative' }}>
             <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Keep under 50 chars for mobile"
-              style={{ width: '100%', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', paddingRight: 48, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', outline: 'none', transition: 'border-color 150ms' }}
-              onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-              onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }} />
+              className="form-input" style={{ paddingRight: 48 }} />
             <span style={{ position: 'absolute', right: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: subject.length > 60 ? 'var(--color-danger)' : 'var(--color-text-disabled)' }}>{subject.length}/60</span>
           </div>
         </div>
@@ -319,12 +320,13 @@ function GenericTextModal({ title, text, onClose, onRegenerate, subtype }: Conte
 
   const onMouseUp = useCallback(() => {
     const ta = textareaRef.current;
-    const container = contentRef.current;
-    if (!ta || !container) return;
+    if (!ta) return;
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
-    const taRect = ta.getBoundingClientRect();
-    setAiPopover({ x: taRect.left + taRect.width / 2, y: taRect.top + (start / content.length) * taRect.height, text: content.slice(start, end) });
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) { setAiPopover(null); return; }
+    const rect = sel.getRangeAt(0).getBoundingClientRect();
+    setAiPopover({ x: rect.left + rect.width / 2, y: rect.top - 8, text: content.slice(start, end) });
   }, [content]);
 
   const handleAiApply = useCallback((newText: string) => {
