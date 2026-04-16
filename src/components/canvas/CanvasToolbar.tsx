@@ -12,6 +12,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
   const { runAll } = useNodeExecution();
   const isRunning = useExecutionStore((s) => Object.values(s.status).some((v) => v === 'running'));
   const [confirmClear, setConfirmClear] = useState(false);
+  const [published, setPublished] = useState(false);
 
   const handleRunAll = () => {
     runAll(async (input, _config, subtype) => {
@@ -54,8 +55,23 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
             <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)' }} onClick={() => { if (nodes.length === 0) { clearGraph(); } else { setConfirmClear(true); } }}>Clear</button>
           )}
         <button className={`btn btn-run ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>
-        <button className="btn btn-primary" disabled={nodes.length === 0}>Publish</button>
+        <button className="btn btn-primary" disabled={nodes.length === 0} onClick={() => { setPublished(true); setTimeout(() => setPublished(false), 2000); }}>{published ? '✓ Published' : 'Publish'}</button>
       </div>
+
+      {/* Publish notification */}
+      {published && (
+        <div style={{
+          position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
+          background: 'var(--color-bg-card)', border: '1px solid var(--color-accent)',
+          borderRadius: 'var(--radius-lg)', padding: 'var(--space-3) var(--space-5)',
+          boxShadow: 'var(--shadow-lg)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
+          color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+          animation: 'fadeIn 150ms ease',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Workflow published successfully
+        </div>
+      )}
     </>
   );
 }
