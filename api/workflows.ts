@@ -1,7 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { kv } from '@vercel/kv';
+import { promises as fs } from 'fs';
+import path from 'path';
 
-const KEY = 'workflows';
+const FILE = path.join('/tmp', 'workflows.json');
+
+async function read(): Promise<unknown[]> {
+  try { return JSON.parse(await fs.readFile(FILE, 'utf-8')); }
+  catch { return []; }
+}
+
+async function write(data: unknown[]) {
+  await fs.writeFile(FILE, JSON.stringify(data));
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,31 +21,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'GET') {
-      const items = await kv.get<unknown[]>(KEY) ?? [];
-      return res.json(items);
+      return res.json(await read());
     }
 
     if (req.method === 'POST') {
       const workflow = req.body;
       if (!workflow?.id || !workflow?.name) return res.status(400).json({ error: 'id and name required' });
-      const items = await kv.get<unknown[]>(KEY) ?? [];
+      const items = await read();
       const updated = [workflow, ...items.filter((w: any) => w.id !== workflow.id)];
-      await kv.set(KEY, updated);
+      await write(updated);
       return res.json(workflow);
     }
 
     if (req.method === 'DELETE') {
       const { id } = req.query;
       if (!id || typeof id !== 'string') return res.status(400).json({ error: 'id required' });
-      const items = await kv.get<unknown[]>(KEY) ?? [];
-      const updated = items.filter((w: any) => w.id !== id);
-      await kv.set(KEY, updated);
+      const items = await read();
+      await write(items.filter((w: any) => w.id !== id));
       return res.status(204).end();
     }
 
     res.status(405).json({ error: 'Method not allowed' });
   } catch (e: any) {
-    // KV not configured — return 503 so frontend falls back to localStorage
-    res.status(503).json({ error: 'Storage unavailable', detail: e.message });
+    res.status(500).json({ error: 'Storage error', detail: e.message });
   }
 }

@@ -30,7 +30,7 @@ export default function ContextMenu({ x, y, nodeId, onClose }: { x: number; y: n
   const isDanger = (label: string) => label.toLowerCase().includes('delete');
 
   return (
-    <div className="fixed z-50 bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-lg shadow-lg py-1 min-w-[160px]" style={{ left: x, top: y }}>
+    <div className="ctx-menu-fade fixed z-50 bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-lg shadow-lg py-1 min-w-[160px]" style={{ left: x, top: y }}>
       {items.map((item) => (
         <button key={item.label} className={`w-full text-left px-3 py-1.5 text-sm transition ${isDanger(item.label) ? 'text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)]' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'}`}
           onClick={() => { item.action(); onClose(); }}>

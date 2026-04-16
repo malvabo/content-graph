@@ -20,8 +20,7 @@ function DeletableEdge({
         style={{
           ...style,
           stroke: hovered ? 'var(--color-border-strong)' : style?.stroke,
-          strokeWidth: hovered ? 2 : style?.strokeWidth,
-          transition: 'stroke 150ms, stroke-width 150ms',
+          transition: 'stroke 150ms',
         }}
         interactionWidth={24}
       />
@@ -31,7 +30,7 @@ function DeletableEdge({
         fill="none"
         stroke="transparent"
         strokeWidth={24}
-        style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+        style={{ pointerEvents: 'stroke', cursor: 'default' }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       />

@@ -54,6 +54,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
             <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)' }} onClick={() => { if (nodes.length === 0) { clearGraph(); } else { setConfirmClear(true); } }}>Clear</button>
           )}
         <button className={`btn btn-run ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>
+        <button className="btn btn-primary" disabled={nodes.length === 0}>Publish</button>
       </div>
     </>
   );

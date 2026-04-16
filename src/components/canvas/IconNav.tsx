@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useEffect } from 'react';
+import { type ReactNode, useState, useEffect, useRef } from 'react';
 
 interface Props {
   activeView: string;
@@ -7,17 +7,21 @@ interface Props {
 
 function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: string; active: boolean; onClick: () => void }) {
   const [hover, setHover] = useState(false);
+  const [showTip, setShowTip] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const enter = () => { setHover(true); timerRef.current = setTimeout(() => setShowTip(true), 200); };
+  const leave = () => { setHover(false); setShowTip(false); clearTimeout(timerRef.current); };
   return (
     <div className="relative w-full flex justify-center">
       {active && <div className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full" style={{ background: 'var(--color-accent)' }} />}
-      <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      <button onClick={onClick} onMouseEnter={enter} onMouseLeave={leave}
         className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
         style={{ background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-accent-subtle)' : 'var(--color-text-tertiary)' }}>
         {icon}
       </button>
-      {hover && (
+      {showTip && (
         <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50"
-          style={{ background: 'var(--color-text-primary)', color: 'var(--p-white)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500, boxShadow: 'var(--shadow-sm)' }}>
+          style={{ background: 'var(--color-text-primary)', color: 'var(--color-text-inverse)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500, boxShadow: 'var(--shadow-sm)', animation: 'fadeIn 100ms ease' }}>
           {label}
         </div>
       )}

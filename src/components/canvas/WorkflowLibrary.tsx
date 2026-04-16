@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { BADGE_COLORS, CATEGORY_LABELS } from '../../utils/nodeDefs';
 import type { NodeCategory } from '../../store/graphStore';
-import { loadWorkflows, saveWorkflow, deleteWorkflow, type SavedWorkflow } from '../../utils/workflowApi';
+import { loadWorkflows, deleteWorkflow, type SavedWorkflow } from '../../utils/workflowApi';
 import type { Edge } from '@xyflow/react';
 
 /* SVG icons */
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>;
-const SaveIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
 const GraphIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="9" width="7" height="6" rx="1.5"/>
@@ -66,22 +65,9 @@ function NodeBreakdown({ nodes }: { nodes: ContentNode[] }) {
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<SavedWorkflow[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const { nodes, edges, graphName, setNodes, setEdges, setGraphName } = useGraphStore();
+  const { setNodes, setEdges, setGraphName } = useGraphStore();
 
   useEffect(() => { loadWorkflows().then(setItems); }, []);
-
-  const canSave = nodes.length > 0;
-
-  const handleSave = async () => {
-    if (!canSave) return;
-    const name = graphName || 'Untitled';
-    const item: SavedWorkflow = { id: Date.now().toString(), name, nodes, edges, savedAt: new Date().toISOString() };
-    setItems(prev => [item, ...prev]);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
-    await saveWorkflow(item);
-  };
 
   const handleLoad = (item: SavedWorkflow) => {
     setNodes(item.nodes);
@@ -130,10 +116,6 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             )}
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-            {saved && <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-accent-subtle)' }}>Saved ✓</span>}
-            <button className="btn btn-outline" onClick={handleSave} disabled={!canSave} title={canSave ? 'Save current workflow' : 'Add nodes first'}>
-              <SaveIcon /> Save current
-            </button>
             <button className="btn btn-primary" onClick={handleNew}>
               <PlusIcon /> New workflow
             </button>

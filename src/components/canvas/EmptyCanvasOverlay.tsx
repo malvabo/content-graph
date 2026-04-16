@@ -100,8 +100,10 @@ export default function EmptyCanvasOverlay() {
                 background: 'var(--color-accent)', color: 'var(--p-white)', border: 'none',
                 borderRadius: 'var(--radius-md)', padding: '6px 16px',
                 fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500,
-                cursor: 'pointer',
-              }}>
+                cursor: 'pointer', transition: 'background 150ms',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-accent-hover)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-accent)'; }}>
               Go →
             </button>
           )}
@@ -135,14 +137,16 @@ export default function EmptyCanvasOverlay() {
           style={{
             fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)',
             background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-            textDecoration: 'underline', textUnderlineOffset: 3,
-          }}>
+            textDecoration: 'underline', textUnderlineOffset: 3, transition: 'color 150ms',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-disabled)'; }}>
           Skip to blank canvas
         </button>
       </div>
 
       <style>{`
-        .onboard-pill:hover { border-color: var(--color-border-strong) !important; box-shadow: var(--shadow-sm); }
+        .onboard-pill:hover { border-color: var(--color-border-strong) !important; box-shadow: var(--shadow-sm); background: var(--color-bg-surface) !important; }
       `}</style>
     </div>
   );

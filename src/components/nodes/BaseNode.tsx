@@ -46,9 +46,9 @@ function MiniSelect({ value, options, onChange }: { value: string; options: read
       </button>
       {open && (
         <div className="absolute top-full left-0 pt-1 z-50">
-        <div className="rounded-lg" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'thin', minWidth: 160, padding: 'var(--space-1) 0' }}>
+        <div className="dropdown-fade rounded-lg" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'thin', minWidth: 160, padding: 'var(--space-1) 0' }}>
           {options.map((o, i) => (
-            <button key={o} className="w-full px-3 py-2" style={{ textAlign: 'left', display: 'block', background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: o === value ? 500 : 400, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', borderBottom: i < options.length - 1 ? '1px solid var(--color-border-subtle)' : 'none' }}
+            <button key={o} className="w-full px-3 py-2" style={{ textAlign: 'left', display: 'block', background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: o === value ? 500 : 400, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', borderBottom: i < options.length - 1 ? '1px solid var(--color-border-subtle)' : 'none', transition: 'background 100ms' }}
               onMouseEnter={e => { if (o !== value) e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
               onMouseLeave={e => { if (o !== value) e.currentTarget.style.background = 'transparent'; }}
               onClick={(e) => { e.stopPropagation(); onChange(o); setOpen(false); }}>{o}</button>
@@ -185,6 +185,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       style={{
         width: 'var(--size-node)',
         maxWidth: 'var(--size-node)',
+        minHeight: 280,
         overflow: 'visible',
         background: 'var(--color-bg-card)',
         border: `1px solid ${isError ? 'var(--color-danger-border)' : isStale ? 'var(--color-warning-border)' : hovered ? 'var(--color-border-strong)' : 'var(--color-border-default)'}`,
@@ -253,7 +254,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {data.subtype === 'video' && <ImagePromptInline id={id} />}
       {data.subtype === 'export' && <ExportInline id={id} />}
       {data.category === 'generate' && !['image-prompt', 'video'].includes(data.subtype) && (
-        <div style={{ minHeight: 'var(--size-node-content)', maxHeight: 200, overflow: 'auto', scrollbarWidth: 'thin' }}>
+        <div style={{ flex: 1, overflow: 'auto', scrollbarWidth: 'thin' }}>
           <GenerateNodeInline id={id} subtype={data.subtype} expandOpen={expandOpen} onExpandClose={() => setExpandOpen(false)} />
         </div>
       )}
