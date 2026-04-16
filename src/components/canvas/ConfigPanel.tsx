@@ -44,7 +44,7 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
   );
 }
 function NumberInput({ value, onChange, min, max, step = 1 }: { value: number; onChange: (v: number) => void; min: number; max: number; step?: number }) {
-  return <input type="number" className="w-full h-8 text-sm rounded-[10px] px-2.5" value={value} min={min} max={max} step={step} onChange={(e) => onChange(Number(e.target.value))} />;
+  return <input type="number" className="form-input" value={value} min={min} max={max} step={step} onChange={(e) => onChange(Number(e.target.value))} />;
 }
 function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
   return <div className="flex items-center justify-between"><span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{label}</span><button role="switch" aria-checked={value} className={`rounded-full transition relative`} style={{ width: 32, height: 18, background: value ? 'var(--color-interactive-focus)' : 'var(--color-text-tertiary)' }} onClick={() => onChange(!value)}><div className={`rounded-full bg-[var(--color-bg-card)] absolute transition-all`} style={{ width: 14, height: 14, top: 2, left: value ? 16 : 2 }} /></button></div>;
@@ -69,13 +69,13 @@ const GENERATE_NODES_WITH_QUANTITY = ['linkedin-post', 'twitter-thread', 'twitte
 const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unknown) => void) => React.ReactNode> = {
   'text-source': (c, s) => <>
     <Field label="Prepare (optional)">
-      <textarea className="w-full min-h-[80px] text-sm border border-[var(--color-border-default)] rounded-lg p-2 outline-none focus:border-[var(--color-interactive-focus)] resize-y" placeholder="e.g. Extract key arguments only. Remove all anecdotes." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
+      <textarea className="form-textarea min-h-[80px]" placeholder="e.g. Extract key arguments only. Remove all anecdotes." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
     </Field>
     {(c.prepare as string)?.trim() ? <ModelSelector value={c.model as string ?? DEFAULT_MODELS['text-source']} onChange={(v) => s('model', v)} /> : <div className="text-xs italic mt-1" style={{ color: 'var(--color-text-placeholder)' }}>Add a Prepare instruction to enable model selection</div>}
   </>,
   'file-source': (c, s) => <>
     <Field label="Prepare (optional)">
-      <textarea className="w-full min-h-[80px] text-sm border border-[var(--color-border-default)] rounded-lg p-2 outline-none focus:border-[var(--color-interactive-focus)] resize-y" placeholder="e.g. Summarize the key points." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
+      <textarea className="form-textarea min-h-[80px]" placeholder="e.g. Summarize the key points." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
     </Field>
     {(c.prepare as string)?.trim() ? <ModelSelector value={c.model as string ?? DEFAULT_MODELS['file-source']} onChange={(v) => s('model', v)} /> : <div className="text-xs italic mt-1" style={{ color: 'var(--color-text-placeholder)' }}>Add a Prepare instruction to enable model selection</div>}
   </>,
@@ -95,7 +95,7 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
   'twitter-single': (c, s) => <Field label="Angle"><Select value={c.angle as string ?? 'Most quotable insight'} onChange={(v) => s('angle', v)} options={['Most quotable insight', 'Strongest stat', 'Contrarian take', 'Call to action']} /></Field>,
   'newsletter': (c, s) => <>
     <Field label="Section type"><Select value={c.type as string ?? 'Full issue'} onChange={(v) => s('type', v)} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} /></Field>
-    <Field label="Audience"><input className="w-full h-8 text-sm border border-[var(--color-border-default)] rounded-lg px-2 outline-none focus:border-[var(--color-interactive-focus)]" value={c.audience as string ?? ''} onChange={(e) => s('audience', e.target.value)} placeholder="e.g. B2B SaaS founders" /></Field>
+    <Field label="Audience"><input className="form-input" value={c.audience as string ?? ''} onChange={(e) => s('audience', e.target.value)} placeholder="e.g. B2B SaaS founders" /></Field>
     <Field label="Word count"><NumberInput value={c.words as number ?? 350} onChange={(v) => s('words', v)} min={100} max={1000} /></Field>
   </>,
   'infographic': (c, s) => <>
@@ -123,7 +123,7 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
         })}
       </div>
     </Field>
-    <Field label="File prefix"><input className="w-full h-8 text-sm border border-[var(--color-border-default)] rounded-lg px-2 outline-none focus:border-[var(--color-interactive-focus)]" value={c.prefix as string ?? 'content-export'} onChange={(e) => s('prefix', e.target.value)} /></Field>
+    <Field label="File prefix"><input className="form-input" value={c.prefix as string ?? 'content-export'} onChange={(e) => s('prefix', e.target.value)} /></Field>
     <Toggle value={!!c.metadata} onChange={(v) => s('metadata', v)} label="Include metadata" />
   </>,
 };

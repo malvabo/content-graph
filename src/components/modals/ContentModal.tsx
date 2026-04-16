@@ -163,9 +163,7 @@ function LinkedInModal({ title, text, onClose, onRegenerate, subtype }: ContentM
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
     const taRect = ta.getBoundingClientRect();
-    const containerRect = ta.parentElement?.getBoundingClientRect();
-    if (!containerRect) return;
-    setAiPopover({ x: taRect.width / 2, y: taRect.top - containerRect.top, text: content.slice(start, end) });
+    setAiPopover({ x: taRect.left + taRect.width / 2, y: taRect.top + (start / content.length) * taRect.height, text: content.slice(start, end) });
   }, [content]);
 
   const handleAiApply = useCallback((newText: string) => {
@@ -326,8 +324,7 @@ function GenericTextModal({ title, text, onClose, onRegenerate, subtype }: Conte
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
     const taRect = ta.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    setAiPopover({ x: taRect.width / 2, y: taRect.top - containerRect.top, text: content.slice(start, end) });
+    setAiPopover({ x: taRect.left + taRect.width / 2, y: taRect.top + (start / content.length) * taRect.height, text: content.slice(start, end) });
   }, [content]);
 
   const handleAiApply = useCallback((newText: string) => {
