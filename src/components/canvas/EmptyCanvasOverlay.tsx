@@ -82,16 +82,8 @@ export default function EmptyCanvasOverlay() {
             onChange={e => setText(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGo(); }}
             placeholder="Paste your content here…"
-            style={{
-              width: '100%', minHeight: 200, maxHeight: 360, resize: 'vertical',
-              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)',
-              color: 'var(--color-text-primary)', background: 'var(--color-bg-card)',
-              border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)',
-              padding: 'var(--space-4)', outline: 'none',
-              transition: 'border-color 150ms, box-shadow 150ms',
-            }}
-            onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13,191,90,0.1)'; }}
-            onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
+            className="form-textarea"
+            style={{ minHeight: 200, maxHeight: 360, borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', background: 'var(--color-bg-card)' }}
           />
           {hasText && (
             <button onClick={handleGo}
