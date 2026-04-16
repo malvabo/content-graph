@@ -11,9 +11,9 @@ export function RefineInline({ id }: { id: string }) {
   const format = (config?.output_format as string) ?? 'Paragraph';
 
   return (
-    <div className="mt-2 flex flex-col gap-1.5">
+    <div className="mt-2 flex flex-col gap-1.5 flex-1">
       <textarea
-        className="form-textarea min-h-[140px]"
+        className="form-textarea min-h-[140px] flex-1"
         placeholder="e.g. Extract the 5 strongest arguments. Simplify to plain English."
         value={directive}
         onChange={(e) => updateConfig(id, { directive: e.target.value })}
