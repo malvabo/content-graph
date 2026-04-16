@@ -22,14 +22,24 @@ function AiEditPopover({ selectedText, position, onApply, onClose }: {
     setTimeout(() => {
       let result = selectedText;
       if (action === 'engaging') {
-        result = selectedText.replace(/\bis\b/g, 'becomes').replace(/\bwas\b/g, 'proved to be');
+        result = selectedText.replace(/\bIt is\b/g, "It's").replace(/\bit is\b/g, "it's").replace(/\bdo not\b/g, "don't").replace(/\bDo not\b/g, "Don't").replace(/\bcannot\b/g, "can't").replace(/\bwill not\b/g, "won't");
+        if (/^[A-Z][a-z]/.test(result) && !result.startsWith('Here') && !result.startsWith('This')) {
+          result = 'Here\'s the thing — ' + result.charAt(0).toLowerCase() + result.slice(1);
+        }
       } else if (action === 'expand') {
-        const sentences = selectedText.match(/[^.!?]+[.!?]+/g) || [selectedText];
-        const last = sentences[sentences.length - 1]?.trim() || selectedText;
-        result = selectedText + ` To elaborate — ${last.charAt(0).toLowerCase() + last.slice(1).replace(/[.!?]+$/, '')} has broader implications worth exploring.`;
+        const sentences = selectedText.match(/[^.!?]+[.!?]+\s*/g) || [selectedText];
+        const elaboration = sentences.length > 1
+          ? ' This is particularly worth noting because it shapes how we think about the broader context.'
+          : ' In other words, this carries more weight than it might first appear — and the implications extend further than expected.';
+        result = sentences[0].trim() + elaboration + ' ' + sentences.slice(1).join('').trim();
       } else if (action === 'condense') {
-        const sentences = selectedText.match(/[^.!?]+[.!?]+/g) || [selectedText];
-        result = sentences.length <= 1 ? selectedText.split(/,\s*/).slice(0, Math.ceil(selectedText.split(/,\s*/).length / 2)).join(', ') : sentences.slice(0, Math.ceil(sentences.length / 2)).join(' ').trim();
+        const sentences = selectedText.match(/[^.!?]+[.!?]+\s*/g);
+        if (!sentences || sentences.length <= 1) {
+          result = selectedText.replace(/\b(very|really|just|quite|rather|somewhat|actually|basically|literally|definitely)\s+/gi, '').replace(/\s{2,}/g, ' ').trim();
+        } else {
+          const keep = Math.max(1, Math.ceil(sentences.length * 0.6));
+          result = sentences.slice(0, keep).join('').trim();
+        }
       } else if (action === 'custom' && prompt) {
         result = `[${prompt}]: ${selectedText}`;
       }
