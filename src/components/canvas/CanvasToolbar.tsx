@@ -36,7 +36,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
         <input
           aria-label="Graph name"
           className="graph-name-input outline-none"
-          style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0' }}
+          style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0' }}
           value={graphName}
           placeholder="Untitled"
           onChange={(e) => setGraphName(e.target.value)}
@@ -48,7 +48,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
         <button className="btn-ghost btn-sm hidden md:inline-flex" style={{ borderRadius: 'var(--radius-md)' }} onClick={autoLayout}>Auto-layout</button>
           {confirmClear ? (
             <span className="hidden md:contents">
-              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>Clear all?</span>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', fontWeight: 'var(--weight-medium)' }}>Clear all?</span>
               <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)', color: 'var(--color-danger)' }} onClick={() => { clearGraph(); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); setConfirmClear(false); }}>Yes</button>
               <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)' }} onClick={() => setConfirmClear(false)}>No</button>
             </span>
@@ -68,7 +68,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
       {/* Publish notification */}
       {published && (
         <div style={{
-          position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
+          position: 'fixed', top: 'var(--space-5)', left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
           background: 'var(--color-bg-card)', border: '1px solid var(--color-accent)',
           borderRadius: 'var(--radius-lg)', padding: 'var(--space-3) var(--space-5)',
           boxShadow: 'var(--shadow-lg)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',

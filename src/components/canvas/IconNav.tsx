@@ -22,7 +22,7 @@ function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: str
       </button>
       {showTip && (
         <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50"
-          style={{ background: 'var(--color-text-primary)', color: 'var(--color-text-inverse)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500, boxShadow: 'var(--shadow-sm)', animation: 'fadeIn 100ms ease' }}>
+          style={{ background: 'var(--color-text-primary)', color: 'var(--color-text-inverse)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 'var(--weight-medium)', boxShadow: 'var(--shadow-sm)', animation: 'fadeIn 100ms ease' }}>
           {label}
         </div>
       )}
@@ -72,7 +72,7 @@ function UserMenu() {
   return (
     <div ref={ref} className="relative flex justify-center">
       <button onClick={() => setOpen(!open)} className="w-8 h-8 rounded-full flex items-center justify-center"
-        style={{ background: 'var(--color-border-strong)', color: 'var(--color-text-primary)', fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', border: 'none', cursor: 'pointer' }}>
+        style={{ background: 'var(--color-border-strong)', color: 'var(--color-text-primary)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', border: 'none', cursor: 'pointer' }}>
         {initial}
       </button>
       {open && (

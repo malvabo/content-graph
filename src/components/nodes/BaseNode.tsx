@@ -234,8 +234,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         onMouseDown={e => e.stopPropagation()}
         onClick={() => runNode(id, async (input, config) => aiExecute(input, config, data.subtype))}
         style={{
-          position: 'absolute', bottom: 12, right: 12,
-          width: 28, height: 28, borderRadius: '50%',
+          position: 'absolute', bottom: 'var(--space-3)', right: 'var(--space-3)',
+          width: 28, height: 28, borderRadius: 'var(--radius-full)',
           background: 'var(--color-accent)', border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', opacity: hovered ? 1 : 0,
@@ -256,7 +256,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
             {NODE_ICONS[data.subtype]?.() ?? data.badge}
           </div>
           {brandActive && (data.category === 'generate' || data.subtype === 'brand-voice') && (
-            <div style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: brandColor, border: '1.5px solid var(--color-bg-card)' }} title={`Brand voice active`} />
+            <div style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: 'var(--radius-full)', background: brandColor, border: '1.5px solid var(--color-bg-card)' }} title="Brand voice active" />
           )}
         </div>
         <div className="flex-1 min-w-0">
