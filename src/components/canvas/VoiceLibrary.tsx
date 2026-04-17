@@ -51,18 +51,9 @@ function RecordingOverlay({ elapsed, finalText, interimText, onStop }: { elapsed
     let t = 0, raf: number;
     const resize = () => { const r = canvas.getBoundingClientRect(); canvas.width = r.width * devicePixelRatio; canvas.height = r.height * devicePixelRatio; ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0); };
     resize(); window.addEventListener('resize', resize);
-    const particles = Array.from({ length: 40 }, () => ({
-      angle: Math.random() * Math.PI * 2,
-      dist: 80 + Math.random() * 200,
-      speed: 0.3 + Math.random() * 0.5,
-      size: 2 + Math.random() * 4,
-      hue: 140 + Math.random() * 30,
-      phase: Math.random() * Math.PI * 2,
-    }));
     const draw = () => {
       const r = canvas.getBoundingClientRect(); const w = r.width, h = r.height, cx = w / 2, cy = h / 2;
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
-      // Fog blobs
       for (let i = 0; i < 5; i++) {
         const angle = t * 0.8 + i * 1.3;
         const spread = 160 + Math.sin(t * 0.5 + i) * 80;
@@ -75,16 +66,6 @@ function RecordingOverlay({ elapsed, finalText, interimText, onStop }: { elapsed
         grad.addColorStop(0.6, `hsla(${hue + 15},45%,60%,0.075)`);
         grad.addColorStop(1, 'transparent');
         ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
-      }
-      // Particles
-      for (const p of particles) {
-        p.angle += p.speed * 0.01;
-        const px = cx + Math.cos(p.angle + Math.sin(t * 0.3 + p.phase) * 0.5) * p.dist;
-        const py = cy + Math.sin(p.angle + Math.cos(t * 0.4 + p.phase) * 0.5) * p.dist * 0.7;
-        ctx.beginPath();
-        ctx.arc(px, py, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue},50%,65%,0.15)`;
-        ctx.fill();
       }
       t += 0.012; raf = requestAnimationFrame(draw);
     };
