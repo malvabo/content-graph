@@ -16,16 +16,18 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   setAnthropicKey: (key) => set({ anthropicKey: key }),
 
   load: async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!supabase) { set({ loaded: true }); return; }
+    const { data: { user } } = await supabase!.auth.getUser();
     if (!user) return;
-    const { data } = await supabase.from('user_settings').select('anthropic_key').eq('user_id', user.id).single();
+    const { data } = await supabase!.from('user_settings').select('anthropic_key').eq('user_id', user.id).single();
     if (data) set({ anthropicKey: data.anthropic_key ?? '', loaded: true });
     else set({ loaded: true });
   },
 
   save: async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!supabase) return;
+    const { data: { user } } = await supabase!.auth.getUser();
     if (!user) return;
-    await supabase.from('user_settings').upsert({ user_id: user.id, anthropic_key: get().anthropicKey }, { onConflict: 'user_id' });
+    await supabase!.from('user_settings').upsert({ user_id: user.id, anthropic_key: get().anthropicKey }, { onConflict: 'user_id' });
   },
 }));

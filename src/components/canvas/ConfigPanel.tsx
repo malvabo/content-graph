@@ -7,7 +7,7 @@ import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import { mockExecute } from '../../utils/mockExecutor';
 
-import { FormInput } from '../ui/FormField';
+import { FormInput, FormTextarea } from '../ui/FormField';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="flex flex-col gap-1"><label className="text-field-label">{label}</label>{children}</div>;
@@ -70,15 +70,11 @@ const GENERATE_NODES_WITH_QUANTITY = ['linkedin-post', 'twitter-thread', 'twitte
 
 const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unknown) => void) => React.ReactNode> = {
   'text-source': (c, s) => <>
-    <Field label="Prepare (optional)">
-      <textarea className="form-textarea min-h-[80px]" placeholder="e.g. Extract key arguments only. Remove all anecdotes." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
-    </Field>
+    <FormTextarea label="Prepare (optional)" className="min-h-[80px]" placeholder="e.g. Extract key arguments only. Remove all anecdotes." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
     {(c.prepare as string)?.trim() ? <ModelSelector value={c.model as string ?? DEFAULT_MODELS['text-source']} onChange={(v) => s('model', v)} /> : <div className="text-xs italic mt-1" style={{ color: 'var(--color-text-placeholder)' }}>Add a Prepare instruction to enable model selection</div>}
   </>,
   'file-source': (c, s) => <>
-    <Field label="Prepare (optional)">
-      <textarea className="form-textarea min-h-[80px]" placeholder="e.g. Summarize the key points." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
-    </Field>
+    <FormTextarea label="Prepare (optional)" className="min-h-[80px]" placeholder="e.g. Summarize the key points." value={c.prepare as string ?? ''} onChange={(e) => s('prepare', e.target.value)} />
     {(c.prepare as string)?.trim() ? <ModelSelector value={c.model as string ?? DEFAULT_MODELS['file-source']} onChange={(v) => s('model', v)} /> : <div className="text-xs italic mt-1" style={{ color: 'var(--color-text-placeholder)' }}>Add a Prepare instruction to enable model selection</div>}
   </>,
   'linkedin-post': (c, s) => <>
