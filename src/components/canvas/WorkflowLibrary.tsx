@@ -130,6 +130,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             borderRadius: 'var(--radius-lg)',
             border: '1px dashed var(--color-border-subtle)',
             background: 'var(--color-bg-card)',
+            marginTop: 'calc(35vh - 100px)',
           }}>
             <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--color-text-disabled)' }}>
               <GraphIcon />

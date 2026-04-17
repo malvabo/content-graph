@@ -617,25 +617,45 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
   return (
     <>
       <style>{FONT_STYLE}</style>
-      <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.pageBg, color:C.text }}>
-        <div style={{ flex:1, maxWidth:600, width:"100%", margin:"0 auto", padding:"32px 24px" }}>
-          {/* Header */}
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
-            <h1 style={{ fontSize:16, fontWeight:600, margin:0 }}>Talks</h1>
-            <button onClick={onNew} style={{ background:C.accent, color:"#fff", border:"none", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer" }}>+ New</button>
+      <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.pageBg, color:C.text, overflow:"auto" }}>
+        <div style={{ padding:"24px 32px" }}>
+
+          {/* Header — matches Workflows */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:12 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <h1 style={{ fontSize:20, fontWeight:500, margin:0 }}>Talks</h1>
+              {drafts.length > 0 && (
+                <span style={{ fontSize:11, color:C.mute, background:C.surface, padding:"2px 8px", borderRadius:99 }}>{drafts.length}</span>
+              )}
+            </div>
+            <button onClick={onNew} style={{ display:"flex", alignItems:"center", gap:6, background:C.accent, color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+              <span style={{ fontSize:16, lineHeight:1 }}>+</span> New talk
+            </button>
           </div>
 
           {drafts.length === 0 ? (
-            <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", paddingTop:80 }}>
-              <FileText size={20} color={C.mute} style={{ marginBottom:12 }} />
-              <p style={{ fontSize:14, fontWeight:500, marginBottom:4 }}>No talks yet</p>
-              <p style={{ fontSize:12, color:C.sub }}>Click "+ New" to get started</p>
+            /* Empty state — horizontal row, matches Workflows, vertically centered */
+            <div style={{
+              display:"flex", alignItems:"center", gap:24,
+              padding:"32px 24px", borderRadius:12,
+              border:`1px dashed ${C.border2}`, background:C.white,
+              marginTop:"calc(35vh - 100px)",
+            }}>
+              <div style={{ width:48, height:48, borderRadius:12, background:C.surface, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:C.mute }}>
+                <FileText size={20} />
+              </div>
+              <div style={{ flex:1 }}>
+                <p style={{ fontSize:14, fontWeight:500, color:C.sub, marginBottom:2 }}>No saved talks yet</p>
+                <p style={{ fontSize:12, color:C.mute }}>Write or paste a talk script and analyze it with AI</p>
+              </div>
+              <button onClick={onNew} style={{ flexShrink:0, display:"flex", alignItems:"center", gap:6, background:C.accent, color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                <span style={{ fontSize:16, lineHeight:1 }}>+</span> Create talk
+              </button>
             </div>
           ) : (
-            <div style={{ background:C.white, borderRadius:10, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+            <div style={{ background:C.white, borderRadius:12, border:`1px solid ${C.border}`, overflow:"hidden" }}>
               {drafts.map((draft, i) => (
                 <div key={draft.id} onClick={() => onOpen(draft)}
-                  className="draft-card"
                   style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", cursor:"pointer", borderBottom: i < drafts.length - 1 ? `1px solid ${C.border}` : "none", transition:"background 100ms" }}
                   onMouseEnter={e => e.currentTarget.style.background = C.surface}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>

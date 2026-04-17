@@ -6,7 +6,8 @@ export default function SettingsPanel() {
   const [show, setShow] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    await useSettingsStore.getState().save();
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   };
@@ -39,7 +40,7 @@ export default function SettingsPanel() {
             </div>
           </div>
           <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-2)' }}>
-            Stored locally in your browser. Never sent to our servers.
+            Encrypted and stored with your account.
           </div>
         </div>
 

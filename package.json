@@ -15,6 +15,7 @@
     "@base-ui/react": "^1.4.0",
     "@dagrejs/dagre": "^3.0.0",
     "@fontsource-variable/geist": "^5.2.8",
+    "@supabase/supabase-js": "^2.103.3",
     "@tabler/icons-react": "^3.41.1",
     "@xyflow/react": "^12.10.2",
     "class-variance-authority": "^0.7.1",

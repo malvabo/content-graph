@@ -1,4 +1,5 @@
 import { type ReactNode, useState, useEffect, useRef } from 'react';
+import { useAuthStore } from '../../store/authStore';
 
 interface Props {
   activeView: string;

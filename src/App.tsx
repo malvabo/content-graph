@@ -6,11 +6,14 @@ import IconNav from './components/canvas/IconNav';
 import VoicePanel from './components/canvas/VoicePanel';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import { useGraphStore, type ContentNode } from './store/graphStore';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
 import type { NodeDef } from './utils/nodeDefs';
 import MobileWorkflow from './components/canvas/MobileWorkflow';
+import { useAuthStore } from './store/authStore';
+import { useSettingsStore } from './store/settingsStore';
+import AuthGate from './components/auth/AuthGate';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; btnHover: boolean }> {
   state = { error: null as Error | null, btnHover: false };
@@ -36,11 +39,23 @@ export default function App() {
 }
 
 function AppInner() {
+  const { user, loading: authLoading, init } = useAuthStore();
   const addNode = useGraphStore((s) => s.addNode);
   const nodes = useGraphStore((s) => s.nodes);
   const [activeView, setActiveView] = useState('workflow');
   const [voiceTranscript, setVoiceTranscript] = useState('');
   useKeyboardShortcuts();
+
+  useEffect(() => { init(); }, [init]);
+  useEffect(() => { if (user) useSettingsStore.getState().load(); }, [user]);
+
+  if (authLoading) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
+      <div className="skeleton-bar" style={{ width: 48, height: 48, borderRadius: 'var(--radius-lg)' }} />
+    </div>
+  );
+
+  if (!user) return <AuthGate />;
 
   const handleTranscript = useCallback((text: string) => {
     setVoiceTranscript(text);
