@@ -152,7 +152,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 </div>
 
                 {/* Content area */}
-                <div style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                <div style={{ padding: 'var(--space-3) var(--space-4)', overflow: 'hidden' }}>
                   {/* Title + menu */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
                     {renameId === item.id ? (
@@ -203,7 +203,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
 
                   {/* Content preview */}
                   {preview && (
-                    <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                    <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', maxHeight: '2.8em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
                       {preview}{preview.length >= 80 ? '…' : ''}
                     </div>
                   )}
