@@ -154,7 +154,7 @@ export default function EmptyCanvasOverlay() {
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--color-bg)', overflow: 'auto' }}>
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: 'var(--space-6) var(--space-6) var(--space-8)' }}>
+      <div style={{ maxWidth: 1080, margin: '0 auto', padding: 'var(--space-6) var(--space-6) var(--space-8)' }}>
 
         {/* Hero */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
@@ -187,7 +187,7 @@ export default function EmptyCanvasOverlay() {
         )}
 
         {/* Template grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-3)' }}>
           {/* Empty workflow */}
           <button onClick={handleNew}
             style={{
@@ -228,8 +228,8 @@ export default function EmptyCanvasOverlay() {
                 <SchematicPreview idx={i} />
               </div>
               <div style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>{t.name}</div>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-1)' }}>{t.description}</div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.description}</div>
               </div>
             </button>
           ))}
