@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { BADGE_COLORS, CATEGORY_LABELS } from '../../utils/nodeDefs';
 import type { NodeCategory } from '../../store/graphStore';
-import { loadWorkflows, deleteWorkflow, type SavedWorkflow } from '../../utils/workflowApi';
+import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from '../../utils/workflowApi';
 import type { Edge } from '@xyflow/react';
 
 /* SVG icons */
@@ -53,9 +53,19 @@ function NodeBreakdown({ nodes }: { nodes: ContentNode[] }) {
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<SavedWorkflow[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [renameName, setRenameName] = useState('');
+  const menuRef = useRef<HTMLDivElement>(null);
   const { setNodes, setEdges, setGraphName } = useGraphStore();
 
   useEffect(() => { loadWorkflows().then(setItems); }, []);
+  useEffect(() => {
+    if (!menuId) return;
+    const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuId(null); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [menuId]);
 
   const handleLoad = (item: SavedWorkflow) => {
     setNodes(item.nodes);
@@ -69,6 +79,21 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
     setItems(prev => prev.filter(i => i.id !== deleteId));
     setDeleteId(null);
     await deleteWorkflow(deleteId);
+  };
+
+  const handleRename = async () => {
+    if (!renameId || !renameName.trim()) return;
+    setItems(prev => prev.map(i => i.id === renameId ? { ...i, name: renameName.trim() } : i));
+    const item = items.find(i => i.id === renameId);
+    if (item) await saveWorkflow({ ...item, name: renameName.trim() });
+    setRenameId(null);
+  };
+
+  const handleDuplicate = async (item: SavedWorkflow) => {
+    const dup: SavedWorkflow = { ...item, id: `wf-${Date.now()}`, name: `${item.name} (copy)`, savedAt: new Date().toISOString() };
+    setItems(prev => [...prev, dup]);
+    await saveWorkflow(dup);
+    setMenuId(null);
   };
 
   const handleNew = () => {
@@ -150,22 +175,47 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
 
-                {/* Row 1: name + delete */}
+                {/* Row 1: name + 3-dot menu */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-                  <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                    {item.name}
-                  </div>
-                  <div
-                    role="button" tabIndex={0} aria-label="Delete workflow"
-                    style={{
-                      width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0, color: 'var(--color-text-disabled)', background: 'transparent',
-                      transition: 'color .15s, background .15s', cursor: 'pointer',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)'; e.currentTarget.style.background = 'var(--color-danger-bg)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'transparent'; }}
-                    onClick={e => { e.stopPropagation(); setDeleteId(item.id); }}>
-                    <TrashIcon />
+                  {renameId === item.id ? (
+                    <input autoFocus value={renameName} onChange={e => setRenameName(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenameId(null); }}
+                      onBlur={handleRename}
+                      onClick={e => e.stopPropagation()}
+                      style={{ flex: 1, minWidth: 0, fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)', padding: '2px 6px', outline: 'none' }} />
+                  ) : (
+                    <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                      {item.name}
+                    </div>
+                  )}
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <div role="button" tabIndex={0} aria-label="More options"
+                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', background: 'transparent', transition: 'color .15s, background .15s', cursor: 'pointer' }}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+                      onMouseLeave={e => { if (menuId !== item.id) { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'transparent'; } }}
+                      onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                    </div>
+                    {menuId === item.id && (
+                      <div ref={menuRef} onClick={e => e.stopPropagation()}
+                        style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 4, minWidth: 140, animation: 'fadeIn 100ms ease' }}>
+                        {[
+                          { label: 'Rename', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>,
+                            action: () => { setRenameName(item.name); setRenameId(item.id); setMenuId(null); } },
+                          { label: 'Duplicate', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+                            action: () => handleDuplicate(item) },
+                          { label: 'Delete', icon: <TrashIcon />, danger: true,
+                            action: () => { setDeleteId(item.id); setMenuId(null); } },
+                        ].map(opt => (
+                          <button key={opt.label} onClick={opt.action}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', transition: 'background 100ms' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                            {opt.icon} {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
