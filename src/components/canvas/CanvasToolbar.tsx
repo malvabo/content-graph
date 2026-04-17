@@ -4,7 +4,7 @@ import { useGraphLayout } from '../../hooks/useGraphLayout';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
-import { mockExecute } from '../../utils/mockExecutor';
+import { aiExecute } from '../../utils/aiExecutor';
 
 import { saveWorkflow } from '../../utils/workflowApi';
 
@@ -17,9 +17,8 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
   const [published, setPublished] = useState(false);
 
   const handleRunAll = () => {
-    runAll(async (input, _config, subtype) => {
-      await new Promise((r) => setTimeout(r, 600 + Math.random() * 600));
-      return mockExecute(input, subtype);
+    runAll(async (input, config, subtype) => {
+      return aiExecute(input, config, subtype);
     });
   };
 

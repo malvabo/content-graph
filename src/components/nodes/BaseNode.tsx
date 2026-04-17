@@ -4,7 +4,7 @@ import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import ContentModal from '../modals/ContentModal';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
-import { mockExecute } from '../../utils/mockExecutor';
+import { aiExecute } from '../../utils/aiExecutor';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import type { ContentNode } from '../../store/graphStore';
 import { TextSourceInline, ImageSourceInline, FileSourceInline } from './SourceNodes';
@@ -204,7 +204,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {/* Run button (bottom-right, hover only) */}
       <button
         onMouseDown={e => e.stopPropagation()}
-        onClick={() => runNode(id, async (input) => { await new Promise(r => setTimeout(r, 600 + Math.random() * 600)); return mockExecute(input, data.subtype); })}
+        onClick={() => runNode(id, async (input, config) => aiExecute(input, config, data.subtype))}
         style={{
           position: 'absolute', bottom: 12, right: 12,
           width: 28, height: 28, borderRadius: '50%',

@@ -5,7 +5,7 @@ import { useOutputStore } from '../../store/outputStore';
 import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, IMAGE_MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { NODE_ICONS } from '../../utils/nodeIcons';
-import { mockExecute } from '../../utils/mockExecutor';
+import { aiExecute } from '../../utils/aiExecutor';
 
 import { FormInput, FormTextarea } from '../ui/FormField';
 
@@ -174,9 +174,8 @@ export default function ConfigPanel() {
       <div className="px-5 pb-5">
         <button className="btn btn-primary w-full" onClick={() => {
           if (!node) return;
-          runNode(node.id, async (input) => {
-            await new Promise((r) => setTimeout(r, 600 + Math.random() * 600));
-            return mockExecute(input, node.data.subtype);
+          runNode(node.id, async (input, config) => {
+            return aiExecute(input, config, node.data.subtype);
           });
         }}>▶ Run</button>
       </div>

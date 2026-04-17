@@ -47,7 +47,11 @@ export const BADGE_COLORS: Record<NodeCategory, { bg: string; text: string }> = 
   output: { bg: 'var(--color-badge-output-bg)', text: 'var(--color-badge-output-text)' },
 };
 
-export const MODEL_OPTIONS = ['claude-haiku-4', 'claude-sonnet-4', 'claude-opus-4'] as const;
+export const MODEL_OPTIONS = [
+  'claude-haiku-4', 'claude-sonnet-4', 'claude-opus-4',
+  'gpt-4o-mini', 'gpt-4o', 'o4-mini',
+  'gemini-2.0-flash', 'gemini-2.5-flash',
+] as const;
 export const IMAGE_MODEL_OPTIONS = ['FLUX.1 schnell', 'FLUX.1 dev'] as const;
 
 export const DEFAULT_MODELS: Record<string, string> = {

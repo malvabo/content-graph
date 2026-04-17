@@ -31,12 +31,11 @@ function DeletableEdge({
           d={edgePath}
           fill="none"
           stroke="var(--color-accent)"
-          strokeWidth={2}
+          strokeWidth={2.5}
           strokeLinecap="round"
-          strokeDasharray="12 20"
-          style={{ opacity: 0.6 }}
+          strokeDasharray="8 6"
         >
-          <animate attributeName="stroke-dashoffset" from="32" to="0" dur="0.8s" repeatCount="indefinite" />
+          <animate attributeName="stroke-dashoffset" from="14" to="0" dur="0.6s" repeatCount="indefinite" />
         </path>
       )}
       {/* Hit area on top of everything */}

@@ -296,14 +296,10 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 
 /* ── Edge animation ── */
 .react-flow__edge.animated path {
-  animation: edge-pulse 1.5s ease-in-out infinite;
   stroke: var(--color-accent) !important;
-  stroke-width: 2 !important;
+  stroke-width: 2.5 !important;
   stroke-dasharray: none !important;
-}
-@keyframes edge-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+  opacity: 0.25;
 }
 
 /* ── ReactFlow Controls dark mode ── */

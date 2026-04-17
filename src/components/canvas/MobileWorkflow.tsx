@@ -3,7 +3,7 @@ import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
-import { mockExecute } from '../../utils/mockExecutor';
+import { aiExecute } from '../../utils/aiExecutor';
 import { BADGE_COLORS } from '../../utils/nodeDefs';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import ContentModal from '../modals/ContentModal';
@@ -115,9 +115,8 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
   const [editingName, setEditingName] = useState(false);
 
   const handleRunAll = useCallback(() => {
-    runAll(async (input, _config, subtype) => {
-      await new Promise(r => setTimeout(r, 600 + Math.random() * 600));
-      return mockExecute(input, subtype);
+    runAll(async (input, config, subtype) => {
+      return aiExecute(input, config, subtype);
     });
   }, [runAll]);
 
