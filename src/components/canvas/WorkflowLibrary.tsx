@@ -120,7 +120,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         ) : (
           /* Card grid */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 280px))', gap: 'var(--space-3)' }}>
             {items.map(item => {
               // Extract source text preview
               const srcNode = item.nodes.find(n => n.data.subtype === 'text-source' || n.data.subtype === 'voice-source');
@@ -140,7 +140,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
 
                 {/* Preview area — node labels as pills */}
-                <div style={{ height: 100, background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'center', gap: 4 }}>
+                <div style={{ height: 100, background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start', gap: 4, overflow: 'hidden' }}>
                   {nodeLabels.map((label, j) => {
                     const cat = item.nodes[j]?.data.category;
                     const c = BADGE_COLORS[cat] || BADGE_COLORS.source;
