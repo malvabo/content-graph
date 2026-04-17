@@ -58,6 +58,40 @@ function DarkModeToggle() {
   );
 }
 
+function UserMenu() {
+  const { user, signOut } = useAuthStore();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+  if (!user) return null;
+  const initial = (user.email?.[0] ?? '?').toUpperCase();
+  return (
+    <div ref={ref} className="relative flex justify-center">
+      <button onClick={() => setOpen(!open)} className="w-8 h-8 rounded-full flex items-center justify-center"
+        style={{ background: 'var(--color-accent)', color: 'var(--p-white)', fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', border: 'none', cursor: 'pointer' }}>
+        {initial}
+      </button>
+      {open && (
+        <div className="absolute bottom-full mb-2 md:bottom-auto md:left-full md:ml-2 md:top-0 z-50 dropdown-fade"
+          style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-2)', minWidth: 160 }}>
+          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: 'var(--space-1) var(--space-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+          <button onClick={() => { signOut(); setOpen(false); }} className="w-full text-left"
+            style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 'var(--space-1)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function IconNav({ activeView, onViewChange }: Props) {
   return (
     <nav aria-label="Main navigation" className="
