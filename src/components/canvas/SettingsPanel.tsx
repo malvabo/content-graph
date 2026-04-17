@@ -208,17 +208,17 @@ export default function SettingsPanel() {
   return (
     <div style={{ flex: 1, display: 'flex', background: 'var(--color-bg)', overflow: 'hidden' }}>
       <nav style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', padding: 'var(--space-6) 0', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        <div style={{ padding: '0 var(--space-5) var(--space-5)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+        <div style={{ padding: '0 var(--space-6) var(--space-5)', borderBottom: '1px solid var(--color-border-subtle)' }}>
           <h1 style={{ fontWeight: 500, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Settings</h1>
         </div>
-        <div style={{ padding: 'var(--space-3) var(--space-3)', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {Object.entries(groups).map(([group, items]) => (
-            <div key={group}>
-              <div style={{ padding: 'var(--space-3) var(--space-2) var(--space-1)', fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{group}</div>
+        <div style={{ padding: 'var(--space-4) var(--space-4) 0', display: 'flex', flexDirection: 'column' }}>
+          {Object.entries(groups).map(([group, items], gi) => (
+            <div key={group} style={{ marginTop: gi > 0 ? 'var(--space-5)' : 0 }}>
+              <div style={{ padding: '0 var(--space-2) var(--space-2)', fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', letterSpacing: '0.02em' }}>{group}</div>
               {items.map(s => {
                 const on = active === s.id;
                 return (
-                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms' }}>
+                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-2)', borderRadius: 'var(--radius-md)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms', textAlign: 'left' }}>
                     <span style={{ color: on ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)', display: 'flex' }}><s.icon /></span>
                     {s.label}
                   </button>
