@@ -3,7 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { FormInput } from '../ui/FormField';
 
 export default function AuthGate() {
-  const { signIn, signUp, signInWithGoogle } = useAuthStore();
+  const { signIn, signUp, signInWithGoogle, continueAsGuest } = useAuthStore();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,6 +63,10 @@ export default function AuthGate() {
                 {mode === 'login' ? 'Sign up' : 'Sign in'}
               </button>
             </div>
+            <button type="button" onClick={continueAsGuest}
+              style={{ background: 'none', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0, textAlign: 'center' }}>
+              Continue as guest
+            </button>
           </form>
         )}
       </div>
