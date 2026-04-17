@@ -12,6 +12,7 @@ import { GenerateNodeInline } from './GenerateNodes';
 import { RefineInline } from './TransformNodes';
 import { ExportInline } from './OutputNodes';
 import { ImagePromptInline } from './ImagePromptNode';
+import { VoiceSourceInline } from './VoiceSourceNode';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import { useGraphStore } from '../../store/graphStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -105,6 +106,7 @@ const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string,
     <MiniSelect value={c.strength as string ?? 'Full rewrite'} options={['Light touch', 'Moderate', 'Full rewrite']} onChange={v => s('strength', v)} />
     <MiniSelect value={c.model as string ?? DEFAULT_MODELS['brand-voice']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
+  'voice-source': () => <></>,
 };
 
 function InlineConfig({ id, subtype }: { id: string; subtype: string }) {
@@ -284,6 +286,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         {data.subtype === 'text-source' && <TextSourceInline id={id} />}
         {data.subtype === 'file-source' && <FileSourceInline id={id} />}
         {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
+        {data.subtype === 'voice-source' && <VoiceSourceInline id={id} />}
         {data.subtype === 'refine' && <RefineInline id={id} />}
         {(data.subtype === 'image-prompt' || data.subtype === 'video') && <ImagePromptInline id={id} />}
         {data.subtype === 'export' && <ExportInline id={id} />}

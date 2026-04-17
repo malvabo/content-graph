@@ -3,7 +3,7 @@ import GraphCanvas from './components/canvas/GraphCanvas';
 import CanvasToolbar from './components/canvas/CanvasToolbar';
 import NodePalette from './components/canvas/NodePalette';
 import IconNav from './components/canvas/IconNav';
-import VoicePanel from './components/canvas/VoicePanel';
+import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import { useGraphStore, type ContentNode } from './store/graphStore';
 import { useCallback, useState, useEffect } from 'react';
@@ -44,7 +44,7 @@ function AppInner() {
   const addNode = useGraphStore((s) => s.addNode);
   const nodes = useGraphStore((s) => s.nodes);
   const [activeView, setActiveView] = useState('workflow');
-  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [voiceTranscript] = useState('');
   useKeyboardShortcuts();
 
   useEffect(() => { init(); }, [init]);
@@ -55,11 +55,6 @@ function AppInner() {
       if (session?.user) useSettingsStore.getState().load();
     });
     return () => subscription.unsubscribe();
-  }, []);
-
-  const handleTranscript = useCallback((text: string) => {
-    setVoiceTranscript(text);
-    setActiveView('scriptsense');
   }, []);
 
   const handleAddNode = useCallback((def: NodeDef) => {
@@ -108,7 +103,7 @@ function AppInner() {
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
-        {activeView === 'voice' && <VoicePanel onTranscriptReady={handleTranscript} />}
+        {activeView === 'voice' && <VoiceLibrary />}
 
         {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
 
