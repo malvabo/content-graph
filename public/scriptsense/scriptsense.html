@@ -637,13 +637,13 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
           {/* Header — matches Workflows */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:12 }}>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <h1 style={{ fontSize:20, fontWeight:500, margin:0 }}>Talks</h1>
+              <h1 style={{ fontSize:20, fontWeight:500, margin:0 }}>Scripts</h1>
               {drafts.length > 0 && (
                 <span style={{ fontSize:11, color:C.mute, background:C.surface, padding:"2px 8px", borderRadius:99 }}>{drafts.length}</span>
               )}
             </div>
             <button onClick={onNew} style={{ display:"flex", alignItems:"center", gap:6, background:C.white, color:C.text, border:`1px solid ${C.border2}`, borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
-              <span style={{ fontSize:16, lineHeight:1 }}>+</span> New talk
+              <span style={{ fontSize:16, lineHeight:1 }}>+</span> New script
             </button>
           </div>
 
@@ -659,11 +659,11 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
                 <FileText size={20} />
               </div>
               <div style={{ flex:1 }}>
-                <p style={{ fontSize:14, fontWeight:500, color:C.sub, marginBottom:2 }}>No saved talks yet</p>
-                <p style={{ fontSize:12, color:C.mute }}>Write or paste a talk script and analyze it with AI</p>
+                <p style={{ fontSize:14, fontWeight:500, color:C.sub, marginBottom:2 }}>No saved scripts yet</p>
+                <p style={{ fontSize:12, color:C.mute }}>Write or paste a script and analyze it with AI</p>
               </div>
               <button onClick={onNew} style={{ flexShrink:0, display:"flex", alignItems:"center", gap:6, background:C.accent, color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
-                <span style={{ fontSize:16, lineHeight:1 }}>+</span> Create talk
+                <span style={{ fontSize:16, lineHeight:1 }}>+</span> Create script
               </button>
             </div>
           ) : (
@@ -827,7 +827,7 @@ ${text}`
         <div style={{ display:"flex", background:C.white, borderBottom:`1px solid rgba(0,0,0,0.06)`, flexShrink:0 }}>
           <div style={{ width:"50%", padding:"0 16px", display:"flex", alignItems:"center", gap:10, borderRight:`1px solid rgba(0,0,0,0.06)`, height:36 }}>
             <button className="back-btn" onClick={onBack} style={{ background:"none", border:"none", padding:"2px 4px", fontSize:11, fontWeight:600, color:C.mute, display:"flex", alignItems:"center", gap:4, letterSpacing:"0.04em" }}>
-              <span style={{ fontSize:14, lineHeight:1 }}>←</span> Talks
+              <span style={{ fontSize:14, lineHeight:1 }}>←</span> Scripts
             </button>
             <div style={{ width:1, height:12, background:"rgba(0,0,0,0.08)" }} />
             <span style={{ fontSize:11, fontWeight:600, color:C.mute, letterSpacing:"0.06em", textTransform:"uppercase" }}>Script</span>
@@ -909,7 +909,7 @@ ${text}`
               ref={taRef} value={text}
               onChange={e => setText(e.target.value)}
               onScroll={onScroll}
-              placeholder="Paste your talk script here…"
+              placeholder="Paste your script here…"
               style={{ flex:1, outline:"none", border:"none", background:"transparent", padding:"28px 32px", fontSize:15, lineHeight:1.85, color:C.text, position:"relative", zIndex:2, mixBlendMode:"multiply", letterSpacing:"-0.01em" }}
             />
           </div>
