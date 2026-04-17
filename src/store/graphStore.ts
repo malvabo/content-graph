@@ -129,7 +129,8 @@ export const useGraphStore = create<GraphState>()(
         }),
         onRehydrateStorage: () => (_state, error) => {
           if (error) { localStorage.removeItem('content-graph-store'); }
-          useGraphStore.setState({ _hydrated: true } as any);
+          // Use queueMicrotask to ensure store is fully initialized
+          queueMicrotask(() => useGraphStore.setState({ _hydrated: true } as any));
         },
       }
     ),

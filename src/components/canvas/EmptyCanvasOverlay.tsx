@@ -116,6 +116,8 @@ function HeroBanner({ onNew }: { onNew: () => void }) {
 export default function EmptyCanvasOverlay() {
   const { nodes, setNodes, setEdges, setGraphName, addNode } = useGraphStore();
   const hydrated = useGraphStore((s) => s._hydrated);
+  const [forceReady, setForceReady] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setForceReady(true), 500); return () => clearTimeout(t); }, []);
   const { autoLayout } = useGraphLayout();
   const [dismissed, setDismissed] = useState(false);
   const [text, setText] = useState('');
@@ -124,7 +126,7 @@ export default function EmptyCanvasOverlay() {
 
   useEffect(() => { if (pasting) setTimeout(() => taRef.current?.focus(), 100); }, [pasting]);
 
-  if (!hydrated || nodes.length > 0 || dismissed) return null;
+  if (!(hydrated || forceReady) || nodes.length > 0 || dismissed) return null;
 
   const handleGo = () => {
     const trimmed = text.trim();
