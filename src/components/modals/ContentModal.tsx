@@ -253,14 +253,22 @@ function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalPro
 
   const [subject, setSubject] = useState('');
   const [sections, setSections] = useState(() => parseSections(text));
+  const sectionRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const updateSection = (i: number, val: string) => { const n = [...sections]; n[i] = { ...n[i], text: val }; setSections(n); };
   const { copied, copy } = useCopy(() => (subject ? `Subject: ${subject}\n\n` : '') + sections.map(s => `## ${s.label}\n${s.text}`).join('\n\n---\n\n'));
+
+  // Auto-resize all section textareas
+  useEffect(() => {
+    sectionRefs.current.forEach(el => {
+      if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+    });
+  }, [sections]);
 
   return (
     <ModalShell onClose={onClose} maxWidth={640}>
       <Header title={title} onClose={onClose} />
-      <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
-        {/* Subject line — extra bottom gap to separate from sections */}
+      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-4) var(--space-4)', scrollbarWidth: 'thin' }}>
+        {/* Subject line */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
           <div className="text-field-label" style={{ marginBottom: 'var(--space-1)' }}>Subject line</div>
           <div style={{ position: 'relative' }}>
@@ -276,9 +284,8 @@ function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalPro
             <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', transition: 'border-color 150ms' }}
               onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
               onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
-              <textarea value={sec.text} onChange={e => updateSection(i, e.target.value)}
-                rows={Math.max(3, Math.ceil(sec.text.length / 60))}
-                style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+              <textarea ref={el => { sectionRefs.current[i] = el; }} value={sec.text} onChange={e => updateSection(i, e.target.value)}
+                style={{ width: '100%', minHeight: 60, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
             </div>
           </div>
         ))}

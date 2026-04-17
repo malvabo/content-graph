@@ -28,10 +28,26 @@ function OutputPreview({ id, subtype, expandOpen, onExpandClose }: { id: string;
   const rerun = () => { useExecutionStore.getState().setStatus(id, 'running'); setTimeout(() => useExecutionStore.getState().setStatus(id, 'complete'), 1500); };
   if (!text) return null;
 
+  const isThread = subtype === 'twitter-thread';
+  const tweets = isThread ? text.split(/\n\n+/).filter((s: string) => s.trim()).map((s: string) => s.replace(/^\d+\/\s*/, '')) : [];
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, marginTop: 8 }}>
-      <div className="nowheel" style={{ flex: 1, overflowY: 'auto', fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', scrollbarWidth: 'thin' }}>
-        {text}
+      <div className="nowheel" style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'thin' }}>
+        {isThread ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {tweets.map((t, i) => (
+              <div key={i} style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: '6px 8px' }}>
+                <span style={{ fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginRight: 4 }}>{i + 1}/</span>
+                <span style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{t}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>
+            {text}
+          </div>
+        )}
       </div>
       {expandOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => onExpandClose?.()} onRegenerate={rerun} />}
     </div>

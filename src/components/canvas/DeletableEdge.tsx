@@ -20,7 +20,7 @@ function DeletableEdge({
         style={{
           ...style,
           stroke: animated ? 'var(--color-accent)' : hovered ? 'var(--color-border-strong)' : style?.stroke,
-          strokeWidth: animated ? 2 : style?.strokeWidth,
+          strokeWidth: animated ? 1.5 : style?.strokeWidth,
           strokeDasharray: animated ? 'none' : style?.strokeDasharray,
           transition: 'stroke 150ms',
         }}
@@ -31,11 +31,10 @@ function DeletableEdge({
           d={edgePath}
           fill="none"
           stroke="var(--color-accent)"
-          strokeWidth={2.5}
           strokeLinecap="round"
-          strokeDasharray="8 6"
         >
-          <animate attributeName="stroke-dashoffset" from="14" to="0" dur="0.6s" repeatCount="indefinite" />
+          <animate attributeName="stroke-width" values="1.5;3;1.5" dur="2s" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1" repeatCount="indefinite" />
         </path>
       )}
       {/* Hit area on top of everything */}
