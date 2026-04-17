@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 
 interface SettingsState {
@@ -13,34 +14,42 @@ interface SettingsState {
   save: () => Promise<void>;
 }
 
-export const useSettingsStore = create<SettingsState>()((set, get) => ({
-  anthropicKey: '',
-  openaiKey: '',
-  googleKey: '',
-  loaded: false,
+export const useSettingsStore = create<SettingsState>()(
+  persist(
+    (set, get) => ({
+      anthropicKey: '',
+      openaiKey: '',
+      googleKey: '',
+      loaded: false,
 
-  setAnthropicKey: (key) => set({ anthropicKey: key }),
-  setOpenaiKey: (key) => set({ openaiKey: key }),
-  setGoogleKey: (key) => set({ googleKey: key }),
+      setAnthropicKey: (key) => set({ anthropicKey: key }),
+      setOpenaiKey: (key) => set({ openaiKey: key }),
+      setGoogleKey: (key) => set({ googleKey: key }),
 
-  load: async () => {
-    if (!supabase) { set({ loaded: true }); return; }
-    try {
-      const { data: { user } } = await supabase!.auth.getUser();
-      if (!user) { set({ loaded: true }); return; }
-      const { data } = await supabase!.from('user_settings').select('anthropic_key, openai_key, google_key').eq('user_id', user.id).single();
-      if (data) set({ anthropicKey: data.anthropic_key ?? '', openaiKey: data.openai_key ?? '', googleKey: data.google_key ?? '', loaded: true });
-      else set({ loaded: true });
-    } catch {
-      set({ loaded: true });
+      load: async () => {
+        if (!supabase) { set({ loaded: true }); return; }
+        try {
+          const { data: { user } } = await supabase!.auth.getUser();
+          if (!user) { set({ loaded: true }); return; }
+          const { data } = await supabase!.from('user_settings').select('anthropic_key, openai_key, google_key').eq('user_id', user.id).single();
+          if (data) set({ anthropicKey: data.anthropic_key ?? '', openaiKey: data.openai_key ?? '', googleKey: data.google_key ?? '', loaded: true });
+          else set({ loaded: true });
+        } catch {
+          set({ loaded: true });
+        }
+      },
+
+      save: async () => {
+        if (!supabase) return;
+        const { data: { user } } = await supabase!.auth.getUser();
+        if (!user) return;
+        const { anthropicKey, openaiKey, googleKey } = get();
+        await supabase!.from('user_settings').upsert({ user_id: user.id, anthropic_key: anthropicKey, openai_key: openaiKey, google_key: googleKey }, { onConflict: 'user_id' });
+      },
+    }),
+    {
+      name: 'content-graph-settings',
+      partialize: (state) => ({ anthropicKey: state.anthropicKey, openaiKey: state.openaiKey, googleKey: state.googleKey }),
     }
-  },
-
-  save: async () => {
-    if (!supabase) return;
-    const { data: { user } } = await supabase!.auth.getUser();
-    if (!user) return;
-    const { anthropicKey, openaiKey, googleKey } = get();
-    await supabase!.from('user_settings').upsert({ user_id: user.id, anthropic_key: anthropicKey, openai_key: openaiKey, google_key: googleKey }, { onConflict: 'user_id' });
-  },
-}));
+  )
+);
