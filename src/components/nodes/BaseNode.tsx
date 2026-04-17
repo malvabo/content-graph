@@ -181,11 +181,25 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const hiTarget = canReceive || selected || connectionState === 'compatible';
   const hiSource = isDragSource || selected || connectionState === 'compatible';
 
+  const [glowIntensity, setGlowIntensity] = useState(0);
+  useEffect(() => {
+    if (!isRunning) { setGlowIntensity(0); return; }
+    let raf: number;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = ((now - start) % 2000) / 2000;
+      const v = Math.sin(t * Math.PI);
+      setGlowIntensity(v);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [isRunning]);
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={isRunning ? 'node-running' : undefined}
       style={{
         width: 'var(--size-node)',
         maxWidth: 'var(--size-node)',
@@ -199,10 +213,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         display: 'flex',
         flexDirection: 'column',
         opacity: dragDimmed ? 0.4 : 1,
-        transition: isRunning
-          ? 'opacity 200ms ease, border-color 150ms ease, outline-color 150ms ease'
-          : 'opacity 200ms ease, box-shadow 200ms ease, border-color 150ms ease, outline-color 150ms ease',
-        boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : isRunning ? undefined : 'none',
+        transition: 'opacity 200ms ease, border-color 150ms ease, outline-color 150ms ease',
+        boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : isRunning ? `0 0 ${20 * glowIntensity}px ${4 * glowIntensity}px rgba(13,191,90,${0.25 * glowIntensity})` : 'none',
         outline: selected ? '2px solid var(--color-accent)' : 'none',
         outlineOffset: -2,
       }}

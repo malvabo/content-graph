@@ -56,15 +56,12 @@ function OutputPreview({ id, subtype, expandOpen, onExpand, onExpandClose }: { i
             {text}
           </div>
         )}
-        {/* Fade overlay */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 48, background: 'linear-gradient(transparent, var(--color-bg-card))', pointerEvents: 'none' }} />
+        {/* Fade overlay with inline read-more */}
+        <div onMouseDown={e => e.stopPropagation()} onClick={openModal}
+          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 48, background: 'linear-gradient(transparent, var(--color-bg-card))', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 2, cursor: 'pointer' }}>
+          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', letterSpacing: '0.01em' }}>···</span>
+        </div>
       </div>
-      {/* Read more bar */}
-      <button onMouseDown={e => e.stopPropagation()} onClick={openModal}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '6px 0 0', background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent-subtle)' }}>
-        Read more
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="m9 18 6-6-6-6"/></svg>
-      </button>
       {expandOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => onExpandClose?.()} onRegenerate={rerun} />}
     </div>
   );
