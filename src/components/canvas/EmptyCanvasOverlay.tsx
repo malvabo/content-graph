@@ -15,12 +15,22 @@ function makeSourceNode(content: string): ContentNode {
   };
 }
 
-/* Template card icons */
-const TemplateIcon = ({ idx }: { idx: number }) => {
-  const s = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-  if (idx === 0) return <svg {...s}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 12h4"/><path d="M10 16h4"/></svg>;
-  if (idx === 1) return <svg {...s}><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>;
-  return <svg {...s}><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>;
+/* Template card icons — colored circles with emoji */
+const TEMPLATE_ICONS = ['📄', '🎙️', '📊'];
+const TEMPLATE_ICON_BG = ['#EDE8F0', '#E8EDE5', '#E5ECF0'];
+
+/* Node pills with category colors */
+const PILL_COLORS: Record<string, { bg: string; text: string }> = {
+  'Text': { bg: 'var(--color-badge-source-bg)', text: 'var(--color-badge-source-text)' },
+  'LinkedIn': { bg: 'var(--color-badge-generate-bg)', text: 'var(--color-badge-generate-text)' },
+  'LinkedIn ×2': { bg: 'var(--color-badge-generate-bg)', text: 'var(--color-badge-generate-text)' },
+  'Newsletter': { bg: 'var(--color-badge-generate-bg)', text: 'var(--color-badge-generate-text)' },
+  'Thread': { bg: 'var(--color-badge-generate-bg)', text: 'var(--color-badge-generate-text)' },
+  'Thread ×2': { bg: 'var(--color-badge-generate-bg)', text: 'var(--color-badge-generate-text)' },
+  'Quote': { bg: 'var(--color-badge-generate-bg)', text: 'var(--color-badge-generate-text)' },
+  'Infographic': { bg: 'var(--color-badge-generate-bg)', text: 'var(--color-badge-generate-text)' },
+  'Image': { bg: 'var(--color-badge-generate-bg)', text: 'var(--color-badge-generate-text)' },
+  'Export': { bg: 'var(--color-badge-output-bg)', text: 'var(--color-badge-output-text)' },
 };
 
 /* Node count badges for template cards */
@@ -108,24 +118,35 @@ export default function EmptyCanvasOverlay() {
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
               <div style={{
-                width: 40, height: 40, borderRadius: 'var(--radius-lg)',
-                background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)',
+                width: 44, height: 44, borderRadius: 'var(--radius-full)',
+                background: TEMPLATE_ICON_BG[i],
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--color-text-tertiary)', flexShrink: 0,
+                fontSize: 20, flexShrink: 0, lineHeight: 1,
               }}>
-                <TemplateIcon idx={i} />
+                {TEMPLATE_ICONS[i]}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>{t.name}</div>
                 <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 2 }}>{t.description}</div>
-                <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
-                  {TEMPLATE_NODES[i].map(n => (
-                    <span key={n} style={{
-                      fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 500,
-                      color: 'var(--color-text-disabled)', background: 'var(--color-bg-surface)',
-                      borderRadius: 'var(--radius-sm)', padding: '2px 6px', letterSpacing: '.02em',
-                    }}>{n}</span>
-                  ))}
+                <div style={{ display: 'flex', gap: 5, marginTop: 10, flexWrap: 'wrap' }}>
+                  {TEMPLATE_NODES[i].map((n, j) => {
+                    const c = PILL_COLORS[n] || { bg: 'var(--color-bg-surface)', text: 'var(--color-text-disabled)' };
+                    return (
+                      <span key={n + j} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{
+                          fontSize: 11, fontFamily: 'var(--font-sans)', fontWeight: 500,
+                          color: c.text, background: c.bg,
+                          borderRadius: 'var(--radius-full)', padding: '3px 10px',
+                          lineHeight: '16px',
+                        }}>{n}</span>
+                        {j < TEMPLATE_NODES[i].length - 1 && (
+                          <svg width="8" height="8" viewBox="0 0 8 8" style={{ opacity: 0.25, flexShrink: 0 }}>
+                            <path d="M2 4h4M4.5 2.5L6 4l-1.5 1.5" fill="none" stroke="var(--color-text-disabled)" strokeWidth="1.2" strokeLinecap="round"/>
+                          </svg>
+                        )}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><path d="m9 18 6-6-6-6"/></svg>
