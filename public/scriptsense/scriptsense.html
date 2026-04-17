@@ -224,11 +224,25 @@ const MOCK_STORYTELLING = JSON.stringify({
   summary: { overallScore:61, topStrength:"Strong opening hook with a vivid statistic that captures attention.", topWeakness:"Relies too heavily on unverified statistics and absolute claims.", recommendation:"Replace the second statistic paragraph with a concrete before/after example." }
 });
 
+let _anthropicKey = '';
+window.addEventListener('message', e => { if (e.data?.type === 'set-api-key') _anthropicKey = e.data.key; });
+
 async function callClaude(prompt) {
-  // Return mock data instantly — no API key needed
-  await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
-  if (prompt.includes("audience engagement")) return MOCK_STORYTELLING;
-  return MOCK_INSIGHTS;
+  if (!_anthropicKey) {
+    // Fallback to mock if no key
+    await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
+    if (prompt.includes("audience engagement")) return MOCK_STORYTELLING;
+    return MOCK_INSIGHTS;
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': _anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
+  });
+  if (!res.ok) throw new Error('API error: ' + res.status);
+  const data = await res.json();
+  const text = data.content?.[0]?.text ?? '';
+  try { return JSON.parse(text); } catch { return text; }
 }
 
 /* ── shared components ── */

@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useSettingsStore } from '../../store/settingsStore';
 
 interface Props { initialText?: string }
 
 export default function ScriptSensePanel({ initialText }: Props) {
   const [iframeKey, setIframeKey] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const anthropicKey = useSettingsStore(s => s.anthropicKey);
 
   useEffect(() => {
     if (initialText) {
@@ -11,6 +14,13 @@ export default function ScriptSensePanel({ initialText }: Props) {
       setIframeKey((k) => k + 1);
     }
   }, [initialText]);
+
+  // Send API key to iframe on load
+  const handleLoad = () => {
+    if (iframeRef.current?.contentWindow && anthropicKey) {
+      iframeRef.current.contentWindow.postMessage({ type: 'set-api-key', key: anthropicKey }, '*');
+    }
+  };
 
   // Reload iframe when dark mode toggles
   useEffect(() => {
@@ -22,10 +32,12 @@ export default function ScriptSensePanel({ initialText }: Props) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)' }}>
       <iframe
+        ref={iframeRef}
         key={iframeKey}
         src="/scriptsense/scriptsense.html"
         className="flex-1 w-full border-none"
         title="ScriptSense"
+        onLoad={handleLoad}
       />
     </div>
   );

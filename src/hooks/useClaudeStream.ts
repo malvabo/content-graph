@@ -6,7 +6,7 @@ import { useSettingsStore } from '../store/settingsStore';
 export function useClaudeStream() {
   const stream = useCallback(
     async (nodeId: string, prompt: string, model = 'claude-sonnet-4', temperature = 0.7, signal?: AbortSignal) => {
-      const apiKey = useSettingsStore.getState().anthropicKey || import.meta.env.VITE_ANTHROPIC_API_KEY;
+      const apiKey = useSettingsStore.getState().anthropicKey;
 
       if (!apiKey) {
         useExecutionStore.getState().setError(nodeId, 'No API key — add one in Settings');
