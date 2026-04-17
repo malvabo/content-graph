@@ -35,37 +35,90 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
     resize();
     window.addEventListener('resize', resize);
 
+    // Particle system — 40 particles that drift as fog and pull to center
+    const FINAL_R = 60;
+    const particles = Array.from({ length: 40 }, () => ({
+      angle: Math.random() * Math.PI * 2,
+      dist: 80 + Math.random() * 200,
+      speed: 0.3 + Math.random() * 0.5,
+      size: 2 + Math.random() * 4,
+      hue: 140 + Math.random() * 30,
+      phase: Math.random() * Math.PI * 2,
+      homeDist: 80 + Math.random() * 200,
+    }));
+
     const draw = () => {
       const target = listening ? 1 : 0;
-      collapse += (target - collapse) * 0.03;
-      const amp = ampRef.current;
+      collapse += (target - collapse) * 0.06;
+      if (Math.abs(collapse - target) < 0.005) collapse = target;
       const rect = canvas.getBoundingClientRect();
       const w = rect.width, h = rect.height, cx = w / 2, cy = h / 2;
+      const c3 = collapse * collapse * collapse;
 
       ctx.fillStyle = BG.current;
       ctx.fillRect(0, 0, w, h);
 
-      /* Warm-toned blobs — no harsh dark edges */
-      const blobs = 4;
-      for (let i = 0; i < blobs; i++) {
-        const angle = tRef.current * 0.6 + i * (Math.PI * 2 / blobs);
-        const breathe = 1 + amp * 0.4;
-        const spreadR = (140 + Math.sin(tRef.current * 0.4 + i) * 50) * (1 - collapse * 0.88);
-        const x = cx + Math.cos(angle) * spreadR;
-        const y = cy + Math.sin(angle) * spreadR;
-        const size = (180 + Math.sin(tRef.current * 0.7 + i * 2) * 40) * (1 - collapse * 0.5) * breathe;
+      /* Fog blobs — fade out as collapse increases */
+      const fogAlpha = (1 - c3) * 0.25;
+      if (fogAlpha > 0.01) {
+        for (let i = 0; i < 5; i++) {
+          const angle = tRef.current * 0.8 + i * 1.3;
+          const spread = (160 + Math.sin(tRef.current * 0.5 + i) * 80) * (1 - c3);
+          const x = cx + Math.cos(angle) * spread * 0.7;
+          const y = cy + Math.sin(angle) * spread * 0.5;
+          const sz = (250 + Math.sin(tRef.current + i) * 60) * (1 - c3 * 0.85);
+          const grad = ctx.createRadialGradient(x, y, 0, x, y, Math.max(sz, 1));
+          const hue = 145 + i * 10;
+          grad.addColorStop(0, `hsla(${hue},55%,65%,${fogAlpha})`);
+          grad.addColorStop(0.6, `hsla(${hue + 15},45%,60%,${fogAlpha * 0.3})`);
+          grad.addColorStop(1, 'transparent');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+        }
+      }
 
-        const grad = ctx.createRadialGradient(x, y, 0, x, y, size);
-        /* Warm teal/sage palette that blends with #F2EFE9 */
-        const hue = 170 + i * 15;
-        const sat = 35 + collapse * 25;
-        const light = 72 - collapse * 12;
-        const alpha = 0.12 + collapse * 0.3;
-        grad.addColorStop(0, `hsla(${hue},${sat}%,${light}%,${alpha})`);
-        grad.addColorStop(0.6, `hsla(${hue + 10},${sat - 5}%,${light + 8}%,${alpha * 0.25})`);
+      /* Particles: drift in fog, pull to center */
+      for (const p of particles) {
+        p.angle += p.speed * 0.01;
+        const targetDist = FINAL_R * 0.6 + Math.sin(tRef.current * 2 + p.phase) * 8;
+        const d = p.homeDist * (1 - c3) + targetDist * c3;
+        const px = cx + Math.cos(p.angle + Math.sin(tRef.current * 0.3 + p.phase) * 0.5) * d;
+        const py = cy + Math.sin(p.angle + Math.cos(tRef.current * 0.4 + p.phase) * 0.5) * d * 0.7;
+        const sat = 50 + collapse * 40;
+        const light = 65 - collapse * 20;
+        const alpha = 0.15 + collapse * 0.6;
+        const sz = p.size * (1 - collapse * 0.5);
+        ctx.beginPath();
+        ctx.arc(px, py, Math.max(sz, 0.5), 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue},${sat}%,${light}%,${alpha})`;
+        ctx.fill();
+      }
+
+      /* Central glow — grows with collapse */
+      if (collapse > 0.1) {
+        const gp = Math.min(1, (collapse - 0.1) / 0.9);
+        const gp3 = gp * gp;
+        const outerR = 200 * (1 - gp3 * 0.7);
+        const innerR = FINAL_R * gp3;
+        const grad = ctx.createRadialGradient(cx, cy, innerR * 0.3, cx, cy, outerR);
+        const sat = 60 + gp3 * 30;
+        const light = 55 - gp3 * 15;
+        grad.addColorStop(0, `hsla(150,${sat}%,${light}%,${gp3 * 0.7})`);
+        grad.addColorStop(0.4, `hsla(155,${sat - 10}%,${light + 10}%,${gp3 * 0.35})`);
         grad.addColorStop(1, 'transparent');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
+      }
+
+      /* Hard circle stroke when fully collapsed */
+      if (collapse > 0.5) {
+        const strokeAlpha = (collapse - 0.5) * 2;
+        const breathe = 1 + ampRef.current * 0.15;
+        ctx.beginPath();
+        ctx.arc(cx, cy, FINAL_R * breathe, 0, Math.PI * 2);
+        ctx.strokeStyle = `hsla(150,70%,45%,${strokeAlpha * 0.6})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
       }
 
       tRef.current += 0.012;
