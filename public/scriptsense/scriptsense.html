@@ -611,70 +611,44 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
   const fmt = (ts) => new Date(ts).toLocaleDateString("en-US", { month:"short", day:"numeric" });
   const getTitle = (text) => {
     const s = text.trim().split(/[.\n!?]/)[0].trim();
-    return s.length > 52 ? s.slice(0, 52) + "…" : s || "Untitled";
+    return s.length > 60 ? s.slice(0, 60) + "…" : s || "Untitled";
   };
-  const getSnippet = (text) => text.trim().slice(0, 100).replace(/\n/g, " ") + "…";
 
   return (
     <>
       <style>{FONT_STYLE}</style>
       <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.pageBg, color:C.text }}>
-        {/* Top bar */}
-        <div style={{ background:C.white, borderBottom:`1px solid ${C.border}`, padding:"0 32px", height:52, display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:26, height:26, background:C.text, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <FileText size={12} color="#fff" />
-            </div>
-            <span style={{ fontWeight:700, fontSize:14, letterSpacing:"-0.02em" }}>ContentGraph</span>
+        <div style={{ flex:1, maxWidth:600, width:"100%", margin:"0 auto", padding:"32px 24px" }}>
+          {/* Header */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:24 }}>
+            <h1 style={{ fontSize:16, fontWeight:600, margin:0 }}>Talks</h1>
+            <button onClick={onNew} style={{ background:C.accent, color:"#fff", border:"none", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer" }}>+ New</button>
           </div>
-          <button onClick={onNew} style={{ background:C.white, color:C.text, border:`1px solid ${C.border2}`, borderRadius:8, padding:"7px 16px", fontSize:12, fontWeight:600, cursor:"pointer" }}>
-            + New talk
-          </button>
-        </div>
 
-        {/* Content */}
-        <div style={{ flex:1, display:"flex", flexDirection:"column", maxWidth:760, width:"100%", margin:"0 auto", padding:"16px 24px" }}>
           {drafts.length === 0 ? (
-            /* Empty state — centred in remaining viewport */
-            <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
-              <div style={{ width:52, height:52, borderRadius:14, background:C.surface, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", border:"1px dashed "+C.border2 }}>
-                <FileText size={22} color={C.mute} />
-              </div>
-              <p style={{ fontSize:15, fontWeight:600, marginBottom:6 }}>No talks yet</p>
-              <p style={{ fontSize:13, color:C.sub, marginBottom:24 }}>Create your first talk to get started</p>
-              <button onClick={onNew} style={{ background:C.text, color:C.white, border:"none", borderRadius:8, padding:"9px 20px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
-                + New talk
-              </button>
+            <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", paddingTop:80 }}>
+              <FileText size={20} color={C.mute} style={{ marginBottom:12 }} />
+              <p style={{ fontSize:14, fontWeight:500, marginBottom:4 }}>No talks yet</p>
+              <p style={{ fontSize:12, color:C.sub }}>Click "+ New" to get started</p>
             </div>
           ) : (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:12 }}>
-              {/* New talk card */}
-              <div className="new-card" onClick={onNew} style={{ background:C.white, border:`1px dashed ${C.border2}`, borderRadius:12, padding:"16px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8, minHeight:140 }}>
-                <div style={{ width:32, height:32, borderRadius:8, background:C.surface, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <span style={{ fontSize:18, lineHeight:1, color:C.mute, fontWeight:300 }}>+</span>
-                </div>
-                <span style={{ fontSize:13, fontWeight:500, color:C.mute }}>New talk</span>
-              </div>
-
-              {/* Draft cards */}
-              {drafts.map(draft => (
-                <div key={draft.id} className="draft-card" onClick={() => onOpen(draft)}
-                  style={{ background:C.white, borderRadius:12, padding:"16px", border:"1px solid "+C.border, display:"flex", flexDirection:"column", gap:10, minHeight:140 }}>
-                  <div style={{ flex:1 }}>
-                    <p style={{ fontSize:14, fontWeight:500, color:C.text, lineHeight:1.4, marginBottom:6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
-                      {getTitle(draft.text)}
-                    </p>
-                    <p style={{ fontSize:12, color:C.mute, lineHeight:1.6, display:"-webkit-box", WebkitLineClamp:3, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
-                      {getSnippet(draft.text)}
-                    </p>
-                  </div>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:12, color:C.mute }}>{draft.wordCount} words · {fmt(draft.updatedAt)}</span>
-                    <button onClick={(e) => { e.stopPropagation(); onDelete(draft.id); }}
-                      style={{ background:"transparent", border:"none", cursor:"pointer", padding:"4px", borderRadius:6, color:C.mute, display:"flex", alignItems:"center" }}>
-                      <X size={13} />
-                    </button>
-                  </div>
+            <div style={{ background:C.white, borderRadius:10, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+              {drafts.map((draft, i) => (
+                <div key={draft.id} onClick={() => onOpen(draft)}
+                  className="draft-card"
+                  style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", cursor:"pointer", borderBottom: i < drafts.length - 1 ? `1px solid ${C.border}` : "none", transition:"background 100ms" }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.surface}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <FileText size={14} color={C.mute} style={{ flexShrink:0 }} />
+                  <span style={{ flex:1, fontSize:13, fontWeight:500, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{getTitle(draft.text)}</span>
+                  <span style={{ fontSize:11, color:C.mute, whiteSpace:"nowrap", flexShrink:0 }}>{draft.wordCount}w</span>
+                  <span style={{ fontSize:11, color:C.mute, whiteSpace:"nowrap", flexShrink:0 }}>{fmt(draft.updatedAt)}</span>
+                  <button onClick={(e) => { e.stopPropagation(); onDelete(draft.id); }}
+                    className="close-btn" style={{ flexShrink:0, opacity:0.4 }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                    onMouseLeave={e => e.currentTarget.style.opacity = "0.4"}>
+                    <X size={12} />
+                  </button>
                 </div>
               ))}
             </div>
