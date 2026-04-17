@@ -49,7 +49,7 @@ export const useSettingsStore = create<SettingsState>()(
       setOpenaiKey: (key) => set({ openaiKey: key }),
       setGoogleKey: (key) => set({ googleKey: key }),
       setGroqKey: (key) => set({ groqKey: key }),
-      setBrand: (partial) => set((s) => {
+      setBrand: (partial) => set((s: any) => {
         const b = s.brand || EMPTY_BRAND;
         return { brand: { ...b, ...partial, colors: { ...b.colors, ...(partial.colors || {}) }, voice: { ...b.voice, ...(partial.voice || {}) } } };
       }),

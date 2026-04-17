@@ -42,7 +42,6 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   const addNode = useGraphStore((s) => s.addNode);
-  const nodes = useGraphStore((s) => s.nodes);
   const [activeView, setActiveView] = useState('workflow');
   const [voiceTranscript] = useState('');
   useKeyboardShortcuts();

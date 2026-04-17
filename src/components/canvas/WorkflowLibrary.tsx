@@ -14,11 +14,11 @@ function MiniGraph({ nodes, edges }: { nodes: ContentNode[]; edges: Edge[] }) {
   const uniq = [...new Set(cats)];
   const total = Math.min(nodes.length, 6);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 3, height: 16 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', height: 16 }}>
       {Array.from({ length: total }).map((_, i) => {
         const cat = cats[i] || uniq[0];
         const c = BADGE_COLORS[cat];
-        return <div key={i} style={{ width: 6, height: 6, borderRadius: 2, background: c.text, opacity: 0.6 }} />;
+        return <div key={i} style={{ width: 6, height: 6, borderRadius: 'var(--radius-sm)', background: c.text, opacity: 0.6 }} />;
       })}
       {edges.length > 0 && (
         <svg width="12" height="8" viewBox="0 0 12 8" style={{ marginLeft: 2, opacity: 0.3 }}>
@@ -35,14 +35,14 @@ function NodeBreakdown({ nodes }: { nodes: ContentNode[] }) {
   const counts: Partial<Record<NodeCategory, number>> = {};
   nodes.forEach(n => { const c = n.data.category; counts[c] = (counts[c] || 0) + 1; });
   return (
-    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
       {(Object.entries(counts) as [NodeCategory, number][]).map(([cat, count]) => {
         const c = BADGE_COLORS[cat];
         return (
           <span key={cat} style={{
-            fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)',
-            padding: '2px 8px', borderRadius: 'var(--radius-full)',
-            background: c.bg, color: c.text, lineHeight: '18px',
+            fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)',
+            padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-full)',
+            background: c.bg, color: c.text, lineHeight: 'var(--leading-fixed)',
           }}>{count} {CATEGORY_LABELS[cat]}</span>
         );
       })}
@@ -119,11 +119,11 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
       <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
         {/* Header row — compact, full-width */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <h1 style={{ fontWeight: 600, fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
+            <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
             {items.length > 0 && (
-              <span style={{ fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>
                 {items.length}
               </span>
             )}
@@ -162,11 +162,11 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         ) : (
           /* Card grid */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
             {items.map(item => (
               <button key={item.id} onClick={() => handleLoad(item)}
                 style={{
-                  textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: '20px',
+                  textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
                   background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                   fontFamily: 'var(--font-sans)', cursor: 'pointer', outline: 'none',
                   transition: 'border-color .15s, box-shadow .15s',

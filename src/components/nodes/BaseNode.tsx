@@ -3,7 +3,7 @@ import { useRef, useState, useEffect, memo } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import ContentModal from '../modals/ContentModal';
-import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, IMAGE_MODEL_OPTIONS, IMAGE_RESOLUTION_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
+import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
 import { aiExecute } from '../../utils/aiExecutor';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import type { ContentNode } from '../../store/graphStore';
@@ -99,8 +99,7 @@ const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string,
     <MiniSelect value={c.purpose as string ?? 'Blog hero'} options={['Blog hero', 'LinkedIn post', 'Newsletter header', 'Instagram slide', 'Social concept']} onChange={v => { s('purpose', v); if (PURPOSE_RATIO[v]) s('aspect', PURPOSE_RATIO[v]); }} />
     <MiniSelect value={c.style as string ?? 'Photography'} options={['Photography', 'Flat illustration', '3D render', 'Abstract', 'Editorial graphic']} onChange={v => s('style', v)} />
     <MiniSelect value={c.aspect as string ?? '16:9'} options={['1:1', '4:5', '16:9', '9:16', '1.91:1']} onChange={v => s('aspect', v)} />
-    <MiniSelect value={c.imageModel as string ?? 'FLUX.1 schnell'} options={IMAGE_MODEL_OPTIONS} onChange={v => s('imageModel', v)} />
-    <MiniSelect value={c.resolution as string ?? '1024x1024'} options={IMAGE_RESOLUTION_OPTIONS} onChange={v => s('resolution', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['image-prompt']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'brand-voice': (c, s) => <>
     <MiniSelect value={c.strength as string ?? 'Full rewrite'} options={['Light touch', 'Moderate', 'Full rewrite']} onChange={v => s('strength', v)} />
