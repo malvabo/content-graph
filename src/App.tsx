@@ -6,23 +6,11 @@ import IconNav from './components/canvas/IconNav';
 import VoicePanel from './components/canvas/VoicePanel';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import { useGraphStore, type ContentNode } from './store/graphStore';
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
 import type { NodeDef } from './utils/nodeDefs';
 import MobileWorkflow from './components/canvas/MobileWorkflow';
-
-function useIsMobile() {
-  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
-    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
-    setMobile(mq.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-  return mobile;
-}
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; btnHover: boolean }> {
   state = { error: null as Error | null, btnHover: false };
@@ -52,7 +40,6 @@ function AppInner() {
   const nodes = useGraphStore((s) => s.nodes);
   const [activeView, setActiveView] = useState('workflow');
   const [voiceTranscript, setVoiceTranscript] = useState('');
-  const mobile = useIsMobile();
   useKeyboardShortcuts();
 
   const handleTranscript = useCallback((text: string) => {
@@ -83,16 +70,17 @@ function AppInner() {
         )}
 
         {activeView === 'workflow' && (
-          mobile ? (
-            <MobileWorkflow onBackToLibrary={() => setActiveView('library')} />
-          ) : (
-            <div className="flex-1 relative">
+          <>
+            <div className="hidden md:flex flex-1 relative">
               <CanvasToolbar onBackToLibrary={() => setActiveView('library')} />
               <EmptyCanvasOverlay />
               <GraphCanvas />
               {nodes.length > 0 && <NodePalette onAddNode={handleAddNode} />}
             </div>
-          )
+            <div className="flex md:hidden flex-1">
+              <MobileWorkflow onBackToLibrary={() => setActiveView('library')} />
+            </div>
+          </>
         )}
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}

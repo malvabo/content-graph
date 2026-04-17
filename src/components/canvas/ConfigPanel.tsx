@@ -7,6 +7,8 @@ import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import { mockExecute } from '../../utils/mockExecutor';
 
+import { FormInput, FormTextarea } from '../ui/FormField';
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="flex flex-col gap-1"><label className="text-field-label">{label}</label>{children}</div>;
 }
@@ -95,7 +97,7 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
   'twitter-single': (c, s) => <Field label="Angle"><Select value={c.angle as string ?? 'Most quotable insight'} onChange={(v) => s('angle', v)} options={['Most quotable insight', 'Strongest stat', 'Contrarian take', 'Call to action']} /></Field>,
   'newsletter': (c, s) => <>
     <Field label="Section type"><Select value={c.type as string ?? 'Full issue'} onChange={(v) => s('type', v)} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} /></Field>
-    <Field label="Audience"><input className="form-input" value={c.audience as string ?? ''} onChange={(e) => s('audience', e.target.value)} placeholder="e.g. B2B SaaS founders" /></Field>
+    <FormInput label="Audience" value={c.audience as string ?? ''} onChange={(e) => s('audience', e.target.value)} placeholder="e.g. B2B SaaS founders" />
     <Field label="Word count"><NumberInput value={c.words as number ?? 350} onChange={(v) => s('words', v)} min={100} max={1000} /></Field>
   </>,
   'infographic': (c, s) => <>
@@ -123,7 +125,7 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
         })}
       </div>
     </Field>
-    <Field label="File prefix"><input className="form-input" value={c.prefix as string ?? 'content-export'} onChange={(e) => s('prefix', e.target.value)} /></Field>
+    <FormInput label="File prefix" value={c.prefix as string ?? 'content-export'} onChange={(e) => s('prefix', e.target.value)} />
     <Toggle value={!!c.metadata} onChange={(v) => s('metadata', v)} label="Include metadata" />
   </>,
 };
