@@ -116,6 +116,12 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
     system += `\n\nFor this specific piece, adjust the tone to be more ${tone} while staying within the brand voice.`;
   }
 
+  // Enrich brand-voice with strength config
+  if (subtype === 'brand-voice') {
+    const strength = config.strength as string || 'Full rewrite';
+    system += `\n\nRewrite strength: "${strength}". Light touch = preserve most original phrasing, just adjust tone. Moderate = rewrite ~50% of sentences. Full rewrite = completely transform while keeping the message.`;
+  }
+
   // Enrich image-prompt with node config
   if (subtype === 'image-prompt') {
     const purpose = config.purpose as string || 'Blog hero';

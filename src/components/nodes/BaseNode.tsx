@@ -14,6 +14,7 @@ import { ExportInline } from './OutputNodes';
 import { ImagePromptInline } from './ImagePromptNode';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import { useGraphStore } from '../../store/graphStore';
+import { useSettingsStore } from '../../store/settingsStore';
 
 import { PURPOSE_RATIO } from '../../utils/imageDims';
 
@@ -188,6 +189,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const hiSource = isDragSource || selected || connectionState === 'compatible';
 
   const [glowIntensity, setGlowIntensity] = useState(0);
+  const brandActive = useSettingsStore(s => !!s.brand?.voice?.personality);
+  const brandColor = useSettingsStore(s => s.brand?.colors?.primary || '#0DBF5A');
   useEffect(() => {
     if (!isRunning) { setGlowIntensity(0); return; }
     let raf: number;
@@ -247,8 +250,13 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
-        <div className="shrink-0 w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ backgroundColor: colors.bg, color: colors.text }}>
-          {NODE_ICONS[data.subtype]?.() ?? data.badge}
+        <div style={{ position: 'relative' }} className="shrink-0">
+          <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ backgroundColor: colors.bg, color: colors.text }}>
+            {NODE_ICONS[data.subtype]?.() ?? data.badge}
+          </div>
+          {brandActive && (data.category === 'generate' || data.subtype === 'brand-voice') && (
+            <div style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: brandColor, border: '1.5px solid var(--color-bg-card)' }} title={`Brand voice active`} />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', color: 'var(--color-text-primary)' }} className="truncate">{data.label}</div>
@@ -279,6 +287,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         {data.subtype === 'refine' && <RefineInline id={id} />}
         {(data.subtype === 'image-prompt' || data.subtype === 'video') && <ImagePromptInline id={id} />}
         {data.subtype === 'export' && <ExportInline id={id} />}
+        {data.subtype === 'brand-voice' && <GenerateNodeInline id={id} subtype={data.subtype} expandOpen={expandOpen} onExpand={() => setExpandOpen(true)} onExpandClose={() => setExpandOpen(false)} />}
         {data.category === 'generate' && !['image-prompt', 'video'].includes(data.subtype) && (
           <GenerateNodeInline id={id} subtype={data.subtype} expandOpen={expandOpen} onExpand={() => setExpandOpen(true)} onExpandClose={() => setExpandOpen(false)} />
         )}

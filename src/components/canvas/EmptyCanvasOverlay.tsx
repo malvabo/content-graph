@@ -15,92 +15,98 @@ function makeSourceNode(content: string): ContentNode {
   };
 }
 
-/* ── Schematic SVG preview for each template ── */
+/* ── Schematic SVG preview ── */
 function SchematicPreview({ idx }: { idx: number }) {
-  const accent = 'var(--color-accent)';
   const card = 'var(--color-bg-card)';
   const border = 'var(--color-border-default)';
-  const ns = { rx: 4, fill: card, stroke: border, strokeWidth: 1 };
-  const ts = { fontSize: 6, fontFamily: 'var(--font-sans)', fill: 'var(--color-text-tertiary)', fontWeight: 500 };
-  const es = { fill: 'none', stroke: accent, strokeWidth: 1, opacity: 0.5 };
+  const accent = 'var(--color-accent)';
+  const ns = { rx: 6, fill: card, stroke: border, strokeWidth: 1 };
+  const ts: React.SVGAttributes<SVGTextElement> = { fontSize: 7, fontFamily: 'var(--font-sans)', fill: 'var(--color-text-tertiary)', fontWeight: 500, textAnchor: 'middle' as const };
+  const es = { fill: 'none', stroke: accent, strokeWidth: 1.2, opacity: 0.4 };
+  const dot = (cx: number, cy: number) => <circle cx={cx} cy={cy} r="2.5" fill={accent} opacity="0.5" />;
 
   if (idx === 0) return (
-    <svg viewBox="0 0 240 140" style={{ width: '100%', height: '100%' }}>
-      <rect x="10" y="50" width="56" height="40" {...ns} /><text x="38" y="73" textAnchor="middle" {...ts}>Text</text>
-      <rect x="92" y="14" width="56" height="32" {...ns} /><text x="120" y="33" textAnchor="middle" {...ts}>LinkedIn</text>
-      <rect x="92" y="54" width="56" height="32" {...ns} /><text x="120" y="73" textAnchor="middle" {...ts}>Newsletter</text>
-      <rect x="92" y="94" width="56" height="32" {...ns} /><text x="120" y="113" textAnchor="middle" {...ts}>Thread</text>
-      <rect x="174" y="50" width="56" height="40" {...ns} /><text x="202" y="73" textAnchor="middle" {...ts}>Export</text>
-      <path d={`M66 65 L92 30`} {...es} /><path d={`M66 70 L92 70`} {...es} /><path d={`M66 75 L92 110`} {...es} />
-      <path d={`M148 30 L174 65`} {...es} /><path d={`M148 70 L174 70`} {...es} /><path d={`M148 110 L174 75`} {...es} />
+    <svg viewBox="0 0 260 140" style={{ width: '100%', height: '100%' }}>
+      <rect x="10" y="50" width="60" height="40" {...ns} /><text x="40" y="74" {...ts}>Text</text>
+      <rect x="100" y="10" width="60" height="34" {...ns} /><text x="130" y="31" {...ts}>LinkedIn</text>
+      <rect x="100" y="53" width="60" height="34" {...ns} /><text x="130" y="74" {...ts}>Newsletter</text>
+      <rect x="100" y="96" width="60" height="34" {...ns} /><text x="130" y="117" {...ts}>Thread</text>
+      <rect x="190" y="50" width="60" height="40" {...ns} /><text x="220" y="74" {...ts}>Export</text>
+      <path d="M70 65 Q85 27 100 27" {...es} /><path d="M70 70 L100 70" {...es} /><path d="M70 75 Q85 113 100 113" {...es} />
+      <path d="M160 27 Q175 65 190 65" {...es} /><path d="M160 70 L190 70" {...es} /><path d="M160 113 Q175 75 190 75" {...es} />
+      {dot(70, 70)}{dot(100, 27)}{dot(100, 70)}{dot(100, 113)}{dot(160, 27)}{dot(160, 70)}{dot(160, 113)}{dot(190, 70)}
     </svg>
   );
   if (idx === 1) return (
-    <svg viewBox="0 0 240 140" style={{ width: '100%', height: '100%' }}>
-      <rect x="10" y="50" width="56" height="40" {...ns} /><text x="38" y="73" textAnchor="middle" {...ts}>Text</text>
-      <rect x="92" y="14" width="56" height="32" {...ns} /><text x="120" y="33" textAnchor="middle" {...ts}>Quote</text>
-      <rect x="92" y="54" width="56" height="32" {...ns} /><text x="120" y="73" textAnchor="middle" {...ts}>Thread</text>
-      <rect x="92" y="94" width="56" height="32" {...ns} /><text x="120" y="113" textAnchor="middle" {...ts}>LinkedIn</text>
-      <rect x="174" y="50" width="56" height="40" {...ns} /><text x="202" y="73" textAnchor="middle" {...ts}>Export</text>
-      <path d={`M66 65 L92 30`} {...es} /><path d={`M66 70 L92 70`} {...es} /><path d={`M66 75 L92 110`} {...es} />
-      <path d={`M148 30 L174 65`} {...es} />
+    <svg viewBox="0 0 260 140" style={{ width: '100%', height: '100%' }}>
+      <rect x="10" y="50" width="60" height="40" {...ns} /><text x="40" y="74" {...ts}>Text</text>
+      <rect x="100" y="10" width="60" height="34" {...ns} /><text x="130" y="31" {...ts}>Quote</text>
+      <rect x="100" y="53" width="60" height="34" {...ns} /><text x="130" y="74" {...ts}>Thread</text>
+      <rect x="100" y="96" width="60" height="34" {...ns} /><text x="130" y="117" {...ts}>LinkedIn</text>
+      <rect x="190" y="50" width="60" height="40" {...ns} /><text x="220" y="74" {...ts}>Export</text>
+      <path d="M70 65 Q85 27 100 27" {...es} /><path d="M70 70 L100 70" {...es} /><path d="M70 75 Q85 113 100 113" {...es} />
+      <path d="M160 27 Q175 65 190 65" {...es} />
+      {dot(70, 70)}{dot(100, 27)}{dot(100, 70)}{dot(100, 113)}{dot(160, 27)}{dot(190, 65)}
     </svg>
   );
   return (
-    <svg viewBox="0 0 240 140" style={{ width: '100%', height: '100%' }}>
-      <rect x="10" y="50" width="56" height="40" {...ns} /><text x="38" y="73" textAnchor="middle" {...ts}>Text</text>
-      <rect x="92" y="30" width="56" height="32" {...ns} /><text x="120" y="49" textAnchor="middle" {...ts}>Infographic</text>
-      <rect x="92" y="78" width="56" height="32" {...ns} /><text x="120" y="97" textAnchor="middle" {...ts}>Image</text>
-      <rect x="174" y="50" width="56" height="40" {...ns} /><text x="202" y="73" textAnchor="middle" {...ts}>Export</text>
-      <path d={`M66 65 L92 46`} {...es} /><path d={`M66 75 L92 94`} {...es} />
-      <path d={`M148 46 L174 65`} {...es} />
+    <svg viewBox="0 0 260 140" style={{ width: '100%', height: '100%' }}>
+      <rect x="10" y="50" width="60" height="40" {...ns} /><text x="40" y="74" {...ts}>Text</text>
+      <rect x="100" y="28" width="60" height="34" {...ns} /><text x="130" y="49" {...ts}>Infographic</text>
+      <rect x="100" y="78" width="60" height="34" {...ns} /><text x="130" y="99" {...ts}>Image</text>
+      <rect x="190" y="50" width="60" height="40" {...ns} /><text x="220" y="74" {...ts}>Export</text>
+      <path d="M70 65 Q85 45 100 45" {...es} /><path d="M70 75 Q85 95 100 95" {...es} />
+      <path d="M160 45 Q175 65 190 65" {...es} />
+      {dot(70, 70)}{dot(100, 45)}{dot(100, 95)}{dot(160, 45)}{dot(190, 65)}
     </svg>
   );
 }
 
-/* ── Hero banner SVG — abstract node graph ── */
+/* ── Hero banner ── */
 function HeroBanner({ onNew }: { onNew: () => void }) {
   return (
     <div style={{
       position: 'relative', width: '100%', borderRadius: 'var(--radius-xl)',
       background: 'linear-gradient(135deg, var(--color-bg-dark) 0%, #2a3028 100%)',
-      overflow: 'hidden', marginBottom: 24,
+      overflow: 'hidden',
     }}>
-      {/* Decorative nodes */}
-      <svg viewBox="0 0 800 200" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.15 }}>
-        <rect x="420" y="30" width="100" height="60" rx="8" fill="none" stroke="#fff" strokeWidth="1" />
-        <rect x="560" y="10" width="90" height="50" rx="8" fill="none" stroke="#fff" strokeWidth="1" />
-        <rect x="560" y="80" width="90" height="50" rx="8" fill="none" stroke="#fff" strokeWidth="1" />
-        <rect x="690" y="40" width="90" height="60" rx="8" fill="none" stroke="#fff" strokeWidth="1" />
-        <path d="M520 60 L560 35" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.6" />
-        <path d="M520 60 L560 105" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.6" />
-        <path d="M650 35 L690 65" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.4" />
-        <path d="M650 105 L690 75" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.4" />
-        <circle cx="520" cy="60" r="3" fill="var(--color-accent)" opacity="0.5" />
-        <circle cx="560" cy="35" r="3" fill="var(--color-accent)" opacity="0.5" />
-        <circle cx="560" cy="105" r="3" fill="var(--color-accent)" opacity="0.5" />
-        <circle cx="650" cy="35" r="3" fill="var(--color-accent)" opacity="0.3" />
-        <circle cx="650" cy="105" r="3" fill="var(--color-accent)" opacity="0.3" />
+      {/* Decorative graph */}
+      <svg viewBox="0 0 800 200" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.12 }}>
+        <rect x="400" y="35" width="110" height="55" rx="10" fill="none" stroke="#fff" strokeWidth="1" />
+        <rect x="550" y="15" width="95" height="45" rx="10" fill="none" stroke="#fff" strokeWidth="1" />
+        <rect x="550" y="85" width="95" height="45" rx="10" fill="none" stroke="#fff" strokeWidth="1" />
+        <rect x="690" y="45" width="95" height="55" rx="10" fill="none" stroke="#fff" strokeWidth="1" />
+        <path d="M510 62 Q530 37 550 37" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.5" />
+        <path d="M510 62 Q530 107 550 107" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.5" />
+        <path d="M645 37 Q667 72 690 72" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.35" />
+        <path d="M645 107 Q667 72 690 72" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.35" />
+        <circle cx="510" cy="62" r="3.5" fill="var(--color-accent)" opacity="0.5" />
+        <circle cx="550" cy="37" r="3.5" fill="var(--color-accent)" opacity="0.4" />
+        <circle cx="550" cy="107" r="3.5" fill="var(--color-accent)" opacity="0.4" />
+        <circle cx="645" cy="37" r="3" fill="var(--color-accent)" opacity="0.3" />
+        <circle cx="645" cy="107" r="3" fill="var(--color-accent)" opacity="0.3" />
+        <circle cx="690" cy="72" r="3" fill="var(--color-accent)" opacity="0.3" />
       </svg>
 
-      <div style={{ position: 'relative', padding: '40px 32px 36px' }}>
+      <div style={{ position: 'relative', padding: 'var(--space-8) var(--space-6) var(--space-8)' }}>
         <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 600, color: '#fff', margin: 0, letterSpacing: '-.02em' }}>
           Content Graph
         </h1>
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'rgba(255,255,255,0.55)', margin: '6px 0 20px', maxWidth: 340, lineHeight: 1.5 }}>
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'rgba(255,255,255,0.5)', margin: 'var(--space-2) 0 var(--space-5)', maxWidth: 360, lineHeight: 1.5 }}>
           Connect nodes to repurpose any content into LinkedIn posts, threads, newsletters, and more.
         </p>
         <button onClick={onNew}
           style={{
             fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500,
-            color: 'var(--color-text-primary)', background: '#fff',
+            color: 'var(--color-bg-dark)', background: 'var(--color-bg-card)',
             border: 'none', borderRadius: 'var(--radius-full)',
-            padding: '8px 20px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: 'var(--space-2) var(--space-5)', cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
             transition: 'opacity 150ms',
           }}
           onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
           onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}>
-          New Workflow <span style={{ fontSize: 16 }}>→</span>
+          New Workflow →
         </button>
       </div>
     </div>
@@ -118,7 +124,6 @@ export default function EmptyCanvasOverlay() {
 
   useEffect(() => { if (pasting) setTimeout(() => taRef.current?.focus(), 100); }, [pasting]);
 
-  // Wait for store rehydration, then check if graph is empty
   if (!hydrated || nodes.length > 0 || dismissed) return null;
 
   const handleGo = () => {
@@ -147,30 +152,30 @@ export default function EmptyCanvasOverlay() {
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--color-bg)', overflow: 'auto' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 24px 48px' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: 'var(--space-6) var(--space-6) var(--space-8)' }}>
 
-        {/* Hero banner */}
-        <HeroBanner onNew={handleNew} />
+        {/* Hero */}
+        <div style={{ marginBottom: 'var(--space-6)' }}>
+          <HeroBanner onNew={handleNew} />
+        </div>
 
-        {/* Section label */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Start from a template
-          </span>
+        {/* Section header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+          <span className="text-label">Start from a template</span>
           <button onClick={() => setPasting(!pasting)}
             style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-accent-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
             {pasting ? '← Back' : 'Paste content instead'}
           </button>
         </div>
 
-        {/* Paste area (collapsible) */}
+        {/* Paste area */}
         {pasting && (
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom: 'var(--space-5)' }}>
             <textarea ref={taRef} value={text} onChange={e => setText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGo(); }}
               placeholder="Paste an article, transcript, or notes…"
               className="form-textarea"
-              style={{ minHeight: 120, borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', background: 'var(--color-bg-card)', marginBottom: 8 }} />
+              style={{ minHeight: 120, borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', background: 'var(--color-bg-card)', marginBottom: 'var(--space-2)' }} />
             <div style={{ textAlign: 'right' }}>
               <button onClick={handleGo} disabled={!text.trim()} className="btn btn-primary" style={{ opacity: text.trim() ? 1 : 0.4 }}>
                 Create graph →
@@ -180,8 +185,8 @@ export default function EmptyCanvasOverlay() {
         )}
 
         {/* Template grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 12 }}>
-          {/* Empty workflow card */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
+          {/* Empty workflow */}
           <button onClick={handleNew}
             style={{
               textAlign: 'left', cursor: 'pointer',
@@ -191,10 +196,7 @@ export default function EmptyCanvasOverlay() {
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
-            <div style={{
-              height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--color-bg-surface)',
-            }}>
+            <div style={{ height: 148, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-surface)' }}>
               <div style={{
                 width: 44, height: 44, borderRadius: 'var(--radius-full)',
                 background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
@@ -203,12 +205,13 @@ export default function EmptyCanvasOverlay() {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
               </div>
             </div>
-            <div style={{ padding: '12px 16px' }}>
+            <div style={{ padding: 'var(--space-3) var(--space-4)' }}>
               <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>Empty Workflow</div>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-1)' }}>Start from scratch</div>
             </div>
           </button>
 
-          {/* Template cards */}
+          {/* Templates */}
           {TEMPLATES.map((t, i) => (
             <button key={t.name} onClick={() => loadTemplate(i)}
               style={{
@@ -219,14 +222,12 @@ export default function EmptyCanvasOverlay() {
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
-              {/* Schematic preview */}
-              <div style={{ height: 140, background: 'var(--color-bg-surface)', padding: '8px 12px', display: 'flex', alignItems: 'center' }}>
+              <div style={{ height: 148, background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', alignItems: 'center' }}>
                 <SchematicPreview idx={i} />
               </div>
-              {/* Label */}
-              <div style={{ padding: '12px 16px' }}>
+              <div style={{ padding: 'var(--space-3) var(--space-4)' }}>
                 <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>{t.name}</div>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 2 }}>{t.description}</div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-1)' }}>{t.description}</div>
               </div>
             </button>
           ))}
