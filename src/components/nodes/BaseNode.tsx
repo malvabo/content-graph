@@ -129,6 +129,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const colors = BADGE_COLORS[data.category];
   const isError = status === 'error';
   const isStale = status === 'stale';
+  const isRunning = status === 'running';
 
   const isOtherSelected = selectedId !== null && selectedId !== id;
 
@@ -184,6 +185,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className={isRunning ? 'node-running' : undefined}
       style={{
         width: 'var(--size-node)',
         maxWidth: 'var(--size-node)',
