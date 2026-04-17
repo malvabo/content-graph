@@ -102,7 +102,7 @@ function AppInner() {
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
-        {activeView === 'voice' && <VoiceLibrary />}
+        {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} />}
 
         {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
 

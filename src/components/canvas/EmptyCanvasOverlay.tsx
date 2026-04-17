@@ -95,17 +95,8 @@ function HeroBanner({ onNew }: { onNew: () => void }) {
         <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'rgba(255,255,255,0.5)', margin: 'var(--space-2) 0 var(--space-5)', maxWidth: 360, lineHeight: 1.5 }}>
           Connect nodes to repurpose any content into LinkedIn posts, threads, newsletters, and more.
         </p>
-        <button onClick={onNew}
-          style={{
-            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500,
-            color: 'var(--color-bg-dark)', background: 'var(--color-bg-card)',
-            border: 'none', borderRadius: 'var(--radius-full)',
-            padding: 'var(--space-2) var(--space-5)', cursor: 'pointer',
-            display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
-            transition: 'opacity 150ms',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
-          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}>
+        <button onClick={onNew} className="btn btn-primary"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
           New Workflow →
         </button>
       </div>
@@ -154,7 +145,7 @@ export default function EmptyCanvasOverlay() {
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--color-bg)', overflow: 'auto' }}>
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: 'var(--space-6) var(--space-6) var(--space-8)' }}>
+      <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: 'var(--space-6) var(--space-8) var(--space-8)' }}>
 
         {/* Hero */}
         <div style={{ marginBottom: 'var(--space-6)' }}>

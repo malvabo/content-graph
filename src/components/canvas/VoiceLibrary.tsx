@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useVoiceStore } from '../../store/voiceStore';
+import { useGraphStore, type ContentNode } from '../../store/graphStore';
+import { useOutputStore } from '../../store/outputStore';
 
 /* Icons */
 const MicIcon = () => (
