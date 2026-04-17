@@ -154,7 +154,7 @@ export default function EmptyCanvasOverlay() {
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--color-bg)', overflow: 'auto' }}>
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: 'var(--space-6) var(--space-6) var(--space-8)' }}>
+      <div style={{ maxWidth: 680, padding: 'var(--space-6) var(--space-8) var(--space-8)' }}>
 
         {/* Hero */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
@@ -187,7 +187,7 @@ export default function EmptyCanvasOverlay() {
         )}
 
         {/* Template grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
           {/* Empty workflow */}
           <button onClick={handleNew}
             style={{
