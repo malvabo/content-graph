@@ -15,28 +15,31 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()((set) => ({
   user: null,
   session: null,
-  loading: true,
+  loading: false,
 
   init: async () => {
+    if (!supabase) { set({ loading: false }); return; }
     const { data } = await supabase.auth.getSession();
     set({ session: data.session, user: data.session?.user ?? null, loading: false });
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange((_event: any, session: any) => {
       set({ session, user: session?.user ?? null });
     });
   },
 
   signUp: async (email, password) => {
+    if (!supabase) return 'Auth not configured';
     const { error } = await supabase.auth.signUp({ email, password });
     return error?.message ?? null;
   },
 
   signIn: async (email, password) => {
+    if (!supabase) return 'Auth not configured';
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return error?.message ?? null;
   },
 
   signOut: async () => {
-    await supabase.auth.signOut();
+    if (supabase) await supabase.auth.signOut();
     set({ user: null, session: null });
   },
 }));

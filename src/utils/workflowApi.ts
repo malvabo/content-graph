@@ -13,6 +13,7 @@ export interface SavedWorkflow {
 const API = '/api/workflows';
 
 async function authHeaders(): Promise<HeadersInit> {
+  if (!supabase) return { 'Content-Type': 'application/json' };
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   return token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : { 'Content-Type': 'application/json' };
