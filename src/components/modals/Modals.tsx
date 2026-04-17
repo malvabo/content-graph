@@ -337,7 +337,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                     { label: 'Mood', tags: ['vibrant', 'moody', 'dreamy', 'warm', 'dark'] },
                   ].map(group => (
                     <div key={group.label}>
-                      <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{group.label}</span>
+                      <span className="text-field-label">{group.label}</span>
                       <div className="flex flex-wrap gap-1" style={{ marginTop: 4 }}>
                         {group.tags.map(s => {
                           const active = editPrompt.toLowerCase().includes(s);
