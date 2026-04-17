@@ -154,7 +154,7 @@ export default function EmptyCanvasOverlay() {
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--color-bg)', overflow: 'auto' }}>
-      <div style={{ maxWidth: 680, padding: 'var(--space-6) var(--space-8) var(--space-8)' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: 'var(--space-6) var(--space-6) var(--space-8)' }}>
 
         {/* Hero */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
@@ -191,7 +191,7 @@ export default function EmptyCanvasOverlay() {
           {/* Empty workflow */}
           <button onClick={handleNew}
             style={{
-              textAlign: 'left', cursor: 'pointer',
+              textAlign: 'left', cursor: 'pointer', minWidth: 0,
               background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
               borderRadius: 'var(--radius-xl)', overflow: 'hidden',
               transition: 'border-color 150ms, box-shadow 150ms',
@@ -217,7 +217,7 @@ export default function EmptyCanvasOverlay() {
           {TEMPLATES.map((t, i) => (
             <button key={t.name} onClick={() => loadTemplate(i)}
               style={{
-                textAlign: 'left', cursor: 'pointer',
+                textAlign: 'left', cursor: 'pointer', minWidth: 0,
                 background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                 borderRadius: 'var(--radius-xl)', overflow: 'hidden',
                 transition: 'border-color 150ms, box-shadow 150ms',

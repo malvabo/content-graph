@@ -5,25 +5,19 @@ import { useGraphStore } from '../../store/graphStore';
 import { ImageModal } from '../modals/Modals';
 import { getDims } from '../../utils/imageDims';
 
-import { useSettingsStore } from '../../store/settingsStore';
-
-async function genImage(prompt: string, _seed: number, w: number, h: number): Promise<string> {
-  const openaiKey = useSettingsStore.getState().openaiKey;
-  if (!openaiKey) throw new Error('No OpenAI API key set. Go to Settings to add one.');
-  const size = w > h ? '1792x1024' : h > w ? '1024x1792' : '1024x1024';
-  const res = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'dall-e-3', prompt: prompt.slice(0, 1000), n: 1, size, response_format: 'b64_json' }),
+async function genImage(prompt: string, seed: number, w: number, h: number): Promise<string> {
+  const shortPrompt = prompt.slice(0, 500);
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(shortPrompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Image generation failed: ${res.status}`);
+  const blob = await res.blob();
+  if (blob.size < 1000) throw new Error('Image generation returned empty result');
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `OpenAI error: ${res.status}`);
-  }
-  const data = await res.json();
-  const b64 = data.data?.[0]?.b64_json;
-  if (!b64) throw new Error('No image data returned');
-  return `data:image/png;base64,${b64}`;
 }
 
 
