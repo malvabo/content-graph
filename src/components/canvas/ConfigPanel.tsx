@@ -10,7 +10,7 @@ import { aiExecute } from '../../utils/aiExecutor';
 import { FormInput, FormTextarea } from '../ui/FormField';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="flex flex-col gap-1"><label className="text-field-label">{label}</label>{children}</div>;
+  return <div className="flex flex-col gap-2"><label className="text-field-label">{label}</label>{children}</div>;
 }
 function Select({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: readonly string[] }) {
   const [open, setOpen] = useState(false);

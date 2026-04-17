@@ -214,20 +214,26 @@ function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps
       <Header title={title} onClose={onClose} />
       <div className="flex-1 overflow-y-auto relative" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
-        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', transition: 'border-color 150ms' }}
+        <div style={{ position: 'relative', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', transition: 'border-color 150ms' }}
           onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
           onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
+          {/* Above-fold text */}
           <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}
             style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
         </div>
-        {(
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', margin: 'var(--space-4) 0' }}>
-          <div style={{ flex: 1, borderTop: '1px dashed var(--color-border-subtle)' }} />
-          <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', whiteSpace: 'nowrap' }}>
-            LinkedIn "see more" fold · ~210 chars
-          </span>
-          <div style={{ flex: 1, borderTop: '1px dashed var(--color-border-subtle)' }} />
-        </div>
+        {content.length > 210 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', margin: 'var(--space-3) 0' }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--color-border-subtle)' }} />
+            <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', whiteSpace: 'nowrap', padding: '0 var(--space-1)' }}>
+              ↑ visible before "see more" · {Math.min(content.length, 210)}/210 chars
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'var(--color-border-subtle)' }} />
+          </div>
+        )}
+        {content.length <= 210 && (
+          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)', marginTop: 'var(--space-2)', textAlign: 'center' }}>
+            ✓ Entire post visible without "see more"
+          </div>
         )}
       </div>
       <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
@@ -294,7 +300,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalPro
       <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-4) var(--space-4)', scrollbarWidth: 'thin' }}>
         {/* Subject line */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
-          <div className="text-field-label" style={{ marginBottom: 'var(--space-1)' }}>Subject line</div>
+          <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>Subject line</div>
           <div style={{ position: 'relative' }}>
             <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Keep under 50 chars for mobile"
               className="form-input" style={{ paddingRight: 48 }} />
@@ -304,7 +310,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalPro
 
         {sections.map((sec, i) => (
           <div key={i} style={{ marginBottom: 'var(--space-4)' }}>
-            <div className="text-field-label" style={{ marginBottom: 'var(--space-1)' }}>{sec.label}</div>
+            <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>{sec.label}</div>
             <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', transition: 'border-color 150ms' }}
               onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
               onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
