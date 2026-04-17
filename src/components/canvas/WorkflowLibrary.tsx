@@ -35,14 +35,14 @@ function NodeBreakdown({ nodes }: { nodes: ContentNode[] }) {
   const counts: Partial<Record<NodeCategory, number>> = {};
   nodes.forEach(n => { const c = n.data.category; counts[c] = (counts[c] || 0) + 1; });
   return (
-    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
       {(Object.entries(counts) as [NodeCategory, number][]).map(([cat, count]) => {
         const c = BADGE_COLORS[cat];
         return (
           <span key={cat} style={{
             fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)',
-            padding: '1px 6px', borderRadius: 'var(--radius-full)',
-            background: c.bg, color: c.text, lineHeight: '16px',
+            padding: '2px 8px', borderRadius: 'var(--radius-full)',
+            background: c.bg, color: c.text, lineHeight: '18px',
           }}>{count} {CATEGORY_LABELS[cat]}</span>
         );
       })}
@@ -119,11 +119,11 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
       <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
         {/* Header row — compact, full-width */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <h1 style={{ fontWeight: 600, fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
             {items.length > 0 && (
-              <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', background: 'var(--color-bg-surface)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+              <span style={{ fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>
                 {items.length}
               </span>
             )}
@@ -161,16 +161,17 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             </button>
           </div>
         ) : (
-          /* Card grid — 3 columns, full-width, tight cards */
-          <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(280px,1fr))]" style={{ gap: 'var(--space-3)' }}>
+          /* Card grid */
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
             {items.map(item => (
               <button key={item.id} onClick={() => handleLoad(item)}
                 style={{
-                  textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+                  textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: '20px',
                   background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                   fontFamily: 'var(--font-sans)', cursor: 'pointer', outline: 'none',
                   transition: 'border-color .15s, box-shadow .15s',
-                  display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
+                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                  minHeight: 140,
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
@@ -220,11 +221,13 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 </div>
 
                 {/* Row 2: meta line — nodes, edges, time + mini graph */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', whiteSpace: 'nowrap' }}>
                     {item.nodes.length} node{item.nodes.length !== 1 ? 's' : ''} · {item.edges.length} edge{item.edges.length !== 1 ? 's' : ''} · {fmt(item.savedAt)}
                   </div>
-                  <MiniGraph nodes={item.nodes} edges={item.edges} />
+                  <div style={{ flexShrink: 0, marginLeft: 12 }}>
+                    <MiniGraph nodes={item.nodes} edges={item.edges} />
+                  </div>
                 </div>
 
                 {/* Row 3: category badges */}
