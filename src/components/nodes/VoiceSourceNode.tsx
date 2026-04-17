@@ -1,6 +1,7 @@
 import { useGraphStore } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useVoiceStore } from '../../store/voiceStore';
+import { useMemo } from 'react';
 
 function formatDuration(ms: number) {
   const s = Math.round(ms / 1000);
@@ -8,7 +9,8 @@ function formatDuration(ms: number) {
 }
 
 export function VoiceSourceInline({ id }: { id: string }) {
-  const notes = useVoiceStore((s) => s.notes?.filter((n) => n.status === 'ready') ?? []);
+  const allNotes = useVoiceStore((s) => s.notes);
+  const notes = useMemo(() => (allNotes ?? []).filter((n) => n.status === 'ready'), [allNotes]);
   const voiceNoteId = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.config?.voiceNoteId as string | undefined);
   const updateConfig = useGraphStore((s) => s.updateNodeConfig);
   const selected = notes.find((n) => n.id === voiceNoteId);

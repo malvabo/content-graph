@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { getDims, RATIO_DIMS, PURPOSE_RATIO } from '../../utils/imageDims';
 import { IMAGE_MODEL_OPTIONS, IMAGE_RESOLUTION_OPTIONS } from '../../utils/nodeDefs';
 import { useGraphStore } from '../../store/graphStore';
+import { useSettingsStore } from '../../store/settingsStore';
 
 /* ── AI Selection Popover ── */
 const AI_ACTIONS = [
@@ -163,17 +164,22 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
     setVariants([]);
     const dims = getDims(ratio);
     const baseSeed = Date.now();
-    const encoded = encodeURIComponent(editPrompt.trim().replace(/\n+/g, ' '));
+    const togetherKey = useSettingsStore.getState().togetherKey;
+    if (!togetherKey) { setGenError('No Together API key set. Go to Settings to add one.'); setGenLoading(false); return; }
     try {
       for (let i = 0; i < 4; i++) {
         if (ctrl.signal.aborted) return;
         try {
-          const url = `https://image.pollinations.ai/prompt/${encoded}?width=${dims.w}&height=${dims.h}&nologo=true&seed=${baseSeed + i}`;
-          const res = await fetch(url, { signal: ctrl.signal });
+          const res = await fetch('https://api.together.xyz/v1/images/generations', {
+            method: 'POST', signal: ctrl.signal,
+            headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt: editPrompt.trim().slice(0, 500), width: dims.w, height: dims.h, steps: 4, n: 1, seed: baseSeed + i, response_format: 'b64_json' }),
+          });
           if (!res.ok) continue;
-          const blob = await res.blob();
-          if (!blob.type.startsWith('image/')) continue;
-          const b64: string = await new Promise((resolve) => { const r = new FileReader(); r.onloadend = () => resolve(r.result as string); r.readAsDataURL(blob); });
+          const data = await res.json();
+          const b64raw = data.data?.[0]?.b64_json;
+          if (!b64raw) continue;
+          const b64 = `data:image/png;base64,${b64raw}`;
           if (ctrl.signal.aborted) return;
           setVariants(prev => { const next = [...prev, b64]; if (next.length === 1) setActiveSrc(b64); return next; });
         } catch { if (ctrl.signal.aborted) return; }
