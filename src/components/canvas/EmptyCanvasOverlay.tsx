@@ -109,6 +109,7 @@ function HeroBanner({ onNew }: { onNew: () => void }) {
 
 export default function EmptyCanvasOverlay() {
   const { nodes, setNodes, setEdges, setGraphName, addNode } = useGraphStore();
+  const hydrated = useGraphStore((s) => s._hydrated);
   const { autoLayout } = useGraphLayout();
   const [dismissed, setDismissed] = useState(false);
   const [text, setText] = useState('');
@@ -117,16 +118,8 @@ export default function EmptyCanvasOverlay() {
 
   useEffect(() => { if (pasting) setTimeout(() => taRef.current?.focus(), 100); }, [pasting]);
 
-  // Don't flash empty state while zustand persist is rehydrating
-  const [ready, setReady] = useState(() => {
-    try {
-      const raw = localStorage.getItem('content-graph-store');
-      if (raw && JSON.parse(raw)?.state?.nodes?.length > 0) return false;
-    } catch { /* ignore */ }
-    return true;
-  });
-  useEffect(() => { if (!ready) { const t = setTimeout(() => setReady(true), 100); return () => clearTimeout(t); } }, [ready]);
-  if (!ready || nodes.length > 0 || dismissed) return null;
+  // Wait for store rehydration, then check if graph is empty
+  if (!hydrated || nodes.length > 0 || dismissed) return null;
 
   const handleGo = () => {
     const trimmed = text.trim();

@@ -46,6 +46,7 @@ export interface GraphState {
   clearGraph: () => void;
   workflowId: string | null;
   setWorkflowId: (id: string) => void;
+  _hydrated: boolean;
 }
 
 export const useGraphStore = create<GraphState>()(
@@ -58,6 +59,7 @@ export const useGraphStore = create<GraphState>()(
         selectedNodeId: null,
         connectingNodeId: null,
         workflowId: null,
+        _hydrated: false,
 
         setGraphName: (name) => set({ graphName: name }),
         setWorkflowId: (id) => set({ workflowId: id }),
@@ -127,6 +129,7 @@ export const useGraphStore = create<GraphState>()(
         }),
         onRehydrateStorage: () => (_state, error) => {
           if (error) { localStorage.removeItem('content-graph-store'); }
+          useGraphStore.setState({ _hydrated: true } as any);
         },
       }
     ),
