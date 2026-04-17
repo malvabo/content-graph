@@ -7,7 +7,7 @@ const SYSTEM_PROMPTS: Record<string, string> = {
   'newsletter': 'You are a newsletter writer. Write a 300–500 word newsletter digest with SUBJECT line, greeting, body, takeaway, and sign-off. Output only the newsletter.',
   'infographic': 'You are an infographic content planner. Create a structured infographic spec with TITLE, SUBTITLE, 3-5 SECTIONS (each with heading + content + visual element), and DESIGN DIRECTION. Output only the spec.',
   'quote-card': 'You are a quote curator. Extract the single strongest, most shareable quote from the input. Format as QUOTE, ATTRIBUTION, and CONTEXT. Output only the quote card.',
-  'image-prompt': 'You are an AI image prompt engineer. Write a detailed, cinematic image generation prompt based on the input. Include style, lighting, composition, mood. Output only the prompt.',
+  'image-prompt': 'You are an expert AI image prompt engineer for text-to-image models. Based on the input content, write ONE highly specific, visual image generation prompt. Focus on concrete visual elements: specific subjects, setting, lighting, camera angle, color palette, and mood. Avoid abstract concepts — describe what the camera SEES. Output only the prompt text, nothing else.',
   'refine': 'You are an editor. Refine and improve the input text based on any instructions provided. Output only the refined text.',
   'text-source': 'You are a text processor. Process and clean up the input text. If there are preparation instructions, follow them. Output the processed text.',
   'video': 'You are a video script writer. Write a short video script based on the input, with scene descriptions and narration. Output only the script.',
@@ -73,7 +73,15 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
   const apiKey = keys[provider];
   if (!apiKey) throw new Error(`No ${provider} API key set. Go to Settings to add one.`);
 
-  const system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
+  let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
+
+  // Enrich image-prompt with node config
+  if (subtype === 'image-prompt') {
+    const purpose = config.purpose as string || 'Blog hero';
+    const style = config.style as string || 'Photography';
+    const aspect = config.aspect as string || '16:9';
+    system += `\n\nContext: Purpose is "${purpose}". Visual style: "${style}". Aspect ratio: ${aspect}. Tailor the prompt to this use case.`;
+  }
 
   if (provider === 'anthropic') return callAnthropic(apiKey, model, system, input);
   if (provider === 'openai') return callOpenAI(apiKey, model, system, input);
