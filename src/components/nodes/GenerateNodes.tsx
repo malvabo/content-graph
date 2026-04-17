@@ -37,9 +37,19 @@ function OutputPreview({ id, subtype, expandOpen, onExpandClose }: { id: string;
         {isThread ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {tweets.map((t, i) => (
-              <div key={i} style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: '6px 8px' }}>
-                <span style={{ fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginRight: 4 }}>{i + 1}/</span>
-                <span style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{t}</span>
+              <div key={i} style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px' }}>
+                  <svg width="8" height="12" viewBox="0 0 10 16" fill="var(--color-text-disabled)" style={{ flexShrink: 0 }}>
+                    <circle cx="2.5" cy="2" r="1.2"/><circle cx="7.5" cy="2" r="1.2"/>
+                    <circle cx="2.5" cy="8" r="1.2"/><circle cx="7.5" cy="8" r="1.2"/>
+                    <circle cx="2.5" cy="14" r="1.2"/><circle cx="7.5" cy="14" r="1.2"/>
+                  </svg>
+                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', flex: 1 }}>Tweet {i + 1}</span>
+                  <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)' }}>{t.length}</span>
+                </div>
+                <div style={{ borderTop: '1px solid var(--color-border-subtle)', padding: '4px 8px' }}>
+                  <span style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{t}</span>
+                </div>
               </div>
             ))}
           </div>

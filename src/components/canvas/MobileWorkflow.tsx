@@ -1,14 +1,75 @@
 import { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { aiExecute } from '../../utils/aiExecutor';
-import { BADGE_COLORS } from '../../utils/nodeDefs';
+import { NODE_DEFS_BY_SUBTYPE, BADGE_COLORS } from '../../utils/nodeDefs';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import ContentModal from '../modals/ContentModal';
 import MobileNodePicker from './MobileNodePicker';
 import type { NodeDef } from '../../utils/nodeDefs';
+
+/* ── Detail sheet for nodes without output ── */
+function MobileNodeDetail({ node, onClose }: { node: ContentNode; onClose: () => void }) {
+  const config = useGraphStore(s => s.nodes.find(n => n.id === node.id)?.data.config ?? {});
+  const updateConfig = useGraphStore(s => s.updateNodeConfig);
+  const status = useExecutionStore(s => s.status[node.id] ?? 'idle');
+  const colors = BADGE_COLORS[node.data.category];
+  const def = NODE_DEFS_BY_SUBTYPE[node.data.subtype];
+  const set = (k: string, v: unknown) => updateConfig(node.id, { [k]: v });
+
+  return createPortal(
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }} onClick={onClose}>
+      <div style={{ position: 'absolute', inset: 0, background: 'var(--color-overlay-backdrop)' }} />
+      <div onClick={e => e.stopPropagation()} style={{
+        position: 'relative', background: 'var(--color-bg-card)',
+        borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
+        maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-3) 0 var(--space-2)' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-border-default)' }} />
+        </div>
+        <div style={{ padding: '0 var(--space-4) var(--space-3)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: colors.bg, color: colors.text, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {NODE_ICONS[node.data.subtype]?.() ?? node.data.badge}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 500, fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{node.data.label}</div>
+            <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{def?.description ?? node.data.category}</div>
+          </div>
+          <button onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto', padding: 'var(--space-3) var(--space-4) var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {node.data.subtype === 'text-source' && (
+            <textarea placeholder="Paste your text here…" value={(config.text as string) ?? ''} onChange={e => { set('text', e.target.value); useOutputStore.getState().setOutput(node.id, { text: e.target.value }); }}
+              className="form-textarea" style={{ minHeight: 160 }} />
+          )}
+          {status === 'idle' && node.data.category === 'generate' && (
+            <div style={{ textAlign: 'center', padding: 'var(--space-6)', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }}>
+              No output yet — run the workflow to generate content.
+            </div>
+          )}
+          {status === 'running' && (
+            <div style={{ textAlign: 'center', padding: 'var(--space-6)', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }}>
+              Generating…
+            </div>
+          )}
+          {Object.entries(config).filter(([k, v]) => k !== 'text' && typeof v === 'string' && v.length < 60).map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }}>
+              <span style={{ color: 'var(--color-text-tertiary)', textTransform: 'capitalize' }}>{k.replace(/([A-Z])/g, ' $1')}</span>
+              <span style={{ color: 'var(--color-text-primary)' }}>{v as string}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 function ConfigSummary({ config }: { config: Record<string, unknown> }) {
   const vals = Object.values(config).filter(v => typeof v === 'string' && v.length < 30) as string[];
@@ -206,6 +267,9 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
           text={expandOutput}
           onClose={() => setExpandId(null)}
         />
+      )}
+      {expandNode && !expandOutput && (
+        <MobileNodeDetail node={expandNode} onClose={() => setExpandId(null)} />
       )}
 
       {/* Node picker bottom sheet */}

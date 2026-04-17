@@ -40,19 +40,19 @@ const RotateCcw = ({size,...p}) => <I size={size} {...p}><path d="M3 12a9 9 0 1 
    • Cards: shadow-only elevation, no borders
 ───────────────────────────────────────────── */
 const C = {
-  pageBg:  "#F6F7F5",
-  surface: "#F0F2F0",
+  pageBg:  "#F2EFE9",
+  surface: "#F7F5F1",
   white:   "#FFFFFF",
   border:  "#E0E4E0",
   border2: "#C8D4CC",
   text:    "#1A2420",
-  sub:     "#526858",
-  mute:    "#4A6A52",
+  sub:     "#57534e",
+  mute:    "#6d6d6d",
   accent:  "#0DBF5A",
   accentHover: "#0BAF52",
   accentAct: "#0A9F4A",
-  accentLt: "#D6EEE0",
-  accentTint: "#EEF8F2",
+  accentLt: "#F7F5F1",
+  accentTint: "#F9F8F5",
   accentText: "#0A5C2A",
   accentDark: "#061208",
   red:     "#C93030",
@@ -61,11 +61,9 @@ const C = {
   amberText: "#6A4A10",
   amberLt: "#FEF8E8",
   amberBdr: "#F0D8A0",
-  // Tag colors — mapped to ContentGraph palette
-  tagIndigo: { text:"#0A5C2A", bg:"#D6EEE0" },  // science → green tonal
-  tagEmerald:{ text:"#1A5048", bg:"#EBF4F0" },   // metaphor → teal tint
-  tagAmber:  { text:"#6A4A10", bg:"#FEF8E8" },   // logic → amber
-  // Editor highlight underlines
+  tagIndigo: { text:"#0A5C2A", bg:"#D6EEE0" },
+  tagEmerald:{ text:"#1A5048", bg:"#EBF4F0" },
+  tagAmber:  { text:"#6A4A10", bg:"#FEF8E8" },
   hlIndigo:  { bg:"rgba(13,191,90,0.06)",  activeBg:"rgba(13,191,90,0.15)", line:"rgba(13,191,90,0.35)"  },
   hlEmerald: { bg:"rgba(26,80,72,0.06)",   activeBg:"rgba(26,80,72,0.15)",  line:"rgba(26,80,72,0.35)"   },
   hlAmber:   { bg:"rgba(106,74,16,0.06)",  activeBg:"rgba(106,74,16,0.15)", line:"rgba(106,74,16,0.35)"  },
@@ -84,9 +82,9 @@ const TAG = {
 };
 
 const FONT_STYLE = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body, input, button, select, textarea { font-family: 'DM Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body, input, button, select, textarea { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   textarea { resize: none; letter-spacing: -0.01em; scrollbar-width: none; }
   textarea::-webkit-scrollbar { display: none; }
   textarea::placeholder { color: ${C.mute}; }
@@ -290,11 +288,11 @@ function useSources(query) {
 function RephraseBlock({ rephrase, onApply }) {
   if (!rephrase) return null;
   return (
-    <div style={{ marginTop:14, background:"linear-gradient(135deg,#EEF8F2 0%,#EBF4F0 100%)", borderRadius:12, padding:"12px 14px" }}>
+    <div style={{ marginTop:14, background:C.accentTint, border:`1px solid ${C.border}`, borderRadius:12, padding:"12px 14px" }}>
       <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.accent, marginBottom:6 }}>Rephrase to</p>
       <p style={{ fontSize:13, color:C.text, lineHeight:1.6, fontStyle:"italic", marginBottom:10 }}>"{rephrase}"</p>
       <button onClick={onApply} style={{
-        background:C.accent, color:"#061208", border:"none", borderRadius:8,
+        background:C.accentLt, color:C.accentText, border:"none", borderRadius:8,
         fontSize:12, fontWeight:600, padding:"5px 14px", cursor:"pointer",
       }}>Apply</button>
     </div>
@@ -324,7 +322,7 @@ function MetaphorCard({ data, country, elRef, onClose, onApply, highlighted }) {
       <CardHeader type="metaphor" label="Metaphor" extra={`${ci.flag} ${ci.name}`} onClose={onClose} />
       <p style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:14 }}>{data.headline}</p>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 32px 1fr", gap:8, alignItems:"stretch" }}>
-        <div style={{ background:"#F6F7F5", borderRadius:12, padding:"12px 14px" }}>
+        <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}>
           <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mute, marginBottom:6 }}>Original</p>
           <p style={{ fontSize:13, color:C.text, lineHeight:1.6, fontStyle:"italic" }}>"{data.original}"</p>
         </div>
@@ -463,7 +461,7 @@ ${paras.map((p,i)=>`[${i+1}] "${p}"`).join("\n\n")}`
           <div style={{ display:"flex", gap:14, alignItems:"center" }}>
             {[["#C8D4CC","Flat"],["#5CB87A","Building"],["#0DBF5A","Captivating"]].map(([col, lbl]) => (
               <div key={lbl} style={{ display:"flex", alignItems:"center", gap:5 }}>
-                <div style={{ width:18, height:3, background:col, borderRadius:99 }} />
+                <div style={{ width:6, height:6, borderRadius:"50%", background:col }} />
                 <span style={{ fontSize:10, color:C.mute, fontWeight:500 }}>{lbl}</span>
               </div>
             ))}
@@ -836,7 +834,7 @@ ${text}`
           <div style={{ width:"50%", borderRight:`1px solid rgba(0,0,0,0.06)`, position:"relative", display:"flex", flexDirection:"column", background:C.white }}>
 
             {/* highlight overlay */}
-            <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"DM Sans, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
+            <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif", letterSpacing:"-0.01em" }}>
               {paras.map((p,pi) => (
                 <p key={pi} style={{ marginBottom:28 }}>
                   {tokenize(p, aiInsights || []).map((s,i) =>
@@ -849,7 +847,7 @@ ${text}`
             </div>
 
             {/* click layer */}
-            <div style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"DM Sans, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
+            <div style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif", letterSpacing:"-0.01em" }}>
               {paras.map((p,pi) => (
                 <p key={pi} style={{ marginBottom:28 }}>
                   {tokenize(p, aiInsights || []).map((s,i) =>
@@ -871,7 +869,7 @@ ${text}`
           </div>
 
           {/* Right — insights panel */}
-          <div ref={insightRef} className="scroll-area" style={{ width:"50%", overflowY:"auto", padding:"12px", display:"flex", flexDirection:"column", gap:8, background:"#F0F2F0" }}>
+          <div ref={insightRef} className="scroll-area" style={{ width:"50%", overflowY:"auto", padding:"12px", display:"flex", flexDirection:"column", gap:8, background:C.surface }}>
 
             <div style={{ display: activeTab==="insights" ? "contents" : "none" }}>
               {/* ── Empty / loading / results states ── */}

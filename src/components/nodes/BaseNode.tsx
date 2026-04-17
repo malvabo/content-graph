@@ -266,9 +266,11 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       <InlineConfig id={id} subtype={data.subtype} />
 
       {/* Expand modal for source/transform nodes */}
-      {expandOpen && ["text-source", "file-source", "refine"].includes(data.subtype) && (
-        <ContentModal subtype={data.subtype} title={data.label} text={(data.config?.text as string) || ""} onClose={() => setExpandOpen(false)} />
-      )}
+      {expandOpen && ["text-source", "file-source", "refine"].includes(data.subtype) && (() => {
+        const output = useOutputStore.getState().outputs[id]?.text;
+        const configText = (data.config?.text as string) || "";
+        return <ContentModal subtype={data.subtype} title={data.label} text={output || configText || ""} onClose={() => setExpandOpen(false)} />;
+      })()}
       {def?.hasOutput && <Handle type="source" position={Position.Right} id="text" className={HANDLE_CLS} style={hiSource ? { borderColor: 'var(--color-accent)', backgroundColor: 'var(--color-accent)' } : undefined} />}
     </div>
   );

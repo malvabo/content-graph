@@ -100,15 +100,35 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
   const parseTweets = (t: string) => t.split(/\n\n+/).filter(s => s.trim()).map(s => s.replace(/^\d+\/\s*/, ''));
   const [tweets, setTweets] = useState(() => parseTweets(text));
   const refs = useRef<(HTMLTextAreaElement | null)[]>([]);
+  const dragIdx = useRef<number | null>(null);
 
   const update = (i: number, val: string) => { const n = [...tweets]; n[i] = val; setTweets(n); };
   const remove = (i: number) => { if (tweets.length > 1) setTweets(tweets.filter((_, j) => j !== i)); };
   const add = () => setTweets([...tweets, '']);
+  const onDragStart = (i: number) => { dragIdx.current = i; };
+  const onDragOver = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    if (dragIdx.current === null || dragIdx.current === i) return;
+    const n = [...tweets];
+    const [moved] = n.splice(dragIdx.current, 1);
+    n.splice(i, 0, moved);
+    setTweets(n);
+    dragIdx.current = i;
+  };
+  const onDragEnd = () => { dragIdx.current = null; };
 
   const totalChars = tweets.reduce((s, t) => s + t.length, 0);
   const { copied, copy } = useCopy(() => tweets.map((t, i) => `${i + 1}/ ${t}`).join('\n\n'));
 
   useEffect(() => { refs.current.forEach(el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }); }, [tweets]);
+
+  const GripDots = () => (
+    <svg width="10" height="16" viewBox="0 0 10 16" fill="var(--color-text-disabled)">
+      <circle cx="2.5" cy="2" r="1.2"/><circle cx="7.5" cy="2" r="1.2"/>
+      <circle cx="2.5" cy="8" r="1.2"/><circle cx="7.5" cy="8" r="1.2"/>
+      <circle cx="2.5" cy="14" r="1.2"/><circle cx="7.5" cy="14" r="1.2"/>
+    </svg>
+  );
 
   return (
     <ModalShell onClose={onClose} maxWidth={560}>
@@ -119,27 +139,31 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
             const len = tweet.length;
             const over = len > 280;
             return (
-              <div key={i} style={{
-                background: 'var(--color-bg-surface)',
-                border: `1px solid ${over ? 'var(--color-danger-border)' : 'var(--color-border-subtle)'}`,
-                borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)',
-                transition: 'border-color 150ms',
-              }}>
-                <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-1)' }}>
-                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{i + 1}/</span>
-                  <div className="flex items-center gap-1.5">
-                    <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: over ? 'var(--color-danger)' : 'var(--color-text-disabled)' }}>{len}/280</span>
-                    {tweets.length > 1 && (
-                      <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 2, display: 'flex', borderRadius: 'var(--radius-sm)', transition: 'color 100ms, background 100ms' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger)'; e.currentTarget.style.background = 'var(--color-danger-bg)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'none'; }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                      </button>
-                    )}
-                  </div>
+              <div key={i} draggable onDragStart={() => onDragStart(i)} onDragOver={e => onDragOver(e, i)} onDragEnd={onDragEnd}
+                style={{
+                  background: 'var(--color-bg-card)',
+                  border: `1px solid ${over ? 'var(--color-danger-border)' : 'var(--color-border-default)'}`,
+                  borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+                  transition: 'border-color 150ms, box-shadow 150ms',
+                }}>
+                {/* Header row: grip + number + char count + remove */}
+                <div className="flex items-center" style={{ padding: 'var(--space-2) var(--space-3)', gap: 'var(--space-2)' }}>
+                  <div style={{ cursor: 'grab', display: 'flex', alignItems: 'center', padding: '2px 0', flexShrink: 0 }}><GripDots /></div>
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', flex: 1 }}>Tweet {i + 1}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: over ? 'var(--color-danger)' : 'var(--color-text-disabled)' }}>{len}/280</span>
+                  {tweets.length > 1 && (
+                    <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 2, display: 'flex', borderRadius: 'var(--radius-sm)', transition: 'color 100ms' }}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger-text)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-disabled)'; }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                  )}
                 </div>
-                <textarea ref={el => { refs.current[i] = el; }} value={tweet} onChange={e => update(i, e.target.value)}
-                  style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+                {/* Divider + textarea */}
+                <div style={{ borderTop: '1px solid var(--color-border-subtle)', padding: 'var(--space-2) var(--space-3)' }}>
+                  <textarea ref={el => { refs.current[i] = el; }} value={tweet} onChange={e => update(i, e.target.value)}
+                    style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+                </div>
               </div>
             );
           })}

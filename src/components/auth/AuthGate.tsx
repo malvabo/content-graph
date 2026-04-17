@@ -7,7 +7,13 @@ export default function AuthGate() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    const p = new URLSearchParams(window.location.search);
+    const h = new URLSearchParams(window.location.hash.replace('#', '?'));
+    const desc = p.get('error_description') || h.get('error_description');
+    if (desc) window.history.replaceState({}, '', window.location.pathname);
+    return desc ? decodeURIComponent(desc) : null;
+  });
   const [loading, setLoading] = useState(false);
   const [signupDone, setSignupDone] = useState(false);
 

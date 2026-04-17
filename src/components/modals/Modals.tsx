@@ -78,10 +78,11 @@ function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.Rea
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center" style={{ padding: 0, background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms ease' }} onClick={onClose}>
-      <div role="dialog" aria-modal="true" className="flex flex-col w-full overflow-hidden"
-        style={{ maxWidth: typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : maxWidth, maxHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? '95vh' : 'min(92vh, calc(100vh - 48px))', background: 'var(--color-bg-card)', borderRadius: typeof window !== 'undefined' && window.innerWidth < 768 ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl)', boxShadow: '0 16px 48px rgba(0,0,0,0.18), 0 0 0 1px var(--color-border-default)', transform: visible ? 'translateY(0)' : 'translateY(16px)', opacity: visible ? 1 : 0, transition: 'transform 150ms ease, opacity 150ms ease' }}
+      <div role="dialog" aria-modal="true" className="flex flex-col w-full overflow-hidden rounded-t-[var(--radius-xl)] md:rounded-[var(--radius-xl)]"
+        style={{ maxWidth: isMobile ? '100%' : maxWidth, maxHeight: isMobile ? '95vh' : `min(92vh, calc(100vh - 48px))`, background: 'var(--color-bg-card)', boxShadow: '0 16px 48px rgba(0,0,0,0.18), 0 0 0 1px var(--color-border-default)', transform: visible ? 'translateY(0)' : 'translateY(16px)', opacity: visible ? 1 : 0, transition: 'transform 150ms ease, opacity 150ms ease' }}
         onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
