@@ -72,7 +72,7 @@ function UserMenu() {
   return (
     <div ref={ref} className="relative flex justify-center">
       <button onClick={() => setOpen(!open)} className="w-8 h-8 rounded-full flex items-center justify-center"
-        style={{ background: 'var(--color-accent)', color: 'var(--p-white)', fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', border: 'none', cursor: 'pointer' }}>
+        style={{ background: 'var(--color-border-strong)', color: 'var(--color-text-primary)', fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', border: 'none', cursor: 'pointer' }}>
         {initial}
       </button>
       {open && (

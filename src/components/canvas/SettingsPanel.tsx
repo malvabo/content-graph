@@ -23,16 +23,26 @@ const PROVIDERS = [
   { key: 'groqKey' as const, setter: 'setGroqKey' as const, label: 'Groq (Llama)', placeholder: 'gsk_...', icon: 'L', validateUrl: 'https://api.groq.com/openai/v1/models', validateHeaders: (k: string) => ({ Authorization: `Bearer ${k}` }), validateBody: null },
 ] as const;
 
-const LBL: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', display: 'block', marginBottom: 6 };
-const CARD: React.CSSProperties = { background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-5)' };
+const LBL: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', display: 'block', marginBottom: 'var(--space-2)' };
+const CARD: React.CSSProperties = { background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)' };
+const HDESC: React.CSSProperties = { fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0', lineHeight: 'var(--leading-normal)' };
+
+function SectionHeader({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div style={{ marginBottom: 'var(--space-5)' }}>
+      <h2 style={{ fontWeight: 500, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>{title}</h2>
+      <p style={HDESC}>{desc}</p>
+    </div>
+  );
+}
 
 function ColorSwatch({ color, label, onChange }: { color: string; label: string; onChange: (c: string) => void }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)' }}>
       <label style={{ position: 'relative', width: 36, height: 36, borderRadius: 'var(--radius-full)', border: '2px solid var(--color-border-default)', background: color, cursor: 'pointer' }}>
         <input type="color" value={color} onChange={e => onChange(e.target.value)} style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
       </label>
-      <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+      <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
     </div>
   );
 }
@@ -41,7 +51,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) 
   const [val, setVal] = useState('');
   return (
     <div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: tags.length ? 8 : 0 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginBottom: tags.length ? 'var(--space-2)' : 0 }}>
         {tags.map(t => (
           <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-full)', padding: '3px 10px', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)' }}>
             {t}
@@ -60,29 +70,28 @@ function BrandVisualSection() {
   const b = brand || EMPTY_BRAND;
   return (
     <div>
-      <h2 style={{ fontWeight: 500, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Brand Visual</h2>
-      <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: '2px 0 0', lineHeight: 'var(--leading-normal)' }}>Define your brand's visual identity. Colors are applied to visual content nodes.</p>
-      <div style={{ ...CARD, marginTop: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <SectionHeader title="Brand Visual" desc="Define your brand's visual identity. Colors are applied to visual content nodes." />
+      <div style={{ ...CARD, display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
         <div>
           <label style={LBL}>Brand name</label>
           <input className="form-input" value={b.name} onChange={e => setBrand({ name: e.target.value })} placeholder="Acme Corp" style={{ width: '100%' }} />
         </div>
         <div>
           <label style={LBL}>Brand colors</label>
-          <div style={{ display: 'flex', gap: 20 }}>
+          <div style={{ display: 'flex', gap: 'var(--space-5)' }}>
             {(['primary', 'secondary', 'accent'] as const).map(k => (
               <ColorSwatch key={k} label={k} color={b.colors[k]} onChange={c => setBrand({ colors: { ...b.colors, [k]: c } })} />
             ))}
           </div>
         </div>
         {b.name && (
-          <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 16 }}>
+          <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)' }}>
             <label style={LBL}>Preview</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)' }}>
               <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: b.colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>{b.name.charAt(0).toUpperCase()}</div>
               <div>
                 <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: b.colors.secondary }}>{b.name}</div>
-                <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', marginTop: 1 }}>{b.colors.primary} · {b.colors.secondary} · {b.colors.accent}</div>
+                <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', marginTop: 2 }}>{b.colors.primary} · {b.colors.secondary} · {b.colors.accent}</div>
               </div>
             </div>
           </div>
@@ -97,9 +106,8 @@ function BrandVoiceSection() {
   const b = brand || EMPTY_BRAND;
   return (
     <div>
-      <h2 style={{ fontWeight: 500, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Brand Voice</h2>
-      <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: '2px 0 0', lineHeight: 'var(--leading-normal)' }}>Teach the AI how your brand sounds. Injected into every content generation prompt.</p>
-      <div style={{ ...CARD, marginTop: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <SectionHeader title="Brand Voice" desc="Teach the AI how your brand sounds. Injected into every content generation prompt." />
+      <div style={{ ...CARD, display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
         <div>
           <label style={LBL}>Personality</label>
           <textarea className="form-input" rows={3} value={b.voice.personality} onChange={e => setBrand({ voice: { ...b.voice, personality: e.target.value } })}
@@ -119,7 +127,7 @@ function BrandVoiceSection() {
           <textarea className="form-input" rows={5} value={b.voice.examplePost} onChange={e => setBrand({ voice: { ...b.voice, examplePost: e.target.value } })}
             placeholder="Paste a real post that perfectly captures your brand voice." style={{ width: '100%', resize: 'none' }} />
         </div>
-        <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: b.voice.personality ? 'var(--color-accent)' : 'var(--color-border-default)' }} />
           <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: b.voice.personality ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)' }}>
             {b.voice.personality ? 'Brand voice active — applied to all generate nodes' : 'No voice configured yet'}
@@ -160,15 +168,14 @@ function APIKeysSection() {
   const connectedCount = PROVIDERS.filter(p => !!store[p.key]).length;
   return (
     <div>
-      <h2 style={{ fontWeight: 500, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>API Keys</h2>
-      <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: '2px 0 0', lineHeight: 'var(--leading-normal)' }}>{connectedCount} of {PROVIDERS.length} providers connected. Keys are encrypted with your account.</p>
-      <div style={{ ...CARD, marginTop: 20, padding: 0, overflow: 'hidden' }}>
+      <SectionHeader title="API Keys" desc={`${connectedCount} of ${PROVIDERS.length} providers connected. Keys are encrypted with your account.`} />
+      <div style={{ ...CARD, padding: 0, overflow: 'hidden' }}>
         {PROVIDERS.map((p, i) => {
           const value = store[p.key]; const show = showKeys[p.key] ?? false; const st = status[p.key];
           return (
             <div key={p.key} style={{ padding: 'var(--space-5)', borderBottom: i < PROVIDERS.length - 1 ? '1px solid var(--color-border-subtle)' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-                <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', background: value ? 'var(--color-accent)' : 'var(--color-bg-surface)', border: value ? 'none' : '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-sans)', color: value ? '#fff' : 'var(--color-text-disabled)', flexShrink: 0, transition: 'background 150ms' }}>{p.icon}</div>
+                <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', background: value ? 'var(--color-border-strong)' : 'var(--color-bg-surface)', border: value ? 'none' : '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-sans)', color: value ? 'var(--color-text-primary)' : 'var(--color-text-disabled)', flexShrink: 0, transition: 'background 150ms' }}>{p.icon}</div>
                 <div style={{ flex: 1, fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{p.label}</div>
                 {st && <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: st === 'valid' ? 'var(--color-success-bg)' : 'var(--color-danger-bg)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: st === 'valid' ? 'var(--color-accent)' : 'var(--color-danger-text)' }}>{st === 'valid' ? <CheckIcon /> : <XIcon />}{st === 'valid' ? 'Valid' : 'Invalid'}</div>}
               </div>
@@ -181,12 +188,12 @@ function APIKeysSection() {
                   {validating === p.key ? <span style={{ display: 'inline-block', width: 12, height: 12, border: '1.5px solid var(--color-text-disabled)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'btn-spin 600ms linear infinite' }} /> : 'Validate'}
                 </button>
               </div>
-              {st === 'invalid' && errorMsg[p.key] && <div style={{ marginTop: 6, fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)' }}>{errorMsg[p.key]}</div>}
+              {st === 'invalid' && errorMsg[p.key] && <div style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)' }}>{errorMsg[p.key]}</div>}
             </div>
           );
         })}
       </div>
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: 'var(--space-4)' }}>
         <button className="btn btn-primary" disabled={!hasAnyKey} onClick={handleSave} style={{ minWidth: 100 }}>{saved ? '✓ Saved' : 'Save keys'}</button>
       </div>
     </div>
@@ -200,18 +207,18 @@ export default function SettingsPanel() {
 
   return (
     <div style={{ flex: 1, display: 'flex', background: 'var(--color-bg)', overflow: 'hidden' }}>
-      <nav style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', padding: '24px 0', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        <div style={{ padding: '0 20px 20px', borderBottom: '1px solid var(--color-border-subtle)' }}>
+      <nav style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', padding: 'var(--space-6) 0', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        <div style={{ padding: '0 var(--space-5) var(--space-5)', borderBottom: '1px solid var(--color-border-subtle)' }}>
           <h1 style={{ fontWeight: 500, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Settings</h1>
         </div>
-        <div style={{ padding: '12px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ padding: 'var(--space-3) var(--space-3)', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {Object.entries(groups).map(([group, items]) => (
             <div key={group}>
-              <div style={{ padding: '12px 8px 6px', fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{group}</div>
+              <div style={{ padding: 'var(--space-3) var(--space-2) var(--space-1)', fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{group}</div>
               {items.map(s => {
                 const on = active === s.id;
                 return (
-                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 'var(--radius-md)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms' }}>
+                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms' }}>
                     <span style={{ color: on ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)', display: 'flex' }}><s.icon /></span>
                     {s.label}
                   </button>
@@ -221,7 +228,7 @@ export default function SettingsPanel() {
           ))}
         </div>
       </nav>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-8) var(--space-10)' }}>
         <div style={{ maxWidth: 520 }}>
           {active === 'brand-visual' && <BrandVisualSection />}
           {active === 'brand-voice' && <BrandVoiceSection />}
