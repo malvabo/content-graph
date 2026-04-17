@@ -7,7 +7,7 @@ import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import { mockExecute } from '../../utils/mockExecutor';
 
-import { FormInput, FormTextarea } from '../ui/FormField';
+import { FormInput } from '../ui/FormField';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="flex flex-col gap-1"><label className="text-field-label">{label}</label>{children}</div>;
