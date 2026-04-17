@@ -41,7 +41,7 @@ const statusBadge = (status: string) => {
   );
 };
 
-export default function VoiceLibrary() {
+export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: () => void }) {
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -278,7 +278,19 @@ export default function VoiceLibrary() {
                         style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 4, minWidth: 140, animation: 'fadeIn 100ms ease' }}>
                         {[
                           { label: 'Rename', action: () => { setRenameName(note.title); setRenameId(note.id); setMenuId(null); } },
-                          { label: 'Use in workflow', action: () => { console.log('Use in workflow:', note.id); setMenuId(null); } },
+                          { label: 'Use in workflow', action: () => {
+                            const node: ContentNode = {
+                              id: `text-source-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+                              type: 'contentNode',
+                              position: { x: 200, y: 150 },
+                              deletable: true,
+                              data: { subtype: 'text-source', label: 'Voice: ' + note.title.slice(0, 30), badge: '📝', category: 'source', description: 'From voice note', config: { text: note.transcript } },
+                            };
+                            useGraphStore.getState().addNode(node);
+                            useOutputStore.getState().setOutput(node.id, { text: note.transcript });
+                            setMenuId(null);
+                            onUseInWorkflow?.();
+                          } },
                           { label: 'Delete', danger: true, action: () => { setDeleteId(note.id); setMenuId(null); } },
                         ].map(opt => (
                           <button key={opt.label} onClick={opt.action}

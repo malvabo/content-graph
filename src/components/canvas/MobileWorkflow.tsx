@@ -45,8 +45,11 @@ function MobileNodeDetail({ node, onClose }: { node: ContentNode; onClose: () =>
         </div>
         <div style={{ flex: 1, overflow: 'auto', padding: 'var(--space-3) var(--space-4) var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           {node.data.subtype === 'text-source' && (
-            <textarea placeholder="Paste your text here…" value={(config.text as string) ?? ''} onChange={e => { set('text', e.target.value); useOutputStore.getState().setOutput(node.id, { text: e.target.value }); }}
-              className="form-textarea" style={{ minHeight: 280, flex: 1, fontSize: 16 }} />
+            <>
+              <div style={{ fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Input text</div>
+              <textarea placeholder="Paste your article, transcript, or notes…" value={(config.text as string) ?? ''} onChange={e => { set('text', e.target.value); useOutputStore.getState().setOutput(node.id, { text: e.target.value }); }}
+                className="form-textarea" style={{ minHeight: 280, flex: 1, fontSize: 16 }} />
+            </>
           )}
           {status === 'idle' && node.data.category === 'generate' && (
             <div style={{ textAlign: 'center', padding: 'var(--space-6)', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }}>
