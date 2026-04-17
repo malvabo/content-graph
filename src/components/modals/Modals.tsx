@@ -202,7 +202,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
         {/* ── Left: image viewer ── */}
         <div className="flex-1 flex flex-col min-w-0 relative" style={{ background: 'var(--color-bg-dark)', borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)' }}>
           {/* Vignette */}
-          <div style={{ position: 'absolute', inset: 0, borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)', background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%)', pointerEvents: 'none', zIndex: 1 }} />
+          <div style={{ position: 'absolute', inset: 0, borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)', background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%)', pointerEvents: 'none', zIndex: 1, animation: genLoading ? 'pulse 2s ease-in-out infinite' : 'none' }} />
           <div style={{ position: 'absolute', top: 'var(--space-3)', left: 'var(--space-3)', zIndex: 3, display: 'flex', gap: 'var(--space-1)' }}>
             <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? 'Exit fullscreen' : 'Expand preview'} style={toolBtn}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -213,30 +213,38 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
           </div>
 
           <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-8) var(--space-6)', overflow: zoomed ? 'auto' : 'hidden' }}>
-            <img src={activeSrc} alt={editPrompt || 'Generated image'}
-              onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}
-              style={{ maxWidth: zoomed ? 'none' : '100%', maxHeight: zoomed ? 'none' : typeof window !== 'undefined' && window.innerWidth < 768 ? '40vh' : '62vh', width: zoomed ? `${Math.max(d.w, 800)}px` : undefined, objectFit: 'contain', borderRadius: 'var(--radius-md)', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'opacity 150ms ease' }} />
+            <div style={{ width: '100%', maxWidth: d.w >= d.h ? '100%' : `${Math.round(62 * d.w / d.h)}vh`, aspectRatio: `${d.w} / ${d.h}`, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'aspect-ratio 200ms ease, max-width 200ms ease' }}>
+              <img src={activeSrc} alt={editPrompt || 'Generated image'}
+                onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}
+                style={{ maxWidth: zoomed ? 'none' : '100%', maxHeight: zoomed ? 'none' : '100%', width: zoomed ? `${Math.max(d.w, 800)}px` : undefined, objectFit: 'contain', borderRadius: 'var(--radius-md)', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'opacity 150ms ease' }} />
+            </div>
           </div>
 
           {(variants.length > 0 || genLoading) && (
             <div style={{ padding: '0 var(--space-6) var(--space-4)', display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', scrollbarWidth: 'thin' }}>
-              {variants.map((img, i) => (
-                <div key={i} className="shrink-0 flex flex-col items-center" style={{ gap: 3 }}>
-                  <div className="relative" style={{ width: 56, height: thumbH }}>
-                    <img src={img} onClick={() => { setActiveSrc(img); setZoomed(false); }}
-                      style={{ width: 56, height: thumbH, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent', opacity: img === activeSrc ? 1 : 0.6, transition: 'opacity 150ms' }} />
-                    {img === activeSrc && (
-                      <div style={{ position: 'absolute', top: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
-                      </div>
-                    )}
+              {Array.from({ length: 4 }).map((_, i) => {
+                const img = variants[i];
+                return (
+                  <div key={i} className="shrink-0 flex flex-col items-center" style={{ gap: 3 }}>
+                    <div className="relative" style={{ width: 56, height: thumbH }}>
+                      {img ? (
+                        <>
+                          <img src={img} onClick={() => { setActiveSrc(img); setZoomed(false); }}
+                            style={{ width: 56, height: thumbH, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent', opacity: img === activeSrc ? 1 : 0.6, transition: 'opacity 150ms' }} />
+                          {img === activeSrc && (
+                            <div style={{ position: 'absolute', top: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+                            </div>
+                          )}
+                        </>
+                      ) : genLoading ? (
+                        <div className="skeleton-bar" style={{ width: 56, height: thumbH, borderRadius: 'var(--radius-sm)' }} />
+                      ) : null}
+                    </div>
+                    <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: img && img === activeSrc ? 'var(--color-text-secondary)' : 'var(--color-text-disabled)' }}>{i + 1}</span>
                   </div>
-                  <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: img === activeSrc ? 'var(--color-text-secondary)' : 'var(--color-text-disabled)' }}>{i + 1}</span>
-                </div>
-              ))}
-              {genLoading && Array.from({ length: 4 - variants.length }).map((_, i) => (
-                <div key={`s${i}`} className="skeleton-bar shrink-0" style={{ width: 56, height: thumbH, borderRadius: 'var(--radius-sm)' }} />
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -371,8 +379,9 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                 </button>
               </>
             ) : (
-              <button className="btn-sm btn-primary w-full" disabled={genLoading} onClick={generate4}>
-                {genLoading ? `Generating ${variants.length}/4…` : needsRegen ? 'Generate with changes' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}
+              <button className="btn-sm btn-primary w-full" disabled={genLoading} onClick={generate4} style={{ position: 'relative', overflow: 'hidden' }}>
+                {genLoading && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${variants.length * 25}%`, background: 'rgba(255,255,255,0.15)', transition: 'width 300ms ease', borderRadius: 'inherit' }} />}
+                <span style={{ position: 'relative' }}>{genLoading ? `Generating ${variants.length}/4…` : needsRegen ? 'Generate with changes' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}</span>
               </button>
             )}
             {genLoading && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', textAlign: 'center' }}>~15s per image</div>}
