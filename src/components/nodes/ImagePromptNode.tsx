@@ -27,48 +27,54 @@ export function ImagePromptInline({ id }: { id: string }) {
   const aspect = useGraphStore((s) => s.nodes.find(n => n.id === id)?.data.config.aspect as string | undefined);
   const [generating, setGenerating] = useState(false);
   const [viewImage, setViewImage] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState('');
   const generatingRef = useRef(false);
 
-  const generate = useCallback(async (prompt: string) => {
-    if (generatingRef.current) return;
+  const generate = useCallback(async (text: string) => {
+    if (generatingRef.current || !text.trim()) return;
     generatingRef.current = true;
     setGenerating(true);
     try {
       const d = getDims(aspect);
-      const img = await genImage(prompt, Date.now(), d.w, d.h);
-      // Replace entire output to ensure imageBase64 is set (merge won't clear undefined)
+      const img = await genImage(text, Date.now(), d.w, d.h);
       const store = useOutputStore.getState();
       const existing = store.outputs[id] || {};
-      store.setOutput(id, { ...existing, text: prompt, imageBase64: img, imgWidth: d.w, imgHeight: d.h });
+      store.setOutput(id, { ...existing, text, imageBase64: img, imgWidth: d.w, imgHeight: d.h });
+      useExecutionStore.getState().setStatus(id, 'complete');
     } catch (e) {
       console.error('Image generation failed:', e);
-      // Show error in output so user can see it
-      const store = useOutputStore.getState();
-      const existing = store.outputs[id] || {};
-      store.setOutput(id, { ...existing, text: existing.text || `Error: ${e instanceof Error ? e.message : 'Unknown error'}` });
+      useExecutionStore.getState().setError(id, e instanceof Error ? e.message : 'Image generation failed');
     }
     generatingRef.current = false;
     setGenerating(false);
   }, [id, aspect]);
 
-  // Auto-generate when execution completes with a prompt but no image
+  // Also auto-generate when upstream text arrives via Run All
   useEffect(() => {
     if (status === 'complete' && output?.text && !output?.imageBase64 && !generatingRef.current) {
       generate(output.text);
     }
   }, [status, output?.text, output?.imageBase64, generate]);
 
-  // Show skeleton when running OR generating (no gap between states)
-  const showSkeleton = status === 'running' || generating || (status === 'complete' && output?.text && !output?.imageBase64);
-  const showImage = status === 'complete' && output?.imageBase64 && !generating;
-  const showIdle = status === 'idle' || status === 'stale';
-  const showWarning = status === 'warning';
+  const showSkeleton = status === 'running' || generating;
+  const showImage = output?.imageBase64 && !generating;
+  const showInput = !showSkeleton && !showImage;
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: 8 }}>
-      {showIdle && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
-          Connect a text source, then Run
+      {showInput && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          <textarea
+            className="form-input nowheel"
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            onMouseDown={e => e.stopPropagation()}
+            placeholder="Describe the image you want..."
+            style={{ flex: 1, resize: 'none', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', minHeight: 60 }}
+          />
+          <button className="btn btn-primary btn-sm" disabled={!prompt.trim()} onMouseDown={e => e.stopPropagation()} onClick={() => generate(prompt)}>
+            Generate
+          </button>
         </div>
       )}
 
@@ -91,11 +97,6 @@ export function ImagePromptInline({ id }: { id: string }) {
         </div>
       )}
 
-      {showWarning && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', borderRadius: 'var(--radius-sm)' }}>
-          No input — connect a text node upstream
-        </div>
-      )}
     </div>
   );
 }
