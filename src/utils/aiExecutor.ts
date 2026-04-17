@@ -65,7 +65,7 @@ async function callGoogle(apiKey: string, model: string, system: string, input: 
 }
 
 export async function aiExecute(input: string, config: Record<string, unknown>, subtype: string): Promise<string> {
-  const model = (config.model as string) || 'claude-haiku-4';
+  const model = (config.model as string) || 'claude-opus-4';
   const provider = getProvider(model);
   const { anthropicKey, openaiKey, googleKey } = useSettingsStore.getState();
 

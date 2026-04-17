@@ -25,11 +25,15 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
 
   load: async () => {
     if (!supabase) { set({ loaded: true }); return; }
-    const { data: { user } } = await supabase!.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase!.from('user_settings').select('anthropic_key, openai_key, google_key').eq('user_id', user.id).single();
-    if (data) set({ anthropicKey: data.anthropic_key ?? '', openaiKey: data.openai_key ?? '', googleKey: data.google_key ?? '', loaded: true });
-    else set({ loaded: true });
+    try {
+      const { data: { user } } = await supabase!.auth.getUser();
+      if (!user) { set({ loaded: true }); return; }
+      const { data } = await supabase!.from('user_settings').select('anthropic_key, openai_key, google_key').eq('user_id', user.id).single();
+      if (data) set({ anthropicKey: data.anthropic_key ?? '', openaiKey: data.openai_key ?? '', googleKey: data.google_key ?? '', loaded: true });
+      else set({ loaded: true });
+    } catch {
+      set({ loaded: true });
+    }
   },
 
   save: async () => {
