@@ -23,15 +23,15 @@ export function HoverBorderGradient({ children, className = '', containerClassNa
       className={`relative rounded-full p-[2px] overflow-hidden ${containerClassName}`}
       style={{
         background: hovered
-          ? `conic-gradient(from ${angle}deg, transparent 0%, #0DBF5A 10%, transparent 20%, transparent 100%)`
-          : 'var(--cg-border)',
+          ? `conic-gradient(from ${angle}deg, transparent 0%, var(--color-accent) 10%, transparent 20%, transparent 100%)`
+          : 'var(--color-border-default)',
         transition: hovered ? 'none' : 'background 300ms',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className={`rounded-full bg-white px-4 py-2 text-sm font-medium ${className}`}
-        style={{ boxShadow: hovered ? '0 0 20px rgba(13,191,90,0.15)' : 'none' }}>
+      <div className={`rounded-full px-4 py-2 text-sm font-medium ${className}`}
+        style={{ background: 'var(--color-bg-card)', boxShadow: hovered ? '0 0 20px rgba(13,191,90,0.15)' : 'none' }}>
         {children}
       </div>
     </div>

@@ -30,7 +30,9 @@ create policy "Users can delete own workflows"
 -- User settings table
 create table if not exists user_settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  anthropic_key text default ''
+  anthropic_key text default '',
+  openai_key text default '',
+  google_key text default ''
 );
 
 alter table user_settings enable row level security;
