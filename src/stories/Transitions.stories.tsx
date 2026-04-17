@@ -16,7 +16,7 @@ const DURATIONS = [
 ];
 
 const KEYFRAMES = [
-  { name: 'pulse', duration: '1.2s', usage: 'Running status dot' },
+  { name: 'pulse', duration: '2s', usage: 'Running status dot (breathing)' },
   { name: 'done-pulse', duration: '0.5s', usage: 'Complete status dot' },
   { name: 'border-rotate', duration: '3s', usage: 'Run button gradient spin' },
   { name: 'flow-dash', duration: '0.6s', usage: 'Edge flow animation' },
@@ -51,7 +51,7 @@ function TransitionsDoc() {
           <div key={k.name} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
             <code style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', width: 130, flexShrink: 0 }}>{k.name}</code>
             <div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {k.name === 'pulse' && <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'var(--p-status-running)', animation: 'pulse 1.2s ease-in-out infinite' }} />}
+              {k.name === 'pulse' && <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'var(--p-status-running)', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite' }} />}
               {k.name === 'btn-spin' && <div style={{ width: 14, height: 14, border: '2px solid var(--color-border-default)', borderTopColor: 'var(--color-accent)', borderRadius: 'var(--radius-full)', animation: 'btn-spin 0.65s linear infinite' }} />}
               {k.name === 'shimmer' && <div className="skeleton-bar" style={{ width: 24, height: 4, borderRadius: 'var(--radius-sm)' }} />}
               {!['pulse', 'btn-spin', 'shimmer'].includes(k.name) && <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'var(--color-accent)' }} />}

@@ -58,7 +58,7 @@ function NodeCard({
       {/* Status pill */}
       <div style={{ marginTop: 'var(--space-1)' }}>
         <span className="btn-pill" style={{ cursor: 'default', height: 'var(--space-5)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', background: pill.bg, color: pill.color, borderColor: pill.border }}>
-          <div style={{ width: 'var(--size-status-dot)', height: 'var(--size-status-dot)', borderRadius: 'var(--radius-full)', background: STATUS_DOT[status] ?? STATUS_DOT.idle, animation: status === 'running' ? 'pulse 1.2s ease-in-out infinite' : undefined }} />
+          <div style={{ width: 'var(--size-status-dot)', height: 'var(--size-status-dot)', borderRadius: 'var(--radius-full)', background: STATUS_DOT[status] ?? STATUS_DOT.idle, animation: status === 'running' ? 'pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite' : undefined }} />
           {status}
         </span>
       </div>

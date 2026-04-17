@@ -8,18 +8,6 @@ import type { Edge } from '@xyflow/react';
 /* SVG icons */
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>;
-const GraphIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="9" width="7" height="6" rx="1.5"/>
-    <rect x="15" y="3" width="7" height="5" rx="1.5"/>
-    <rect x="15" y="10" width="7" height="5" rx="1.5"/>
-    <rect x="15" y="17" width="7" height="5" rx="1.5"/>
-    <path d="M9 11C12 11 12 5.5 15 5.5"/>
-    <path d="M9 12C12 12 12 12.5 15 12.5"/>
-    <path d="M9 13C12 13 12 19.5 15 19.5"/>
-  </svg>
-);
-
 /* Mini node graph preview for cards */
 function MiniGraph({ nodes, edges }: { nodes: ContentNode[]; edges: Edge[] }) {
   const cats = nodes.map(n => n.data.category);
@@ -103,7 +91,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   return (
     <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
       {/* Full-width layout with horizontal padding */}
-      <div className="p-4 md:px-8 md:py-6">
+      <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
         {/* Header row — compact, full-width */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
@@ -116,35 +104,35 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             )}
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-            <button className="btn btn-primary" onClick={handleNew}>
+            {items.length > 0 && <button className="btn btn-primary" onClick={handleNew}>
               <PlusIcon /> New workflow
-            </button>
+            </button>}
           </div>
         </div>
 
-        {/* Empty state — compact, not oversized */}
         {items.length === 0 ? (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 'var(--space-6)',
-            padding: 'var(--space-8) var(--space-6)',
-            borderRadius: 'var(--radius-lg)',
-            border: '1px dashed var(--color-border-subtle)',
-            background: 'var(--color-bg-card)',
-            marginTop: 'calc(35vh - 100px)',
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            textAlign: 'center', padding: 'var(--space-8)',
           }}>
-            <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--color-text-disabled)' }}>
-              <GraphIcon />
+            <div style={{
+              width: 64, height: 64, borderRadius: 'var(--radius-xl, 16px)',
+              background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)',
+            }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><path d="M17.5 14v7m-3.5-3.5h7" />
+              </svg>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: 2 }}>
-                No saved workflows yet
-              </div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
-                Build a content pipeline and save it here for reuse
-              </div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md, 16px)', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>
+              No workflows yet
             </div>
-            <button className="btn btn-primary" onClick={handleNew} style={{ flexShrink: 0 }}>
-              <PlusIcon /> Create workflow
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 300, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>
+              Create your first content pipeline to connect nodes, automate tasks, and reuse flows.
+            </div>
+            <button className="btn btn-primary" onClick={handleNew} style={{ padding: '10px 24px', fontSize: 'var(--text-sm)' }}>
+              <PlusIcon /> Create your first workflow
             </button>
           </div>
         ) : (

@@ -9,7 +9,7 @@ const STATUS_MAP: Record<string, { dot: string; bg: string; color: string; borde
 function StatusPill({ status = 'idle' }: { status?: string }) {
   const s = STATUS_MAP[status] ?? STATUS_MAP.idle;
   return (<span className="btn-pill" style={{ cursor: 'default', height: 'var(--space-5)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', background: s.bg, color: s.color, borderColor: s.border }}>
-    <div style={{ width: 'var(--size-status-dot)', height: 'var(--size-status-dot)', borderRadius: 'var(--radius-full)', background: s.dot, animation: status === 'running' ? 'pulse 1.2s ease-in-out infinite' : undefined }} />{status}
+    <div style={{ width: 'var(--size-status-dot)', height: 'var(--size-status-dot)', borderRadius: 'var(--radius-full)', background: s.dot, animation: status === 'running' ? 'pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite' : undefined }} />{status}
   </span>);
 }
 const meta: Meta<typeof StatusPill> = { title: 'Components/Feedback/Status', component: StatusPill, tags: ['autodocs'], argTypes: { status: { control: 'select', options: ['idle','running','complete','error'] } } };
