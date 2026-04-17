@@ -21,6 +21,7 @@ const PROVIDERS = [
   { key: 'openaiKey' as const, setter: 'setOpenaiKey' as const, label: 'OpenAI', placeholder: 'sk-...', icon: 'O', validateUrl: 'https://api.openai.com/v1/models', validateHeaders: (k: string) => ({ Authorization: `Bearer ${k}` }), validateBody: null },
   { key: 'googleKey' as const, setter: 'setGoogleKey' as const, label: 'Google Gemini', placeholder: 'AIza...', icon: 'G', validateUrl: null, validateHeaders: () => ({}), validateBody: null },
   { key: 'groqKey' as const, setter: 'setGroqKey' as const, label: 'Groq (Llama)', placeholder: 'gsk_...', icon: 'L', validateUrl: 'https://api.groq.com/openai/v1/models', validateHeaders: (k: string) => ({ Authorization: `Bearer ${k}` }), validateBody: null },
+  { key: 'togetherKey' as const, setter: 'setTogetherKey' as const, label: 'Together (Images)', placeholder: '', icon: 'T', validateUrl: 'https://api.together.xyz/v1/models', validateHeaders: (k: string) => ({ Authorization: `Bearer ${k}` }), validateBody: null },
 ] as const;
 
 const LBL: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', display: 'block', marginBottom: 'var(--space-2)' };
@@ -96,6 +97,44 @@ function BrandVisualSection() {
             </div>
           </div>
         )}
+
+        {/* Reference images for image style */}
+        <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)' }}>
+          <label style={LBL}>Reference images</label>
+          <p style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', margin: '0 0 var(--space-3)', lineHeight: 1.5 }}>
+            Upload images that define your visual style. All generated images will reference this aesthetic.
+          </p>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+            {(b.referenceImages || []).map((img, i) => (
+              <div key={i} style={{ position: 'relative', width: 72, height: 72, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--color-border-default)' }}>
+                <img src={img} alt={`Reference ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <button onClick={() => setBrand({ referenceImages: b.referenceImages.filter((_, j) => j !== i) })}
+                  style={{ position: 'absolute', top: 2, right: 2, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+              </div>
+            ))}
+            {(b.referenceImages || []).length < 4 && (
+              <label style={{ width: 72, height: 72, borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-border-default)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-disabled)', transition: 'border-color 150ms' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                <input type="file" accept="image/*" hidden onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => { setBrand({ referenceImages: [...(b.referenceImages || []), reader.result as string] }); };
+                  reader.readAsDataURL(file);
+                  e.target.value = '';
+                }} />
+              </label>
+            )}
+          </div>
+        </div>
+
+        {/* Style note */}
+        <div>
+          <label style={LBL}>Image style description</label>
+          <textarea className="form-textarea" value={b.imageStyleNote || ''} onChange={e => setBrand({ imageStyleNote: e.target.value })}
+            placeholder="e.g. Clean editorial photography, soft natural lighting, muted earth tones, shallow depth of field"
+            style={{ minHeight: 60 }} />
+        </div>
       </div>
     </div>
   );

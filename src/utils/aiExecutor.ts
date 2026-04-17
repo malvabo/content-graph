@@ -132,6 +132,13 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
     const style = config.style as string || 'Photography';
     const aspect = config.aspect as string || '16:9';
     system += `\n\nContext: Purpose is "${purpose}". Visual style: "${style}". Aspect ratio: ${aspect}. Tailor the prompt to this use case.`;
+    // Inject brand reference image style
+    if (brand?.imageStyleNote) {
+      system += `\n\nBRAND IMAGE STYLE: ${brand.imageStyleNote}. All generated images must match this aesthetic.`;
+    }
+    if (brand?.referenceImages?.length) {
+      system += `\n\nThe brand has ${brand.referenceImages.length} reference image(s) defining the visual style. Ensure the generated prompt produces images consistent with this established visual direction.`;
+    }
   }
 
   if (provider === 'anthropic') return callAnthropic(apiKey, model, system, input, signal);
