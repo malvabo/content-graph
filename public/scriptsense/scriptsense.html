@@ -322,11 +322,11 @@ function useSources(query) {
 function RephraseBlock({ rephrase, onApply }) {
   if (!rephrase) return null;
   return (
-    <div style={{ marginTop:14, background:"linear-gradient(135deg,#EEF8F2 0%,#EBF4F0 100%)", borderRadius:12, padding:"12px 14px" }}>
-      <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.accent, marginBottom:6 }}>Rephrase to</p>
+    <div style={{ marginTop:14, background:C.accentLt, borderRadius:12, padding:"12px 14px" }}>
+      <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.accentDark, marginBottom:6 }}>Rephrase to</p>
       <p style={{ fontSize:13, color:C.text, lineHeight:1.6, fontStyle:"italic", marginBottom:10 }}>"{rephrase}"</p>
       <button onClick={onApply} style={{
-        background:C.accent, color:"#061208", border:"none", borderRadius:8,
+        background:C.accent, color:"#fff", border:"none", borderRadius:8,
         fontSize:12, fontWeight:600, padding:"5px 14px", cursor:"pointer",
       }}>Apply</button>
     </div>
@@ -356,15 +356,15 @@ function MetaphorCard({ data, country, elRef, onClose, onApply, highlighted }) {
       <CardHeader type="metaphor" label="Metaphor" extra={`${ci.flag} ${ci.name}`} onClose={onClose} />
       <p style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:14 }}>{data.headline}</p>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 32px 1fr", gap:8, alignItems:"stretch" }}>
-        <div style={{ background:"#F6F7F5", borderRadius:12, padding:"12px 14px" }}>
+        <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}>
           <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mute, marginBottom:6 }}>Original</p>
           <p style={{ fontSize:13, color:C.text, lineHeight:1.6, fontStyle:"italic" }}>"{data.original}"</p>
         </div>
         <div style={{ display:"flex", justifyContent:"center", alignItems:"center" }}>
           <ArrowRight size={14} color={C.mute} />
         </div>
-        <div style={{ background:"#EBF4F0", borderRadius:12, padding:"12px 14px" }}>
-          <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:"#0A5C2A", marginBottom:6 }}>Localized</p>
+        <div style={{ background:C.accentLt, borderRadius:12, padding:"12px 14px" }}>
+          <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.accentDark, marginBottom:6 }}>Localized</p>
           <p style={{ fontSize:13, color:C.text, lineHeight:1.6, fontStyle:"italic" }}>"{localized}"</p>
         </div>
       </div>
@@ -907,7 +907,7 @@ ${text}`
           </div>
 
           {/* Right — insights panel */}
-          <div ref={insightRef} className="scroll-area" style={{ width:"50%", overflowY:"auto", padding:"12px", display:"flex", flexDirection:"column", gap:8, background:"#F0F2F0" }}>
+          <div ref={insightRef} className="scroll-area" style={{ width:"50%", overflowY:"auto", padding:"12px", display:"flex", flexDirection:"column", gap:8, background:C.surface }}>
 
             <div style={{ display: activeTab==="insights" ? "contents" : "none" }}>
               {/* ── Empty / loading / results states ── */}
@@ -920,7 +920,7 @@ ${text}`
                     <p style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:6 }}>Analyze your script</p>
                     <p style={{ fontSize:13, color:C.sub, lineHeight:1.6, maxWidth:240, margin:"0 auto" }}>Find science claims, metaphors, and logic gaps — then get suggestions to strengthen them.</p>
                   </div>
-                  <button onClick={runAnalysis} style={{ background:C.accent, color:"#061208", border:"none", borderRadius:12, padding:"10px 24px", fontSize:13, fontWeight:600, cursor:"pointer", boxShadow:`0 2px 8px rgba(13,191,90,0.35)` }}>
+                  <button onClick={runAnalysis} style={{ background:C.accent, color:"#fff", border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:600, cursor:"pointer", boxShadow:`0 2px 8px rgba(13,191,90,0.25)` }}>
                     Generate insights
                   </button>
                 </div>
@@ -946,7 +946,7 @@ ${text}`
                           onChange={e => { window.__CLAUDE_KEY = e.target.value.trim(); }}
                           style={{ width:"100%", padding:"8px 12px", border:"1px solid rgba(0,0,0,0.12)", borderRadius:8, fontSize:13, outline:"none" }}
                         />
-                        <button onClick={runAnalysis} style={{ marginTop:8, width:"100%", background:C.accent, color:"#061208", border:"none", borderRadius:8, padding:"8px 0", fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                        <button onClick={runAnalysis} style={{ marginTop:8, width:"100%", background:C.accent, color:"#fff", border:"none", borderRadius:8, padding:"8px 0", fontSize:12, fontWeight:600, cursor:"pointer" }}>
                           Retry
                         </button>
                       </div>

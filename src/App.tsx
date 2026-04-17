@@ -60,6 +60,10 @@ function AppInner() {
 
   return (
     <div className="h-screen flex flex-col">
+      {/* Mobile debug banner — remove after confirming */}
+      <div className="md:hidden" style={{ background: '#ff0000', color: '#fff', padding: 8, textAlign: 'center', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 700, zIndex: 99999 }}>
+        📱 MOBILE MODE ACTIVE — width: {typeof window !== 'undefined' ? window.innerWidth : '?'}px
+      </div>
       <div className="flex flex-col-reverse md:flex-row flex-1 overflow-hidden">
         {activeView !== 'intro' && <IconNav activeView={activeView} onViewChange={setActiveView} />}
 
