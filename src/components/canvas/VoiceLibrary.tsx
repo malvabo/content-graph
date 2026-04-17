@@ -7,7 +7,6 @@ const MicIcon = () => (
     <rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><path d="M12 17v4" /><path d="M8 21h8" />
   </svg>
 );
-const StopIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>;
 const DotsIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" /></svg>
 );
@@ -157,29 +156,57 @@ export default function VoiceLibrary() {
           )}
         </div>
 
-        {/* Recording card */}
+        {/* Recording overlay — fullscreen focused experience */}
         {recording && (
           <div style={{
-            borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', marginBottom: 'var(--space-3)',
-            background: 'var(--color-bg-card)', border: '2px solid #e53e3e',
-            fontFamily: 'var(--font-sans)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
+            position: 'fixed', inset: 0, zIndex: 100,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--color-bg)', animation: 'fadeIn 150ms ease',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#e53e3e', animation: 'pulse 1.2s infinite' }} />
-                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)' }}>Recording</span>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>{fmtDuration(elapsed)}</span>
+            {/* Pulsing ring */}
+            <div style={{ position: 'relative', marginBottom: 'var(--space-8)' }}>
+              <div style={{ width: 120, height: 120, borderRadius: '50%', border: '2px solid #e53e3e', opacity: 0.3, animation: 'pulse-ring 2s ease-out infinite', position: 'absolute', inset: -20 }} />
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(229,62,62,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#e53e3e', animation: 'pulse 1.2s infinite' }} />
               </div>
-              <button onClick={stopRecording} className="btn btn-destructive" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 12px', fontSize: 'var(--text-xs)' }}>
-                <StopIcon /> Stop
-              </button>
             </div>
+
+            {/* Duration */}
+            <div style={{ fontSize: 32, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', fontVariantNumeric: 'tabular-nums', marginBottom: 'var(--space-2)', letterSpacing: '0.02em' }}>
+              {Math.floor(elapsed / 60000)}:{String(Math.floor((elapsed / 1000) % 60)).padStart(2, '0')}
+            </div>
+            <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginBottom: 'var(--space-8)' }}>
+              Recording…
+            </div>
+
             {/* Live transcript */}
-            <div style={{ fontSize: 'var(--text-xs)', lineHeight: 1.5, minHeight: 20 }}>
-              <span style={{ color: 'var(--color-text-primary)', transition: 'opacity 150ms ease' }}>{finalText}</span>
-              {interimText && (
-                <span style={{ color: 'var(--color-text-disabled)', opacity: 1, transition: 'opacity 150ms ease' }}>{finalText ? ' ' : ''}{interimText}</span>
+            <div style={{ maxWidth: 480, width: '100%', padding: '0 var(--space-6)', textAlign: 'center', minHeight: 60, marginBottom: 'var(--space-8)' }}>
+              <p style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', margin: 0 }}>
+                <span style={{ color: 'var(--color-text-primary)', transition: 'opacity 200ms ease' }}>{finalText}</span>
+                {interimText && (
+                  <span style={{ color: 'var(--color-text-disabled)', transition: 'opacity 200ms ease' }}>{finalText ? ' ' : ''}{interimText}</span>
+                )}
+              </p>
+              {!finalText && !interimText && (
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)' }}>Start speaking…</span>
               )}
+            </div>
+
+            {/* Stop button */}
+            <button onClick={stopRecording}
+              style={{
+                width: 56, height: 56, borderRadius: '50%', border: 'none',
+                background: '#e53e3e', color: '#fff', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'transform 100ms, opacity 100ms',
+                boxShadow: '0 4px 20px rgba(229,62,62,0.3)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+            </button>
+            <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-3)' }}>
+              Tap to stop
             </div>
           </div>
         )}
@@ -314,6 +341,7 @@ export default function VoiceLibrary() {
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes scaleIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.4; } 100% { transform: scale(1.4); opacity: 0; } }
       `}</style>
     </div>
   );
