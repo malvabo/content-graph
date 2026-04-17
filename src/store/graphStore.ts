@@ -44,6 +44,8 @@ export interface GraphState {
   setNodes: (nodes: ContentNode[]) => void;
   setEdges: (edges: Edge[]) => void;
   clearGraph: () => void;
+  workflowId: string | null;
+  setWorkflowId: (id: string) => void;
 }
 
 export const useGraphStore = create<GraphState>()(
@@ -55,8 +57,10 @@ export const useGraphStore = create<GraphState>()(
         graphName: 'Untitled Graph',
         selectedNodeId: null,
         connectingNodeId: null,
+        workflowId: null,
 
         setGraphName: (name) => set({ graphName: name }),
+        setWorkflowId: (id) => set({ workflowId: id }),
         setConnectingNodeId: (id) => set({ connectingNodeId: id }),
         setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 
@@ -110,7 +114,7 @@ export const useGraphStore = create<GraphState>()(
         setEdges: (edges) => set({ edges }),
 
         clearGraph: () => {
-          set({ nodes: [], edges: [], selectedNodeId: null });
+          set({ nodes: [], edges: [], selectedNodeId: null, workflowId: null });
           useExecutionStore.getState().resetAll();
           useOutputStore.getState().clearAll();
         },

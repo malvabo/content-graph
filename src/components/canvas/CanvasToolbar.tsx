@@ -6,8 +6,10 @@ import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { mockExecute } from '../../utils/mockExecutor';
 
+import { saveWorkflow } from '../../utils/workflowApi';
+
 export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: () => void }) {
-  const { graphName, setGraphName, clearGraph, nodes } = useGraphStore();
+  const { graphName, setGraphName, clearGraph, nodes, edges } = useGraphStore();
   const { autoLayout } = useGraphLayout();
   const { runAll } = useNodeExecution();
   const isRunning = useExecutionStore((s) => Object.values(s.status).some((v) => v === 'running'));
@@ -55,7 +57,12 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
             <button className="btn-ghost btn-sm hidden md:inline-flex" style={{ borderRadius: 'var(--radius-md)' }} onClick={() => { if (nodes.length === 0) { clearGraph(); } else { setConfirmClear(true); } }}>Clear</button>
           )}
         <button className={`btn btn-run ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>
-        <button className="btn btn-outline" disabled={nodes.length === 0} onClick={() => { setPublished(true); setTimeout(() => setPublished(false), 2000); }}>{published ? '✓ Published' : 'Publish'}</button>
+        <button className="btn btn-outline" disabled={nodes.length === 0 || published} onClick={async () => {
+          const id = useGraphStore.getState().workflowId || `wf-${Date.now()}`;
+          await saveWorkflow({ id, name: graphName || 'Untitled', nodes: nodes as any, edges: edges as any, savedAt: new Date().toISOString() });
+          useGraphStore.getState().setWorkflowId(id);
+          setPublished(true); setTimeout(() => setPublished(false), 2000);
+        }}>{published ? '✓ Published' : 'Publish'}</button>
       </div>
 
       {/* Publish notification */}
