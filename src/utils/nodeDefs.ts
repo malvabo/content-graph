@@ -51,6 +51,7 @@ export const MODEL_OPTIONS = [
   'claude-haiku-4', 'claude-sonnet-4', 'claude-opus-4',
   'gpt-4o-mini', 'gpt-4o', 'o4-mini',
   'gemini-2.0-flash', 'gemini-2.5-flash',
+  'llama-3.3-70b', 'llama-4-scout',
 ] as const;
 export const IMAGE_MODEL_OPTIONS = ['FLUX.1 schnell', 'FLUX.1 dev', 'DALL·E 3', 'Imagen 3', 'Stable Diffusion 3.5'] as const;
 export const IMAGE_RESOLUTION_OPTIONS = ['512x512', '1024x1024', '1024x1536', '1536x1024', '1792x1024'] as const;

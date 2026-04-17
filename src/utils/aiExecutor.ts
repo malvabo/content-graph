@@ -13,10 +13,11 @@ const SYSTEM_PROMPTS: Record<string, string> = {
   'video': 'You are a video script writer. Write a short video script based on the input, with scene descriptions and narration. Output only the script.',
 };
 
-function getProvider(model: string): 'anthropic' | 'openai' | 'google' {
+function getProvider(model: string): 'anthropic' | 'openai' | 'google' | 'groq' {
   if (model.startsWith('claude')) return 'anthropic';
   if (model.startsWith('gpt') || model.startsWith('o1') || model.startsWith('o3') || model.startsWith('o4')) return 'openai';
   if (model.startsWith('gemini')) return 'google';
+  if (model.startsWith('llama')) return 'groq';
   return 'anthropic';
 }
 
@@ -27,6 +28,8 @@ function getApiModel(model: string): string {
     'claude-opus-4': 'claude-opus-4-20250514',
     'gemini-2.0-flash': 'gemini-2.0-flash',
     'gemini-2.5-flash': 'gemini-2.5-flash-preview-04-17',
+    'llama-3.3-70b': 'llama-3.3-70b-versatile',
+    'llama-4-scout': 'meta-llama/llama-4-scout-17b-16e-instruct',
   };
   return map[model] ?? model;
 }
@@ -64,12 +67,23 @@ async function callGoogle(apiKey: string, model: string, system: string, input: 
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 }
 
+async function callGroq(apiKey: string, model: string, system: string, input: string): Promise<string> {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: getApiModel(model), max_tokens: 2048, messages: [{ role: 'system', content: system }, { role: 'user', content: input }] }),
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || `Groq ${res.status}`); }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
 export async function aiExecute(input: string, config: Record<string, unknown>, subtype: string): Promise<string> {
   const model = (config.model as string) || 'claude-sonnet-4';
   const provider = getProvider(model);
-  const { anthropicKey, openaiKey, googleKey } = useSettingsStore.getState();
+  const { anthropicKey, openaiKey, googleKey, groqKey } = useSettingsStore.getState();
 
-  const keys: Record<string, string> = { anthropic: anthropicKey, openai: openaiKey, google: googleKey };
+  const keys: Record<string, string> = { anthropic: anthropicKey, openai: openaiKey, google: googleKey, groq: groqKey };
   const apiKey = keys[provider];
   if (!apiKey) throw new Error(`No ${provider} API key set. Go to Settings to add one.`);
 
@@ -85,5 +99,6 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
 
   if (provider === 'anthropic') return callAnthropic(apiKey, model, system, input);
   if (provider === 'openai') return callOpenAI(apiKey, model, system, input);
+  if (provider === 'groq') return callGroq(apiKey, model, system, input);
   return callGoogle(apiKey, model, system, input);
 }
