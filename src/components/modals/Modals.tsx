@@ -163,17 +163,17 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
     setGenError(null);
     setVariants([]);
     const dims = getDims(ratio);
-    const baseSeed = Date.now();
-    const togetherKey = useSettingsStore.getState().togetherKey;
-    if (!togetherKey) { setGenError('No Together API key set. Go to Settings to add one.'); setGenLoading(false); return; }
+    const openaiKey = useSettingsStore.getState().openaiKey;
+    if (!openaiKey) { setGenError('No OpenAI API key set. Go to Settings to add one.'); setGenLoading(false); return; }
+    const size = dims.w > dims.h ? '1792x1024' : dims.h > dims.w ? '1024x1792' : '1024x1024';
     try {
       for (let i = 0; i < 4; i++) {
         if (ctrl.signal.aborted) return;
         try {
-          const res = await fetch('https://api.together.xyz/v1/images/generations', {
+          const res = await fetch('https://api.openai.com/v1/images/generations', {
             method: 'POST', signal: ctrl.signal,
-            headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt: editPrompt.trim().slice(0, 500), width: dims.w, height: dims.h, steps: 4, n: 1, seed: baseSeed + i, response_format: 'b64_json' }),
+            headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'dall-e-3', prompt: editPrompt.trim().slice(0, 1000), n: 1, size, response_format: 'b64_json' }),
           });
           if (!res.ok) continue;
           const data = await res.json();

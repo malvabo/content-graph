@@ -149,8 +149,8 @@ function BrandVoiceSection() {
       <div style={{ ...CARD, display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
         <div>
           <label style={LBL}>Personality</label>
-          <textarea className="form-input" rows={3} value={b.voice.personality} onChange={e => setBrand({ voice: { ...b.voice, personality: e.target.value } })}
-            placeholder="Warm but authoritative. We explain complex topics simply without dumbing them down." style={{ width: '100%', resize: 'none' }} />
+          <textarea className="form-textarea" value={b.voice.personality} onChange={e => setBrand({ voice: { ...b.voice, personality: e.target.value } })}
+            placeholder="Warm but authoritative. We explain complex topics simply without dumbing them down." style={{ width: '100%', minHeight: 80 }} />
         </div>
         <div>
           <label style={LBL}>Target audience</label>
@@ -163,8 +163,8 @@ function BrandVoiceSection() {
         </div>
         <div>
           <label style={LBL}>Example post</label>
-          <textarea className="form-input" rows={5} value={b.voice.examplePost} onChange={e => setBrand({ voice: { ...b.voice, examplePost: e.target.value } })}
-            placeholder="Paste a real post that perfectly captures your brand voice." style={{ width: '100%', resize: 'none' }} />
+          <textarea className="form-textarea" value={b.voice.examplePost} onChange={e => setBrand({ voice: { ...b.voice, examplePost: e.target.value } })}
+            placeholder="Paste a real post that perfectly captures your brand voice." style={{ width: '100%', minHeight: 120 }} />
         </div>
         <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: b.voice.personality ? 'var(--color-accent)' : 'var(--color-border-default)' }} />

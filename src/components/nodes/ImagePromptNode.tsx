@@ -8,24 +8,17 @@ import { getDims } from '../../utils/imageDims';
 import { useSettingsStore } from '../../store/settingsStore';
 
 async function genImage(prompt: string, _seed: number, w: number, h: number): Promise<string> {
-  const togetherKey = useSettingsStore.getState().togetherKey;
-  if (!togetherKey) throw new Error('No Together API key set. Go to Settings to add one.');
-  const res = await fetch('https://api.together.xyz/v1/images/generations', {
+  const openaiKey = useSettingsStore.getState().openaiKey;
+  if (!openaiKey) throw new Error('No OpenAI API key set. Go to Settings to add one.');
+  const size = w > h ? '1792x1024' : h > w ? '1024x1792' : '1024x1024';
+  const res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'black-forest-labs/FLUX.1-schnell-Free',
-      prompt: prompt.slice(0, 500),
-      width: w,
-      height: h,
-      steps: 4,
-      n: 1,
-      response_format: 'b64_json',
-    }),
+    headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'dall-e-3', prompt: prompt.slice(0, 1000), n: 1, size, response_format: 'b64_json' }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Together API error: ${res.status}`);
+    throw new Error(err.error?.message || `OpenAI error: ${res.status}`);
   }
   const data = await res.json();
   const b64 = data.data?.[0]?.b64_json;

@@ -26,7 +26,7 @@ function MobileNodeDetail({ node, onClose }: { node: ContentNode; onClose: () =>
       <div onClick={e => e.stopPropagation()} style={{
         position: 'relative', background: 'var(--color-bg-card)',
         borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
-        maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+        maxHeight: '92vh', display: 'flex', flexDirection: 'column',
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-3) 0 var(--space-2)' }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-border-default)' }} />
@@ -46,7 +46,7 @@ function MobileNodeDetail({ node, onClose }: { node: ContentNode; onClose: () =>
         <div style={{ flex: 1, overflow: 'auto', padding: 'var(--space-3) var(--space-4) var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           {node.data.subtype === 'text-source' && (
             <textarea placeholder="Paste your text here…" value={(config.text as string) ?? ''} onChange={e => { set('text', e.target.value); useOutputStore.getState().setOutput(node.id, { text: e.target.value }); }}
-              className="form-textarea" style={{ minHeight: 160 }} />
+              className="form-textarea" style={{ minHeight: 280, flex: 1, fontSize: 16 }} />
           )}
           {status === 'idle' && node.data.category === 'generate' && (
             <div style={{ textAlign: 'center', padding: 'var(--space-6)', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }}>
@@ -191,6 +191,13 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
       data: { subtype: def.subtype, label: def.label, badge: def.badge, category: def.category, description: def.description, config: {} },
     };
     addNode(node);
+    // Auto-connect to the last node in the list
+    const { nodes: current, edges: currentEdges } = useGraphStore.getState();
+    const prev = current[current.length - 2]; // node before the one we just added
+    if (prev) {
+      const edge = { id: `e-${prev.id}-${node.id}`, source: prev.id, target: node.id, type: 'deletable' };
+      useGraphStore.getState().setEdges([...currentEdges, edge]);
+    }
     setPickerOpen(false);
   }, [addNode]);
 
