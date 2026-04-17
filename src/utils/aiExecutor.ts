@@ -89,10 +89,22 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
   const { anthropicKey, openaiKey, googleKey, groqKey } = useSettingsStore.getState();
 
   const keys: Record<string, string> = { anthropic: anthropicKey, openai: openaiKey, google: googleKey, groq: groqKey };
-  const apiKey = keys[provider];
+  let apiKey = keys[provider];
+  let activeProvider = provider;
+  let activeModel = model;
+
+  // Fallback: if selected provider has no key, try any available key
   if (!apiKey) {
-    console.error(`[aiExecute] No ${provider} API key. Model: ${model}, Provider: ${provider}. Keys present:`, { anthropic: !!anthropicKey, openai: !!openaiKey, google: !!googleKey, groq: !!groqKey });
-    throw new Error(`No ${provider} API key set. Go to Settings to add one.`);
+    const fallbacks: [string, string, string][] = [
+      ['anthropic', anthropicKey, 'claude-sonnet-4'],
+      ['groq', groqKey, 'llama-3.3-70b'],
+      ['openai', openaiKey, 'gpt-4o-mini'],
+      ['google', googleKey, 'gemini-2.0-flash'],
+    ];
+    for (const [p, k, m] of fallbacks) {
+      if (k) { apiKey = k; activeProvider = p as any; activeModel = m; break; }
+    }
+    if (!apiKey) throw new Error('No API key set. Go to Settings to add one.');
   }
 
   let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
@@ -144,8 +156,8 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
     }
   }
 
-  if (provider === 'anthropic') return callAnthropic(apiKey, model, system, input, signal);
-  if (provider === 'openai') return callOpenAI(apiKey, model, system, input, signal);
-  if (provider === 'groq') return callGroq(apiKey, model, system, input, signal);
-  return callGoogle(apiKey, model, system, input, signal);
+  if (activeProvider === 'anthropic') return callAnthropic(apiKey, activeModel, system, input, signal);
+  if (activeProvider === 'openai') return callOpenAI(apiKey, activeModel, system, input, signal);
+  if (activeProvider === 'groq') return callGroq(apiKey, activeModel, system, input, signal);
+  return callGoogle(apiKey, activeModel, system, input, signal);
 }

@@ -41,6 +41,61 @@ const statusBadge = (status: string) => {
   );
 };
 
+function RecordingOverlay({ elapsed, finalText, interimText, onStop }: { elapsed: number; finalText: string; interimText: string; onStop: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#F2EFE9';
+    let t = 0, raf: number;
+    const resize = () => { const r = canvas.getBoundingClientRect(); canvas.width = r.width * devicePixelRatio; canvas.height = r.height * devicePixelRatio; ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0); };
+    resize(); window.addEventListener('resize', resize);
+    const draw = () => {
+      const r = canvas.getBoundingClientRect(); const w = r.width, h = r.height, cx = w / 2, cy = h / 2;
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 4; i++) {
+        const angle = t * 0.6 + i * (Math.PI * 2 / 4);
+        const x = cx + Math.cos(angle) * (100 + Math.sin(t * 0.4 + i) * 40);
+        const y = cy + Math.sin(angle) * (100 + Math.sin(t * 0.4 + i) * 40);
+        const size = 160 + Math.sin(t * 0.7 + i * 2) * 30;
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, size);
+        const hue = 170 + i * 15;
+        grad.addColorStop(0, `hsla(${hue},55%,62%,0.35)`);
+        grad.addColorStop(0.6, `hsla(${hue + 10},40%,70%,0.08)`);
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+      }
+      t += 0.012; raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, []);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <div style={{ fontSize: 32, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em' }}>
+          {Math.floor(elapsed / 60000)}:{String(Math.floor((elapsed / 1000) % 60)).padStart(2, '0')}
+        </div>
+        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginBottom: 24 }}>Recording…</div>
+        <div style={{ maxWidth: 480, width: '100%', padding: '0 24px', textAlign: 'center', minHeight: 60, marginBottom: 24 }}>
+          <p style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', margin: 0 }}>
+            <span style={{ color: 'var(--color-text-primary)' }}>{finalText}</span>
+            {interimText && <span style={{ color: 'var(--color-text-disabled)' }}>{finalText ? ' ' : ''}{interimText}</span>}
+          </p>
+          {!finalText && !interimText && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)' }}>Start speaking…</span>}
+        </div>
+        <button onClick={onStop} style={{ width: 56, height: 56, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(13,191,90,0.3)' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+        </button>
+        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginTop: 8 }}>Tap to stop</div>
+      </div>
+    </div>
+  );
+}
+
 export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: () => void }) {
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
   const [recording, setRecording] = useState(false);
@@ -148,7 +203,7 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
           </div>
           {!recording && notes.length > 0 && (
             <button onClick={startRecording} aria-label="Record" style={{
-              width: 36, height: 36, borderRadius: '50%', border: 'none', background: '#e53e3e', color: '#fff',
+              width: 36, height: 36, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'opacity .15s',
             }}
               onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
@@ -158,60 +213,8 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
           )}
         </div>
 
-        {/* Recording overlay — fullscreen focused experience */}
-        {recording && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 100,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            background: 'var(--color-bg)', animation: 'fadeIn 150ms ease',
-          }}>
-            {/* Pulsing ring */}
-            <div style={{ position: 'relative', marginBottom: 'var(--space-8)' }}>
-              <div style={{ width: 120, height: 120, borderRadius: '50%', border: '2px solid #e53e3e', opacity: 0.3, animation: 'pulse-ring 2s ease-out infinite', position: 'absolute', inset: -20 }} />
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(229,62,62,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#e53e3e', animation: 'pulse 1.2s infinite' }} />
-              </div>
-            </div>
-
-            {/* Duration */}
-            <div style={{ fontSize: 32, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', fontVariantNumeric: 'tabular-nums', marginBottom: 'var(--space-2)', letterSpacing: '0.02em' }}>
-              {Math.floor(elapsed / 60000)}:{String(Math.floor((elapsed / 1000) % 60)).padStart(2, '0')}
-            </div>
-            <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginBottom: 'var(--space-8)' }}>
-              Recording…
-            </div>
-
-            {/* Live transcript */}
-            <div style={{ maxWidth: 480, width: '100%', padding: '0 var(--space-6)', textAlign: 'center', minHeight: 60, marginBottom: 'var(--space-8)' }}>
-              <p style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', margin: 0 }}>
-                <span style={{ color: 'var(--color-text-primary)', transition: 'opacity 200ms ease' }}>{finalText}</span>
-                {interimText && (
-                  <span style={{ color: 'var(--color-text-disabled)', transition: 'opacity 200ms ease' }}>{finalText ? ' ' : ''}{interimText}</span>
-                )}
-              </p>
-              {!finalText && !interimText && (
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)' }}>Start speaking…</span>
-              )}
-            </div>
-
-            {/* Stop button */}
-            <button onClick={stopRecording}
-              style={{
-                width: 56, height: 56, borderRadius: '50%', border: 'none',
-                background: '#e53e3e', color: '#fff', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'transform 100ms, opacity 100ms',
-                boxShadow: '0 4px 20px rgba(229,62,62,0.3)',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-            </button>
-            <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-3)' }}>
-              Tap to stop
-            </div>
-          </div>
-        )}
+        {/* Recording overlay — floating blobs */}
+        {recording && <RecordingOverlay elapsed={elapsed} finalText={finalText} interimText={interimText} onStop={stopRecording} />}
 
         {/* Empty state */}
         {notes.length === 0 && !recording ? (
