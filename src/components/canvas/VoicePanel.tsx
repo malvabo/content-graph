@@ -75,10 +75,13 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); obs.disconnect(); };
   }, [listening]);
 
+  const streamRef = useRef<MediaStream | null>(null);
+
   /* Audio amplitude from mic */
   const startAudio = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
       const actx = new AudioContext();
       const src = actx.createMediaStreamSource(stream);
       const analyser = actx.createAnalyser();
@@ -133,10 +136,15 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
     ampRef.current = 0;
     recRef.current?.stop();
     recRef.current = null;
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
     audioCtxRef.current?.close();
     audioCtxRef.current = null;
     analyserRef.current = null;
   }, []);
+
+  // Cleanup on unmount
+  useEffect(() => () => { stop(); }, [stop]);
 
   const [emptyMsg, setEmptyMsg] = useState(false);
 

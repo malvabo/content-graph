@@ -60,10 +60,10 @@ export const useSettingsStore = create<SettingsState>()(
           if (data) {
             const current = get();
             set({
-              anthropicKey: data.anthropic_key || current.anthropicKey,
-              openaiKey: data.openai_key || current.openaiKey,
-              googleKey: data.google_key || current.googleKey,
-              groqKey: data.groq_key || current.groqKey,
+              anthropicKey: data.anthropic_key ?? current.anthropicKey,
+              openaiKey: data.openai_key ?? current.openaiKey,
+              googleKey: data.google_key ?? current.googleKey,
+              groqKey: data.groq_key ?? current.groqKey,
               loaded: true,
             });
           } else set({ loaded: true });

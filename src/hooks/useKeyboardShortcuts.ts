@@ -18,8 +18,9 @@ export function useKeyboardShortcuts() {
         try { useGraphStore.temporal.getState().redo(); } catch { /* empty */ }
       }
       if (meta && e.key === 'd') {
+        e.preventDefault();
         const id = useGraphStore.getState().selectedNodeId;
-        if (id) { e.preventDefault(); useGraphStore.getState().duplicateNode(id); }
+        if (id) useGraphStore.getState().duplicateNode(id);
       }
       if (meta && e.key === 'a') {
         e.preventDefault();

@@ -14,8 +14,16 @@ function getToken(req: VercelRequest): string | null {
   return h?.startsWith('Bearer ') ? h.slice(7) : null;
 }
 
+function getAllowedOrigin(req: VercelRequest): string {
+  const origin = req.headers.origin ?? '';
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin;
+  if (/\.vercel\.app$/.test(origin)) return origin;
+  return '';
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = getAllowedOrigin(req);
+  if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -31,14 +39,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'GET') {
       const { data, error } = await sb.from('workflows').select('*').eq('user_id', user.id).order('saved_at', { ascending: false });
       if (error) throw error;
-      // Map DB columns to client shape
       return res.json((data ?? []).map(r => ({ id: r.id, name: r.name, nodes: r.nodes, edges: r.edges, savedAt: r.saved_at })));
     }
 
     if (req.method === 'POST') {
       const { id, name, nodes, edges, savedAt } = req.body;
       if (!id || !name) return res.status(400).json({ error: 'id and name required' });
-      const { error } = await sb.from('workflows').upsert({ id, user_id: user.id, name, nodes, edges, saved_at: savedAt || new Date().toISOString() }, { onConflict: 'id' });
+      // Use compound conflict to prevent cross-user overwrites
+      const { error } = await sb.from('workflows').upsert(
+        { id, user_id: user.id, name, nodes, edges, saved_at: savedAt || new Date().toISOString() },
+        { onConflict: 'id,user_id' }
+      );
       if (error) throw error;
       return res.json({ id, name, nodes, edges, savedAt });
     }
@@ -52,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     res.status(405).json({ error: 'Method not allowed' });
-  } catch (e: any) {
-    res.status(500).json({ error: 'Database error', detail: e.message });
+  } catch {
+    res.status(500).json({ error: 'Server error' });
   }
 }

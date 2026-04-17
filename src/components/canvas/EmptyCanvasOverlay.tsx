@@ -7,7 +7,7 @@ import { NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
 function makeSourceNode(content: string): ContentNode {
   const def = NODE_DEFS_BY_SUBTYPE['text-source'];
   return {
-    id: `text-source-${Date.now()}`,
+    id: `text-source-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
     type: 'contentNode',
     position: { x: 200, y: 200 },
     deletable: true,

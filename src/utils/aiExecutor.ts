@@ -35,51 +35,55 @@ function getApiModel(model: string): string {
   return map[model] ?? model;
 }
 
-async function callAnthropic(apiKey: string, model: string, system: string, input: string): Promise<string> {
+async function callAnthropic(apiKey: string, model: string, system: string, input: string, signal?: AbortSignal): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
     body: JSON.stringify({ model: getApiModel(model), max_tokens: 2048, system, messages: [{ role: 'user', content: input }] }),
+    signal,
   });
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || `Anthropic ${res.status}`); }
   const data = await res.json();
   return data.content?.[0]?.text ?? '';
 }
 
-async function callOpenAI(apiKey: string, model: string, system: string, input: string): Promise<string> {
+async function callOpenAI(apiKey: string, model: string, system: string, input: string, signal?: AbortSignal): Promise<string> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({ model: getApiModel(model), max_tokens: 2048, messages: [{ role: 'system', content: system }, { role: 'user', content: input }] }),
+    signal,
   });
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || `OpenAI ${res.status}`); }
   const data = await res.json();
   return data.choices?.[0]?.message?.content ?? '';
 }
 
-async function callGoogle(apiKey: string, model: string, system: string, input: string): Promise<string> {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${getApiModel(model)}:generateContent?key=${apiKey}`, {
+async function callGoogle(apiKey: string, model: string, system: string, input: string, signal?: AbortSignal): Promise<string> {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${getApiModel(model)}:generateContent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ parts: [{ text: input }] }], generationConfig: { maxOutputTokens: 2048 } }),
+    signal,
   });
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || `Gemini ${res.status}`); }
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 }
 
-async function callGroq(apiKey: string, model: string, system: string, input: string): Promise<string> {
+async function callGroq(apiKey: string, model: string, system: string, input: string, signal?: AbortSignal): Promise<string> {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({ model: getApiModel(model), max_tokens: 2048, messages: [{ role: 'system', content: system }, { role: 'user', content: input }] }),
+    signal,
   });
   if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || `Groq ${res.status}`); }
   const data = await res.json();
   return data.choices?.[0]?.message?.content ?? '';
 }
 
-export async function aiExecute(input: string, config: Record<string, unknown>, subtype: string): Promise<string> {
+export async function aiExecute(input: string, config: Record<string, unknown>, subtype: string, signal?: AbortSignal): Promise<string> {
   const model = (config.model as string) || 'llama-3.3-70b';
   const provider = getProvider(model);
   const { anthropicKey, openaiKey, googleKey, groqKey } = useSettingsStore.getState();
@@ -130,8 +134,8 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
     system += `\n\nContext: Purpose is "${purpose}". Visual style: "${style}". Aspect ratio: ${aspect}. Tailor the prompt to this use case.`;
   }
 
-  if (provider === 'anthropic') return callAnthropic(apiKey, model, system, input);
-  if (provider === 'openai') return callOpenAI(apiKey, model, system, input);
-  if (provider === 'groq') return callGroq(apiKey, model, system, input);
-  return callGoogle(apiKey, model, system, input);
+  if (provider === 'anthropic') return callAnthropic(apiKey, model, system, input, signal);
+  if (provider === 'openai') return callOpenAI(apiKey, model, system, input, signal);
+  if (provider === 'groq') return callGroq(apiKey, model, system, input, signal);
+  return callGoogle(apiKey, model, system, input, signal);
 }

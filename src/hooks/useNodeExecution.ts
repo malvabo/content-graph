@@ -40,10 +40,7 @@ export function useNodeExecution() {
       }
 
       // Clear previous errors before re-running
-      const { errors } = useExecutionStore.getState();
-      if (errors[nodeId]) {
-        useExecutionStore.getState().setStatus(nodeId, 'idle');
-      }
+      useExecutionStore.getState().resetNode(nodeId);
 
       setStatus(nodeId, 'running');
       try {
@@ -108,9 +105,7 @@ export function useNodeExecution() {
           await runNode(id, (input, config) => executor(input, config, node.data.subtype), ctrl.signal);
         }
       } finally {
-        if (!ctrl.signal.aborted) {
-          useExecutionStore.getState().setRunAllActive(false);
-        }
+        useExecutionStore.getState().setRunAllActive(false);
       }
     },
     [runNode]

@@ -49,19 +49,26 @@ export default function GraphCanvas() {
   useEffect(() => { wrapperRef.current?.focus(); }, []);
 
   const onNodesChange: OnNodesChange = useCallback(
-    (changes) => setNodes(applyNodeChanges(changes, nodes) as ContentNode[]),
-    [nodes, setNodes]
+    (changes) => {
+      const current = useGraphStore.getState().nodes;
+      setNodes(applyNodeChanges(changes, current) as ContentNode[]);
+    },
+    [setNodes]
   );
   const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => setEdges(applyEdgeChanges(changes, edges)),
-    [edges, setEdges]
+    (changes) => {
+      const current = useGraphStore.getState().edges;
+      setEdges(applyEdgeChanges(changes, current));
+    },
+    [setEdges]
   );
   const onConnect: OnConnect = useCallback(
     (conn: Connection) => {
       if (!isValidConnection(conn)) return;
-      setEdges(addEdge({ ...conn, id: `e-${conn.source}-${conn.target}-${Date.now()}-${Math.random().toString(36).slice(2,7)}` }, edges));
+      const current = useGraphStore.getState().edges;
+      setEdges(addEdge({ ...conn, id: `e-${conn.source}-${conn.target}-${Date.now()}-${Math.random().toString(36).slice(2,7)}` }, current));
     },
-    [edges, setEdges, isValidConnection]
+    [setEdges, isValidConnection]
   );
   const onNodesDelete = useCallback(
     (deleted: Node[]) => { deleted.forEach((n) => { useExecutionStore.getState().resetNode(n.id); useOutputStore.getState().clearNode(n.id); }); },

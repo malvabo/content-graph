@@ -1,6 +1,7 @@
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useGraphStore } from '../../store/graphStore';
+import { aiExecute } from '../../utils/aiExecutor';
 import ContentModal from '../modals/ContentModal';
 
 const SKELETON_LINES: Record<string, number[]> = {
@@ -27,7 +28,18 @@ function Skeleton({ subtype }: { subtype: string }) {
 function OutputPreview({ id, subtype, expandOpen, onExpand, onExpandClose }: { id: string; subtype: string; expandOpen?: boolean; onExpand?: () => void; onExpandClose?: () => void }) {
   const text = useOutputStore((s) => s.outputs[id]?.text);
   const label = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.label ?? subtype);
-  const rerun = () => { useExecutionStore.getState().setStatus(id, 'running'); setTimeout(() => useExecutionStore.getState().setStatus(id, 'complete'), 1500); };
+  const rerun = () => {
+    const node = useGraphStore.getState().nodes.find(n => n.id === id);
+    if (!node) return;
+    const { edges } = useGraphStore.getState();
+    const outputs = useOutputStore.getState().outputs;
+    const upstream = edges.filter(e => e.target === id).map(e => e.source);
+    const input = upstream.map(uid => outputs[uid]?.text || '').filter(Boolean).join('\n\n---\n\n');
+    useExecutionStore.getState().setStatus(id, 'running');
+    aiExecute(input, node.data.config as Record<string, unknown>, subtype)
+      .then(result => { useOutputStore.getState().setOutput(id, { text: result }); useExecutionStore.getState().setStatus(id, 'complete'); })
+      .catch(err => { useExecutionStore.getState().setError(id, err instanceof Error ? err.message : 'Regeneration failed'); });
+  };
   if (!text) return null;
 
   const isThread = subtype === 'twitter-thread';

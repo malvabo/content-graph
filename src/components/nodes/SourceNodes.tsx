@@ -172,6 +172,7 @@ export function FileSourceInline({ id }: { id: string }) {
   const onFile = useCallback((f: File) => {
     const reader = new FileReader();
     reader.onload = () => { const c = reader.result as string; updateConfig(id, { text: c, fileName: f.name, fileSize: f.size }); setOutput(id, { text: c }); };
+    reader.onerror = () => { console.error('Failed to read file'); };
     reader.readAsText(f);
   }, [id, updateConfig, setOutput]);
 
@@ -189,8 +190,8 @@ export function FileSourceInline({ id }: { id: string }) {
           onDragEnter={() => setDragOver(true)}
           onDragLeave={() => setDragOver(false)}
           onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); }}>
-          ↑ Drop .txt .md .docx or click
-          <input ref={fileRef} type="file" accept=".txt,.md,.docx" hidden onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
+          ↑ Drop .txt .md or click
+          <input ref={fileRef} type="file" accept=".txt,.md" hidden onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
         </div>
       )}
     </div>
@@ -218,6 +219,7 @@ export function ImageSourceInline({ id }: { id: string }) {
       };
       img.src = url;
     };
+    reader.onerror = () => { console.error('Failed to read image'); };
     reader.readAsDataURL(f);
   }, [id, updateConfig, setOutput]);
 

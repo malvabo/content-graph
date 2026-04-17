@@ -9,7 +9,7 @@ import { aiExecute } from '../../utils/aiExecutor';
 import { saveWorkflow } from '../../utils/workflowApi';
 
 export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: () => void }) {
-  const { graphName, setGraphName, clearGraph, nodes, edges } = useGraphStore();
+  const { graphName, setGraphName, clearGraph, nodes } = useGraphStore();
   const { autoLayout } = useGraphLayout();
   const { runAll } = useNodeExecution();
   const isRunning = useExecutionStore((s) => Object.values(s.status).some((v) => v === 'running'));
@@ -57,9 +57,10 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
           )}
         <button className={`btn btn-run ${isRunning ? 'loading' : ''}`} disabled={isRunning} onClick={handleRunAll}>▶ Run All</button>
         <button className="btn btn-outline" disabled={nodes.length === 0 || published} onClick={async () => {
-          const id = useGraphStore.getState().workflowId || `wf-${Date.now()}`;
-          await saveWorkflow({ id, name: graphName || 'Untitled', nodes: nodes as any, edges: edges as any, savedAt: new Date().toISOString() });
-          useGraphStore.getState().setWorkflowId(id);
+          const s = useGraphStore.getState();
+          const id = s.workflowId || `wf-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+          s.setWorkflowId(id);
+          try { await saveWorkflow({ id, name: s.graphName || 'Untitled', nodes: s.nodes as any, edges: s.edges as any, savedAt: new Date().toISOString() }); } catch { /* handled */ }
           setPublished(true); setTimeout(() => setPublished(false), 2000);
         }}>{published ? '✓ Published' : 'Publish'}</button>
       </div>

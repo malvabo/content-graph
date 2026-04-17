@@ -22,19 +22,20 @@ async function authHeaders(): Promise<HeadersInit> {
 export async function loadWorkflows(): Promise<SavedWorkflow[]> {
   try {
     const res = await fetch(API, { headers: await authHeaders() });
-    if (!res.ok) throw new Error(res.statusText);
+    if (!res.ok) throw new Error(`Failed to load workflows (${res.status})`);
     return await res.json() as SavedWorkflow[];
-  } catch { return []; }
+  } catch (e) {
+    console.error('loadWorkflows:', e);
+    return [];
+  }
 }
 
 export async function saveWorkflow(workflow: SavedWorkflow): Promise<void> {
-  try {
-    await fetch(API, { method: 'POST', headers: await authHeaders(), body: JSON.stringify(workflow) });
-  } catch { /* silent */ }
+  const res = await fetch(API, { method: 'POST', headers: await authHeaders(), body: JSON.stringify(workflow) });
+  if (!res.ok) throw new Error(`Failed to save workflow (${res.status})`);
 }
 
 export async function deleteWorkflow(id: string): Promise<void> {
-  try {
-    await fetch(`${API}?id=${id}`, { method: 'DELETE', headers: await authHeaders() });
-  } catch { /* silent */ }
+  const res = await fetch(`${API}?id=${id}`, { method: 'DELETE', headers: await authHeaders() });
+  if (!res.ok) throw new Error(`Failed to delete workflow (${res.status})`);
 }

@@ -64,12 +64,14 @@ function Header({ title, subtitle, onClose }: { title: string; subtitle?: string
 /* ── Footer: regenerate (loading), copy (icon), done ── */
 function Footer({ onClose, onRegenerate, onCopy, copied }: { onClose: () => void; onRegenerate?: () => void; onCopy: () => void; copied: boolean }) {
   const [loading, setLoading] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const regen = () => {
     if (!onRegenerate || loading) return;
     setLoading(true);
     onRegenerate();
-    setTimeout(() => { setLoading(false); onClose(); }, 1600);
+    timerRef.current = setTimeout(() => { setLoading(false); onClose(); }, 1600);
   };
+  useEffect(() => () => { clearTimeout(timerRef.current); }, []);
   return (
     <div className="flex items-center justify-between shrink-0" style={{ padding: FP, borderTop: '1px solid var(--color-border-subtle)' }}>
       <div>
@@ -89,7 +91,7 @@ function Footer({ onClose, onRegenerate, onCopy, copied }: { onClose: () => void
 
 function useCopy(getText: () => string) {
   const [copied, setCopied] = useState(false);
-  const copy = () => { navigator.clipboard.writeText(getText()); setCopied(true); setTimeout(() => setCopied(false), 1500); };
+  const copy = () => { try { navigator.clipboard.writeText(getText()); } catch { /* clipboard unavailable */ } setCopied(true); setTimeout(() => setCopied(false), 1500); };
   return { copied, copy };
 }
 
@@ -99,12 +101,13 @@ function useCopy(getText: () => string) {
 function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
   const parseTweets = (t: string) => t.split(/\n\n+/).filter(s => s.trim()).map(s => s.replace(/^\d+\/\s*/, ''));
   const [tweets, setTweets] = useState(() => parseTweets(text));
+  const [tweetIds] = useState(() => parseTweets(text).map(() => Math.random().toString(36).slice(2, 9)));
   const refs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const dragIdx = useRef<number | null>(null);
 
   const update = (i: number, val: string) => { const n = [...tweets]; n[i] = val; setTweets(n); };
-  const remove = (i: number) => { if (tweets.length > 1) setTweets(tweets.filter((_, j) => j !== i)); };
-  const add = () => setTweets([...tweets, '']);
+  const remove = (i: number) => { if (tweets.length > 1) { setTweets(tweets.filter((_, j) => j !== i)); tweetIds.splice(i, 1); } };
+  const add = () => { setTweets([...tweets, '']); tweetIds.push(Math.random().toString(36).slice(2, 9)); };
   const onDragStart = (i: number) => { dragIdx.current = i; };
   const onDragOver = (e: React.DragEvent, i: number) => {
     e.preventDefault();
@@ -139,7 +142,7 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
             const len = tweet.length;
             const over = len > 280;
             return (
-              <div key={i} draggable onDragStart={() => onDragStart(i)} onDragOver={e => onDragOver(e, i)} onDragEnd={onDragEnd}
+              <div key={tweetIds[i]} draggable onDragStart={() => onDragStart(i)} onDragOver={e => onDragOver(e, i)} onDragEnd={onDragEnd}
                 style={{
                   background: 'var(--color-bg-surface)',
                   border: `1px solid ${over ? 'var(--color-danger-border)' : 'var(--color-border-default)'}`,
