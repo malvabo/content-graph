@@ -141,7 +141,7 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
             return (
               <div key={i} draggable onDragStart={() => onDragStart(i)} onDragOver={e => onDragOver(e, i)} onDragEnd={onDragEnd}
                 style={{
-                  background: 'var(--color-bg-card)',
+                  background: 'var(--color-bg-surface)',
                   border: `1px solid ${over ? 'var(--color-danger-border)' : 'var(--color-border-default)'}`,
                   borderRadius: 'var(--radius-lg)', overflow: 'hidden',
                   transition: 'border-color 150ms, box-shadow 150ms',
