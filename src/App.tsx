@@ -74,7 +74,7 @@ function AppInner() {
   if (!user && !guest) return <AuthGate />;
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="flex flex-col" style={{ height: '100dvh' }}>
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
         {activeView !== 'intro' && <IconNav activeView={activeView} onViewChange={setActiveView} />}
 

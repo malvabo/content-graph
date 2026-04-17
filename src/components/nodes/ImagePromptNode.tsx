@@ -79,7 +79,7 @@ export function ImagePromptInline({ id }: { id: string }) {
             onMouseDown={(e) => e.stopPropagation()} onClick={() => generate(output!.text || '')}>
             Regenerate
           </button>
-          {viewImage && <ImageModal src={viewImage} prompt={output!.text} nodeLabel="Image Prompt" onClose={() => setViewImage(null)} aspect={aspect}
+          {viewImage && <ImageModal src={viewImage} prompt={output!.text} nodeLabel="Image Prompt" onClose={() => setViewImage(null)} aspect={aspect} nodeId={id}
             onUse={(img: string) => { useOutputStore.getState().setOutput(id, { ...output, imageBase64: img }); setViewImage(null); }} />}
         </div>
       )}

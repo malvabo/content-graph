@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getDims, RATIO_DIMS } from '../../utils/imageDims';
+import { getDims, RATIO_DIMS, PURPOSE_RATIO } from '../../utils/imageDims';
+import { IMAGE_MODEL_OPTIONS, IMAGE_RESOLUTION_OPTIONS } from '../../utils/nodeDefs';
+import { useGraphStore } from '../../store/graphStore';
 
 /* ── AI Selection Popover ── */
 const AI_ACTIONS = [
@@ -118,9 +120,13 @@ function ModalFooter({ children }: { children: React.ReactNode }) {
 }
 
 /* ── Image Modal ── */
-interface ImageModalProps { src: string; prompt?: string; onClose: () => void; nodeLabel?: string; aspect?: string; imgWidth?: number; imgHeight?: number; onUse?: (src: string) => void }
+interface ImageModalProps { src: string; prompt?: string; onClose: () => void; nodeLabel?: string; aspect?: string; imgWidth?: number; imgHeight?: number; onUse?: (src: string) => void; nodeId?: string }
 
-export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: ImageModalProps) {
+export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nodeId }: ImageModalProps) {
+  const config = useGraphStore((s) => nodeId ? s.nodes.find(n => n.id === nodeId)?.data.config as Record<string, unknown> ?? {} : {});
+  const updateConfig = useGraphStore((s) => s.updateNodeConfig);
+  const setConfig = (k: string, v: unknown) => { if (nodeId) updateConfig(nodeId, { [k]: v }); };
+
   const [variants, setVariants] = useState<string[]>([]);
   const [genLoading, setGenLoading] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
@@ -129,13 +135,18 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
   const [zoomed, setZoomed] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [copiedImg, setCopiedImg] = useState(false);
-  const [ratio, setRatio] = useState(aspect || '16:9');
+  const [ratio, setRatio] = useState(aspect || (config.aspect as string) || '16:9');
   const abortRef = useRef<AbortController | null>(null);
   const origPrompt = useRef(prompt || '');
 
+  const purpose = (config.purpose as string) ?? 'Blog hero';
+  const style = (config.style as string) ?? 'Photography';
+  const imageModel = (config.imageModel as string) ?? 'FLUX.1 schnell';
+  const resolution = (config.resolution as string) ?? '1024x1024';
+
   const d = getDims(ratio);
   const promptChanged = editPrompt.trim() !== origPrompt.current.trim();
-  const ratioChanged = ratio !== (aspect || '16:9');
+  const ratioChanged = ratio !== (aspect || (config.aspect as string) || '16:9');
   const needsRegen = promptChanged || ratioChanged;
   const thumbH = Math.round(56 * d.h / d.w);
 
@@ -192,7 +203,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
           {/* Vignette */}
           <div style={{ position: 'absolute', inset: 0, borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)', background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%)', pointerEvents: 'none', zIndex: 1 }} />
           <div style={{ position: 'absolute', top: 'var(--space-3)', left: 'var(--space-3)', zIndex: 3, display: 'flex', gap: 'var(--space-1)' }}>
-            <button onClick={() => setFullscreen(!fullscreen)} style={toolBtn}>
+            <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? 'Exit fullscreen' : 'Expand preview'} style={toolBtn}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 {fullscreen ? <><path d="M4 14h6v6"/><path d="M20 10h-6V4"/></> : <><path d="M15 3h6v6"/><path d="M9 21H3v-6"/></>}
               </svg>
@@ -232,7 +243,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
         {/* ── Right panel ── */}
         {/* #6/#7: consistent horizontal padding var(--space-6) everywhere */}
         <div className="flex flex-col shrink-0 w-full md:w-[300px]">
-          <ModalHeader title={nodeLabel || 'Image'} onClose={onClose} />
+          <ModalHeader title={nodeLabel || 'Image'} subtitle="Configure and generate variants" onClose={onClose} />
 
           <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-6) var(--space-4)', gap: 'var(--space-5)', scrollbarWidth: 'thin' }}>
 
@@ -247,7 +258,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
                   const active = r === ratio;
                   const bw = 18, bh = Math.round(18 * dims.h / dims.w);
                   return (
-                    <button key={r} onClick={() => setRatio(r)}
+                    <button key={r} onClick={() => { setRatio(r); setConfig('aspect', r); }}
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)', padding: 'var(--space-1) var(--space-2)',
                         background: active ? 'var(--color-interactive-active)' : 'transparent', border: active ? '1px solid var(--color-border-strong)' : '1px solid transparent',
                         borderRadius: 'var(--radius-md)', cursor: 'pointer', transition: 'background 100ms' }}>
@@ -264,6 +275,39 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
             {/* #18: divider between sections */}
             <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: '0 calc(var(--space-1) * -1)' }} />
 
+            {/* Node settings */}
+            {nodeId && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <div>
+                  <span className="text-field-label">Purpose</span>
+                  <select className="form-select w-full" value={purpose} onChange={e => { setConfig('purpose', e.target.value); const r = PURPOSE_RATIO[e.target.value]; if (r) { setRatio(r); setConfig('aspect', r); } }}>
+                    {['Blog hero', 'LinkedIn post', 'Newsletter header', 'Instagram slide', 'Social concept'].map(o => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <span className="text-field-label">Style</span>
+                  <select className="form-select w-full" value={style} onChange={e => setConfig('style', e.target.value)}>
+                    {['Photography', 'Flat illustration', '3D render', 'Abstract', 'Editorial graphic'].map(o => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <span className="text-field-label">Image model</span>
+                  <select className="form-select w-full" value={imageModel} onChange={e => setConfig('imageModel', e.target.value)}>
+                    {IMAGE_MODEL_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <span className="text-field-label">Resolution</span>
+                  <select className="form-select w-full" value={resolution} onChange={e => setConfig('resolution', e.target.value)}>
+                    {IMAGE_RESOLUTION_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* #18: divider between sections */}
+            <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: '0 calc(var(--space-1) * -1)' }} />
+
             {/* Prompt */}
             {editPrompt !== undefined && (
               <div>
@@ -275,10 +319,11 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
                   className="form-textarea" style={{ minHeight: 160, scrollbarWidth: 'thin' }}
                 />
                 <div className="flex justify-between" style={{ marginTop: 'var(--space-1)' }}>
-                  <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: editPrompt.length > 500 ? 'var(--color-warning-text)' : 'var(--color-text-disabled)' }}>{editPrompt.length}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: editPrompt.length > 500 ? 'var(--color-warning-text)' : 'var(--color-text-disabled)' }}>{editPrompt.length} / 500</span>
                   {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
                 </div>
                 <div className="flex flex-wrap gap-1" style={{ marginTop: 'var(--space-2)' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', width: '100%', marginBottom: 2 }}>Enhance</span>
                   {['cinematic', 'minimal', 'editorial', 'vibrant', 'moody'].map(s => (
                     <button key={s} className="btn-xs btn-ghost" style={{ fontSize: 'var(--text-xs)', textTransform: 'lowercase' }}
                       onClick={() => setEditPrompt(p => p.includes(s) ? p : `${p.trimEnd()}, ${s}`)}>+{s}</button>
@@ -288,8 +333,8 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse }: I
             )}
           </div>
 
-          {/* Actions — no top border */}
-          <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', gap: 'var(--space-2)' }}>
+          {/* Actions */}
+          <div className="flex flex-col shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', gap: 'var(--space-2)', borderTop: '1px solid var(--color-border-subtle)' }}>
             {genError && (
               <div className="flex items-center justify-between" style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-sm)' }}>
                 <span>{genError}</span>
