@@ -42,6 +42,17 @@ export default function EmptyCanvasOverlay() {
 
   if (nodes.length > 0 || dismissed) return null;
 
+  // Don't flash empty state while zustand persist is rehydrating
+  const [ready, setReady] = useState(() => {
+    try {
+      const raw = localStorage.getItem('content-graph-store');
+      if (raw && JSON.parse(raw)?.state?.nodes?.length > 0) return false;
+    } catch { /* ignore */ }
+    return true;
+  });
+  useEffect(() => { if (!ready) { const t = setTimeout(() => setReady(true), 100); return () => clearTimeout(t); } }, [ready]);
+  if (!ready || nodes.length > 0) return null;
+
   const handleGo = () => {
     const trimmed = text.trim();
     if (!trimmed) return;

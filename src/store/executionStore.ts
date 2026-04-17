@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { NodeStatus } from './graphStore';
 
 interface ExecutionState {
@@ -17,40 +18,48 @@ interface ExecutionState {
   resetAll: () => void;
 }
 
-export const useExecutionStore = create<ExecutionState>()((set) => ({
-  status: {},
-  errors: {},
-  progress: {},
-  tokenCounts: {},
-  runAllActive: false,
+export const useExecutionStore = create<ExecutionState>()(
+  persist(
+    (set) => ({
+      status: {},
+      errors: {},
+      progress: {},
+      tokenCounts: {},
+      runAllActive: false,
 
-  setStatus: (nodeId, status) =>
-    set((s) => ({ status: { ...s.status, [nodeId]: status } })),
+      setStatus: (nodeId, status) =>
+        set((s) => ({ status: { ...s.status, [nodeId]: status } })),
 
-  setError: (nodeId, error) =>
-    set((s) => ({
-      errors: { ...s.errors, [nodeId]: error },
-      status: { ...s.status, [nodeId]: 'error' },
-    })),
+      setError: (nodeId, error) =>
+        set((s) => ({
+          errors: { ...s.errors, [nodeId]: error },
+          status: { ...s.status, [nodeId]: 'error' },
+        })),
 
-  setProgress: (nodeId, progress) =>
-    set((s) => ({ progress: { ...s.progress, [nodeId]: progress } })),
+      setProgress: (nodeId, progress) =>
+        set((s) => ({ progress: { ...s.progress, [nodeId]: progress } })),
 
-  setTokenCounts: (nodeId, counts) =>
-    set((s) => ({ tokenCounts: { ...s.tokenCounts, [nodeId]: counts } })),
+      setTokenCounts: (nodeId, counts) =>
+        set((s) => ({ tokenCounts: { ...s.tokenCounts, [nodeId]: counts } })),
 
-  setRunAllActive: (active) => set({ runAllActive: active }),
+      setRunAllActive: (active) => set({ runAllActive: active }),
 
-  resetNode: (nodeId) =>
-    set((s) => {
-      const status = { ...s.status };
-      const errors = { ...s.errors };
-      const progress = { ...s.progress };
-      delete status[nodeId];
-      delete errors[nodeId];
-      delete progress[nodeId];
-      return { status, errors, progress };
+      resetNode: (nodeId) =>
+        set((s) => {
+          const status = { ...s.status };
+          const errors = { ...s.errors };
+          const progress = { ...s.progress };
+          delete status[nodeId];
+          delete errors[nodeId];
+          delete progress[nodeId];
+          return { status, errors, progress };
+        }),
+
+      resetAll: () => set({ status: {}, errors: {}, progress: {}, tokenCounts: {}, runAllActive: false }),
     }),
-
-  resetAll: () => set({ status: {}, errors: {}, progress: {}, tokenCounts: {}, runAllActive: false }),
-}));
+    {
+      name: 'content-graph-execution',
+      partialize: (state) => ({ status: state.status }),
+    }
+  )
+);
