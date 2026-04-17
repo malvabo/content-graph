@@ -144,7 +144,7 @@ export function TextSourceInline({ id }: { id: string }) {
   const charColor = charCount > 50000 ? 'var(--color-danger)' : charCount > 40000 ? 'var(--p-amber-600)' : 'var(--color-text-placeholder)';
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8, position: 'relative' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-2)', position: 'relative' }}>
       {popover && (
         <AiEditPopover
           selectedText={popover.text}
@@ -177,7 +177,7 @@ export function FileSourceInline({ id }: { id: string }) {
   }, [id, updateConfig, setOutput]);
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: 8 }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: 'var(--space-2)' }}>
       {fileName ? (
         <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-surface)] rounded-lg px-2 py-1.5">
           <span>{fileName}</span><span>·</span><span>{text.split(/\s+/).length.toLocaleString()} words</span><span>·</span><span>{((config?.fileSize as number ?? 0) / 1024).toFixed(0)} KB</span>
@@ -224,7 +224,7 @@ export function ImageSourceInline({ id }: { id: string }) {
   }, [id, updateConfig, setOutput]);
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: 8 }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: 'var(--space-2)' }}>
       {preview ? (
         <div className="relative flex-1">
           <img src={preview} alt={fileName || 'Uploaded image'} className="w-full h-full object-contain rounded-lg" style={{ background: 'var(--color-bg-surface)' }} />

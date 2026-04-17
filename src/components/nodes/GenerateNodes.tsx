@@ -48,7 +48,7 @@ function OutputPreview({ id, subtype, expandOpen, onExpand, onExpandClose }: { i
   const openModal = () => onExpand?.();
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, marginTop: 8 }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, marginTop: 'var(--space-2)' }}>
       {/* Truncated preview with fade */}
       <div style={{ position: 'relative', flex: 1, overflow: 'hidden', cursor: 'pointer' }} onMouseDown={e => e.stopPropagation()} onClick={openModal}>
         {isThread ? (

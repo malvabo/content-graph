@@ -199,7 +199,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     </div>
                     {menuId === item.id && (
                       <div ref={menuRef} onClick={e => e.stopPropagation()}
-                        style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 4, minWidth: 140, animation: 'fadeIn 100ms ease' }}>
+                        style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', minWidth: 140, animation: 'fadeIn 100ms ease' }}>
                         {[
                           { label: 'Rename', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>,
                             action: () => { setRenameName(item.name); setRenameId(item.id); setMenuId(null); } },
@@ -221,11 +221,11 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 </div>
 
                 {/* Row 2: meta line — nodes, edges, time + mini graph */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', whiteSpace: 'nowrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', whiteSpace: 'nowrap' }}>
                     {item.nodes.length} node{item.nodes.length !== 1 ? 's' : ''} · {item.edges.length} edge{item.edges.length !== 1 ? 's' : ''} · {fmt(item.savedAt)}
                   </div>
-                  <div style={{ flexShrink: 0, marginLeft: 12 }}>
+                  <div style={{ flexShrink: 0, marginLeft: 'var(--space-3)' }}>
                     <MiniGraph nodes={item.nodes} edges={item.edges} />
                   </div>
                 </div>
