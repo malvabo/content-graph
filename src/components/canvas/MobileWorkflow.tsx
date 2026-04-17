@@ -228,7 +228,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
         </button>
         {editingName ? (
           <input autoFocus value={graphName} onChange={e => setGraphName(e.target.value)} onBlur={() => setEditingName(false)} onKeyDown={e => { if (e.key === 'Enter') setEditingName(false); }}
-            style={{ flex: 1, fontWeight: 500, fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', outline: 'none', padding: 0 }} />
+            style={{ flex: 1, fontWeight: 500, fontSize: 16, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', outline: 'none', padding: 0 }} />
         ) : (
           <div onClick={() => setEditingName(true)} style={{ flex: 1, fontWeight: 500, fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{graphName || 'Untitled'}</div>
         )}

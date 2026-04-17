@@ -345,6 +345,10 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 /* ── Mobile overrides ── */
 @media (max-width: 767px) {
   :root { --size-node: 320px; }
+
+  /* Prevent iOS auto-zoom on focus */
+  input, textarea, select { font-size: 16px !important; }
+
   .react-flow__node { touch-action: none; }
   .react-flow__controls { display: none; }
   .react-flow__minimap { display: none; }

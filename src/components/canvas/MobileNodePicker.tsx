@@ -32,7 +32,7 @@ export default function MobileNodePicker({ onAdd, onClose }: { onAdd: (def: Node
 
         {/* Search */}
         <div style={{ padding: '0 16px 8px' }}>
-          <input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder="Search nodes…" className="form-input" />
+          <input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder="Search nodes…" className="form-input" style={{ fontSize: 16 }} />
         </div>
 
         {/* List */}

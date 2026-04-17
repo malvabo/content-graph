@@ -1,54 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { useGraphStore, type ContentNode } from '../../store/graphStore';
-import { BADGE_COLORS, CATEGORY_LABELS } from '../../utils/nodeDefs';
-import type { NodeCategory } from '../../store/graphStore';
+import { useGraphStore } from '../../store/graphStore';
+import { BADGE_COLORS } from '../../utils/nodeDefs';
 import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from '../../utils/workflowApi';
-import type { Edge } from '@xyflow/react';
 
 /* SVG icons */
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>;
 /* Mini node graph preview for cards */
-function MiniGraph({ nodes, edges }: { nodes: ContentNode[]; edges: Edge[] }) {
-  const cats = nodes.map(n => n.data.category);
-  const uniq = [...new Set(cats)];
-  const total = Math.min(nodes.length, 6);
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', height: 16 }}>
-      {Array.from({ length: total }).map((_, i) => {
-        const cat = cats[i] || uniq[0];
-        const c = BADGE_COLORS[cat];
-        return <div key={i} style={{ width: 6, height: 6, borderRadius: 'var(--radius-sm)', background: c.text, opacity: 0.6 }} />;
-      })}
-      {edges.length > 0 && (
-        <svg width="12" height="8" viewBox="0 0 12 8" style={{ marginLeft: 2, opacity: 0.3 }}>
-          <path d="M0 4h12M8 1l4 3-4 3" fill="none" stroke="var(--color-text-disabled)" strokeWidth="1.2"/>
-        </svg>
-      )}
-      {nodes.length > 6 && <span style={{ fontSize: 10, color: 'var(--color-text-disabled)', fontFamily: 'var(--font-sans)' }}>+{nodes.length - 6}</span>}
-    </div>
-  );
-}
-
-/* Node breakdown badges */
-function NodeBreakdown({ nodes }: { nodes: ContentNode[] }) {
-  const counts: Partial<Record<NodeCategory, number>> = {};
-  nodes.forEach(n => { const c = n.data.category; counts[c] = (counts[c] || 0) + 1; });
-  return (
-    <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-      {(Object.entries(counts) as [NodeCategory, number][]).map(([cat, count]) => {
-        const c = BADGE_COLORS[cat];
-        return (
-          <span key={cat} style={{
-            fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)',
-            padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-full)',
-            background: c.bg, color: c.text, lineHeight: 'var(--leading-fixed)',
-          }}>{count} {CATEGORY_LABELS[cat]}</span>
-        );
-      })}
-    </div>
-  );
-}
 
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<SavedWorkflow[]>([]);
@@ -162,78 +120,97 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         ) : (
           /* Card grid */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
-            {items.map(item => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
+            {items.map(item => {
+              // Extract source text preview
+              const srcNode = item.nodes.find(n => n.data.subtype === 'text-source' || n.data.subtype === 'voice-source');
+              const preview = (srcNode?.data.config?.text as string || '').slice(0, 80);
+              // Node type labels
+              const nodeLabels = item.nodes.slice(0, 5).map(n => n.data.label);
+
+              return (
               <button key={item.id} onClick={() => handleLoad(item)}
                 style={{
-                  textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+                  textAlign: 'left', cursor: 'pointer', outline: 'none',
                   background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
-                  fontFamily: 'var(--font-sans)', cursor: 'pointer', outline: 'none',
+                  borderRadius: 'var(--radius-xl)', overflow: 'hidden',
                   transition: 'border-color .15s, box-shadow .15s',
-                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                  minHeight: 140,
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
 
-                {/* Row 1: name + 3-dot menu */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-                  {renameId === item.id ? (
-                    <input autoFocus value={renameName} onChange={e => setRenameName(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenameId(null); }}
-                      onBlur={handleRename}
-                      onClick={e => e.stopPropagation()}
-                      style={{ flex: 1, minWidth: 0, fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)', padding: '2px 6px', outline: 'none' }} />
-                  ) : (
-                    <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                      {item.name}
-                    </div>
-                  )}
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <div role="button" tabIndex={0} aria-label="More options"
-                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', background: 'transparent', transition: 'color .15s, background .15s', cursor: 'pointer' }}
-                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                      onMouseLeave={e => { if (menuId !== item.id) { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'transparent'; } }}
-                      onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                    </div>
-                    {menuId === item.id && (
-                      <div ref={menuRef} onClick={e => e.stopPropagation()}
-                        style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', minWidth: 140, animation: 'fadeIn 100ms ease' }}>
-                        {[
-                          { label: 'Rename', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>,
-                            action: () => { setRenameName(item.name); setRenameId(item.id); setMenuId(null); } },
-                          { label: 'Duplicate', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
-                            action: () => handleDuplicate(item) },
-                          { label: 'Delete', icon: <TrashIcon />, danger: true,
-                            action: () => { setDeleteId(item.id); setMenuId(null); } },
-                        ].map(opt => (
-                          <button key={opt.label} onClick={opt.action}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', transition: 'background 100ms' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                            {opt.icon} {opt.label}
-                          </button>
-                        ))}
+                {/* Preview area — node labels as pills */}
+                <div style={{ height: 100, background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'center', gap: 4 }}>
+                  {nodeLabels.map((label, j) => {
+                    const cat = item.nodes[j]?.data.category;
+                    const c = BADGE_COLORS[cat] || BADGE_COLORS.source;
+                    return (
+                      <span key={j} style={{ fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '2px 8px', borderRadius: 'var(--radius-full)', background: c.bg, color: c.text, lineHeight: '16px' }}>{label}</span>
+                    );
+                  })}
+                  {item.nodes.length > 5 && <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>+{item.nodes.length - 5}</span>}
+                </div>
+
+                {/* Content area */}
+                <div style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                  {/* Title + menu */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
+                    {renameId === item.id ? (
+                      <input autoFocus value={renameName} onChange={e => setRenameName(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenameId(null); }}
+                        onBlur={handleRename} onClick={e => e.stopPropagation()}
+                        style={{ flex: 1, minWidth: 0, fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)', padding: '2px 6px', outline: 'none' }} />
+                    ) : (
+                      <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                        {item.name}
                       </div>
                     )}
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <div role="button" tabIndex={0} aria-label="More options"
+                        style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', background: 'transparent', transition: 'color .15s, background .15s', cursor: 'pointer' }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+                        onMouseLeave={e => { if (menuId !== item.id) { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'transparent'; } }}
+                        onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                      </div>
+                      {menuId === item.id && (
+                        <div ref={menuRef} onClick={e => e.stopPropagation()}
+                          style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', minWidth: 140, animation: 'fadeIn 100ms ease' }}>
+                          {[
+                            { label: 'Rename', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>,
+                              action: () => { setRenameName(item.name); setRenameId(item.id); setMenuId(null); } },
+                            { label: 'Duplicate', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+                              action: () => handleDuplicate(item) },
+                            { label: 'Delete', icon: <TrashIcon />, danger: true,
+                              action: () => { setDeleteId(item.id); setMenuId(null); } },
+                          ].map(opt => (
+                            <button key={opt.label} onClick={opt.action}
+                              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', transition: 'background 100ms' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                              {opt.icon} {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Row 2: meta line — nodes, edges, time + mini graph */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', whiteSpace: 'nowrap' }}>
-                    {item.nodes.length} node{item.nodes.length !== 1 ? 's' : ''} · {item.edges.length} edge{item.edges.length !== 1 ? 's' : ''} · {fmt(item.savedAt)}
+                  {/* Meta */}
+                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginBottom: preview ? 'var(--space-2)' : 0 }}>
+                    {item.nodes.length} nodes · {fmt(item.savedAt)}
                   </div>
-                  <div style={{ flexShrink: 0, marginLeft: 'var(--space-3)' }}>
-                    <MiniGraph nodes={item.nodes} edges={item.edges} />
-                  </div>
-                </div>
 
-                {/* Row 3: category badges */}
-                <NodeBreakdown nodes={item.nodes} />
+                  {/* Content preview */}
+                  {preview && (
+                    <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                      {preview}{preview.length >= 80 ? '…' : ''}
+                    </div>
+                  )}
+                </div>
               </button>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
