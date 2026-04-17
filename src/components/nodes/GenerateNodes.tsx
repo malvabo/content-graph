@@ -4,20 +4,22 @@ import { useGraphStore } from '../../store/graphStore';
 import ContentModal from '../modals/ContentModal';
 
 const SKELETON_LINES: Record<string, number[]> = {
-  'linkedin-post': [100, 85, 95, 70, 90, 60],
-  'twitter-thread': [90, 80, 90, 75],
-  'twitter-single': [95],
-  'newsletter': [60, 95, 50, 90, 40],
-  'quote-card': [95, 50],
-  'infographic': [90, 80, 85, 75, 90],
-  'image-prompt': [100, 90, 80],
+  'linkedin-post': [100, 95, 88, 100, 92, 78, 100, 85, 95, 60],
+  'twitter-thread': [100, 90, 95, 85, 100, 88, 92, 75],
+  'twitter-single': [100, 95, 70],
+  'newsletter': [100, 95, 88, 100, 92, 85, 100, 78, 95, 88, 60],
+  'quote-card': [100, 95, 88, 70],
+  'infographic': [100, 90, 95, 85, 100, 88, 92, 80],
+  'image-prompt': [100, 95, 88, 100, 92, 75],
+  'video': [100, 95, 88, 100, 92, 85, 78],
+  'refine': [100, 95, 88, 100, 92, 85, 60],
 };
 
 function Skeleton({ subtype }: { subtype: string }) {
-  const lines = SKELETON_LINES[subtype] ?? [90, 80, 70];
+  const lines = SKELETON_LINES[subtype] ?? [100, 95, 88, 100, 92, 85, 78];
   return (
-    <div className="flex flex-col gap-1.5 mt-2">
-      {lines.map((w, i) => <div key={i} className="h-2.5 rounded skeleton-bar" style={{ width: `${w}%`, animationDelay: `${i * 0.15}s` }} />)}
+    <div className="flex flex-col gap-2 mt-2">
+      {lines.map((w, i) => <div key={i} className="h-3 rounded-sm skeleton-bar" style={{ width: `${w}%`, animationDelay: `${i * 0.1}s` }} />)}
     </div>
   );
 }
