@@ -10,7 +10,7 @@ const MicIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none
 const KeyIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>;
 
 type SectionId = 'brand-visual' | 'brand-voice' | 'api-keys';
-const SECTIONS: { id: SectionId; label: string; icon: () => JSX.Element; group: string }[] = [
+const SECTIONS: { id: SectionId; label: string; icon: () => React.ReactNode; group: string }[] = [
   { id: 'brand-visual', label: 'Brand Visual', icon: PaletteIcon, group: 'Brand' },
   { id: 'brand-voice', label: 'Brand Voice', icon: MicIcon, group: 'Brand' },
   { id: 'api-keys', label: 'API Keys', icon: KeyIcon, group: 'Connections' },
@@ -24,6 +24,7 @@ const PROVIDERS = [
 ] as const;
 
 const LBL: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', display: 'block', marginBottom: 6 };
+const CARD: React.CSSProperties = { background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-5)' };
 
 function ColorSwatch({ color, label, onChange }: { color: string; label: string; onChange: (c: string) => void }) {
   return (
@@ -187,6 +188,45 @@ function APIKeysSection() {
       </div>
       <div style={{ marginTop: 16 }}>
         <button className="btn btn-primary" disabled={!hasAnyKey} onClick={handleSave} style={{ minWidth: 100 }}>{saved ? '✓ Saved' : 'Save keys'}</button>
+      </div>
+    </div>
+  );
+}
+
+export default function SettingsPanel() {
+  const [active, setActive] = useState<SectionId>('brand-visual');
+  const groups: Record<string, typeof SECTIONS> = {};
+  SECTIONS.forEach(s => { (groups[s.group] ??= []).push(s); });
+
+  return (
+    <div style={{ flex: 1, display: 'flex', background: 'var(--color-bg)', overflow: 'hidden' }}>
+      <nav style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', padding: '24px 0', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        <div style={{ padding: '0 20px 20px', borderBottom: '1px solid var(--color-border-subtle)' }}>
+          <h1 style={{ fontWeight: 500, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Settings</h1>
+        </div>
+        <div style={{ padding: '12px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {Object.entries(groups).map(([group, items]) => (
+            <div key={group}>
+              <div style={{ padding: '12px 8px 6px', fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{group}</div>
+              {items.map(s => {
+                const on = active === s.id;
+                return (
+                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 'var(--radius-md)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms' }}>
+                    <span style={{ color: on ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)', display: 'flex' }}><s.icon /></span>
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </nav>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
+        <div style={{ maxWidth: 520 }}>
+          {active === 'brand-visual' && <BrandVisualSection />}
+          {active === 'brand-voice' && <BrandVoiceSection />}
+          {active === 'api-keys' && <APIKeysSection />}
+        </div>
       </div>
     </div>
   );
