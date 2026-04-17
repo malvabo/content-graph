@@ -41,7 +41,11 @@ export function ImagePromptInline({ id }: { id: string }) {
       const existing = store.outputs[id] || {};
       store.setOutput(id, { ...existing, text: prompt, imageBase64: img, imgWidth: d.w, imgHeight: d.h });
     } catch (e) {
-      console.warn('Image generation failed:', e);
+      console.error('Image generation failed:', e);
+      // Show error in output so user can see it
+      const store = useOutputStore.getState();
+      const existing = store.outputs[id] || {};
+      store.setOutput(id, { ...existing, text: existing.text || `Error: ${e instanceof Error ? e.message : 'Unknown error'}` });
     }
     generatingRef.current = false;
     setGenerating(false);
