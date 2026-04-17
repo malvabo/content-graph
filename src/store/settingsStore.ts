@@ -2,16 +2,35 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 
+export interface BrandKit {
+  name: string;
+  colors: { primary: string; secondary: string; accent: string };
+  voice: {
+    personality: string;
+    audience: string;
+    avoidWords: string[];
+    examplePost: string;
+  };
+}
+
+export const EMPTY_BRAND: BrandKit = {
+  name: '',
+  colors: { primary: '#0DBF5A', secondary: '#1A2420', accent: '#F2EFE9' },
+  voice: { personality: '', audience: '', avoidWords: [], examplePost: '' },
+};
+
 interface SettingsState {
   anthropicKey: string;
   openaiKey: string;
   googleKey: string;
   groqKey: string;
+  brand: BrandKit;
   loaded: boolean;
   setAnthropicKey: (key: string) => void;
   setOpenaiKey: (key: string) => void;
   setGoogleKey: (key: string) => void;
   setGroqKey: (key: string) => void;
+  setBrand: (brand: Partial<BrandKit>) => void;
   load: () => Promise<void>;
   save: () => Promise<void>;
 }
@@ -23,12 +42,14 @@ export const useSettingsStore = create<SettingsState>()(
       openaiKey: '',
       googleKey: '',
       groqKey: '',
+      brand: { ...EMPTY_BRAND },
       loaded: false,
 
       setAnthropicKey: (key) => set({ anthropicKey: key }),
       setOpenaiKey: (key) => set({ openaiKey: key }),
       setGoogleKey: (key) => set({ googleKey: key }),
       setGroqKey: (key) => set({ groqKey: key }),
+      setBrand: (partial) => set((s) => ({ brand: { ...s.brand, ...partial, colors: { ...s.brand.colors, ...(partial.colors || {}) }, voice: { ...s.brand.voice, ...(partial.voice || {}) } } })),
 
       load: async () => {
         if (!supabase) { set({ loaded: true }); return; }
@@ -62,7 +83,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'content-graph-settings',
-      partialize: (state) => ({ anthropicKey: state.anthropicKey, openaiKey: state.openaiKey, googleKey: state.googleKey, groqKey: state.groqKey }),
+      partialize: (state) => ({ anthropicKey: state.anthropicKey, openaiKey: state.openaiKey, googleKey: state.googleKey, groqKey: state.groqKey, brand: state.brand }),
     }
   )
 );

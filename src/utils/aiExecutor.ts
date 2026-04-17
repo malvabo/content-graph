@@ -11,6 +11,7 @@ const SYSTEM_PROMPTS: Record<string, string> = {
   'refine': 'You are an editor. Refine and improve the input text based on any instructions provided. Output only the refined text.',
   'text-source': 'You are a text processor. Process and clean up the input text. If there are preparation instructions, follow them. Output the processed text.',
   'video': 'You are a video script writer. Write a short video script based on the input, with scene descriptions and narration. Output only the script.',
+  'brand-voice': 'You are a brand voice analyst and writer. Based on the input content and the brand voice guidelines provided, rewrite the input to perfectly match the brand voice. Preserve the core message and facts but transform the tone, word choice, and style to be unmistakably on-brand. Output only the rewritten text.',
 };
 
 function getProvider(model: string): 'anthropic' | 'openai' | 'google' | 'groq' {
@@ -88,6 +89,32 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
   if (!apiKey) throw new Error(`No ${provider} API key set. Go to Settings to add one.`);
 
   let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
+
+  // Inject brand voice context
+  const brand = useSettingsStore.getState().brand;
+  if (brand?.voice?.personality) {
+    const parts = [
+      'BRAND VOICE GUIDELINES:',
+      brand.name ? `Brand: ${brand.name}` : '',
+      `Personality: ${brand.voice.personality}`,
+      brand.voice.audience ? `Target audience: ${brand.voice.audience}` : '',
+      brand.voice.avoidWords?.length ? `Never use these words/phrases: ${brand.voice.avoidWords.join(', ')}` : '',
+      brand.voice.examplePost ? `Reference post that captures the voice:\n"${brand.voice.examplePost}"` : '',
+      'Apply this voice consistently. Do not mention these guidelines in your output.',
+    ].filter(Boolean).join('\n');
+    system = parts + '\n\n' + system;
+  }
+
+  // Inject brand visual identity for visual nodes
+  if (brand?.colors && ['infographic', 'quote-card', 'image-prompt'].includes(subtype)) {
+    system += `\n\nBRAND VISUAL IDENTITY: Primary color ${brand.colors.primary}, secondary ${brand.colors.secondary}, accent ${brand.colors.accent}. Incorporate these into the visual direction.`;
+  }
+
+  // Node-level tone override
+  const tone = config.tone as string | undefined;
+  if (tone && brand?.voice?.personality) {
+    system += `\n\nFor this specific piece, adjust the tone to be more ${tone} while staying within the brand voice.`;
+  }
 
   // Enrich image-prompt with node config
   if (subtype === 'image-prompt') {

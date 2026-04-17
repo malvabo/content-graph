@@ -100,6 +100,10 @@ const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string,
     <MiniSelect value={c.imageModel as string ?? 'FLUX.1 schnell'} options={IMAGE_MODEL_OPTIONS} onChange={v => s('imageModel', v)} />
     <MiniSelect value={c.resolution as string ?? '1024x1024'} options={IMAGE_RESOLUTION_OPTIONS} onChange={v => s('resolution', v)} />
   </>,
+  'brand-voice': (c, s) => <>
+    <MiniSelect value={c.strength as string ?? 'Full rewrite'} options={['Light touch', 'Moderate', 'Full rewrite']} onChange={v => s('strength', v)} />
+    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['brand-voice']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
+  </>,
 };
 
 function InlineConfig({ id, subtype }: { id: string; subtype: string }) {
