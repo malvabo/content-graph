@@ -80,7 +80,7 @@ async function callGroq(apiKey: string, model: string, system: string, input: st
 }
 
 export async function aiExecute(input: string, config: Record<string, unknown>, subtype: string): Promise<string> {
-  const model = (config.model as string) || 'claude-sonnet-4';
+  const model = (config.model as string) || 'llama-3.3-70b';
   const provider = getProvider(model);
   const { anthropicKey, openaiKey, googleKey, groqKey } = useSettingsStore.getState();
 

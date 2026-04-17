@@ -6,9 +6,13 @@ import { ImageModal } from '../modals/Modals';
 import { getDims } from '../../utils/imageDims';
 
 async function genImage(prompt: string, seed: number, w: number, h: number): Promise<string> {
-  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
+  // Truncate prompt for URL length limits
+  const shortPrompt = prompt.slice(0, 500);
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(shortPrompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
   const res = await fetch(url);
+  if (!res.ok) throw new Error(`Image generation failed: ${res.status}`);
   const blob = await res.blob();
+  if (blob.size < 1000) throw new Error('Image generation returned empty result');
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
