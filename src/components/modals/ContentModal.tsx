@@ -265,22 +265,38 @@ function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps
    QUOTE CARD
    ════════════════════════════════════════════ */
 function QuoteCardModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
-  const [quote, setQuote] = useState(text);
+  const [quote, setQuote] = useState(text.replace(/\*\*/g, '').replace(/^QUOTE:\s*/i, '').replace(/\nATTRIBUTION:.*$/ms, '').trim());
   const ref = useRef<HTMLTextAreaElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const resize = useAutoResize(ref);
   const { copied, copy } = useCopy(() => quote);
+
+  const downloadImage = async () => {
+    if (!cardRef.current) return;
+    const { toPng } = await import('html-to-image');
+    const url = await toPng(cardRef.current, { pixelRatio: 3 });
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'quote-card.png';
+    a.click();
+  };
 
   return (
     <ModalShell onClose={onClose} maxWidth={520}>
       <Header title={title} onClose={onClose} />
       <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-4) var(--space-6)' }}>
-        <div style={{ width: '100%', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-8)', textAlign: 'center', cursor: 'text' }}>
+        <div ref={cardRef} style={{ width: '100%', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-8)', textAlign: 'center', cursor: 'text' }}>
           <svg width="32" height="24" viewBox="0 0 32 24" fill="none" style={{ margin: '0 auto var(--space-4)', display: 'block', opacity: 0.2 }}>
             <path d="M0 24V14.4C0 6.4 4.8 1.6 14.4 0l1.6 4.8C10.4 6.4 8 9.6 8 14.4h6.4V24H0zm17.6 0V14.4C17.6 6.4 22.4 1.6 32 0l-1.6 4.8C24 6.4 25.6 9.6 25.6 14.4H32V24H17.6z" fill="var(--color-text-disabled)"/>
           </svg>
           <textarea ref={ref} value={quote} onChange={e => { setQuote(e.target.value); resize(); }}
             style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', textAlign: 'center', cursor: 'text', fontSize: 'var(--text-lg)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', fontStyle: 'italic', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
         </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '0 var(--space-6) var(--space-3)' }}>
+        <button className="btn-sm btn-ghost" onClick={downloadImage} style={{ fontSize: 'var(--text-xs)' }}>
+          ↓ Download as image
+        </button>
       </div>
       <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
     </ModalShell>

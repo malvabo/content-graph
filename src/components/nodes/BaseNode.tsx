@@ -89,6 +89,8 @@ const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string,
   </>,
   'quote-card': (c, s) => <>
     <MiniSelect value={c.format as string ?? 'Single quote'} options={['Single quote', 'Multiple options']} onChange={v => s('format', v)} />
+    <MiniSelect value={c.aspect as string ?? '1:1'} options={['1:1', '4:5', '16:9', '9:16', '1.91:1']} onChange={v => s('aspect', v)} />
+    <MiniSelect value={c.style as string ?? 'Minimal'} options={['Minimal', 'Bold', 'Editorial', 'Dark', 'Gradient']} onChange={v => s('style', v)} />
     <MiniSelect value={c.model as string ?? DEFAULT_MODELS['quote-card']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
   'image-prompt': (c, s) => <>

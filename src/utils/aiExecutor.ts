@@ -6,7 +6,7 @@ const SYSTEM_PROMPTS: Record<string, string> = {
   'twitter-single': 'You are a tweet writer. Write the single most quotable, insightful tweet from the input. Max 280 characters. Output only the tweet.',
   'newsletter': 'You are a newsletter writer. Write a 300–500 word newsletter digest with SUBJECT line, greeting, body, takeaway, and sign-off. Output only the newsletter.',
   'infographic': 'You are an infographic content planner. Create a structured infographic spec with TITLE, SUBTITLE, 3-5 SECTIONS (each with heading + content + visual element), and DESIGN DIRECTION. Output only the spec.',
-  'quote-card': 'You are a quote curator. Extract the single strongest, most shareable quote from the input. Format as QUOTE, ATTRIBUTION, and CONTEXT. Output only the quote card.',
+  'quote-card': 'You are a quote curator. Extract the single strongest, most shareable quote from the input. Output ONLY the quote text — no attribution labels, no markdown, no asterisks, no formatting. Just the raw quote text.',
   'image-prompt': 'You are an expert AI image prompt engineer for text-to-image models. Based on the input content, write ONE highly specific, visual image generation prompt. Focus on concrete visual elements: specific subjects, setting, lighting, camera angle, color palette, and mood. Avoid abstract concepts — describe what the camera SEES. Output only the prompt text, nothing else.',
   'refine': 'You are an editor. Refine and improve the input text based on any instructions provided. Output only the refined text.',
   'text-source': 'You are a text processor. Process and clean up the input text. If there are preparation instructions, follow them. Output the processed text.',
