@@ -108,6 +108,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
       <div className="flex-1" />
       <NavItem icon={<SettingsIcon />} label="Settings" active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
       <DarkModeToggle />
+      <UserMenu />
     </nav>
   );
 }
