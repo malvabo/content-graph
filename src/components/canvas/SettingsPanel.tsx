@@ -175,7 +175,7 @@ function APIKeysSection() {
           return (
             <div key={p.key} style={{ padding: 'var(--space-5)', borderBottom: i < PROVIDERS.length - 1 ? '1px solid var(--color-border-subtle)' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-                <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', background: value ? 'var(--color-border-strong)' : 'var(--color-bg-surface)', border: value ? 'none' : '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-sans)', color: value ? 'var(--color-text-primary)' : 'var(--color-text-disabled)', flexShrink: 0, transition: 'background 150ms' }}>{p.icon}</div>
+                <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-sans)', color: value ? 'var(--color-text-primary)' : 'var(--color-text-disabled)', flexShrink: 0 }}>{p.icon}</div>
                 <div style={{ flex: 1, fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{p.label}</div>
                 {st && <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: st === 'valid' ? 'var(--color-success-bg)' : 'var(--color-danger-bg)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: st === 'valid' ? 'var(--color-accent)' : 'var(--color-danger-text)' }}>{st === 'valid' ? <CheckIcon /> : <XIcon />}{st === 'valid' ? 'Valid' : 'Invalid'}</div>}
               </div>
@@ -192,34 +192,37 @@ function APIKeysSection() {
             </div>
           );
         })}
-      </div>
-      <div style={{ marginTop: 'var(--space-4)' }}>
-        <button className="btn btn-primary" disabled={!hasAnyKey} onClick={handleSave} style={{ minWidth: 100 }}>{saved ? '✓ Saved' : 'Save keys'}</button>
+        {/* Save bar inside card */}
+        <div style={{ padding: 'var(--space-4) var(--space-5)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          <button className="btn btn-primary" disabled={!hasAnyKey} onClick={handleSave} style={{ minWidth: 100 }}>{saved ? '✓ Saved' : 'Save keys'}</button>
+          <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Stored with your account.</span>
+        </div>
       </div>
     </div>
   );
 }
 
 export default function SettingsPanel() {
-  const [active, setActive] = useState<SectionId>('brand-visual');
+  const [active, setActive] = useState<SectionId>('api-keys');
   const groups: Record<string, typeof SECTIONS> = {};
   SECTIONS.forEach(s => { (groups[s.group] ??= []).push(s); });
 
   return (
     <div style={{ flex: 1, display: 'flex', background: 'var(--color-bg)', overflow: 'hidden' }}>
-      <nav style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', padding: 'var(--space-6) 0', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        <div style={{ padding: '0 var(--space-6) var(--space-5)', borderBottom: '1px solid var(--color-border-subtle)' }}>
-          <h1 style={{ fontWeight: 500, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Settings</h1>
+      {/* Sidebar nav */}
+      <nav className="hidden md:flex" style={{ width: 180, flexShrink: 0, borderRight: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', padding: 'var(--space-5) 0', flexDirection: 'column', overflowY: 'auto' }}>
+        <div style={{ padding: '0 var(--space-5) var(--space-4)' }}>
+          <h1 style={{ fontWeight: 600, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Settings</h1>
         </div>
-        <div style={{ padding: 'var(--space-4) var(--space-4) 0', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '0 var(--space-3)', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {Object.entries(groups).map(([group, items], gi) => (
-            <div key={group} style={{ marginTop: gi > 0 ? 'var(--space-5)' : 0 }}>
-              <div style={{ padding: '0 var(--space-2) var(--space-2)', fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', letterSpacing: '0.02em' }}>{group}</div>
+            <div key={group} style={{ marginTop: gi > 0 ? 'var(--space-4)' : 0 }}>
+              <div style={{ padding: '0 var(--space-2) var(--space-2)', fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{group}</div>
               {items.map(s => {
                 const on = active === s.id;
                 return (
-                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-2)', borderRadius: 'var(--radius-md)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms', textAlign: 'left' }}>
-                    <span style={{ color: on ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)', display: 'flex' }}><s.icon /></span>
+                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 'var(--radius-md)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: on ? 500 : 400, color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms', textAlign: 'left' }}>
+                    <span style={{ color: on ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)', display: 'flex', flexShrink: 0 }}><s.icon /></span>
                     {s.label}
                   </button>
                 );
@@ -228,8 +231,23 @@ export default function SettingsPanel() {
           ))}
         </div>
       </nav>
-      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-8) var(--space-10)' }}>
-        <div style={{ maxWidth: 520 }}>
+
+      {/* Mobile tab bar */}
+      <div className="flex md:hidden" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border-subtle)', padding: '0 var(--space-3)', gap: 2, overflowX: 'auto' }}>
+        {SECTIONS.map(s => {
+          const on = active === s.id;
+          return (
+            <button key={s.id} onClick={() => setActive(s.id)} style={{ padding: '12px 14px', background: 'none', border: 'none', borderBottom: on ? '2px solid var(--color-accent)' : '2px solid transparent', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: on ? 500 : 400, color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1" style={{ overflowY: 'auto', padding: 'var(--space-6) var(--space-6)' }}>
+        <div className="md:hidden" style={{ height: 44 }} /> {/* spacer for mobile tabs */}
+        <div style={{ maxWidth: 520, margin: '0 auto' }}>
           {active === 'brand-visual' && <BrandVisualSection />}
           {active === 'brand-voice' && <BrandVoiceSection />}
           {active === 'api-keys' && <APIKeysSection />}
