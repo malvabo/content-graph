@@ -29,7 +29,7 @@ const RegenIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 
 /* ── Standardized padding constants ── */
 const HP = 'var(--space-5) var(--space-6) var(--space-4)';   // header: 20 24 16
-const CP = 'var(--space-2) var(--space-6) 0';                // content: 8 24 0
+const CP = 'var(--space-2) var(--space-4) 0';                // content: 8 16 0
 const FP = 'var(--space-4) var(--space-6) var(--space-5)';   // footer: 16 24 20
 
 /* ── Auto-resize textarea ── */
@@ -190,11 +190,11 @@ function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps
       <Header title={title} onClose={onClose} />
       <div className="flex-1 overflow-y-auto relative" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
-        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
+        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', transition: 'border-color 150ms' }}
           onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
           onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
           <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}
-            style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+            style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
         </div>
         {(
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', margin: 'var(--space-4) 0' }}>
@@ -273,12 +273,12 @@ function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalPro
         {sections.map((sec, i) => (
           <div key={i} style={{ marginBottom: 'var(--space-4)' }}>
             <div className="text-field-label" style={{ marginBottom: 'var(--space-1)' }}>{sec.label}</div>
-            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
+            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', transition: 'border-color 150ms' }}
               onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
               onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
               <textarea value={sec.text} onChange={e => updateSection(i, e.target.value)}
                 rows={Math.max(3, Math.ceil(sec.text.length / 60))}
-                style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+                style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
             </div>
           </div>
         ))}
@@ -309,7 +309,7 @@ function TwitterSingleModal({ title, text, onClose, onRegenerate }: ContentModal
           borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', transition: 'border-color 150ms',
         }}>
           <textarea ref={ref} value={tweet} onChange={e => { setTweet(e.target.value); resize(); }}
-            style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+            style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
         </div>
       </div>
       <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
@@ -351,11 +351,11 @@ function GenericTextModal({ title, text, onClose, onRegenerate }: ContentModalPr
       <Header title={title} onClose={onClose} />
       <div className="flex-1 overflow-y-auto relative" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
-        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', transition: 'border-color 150ms' }}
+        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', transition: 'border-color 150ms' }}
           onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
           onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
           <textarea ref={textareaRef} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}
-            style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+            style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
         </div>
       </div>
       <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />

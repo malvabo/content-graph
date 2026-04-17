@@ -75,11 +75,7 @@ function AppInner() {
 
   return (
     <div className="h-screen flex flex-col">
-      {/* Mobile debug banner — remove after confirming */}
-      <div className="md:hidden" style={{ background: '#ff0000', color: '#fff', padding: 8, textAlign: 'center', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 700, zIndex: 99999 }}>
-        📱 MOBILE MODE ACTIVE — width: {typeof window !== 'undefined' ? window.innerWidth : '?'}px
-      </div>
-      <div className="flex flex-col-reverse md:flex-row flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0">
         {activeView !== 'intro' && <IconNav activeView={activeView} onViewChange={setActiveView} />}
 
         {activeView === 'intro' && (
@@ -96,7 +92,7 @@ function AppInner() {
               <GraphCanvas />
               {nodes.length > 0 && <NodePalette onAddNode={handleAddNode} />}
             </div>
-            <div className="flex md:hidden flex-1">
+            <div className="flex md:hidden flex-1 min-h-0">
               <MobileWorkflow onBackToLibrary={() => setActiveView('library')} />
             </div>
           </>
