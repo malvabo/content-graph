@@ -52,7 +52,8 @@ export const MODEL_OPTIONS = [
   'gpt-4o-mini', 'gpt-4o', 'o4-mini',
   'gemini-2.0-flash', 'gemini-2.5-flash',
 ] as const;
-export const IMAGE_MODEL_OPTIONS = ['FLUX.1 schnell', 'FLUX.1 dev'] as const;
+export const IMAGE_MODEL_OPTIONS = ['FLUX.1 schnell', 'FLUX.1 dev', 'DALL·E 3', 'Imagen 3', 'Stable Diffusion 3.5'] as const;
+export const IMAGE_RESOLUTION_OPTIONS = ['512x512', '1024x1024', '1024x1536', '1536x1024', '1792x1024'] as const;
 
 export const DEFAULT_MODELS: Record<string, string> = {
   'refine': 'claude-haiku-4',

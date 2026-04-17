@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useGraphStore } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
-import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, IMAGE_MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
+import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, IMAGE_MODEL_OPTIONS, IMAGE_RESOLUTION_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import { aiExecute } from '../../utils/aiExecutor';
@@ -108,6 +108,7 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
     <Field label="Aspect ratio"><Select value={c.aspect as string ?? '16:9'} onChange={(v) => s('aspect', v)} options={['1:1', '4:5', '16:9', '9:16', '1.91:1']} /></Field>
     <ModelSelector value={c.model as string ?? DEFAULT_MODELS['image-prompt']} onChange={(v) => s('model', v)} />
     <Field label="Image model"><Select value={c.imageModel as string ?? 'FLUX.1 schnell'} onChange={(v) => s('imageModel', v)} options={IMAGE_MODEL_OPTIONS} /></Field>
+    <Field label="Resolution"><Select value={c.resolution as string ?? '1024x1024'} onChange={(v) => s('resolution', v)} options={IMAGE_RESOLUTION_OPTIONS} /></Field>
   </>,
   'refine': () => <></>,
   'export': (c, s) => <>
