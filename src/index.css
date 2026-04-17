@@ -277,7 +277,10 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 
 /* ── Keyframes ── */
 @keyframes btn-spin { to { transform: rotate(360deg); } }
-@keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.6); } }
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(240, 216, 160, 0.5); }
+  50% { opacity: 0.6; transform: scale(0.92); box-shadow: 0 0 0 4px rgba(240, 216, 160, 0); }
+}
 @keyframes done-pulse { 0% { transform: scale(1); opacity: 1; } 40% { transform: scale(2.2); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
 @keyframes flow-dash { to { stroke-dashoffset: -20; } }
 @keyframes flow-down { 0% { transform: translateY(-50%); } 100% { transform: translateY(0%); } }
