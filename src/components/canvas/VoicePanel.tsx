@@ -152,6 +152,7 @@ export default function VoicePanel({ onTranscriptReady }: Props) {
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden cursor-pointer"
+      style={{ background: 'var(--color-bg)' }}
       onClick={() => !listening && start()}>
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }} />
 

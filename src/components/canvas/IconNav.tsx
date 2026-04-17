@@ -96,7 +96,8 @@ export default function IconNav({ activeView, onViewChange }: Props) {
     <nav aria-label="Main navigation" className="
       w-full h-[52px] flex flex-row items-center px-2 gap-1 shrink-0 order-last
       md:w-[52px] md:h-auto md:flex-col md:py-3 md:px-0 md:order-first
-    " style={{ background: 'var(--color-bg-card)', borderTop: '1px solid var(--color-border-subtle)' }}>
+    " style={{ background: 'var(--color-bg-card)' }}>
+      <style>{`nav[aria-label="Main navigation"] { border-top: 1px solid var(--color-border-subtle); } @media(min-width:768px) { nav[aria-label="Main navigation"] { border-top: none; border-right: 1px solid var(--color-border-subtle); } }`}</style>
       <div className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center mb-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
 
       <NavItem icon={<WorkflowIcon />} label="Workflows" active={activeView === 'library' || activeView === 'workflow'} onClick={() => onViewChange('library')} />
