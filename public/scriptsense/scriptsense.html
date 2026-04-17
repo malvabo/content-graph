@@ -642,7 +642,7 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
                 <span style={{ fontSize:11, color:C.mute, background:C.surface, padding:"2px 8px", borderRadius:99 }}>{drafts.length}</span>
               )}
             </div>
-            <button onClick={onNew} style={{ display:"flex", alignItems:"center", gap:6, background:C.accent, color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+            <button onClick={onNew} style={{ display:"flex", alignItems:"center", gap:6, background:C.white, color:C.text, border:`1px solid ${C.border2}`, borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
               <span style={{ fontSize:16, lineHeight:1 }}>+</span> New talk
             </button>
           </div>
