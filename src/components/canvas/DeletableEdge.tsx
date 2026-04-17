@@ -12,44 +12,32 @@ function DeletableEdge({
     useGraphStore.getState().setEdges(useGraphStore.getState().edges.filter((e) => e.id !== id));
   }, [id]);
 
-  const gradId = `pulse-${id}`;
-
   return (
     <>
-      {/* Glow layer when running */}
-      {animated && (
-        <path d={edgePath} fill="none" stroke="var(--color-accent)" strokeWidth={6} strokeLinecap="round" style={{ opacity: 0.15, filter: 'blur(3px)' }} />
-      )}
       <BaseEdge
         id={id}
         path={edgePath}
         style={{
           ...style,
-          stroke: animated ? `url(#${gradId})` : hovered ? 'var(--color-border-strong)' : style?.stroke,
+          stroke: animated ? 'var(--color-accent)' : hovered ? 'var(--color-border-strong)' : style?.stroke,
           strokeWidth: animated ? 2 : style?.strokeWidth,
           strokeDasharray: animated ? 'none' : style?.strokeDasharray,
           transition: 'stroke 150ms',
         }}
         interactionWidth={24}
       />
-      {/* Traveling dot when running */}
       {animated && (
-        <>
-          <defs>
-            <linearGradient id={gradId} gradientUnits="userSpaceOnUse" x1={sourceX} y1={sourceY} x2={targetX} y2={targetY}>
-              <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.3" />
-              <stop offset="50%" stopColor="var(--color-accent)" stopOpacity="1" />
-              <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0.3" />
-              <animateTransform attributeName="gradientTransform" type="translate" from="-1 0" to="1 0" dur="1.5s" repeatCount="indefinite" />
-            </linearGradient>
-          </defs>
-          <circle r="3" fill="var(--color-accent)" style={{ filter: 'drop-shadow(0 0 3px var(--color-accent))' }}>
-            <animateMotion dur="1.8s" repeatCount="indefinite" path={edgePath} />
-          </circle>
-          <circle r="1.5" fill="white" opacity="0.9">
-            <animateMotion dur="1.8s" repeatCount="indefinite" path={edgePath} />
-          </circle>
-        </>
+        <path
+          d={edgePath}
+          fill="none"
+          stroke="var(--color-accent)"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeDasharray="12 20"
+          style={{ opacity: 0.6 }}
+        >
+          <animate attributeName="stroke-dashoffset" from="32" to="0" dur="0.8s" repeatCount="indefinite" />
+        </path>
       )}
       {/* Hit area on top of everything */}
       <path
