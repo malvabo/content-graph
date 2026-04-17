@@ -93,7 +93,7 @@ function AppInner() {
               <CanvasToolbar onBackToLibrary={() => setActiveView('library')} />
               <EmptyCanvasOverlay />
               <GraphCanvas />
-              {nodes.length > 0 && <NodePalette onAddNode={handleAddNode} />}
+              <NodePalette onAddNode={handleAddNode} />
             </div>
             <div className="flex md:hidden flex-1 min-h-0">
               <MobileWorkflow onBackToLibrary={() => setActiveView('library')} />

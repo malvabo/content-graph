@@ -49,7 +49,10 @@ export const useSettingsStore = create<SettingsState>()(
       setOpenaiKey: (key) => set({ openaiKey: key }),
       setGoogleKey: (key) => set({ googleKey: key }),
       setGroqKey: (key) => set({ groqKey: key }),
-      setBrand: (partial) => set((s) => ({ brand: { ...s.brand, ...partial, colors: { ...s.brand.colors, ...(partial.colors || {}) }, voice: { ...s.brand.voice, ...(partial.voice || {}) } } })),
+      setBrand: (partial) => set((s) => {
+        const b = s.brand || EMPTY_BRAND;
+        return { brand: { ...b, ...partial, colors: { ...b.colors, ...(partial.colors || {}) }, voice: { ...b.voice, ...(partial.voice || {}) } } };
+      }),
 
       load: async () => {
         if (!supabase) { set({ loaded: true }); return; }
@@ -84,6 +87,7 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'content-graph-settings',
       partialize: (state) => ({ anthropicKey: state.anthropicKey, openaiKey: state.openaiKey, googleKey: state.googleKey, groqKey: state.groqKey, brand: state.brand }),
+      merge: (persisted: any, current: any) => ({ ...current, ...persisted, brand: { ...EMPTY_BRAND, ...(persisted as any)?.brand } }),
     }
   )
 );
