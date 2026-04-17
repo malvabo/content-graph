@@ -17,12 +17,12 @@ function makeSourceNode(content: string): ContentNode {
 
 /* ── Schematic SVG preview ── */
 function SchematicPreview({ idx }: { idx: number }) {
-  const card = 'var(--color-bg-card)';
-  const border = 'var(--color-border-default)';
+  const card = 'var(--color-bg-hover, #222228)';
+  const border = 'var(--color-border-strong)';
   const accent = 'var(--color-accent)';
   const ns = { rx: 6, fill: card, stroke: border, strokeWidth: 1 };
-  const ts: React.SVGAttributes<SVGTextElement> = { fontSize: 7, fontFamily: 'var(--font-sans)', fill: 'var(--color-text-tertiary)', fontWeight: 500, textAnchor: 'middle' as const };
-  const es = { fill: 'none', stroke: accent, strokeWidth: 1.2, opacity: 0.4 };
+  const ts: React.SVGAttributes<SVGTextElement> = { fontSize: 7.5, fontFamily: 'var(--font-sans)', fill: 'var(--color-text-secondary)', fontWeight: 500, textAnchor: 'middle' as const };
+  const es = { fill: 'none', stroke: accent, strokeWidth: 1.2, opacity: 0.5 };
   const dot = (cx: number, cy: number) => <circle cx={cx} cy={cy} r="2.5" fill={accent} opacity="0.5" />;
 
   if (idx === 0) return (
@@ -154,7 +154,7 @@ export default function EmptyCanvasOverlay() {
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--color-bg)', overflow: 'auto' }}>
-      <div style={{ maxWidth: 1080, margin: '0 auto', padding: 'var(--space-6) var(--space-6) var(--space-8)' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: 'var(--space-6) var(--space-6) var(--space-8)' }}>
 
         {/* Hero */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
@@ -187,7 +187,7 @@ export default function EmptyCanvasOverlay() {
         )}
 
         {/* Template grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-3)' }}>
           {/* Empty workflow */}
           <button onClick={handleNew}
             style={{
