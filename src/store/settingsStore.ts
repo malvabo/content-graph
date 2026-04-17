@@ -36,8 +36,16 @@ export const useSettingsStore = create<SettingsState>()(
           const { data: { user } } = await supabase!.auth.getUser();
           if (!user) { set({ loaded: true }); return; }
           const { data } = await supabase!.from('user_settings').select('anthropic_key, openai_key, google_key, groq_key').eq('user_id', user.id).single();
-          if (data) set({ anthropicKey: data.anthropic_key ?? '', openaiKey: data.openai_key ?? '', googleKey: data.google_key ?? '', groqKey: data.groq_key ?? '', loaded: true });
-          else set({ loaded: true });
+          if (data) {
+            const current = get();
+            set({
+              anthropicKey: data.anthropic_key || current.anthropicKey,
+              openaiKey: data.openai_key || current.openaiKey,
+              googleKey: data.google_key || current.googleKey,
+              groqKey: data.groq_key || current.groqKey,
+              loaded: true,
+            });
+          } else set({ loaded: true });
         } catch {
           set({ loaded: true });
         }
@@ -48,7 +56,8 @@ export const useSettingsStore = create<SettingsState>()(
         const { data: { user } } = await supabase!.auth.getUser();
         if (!user) return;
         const { anthropicKey, openaiKey, googleKey, groqKey } = get();
-        await supabase!.from('user_settings').upsert({ user_id: user.id, anthropic_key: anthropicKey, openai_key: openaiKey, google_key: googleKey, groq_key: groqKey }, { onConflict: 'user_id' });
+        const { error } = await supabase!.from('user_settings').upsert({ user_id: user.id, anthropic_key: anthropicKey, openai_key: openaiKey, google_key: googleKey, groq_key: groqKey }, { onConflict: 'user_id' });
+        if (error) console.error('Failed to save settings:', error.message);
       },
     }),
     {

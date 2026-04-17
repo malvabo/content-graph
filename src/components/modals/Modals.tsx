@@ -323,11 +323,31 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                   <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: editPrompt.length > 500 ? 'var(--color-warning-text)' : 'var(--color-text-disabled)' }}>{editPrompt.length} / 500</span>
                   {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
                 </div>
-                <div className="flex flex-wrap gap-1" style={{ marginTop: 'var(--space-2)' }}>
-                  <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', width: '100%', marginBottom: 2 }}>Enhance</span>
-                  {['cinematic', 'minimal', 'editorial', 'vibrant', 'moody'].map(s => (
-                    <button key={s} className="btn-xs btn-ghost" style={{ fontSize: 'var(--text-xs)', textTransform: 'lowercase' }}
-                      onClick={() => setEditPrompt(p => p.includes(s) ? p : `${p.trimEnd()}, ${s}`)}>+{s}</button>
+                <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                  {[
+                    { label: 'Style', tags: ['cinematic', 'minimal', 'editorial', 'abstract', 'retro'] },
+                    { label: 'Mood', tags: ['vibrant', 'moody', 'dreamy', 'warm', 'dark'] },
+                  ].map(group => (
+                    <div key={group.label}>
+                      <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{group.label}</span>
+                      <div className="flex flex-wrap gap-1" style={{ marginTop: 4 }}>
+                        {group.tags.map(s => {
+                          const active = editPrompt.toLowerCase().includes(s);
+                          return (
+                            <button key={s}
+                              onClick={() => setEditPrompt(p => active ? p.replace(new RegExp(`,?\\s*${s}`, 'gi'), '').trim() : `${p.trimEnd()}, ${s}`)}
+                              style={{
+                                fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500,
+                                padding: '3px 10px', borderRadius: 'var(--radius-full)', cursor: 'pointer',
+                                border: active ? '1px solid var(--color-accent)' : '1px solid var(--color-border-default)',
+                                background: active ? 'var(--color-accent)' : 'transparent',
+                                color: active ? '#fff' : 'var(--color-text-secondary)',
+                                transition: 'all 100ms',
+                              }}>{s}</button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
