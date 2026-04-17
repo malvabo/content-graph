@@ -192,7 +192,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
 
   const [glowIntensity, setGlowIntensity] = useState(0);
   const brandActive = useSettingsStore(s => !!s.brand?.voice?.personality);
-  const brandColor = useSettingsStore(s => s.brand?.colors?.primary || '#0DBF5A');
+  const brandColor = useSettingsStore(s => s.brand?.colors?.primary ?? '#0DBF5A');
   useEffect(() => {
     if (!isRunning) { setGlowIntensity(0); return; }
     let raf: number;

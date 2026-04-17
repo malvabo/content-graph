@@ -8,7 +8,7 @@ function formatDuration(ms: number) {
 }
 
 export function VoiceSourceInline({ id }: { id: string }) {
-  const notes = useVoiceStore((s) => s.notes.filter((n) => n.status === 'ready'));
+  const notes = useVoiceStore((s) => s.notes?.filter((n) => n.status === 'ready') ?? []);
   const voiceNoteId = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.config?.voiceNoteId as string | undefined);
   const updateConfig = useGraphStore((s) => s.updateNodeConfig);
   const selected = notes.find((n) => n.id === voiceNoteId);
