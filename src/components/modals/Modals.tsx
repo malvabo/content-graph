@@ -202,7 +202,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
         {/* ── Left: image viewer ── */}
         <div className="flex-1 flex flex-col min-w-0 relative" style={{ background: 'var(--color-bg-dark)', borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)' }}>
           {/* Vignette */}
-          <div style={{ position: 'absolute', inset: 0, borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)', background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%)', pointerEvents: 'none', zIndex: 1, animation: genLoading ? 'pulse 2s ease-in-out infinite' : 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)', background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%)', pointerEvents: 'none', zIndex: 1 }} />
           <div style={{ position: 'absolute', top: 'var(--space-3)', left: 'var(--space-3)', zIndex: 3, display: 'flex', gap: 'var(--space-1)' }}>
             <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? 'Exit fullscreen' : 'Expand preview'} style={toolBtn}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
