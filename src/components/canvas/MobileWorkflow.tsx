@@ -148,7 +148,8 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
   );
 }
 
-function ConnectionLine({ running }: { running?: boolean }) {
+function ConnectionLine({ fromId, toId }: { fromId: string; toId: string }) {
+  const running = useExecutionStore(s => s.status[fromId] === 'running' || s.status[toId] === 'running');
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0' }}>
       <div style={{
@@ -200,7 +201,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
   }, [removeNode]);
 
   const expandNode = nodes.find(n => n.id === expandId);
-  const expandOutput = expandId ? useOutputStore.getState().outputs[expandId]?.text : undefined;
+  const expandOutput = useOutputStore(s => expandId ? s.outputs[expandId]?.text : undefined);
 
   // Sort: sources → transforms → generates → outputs
   const order: Record<string, number> = { source: 0, transform: 1, generate: 2, output: 3 };
@@ -243,7 +244,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {sorted.map((node, i) => (
               <div key={node.id}>
-                {i > 0 && <ConnectionLine running={useExecutionStore.getState().status[sorted[i - 1].id] === 'running' || useExecutionStore.getState().status[node.id] === 'running'} />}
+                {i > 0 && <ConnectionLine fromId={sorted[i - 1].id} toId={node.id} />}
                 <MobileNodeCard node={node} onExpand={() => setExpandId(node.id)} onDelete={() => handleDelete(node.id)} />
               </div>
             ))}
