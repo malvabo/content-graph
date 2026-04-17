@@ -184,53 +184,73 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
    ════════════════════════════════════════════ */
 function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
   const [content, setContent] = useState(text);
-  const ref = useRef<HTMLTextAreaElement>(null);
-  const resize = useAutoResize(ref);
   const { copied, copy } = useCopy(() => content);
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const onMouseUp = useCallback(() => {
-    const ta = ref.current;
-    if (!ta) return;
+    const ta = document.activeElement as HTMLTextAreaElement;
+    if (!ta || ta.tagName !== 'TEXTAREA') return;
     const start = ta.selectionStart, end = ta.selectionEnd;
     if (start === end || end - start < 3) { setAiPopover(null); return; }
     const taRect = ta.getBoundingClientRect();
     const y = getSelectionY(ta, start);
-    setAiPopover({ x: taRect.left + taRect.width / 2, y, text: content.slice(start, end) });
-  }, [content]);
+    setAiPopover({ x: taRect.left + taRect.width / 2, y, text: ta.value.slice(start, end) });
+  }, []);
 
   const handleAiApply = useCallback((newText: string) => {
-    const ta = ref.current;
-    if (!ta || !aiPopover) return;
+    const ta = document.activeElement as HTMLTextAreaElement;
+    if (!ta || ta.tagName !== 'TEXTAREA' || !aiPopover) return;
     const start = ta.selectionStart, end = ta.selectionEnd;
-    const updated = content.slice(0, start) + newText + content.slice(end);
-    setContent(updated);
+    const updated = ta.value.slice(0, start) + newText + ta.value.slice(end);
+    // Reconstruct full content based on which textarea is active
+    setContent(prev => prev.replace(ta.value, updated));
     setAiPopover(null);
-    setTimeout(() => resize(), 0);
-  }, [content, aiPopover, resize]);
+  }, [aiPopover]);
+
+  // Find the split point: last space before char 210
+  const FOLD = 210;
+  const splitAt = content.length > FOLD ? (content.lastIndexOf(' ', FOLD) > 0 ? content.lastIndexOf(' ', FOLD) : FOLD) : -1;
+  const aboveFold = splitAt > 0 ? content.slice(0, splitAt) : content;
+  const belowFold = splitAt > 0 ? content.slice(splitAt) : '';
+
+  const aboveRef = useRef<HTMLTextAreaElement>(null);
+  const belowRef = useRef<HTMLTextAreaElement>(null);
+  const resizeAbove = useAutoResize(aboveRef);
+  const resizeBelow = useAutoResize(belowRef);
+
+  const updateAbove = (val: string) => { setContent(val + belowFold); setTimeout(resizeAbove, 0); };
+  const updateBelow = (val: string) => { setContent(aboveFold + val); setTimeout(resizeBelow, 0); };
 
   return (
     <ModalShell onClose={onClose} maxWidth={620}>
       <Header title={title} onClose={onClose} />
       <div className="flex-1 overflow-y-auto relative" style={{ padding: CP, paddingBottom: 'var(--space-4)', scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
-        <div style={{ position: 'relative', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', transition: 'border-color 150ms' }}
-          onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-          onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
-          {/* Above-fold text */}
-          <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}
-            style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+
+        {/* Above fold */}
+        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: splitAt > 0 ? 'var(--radius-lg) var(--radius-lg) 0 0' : 'var(--radius-lg)', padding: 'var(--space-3)', transition: 'border-color 150ms' }}>
+          <textarea ref={aboveRef} value={aboveFold} onChange={e => updateAbove(e.target.value)} onMouseUp={onMouseUp}
+            style={{ width: '100%', minHeight: 80, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
         </div>
-        {content.length > 210 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', margin: 'var(--space-3) 0' }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--color-border-subtle)' }} />
-            <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', whiteSpace: 'nowrap', padding: '0 var(--space-1)' }}>
-              ↑ visible before "see more" · {Math.min(content.length, 210)}/210 chars
-            </span>
-            <div style={{ flex: 1, height: 1, background: 'var(--color-border-subtle)' }} />
-          </div>
-        )}
-        {content.length <= 210 && (
+
+        {/* Fold indicator */}
+        {splitAt > 0 ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderTop: 'none', borderBottom: 'none', padding: 'var(--space-2) var(--space-3)' }}>
+              <div style={{ flex: 1, height: 1, borderTop: '1px dashed var(--color-border-default)' }} />
+              <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', whiteSpace: 'nowrap', padding: '0 var(--space-2)' }}>
+                … see more
+              </span>
+              <div style={{ flex: 1, height: 1, borderTop: '1px dashed var(--color-border-default)' }} />
+            </div>
+
+            {/* Below fold */}
+            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderTop: 'none', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)', padding: 'var(--space-3)', opacity: 0.6 }}>
+              <textarea ref={belowRef} value={belowFold} onChange={e => updateBelow(e.target.value)} onMouseUp={onMouseUp}
+                style={{ width: '100%', minHeight: 40, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
+            </div>
+          </>
+        ) : (
           <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)', marginTop: 'var(--space-2)', textAlign: 'center' }}>
             ✓ Entire post visible without "see more"
           </div>
