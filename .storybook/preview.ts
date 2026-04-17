@@ -8,11 +8,16 @@ const preview: Preview = {
        date: /Date$/i,
       },
     },
-
+    backgrounds: {
+      default: 'Canvas',
+      values: [
+        { name: 'Canvas', value: '#F2EFE9' },
+        { name: 'Surface', value: '#F7F5F1' },
+        { name: 'Card', value: '#FFFFFF' },
+        { name: 'Dark', value: '#111114' },
+      ],
+    },
     a11y: {
-      // 'todo' - show a11y violations in the test UI only
-      // 'error' - fail CI on a11y violations
-      // 'off' - skip a11y checks entirely
       test: 'todo'
     }
   },

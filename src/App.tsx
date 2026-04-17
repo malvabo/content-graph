@@ -49,14 +49,6 @@ function AppInner() {
   useEffect(() => { init(); }, [init]);
   useEffect(() => { if (user) useSettingsStore.getState().load(); }, [user]);
 
-  if (authLoading) return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
-      <div className="skeleton-bar" style={{ width: 48, height: 48, borderRadius: 'var(--radius-lg)' }} />
-    </div>
-  );
-
-  if (!user && !guest) return <AuthGate />;
-
   const handleTranscript = useCallback((text: string) => {
     setVoiceTranscript(text);
     setActiveView('scriptsense');
@@ -72,6 +64,14 @@ function AppInner() {
     };
     addNode(node);
   }, [addNode]);
+
+  if (authLoading) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
+      <div className="skeleton-bar" style={{ width: 48, height: 48, borderRadius: 'var(--radius-lg)' }} />
+    </div>
+  );
+
+  if (!user && !guest) return <AuthGate />;
 
   return (
     <div className="h-screen flex flex-col">
