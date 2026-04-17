@@ -6,16 +6,19 @@ interface AuthState {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  guest: boolean;
   init: () => Promise<void>;
   signUp: (email: string, password: string) => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
+  continueAsGuest: () => void;
 }
 
 export const useAuthStore = create<AuthState>()((set) => ({
   user: null,
   session: null,
   loading: false,
+  guest: false,
 
   init: async () => {
     if (!supabase) { set({ loading: false }); return; }
@@ -40,6 +43,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   signOut: async () => {
     if (supabase) await supabase.auth.signOut();
-    set({ user: null, session: null });
+    set({ user: null, session: null, guest: false });
   },
+
+  continueAsGuest: () => set({ guest: true }),
 }));

@@ -39,7 +39,7 @@ export default function App() {
 }
 
 function AppInner() {
-  const { user, loading: authLoading, init } = useAuthStore();
+  const { user, loading: authLoading, init, guest } = useAuthStore();
   const addNode = useGraphStore((s) => s.addNode);
   const nodes = useGraphStore((s) => s.nodes);
   const [activeView, setActiveView] = useState('workflow');
@@ -55,7 +55,7 @@ function AppInner() {
     </div>
   );
 
-  if (!user) return <AuthGate />;
+  if (!user && !guest) return <AuthGate />;
 
   const handleTranscript = useCallback((text: string) => {
     setVoiceTranscript(text);
