@@ -90,7 +90,10 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
 
   const keys: Record<string, string> = { anthropic: anthropicKey, openai: openaiKey, google: googleKey, groq: groqKey };
   const apiKey = keys[provider];
-  if (!apiKey) throw new Error(`No ${provider} API key set. Go to Settings to add one.`);
+  if (!apiKey) {
+    console.error(`[aiExecute] No ${provider} API key. Model: ${model}, Provider: ${provider}. Keys present:`, { anthropic: !!anthropicKey, openai: !!openaiKey, google: !!googleKey, groq: !!groqKey });
+    throw new Error(`No ${provider} API key set. Go to Settings to add one.`);
+  }
 
   let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
 
