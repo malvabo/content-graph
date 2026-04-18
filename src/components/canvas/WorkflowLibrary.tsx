@@ -120,7 +120,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         ) : (
           /* Card grid */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
             {items.map(item => {
               const srcNode = item.nodes.find(n => n.data.subtype === 'text-source' || n.data.subtype === 'voice-source');
               const preview = (srcNode?.data.config?.text as string || '').slice(0, 100);
@@ -129,7 +129,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
               return (
               <button key={item.id} onClick={() => handleLoad(item)}
                 style={{
-                  textAlign: 'left', cursor: 'pointer', outline: 'none',
+                  textAlign: 'left', cursor: 'pointer', outline: 'none', minWidth: 0,
                   background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                   borderRadius: 'var(--radius-lg)', overflow: 'hidden',
                   transition: 'border-color .15s, box-shadow .15s',
@@ -139,7 +139,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
 
                 {/* Top half: node pills */}
-                <div style={{ background: 'var(--color-bg-surface)', padding: 'var(--space-4)', display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start', gap: 6, minHeight: 80, borderBottom: '1px solid var(--color-border-subtle)' }}>
+                <div style={{ background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start', gap: 6, minHeight: 64, overflow: 'hidden', borderBottom: '1px solid var(--color-border-subtle)' }}>
                   {nodeLabels.map((label, j) => {
                     const cat = item.nodes[j]?.data.category;
                     const c = BADGE_COLORS[cat] || BADGE_COLORS.source;
@@ -151,7 +151,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 </div>
 
                 {/* Bottom half: title, meta, preview */}
-                <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', flex: 1 }}>
+                <div style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', flex: 1, minWidth: 0, overflow: 'hidden' }}>
                   {/* Title + menu */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
                     {renameId === item.id ? (
