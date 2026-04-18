@@ -207,7 +207,7 @@
   --color-badge-transform-text: #5C4753;
 
   /* ── Edge/dot ── */
-  --color-dot: var(--p-neutral-400);
+  --color-dot: var(--p-neutral-300);
   --color-edge: var(--p-neutral-500);
   --dot-gap: 12px;
   --dot-size: 0.25px;
@@ -275,7 +275,7 @@
   --color-overlay-light: rgba(18,18,22,0.90);
   --color-overlay-dark: rgba(255,255,255,0.03);
   --color-overlay-backdrop: rgba(0,0,0,0.70);
-  --color-dot: #42424c;
+  --color-dot: #2a2a32;
   --color-edge: #3a3a42;
   --shadow-sm: 0 2px 12px rgba(0,0,0,0.4);
   --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
