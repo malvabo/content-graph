@@ -41,10 +41,11 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
 
   const handleRename = async () => {
     if (!renameId || !renameName.trim()) return;
-    setItems(prev => prev.map(i => i.id === renameId ? { ...i, name: renameName.trim() } : i));
-    const item = prev.find(i => i.id === renameId);
-    if (item) await saveWorkflow({ ...item, name: renameName.trim() });
+    const item = items.find(i => i.id === renameId);
+    const newName = renameName.trim();
+    setItems(prev => prev.map(i => i.id === renameId ? { ...i, name: newName } : i));
     setRenameId(null);
+    if (item) await saveWorkflow({ ...item, name: newName });
   };
 
   const handleDuplicate = async (item: SavedWorkflow) => {
