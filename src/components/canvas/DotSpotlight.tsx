@@ -54,8 +54,8 @@ export default function DotSpotlight() {
       ctx.clearRect(0, 0, w, h);
 
       const s = getComputedStyle(document.documentElement);
-      const GAP = parseFloat(s.getPropertyValue('--dot-gap')) || 24;
-      const DOT_R = parseFloat(s.getPropertyValue('--dot-size')) || 1;
+      const GAP = parseFloat(s.getPropertyValue('--dot-gap')) || 12;
+      const DOT_R = parseFloat(s.getPropertyValue('--dot-size')) || 0.12;
 
       const { x: vx, y: vy, zoom } = viewport;
       const scaledGap = GAP * zoom;

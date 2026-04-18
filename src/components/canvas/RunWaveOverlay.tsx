@@ -47,8 +47,8 @@ export default function RunWaveOverlay() {
     ro.observe(canvas);
     const start = performance.now();
     const s = getComputedStyle(document.documentElement);
-    const GAP = parseFloat(s.getPropertyValue('--dot-gap')) || 24;
-    const BASE_R = Math.max(parseFloat(s.getPropertyValue('--dot-size')) || 1, 1.3);
+    const GAP = parseFloat(s.getPropertyValue('--dot-gap')) || 12;
+    const BASE_R = parseFloat(s.getPropertyValue('--dot-size')) || 0.5;
 
     const draw = (now: number) => {
       const elapsed = now - start;
