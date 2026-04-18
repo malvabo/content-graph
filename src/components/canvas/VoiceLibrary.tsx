@@ -89,7 +89,6 @@ function RecordingOverlay({ onStop }: { onStop: () => void }) {
 export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: () => void }) {
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
   const [recording, setRecording] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
   const [finalText, setFinalText] = useState('');
   const [interimText, setInterimText] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -139,12 +138,9 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
       const id = `vn-${Date.now()}`;
       noteIdRef.current = id;
       startTimeRef.current = Date.now();
-      setElapsed(0);
       setFinalText('');
       setInterimText('');
       setRecording(true);
-
-      timerRef.current = setInterval(() => setElapsed(Date.now() - startTimeRef.current), 200);
 
       addNote({ id, title: 'Recording…', durationMs: 0, transcript: '', status: 'recording', createdAt: new Date().toISOString() });
     } catch (err) {
@@ -204,7 +200,7 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
         </div>
 
         {/* Recording overlay — floating blobs */}
-        {recording && <RecordingOverlay elapsed={elapsed} finalText={finalText} interimText={interimText} onStop={stopRecording} />}
+        {recording && <RecordingOverlay onStop={stopRecording} />}
 
         {/* Empty state */}
         {notes.length === 0 && !recording ? (
