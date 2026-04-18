@@ -40,7 +40,7 @@ const SettingsIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill=
 
 function DarkModeToggle() {
   const [dark, setDark] = useState(() => {
-    const saved = localStorage.getItem('dark-mode');
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('dark-mode') : null;
     return saved === 'true';
   });
   const [hover, setHover] = useState(false);

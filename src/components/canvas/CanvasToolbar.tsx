@@ -3,7 +3,6 @@ import { useGraphStore } from '../../store/graphStore';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { useExecutionStore } from '../../store/executionStore';
-import { useOutputStore } from '../../store/outputStore';
 import { aiExecute } from '../../utils/aiExecutor';
 
 import { saveWorkflow } from '../../utils/workflowApi';
