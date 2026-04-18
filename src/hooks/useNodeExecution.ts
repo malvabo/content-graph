@@ -50,7 +50,7 @@ export function useNodeExecution() {
         setOutput(nodeId, { text: result });
         setStatus(nodeId, 'complete');
       } catch (err) {
-        if (signal?.aborted) return;
+        if (signal?.aborted) { setStatus(nodeId, 'idle'); return; }
         setError(nodeId, err instanceof Error ? err.message : 'Unknown error');
       }
     },

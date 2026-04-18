@@ -18,7 +18,7 @@ export default function ScriptSensePanel({ initialText }: Props) {
   // Send API key to iframe on load
   const handleLoad = () => {
     if (iframeRef.current?.contentWindow && anthropicKey) {
-      iframeRef.current.contentWindow.postMessage({ type: 'set-api-key', key: anthropicKey }, '*');
+      iframeRef.current.contentWindow.postMessage({ type: 'set-api-key', key: anthropicKey }, window.location.origin);
     }
   };
 
