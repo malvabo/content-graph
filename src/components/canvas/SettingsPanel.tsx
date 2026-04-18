@@ -294,23 +294,22 @@ export default function SettingsPanel() {
   return (
     <div style={{ flex: 1, display: 'flex', background: 'var(--color-bg)', overflow: 'hidden' }}>
       {/* Sidebar nav */}
-      <nav className="hidden md:flex" style={{ width: 180, flexShrink: 0, borderRight: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', padding: 'var(--space-5) 0', flexDirection: 'column', overflowY: 'auto' }}>
-        <div style={{ padding: '0 var(--space-5) var(--space-4)' }}>
-          <h1 style={{ fontWeight: 600, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Settings</h1>
-        </div>
-        <div style={{ padding: '0 var(--space-3)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <nav className="hidden md:flex" style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', padding: 'var(--space-6) 0', flexDirection: 'column', overflowY: 'auto' }}>
+        <div style={{ padding: '0 var(--space-6)', display: 'flex', flexDirection: 'column' }}>
           {Object.entries(groups).map(([group, items], gi) => (
-            <div key={group} style={{ marginTop: gi > 0 ? 'var(--space-4)' : 0 }}>
-              <div style={{ padding: '0 var(--space-2) var(--space-2)', fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{group}</div>
-              {items.map(s => {
-                const on = active === s.id;
-                return (
-                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 'var(--radius-md)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: on ? 500 : 400, color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms', textAlign: 'left' }}>
-                    <span style={{ color: on ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)', display: 'flex', flexShrink: 0 }}><s.icon /></span>
-                    {s.label}
-                  </button>
-                );
-              })}
+            <div key={group} style={{ marginTop: gi > 0 ? 'var(--space-6)' : 0 }}>
+              <div style={{ padding: '0 0 var(--space-3)', fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{group}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+                {items.map(s => {
+                  const on = active === s.id;
+                  return (
+                    <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-accent)' : 'var(--color-text-primary)', transition: 'color 100ms', textAlign: 'left' }}>
+                      <span style={{ color: on ? 'var(--color-accent)' : 'var(--color-text-disabled)', display: 'flex', flexShrink: 0 }}><s.icon /></span>
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </div>
