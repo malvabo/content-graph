@@ -127,7 +127,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
               const nodeLabels = item.nodes.slice(0, 6).map(n => n.data.label);
 
               return (
-              <button key={item.id} onClick={() => handleLoad(item)}
+              <div key={item.id} role="button" tabIndex={0} onClick={() => handleLoad(item)}
                 style={{
                   textAlign: 'left', cursor: 'pointer', outline: 'none', minWidth: 0,
                   background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
@@ -207,7 +207,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     </div>
                   )}
                 </div>
-              </button>
+              </div>
               );
             })}
           </div>
