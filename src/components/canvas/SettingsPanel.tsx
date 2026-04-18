@@ -330,7 +330,7 @@ export default function SettingsPanel() {
       {/* Content */}
       <div className="flex-1" style={{ overflowY: 'auto', padding: 'var(--space-6) var(--space-6)' }}>
         <div className="md:hidden" style={{ height: 44 }} /> {/* spacer for mobile tabs */}
-        <div style={{ maxWidth: 520, margin: '0 auto' }}>
+        <div style={{ maxWidth: active === 'api-keys' ? '100%' : 520 }}>
           {active === 'brand-visual' && <BrandVisualSection />}
           {active === 'brand-voice' && <BrandVoiceSection />}
           {active === 'api-keys' && <APIKeysSection />}
