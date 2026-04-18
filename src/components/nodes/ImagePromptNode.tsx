@@ -7,26 +7,41 @@ import { getDims } from '../../utils/imageDims';
 
 import { useSettingsStore } from '../../store/settingsStore';
 
+// Together AI only supports sizes that are multiples of 64
+function snapToGrid(n: number, grid = 64): number { return Math.round(n / grid) * grid; }
+
+async function fetchWithTimeout(url: string, opts: RequestInit, ms = 30000): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  } finally { clearTimeout(timer); }
+}
+
 async function genImage(prompt: string, seed: number, w: number, h: number): Promise<string> {
   const togetherKey = useSettingsStore.getState().togetherKey;
   if (togetherKey) {
-    const res = await fetch('https://api.together.xyz/v1/images/generations', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt: prompt.slice(0, 1000), width: w, height: h, n: 1, seed, response_format: 'b64_json' }),
-    });
-    if (!res.ok) throw new Error(`Together AI error: ${res.status}`);
-    const data = await res.json();
-    const b64 = data.data?.[0]?.b64_json;
-    if (b64) return `data:image/png;base64,${b64}`;
+    try {
+      const res = await fetchWithTimeout('https://api.together.xyz/v1/images/generations', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt: prompt.slice(0, 1000), width: snapToGrid(w), height: snapToGrid(h), n: 1, seed, response_format: 'b64_json' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const b64 = data.data?.[0]?.b64_json;
+        if (b64) return `data:image/png;base64,${b64}`;
+      }
+      // Fall through to Pollinations on any Together failure
+    } catch { /* fall through */ }
   }
   // Fallback to Pollinations (free, no key)
   const shortPrompt = prompt.slice(0, 500);
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(shortPrompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url, {});
   if (!res.ok) throw new Error(`Image generation failed: ${res.status}`);
   const blob = await res.blob();
-  if (blob.size < 1000) throw new Error('Image generation returned empty result');
+  if (blob.size < 1000) throw new Error('Empty image returned');
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
@@ -54,22 +69,25 @@ export function ImagePromptInline({ id }: { id: string }) {
       genImage('abstract colorful gradient background', seed, d.w, d.h).then(img => {
         useOutputStore.getState().setOutput(id, { text: 'Demo image', imageBase64: img, imgWidth: d.w, imgHeight: d.h });
         useExecutionStore.getState().setStatus(id, 'complete');
-      }).catch(() => {}).finally(() => { generatingRef.current = false; setGenerating(false); });
+      }).catch(e => {
+        console.error('Auto image gen failed:', e);
+        useExecutionStore.getState().setError(id, e instanceof Error ? e.message : 'Image generation failed');
+      }).finally(() => { generatingRef.current = false; setGenerating(false); });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generate = useCallback(async (text: string) => {
-    if (generatingRef.current) return;
+    if (generatingRef.current || !text.trim()) return;
     generatingRef.current = true;
     setGenerating(true);
     try {
       const d = getDims(aspect);
       const img = await genImage(text, Date.now(), d.w, d.h);
-      const store = useOutputStore.getState();
-      store.setOutput(id, { text, imageBase64: img, imgWidth: d.w, imgHeight: d.h });
+      useOutputStore.getState().setOutput(id, { text, imageBase64: img, imgWidth: d.w, imgHeight: d.h });
       useExecutionStore.getState().setStatus(id, 'complete');
     } catch (e) {
       console.error('Image generation failed:', e);
+      useExecutionStore.getState().setError(id, e instanceof Error ? e.message : 'Image generation failed');
     }
     generatingRef.current = false;
     setGenerating(false);
@@ -77,16 +95,25 @@ export function ImagePromptInline({ id }: { id: string }) {
 
   // Auto-generate when upstream text arrives via Run All
   useEffect(() => {
-    if (status === 'complete' && output?.text && output.text !== 'Demo image' && !output?.imageBase64 && !generatingRef.current) {
+    if (status === 'complete' && output?.text && !output?.imageBase64 && !generatingRef.current) {
       generate(output.text);
     }
   }, [status, output?.text, output?.imageBase64, generate]);
 
   const showSkeleton = generating;
   const showImage = output?.imageBase64 && !generating;
+  const error = useExecutionStore((s) => s.errors[id]);
+  const isError = useExecutionStore((s) => s.status[id] === 'error');
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: 8 }}>
+      {isError && error && !generating && (
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-sans)' }}>
+          {error}
+          <button onClick={() => { useExecutionStore.getState().setStatus(id, 'idle'); generate('abstract colorful gradient'); }}
+            style={{ marginLeft: 'var(--space-2)', background: 'none', border: 'none', color: 'var(--color-danger-text)', textDecoration: 'underline', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>Retry</button>
+        </div>
+      )}
       {showSkeleton && (
         <div className="rounded-lg skeleton-bar" style={{ flex: 1 }} />
       )}

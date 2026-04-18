@@ -41,7 +41,7 @@ const statusBadge = (status: string) => {
   );
 };
 
-function RecordingOverlay({ elapsed, finalText, interimText, onStop }: { elapsed: number; finalText: string; interimText: string; onStop: () => void }) {
+function RecordingOverlay({ onStop }: { onStop: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -77,17 +77,6 @@ function RecordingOverlay({ elapsed, finalText, interimText, onStop }: { elapsed
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-        <div style={{ fontSize: 32, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em' }}>
-          {Math.floor(elapsed / 60000)}:{String(Math.floor((elapsed / 1000) % 60)).padStart(2, '0')}
-        </div>
-        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginBottom: 24 }}>Recording…</div>
-        <div style={{ maxWidth: 480, width: '100%', padding: '0 24px', textAlign: 'center', minHeight: 60, marginBottom: 24 }}>
-          <p style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-loose)', fontFamily: 'var(--font-sans)', margin: 0 }}>
-            <span style={{ color: 'var(--color-text-primary)' }}>{finalText}</span>
-            {interimText && <span style={{ color: 'var(--color-text-disabled)' }}>{finalText ? ' ' : ''}{interimText}</span>}
-          </p>
-          {!finalText && !interimText && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)' }}>Start speaking…</span>}
-        </div>
         <button onClick={onStop} style={{ width: 56, height: 56, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(13,191,90,0.3)' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
         </button>
