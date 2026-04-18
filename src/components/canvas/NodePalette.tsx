@@ -96,6 +96,7 @@ export default function NodePalette({ onAddNode }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search nodes…"
+              aria-label="Search nodes"
               className="form-input"
             />
           </div>

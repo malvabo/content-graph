@@ -69,7 +69,7 @@ function DeletableEdge({
               background: 'var(--color-danger)', border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', boxShadow: 'var(--shadow-sm)',
-              color: 'white',
+              color: 'var(--color-text-inverse)',
             }}
           >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>

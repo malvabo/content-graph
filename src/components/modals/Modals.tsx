@@ -59,9 +59,9 @@ function AiPopover({ x, y, selectedText, onApply, onClose }: { x: number; y: num
   }, [onClose]);
   return createPortal(
     <div ref={ref} style={{ position: 'fixed', left: x, top: y, zIndex: 99999, transform: 'translate(-50%, -100%)', paddingBottom: 4 }}>
-      <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', display: 'flex', gap: 'var(--space-1)' }}>
+      <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', display: 'flex', gap: 'var(--space-1)' }} role="menu">
         {AI_ACTIONS.map((a) => (
-          <button key={a.label} className="btn-xs btn-ghost" onMouseDown={(e) => e.preventDefault()} onClick={() => { onApply(a.action(selectedText)); onClose(); }}>{a.label}</button>
+          <button key={a.label} role="menuitem" className="btn-xs btn-ghost" onMouseDown={(e) => e.preventDefault()} onClick={() => { onApply(a.action(selectedText)); onClose(); }}>{a.label}</button>
         ))}
       </div>
     </div>,
@@ -87,7 +87,7 @@ function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.Rea
   }, []);
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center" style={{ padding: 0, background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms ease' }} onClick={onClose}>
-      <div role="dialog" aria-modal="true" className="flex flex-col w-full overflow-hidden rounded-t-[var(--radius-xl)] md:rounded-[var(--radius-xl)]"
+      <div role="dialog" aria-modal="true" aria-label="Image Prompt" className="flex flex-col w-full overflow-hidden rounded-t-[var(--radius-xl)] md:rounded-[var(--radius-xl)]"
         style={{ maxWidth: isMobile ? '100%' : maxWidth, maxHeight: isMobile ? '95vh' : `min(92vh, calc(100vh - 48px))`, background: 'var(--color-bg-card)', boxShadow: '0 16px 48px rgba(0,0,0,0.18), 0 0 0 1px var(--color-border-default)', transform: visible ? 'translateY(0)' : 'translateY(16px)', opacity: visible ? 1 : 0, transition: 'transform 150ms ease, opacity 150ms ease' }}
         onClick={(e) => e.stopPropagation()}>
         {children}
@@ -240,7 +240,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                     <div className="relative" style={{ width: 56, height: thumbH }}>
                       {img ? (
                         <>
-                          <img src={img} onClick={() => { setActiveSrc(img); setZoomed(false); }}
+                          <img src={img} alt={`Variant ${i + 1}`} onClick={() => { setActiveSrc(img); setZoomed(false); }}
                             style={{ width: 56, height: thumbH, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent', opacity: img === activeSrc ? 1 : 0.6, transition: 'opacity 150ms' }} />
                           {img === activeSrc && (
                             <div style={{ position: 'absolute', top: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -278,7 +278,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                   const active = r === ratio;
                   const bw = 18, bh = Math.round(18 * dims.h / dims.w);
                   return (
-                    <button key={r} onClick={() => { setRatio(r); setConfig('aspect', r); }}
+                    <button key={r} aria-pressed={active} onClick={() => { setRatio(r); setConfig('aspect', r); }}
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)', padding: 'var(--space-1) var(--space-2)',
                         background: active ? 'var(--color-interactive-active)' : 'transparent', border: active ? '1px solid var(--color-border-strong)' : '1px solid transparent',
                         borderRadius: 'var(--radius-md)', cursor: 'pointer', transition: 'background 100ms' }}>
@@ -360,7 +360,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                                 padding: '3px 10px', borderRadius: 'var(--radius-full)', cursor: 'pointer',
                                 border: active ? '1px solid var(--color-accent)' : '1px solid var(--color-border-default)',
                                 background: active ? 'var(--color-accent)' : 'transparent',
-                                color: active ? '#fff' : 'var(--color-text-secondary)',
+                                color: active ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
                                 transition: 'all 100ms',
                               }}>{s}</button>
                           );

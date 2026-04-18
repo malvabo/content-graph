@@ -5,6 +5,7 @@ interface Props { initialText?: string }
 
 export default function ScriptSensePanel({ initialText }: Props) {
   const [iframeKey, setIframeKey] = useState(0);
+  const [iframeLoading, setIframeLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const anthropicKey = useSettingsStore(s => s.anthropicKey);
 
@@ -17,6 +18,7 @@ export default function ScriptSensePanel({ initialText }: Props) {
 
   // Send API key to iframe on load
   const handleLoad = () => {
+    setIframeLoading(false);
     if (iframeRef.current?.contentWindow && anthropicKey) {
       iframeRef.current.contentWindow.postMessage({ type: 'set-api-key', key: anthropicKey }, window.location.origin);
     }
@@ -34,11 +36,16 @@ export default function ScriptSensePanel({ initialText }: Props) {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)' }}>
+      {iframeLoading && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+          <div className="skeleton-bar" style={{ width: 200, height: 24, borderRadius: 'var(--radius-md)' }} />
+        </div>
+      )}
       <iframe
         ref={iframeRef}
         key={iframeKey}
         src="/scriptsense/scriptsense.html"
-        className="flex-1 w-full border-none"
+        className={`flex-1 w-full border-none${iframeLoading ? ' hidden' : ''}`}
         title="ScriptSense"
         onLoad={handleLoad}
       />

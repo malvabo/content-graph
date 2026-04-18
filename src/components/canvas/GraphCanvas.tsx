@@ -123,7 +123,7 @@ export default function GraphCanvas() {
         <DotSpotlight />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
-        <MiniMap position="bottom-right" pannable zoomable nodeColor="var(--color-border-strong)" maskColor="rgba(17,17,20,0.7)" style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', right: 60, background: 'var(--color-bg-surface)' }} />
+        <MiniMap position="bottom-right" pannable zoomable nodeColor="var(--color-border-strong)" maskColor="var(--color-overlay-backdrop)" style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', right: 60, background: 'var(--color-bg-surface)' }} />
       </ReactFlow>
 
       {tooltip && (
@@ -139,7 +139,7 @@ export default function GraphCanvas() {
         <div onClick={dismissFirstRun} style={{
           position: 'absolute', bottom: 64, left: '50%', transform: 'translateX(-50%)',
           background: 'var(--color-text-primary)', color: 'var(--color-text-inverse)', borderRadius: 'var(--radius-md)',
-          padding: '8px 16px', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
+          padding: 'var(--space-2) var(--space-4)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
           boxShadow: 'var(--shadow-md)', cursor: 'pointer', zIndex: 50, whiteSpace: 'nowrap',
         }}>
           {nodes.some(n => n.data.category === 'generate') ? 'Hit ▶ Run All to generate everything' : 'Add nodes with the + button below'}

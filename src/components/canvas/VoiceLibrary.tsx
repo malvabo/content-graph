@@ -77,10 +77,10 @@ function RecordingOverlay({ onStop }: { onStop: () => void }) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-        <button onClick={onStop} style={{ width: 56, height: 56, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(13,191,90,0.3)' }}>
+        <button onClick={onStop} style={{ width: 56, height: 56, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-md)' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
         </button>
-        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginTop: 8 }}>Tap to stop</div>
+        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginTop: 8 }}>Tap to stop</div>
       </div>
     </div>
   );
@@ -190,7 +190,7 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
           </div>
           {!recording && notes.length > 0 && (
             <button onClick={startRecording} aria-label="Record" style={{
-              width: 36, height: 36, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff',
+              width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'opacity .15s',
             }}
               onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}

@@ -16,8 +16,9 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   const [renameName, setRenameName] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
   const { setNodes, setEdges, setGraphName } = useGraphStore();
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => { loadWorkflows().then(setItems); }, []);
+  useEffect(() => { loadWorkflows().then(r => { setItems(r); setLoading(false); }); }, []);
   useEffect(() => {
     if (!menuId) return;
     const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuId(null); };
@@ -94,7 +95,11 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         </div>
 
-        {items.length === 0 ? (
+        {loading ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
+            {[0,1,2].map(i => <div key={i} className="skeleton-bar" style={{ height: 180, borderRadius: 'var(--radius-lg)' }} />)}
+          </div>
+        ) : items.length === 0 ? (
           <div style={{
             flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             textAlign: 'center', padding: 'var(--space-8)',
@@ -161,7 +166,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                         onBlur={handleRename} onClick={e => e.stopPropagation()}
                         style={{ flex: 1, minWidth: 0, fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)', padding: '2px 6px', outline: 'none' }} />
                     ) : (
-                      <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                      <div title={item.name} style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                         {item.name}
                       </div>
                     )}
@@ -223,7 +228,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)',
           animation: 'fadeIn 150ms ease',
         }} onClick={() => setDeleteId(null)}>
-          <div onClick={e => e.stopPropagation()} style={{
+          <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{
             background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
             boxShadow: '0 16px 48px rgba(0,0,0,0.18)', border: '1px solid var(--color-border-default)',
             maxWidth: 340, width: '100%', fontFamily: 'var(--font-sans)',

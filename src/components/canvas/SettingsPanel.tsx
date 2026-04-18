@@ -85,7 +85,7 @@ function BrandVisualSection() {
           <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)' }}>
             <label style={LBL}>Preview</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)' }}>
-              <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: b.colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>{b.name.charAt(0).toUpperCase()}</div>
+              <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: b.colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-inverse)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>{b.name.charAt(0).toUpperCase()}</div>
               <div>
                 <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: b.colors.secondary }}>{b.name}</div>
                 <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', marginTop: 2 }}>{b.colors.primary} · {b.colors.secondary} · {b.colors.accent}</div>
@@ -104,12 +104,12 @@ function BrandVisualSection() {
             {(b.referenceImages || []).map((img, i) => (
               <div key={i} style={{ position: 'relative', width: 72, height: 72, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--color-border-default)' }}>
                 <img src={img} alt={`Reference ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button onClick={() => setBrand({ referenceImages: b.referenceImages.filter((_, j) => j !== i) })}
-                  style={{ position: 'absolute', top: 2, right: 2, width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                <button aria-label="Remove image" onClick={() => setBrand({ referenceImages: b.referenceImages.filter((_, j) => j !== i) })}
+                  style={{ position: 'absolute', top: 2, right: 2, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
               </div>
             ))}
             {(b.referenceImages || []).length < 4 && (
-              <label style={{ width: 72, height: 72, borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-border-default)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-disabled)', transition: 'border-color 150ms' }}>
+              <label aria-label="Upload reference image" style={{ width: 72, height: 72, borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-border-default)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-disabled)', transition: 'border-color 150ms' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
                 <input type="file" accept="image/*" hidden onChange={e => {
                   const file = e.target.files?.[0];

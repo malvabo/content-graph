@@ -50,7 +50,7 @@ function Header({ title, subtitle, onClose }: { title: string; subtitle?: string
     <div className="flex items-center justify-between shrink-0" style={{ padding: HP }}>
       <div>
         <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{subtitle}</div>}
+        {subtitle && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>{subtitle}</div>}
       </div>
       <button aria-label="Close" onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms' }}
         onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
@@ -164,7 +164,7 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
                 </div>
                 {/* Divider + textarea */}
                 <div style={{ borderTop: '1px solid var(--color-border-subtle)', padding: 'var(--space-2) var(--space-3)' }}>
-                  <textarea ref={el => { refs.current[i] = el; }} value={tweet} onChange={e => update(i, e.target.value)}
+                  <textarea ref={el => { refs.current[i] = el; }} value={tweet} onChange={e => update(i, e.target.value)} aria-label={`Tweet ${i + 1} content`}
                     style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
                 </div>
               </div>
@@ -248,7 +248,7 @@ function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps
             </div>
 
             {/* Below fold */}
-            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderTop: 'none', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)', padding: 'var(--space-3)', opacity: 0.6 }}>
+            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderTop: 'none', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)', padding: 'var(--space-3)', opacity: 0.75 }}>
               <textarea ref={belowRef} value={belowFold} onChange={e => updateBelow(e.target.value)} onMouseUp={onMouseUp}
                 style={{ width: '100%', minHeight: 40, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
             </div>
@@ -292,7 +292,7 @@ function QuoteCardModal({ title, text, onClose, onRegenerate }: ContentModalProp
           <svg width="32" height="24" viewBox="0 0 32 24" fill="none" style={{ margin: '0 auto var(--space-4)', display: 'block', opacity: 0.2 }}>
             <path d="M0 24V14.4C0 6.4 4.8 1.6 14.4 0l1.6 4.8C10.4 6.4 8 9.6 8 14.4h6.4V24H0zm17.6 0V14.4C17.6 6.4 22.4 1.6 32 0l-1.6 4.8C24 6.4 25.6 9.6 25.6 14.4H32V24H17.6z" fill="var(--color-text-disabled)"/>
           </svg>
-          <textarea ref={ref} value={quote} onChange={e => { setQuote(e.target.value); resize(); }}
+          <textarea ref={ref} value={quote} onChange={e => { setQuote(e.target.value); resize(); }} aria-label="Quote text"
             style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', textAlign: 'center', cursor: 'text', fontSize: 'var(--text-lg)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', fontStyle: 'italic', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
         </div>
       </div>
@@ -353,7 +353,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalPro
             <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', transition: 'border-color 150ms' }}
               onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
               onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
-              <textarea ref={el => { sectionRefs.current[i] = el; }} value={sec.text} onChange={e => updateSection(i, e.target.value)}
+              <textarea ref={el => { sectionRefs.current[i] = el; }} value={sec.text} onChange={e => updateSection(i, e.target.value)} aria-label={sec.label}
                 style={{ width: '100%', minHeight: 60, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
             </div>
           </div>

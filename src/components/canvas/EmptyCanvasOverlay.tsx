@@ -26,7 +26,7 @@ function SchematicPreview({ idx }: { idx: number }) {
   const dot = (cx: number, cy: number) => <circle cx={cx} cy={cy} r="2.5" fill={accent} opacity="0.5" />;
 
   if (idx === 0) return (
-    <svg viewBox="0 0 260 140" style={{ width: '100%', height: '100%' }}>
+    <svg viewBox="0 0 260 140" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
       <rect x="10" y="50" width="60" height="40" {...ns} /><text x="40" y="74" {...ts}>Text</text>
       <rect x="100" y="10" width="60" height="34" {...ns} /><text x="130" y="31" {...ts}>LinkedIn</text>
       <rect x="100" y="53" width="60" height="34" {...ns} /><text x="130" y="74" {...ts}>Newsletter</text>
@@ -38,7 +38,7 @@ function SchematicPreview({ idx }: { idx: number }) {
     </svg>
   );
   if (idx === 1) return (
-    <svg viewBox="0 0 260 140" style={{ width: '100%', height: '100%' }}>
+    <svg viewBox="0 0 260 140" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
       <rect x="10" y="50" width="60" height="40" {...ns} /><text x="40" y="74" {...ts}>Text</text>
       <rect x="100" y="10" width="60" height="34" {...ns} /><text x="130" y="31" {...ts}>Quote</text>
       <rect x="100" y="53" width="60" height="34" {...ns} /><text x="130" y="74" {...ts}>Thread</text>
@@ -50,7 +50,7 @@ function SchematicPreview({ idx }: { idx: number }) {
     </svg>
   );
   return (
-    <svg viewBox="0 0 260 140" style={{ width: '100%', height: '100%' }}>
+    <svg viewBox="0 0 260 140" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
       <rect x="10" y="50" width="60" height="40" {...ns} /><text x="40" y="74" {...ts}>Text</text>
       <rect x="100" y="28" width="60" height="34" {...ns} /><text x="130" y="49" {...ts}>Infographic</text>
       <rect x="100" y="78" width="60" height="34" {...ns} /><text x="130" y="99" {...ts}>Image</text>
@@ -89,10 +89,10 @@ function HeroBanner({ onNew }: { onNew: () => void }) {
       </svg>
 
       <div style={{ position: 'relative', padding: 'var(--space-8) var(--space-6) var(--space-8)' }}>
-        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 600, color: '#fff', margin: 0, letterSpacing: '-.02em' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--color-text-inverse)', margin: 0, letterSpacing: '-.02em' }}>
           Content Graph
         </h1>
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'rgba(255,255,255,0.5)', margin: 'var(--space-2) 0 var(--space-5)', maxWidth: 360, lineHeight: 1.5 }}>
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-on-dark)', margin: 'var(--space-2) 0 var(--space-5)', maxWidth: 360, lineHeight: 1.5 }}>
           Connect nodes to repurpose any content into LinkedIn posts, threads, newsletters, and more.
         </p>
         <button onClick={onNew} className="btn btn-primary"
@@ -178,7 +178,7 @@ export default function EmptyCanvasOverlay() {
         )}
 
         {/* Template grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)' }}>
           {/* Empty workflow */}
           <button onClick={handleNew}
             style={{
@@ -207,6 +207,7 @@ export default function EmptyCanvasOverlay() {
           {/* Templates */}
           {TEMPLATES.map((t, i) => (
             <button key={t.name} onClick={() => loadTemplate(i)}
+              aria-label={t.name}
               style={{
                 textAlign: 'left', cursor: 'pointer', minWidth: 0,
                 background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
