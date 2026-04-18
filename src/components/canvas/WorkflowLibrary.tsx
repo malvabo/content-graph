@@ -120,27 +120,26 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         ) : (
           /* Card grid */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 280px))', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             {items.map(item => {
-              // Extract source text preview
               const srcNode = item.nodes.find(n => n.data.subtype === 'text-source' || n.data.subtype === 'voice-source');
-              const preview = (srcNode?.data.config?.text as string || '').slice(0, 80);
-              // Node type labels
-              const nodeLabels = item.nodes.slice(0, 5).map(n => n.data.label);
+              const preview = (srcNode?.data.config?.text as string || '').slice(0, 120);
+              const nodeLabels = item.nodes.slice(0, 6).map(n => n.data.label);
 
               return (
               <button key={item.id} onClick={() => handleLoad(item)}
                 style={{
                   textAlign: 'left', cursor: 'pointer', outline: 'none',
                   background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
-                  borderRadius: 'var(--radius-xl)', overflow: 'hidden',
+                  borderRadius: 'var(--radius-lg)', overflow: 'hidden',
                   transition: 'border-color .15s, box-shadow .15s',
+                  display: 'flex', flexDirection: 'row',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
 
-                {/* Preview area — node labels as pills */}
-                <div style={{ height: 100, background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start', gap: 4, overflow: 'hidden' }}>
+                {/* Left: node pills */}
+                <div style={{ width: 180, flexShrink: 0, background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start', gap: 4, borderRight: '1px solid var(--color-border-subtle)' }}>
                   {nodeLabels.map((label, j) => {
                     const cat = item.nodes[j]?.data.category;
                     const c = BADGE_COLORS[cat] || BADGE_COLORS.source;
@@ -148,11 +147,11 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                       <span key={j} style={{ fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '2px 8px', borderRadius: 'var(--radius-full)', background: c.bg, color: c.text, lineHeight: '16px' }}>{label}</span>
                     );
                   })}
-                  {item.nodes.length > 5 && <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>+{item.nodes.length - 5}</span>}
+                  {item.nodes.length > 6 && <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>+{item.nodes.length - 6}</span>}
                 </div>
 
-                {/* Content area */}
-                <div style={{ padding: 'var(--space-3) var(--space-4)', overflow: 'hidden' }}>
+                {/* Right: content */}
+                <div style={{ flex: 1, padding: 'var(--space-3) var(--space-4)', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
                   {/* Title + menu */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
                     {renameId === item.id ? (
