@@ -25,8 +25,12 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   init: async () => {
     if (!supabase) { set({ loading: false }); return; }
-    const { data } = await supabase.auth.getSession();
-    set({ session: data.session, user: data.session?.user ?? null, loading: false });
+    try {
+      const { data } = await supabase.auth.getSession();
+      set({ session: data.session, user: data.session?.user ?? null, loading: false });
+    } catch {
+      set({ loading: false });
+    }
     authSub?.unsubscribe();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       set({ session, user: session?.user ?? null });

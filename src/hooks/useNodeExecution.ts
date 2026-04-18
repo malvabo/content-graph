@@ -44,9 +44,9 @@ export function useNodeExecution() {
 
       setStatus(nodeId, 'running');
       try {
-        if (signal?.aborted) return;
+        if (signal?.aborted) { setStatus(nodeId, 'idle'); return; }
         const result = await executor(input, node.data.config as Record<string, unknown>);
-        if (signal?.aborted) return;
+        if (signal?.aborted) { setStatus(nodeId, 'idle'); return; }
         setOutput(nodeId, { text: result });
         setStatus(nodeId, 'complete');
       } catch (err) {
@@ -68,7 +68,10 @@ export function useNodeExecution() {
       const { nodes, edges } = useGraphStore.getState();
       useExecutionStore.getState().resetAll();
       useExecutionStore.getState().setRunAllActive(true);
-      useOutputStore.getState().clearAll();
+      // Clear only non-source outputs to preserve image/voice source data
+      const sourceIds = new Set(nodes.filter(n => n.data.category === 'source').map(n => n.id));
+      const outputState = useOutputStore.getState();
+      Object.keys(outputState.outputs).forEach(id => { if (!sourceIds.has(id)) outputState.setOutput(id, {}); });
 
       const nodeIds = nodes.map((n) => n.id);
       const order = topologicalSort(nodeIds, edges);

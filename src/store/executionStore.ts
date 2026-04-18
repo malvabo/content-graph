@@ -60,6 +60,16 @@ export const useExecutionStore = create<ExecutionState>()(
     {
       name: 'content-graph-execution',
       partialize: (state) => ({ status: state.status }),
+      onRehydrateStorage: () => (state) => {
+        // Reset any stale 'running' states from previous session
+        if (state?.status) {
+          const fixed: Record<string, string> = {};
+          for (const [k, v] of Object.entries(state.status)) {
+            fixed[k] = v === 'running' ? 'idle' : v as string;
+          }
+          state.status = fixed as any;
+        }
+      },
     }
   )
 );
