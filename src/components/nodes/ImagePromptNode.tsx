@@ -5,7 +5,22 @@ import { useGraphStore } from '../../store/graphStore';
 import { ImageModal } from '../modals/Modals';
 import { getDims } from '../../utils/imageDims';
 
+import { useSettingsStore } from '../../store/settingsStore';
+
 async function genImage(prompt: string, seed: number, w: number, h: number): Promise<string> {
+  const togetherKey = useSettingsStore.getState().togetherKey;
+  if (togetherKey) {
+    const res = await fetch('https://api.together.xyz/v1/images/generations', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt: prompt.slice(0, 1000), width: w, height: h, n: 1, seed, response_format: 'b64_json' }),
+    });
+    if (!res.ok) throw new Error(`Together AI error: ${res.status}`);
+    const data = await res.json();
+    const b64 = data.data?.[0]?.b64_json;
+    if (b64) return `data:image/png;base64,${b64}`;
+  }
+  // Fallback to Pollinations (free, no key)
   const shortPrompt = prompt.slice(0, 500);
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(shortPrompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
   const res = await fetch(url);
