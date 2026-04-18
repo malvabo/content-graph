@@ -185,6 +185,7 @@ export function FileSourceInline({ id }: { id: string }) {
         </div>
       ) : (
         <div className={`border border-dashed border-[var(--color-text-disabled)] rounded-lg flex-1 flex flex-col items-center justify-center text-sm text-[var(--color-text-placeholder)] cursor-pointer hover:border-solid hover:bg-[var(--color-bg-surface)] transition ${dragOver ? 'border-solid bg-[var(--color-bg-surface)]' : ''}`}
+          role="button" tabIndex={0} aria-label="Upload file"
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDragEnter={() => setDragOver(true)}
@@ -234,6 +235,7 @@ export function ImageSourceInline({ id }: { id: string }) {
         </div>
       ) : (
         <div className={`w-full flex-1 border border-dashed border-[var(--color-text-disabled)] rounded-lg flex flex-col items-center justify-center text-sm text-[var(--color-text-placeholder)] cursor-pointer hover:border-solid hover:bg-[var(--color-bg-surface)] transition ${dragOver ? 'border-solid bg-[var(--color-bg-surface)]' : ''}`}
+          role="button" tabIndex={0} aria-label="Upload image"
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDragEnter={() => setDragOver(true)}

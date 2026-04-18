@@ -15,7 +15,7 @@ function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: str
   return (
     <div className="relative flex justify-center md:w-full">
       {active && <div className="absolute bottom-0 left-1 right-1 h-[3px] rounded-t-full md:bottom-auto md:top-1 md:left-0 md:right-auto md:h-auto md:w-[3px] md:rounded-r-full md:rounded-t-none" style={{ background: 'var(--color-accent)' }} />}
-      <button onClick={onClick} onMouseEnter={enter} onMouseLeave={leave}
+      <button onClick={onClick} onMouseEnter={enter} onMouseLeave={leave} aria-label={label}
         className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
         style={{ background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-accent-subtle)' : 'var(--color-text-tertiary)' }}>
         {icon}
@@ -50,6 +50,7 @@ function DarkModeToggle() {
   }, [dark]);
   return (
     <button onClick={() => setDark(!dark)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
       className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
       style={{ background: hover ? 'var(--color-bg-surface)' : 'transparent', color: 'var(--color-text-tertiary)' }}>
       {dark ? <SunIcon /> : <MoonIcon />}
@@ -78,7 +79,7 @@ function UserMenu() {
       {open && (
         <div className="absolute bottom-full mb-2 md:bottom-auto md:left-full md:ml-2 md:top-0 z-50 dropdown-fade"
           style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-2)', minWidth: 160 }}>
-          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: 'var(--space-1) var(--space-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+          <div title={user.email} style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: 'var(--space-1) var(--space-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
           <button onClick={() => { signOut(); setOpen(false); }} className="w-full text-left"
             style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 'var(--space-1)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}

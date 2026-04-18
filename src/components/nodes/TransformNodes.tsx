@@ -17,10 +17,12 @@ export function RefineInline({ id }: { id: string }) {
         placeholder="e.g. Extract the 5 strongest arguments. Simplify to plain English."
         value={directive}
         onChange={(e) => updateConfig(id, { directive: e.target.value })}
+        aria-label="Refine directive"
       />
       <div className="flex gap-1">
         {['List', 'Paragraph', 'JSON'].map((f) => (
           <button key={f}
+            aria-pressed={format === f}
             className={`text-sm px-2.5 py-1 rounded ${format === f ? 'bg-[var(--color-accent-subtle)] text-[var(--color-bg-card)]' : 'bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)]'}`}
             onClick={() => updateConfig(id, { output_format: f })}>{f}</button>
         ))}

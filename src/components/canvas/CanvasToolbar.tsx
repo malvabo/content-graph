@@ -39,6 +39,8 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
           value={graphName}
           placeholder="Untitled"
           onChange={(e) => setGraphName(e.target.value)}
+          onFocus={(e) => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
+          onBlur={(e) => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
         />
       </div>
 

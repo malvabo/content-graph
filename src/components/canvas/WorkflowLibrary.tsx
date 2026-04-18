@@ -74,9 +74,9 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   };
 
   return (
-    <div style={{ flex: 1, overflow: 'hidden', background: 'var(--color-bg)', minWidth: 0 }}>
+    <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)', minWidth: 0, maxWidth: '100%' }}>
       {/* Full-width layout with horizontal padding */}
-      <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', overflow: 'auto', minWidth: 0 }}>
+      <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', width: '100%' }}>
 
         {/* Header row — compact, full-width */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
@@ -126,7 +126,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         ) : (
           /* Card grid */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)', overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)', width: '100%' }}>
             {items.map(item => {
               const srcNode = item.nodes.find(n => n.data.subtype === 'text-source' || n.data.subtype === 'voice-source');
               const preview = (srcNode?.data.config?.text as string || '').slice(0, 100);

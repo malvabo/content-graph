@@ -37,6 +37,7 @@ export function VoiceSourceInline({ id }: { id: string }) {
         value={voiceNoteId ?? ''}
         onChange={(e) => onChange(e.target.value)}
         style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }}
+        aria-label="Select voice note"
       >
         <option value="" disabled>Select a voice note…</option>
         {notes.map((n) => (
