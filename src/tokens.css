@@ -210,7 +210,7 @@
   --color-dot: var(--p-neutral-300);
   --color-edge: var(--p-neutral-500);
   --dot-gap: 12px;
-  --dot-size: 0.25px;
+  --dot-size: 0.12px;
 
   /* ── Legacy aliases (backward compat) ── */
   --cg-green: var(--color-accent);
