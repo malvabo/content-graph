@@ -120,10 +120,10 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         ) : (
           /* Card grid */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-4)' }}>
             {items.map(item => {
               const srcNode = item.nodes.find(n => n.data.subtype === 'text-source' || n.data.subtype === 'voice-source');
-              const preview = (srcNode?.data.config?.text as string || '').slice(0, 120);
+              const preview = (srcNode?.data.config?.text as string || '').slice(0, 100);
               const nodeLabels = item.nodes.slice(0, 6).map(n => n.data.label);
 
               return (
@@ -133,25 +133,25 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                   background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                   borderRadius: 'var(--radius-lg)', overflow: 'hidden',
                   transition: 'border-color .15s, box-shadow .15s',
-                  display: 'flex', flexDirection: 'row',
+                  display: 'flex', flexDirection: 'column',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
 
-                {/* Left: node pills */}
-                <div style={{ width: 180, flexShrink: 0, background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start', gap: 4, borderRight: '1px solid var(--color-border-subtle)' }}>
+                {/* Top half: node pills */}
+                <div style={{ background: 'var(--color-bg-surface)', padding: 'var(--space-4)', display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start', gap: 6, minHeight: 80, borderBottom: '1px solid var(--color-border-subtle)' }}>
                   {nodeLabels.map((label, j) => {
                     const cat = item.nodes[j]?.data.category;
                     const c = BADGE_COLORS[cat] || BADGE_COLORS.source;
                     return (
-                      <span key={j} style={{ fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '2px 8px', borderRadius: 'var(--radius-full)', background: c.bg, color: c.text, lineHeight: '16px' }}>{label}</span>
+                      <span key={j} style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '3px 10px', borderRadius: 'var(--radius-full)', background: c.bg, color: c.text, lineHeight: '16px' }}>{label}</span>
                     );
                   })}
-                  {item.nodes.length > 6 && <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>+{item.nodes.length - 6}</span>}
+                  {item.nodes.length > 6 && <span style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: '3px 0' }}>+{item.nodes.length - 6}</span>}
                 </div>
 
-                {/* Right: content */}
-                <div style={{ flex: 1, padding: 'var(--space-3) var(--space-4)', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
+                {/* Bottom half: title, meta, preview */}
+                <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', flex: 1 }}>
                   {/* Title + menu */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
                     {renameId === item.id ? (
