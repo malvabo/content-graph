@@ -297,12 +297,12 @@ export default function SettingsPanel() {
       <nav className="hidden md:flex" style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', padding: 'var(--space-6) var(--space-4)', flexDirection: 'column', overflowY: 'auto' }}>
           {Object.entries(groups).map(([group, items], gi) => (
             <div key={group} style={{ marginTop: gi > 0 ? 'var(--space-6)' : 0 }}>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-2)' }}>{group}</div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-3)' }}>{group}</div>
               {items.map(s => {
                 const on = active === s.id;
                 return (
-                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-accent)' : 'var(--color-text-primary)', transition: 'color 100ms', textAlign: 'left' }}>
-                    <span style={{ color: on ? 'var(--color-accent)' : 'var(--color-text-disabled)', display: 'flex', flexShrink: 0 }}><s.icon /></span>
+                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-accent)' : 'var(--color-text-primary)', transition: 'color 100ms', textAlign: 'left' }}>
+                    <span style={{ width: 20, color: on ? 'var(--color-accent)' : 'var(--color-text-disabled)', display: 'flex', flexShrink: 0, justifyContent: 'center' }}><s.icon /></span>
                     {s.label}
                   </button>
                 );
