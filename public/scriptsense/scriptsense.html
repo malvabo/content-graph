@@ -78,8 +78,8 @@ const DARK = {
   border:  "#2a2a30",
   border2: "#4a4a54",
   text:    "#e8e6e3",
-  sub:     "#78766f",
-  mute:    "#5a5850",
+  sub:     "#a8a6a2",
+  mute:    "#78766e",
   accent:  "#a8a6a2",
   accentHover: "#c0beb8",
   accentAct: "#d0cec8",
@@ -880,7 +880,7 @@ ${text}`
           <div style={{ width:"50%", borderRight:`1px solid rgba(0,0,0,0.06)`, position:"relative", display:"flex", flexDirection:"column", background:C.white }}>
 
             {/* highlight overlay */}
-            <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
+            <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"-apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
               {paras.map((p,pi) => (
                 <p key={pi} style={{ marginBottom:28 }}>
                   {tokenize(p, aiInsights || []).map((s,i) =>
@@ -893,7 +893,7 @@ ${text}`
             </div>
 
             {/* click layer */}
-            <div style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
+            <div style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"-apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
               {paras.map((p,pi) => (
                 <p key={pi} style={{ marginBottom:28 }}>
                   {tokenize(p, aiInsights || []).map((s,i) =>
