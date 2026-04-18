@@ -349,6 +349,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   /* Prevent iOS auto-zoom on focus */
   input, textarea, select { font-size: 16px !important; }
 
+  button, a, [role="button"] { touch-action: manipulation; }
   .react-flow__node { touch-action: none; }
   .react-flow__controls { display: none; }
   .react-flow__minimap { display: none; }

@@ -26,7 +26,7 @@ function MobileNodeDetail({ node, onClose }: { node: ContentNode; onClose: () =>
       <div onClick={e => e.stopPropagation()} style={{
         position: 'relative', background: 'var(--color-bg-card)',
         borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
-        maxHeight: '92vh', display: 'flex', flexDirection: 'column',
+        maxHeight: '92vh', paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex', flexDirection: 'column',
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-3) 0 var(--space-2)' }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-border-default)' }} />

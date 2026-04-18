@@ -238,9 +238,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
           width: 28, height: 28, borderRadius: 'var(--radius-full)',
           background: 'var(--color-accent)', border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', opacity: hovered ? 1 : 0,
+          cursor: 'pointer', opacity: hovered ? 1 : 0.6,
           transition: 'opacity 150ms ease',
-          pointerEvents: hovered ? 'auto' : 'none',
           zIndex: 10,
         }}
       >
@@ -263,7 +262,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
           <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', color: 'var(--color-text-primary)' }} className="truncate">{data.label}</div>
         </div>
         {/* Expand + Close — visible on hover */}
-        <div className="flex items-center gap-0.5 shrink-0" style={{ opacity: hovered ? 1 : 0, transition: 'opacity 150ms', pointerEvents: hovered ? 'auto' : 'none' }}>
+        <div className="flex items-center gap-0.5 shrink-0 md:opacity-0 md:pointer-events-none" style={{ opacity: hovered ? 1 : undefined, pointerEvents: hovered ? 'auto' : undefined, transition: 'opacity 150ms' }}>
           <button onMouseDown={e => e.stopPropagation()} onClick={() => setExpandOpen(true)}
             style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>

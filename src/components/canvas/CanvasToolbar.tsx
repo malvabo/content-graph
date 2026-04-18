@@ -49,7 +49,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
           {confirmClear ? (
             <span className="hidden md:contents">
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', fontWeight: 'var(--weight-medium)' }}>Clear all?</span>
-              <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)', color: 'var(--color-danger)' }} onClick={() => { clearGraph(); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); setConfirmClear(false); }}>Yes</button>
+              <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)', color: 'var(--color-danger)' }} onClick={() => { clearGraph(); setConfirmClear(false); }}>Yes</button>
               <button className="btn-ghost btn-sm" style={{ borderRadius: 'var(--radius-md)' }} onClick={() => setConfirmClear(false)}>No</button>
             </span>
           ) : (

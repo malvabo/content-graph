@@ -312,7 +312,7 @@ export default function SettingsPanel() {
       </nav>
 
       {/* Mobile tab bar */}
-      <div className="flex md:hidden" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border-subtle)', padding: '0 var(--space-3)', gap: 2, overflowX: 'auto' }}>
+      <div className="flex md:hidden" style={{ position: 'sticky', top: 0, left: 0, right: 0, zIndex: 10, background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border-subtle)', padding: '0 var(--space-3)', gap: 2, overflowX: 'auto' }}>
         {SECTIONS.map(s => {
           const on = active === s.id;
           return (
@@ -325,7 +325,6 @@ export default function SettingsPanel() {
 
       {/* Content */}
       <div className="flex-1" style={{ overflowY: 'auto', padding: 'var(--space-6) var(--space-6)' }}>
-        <div className="md:hidden" style={{ height: 44 }} /> {/* spacer for mobile tabs */}
         <div style={{ maxWidth: active === 'api-keys' ? '100%' : 520 }}>
           {active === 'brand-visual' && <BrandVisualSection />}
           {active === 'brand-voice' && <BrandVoiceSection />}

@@ -22,9 +22,12 @@ export default function ScriptSensePanel({ initialText }: Props) {
     }
   };
 
-  // Reload iframe when dark mode toggles
+  // Notify iframe of dark mode change instead of reloading
   useEffect(() => {
-    const obs = new MutationObserver(() => setIframeKey(k => k + 1));
+    const obs = new MutationObserver(() => {
+      const dark = document.documentElement.classList.contains('dark');
+      iframeRef.current?.contentWindow?.postMessage({ type: 'set-theme', dark }, window.location.origin);
+    });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => obs.disconnect();
   }, []);

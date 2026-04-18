@@ -36,7 +36,7 @@ export default function MobileNodePicker({ onAdd, onClose }: { onAdd: (def: Node
         </div>
 
         {/* List */}
-        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 20 }}>
+        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}>
           {!hasAny && (
             <div style={{ padding: '32px 16px', textAlign: 'center', fontSize: 13, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>No nodes found</div>
           )}

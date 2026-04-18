@@ -109,7 +109,8 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
     if (!menuId) return;
     const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuId(null); };
     document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    document.addEventListener('touchstart', h);
+    return () => { document.removeEventListener('mousedown', h); document.removeEventListener('touchstart', h); };
   }, [menuId]);
 
   const startRecording = useCallback(async () => {

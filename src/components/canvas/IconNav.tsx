@@ -20,7 +20,7 @@ function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: str
         style={{ background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-accent-subtle)' : 'var(--color-text-tertiary)' }}>
         {icon}
       </button>
-      {showTip && (
+      {showTip && window.matchMedia('(hover: hover)').matches && (
         <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50"
           style={{ background: 'var(--color-text-primary)', color: 'var(--color-text-inverse)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 'var(--weight-medium)', boxShadow: 'var(--shadow-sm)', animation: 'fadeIn 100ms ease' }}>
           {label}

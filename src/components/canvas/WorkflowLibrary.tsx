@@ -73,9 +73,9 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   };
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)', minWidth: 0 }}>
+    <div style={{ flex: 1, overflow: 'hidden', background: 'var(--color-bg)', minWidth: 0 }}>
       {/* Full-width layout with horizontal padding */}
-      <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', minWidth: 0 }}>
+      <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', overflow: 'auto', minWidth: 0 }}>
 
         {/* Header row — compact, full-width */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
