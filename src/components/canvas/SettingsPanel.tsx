@@ -295,11 +295,11 @@ export default function SettingsPanel() {
     <div style={{ flex: 1, display: 'flex', background: 'var(--color-bg)', overflow: 'hidden' }}>
       {/* Sidebar nav */}
       <nav className="hidden md:flex" style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', padding: 'var(--space-6) 0', flexDirection: 'column', overflowY: 'auto' }}>
-        <div style={{ padding: '0 var(--space-6)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '0 var(--space-4)', display: 'flex', flexDirection: 'column' }}>
           {Object.entries(groups).map(([group, items], gi) => (
             <div key={group} style={{ marginTop: gi > 0 ? 'var(--space-6)' : 0 }}>
-              <div style={{ padding: '0 0 var(--space-3)', fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{group}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-2)' }}>{group}</div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {items.map(s => {
                   const on = active === s.id;
                   return (
