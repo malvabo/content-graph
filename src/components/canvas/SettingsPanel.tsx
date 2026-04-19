@@ -214,7 +214,7 @@ function APIKeysSection() {
         </div>
         {saved && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>✓ Saved</span>}
       </div>
-      <div style={{ ...CARD, padding: 0, overflow: 'hidden' }}>
+      <div style={{ ...CARD, padding: 0 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
