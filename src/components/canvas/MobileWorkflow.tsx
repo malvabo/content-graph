@@ -22,7 +22,7 @@ function MobileNodeDetail({ node, onClose, onRun }: { node: ContentNode; onClose
   const set = (k: string, v: unknown) => updateConfig(node.id, { [k]: v });
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }} onClick={onClose}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1100, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }} onClick={onClose}>
       <div style={{ position: 'absolute', inset: 0, background: 'var(--color-overlay-backdrop)' }} />
       <div onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" style={{
         position: 'relative', background: 'var(--color-bg-card)',
@@ -192,6 +192,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
   const { nodes, graphName, setGraphName, addNode, removeNode } = useGraphStore();
   const { runAll, cancelAll } = useNodeExecution();
   const isRunning = useExecutionStore(s => Object.values(s.status).some(v => v === 'running'));
+  const doneCount = useExecutionStore(s => Object.values(s.status).filter(v => v === 'complete' || v === 'error').length);
   const [expandId, setExpandId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editingName, setEditingName] = useState(false);
@@ -262,9 +263,15 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
           </div>
         )}
+        {nodes.length > 0 && (
+          <button onClick={() => { if (window.confirm('Clear all nodes?')) { useGraphStore.getState().clearGraph(); } }} aria-label="Clear graph"
+            style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: 'var(--color-text-disabled)', borderRadius: 'var(--radius-md)', flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+          </button>
+        )}
         <button disabled={!isRunning && nodes.length === 0} onClick={isRunning ? cancelAll : handleRunAll}
           style={{ height: 44, padding: '0 var(--space-4)', borderRadius: 'var(--radius-lg)', background: isRunning ? 'var(--color-danger-bg)' : 'var(--color-interactive-default)', border: `1px solid ${isRunning ? 'var(--color-danger-border)' : 'var(--color-border-default)'}`, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: isRunning ? 'var(--color-danger-text)' : 'var(--color-text-primary)', flexShrink: 0, opacity: !isRunning && nodes.length === 0 ? 0.4 : 1 }}>
-          {isRunning ? '■ Stop' : runDone ? '✓ Done' : '▶ Run'}
+          {isRunning ? `■ ${doneCount}/${nodes.length}` : runDone ? '✓ Done' : '▶ Run'}
         </button>
       </div>
 

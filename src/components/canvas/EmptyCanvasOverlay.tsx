@@ -117,7 +117,10 @@ export default function EmptyCanvasOverlay() {
 
   useEffect(() => { if (pasting) setTimeout(() => taRef.current?.focus(), 100); }, [pasting]);
 
-  if (!(hydrated || forceReady) || nodes.length > 0 || dismissed) return null;
+  const shouldHide = !(hydrated || forceReady) || nodes.length > 0 || dismissed;
+  const [visible, setVisible] = useState(!shouldHide);
+  useEffect(() => { if (shouldHide) { const t = setTimeout(() => setVisible(false), 200); return () => clearTimeout(t); } else { setVisible(true); } }, [shouldHide]);
+  if (!visible && shouldHide) return null;
 
   const handleGo = () => {
     const trimmed = text.trim();
@@ -144,7 +147,7 @@ export default function EmptyCanvasOverlay() {
   const handleNew = () => { setGraphName('Untitled Graph'); setDismissed(true); };
 
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--color-bg)', overflow: 'auto' }}>
+    <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--color-bg)', overflow: 'auto', opacity: shouldHide ? 0 : 1, transition: 'opacity 200ms ease', pointerEvents: shouldHide ? 'none' : 'auto' }}>
       <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: 'var(--space-6) var(--space-8) var(--space-8)' }}>
 
         {/* Hero */}

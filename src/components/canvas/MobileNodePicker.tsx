@@ -16,7 +16,7 @@ export default function MobileNodePicker({ onAdd, onClose }: { onAdd: (def: Node
   const hasAny = ORDER.some(cat => NODE_DEFS.some(n => n.category === cat && (!q || n.label.toLowerCase().includes(q) || n.description.toLowerCase().includes(q))));
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }} onClick={dismiss}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1100, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }} onClick={dismiss}>
       <div style={{ position: 'absolute', inset: 0, background: 'var(--color-overlay-backdrop)', opacity: visible ? 1 : 0, transition: 'opacity 200ms' }} />
       <div onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Add node" style={{
         position: 'relative', background: 'var(--color-bg-card)',

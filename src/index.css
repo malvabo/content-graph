@@ -281,6 +281,11 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 .btn-run:hover::before { opacity: 1; }
 .btn-run:hover { box-shadow: var(--shadow-glow); }
 
+/* WebKit scrollbar fallback */
+[style*='scrollbar-width: thin']::-webkit-scrollbar { width: 4px; }
+[style*='scrollbar-width: thin']::-webkit-scrollbar-track { background: transparent; }
+[style*='scrollbar-width: thin']::-webkit-scrollbar-thumb { background: var(--color-border-default); border-radius: 99px; }
+
 /* ── Keyframes ── */
 @keyframes btn-spin { to { transform: rotate(360deg); } }
 @keyframes pulse {

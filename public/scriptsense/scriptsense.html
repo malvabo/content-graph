@@ -145,9 +145,9 @@ const FONT_STYLE = `
   @keyframes fadeUp  { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
 
   .draft-card { cursor:pointer; transition: box-shadow 0.15s, transform 0.15s; }
-  .draft-card:hover { border-color: ${C.border2} !important; box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important; transform: translateY(-1px); }
+  .draft-card:hover { border-color: ${C.border2} !important; box-shadow: 0 2px 12px ${C.border} !important; transform: translateY(-1px); }
   .new-card   { cursor:pointer; transition: background 100ms, border-color 100ms; }
-  .new-card:hover { background: ${C.surface} !important; border-color: ${C.border2} !important; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .new-card:hover { background: ${C.surface} !important; border-color: ${C.border2} !important; box-shadow: 0 2px 8px ${C.border}; }
   .save-btn   { cursor:pointer; transition: background 100ms; }
   .save-btn:hover { background: ${C.accentHover} !important; }
   .back-btn   { cursor:pointer; transition: color 100ms; }
@@ -241,7 +241,7 @@ function Tag({ type, label }) {
     <span style={{
       display:"inline-flex", alignItems:"center",
       background:t.bg, color:t.text,
-      borderRadius:8, fontSize:11, fontWeight:600,
+      borderRadius:6, fontSize:11, fontWeight:600,
       padding:"3px 10px", whiteSpace:"nowrap",
       letterSpacing:"0.01em",
     }}>{label}</span>
@@ -263,8 +263,8 @@ function Card({ children, elRef, highlighted }) {
       borderRadius:12,
       padding:"20px",
       boxShadow: highlighted
-        ? "0 0 0 2px #0DBF5A, 0 4px 16px rgba(13,191,90,0.12)"
-        : "0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)",
+        ? "0 0 0 1.5px #0DBF5A, 0 4px 16px rgba(13,191,90,0.12)"
+        : `0 2px 8px ${C.border}, 0 0 0 1px transparent`,
       transition:"box-shadow 0.25s ease",
     }}>
       {children}
@@ -279,8 +279,8 @@ function CardHeader({ type, label, extra, onClose }) {
         <Tag type={type} label={label} />
         {extra && <span style={{ fontSize:12, color:C.mute, fontWeight:500 }}>{extra}</span>}
       </div>
-      <button className="close-btn" onClick={onClose} style={{ flexShrink:0, marginLeft:8 }}>
-        <X size={14} />
+      <button className="close-btn" onClick={onClose} style={{ flexShrink:0, marginLeft:8, padding:6 }}>
+        <X size={16} />
       </button>
     </div>
   );
@@ -328,7 +328,7 @@ function RephraseBlock({ rephrase, onApply }) {
       <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.accentDark, marginBottom:6 }}>Rephrase to</p>
       <p style={{ fontSize:13, color:C.text, lineHeight:1.6, fontStyle:"italic", marginBottom:10 }}>"{rephrase}"</p>
       <button onClick={onApply} style={{
-        background:"#0DBF5A", color:"#fff", border:"none", borderRadius:8,
+        background:"#0DBF5A", color:C.white, border:"none", borderRadius:8,
         fontSize:12, fontWeight:600, padding:"6px 16px", cursor:"pointer", transition:"opacity 100ms",
       }}
         onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
@@ -414,7 +414,9 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
                 <span style={{ fontSize:11, color:C.mute, background:C.surface, padding:"2px 8px", borderRadius:99 }}>{drafts.length}</span>
               )}
             </div>
-            <button onClick={onNew} style={{ display:"flex", alignItems:"center", gap:6, background:C.white, color:C.text, border:`1px solid ${C.border2}`, borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+            <button onClick={onNew} style={{ display:"flex", alignItems:"center", gap:6, background:C.white, color:C.text, border:`1px solid ${C.border2}`, borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}
+              onMouseEnter={e => { e.currentTarget.style.background = C.surface; }}
+              onMouseLeave={e => { e.currentTarget.style.background = C.white; }}>
               <span style={{ fontSize:16, lineHeight:1 }}>+</span> New script
             </button>
           </div>
@@ -434,7 +436,7 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
                 <p style={{ fontSize:14, fontWeight:500, color:C.sub, marginBottom:2 }}>No saved scripts yet</p>
                 <p style={{ fontSize:12, color:C.mute }}>Paste a talk script and get AI-powered insights on claims, metaphors, and logic</p>
               </div>
-              <button onClick={onNew} style={{ flexShrink:0, display:"flex", alignItems:"center", gap:6, background:C.accent, color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+              <button onClick={onNew} style={{ flexShrink:0, display:"flex", alignItems:"center", gap:6, background:C.accent, color:C.white, border:"none", borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
                 <span style={{ fontSize:16, lineHeight:1 }}>+</span> Create script
               </button>
             </div>
@@ -488,6 +490,14 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
   const cardRefs    = useRef({});
   const autoSaveRef = useRef(null);
   const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved"
+
+  /* ── Escape to close dropdown ── */
+  useEffect(() => {
+    if (!ddOpen) return;
+    const h = e => { if (e.key === 'Escape') setDdOpen(false); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [ddOpen]);
 
   /* ── Auto-save (debounced 1.2s) ── */
   useEffect(() => {
@@ -601,7 +611,7 @@ ${text}`
             <button className="back-btn" onClick={onBack} style={{ background:"none", border:"none", padding:"2px 4px", fontSize:11, fontWeight:600, color:C.mute, display:"flex", alignItems:"center", gap:4, letterSpacing:"0.04em" }}>
               <span style={{ fontSize:14, lineHeight:1 }}>←</span> Scripts
             </button>
-            <div style={{ width:1, height:12, background:"rgba(0,0,0,0.08)" }} />
+            <div style={{ width:1, height:12, background:C.border }} />
             <span style={{ fontSize:11, fontWeight:600, color:C.mute, letterSpacing:"0.06em", textTransform:"uppercase" }}>Script</span>
           </div>
           <div style={{ width:"50%", display:"flex", alignItems:"stretch" }}>
@@ -618,21 +628,21 @@ ${text}`
                   {saveStatus==="saving" ? "Saving…" : "✓ Saved"}
                 </span>
               )}
-              <div style={{ width:1, height:14, background:"rgba(0,0,0,0.08)" }} />
+              <div style={{ width:1, height:14, background:C.border }} />
               <button title="Re-run analysis" onClick={runAnalysis}
                 style={{ width:36, height:36, borderRadius:"50%", border:`1px solid ${C.border}`, background:"transparent", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"background 100ms" }}
                 onMouseEnter={e => { e.currentTarget.style.background = C.surface; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
                 <RotateCcw size={13} color={C.sub} />
               </button>
-              <div style={{ width:1, height:14, background:"rgba(0,0,0,0.08)" }} />
+              <div style={{ width:1, height:14, background:C.border }} />
               <div style={{ position:"relative" }}>
                 <button className="dd-btn" onClick={() => setDdOpen(v=>!v)}
                   style={{ display:"flex", alignItems:"center", gap:5, background:"transparent", border:"none", color:C.text, fontSize:12, fontWeight:500, cursor:"pointer" }}>
                   <span>{selC?.flag}</span><span>{selC?.name}</span><ChevronDown size={10} color={C.mute} style={{ marginLeft:1 }} />
                 </button>
                 {ddOpen && (
-                  <div style={{ position:"absolute", top:"calc(100% + 6px)", right:0, background:C.white, border:`1px solid rgba(0,0,0,0.07)`, borderRadius:14, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:99, minWidth:180, padding:"6px 0", overflow:"hidden" }}>
+                  <div style={{ position:"absolute", top:"calc(100% + 6px)", right:0, background:C.white, border:`1px solid ${C.border}`, borderRadius:14, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:99, minWidth:180, padding:"6px 0", overflow:"hidden" }}>
                     {COUNTRIES.map(c => (
                       <button key={c.code} className="dd-item"
                         onClick={() => { setCountry(c.code); setDdOpen(false); }}
@@ -651,7 +661,7 @@ ${text}`
         <div style={{ display:"flex", flex:1, minHeight:0 }}>
 
           {/* Left — editor */}
-          <div style={{ width:"50%", borderRight:`1px solid rgba(0,0,0,0.06)`, position:"relative", display:"flex", flexDirection:"column", background:C.white }}>
+          <div style={{ width:"50%", borderRight:`1px solid ${C.border}`, position:"relative", display:"flex", flexDirection:"column", background:C.white }}>
 
             {/* highlight overlay */}
             <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"-apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
@@ -695,14 +705,14 @@ ${text}`
               {/* ── Empty / loading / results states ── */}
               {analysisVersion === 0 && (
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flex:1, gap:16, padding:40, textAlign:"center" }}>
-                  <div style={{ width:48, height:48, borderRadius:14, background:C.white, display:"flex", alignItems:"center", justifyContent:"center", border:"1px solid "+C.border, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+                  <div style={{ width:48, height:48, borderRadius:14, background:C.white, display:"flex", alignItems:"center", justifyContent:"center", border:"1px solid "+C.border, boxShadow:"0 2px 8px transparent" }}>
                     <FileText size={22} color="#0DBF5A" />
                   </div>
                   <div>
                     <p style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:6 }}>Analyze your script</p>
                     <p style={{ fontSize:13, color:C.sub, lineHeight:1.6, maxWidth:240, margin:"0 auto" }}>Find science claims, metaphors, and logic gaps — then get suggestions to strengthen them.</p>
                   </div>
-                  <button onClick={runAnalysis} style={{ background:"#0DBF5A", color:"#fff", border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:600, cursor:"pointer", boxShadow:"0 2px 8px rgba(13,191,90,0.25)", transition:"opacity 100ms" }}
+                  <button onClick={runAnalysis} style={{ background:"#0DBF5A", color:C.white, border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:600, cursor:"pointer", boxShadow:"0 2px 8px rgba(13,191,90,0.25)", transition:"opacity 100ms" }}
                     onMouseEnter={e => { e.currentTarget.style.opacity = "0.9"; }}
                     onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
                     Generate insights
@@ -713,6 +723,7 @@ ${text}`
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flex:1, gap:10, padding:40, color:C.mute }}>
                   <Loader size={18} style={{ animation:"spin 1s linear infinite" }} />
                   <p style={{ fontSize:13, fontWeight:500 }}>Analyzing your script…</p>
+                  <p style={{ fontSize:12, color:C.mute, marginTop:4 }}>This usually takes 5–10 seconds</p>
                 </div>
               )}
               {!insightLoading && aiInsights !== null && visibleInsights.length === 0 && (
@@ -728,9 +739,9 @@ ${text}`
                           placeholder="sk-ant-..."
                           defaultValue={window.__CLAUDE_KEY || ""}
                           onChange={e => { window.__CLAUDE_KEY = e.target.value.trim(); }}
-                          style={{ width:"100%", padding:"8px 12px", border:"1px solid rgba(0,0,0,0.12)", borderRadius:8, fontSize:13, outline:"none" }}
+                          style={{ width:"100%", padding:"8px 12px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, outline:"none" }}
                         />
-                        <button onClick={runAnalysis} style={{ marginTop:8, width:"100%", background:C.accent, color:"#fff", border:"none", borderRadius:8, padding:"8px 0", fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                        <button onClick={runAnalysis} style={{ marginTop:8, width:"100%", background:C.accent, color:C.white, border:"none", borderRadius:8, padding:"8px 0", fontSize:12, fontWeight:600, cursor:"pointer" }}>
                           Retry
                         </button>
                       </div>

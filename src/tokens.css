@@ -186,6 +186,14 @@
   --size-node-content: 130px;
   --size-swatch: 24px;
 
+  /* Z-index scale */
+  --z-dropdown: 50;
+  --z-sticky: 100;
+  --z-modal: 1000;
+  --z-sheet: 1100;
+  --z-toast: 1200;
+  --z-popover: 1300;
+
   /* ── Overlay ── */
   --color-overlay-light: rgba(255,255,255,0.85);
   --color-overlay-dark: rgba(0,0,0,0.06);

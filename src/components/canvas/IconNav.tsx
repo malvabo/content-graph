@@ -13,13 +13,14 @@ function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: str
   const enter = () => { setHover(true); timerRef.current = setTimeout(() => setShowTip(true), 200); };
   const leave = () => { setHover(false); setShowTip(false); clearTimeout(timerRef.current); };
   return (
-    <div className="relative flex justify-center md:w-full">
+    <div className="relative flex flex-col items-center md:flex-row md:justify-center md:w-full" style={{ gap: 1 }}>
       {active && <div className="absolute bottom-0 left-1 right-1 h-[3px] rounded-t-full md:bottom-auto md:top-1 md:left-0 md:right-auto md:h-auto md:w-[3px] md:rounded-r-full md:rounded-t-none" style={{ background: 'var(--color-accent)' }} />}
       <button onClick={onClick} onMouseEnter={enter} onMouseLeave={leave} aria-label={label}
         className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
         style={{ background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-accent-subtle)' : 'var(--color-text-tertiary)' }}>
         {icon}
       </button>
+      <span className="md:hidden" style={{ fontSize: 9, fontFamily: 'var(--font-sans)', color: active ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)', lineHeight: 1 }}>{label}</span>
       {showTip && window.matchMedia('(hover: hover)').matches && (
         <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50"
           style={{ background: 'var(--color-text-primary)', color: 'var(--color-text-inverse)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 'var(--weight-medium)', boxShadow: 'var(--shadow-sm)', animation: 'fadeIn 100ms ease' }}>

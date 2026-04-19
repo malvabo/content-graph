@@ -294,16 +294,15 @@ export default function SettingsPanel() {
   return (
     <div style={{ flex: 1, display: 'flex', background: 'var(--color-bg)', overflow: 'hidden' }}>
       {/* Sidebar nav */}
-      <nav className="hidden md:flex" style={{ width: 160, flexShrink: 0, borderRight: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', padding: 'var(--space-5) var(--space-3)', flexDirection: 'column', overflowY: 'auto' }}>
-          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-5)', paddingLeft: 2 }}>Settings</div>
+      <nav className="hidden md:flex" style={{ width: 160, flexShrink: 0, borderRight: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', padding: 'var(--space-5) var(--space-4)', flexDirection: 'column', overflowY: 'auto' }}>
+          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-5)' }}>Settings</div>
           {Object.entries(groups).map(([group, items], gi) => (
             <div key={group} style={{ marginTop: gi > 0 ? 24 : 0 }}>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginBottom: 8, paddingLeft: 26 }}>{group}</div>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginBottom: 8, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{group}</div>
               {items.map(s => {
                 const on = active === s.id;
                 return (
-                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-2) var(--space-2) 0', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-accent)' : 'var(--color-text-primary)', transition: 'color 100ms, background 100ms', textAlign: 'left', borderRadius: 'var(--radius-md)' }}>
-                    <span style={{ width: 18, display: 'flex', flexShrink: 0, color: on ? 'var(--color-accent)' : 'var(--color-text-disabled)' }}><s.icon /></span>
+                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'block', padding: '8px 0', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-accent)' : 'var(--color-text-primary)', transition: 'color 100ms', textAlign: 'left' }}>
                     {s.label}
                   </button>
                 );
