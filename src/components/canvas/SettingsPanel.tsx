@@ -298,7 +298,7 @@ export default function SettingsPanel() {
           <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-5)', paddingLeft: 2 }}>Settings</div>
           {Object.entries(groups).map(([group, items], gi) => (
             <div key={group} style={{ marginTop: gi > 0 ? 24 : 0 }}>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginBottom: 8 }}>{group}</div>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginBottom: 8, paddingLeft: 26 }}>{group}</div>
               {items.map(s => {
                 const on = active === s.id;
                 return (

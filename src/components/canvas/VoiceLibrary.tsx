@@ -105,9 +105,10 @@ function RecordingOverlay({ onStop, startTime }: { onStop: () => void; startTime
   );
 }
 
-export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: () => void }) {
+export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUseInWorkflow?: () => void; onSendToScript?: (text: string) => void }) {
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
   const [recording, setRecording] = useState(false);
+  const [micError, setMicError] = useState(false);
   const [finalText, setFinalText] = useState('');
   const [interimText, setInterimText] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -165,6 +166,8 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
       addNote({ id, title: 'Recording…', durationMs: 0, transcript: '', status: 'recording', createdAt: new Date().toISOString() });
     } catch (err) {
       console.error('Mic access denied', err);
+      setMicError(true);
+      setTimeout(() => setMicError(false), 3000);
     }
   }, [addNote]);
 
@@ -245,6 +248,7 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
             <button className="btn btn-primary" onClick={startRecording} style={{ padding: '10px 24px', fontSize: 'var(--text-sm)' }}>
               Record your first note
             </button>
+            {micError && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)' }}>Microphone access denied. Check browser permissions.</div>}
           </div>
         ) : (
           /* Card grid */
@@ -301,6 +305,7 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
                             onUseInWorkflow?.();
                           } },
                           { label: 'Delete', danger: true, action: () => { setDeleteId(note.id); setMenuId(null); } },
+                          { label: 'Analyze in ScriptSense', action: () => { if (note.transcript) onSendToScript?.(note.transcript); setMenuId(null); } },
                         ].map(opt => (
                           <button key={opt.label} onClick={opt.action}
                             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', transition: 'background 100ms' }}

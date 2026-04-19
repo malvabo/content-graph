@@ -212,7 +212,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
     const node: ContentNode = {
       id: `${def.subtype}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       type: 'contentNode',
-      position: { x: 0, y: 0 },
+      position: { x: 200, y: (useGraphStore.getState().nodes.length) * 320 + 100 },
       deletable: true,
       data: { subtype: def.subtype, label: def.label, badge: def.badge, category: def.category, description: def.description, config: {} },
     };

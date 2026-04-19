@@ -57,7 +57,7 @@ export default function AuthGate() {
               <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>or</span>
               <div style={{ flex: 1, height: 1, background: 'var(--color-border-default)' }} />
             </div>
-            <button type="button" onClick={async () => { const err = await signInWithGoogle(); if (err) setError(err); }}
+            <button type="button" disabled={loading} onClick={async () => { setLoading(true); const err = await signInWithGoogle(); setLoading(false); if (err) setError(err); }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.background = 'var(--color-bg-card)'; }}
               style={{ width: '100%', padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)', transition: 'border-color .15s, background .15s' }}>

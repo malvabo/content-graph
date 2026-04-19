@@ -43,7 +43,7 @@ function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   const addNode = useGraphStore((s) => s.addNode);
   const [activeView, setActiveView] = useState('workflow');
-  const [voiceTranscript] = useState('');
+  const [voiceTranscript, setVoiceTranscript] = useState('');
   useKeyboardShortcuts();
 
   useEffect(() => { init(); }, [init]);
@@ -77,6 +77,11 @@ function AppInner() {
 
   return (
     <div className="flex flex-col" style={{ height: '100dvh' }}>
+      {guest && !user && (
+        <div style={{ background: 'var(--color-warning-bg)', borderBottom: '1px solid var(--color-warning-border)', padding: '6px 16px', fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', textAlign: 'center' }}>
+          Guest mode — your work won't be saved. <button style={{ background: 'none', border: 'none', textDecoration: 'underline', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', padding: 0 }} onClick={() => { useAuthStore.setState({ guest: false }); }}>Sign up to save</button>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
         {activeView !== 'intro' && <IconNav activeView={activeView} onViewChange={setActiveView} />}
 
@@ -102,7 +107,7 @@ function AppInner() {
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
-        {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} />}
+        {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => { setVoiceTranscript(t); setActiveView('scriptsense'); }} />}
 
         {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
 
