@@ -7,15 +7,12 @@ import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from 
 
 /* SVG icons */
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
-const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>;
 /* Mini node graph preview for cards */
 
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<SavedWorkflow[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
-  const [renameId, setRenameId] = useState<string | null>(null);
-  const [renameName, setRenameName] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
   const { setNodes, setEdges, setGraphName } = useGraphStore();
   const [loading, setLoading] = useState(true);
@@ -44,12 +41,9 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
     await deleteWorkflow(deleteId);
   };
 
-  const handleRename = async () => {
-    if (!renameId || !renameName.trim()) return;
-    const item = items.find(i => i.id === renameId);
-    const newName = renameName.trim();
-    setItems(prev => prev.map(i => i.id === renameId ? { ...i, name: newName } : i));
-    setRenameId(null);
+  const handleRename = async (id: string, newName: string) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, name: newName } : i));
+    const item = items.find(i => i.id === id);
     if (item) await saveWorkflow({ ...item, name: newName });
   };
 
@@ -169,44 +163,37 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     </div>
                     <div style={{ position: 'relative', flexShrink: 0 }}>
                       <div role="button" tabIndex={0} aria-label="More options"
-                        style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', background: 'transparent', transition: 'color .15s, background .15s', cursor: 'pointer' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                        onMouseLeave={e => { if (menuId !== item.id) { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'transparent'; } }}
+                        style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', cursor: 'pointer' }}
                         onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                       </div>
                       {menuId === item.id && (
                         <div ref={menuRef} onClick={e => e.stopPropagation()}
-                          style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', minWidth: 140, animation: 'fadeIn 100ms ease' }}>
+                          style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 4, minWidth: 140 }}>
                           {[
-                            { label: 'Rename', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>,
-                              action: () => { setRenameName(item.name); setRenameId(item.id); setMenuId(null); } },
-                            { label: 'Duplicate', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
-                              action: () => handleDuplicate(item) },
-                            { label: 'Delete', icon: <TrashIcon />, danger: true,
-                              action: () => { setDeleteId(item.id); setMenuId(null); } },
+                            { label: 'Rename', action: () => {
+                              const name = prompt('Rename workflow', item.name);
+                              if (name?.trim()) handleRename(item.id, name.trim());
+                              setMenuId(null);
+                            } },
+                            { label: 'Duplicate', action: () => handleDuplicate(item) },
+                            { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
                           ].map(opt => (
                             <button key={opt.label} onClick={opt.action}
-                              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', transition: 'background 100ms' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                              {opt.icon} {opt.label}
+                              style={{ width: '100%', padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', textAlign: 'left' }}>
+                              {opt.label}
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
                   </div>
-
-                  {/* Meta */}
-                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginBottom: preview ? 'var(--space-2)' : 0 }}>
+                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>
                     {item.nodes.length} nodes · {fmt(item.savedAt)}
                   </div>
-
-                  {/* Content preview */}
                   {preview && (
-                    <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', maxHeight: '2.8em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
-                      {preview}{preview.length >= 80 ? '…' : ''}
+                    <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 4 }}>
+                      {preview}
                     </div>
                   )}
                 </div>

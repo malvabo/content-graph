@@ -20,6 +20,7 @@ interface ContentModalProps {
   text: string;
   onClose: () => void;
   onRegenerate?: () => void;
+  onSave?: (text: string) => void;
 }
 
 /* ── Icons ── */
@@ -83,7 +84,7 @@ function Footer({ onClose, onRegenerate, onCopy, copied, onSave }: { onClose: ()
       </div>
       <div className="flex items-center gap-2">
         <button className="btn btn-sm btn-ghost" onClick={onCopy}>{copied ? <><CheckIcon /> Copied</> : <><CopyIcon /> Copy</>}</button>
-        <button className="btn btn-sm btn-primary" onClick={onClose}>Done</button>
+        <button className="btn btn-sm btn-primary" onClick={() => { onSave?.(); onClose(); }}>Done</button>
       </div>
     </div>
   );
@@ -98,7 +99,7 @@ function useCopy(getText: () => string) {
 /* ════════════════════════════════════════════
    TWITTER THREAD
    ════════════════════════════════════════════ */
-function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
+function TwitterThreadModal({ title, text, onClose, onSave, onRegenerate }: ContentModalProps) {
   const parseTweets = (t: string) => t.split(/\n\n+/).filter(s => s.trim()).map(s => s.replace(/^\d+\/\s*/, ''));
   const [tweets, setTweets] = useState(() => parseTweets(text));
   const [tweetIds] = useState(() => parseTweets(text).map(() => Math.random().toString(36).slice(2, 9)));
@@ -187,7 +188,7 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
 /* ════════════════════════════════════════════
    LINKEDIN POST
    ════════════════════════════════════════════ */
-function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
+function LinkedInModal({ title, text, onClose, onSave, onRegenerate }: ContentModalProps) {
   const [content, setContent] = useState(text);
   const { copied, copy } = useCopy(() => content);
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
@@ -269,7 +270,7 @@ function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps
 /* ════════════════════════════════════════════
    QUOTE CARD
    ════════════════════════════════════════════ */
-function QuoteCardModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
+function QuoteCardModal({ title, text, onClose, onSave, onRegenerate }: ContentModalProps) {
   const [quote, setQuote] = useState(text.replace(/\*\*/g, '').replace(/^QUOTE:\s*/i, '').replace(/\nATTRIBUTION:.*$/ms, '').trim());
   const ref = useRef<HTMLTextAreaElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -311,7 +312,7 @@ function QuoteCardModal({ title, text, onClose, onRegenerate }: ContentModalProp
 /* ════════════════════════════════════════════
    NEWSLETTER
    ════════════════════════════════════════════ */
-function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
+function NewsletterModal({ title, text, onClose, onSave, onRegenerate }: ContentModalProps) {
   const parseSections = (t: string) => {
     const parts = t.split(/\n---\n|\n##\s+/);
     if (parts.length <= 1) return [{ label: 'Content', text: t }];
@@ -369,7 +370,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalPro
 /* ════════════════════════════════════════════
    TWITTER SINGLE — no duplicate counter
    ════════════════════════════════════════════ */
-function TwitterSingleModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
+function TwitterSingleModal({ title, text, onClose, onSave, onRegenerate }: ContentModalProps) {
   const [tweet, setTweet] = useState(text.replace(/^\d+\/\s*/, '').trim());
   const ref = useRef<HTMLTextAreaElement>(null);
   const resize = useAutoResize(ref);
@@ -398,7 +399,7 @@ function TwitterSingleModal({ title, text, onClose, onRegenerate }: ContentModal
 /* ════════════════════════════════════════════
    GENERIC TEXT — with AI popover
    ════════════════════════════════════════════ */
-function GenericTextModal({ title, text, onClose, onRegenerate }: ContentModalProps) {
+function GenericTextModal({ title, text, onClose, onSave, onRegenerate }: ContentModalProps) {
   const [content, setContent] = useState(text);
   const [aiPopover, setAiPopover] = useState<{ x: number; y: number; text: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
