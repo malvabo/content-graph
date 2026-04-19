@@ -42,7 +42,11 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   const addNode = useGraphStore((s) => s.addNode);
-  const [activeView, setActiveView] = useState('workflow');
+  const validViews = ['workflow', 'library', 'voice', 'scriptsense', 'settings', 'intro'];
+  const getViewFromHash = () => { const h = window.location.hash.slice(1); return validViews.includes(h) ? h : 'library'; };
+  const [activeView, setActiveViewRaw] = useState(getViewFromHash);
+  const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v); }, []);
+  useEffect(() => { const h = () => setActiveViewRaw(getViewFromHash()); window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   useKeyboardShortcuts();
 

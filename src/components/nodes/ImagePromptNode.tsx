@@ -28,12 +28,18 @@ async function genImage(prompt: string, seed: number, w: number, h: number): Pro
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Together API error: ${res.status}`);
+      const msg = err.error?.message || `Together API error: ${res.status}`;
+      if (msg.toLowerCase().includes('credit') || res.status === 402 || res.status === 429) {
+        // Fall through to Pollinations
+      } else {
+        throw new Error(msg);
+      }
+    } else {
+      const data = await res.json();
+      const b64 = data.data?.[0]?.b64_json;
+      if (b64) return `data:image/png;base64,${b64}`;
+      throw new Error('No image data in Together response');
     }
-    const data = await res.json();
-    const b64 = data.data?.[0]?.b64_json;
-    if (b64) return `data:image/png;base64,${b64}`;
-    throw new Error('No image data in Together response');
   }
   // No Together key — use Pollinations fallback
   const shortPrompt = prompt.slice(0, 500);
