@@ -6,8 +6,9 @@ import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from 
 
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 
-const CHIP: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-normal)', fontFamily: 'var(--font-sans)', padding: '3px var(--space-2)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', color: 'var(--color-text-secondary)', lineHeight: '16px', whiteSpace: 'nowrap', flexShrink: 0 };
-const ARROW: React.CSSProperties = { color: 'var(--color-text-disabled)', fontSize: 'var(--text-xs)', opacity: 0.4, flexShrink: 0 };
+const CHIP: React.CSSProperties = { fontSize: 11, fontWeight: 400, fontFamily: 'var(--font-sans)', padding: '3px 10px', borderRadius: 5, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' };
+const ARROW: React.CSSProperties = { color: 'var(--color-text-secondary)', fontSize: 11, opacity: 0.4, margin: '0 4px', flexShrink: 0 };
+const MORE: React.CSSProperties = { fontSize: 11, fontWeight: 400, fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', opacity: 0.4, whiteSpace: 'nowrap', flexShrink: 0 };
 
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<SavedWorkflow[]>([]);
@@ -34,10 +35,10 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   const fmt = (iso: string) => { const d = new Date(iso), diff = Date.now() - d.getTime(); if (diff < 60000) return 'Just now'; if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`; if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`; return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); };
 
   const chipList = (item: SavedWorkflow) => {
-    const MAX = 3;
-    const labels = item.nodes.slice(0, MAX).map(n => n.data.label);
-    const extra = Math.max(0, item.nodes.length - MAX);
-    return { labels, extra };
+    const all = item.nodes.map(n => n.data.label);
+    const visible = all.slice(0, 2);
+    const remaining = Math.max(0, all.length - 2);
+    return { visible, remaining };
   };
 
   return (
@@ -75,7 +76,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
             {items.map(item => {
               const hovered = hoverId === item.id;
-              const { labels, extra } = chipList(item);
+              const { visible, remaining } = chipList(item);
               return (
                 <div key={item.id} role="button" tabIndex={0} onClick={() => handleLoad(item)}
                   onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}
@@ -120,18 +121,15 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     </div>
                   </div>
 
-                  {/* Chips — single row */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', overflow: 'hidden', flex: 1, minWidth: 0 }}>
-                    {labels.map((label, j) => (
+                  {/* Chips — exactly 2 + overflow */}
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '0 var(--space-4)', overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                    {visible.map((label, j) => (
                       <span key={j} style={{ display: 'contents' }}>
                         {j > 0 && <span style={ARROW}>→</span>}
                         <span style={CHIP}>{label}</span>
                       </span>
                     ))}
-                    {extra > 0 && <>
-                      {labels.length > 0 && <span style={ARROW}>→</span>}
-                      <span style={{ ...CHIP, minWidth: 'fit-content' }}>+{extra} more</span>
-                    </>}
+                    {remaining > 0 && <span style={MORE}>&nbsp;+{remaining}</span>}
                   </div>
 
                   {/* Metadata */}
