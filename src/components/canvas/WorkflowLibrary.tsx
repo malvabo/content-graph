@@ -87,38 +87,38 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out',
                     transform: hovered ? 'translateY(-1px)' : 'none',
                     boxShadow: hovered ? 'var(--shadow-md)' : 'none',
-                    display: 'flex', flexDirection: 'column',
+                    display: 'flex', flexDirection: 'column', position: 'relative',
                   }}>
 
-                  {/* Title + menu */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                    <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                      {item.name}
+                  {/* 3-dot menu — top right */}
+                  <div style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', opacity: hovered || menuId === item.id ? 1 : 0, transition: 'opacity 150ms' }}>
+                    <div role="button" tabIndex={0} aria-label="More options"
+                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', cursor: 'pointer' }}
+                      onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                     </div>
-                    <div style={{ position: 'relative', flexShrink: 0, opacity: hovered || menuId === item.id ? 1 : 0, transition: 'opacity 150ms' }}>
-                      <div role="button" tabIndex={0} aria-label="More options"
-                        style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', cursor: 'pointer' }}
-                        onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                    {menuId === item.id && (
+                      <div ref={menuRef} onClick={e => e.stopPropagation()}
+                        style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', minWidth: 130 }}>
+                        {[
+                          { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
+                          { label: 'Duplicate', action: () => handleDuplicate(item) },
+                          { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
+                        ].map(opt => (
+                          <button key={opt.label} onClick={opt.action}
+                            style={{ width: '100%', padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', textAlign: 'left', transition: 'background 100ms' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-card)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                            {opt.label}
+                          </button>
+                        ))}
                       </div>
-                      {menuId === item.id && (
-                        <div ref={menuRef} onClick={e => e.stopPropagation()}
-                          style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', minWidth: 130 }}>
-                          {[
-                            { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
-                            { label: 'Duplicate', action: () => handleDuplicate(item) },
-                            { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
-                          ].map(opt => (
-                            <button key={opt.label} onClick={opt.action}
-                              style={{ width: '100%', padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', textAlign: 'left', transition: 'background 100ms' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-card)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 'var(--space-3)', paddingRight: 'var(--space-8)' }}>
+                    {item.name}
                   </div>
 
                   {/* Chips — exactly 2 + overflow */}
