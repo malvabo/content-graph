@@ -96,7 +96,7 @@ function RecordingOverlay({ onStop, startTime }: { onStop: () => void; startTime
       </div>
       {/* Stop button — bottom third */}
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 48px)', gap: 12 }}>
-        <button onClick={onStop} style={{ width: 72, height: 72, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(13,191,90,0.35)' }}>
+        <button onClick={onStop} style={{ width: 72, height: 72, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: 'var(--color-text-inverse)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(13,191,90,0.35)' }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
         </button>
         <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)' }}>Tap to stop</div>
@@ -212,12 +212,12 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
           </div>
           {!recording && notes.length > 0 && (
             <button onClick={startRecording} aria-label="Record" style={{
-              width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff',
+              width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: 'var(--color-text-inverse)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'opacity .15s',
             }}
               onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
               onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}>
-              <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#fff' }} />
+              <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'var(--color-bg-card)' }} />
             </button>
           )}
         </div>

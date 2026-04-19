@@ -18,6 +18,7 @@ const PROVIDERS = [
   { key: 'googleKey' as const, setter: 'setGoogleKey' as const, label: 'Google Gemini', placeholder: 'AIza...', icon: 'G', validateUrl: null, validateHeaders: () => ({}), validateBody: null },
   { key: 'groqKey' as const, setter: 'setGroqKey' as const, label: 'Groq (Llama)', placeholder: 'gsk_...', icon: 'L', validateUrl: 'https://api.groq.com/openai/v1/models', validateHeaders: (k: string) => ({ Authorization: `Bearer ${k}` }), validateBody: null },
   { key: 'togetherKey' as const, setter: 'setTogetherKey' as const, label: 'Together (Images)', placeholder: '', icon: 'T', validateUrl: 'https://api.together.xyz/v1/models', validateHeaders: (k: string) => ({ Authorization: `Bearer ${k}` }), validateBody: null },
+  { key: 'hfKey' as const, setter: 'setHfKey' as const, label: 'Hugging Face (Images)', placeholder: 'hf_...', icon: 'H', validateUrl: 'https://huggingface.co/api/whoami-v2', validateHeaders: (k: string) => ({ Authorization: `Bearer ${k}` }), validateBody: null },
 ] as const;
 
 const LBL: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', display: 'block', marginBottom: 'var(--space-2)' };
@@ -105,7 +106,7 @@ function BrandVisualSection() {
               <div key={i} style={{ position: 'relative', width: 72, height: 72, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--color-border-default)' }}>
                 <img src={img} alt={`Reference ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <button aria-label="Remove image" onClick={() => setBrand({ referenceImages: b.referenceImages.filter((_, j) => j !== i) })}
-                  style={{ position: 'absolute', top: 2, right: 2, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                  style={{ position: 'absolute', top: 2, right: 2, width: 24, height: 24, borderRadius: '50%', background: 'var(--color-overlay-dark)', border: 'none', color: 'var(--color-text-inverse)', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
               </div>
             ))}
             {(b.referenceImages || []).length < 4 && (

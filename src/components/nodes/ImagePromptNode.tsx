@@ -41,7 +41,26 @@ async function genImage(prompt: string, seed: number, w: number, h: number): Pro
       throw new Error('No image data in Together response');
     }
   }
-  // No Together key — use Pollinations fallback
+  // Try Hugging Face Inference API (free tier)
+  const hfKey = useSettingsStore.getState().hfKey;
+  if (hfKey) {
+    const res = await fetchWithTimeout('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${hfKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputs: prompt.slice(0, 1000), parameters: { width: snapToGrid(w), height: snapToGrid(h), seed } }),
+    }, 60000);
+    if (res.ok) {
+      const blob = await res.blob();
+      if (blob.size > 1000) return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+    // Fall through to Pollinations on failure
+  }
+  // Pollinations fallback (free, no key)
   const shortPrompt = prompt.slice(0, 500);
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(shortPrompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
   const res = await fetchWithTimeout(url, {});

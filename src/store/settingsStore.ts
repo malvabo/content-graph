@@ -29,6 +29,7 @@ interface SettingsState {
   googleKey: string;
   groqKey: string;
   togetherKey: string;
+  hfKey: string;
   brand: BrandKit;
   loaded: boolean;
   setAnthropicKey: (key: string) => void;
@@ -36,6 +37,7 @@ interface SettingsState {
   setGoogleKey: (key: string) => void;
   setGroqKey: (key: string) => void;
   setTogetherKey: (key: string) => void;
+  setHfKey: (key: string) => void;
   setBrand: (brand: Partial<BrandKit>) => void;
   load: () => Promise<void>;
   save: () => Promise<void>;
@@ -49,6 +51,7 @@ export const useSettingsStore = create<SettingsState>()(
       googleKey: '',
       groqKey: '',
       togetherKey: '',
+      hfKey: '',
       brand: { ...EMPTY_BRAND },
       loaded: false,
 
@@ -57,6 +60,7 @@ export const useSettingsStore = create<SettingsState>()(
       setGoogleKey: (key) => set({ googleKey: key }),
       setGroqKey: (key) => set({ groqKey: key }),
       setTogetherKey: (key) => set({ togetherKey: key }),
+      setHfKey: (key) => set({ hfKey: key }),
       setBrand: (partial) => set((s: any) => {
         const b = s.brand || EMPTY_BRAND;
         return { brand: { ...b, ...partial, colors: { ...b.colors, ...(partial.colors || {}) }, voice: { ...b.voice, ...(partial.voice || {}) } } };
@@ -95,7 +99,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'content-graph-settings',
-      partialize: (state) => ({ anthropicKey: state.anthropicKey, openaiKey: state.openaiKey, googleKey: state.googleKey, groqKey: state.groqKey, togetherKey: state.togetherKey, brand: state.brand }),
+      partialize: (state) => ({ anthropicKey: state.anthropicKey, openaiKey: state.openaiKey, googleKey: state.googleKey, groqKey: state.groqKey, togetherKey: state.togetherKey, hfKey: state.hfKey, brand: state.brand }),
       merge: (persisted: any, current: any) => ({ ...current, ...persisted, brand: { ...EMPTY_BRAND, ...(persisted as any)?.brand } }),
     }
   )
