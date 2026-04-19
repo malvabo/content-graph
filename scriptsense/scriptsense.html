@@ -607,24 +607,25 @@ ${text}`
 
         {/* ── Column labels + tabs ── */}
         <div style={{ display:"flex", background:C.white, borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
-          <div style={{ width:"50%", padding:"0 16px", display:"flex", alignItems:"center", gap:10, borderRight:`1px solid ${C.border}`, height:42 }}>
-            <button className="back-btn" onClick={onBack} style={{ background:"none", border:"none", padding:"2px 4px", fontSize:11, fontWeight:600, color:C.mute, display:"flex", alignItems:"center", gap:4, letterSpacing:"0.04em" }}>
-              <span style={{ fontSize:14, lineHeight:1 }}>←</span> Scripts
+          <div style={{ width:"50%", padding:"0 16px", display:"flex", alignItems:"center", gap:10, borderRight:`1px solid ${C.border}`, height:44 }}>
+            <button className="back-btn" onClick={onBack} style={{ width:28, height:28, borderRadius:8, background:C.surface, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center", color:C.mute, padding:0, transition:"background 100ms, color 100ms" }}
+              onMouseEnter={e => { e.currentTarget.style.background = C.border; e.currentTarget.style.color = C.text; }}
+              onMouseLeave={e => { e.currentTarget.style.background = C.surface; e.currentTarget.style.color = C.mute; }}>
+              <span style={{ fontSize:14, lineHeight:1 }}>←</span>
             </button>
-            <div style={{ width:1, height:12, background:C.border }} />
-            <span style={{ fontSize:11, fontWeight:600, color:C.mute, letterSpacing:"0.06em", textTransform:"uppercase" }}>Script</span>
+            <span style={{ fontSize:13, fontWeight:500, color:C.text }}>Script</span>
           </div>
           <div style={{ width:"50%", display:"flex", alignItems:"stretch" }}>
             {[["insights", analysisVersion > 0 ? `Insights · ${visibleInsights.length}` : "Insights"]].map(([tab,label]) => (
               <button key={tab} className="tab-btn" onClick={() => setActiveTab(tab)} style={{
-                padding:"0 18px", fontSize:12, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.05em",
-                color: activeTab===tab ? C.accent : C.mute,
+                padding:"0 16px", fontSize:12, fontWeight:500, letterSpacing:"0.04em",
+                color: activeTab===tab ? C.text : C.mute,
                 borderBottom: activeTab===tab ? `2px solid ${C.accent}` : "2px solid transparent",
               }}>{label}</button>
             ))}
             <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8, paddingRight:16 }}>
               {saveStatus && (
-                <span style={{ fontSize:11, color: saveStatus==="saved" ? "#1A5048" : C.mute, fontWeight:500, transition:"color 0.2s" }}>
+                <span style={{ fontSize:11, color: saveStatus==="saved" ? C.accent : C.mute, fontWeight:500, transition:"color 0.2s" }}>
                   {saveStatus==="saving" ? "Saving…" : "✓ Saved"}
                 </span>
               )}
