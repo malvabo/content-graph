@@ -229,8 +229,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         outlineOffset: -2,
       }}
     >
-      {/* Run button (bottom-right, hover only) */}
-      <button
+      {/* Run button (bottom-right, hover only) — hide for source nodes */}
+      {data.category !== 'source' && <button
         onMouseDown={e => e.stopPropagation()}
         onClick={() => runNode(id, async (input, config) => aiExecute(input, config, data.subtype))}
         style={{
@@ -244,7 +244,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         }}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-      </button>
+      </button>}
 
       {def?.hasInput && <Handle type="target" position={Position.Left} id="text" className={HANDLE_CLS} style={hiTarget ? { borderColor: 'var(--color-accent)', backgroundColor: 'var(--color-accent)' } : undefined} />}
 

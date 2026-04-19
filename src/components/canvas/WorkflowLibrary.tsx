@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useGraphStore } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
-import { BADGE_COLORS } from '../../utils/nodeDefs';
 import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from '../../utils/workflowApi';
 
 /* SVG icons */
@@ -128,74 +127,69 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           /* Card grid */
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
             {items.map(item => {
-              const srcNode = item.nodes.find(n => n.data.subtype === 'text-source' || n.data.subtype === 'voice-source');
-              const preview = (srcNode?.data.config?.text as string || '').slice(0, 100);
-              const nodeLabels = item.nodes.slice(0, 6).map(n => n.data.label);
+              const labels = item.nodes.slice(0, 3).map(n => n.data.label);
+              const extra = item.nodes.length - 3;
 
               return (
               <div key={item.id} role="button" tabIndex={0} onClick={() => handleLoad(item)}
                 style={{
-                  textAlign: 'left', cursor: 'pointer', outline: 'none',
+                  cursor: 'pointer', outline: 'none', height: 160, padding: 20,
                   background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                   borderRadius: 'var(--radius-lg)', overflow: 'hidden',
                   transition: 'border-color .15s, box-shadow .15s',
+                  display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
 
-                {/* Top: node pills */}
-                <div style={{ background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', gap: 6, borderBottom: '1px solid var(--color-border-subtle)' }}>
-                  {nodeLabels.map((label, j) => {
-                    const cat = item.nodes[j]?.data.category;
-                    const c = BADGE_COLORS[cat] || BADGE_COLORS.source;
-                    return (
-                      <span key={j} style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '3px 10px', borderRadius: 'var(--radius-full)', background: c.bg, color: c.text, lineHeight: '16px' }}>{label}</span>
-                    );
-                  })}
-                  {item.nodes.length > 6 && <span style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>+{item.nodes.length - 6}</span>}
+                {/* 1. Title */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                  <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                    {item.name}
+                  </div>
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <div role="button" tabIndex={0} aria-label="More options"
+                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', cursor: 'pointer' }}
+                      onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                    </div>
+                    {menuId === item.id && (
+                      <div ref={menuRef} onClick={e => e.stopPropagation()}
+                        style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 4, minWidth: 140 }}>
+                        {[
+                          { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
+                          { label: 'Duplicate', action: () => handleDuplicate(item) },
+                          { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
+                        ].map(opt => (
+                          <button key={opt.label} onClick={opt.action}
+                            style={{ width: '100%', padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', textAlign: 'left' }}>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Bottom: title, meta, preview */}
-                <div style={{ padding: 'var(--space-3) var(--space-4)', overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 2 }}>
-                    <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                      {item.name}
-                    </div>
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <div role="button" tabIndex={0} aria-label="More options"
-                        style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', cursor: 'pointer' }}
-                        onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                      </div>
-                      {menuId === item.id && (
-                        <div ref={menuRef} onClick={e => e.stopPropagation()}
-                          style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 4, minWidth: 140 }}>
-                          {[
-                            { label: 'Rename', action: () => {
-                              const name = prompt('Rename workflow', item.name);
-                              if (name?.trim()) handleRename(item.id, name.trim());
-                              setMenuId(null);
-                            } },
-                            { label: 'Duplicate', action: () => handleDuplicate(item) },
-                            { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
-                          ].map(opt => (
-                            <button key={opt.label} onClick={opt.action}
-                              style={{ width: '100%', padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', textAlign: 'left' }}>
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>
-                    {item.nodes.length} nodes · {fmt(item.savedAt)}
-                  </div>
-                  {preview && (
-                    <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 4 }}>
-                      {preview}
-                    </div>
+                {/* 2. Chips with arrows */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', overflow: 'hidden' }}>
+                  {labels.map((label, j) => (
+                    <span key={j} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {j > 0 && <span style={{ color: '#B0A898', fontSize: 11, lineHeight: 1 }}>→</span>}
+                      <span style={{ fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '3px 8px', borderRadius: 6, background: '#F0EDE8', border: '1px solid #E0DDD8', color: '#5A5550', lineHeight: '16px', whiteSpace: 'nowrap' }}>{label}</span>
+                    </span>
+                  ))}
+                  {extra > 0 && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ color: '#B0A898', fontSize: 11, lineHeight: 1 }}>→</span>
+                      <span style={{ fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '3px 8px', borderRadius: 6, background: '#F0EDE8', border: '1px solid #E0DDD8', color: '#5A5550', lineHeight: '16px', whiteSpace: 'nowrap' }}>+{extra} more</span>
+                    </span>
                   )}
+                </div>
+
+                {/* 3. Metadata */}
+                <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>
+                  {item.nodes.length} nodes · {fmt(item.savedAt)}
                 </div>
               </div>
               );
