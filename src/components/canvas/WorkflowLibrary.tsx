@@ -81,13 +81,13 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 <div key={item.id} role="button" tabIndex={0} onClick={() => handleLoad(item)}
                   onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}
                   style={{
-                    cursor: 'pointer', outline: 'none', height: 156, padding: 'var(--space-5)',
+                    cursor: 'pointer', outline: 'none', height: 156, padding: 'var(--space-4)',
                     background: 'var(--color-bg-card)', border: `1px solid var(--color-border-${hovered ? 'strong' : 'default'})`,
                     borderRadius: 'var(--radius-lg)',
                     transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out',
                     transform: hovered ? 'translateY(-1px)' : 'none',
                     boxShadow: hovered ? 'var(--shadow-md)' : 'none',
-                    display: 'flex', flexDirection: 'column', position: 'relative',
+                    display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
                   }}>
 
                   {/* 3-dot menu — top right */}
@@ -117,7 +117,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                   </div>
 
                   {/* Title */}
-                  <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 'var(--space-3)', paddingRight: 'var(--space-8)' }}>
+                  <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 'var(--space-6)' }}>
                     {item.name}
                   </div>
 
@@ -133,7 +133,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                   </div>
 
                   {/* Metadata */}
-                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-3)' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'auto' }}>
                     {item.nodes.length} nodes · {fmt(item.savedAt)}
                   </div>
                 </div>
