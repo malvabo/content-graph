@@ -117,7 +117,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                   </div>
 
                   {/* Chips */}
-                  <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden', minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden', minWidth: 0, background: 'var(--color-bg-surface)', margin: 'calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) 0', padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
                     {visible.map((label, j) => (
                       <span key={j} style={{ display: 'contents' }}>
                         {j > 0 && <span style={ARROW}>→</span>}
