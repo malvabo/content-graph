@@ -62,7 +62,7 @@ function Header({ title, subtitle, onClose }: { title: string; subtitle?: string
 }
 
 /* ── Footer: regenerate (loading), copy (icon), done ── */
-function Footer({ onClose, onRegenerate, onCopy, copied }: { onClose: () => void; onRegenerate?: () => void; onCopy: () => void; copied: boolean }) {
+function Footer({ onClose, onRegenerate, onCopy, copied, onSave }: { onClose: () => void; onRegenerate?: () => void; onCopy: () => void; copied: boolean; onSave?: () => void }) {
   const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const regen = () => {
@@ -179,7 +179,7 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
           + Add tweet
         </button>
       </div>
-      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
+      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} onSave={() => onSave?.(tweets.map((t, i) => `${i + 1}/ ${t}`).join("\n\n"))} />
     </ModalShell>
   );
 }
@@ -261,7 +261,7 @@ function LinkedInModal({ title, text, onClose, onRegenerate }: ContentModalProps
           </div>
         )}
       </div>
-      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
+      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} onSave={() => onSave?.(content)} />
     </ModalShell>
   );
 }
@@ -303,7 +303,7 @@ function QuoteCardModal({ title, text, onClose, onRegenerate }: ContentModalProp
           ↓ Download as image
         </button>
       </div>
-      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
+      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} onSave={() => onSave?.(quote)} />
     </ModalShell>
   );
 }
@@ -361,7 +361,7 @@ function NewsletterModal({ title, text, onClose, onRegenerate }: ContentModalPro
           </div>
         ))}
       </div>
-      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
+      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} onSave={() => onSave?.(sections.map(s => s.text).join("\n\n"))} />
     </ModalShell>
   );
 }
@@ -390,7 +390,7 @@ function TwitterSingleModal({ title, text, onClose, onRegenerate }: ContentModal
             style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
         </div>
       </div>
-      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
+      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} onSave={() => onSave?.(tweet)} />
     </ModalShell>
   );
 }
@@ -436,7 +436,7 @@ function GenericTextModal({ title, text, onClose, onRegenerate }: ContentModalPr
             style={{ width: '100%', minHeight: 200, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden' }} />
         </div>
       </div>
-      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} />
+      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} onSave={() => onSave?.(content)} />
     </ModalShell>
   );
 }

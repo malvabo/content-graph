@@ -5,6 +5,7 @@ import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { aiExecute } from '../../utils/aiExecutor';
+import { useSettingsStore } from '../../store/settingsStore';
 import { NODE_DEFS_BY_SUBTYPE, BADGE_COLORS } from '../../utils/nodeDefs';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import ContentModal from '../modals/ContentModal';
@@ -194,10 +195,17 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editingName, setEditingName] = useState(false);
 
+  const [runDone, setRunDone] = useState(false);
+
   const handleRunAll = useCallback(() => {
-    runAll(async (input, config, subtype) => {
-      return aiExecute(input, config, subtype);
-    });
+    const s = useSettingsStore.getState();
+    if (!s.anthropicKey && !s.openaiKey && !s.googleKey && !s.groqKey) {
+      alert('No API key configured. Go to Settings to add one.');
+      return;
+    }
+    setRunDone(false);
+    runAll(async (input, config, subtype) => aiExecute(input, config, subtype))
+      .then(() => { setRunDone(true); setTimeout(() => setRunDone(false), 3000); });
   }, [runAll]);
 
   const handleAddNode = useCallback((def: NodeDef) => {
@@ -255,7 +263,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
         )}
         <button disabled={isRunning || nodes.length === 0} onClick={handleRunAll}
           style={{ height: 44, padding: '0 var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-interactive-default)', border: '1px solid var(--color-border-default)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)', flexShrink: 0, opacity: nodes.length === 0 ? 0.4 : 1 }}>
-          {isRunning ? '⏳' : '▶'} Run
+          {isRunning ? '⏳ Running…' : runDone ? '✓ Done' : '▶ Run'}
         </button>
       </div>
 
@@ -295,6 +303,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
           title={expandNode.data.label}
           text={expandOutput}
           onClose={() => setExpandId(null)}
+          onSave={(t: string) => useOutputStore.getState().setOutput(expandNode.id, { text: t })}
         />
       )}
       {expandNode && !expandOutput && (

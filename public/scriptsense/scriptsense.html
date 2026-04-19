@@ -214,24 +214,12 @@ const MOCK_INSIGHTS = JSON.stringify({
   ]
 });
 
-const MOCK_STORYTELLING = JSON.stringify({
-  segments: [
-    { score:72, label:"Bold visual brain hook", why:"Opens with a striking statistic that grabs attention immediately. The 60,000x claim is memorable even if questionable." },
-    { score:65, label:"Butterfly effect analogy", why:"The metaphor is vivid and relatable, but the paragraph stays abstract. It tells without showing." },
-    { score:58, label:"Retention statistics", why:"Another stat-driven paragraph that feels formulaic. The 'memory anchors' line is strong, but the setup feels like a textbook." },
-    { score:48, label:"Hero's journey reference", why:"The weakest paragraph. The hero's journey is overused, and the absolute claim undermines credibility. Ends flat." }
-  ],
-  summary: { overallScore:61, topStrength:"Strong opening hook with a vivid statistic that captures attention.", topWeakness:"Relies too heavily on unverified statistics and absolute claims.", recommendation:"Replace the second statistic paragraph with a concrete before/after example." }
-});
-
 let _anthropicKey = '';
 window.addEventListener('message', e => { if (e.data?.type === 'set-api-key') _anthropicKey = e.data.key; });
 
 async function callClaude(prompt) {
   if (!_anthropicKey) {
-    // Fallback to mock if no key
     await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
-    if (prompt.includes("audience engagement")) return MOCK_STORYTELLING;
     return MOCK_INSIGHTS;
   }
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -265,7 +253,7 @@ function Label({ children }) {
 }
 
 function Divider() {
-  return <div style={{ height:1, background:"rgba(0,0,0,0.06)", margin:"14px 0" }} />;
+  return <div style={{ height:1, background:C.border, margin:"14px 0" }} />;
 }
 
 function Card({ children, elRef, highlighted }) {
@@ -399,224 +387,6 @@ function LogicCard({ data, elRef, onClose, onApply, highlighted }) {
       <RephraseBlock rephrase={data.rephrase} onApply={onApply} />
       <SourceList sources={sources} />
     </Card>
-  );
-}
-
-/* ── Storytelling Panel ── */
-function StorytellingPanel({ text, triggerVersion }) {
-  const [segments, setSegments]   = useState(null);
-  const [summary,  setSummary]    = useState(null);
-  const [loading,  setLoading]    = useState(false);
-  const [hovered,  setHovered]    = useState(0);
-  const [summaryOpen, setSummaryOpen] = useState(false);
-
-  useEffect(() => {
-    if (!text || triggerVersion === 0) return;
-    setLoading(true); setSegments(null); setSummary(null);
-    const paras = text.split("\n\n").filter(Boolean);
-    callClaude(
-      `Analyze each paragraph's audience engagement for a talk script. Use simple, clear language at a grade 11 reading level — no jargon. Return ONLY a JSON object: {
-  "segments": [ /* one per paragraph in order */ {"score":0-100,"label":"3-5 word title","why":"1-2 sentences WHY this is flat or captivating"} ],
-  "summary": {"overallScore":0-100,"topStrength":"one sentence","topWeakness":"one sentence","recommendation":"one concrete actionable suggestion"}
-}
-Score guide: 0-30=flat/predictable, 31-65=moderate, 66-100=emotionally captivating.
-Paragraphs:
-${paras.map((p,i)=>`[${i+1}] "${p}"`).join("\n\n")}`
-    ).then(raw => {
-      try {
-        const d = JSON.parse(raw.replace(/```json|```/g,"").trim());
-        setSegments(d.segments || []);
-        setSummary(d.summary || null);
-      } catch {
-        setSegments(paras.map((_,i) => ({ score:50, label:`Paragraph ${i+1}`, why:"" })));
-      }
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [triggerVersion]);
-
-  const engColor = (score) => {
-    if (score == null || score < 30) return "#C8D4CC";
-    if (score < 55) return "#B0D8BF";
-    if (score < 72) return "#5CB87A";
-    return "#0DBF5A";
-  };
-  const engStroke = (score) => 1.5 + (Math.max(0, score - 20) / 80) * 2.5;
-
-  if (loading) return (
-    <div style={{ background:C.white, borderRadius:12, padding:20, border:"1px solid "+C.border, display:"flex", alignItems:"center", gap:8, color:C.mute, fontSize:13 }}>
-      <Loader size={13} style={{ animation:"spin 1s linear infinite" }} /> Analyzing engagement arc…
-    </div>
-  );
-
-  if (triggerVersion === 0) return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:40, gap:8, color:C.mute, textAlign:"center" }}>
-      <p style={{ fontSize:13, fontWeight:500, color:C.sub }}>Click "Generate insights" to run the engagement arc analysis.</p>
-    </div>
-  );
-
-  if (!segments?.length) return null;
-
-  const n = segments.length;
-  const VW = 600, VH = 140, PX = 28, PY = 18;
-  const toY = (s) => PY + (VH - 2*PY) * (1 - Math.max(0, Math.min(100, s ?? 50)) / 100);
-  const toX = (i) => n <= 1 ? VW/2 : PX + (VW - 2*PX) * i / (n - 1);
-  const pts = segments.map((seg, i) => ({ x:toX(i), y:toY(seg.score), score:seg.score }));
-
-  const curvePath = pts.reduce((d, p, i) => {
-    if (i === 0) return `M ${p.x} ${p.y}`;
-    const mx = (pts[i-1].x + p.x) / 2;
-    return d + ` C ${mx} ${pts[i-1].y}, ${mx} ${p.y}, ${p.x} ${p.y}`;
-  }, "");
-  const areaPath = curvePath + ` L ${pts[pts.length-1].x} ${VH} L ${pts[0].x} ${VH} Z`;
-
-  return (
-    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-
-      {/* ── Summary card (collapsible) ── */}
-      {summary && (
-        <div style={{ background:C.white, borderRadius:12, border:"1px solid "+C.border, animation:"fadeUp 0.18s ease", overflow:"hidden" }}>
-          <div onClick={() => setSummaryOpen(o => !o)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:16, cursor:"pointer", userSelect:"none" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <Tag type="science" label="Overall analysis" />
-              <div style={{ background:`${engColor(summary.overallScore)}22`, borderRadius:8, padding:"2px 8px" }}>
-                <span style={{ fontSize:12, fontWeight:700, color:engColor(summary.overallScore) }}>{summary.overallScore}/100</span>
-              </div>
-            </div>
-            <ChevronDown size={14} color={C.mute} style={{ transform: summaryOpen ? "rotate(180deg)" : "rotate(0deg)", transition:"transform 0.2s" }} />
-          </div>
-          {summaryOpen && (
-            <div style={{ padding:"0 16px 16px", display:"flex", flexDirection:"column", gap:12 }}>
-              {[["#0DBF5A","#0A5C2A","Strength",summary.topStrength],["#C93030","#C93030","Weakness",summary.topWeakness],[C.accent,C.accent,"Recommendation",summary.recommendation]].map(([bar,label,title,text]) => (
-                <div key={title} style={{ display:"flex", gap:10 }}>
-                  <div style={{ width:3, borderRadius:99, background:bar, flexShrink:0 }} />
-                  <div>
-                    <p style={{ fontSize:11, fontWeight:600, color:label, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:3 }}>{title}</p>
-                    <p style={{ fontSize:13, color:C.sub, lineHeight:1.65 }}>{text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Chart card ── */}
-      <div style={{ background:C.white, borderRadius:12, padding:20, border:"1px solid "+C.border }}>
-
-        {/* Header */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-          <span style={{ fontSize:12, fontWeight:600, color:C.sub, textTransform:"uppercase", letterSpacing:"0.06em" }}>Engagement arc</span>
-          <div style={{ display:"flex", gap:14, alignItems:"center" }}>
-            {[["#C8D4CC","Flat"],["#5CB87A","Building"],["#0DBF5A","Captivating"]].map(([col, lbl]) => (
-              <div key={lbl} style={{ display:"flex", alignItems:"center", gap:5 }}>
-                <div style={{ width:18, height:3, background:col, borderRadius:99 }} />
-                <span style={{ fontSize:10, color:C.mute, fontWeight:500 }}>{lbl}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Y-axis + Chart */}
-        <div style={{ display:"flex", gap:8, alignItems:"stretch" }}>
-          <div style={{ display:"flex", flexDirection:"column", justifyContent:"space-between", paddingBottom:24 }}>
-            <span style={{ fontSize:9, color:C.mute, textTransform:"uppercase", letterSpacing:"0.06em" }}>High</span>
-            <span style={{ fontSize:9, color:C.mute, textTransform:"uppercase", letterSpacing:"0.06em" }}>Low</span>
-          </div>
-          <div style={{ flex:1, position:"relative" }}>
-            <svg viewBox={`0 0 ${VW} ${VH}`} width="100%" height="140" preserveAspectRatio="none" style={{ display:"block", overflow:"visible" }}>
-              <defs>
-                <linearGradient id="engArea" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#0DBF5A" stopOpacity="0.08" />
-                  <stop offset="100%" stopColor="#0DBF5A" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              {/* Grid lines */}
-              {[25, 50, 75].map(lvl => (
-                <line key={lvl} x1={PX} y1={toY(lvl)} x2={VW-PX} y2={toY(lvl)}
-                  stroke="rgba(0,0,0,0.05)" strokeWidth="1" strokeDasharray="4 6" />
-              ))}
-              {/* Area fill */}
-              <path d={areaPath} fill="url(#engArea)" />
-              {/* Colored segments */}
-              {pts.slice(0,-1).map((p, i) => {
-                const next = pts[i+1];
-                const avg  = (p.score + next.score) / 2;
-                const mx   = (p.x + next.x) / 2;
-                const isHov = hovered === i || hovered === i+1;
-                return (
-                  <path key={i}
-                    d={`M ${p.x} ${p.y} C ${mx} ${p.y}, ${mx} ${next.y}, ${next.x} ${next.y}`}
-                    fill="none" stroke={engColor(avg)}
-                    strokeWidth={engStroke(avg) * (isHov ? 1.5 : 1)}
-                    strokeLinecap="round"
-                    style={{ transition:"stroke-width 0.15s" }}
-                  />
-                );
-              })}
-              {/* Hover zones */}
-              {pts.map((p, i) => {
-                const x0 = i === 0 ? 0 : (pts[i-1].x + p.x) / 2;
-                const x1 = i === n-1 ? VW : (p.x + pts[i+1].x) / 2;
-                return (
-                  <rect key={i} x={x0} y={0} width={x1-x0} height={VH}
-                    fill="transparent" style={{ cursor:"default" }}
-                    onMouseEnter={() => setHovered(i)}
-                  />
-                );
-              })}
-            </svg>
-
-            {/* CSS dots — true circles (SVG circles distort with preserveAspectRatio=none) */}
-            {pts.map((p, i) => {
-              const isHov = hovered === i;
-              const col   = engColor(p.score);
-              return (
-                <div key={i} style={{
-                  position:"absolute",
-                  left:`${(p.x / VW) * 100}%`,
-                  top:`${(p.y / VH) * 100}%`,
-                  width: isHov ? 12 : 8, height: isHov ? 12 : 8,
-                  borderRadius:"50%", background:col,
-                  border:"2px solid white",
-                  transform:"translate(-50%, -50%)",
-                  boxShadow: isHov ? `0 0 0 4px ${col}33` : "none",
-                  transition:"width 0.15s, height 0.15s, box-shadow 0.15s",
-                  pointerEvents:"none",
-                }} />
-              );
-            })}
-
-            {/* Paragraph labels */}
-            {pts.map((p, i) => (
-              <div key={i} style={{
-                position:"absolute",
-                left:`${(p.x / VW) * 100}%`,
-                top:"calc(100% + 8px)",
-                transform:"translateX(-50%)",
-                fontSize:10, whiteSpace:"nowrap",
-                fontWeight: hovered===i ? 600 : 400,
-                color: hovered===i ? engColor(segments[i].score) : C.mute,
-                transition:"color 0.12s",
-              }}>P{i+1}</div>
-            ))}
-          </div>
-        </div>
-        {/* ── Segment detail ── */}
-        {segments[hovered] && (
-          <div style={{ marginTop:28, borderTop:"1px solid rgba(0,0,0,0.05)", paddingTop:24 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-              <div style={{ width:8, height:8, borderRadius:"50%", background:engColor(segments[hovered].score), flexShrink:0 }} />
-              <span style={{ fontSize:13, fontWeight:600, color:C.text, flex:1 }}>{segments[hovered].label}</span>
-              <div style={{ background:`${engColor(segments[hovered].score)}22`, borderRadius:6, padding:"2px 8px" }}>
-                <span style={{ fontSize:11, fontWeight:600, color:engColor(segments[hovered].score) }}>P{hovered+1} · {segments[hovered].score}/100</span>
-              </div>
-            </div>
-            <p style={{ fontSize:13, color:C.sub, lineHeight:1.65 }}>{segments[hovered].why}</p>
-          </div>
-        )}
-      </div>
-
-    </div>
   );
 }
 
@@ -833,9 +603,9 @@ ${text}`
             <span style={{ fontSize:11, fontWeight:600, color:C.mute, letterSpacing:"0.06em", textTransform:"uppercase" }}>Script</span>
           </div>
           <div style={{ width:"50%", display:"flex", alignItems:"stretch" }}>
-            {[["insights",`Insights · ${visibleInsights.length}`],["storytelling","Storytelling"]].map(([tab,label]) => (
+            {[["insights", analysisVersion > 0 ? `Insights · ${visibleInsights.length}` : "Insights"]].map(([tab,label]) => (
               <button key={tab} className="tab-btn" onClick={() => setActiveTab(tab)} style={{
-                padding:"0 18px", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.06em",
+                padding:"0 18px", fontSize:12, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.05em",
                 color: activeTab===tab ? C.accent : C.mute,
                 borderBottom: activeTab===tab ? `2px solid ${C.accent}` : "2px solid transparent",
               }}>{label}</button>
@@ -909,13 +679,13 @@ ${text}`
               ref={taRef} value={text}
               onChange={e => setText(e.target.value)}
               onScroll={onScroll}
-              placeholder="Paste your script here…"
-              style={{ flex:1, outline:"none", border:"none", background:"transparent", padding:"28px 32px", fontSize:15, lineHeight:1.85, color:C.text, position:"relative", zIndex:2, mixBlendMode:"multiply", letterSpacing:"-0.01em" }}
+              placeholder="Paste or write your talk script here…"
+              style={{ flex:1, outline:"none", border:"none", background:"transparent", padding:"28px 32px", fontSize:15, lineHeight:1.85, color:C.text, position:"relative", zIndex:2, letterSpacing:"-0.01em" }}
             />
           </div>
 
           {/* Right — insights panel */}
-          <div ref={insightRef} className="scroll-area" style={{ width:"50%", overflowY:"auto", padding:"12px", display:"flex", flexDirection:"column", gap:8, background:C.surface }}>
+          <div ref={insightRef} className="scroll-area" style={{ width:"50%", overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:12, background:C.surface }}>
 
             <div style={{ display: activeTab==="insights" ? "contents" : "none" }}>
               {/* ── Empty / loading / results states ── */}
@@ -975,10 +745,6 @@ ${text}`
                 </div>
               ))}
             </div>
-
-            <div style={{ display: activeTab==="storytelling" ? "contents" : "none" }}>
-              <StorytellingPanel text={text} triggerVersion={analysisVersion} />
-            </div>
           </div>
         </div>
 
@@ -987,23 +753,22 @@ ${text}`
           const total = accepted.size + dismissed.size;
           const rate  = total > 0 ? Math.round(accepted.size / total * 100) : null;
           return (
-            <div style={{ background:C.white, borderTop:`1px solid rgba(0,0,0,0.06)`, padding:"5px 24px", display:"flex", alignItems:"center", gap:10, fontSize:12, color:C.mute, fontWeight:500, flexShrink:0 }}>
+            <div style={{ background:C.white, borderTop:`1px solid ${C.border}`, padding:"8px 24px", display:"flex", alignItems:"center", gap:10, fontSize:12, color:C.mute, fontWeight:500, flexShrink:0 }}>
               <span>{wc} words</span>
               <span style={{ opacity:0.3 }}>·</span>
               <span>{paras.length} paragraphs</span>
               <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color:"#0A5C2A" }}>{allInsights.filter(i=>i.data.type==="science").length} science</span>
+              <span style={{ color:TAG.science.text }}>{allInsights.filter(i=>i.data.type==="science").length} science</span>
               <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color:"#1A5048" }}>{allInsights.filter(i=>i.data.type==="metaphor").length} metaphors</span>
+              <span style={{ color:TAG.metaphor.text }}>{allInsights.filter(i=>i.data.type==="metaphor").length} metaphors</span>
               <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color:"#6A4A10" }}>{allInsights.filter(i=>i.data.type==="logic").length} logic gaps</span>
+              <span style={{ color:TAG.logic.text }}>{allInsights.filter(i=>i.data.type==="logic").length} logic gaps</span>
               {rate !== null && <>
                 <span style={{ opacity:0.3 }}>·</span>
-                <span style={{ color: rate >= 60 ? "#1A5048" : rate >= 30 ? "#6A4A10" : C.mute }}>
+                <span style={{ color: rate >= 60 ? TAG.metaphor.text : rate >= 30 ? TAG.logic.text : C.mute }}>
                   AI acceptance {rate}%
                 </span>
               </>}
-              <span style={{ marginLeft:"auto", fontSize:11, color:C.mute }}>ContentGraph v0.1</span>
             </div>
           );
         })()}

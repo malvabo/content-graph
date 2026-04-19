@@ -301,7 +301,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {expandOpen && ["text-source", "file-source", "refine"].includes(data.subtype) && (() => {
         const output = useOutputStore.getState().outputs[id]?.text;
         const configText = (data.config?.text as string) || "";
-        return <ContentModal subtype={data.subtype} title={data.label} text={output || configText || ""} onClose={() => setExpandOpen(false)} />;
+        return <ContentModal subtype={data.subtype} title={data.label} text={output || configText || ""} onClose={() => setExpandOpen(false)} onSave={(t: string) => { useOutputStore.getState().setOutput(id, { text: t }); if (data.subtype === 'text-source') useGraphStore.getState().updateNodeConfig(id, { text: t }); }} />;
       })()}
       {def?.hasOutput && <Handle type="source" position={Position.Right} id="text" className={HANDLE_CLS} style={hiSource ? { borderColor: 'var(--color-accent)', backgroundColor: 'var(--color-accent)' } : undefined} />}
     </div>

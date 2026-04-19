@@ -132,7 +132,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         ) : (
           /* Card grid */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)', width: '100%' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
             {items.map(item => {
               const srcNode = item.nodes.find(n => n.data.subtype === 'text-source' || n.data.subtype === 'voice-source');
               const preview = (srcNode?.data.config?.text as string || '').slice(0, 100);
@@ -141,17 +141,16 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
               return (
               <div key={item.id} role="button" tabIndex={0} onClick={() => handleLoad(item)}
                 style={{
-                  textAlign: 'left', cursor: 'pointer', outline: 'none', minWidth: 0,
+                  textAlign: 'left', cursor: 'pointer', outline: 'none',
                   background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                   borderRadius: 'var(--radius-lg)', overflow: 'hidden',
                   transition: 'border-color .15s, box-shadow .15s',
-                  display: 'flex', flexDirection: 'column',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
 
-                {/* Top half: node pills */}
-                <div style={{ background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start', gap: 6, minHeight: 64, overflow: 'hidden', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                {/* Top: node pills */}
+                <div style={{ background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', flexWrap: 'wrap', gap: 6, borderBottom: '1px solid var(--color-border-subtle)' }}>
                   {nodeLabels.map((label, j) => {
                     const cat = item.nodes[j]?.data.category;
                     const c = BADGE_COLORS[cat] || BADGE_COLORS.source;
@@ -159,23 +158,15 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                       <span key={j} style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '3px 10px', borderRadius: 'var(--radius-full)', background: c.bg, color: c.text, lineHeight: '16px' }}>{label}</span>
                     );
                   })}
-                  {item.nodes.length > 6 && <span style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: '3px 0' }}>+{item.nodes.length - 6}</span>}
+                  {item.nodes.length > 6 && <span style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>+{item.nodes.length - 6}</span>}
                 </div>
 
-                {/* Bottom half: title, meta, preview */}
-                <div style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-1)', flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                  {/* Title + menu */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
-                    {renameId === item.id ? (
-                      <input autoFocus value={renameName} onChange={e => setRenameName(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenameId(null); }}
-                        onBlur={handleRename} onClick={e => e.stopPropagation()}
-                        style={{ flex: 1, minWidth: 0, fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)', padding: '2px 6px', outline: 'none' }} />
-                    ) : (
-                      <div title={item.name} style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                        {item.name}
-                      </div>
-                    )}
+                {/* Bottom: title, meta, preview */}
+                <div style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 2 }}>
+                    <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      {item.name}
+                    </div>
                     <div style={{ position: 'relative', flexShrink: 0 }}>
                       <div role="button" tabIndex={0} aria-label="More options"
                         style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', background: 'transparent', transition: 'color .15s, background .15s', cursor: 'pointer' }}

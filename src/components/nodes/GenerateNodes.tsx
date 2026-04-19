@@ -76,7 +76,7 @@ function OutputPreview({ id, subtype, expandOpen, onExpand, onExpandClose }: { i
           <span style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', letterSpacing: '0.01em' }}>···</span>
         </div>
       </div>
-      {expandOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => onExpandClose?.()} onRegenerate={rerun} />}
+      {expandOpen && <ContentModal subtype={subtype} title={label} text={text} onClose={() => onExpandClose?.()} onRegenerate={rerun} onSave={(t: string) => useOutputStore.getState().setOutput(id, { text: t })} />}
     </div>
   );
 }
