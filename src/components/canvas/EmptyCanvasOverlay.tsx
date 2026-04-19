@@ -139,7 +139,7 @@ export default function EmptyCanvasOverlay() {
     }
     setNodes(n);
     setEdges(e);
-    setGraphName(TEMPLATES[idx].name);
+    setGraphName(`${TEMPLATES[idx].name} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
     setDismissed(true);
     setTimeout(autoLayout, 0);
   };
