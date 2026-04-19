@@ -213,7 +213,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       style={{
         width: 'var(--size-node)',
         maxWidth: 'var(--size-node)',
-        height: 280,
+        minHeight: 280,
         overflow: 'visible',
         background: 'var(--color-bg-card)',
         border: `1px solid ${isError ? 'var(--color-danger-border)' : isStale ? 'var(--color-warning-border)' : hovered ? 'var(--color-border-strong)' : 'var(--color-border-default)'}`,
@@ -238,7 +238,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
           width: 28, height: 28, borderRadius: 'var(--radius-full)',
           background: 'var(--color-accent)', border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', opacity: hovered ? 1 : 0.6,
+          cursor: 'pointer', opacity: hovered ? 1 : 0.4,
           transition: 'opacity 150ms ease',
           zIndex: 10,
         }}

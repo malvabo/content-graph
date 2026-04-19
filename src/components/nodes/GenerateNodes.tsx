@@ -20,7 +20,7 @@ function Skeleton({ subtype }: { subtype: string }) {
   const lines = SKELETON_LINES[subtype] ?? [100, 95, 88, 100, 92, 85, 78];
   return (
     <div className="flex flex-col gap-2 mt-2" role="status" aria-label="Loading">
-      {lines.map((w, i) => <div key={i} className="h-3 rounded-sm skeleton-bar" style={{ width: `${w}%`, animationDelay: `${i * 0.1}s` }} />)}
+      {lines.map((w, i) => <div key={i} className="h-2.5 rounded-sm skeleton-bar" style={{ width: `${w}%`, animationDelay: `${i * 0.1}s` }} />)}
     </div>
   );
 }

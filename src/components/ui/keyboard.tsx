@@ -515,7 +515,7 @@ export const Keyboard = ({
 
 export const Keypad = () => {
   return (
-    <div className="h-full w-fit rounded-xl bg-[var(--color-bg-hover,#e5e5e5)] p-1 shadow-sm ring-1 shadow-[var(--shadow-sm)] ring-black/5">
+    <div className="h-full w-fit rounded-xl bg-[var(--color-bg-hover,#e5e5e5)] p-1 shadow-sm ring-1 shadow-[var(--shadow-sm)] ring-[var(--color-border-default)]">
       {/* Function Row */}
       <Row>
         <Key

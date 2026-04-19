@@ -23,7 +23,7 @@ function MobileNodeDetail({ node, onClose }: { node: ContentNode; onClose: () =>
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }} onClick={onClose}>
       <div style={{ position: 'absolute', inset: 0, background: 'var(--color-overlay-backdrop)' }} />
-      <div onClick={e => e.stopPropagation()} style={{
+      <div onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" style={{
         position: 'relative', background: 'var(--color-bg-card)',
         borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
         maxHeight: '92vh', paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex', flexDirection: 'column',
@@ -31,7 +31,7 @@ function MobileNodeDetail({ node, onClose }: { node: ContentNode; onClose: () =>
         <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-3) 0 var(--space-2)' }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-border-default)' }} />
         </div>
-        <div style={{ padding: '0 var(--space-4) var(--space-3)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ padding: '0 var(--space-4) var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: colors.bg, color: colors.text, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {NODE_ICONS[node.data.subtype]?.() ?? node.data.badge}
           </div>
@@ -39,14 +39,14 @@ function MobileNodeDetail({ node, onClose }: { node: ContentNode; onClose: () =>
             <div style={{ fontWeight: 500, fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{node.data.label}</div>
             <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{def?.description ?? node.data.category}</div>
           </div>
-          <button onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)' }}>
+          <button onClick={onClose} aria-label="Close" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
         </div>
         <div style={{ flex: 1, overflow: 'auto', padding: 'var(--space-3) var(--space-4) var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           {node.data.subtype === 'text-source' && (
             <>
-              <div style={{ fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Input text</div>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Input text</div>
               <textarea placeholder="Paste your article, transcript, or notes…" value={(config.text as string) ?? ''} onChange={e => { set('text', e.target.value); useOutputStore.getState().setOutput(node.id, { text: e.target.value }); }}
                 className="form-textarea" style={{ minHeight: 280, flex: 1, fontSize: 16 }} />
             </>
@@ -78,9 +78,9 @@ function ConfigSummary({ config }: { config: Record<string, unknown> }) {
   const vals = Object.values(config).filter(v => typeof v === 'string' && v.length < 30) as string[];
   if (!vals.length) return null;
   return (
-    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+    <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap', marginTop: 'var(--space-2)' }}>
       {vals.slice(0, 3).map((v, i) => (
-        <span key={i} style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', background: 'var(--color-bg-surface)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>{v}</span>
+        <span key={i} style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', background: 'var(--color-bg-surface)', padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-full)' }}>{v}</span>
       ))}
     </div>
   );
@@ -110,7 +110,7 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
       <div onClick={onDelete} style={{
         position: 'absolute', right: 0, top: 0, bottom: 0, width: 80,
         background: 'var(--color-danger)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#fff', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500,
+        color: 'var(--color-text-inverse)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500,
         borderRadius: '0 var(--radius-lg) var(--radius-lg) 0',
       }}>Delete</div>
 
@@ -126,7 +126,7 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
           minHeight: 44,
         }}>
         {/* Header row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', background: colors.bg, color: colors.text, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {NODE_ICONS[node.data.subtype]?.() ?? node.data.badge}
           </div>
@@ -145,19 +145,19 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
 
         {/* Error message */}
         {status === 'error' && error && (
-          <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.4, fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-xs)', lineHeight: 1.4, fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
             {error}
           </div>
         )}
         {status === 'warning' && (
-          <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.4, fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-xs)', lineHeight: 1.4, fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
             No input — connect a source node above
           </div>
         )}
 
         {/* Output preview */}
         {output && (
-          <div style={{ marginTop: 8, fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+          <div style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
             {output}
           </div>
         )}
@@ -241,7 +241,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
         background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border-subtle)',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
-        <button onClick={onBackToLibrary} style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)', flexShrink: 0 }}>
+        <button onClick={onBackToLibrary} aria-label="Back to library" style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: 'var(--color-text-tertiary)', borderRadius: 'var(--radius-md)', flexShrink: 0 }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         {editingName ? (
@@ -277,7 +277,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
             {/* Add node button */}
             <div style={{ marginTop: 'var(--space-3)' }}>
               <button onClick={() => setPickerOpen(true)}
-                style={{ width: '100%', height: 48, borderRadius: 'var(--radius-lg)', border: '1px dashed var(--color-border-default)', background: 'none', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                style={{ width: '100%', height: 48, borderRadius: 'var(--radius-lg)', border: '1px dashed var(--color-border-default)', background: 'none', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-1)' }}>
                 + Add node
               </button>
             </div>

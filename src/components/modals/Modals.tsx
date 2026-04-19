@@ -107,7 +107,7 @@ function ModalHeader({ title, subtitle, onClose, extra }: { title: string; subti
       </div>
       <div className="flex items-center gap-1">
         {extra}
-        <button aria-label="Close" onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms' }}
+        <button aria-label="Close" onClick={onClose} style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms' }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
