@@ -704,19 +704,17 @@ ${text}`
             <div style={{ display: activeTab==="insights" ? "contents" : "none" }}>
               {/* ── Empty / loading / results states ── */}
               {analysisVersion === 0 && (
-                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flex:1, gap:16, padding:40, textAlign:"center" }}>
-                  <div style={{ width:48, height:48, borderRadius:14, background:C.white, display:"flex", alignItems:"center", justifyContent:"center", border:"1px solid "+C.border, boxShadow:"0 2px 8px transparent" }}>
-                    <FileText size={22} color="#0DBF5A" />
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flex:1, padding:40 }}>
+                  <div style={{ maxWidth:260 }}>
+                    <FileText size={20} color={C.mute} style={{ marginBottom:12 }} />
+                    <p style={{ fontSize:14, fontWeight:500, color:C.text, marginBottom:4 }}>Analyze your script</p>
+                    <p style={{ fontSize:13, color:C.mute, lineHeight:1.5, marginBottom:16 }}>Find science claims, metaphors, and logic gaps — then get suggestions to strengthen them.</p>
+                    <button onClick={runAnalysis} style={{ height:32, padding:"0 14px", background:C.accent, color:C.accentText, border:`1px solid ${C.border2}`, borderRadius:8, fontSize:13, fontWeight:500, cursor:"pointer", transition:"background 100ms", letterSpacing:"-0.01em" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = C.accentHover; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = C.accent; }}>
+                      Generate insights
+                    </button>
                   </div>
-                  <div>
-                    <p style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:6 }}>Analyze your script</p>
-                    <p style={{ fontSize:13, color:C.sub, lineHeight:1.6, maxWidth:240, margin:"0 auto" }}>Find science claims, metaphors, and logic gaps — then get suggestions to strengthen them.</p>
-                  </div>
-                  <button onClick={runAnalysis} style={{ background:"#0DBF5A", color:C.white, border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:600, cursor:"pointer", boxShadow:"0 2px 8px rgba(13,191,90,0.25)", transition:"opacity 100ms" }}
-                    onMouseEnter={e => { e.currentTarget.style.opacity = "0.9"; }}
-                    onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
-                    Generate insights
-                  </button>
                 </div>
               )}
               {analysisVersion > 0 && insightLoading && (
@@ -775,11 +773,11 @@ ${text}`
               <span style={{ opacity:0.3 }}>·</span>
               <span>{paras.length} paragraphs</span>
               <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color:TAG.science.text }}>{allInsights.filter(i=>i.data.type==="science").length} science</span>
+              <span style={{ color: allInsights.filter(i=>i.data.type==="science").length > 0 ? TAG.science.text : C.mute }}>{allInsights.filter(i=>i.data.type==="science").length} science</span>
               <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color:TAG.metaphor.text }}>{allInsights.filter(i=>i.data.type==="metaphor").length} metaphors</span>
+              <span style={{ color: allInsights.filter(i=>i.data.type==="metaphor").length > 0 ? TAG.metaphor.text : C.mute }}>{allInsights.filter(i=>i.data.type==="metaphor").length} metaphors</span>
               <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color:TAG.logic.text }}>{allInsights.filter(i=>i.data.type==="logic").length} logic gaps</span>
+              <span style={{ color: allInsights.filter(i=>i.data.type==="logic").length > 0 ? TAG.logic.text : C.mute }}>{allInsights.filter(i=>i.data.type==="logic").length} logic gaps</span>
               {rate !== null && <>
                 <span style={{ opacity:0.3 }}>·</span>
                 <span style={{ color: rate >= 60 ? TAG.metaphor.text : rate >= 30 ? TAG.logic.text : C.mute }}>

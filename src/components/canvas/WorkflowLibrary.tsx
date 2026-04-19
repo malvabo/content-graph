@@ -6,6 +6,10 @@ import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from 
 
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 
+/* DS chip style */
+const CHIP: React.CSSProperties = { fontSize: 11, fontWeight: 400, fontFamily: 'var(--font-sans)', padding: '3px 8px', borderRadius: 5, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', color: 'var(--color-text-secondary)', lineHeight: '16px', whiteSpace: 'nowrap', flexShrink: 0 };
+const ARROW: React.CSSProperties = { color: 'var(--color-text-disabled)', fontSize: 11, opacity: 0.4, flexShrink: 0 };
+
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<SavedWorkflow[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -19,8 +23,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   useEffect(() => {
     if (!menuId) return;
     const h = (e: Event) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuId(null); };
-    document.addEventListener('mousedown', h);
-    document.addEventListener('touchstart', h);
+    document.addEventListener('mousedown', h); document.addEventListener('touchstart', h);
     return () => { document.removeEventListener('mousedown', h); document.removeEventListener('touchstart', h); };
   }, [menuId]);
 
@@ -29,11 +32,15 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   const handleRename = async (id: string, newName: string) => { setItems(p => p.map(i => i.id === id ? { ...i, name: newName } : i)); const item = items.find(i => i.id === id); if (item) await saveWorkflow({ ...item, name: newName }); };
   const handleDuplicate = async (item: SavedWorkflow) => { const dup: SavedWorkflow = { ...item, id: `wf-${Date.now()}`, name: `${item.name} (copy)`, savedAt: new Date().toISOString() }; setItems(p => [...p, dup]); await saveWorkflow(dup); setMenuId(null); };
   const handleNew = () => { setNodes([]); setEdges([]); setGraphName('Untitled'); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); onOpen(); };
-
   const fmt = (iso: string) => { const d = new Date(iso), diff = Date.now() - d.getTime(); if (diff < 60000) return 'Just now'; if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`; if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`; return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); };
 
-  // DS tokens
-  const CHIP: React.CSSProperties = { fontSize: 11, fontWeight: 400, fontFamily: 'var(--font-sans)', padding: '3px 8px', borderRadius: 5, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', color: 'var(--color-text-secondary)', lineHeight: '16px', whiteSpace: 'nowrap' };
+  /* Build chip list: up to 3 named + overflow count */
+  const chipList = (item: SavedWorkflow) => {
+    const MAX = 3;
+    const labels = item.nodes.slice(0, MAX).map(n => n.data.label);
+    const extra = Math.max(0, item.nodes.length - MAX);
+    return { labels, extra };
+  };
 
   return (
     <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
@@ -48,10 +55,13 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           {items.length > 0 && <button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New workflow</button>}
         </div>
 
+        {/* Loading skeleton */}
         {loading ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
             {[0,1,2].map(i => <div key={i} className="skeleton-bar" style={{ height: 156, borderRadius: 12 }} />)}
           </div>
+
+        /* Empty state */
         ) : items.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 40 }}>
             <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 20 }}>
@@ -61,30 +71,27 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             <div style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--color-text-tertiary)', maxWidth: 280, lineHeight: 1.5, marginBottom: 24 }}>Create your first workflow to start repurposing content</div>
             <button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New workflow</button>
           </div>
+
+        /* Card grid */
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
             {items.map(item => {
               const hovered = hoverId === item.id;
-              const source = item.nodes.filter(n => n.data.category === 'source');
-              const rest = item.nodes.filter(n => n.data.category !== 'source');
-              const showLabels = [...source.slice(0, 1), ...rest.slice(0, 2)];
-              const extra = item.nodes.length - showLabels.length;
-
+              const { labels, extra } = chipList(item);
               return (
                 <div key={item.id} role="button" tabIndex={0} onClick={() => handleLoad(item)}
-                  onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => { setHoverId(null); }}
+                  onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}
                   style={{
                     cursor: 'pointer', outline: 'none', height: 156, padding: 20,
-                    background: 'var(--color-bg-card)',
-                    border: `1px solid ${hovered ? 'var(--color-border-strong)' : 'var(--color-border-default)'}`,
+                    background: 'var(--color-bg-card)', border: `1px solid var(--color-border-${hovered ? 'strong' : 'default'})`,
                     borderRadius: 12, overflow: 'hidden',
                     transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out',
                     transform: hovered ? 'translateY(-1px)' : 'none',
-                    boxShadow: hovered ? '0 8px 24px rgba(0,0,0,0.08)' : '0 2px 12px rgba(0,0,0,0.08)',
-                    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                    boxShadow: hovered ? '0 8px 24px rgba(0,0,0,0.08)' : 'none',
+                    display: 'flex', flexDirection: 'column',
                   }}>
 
-                  {/* Title + menu */}
+                  {/* Title + 3-dot */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                     <div style={{ fontWeight: 500, fontSize: 14, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                       {item.name}
@@ -115,24 +122,22 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     </div>
                   </div>
 
-                  {/* Chips — single row, no wrap */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', flex: 1 }}>
-                    {showLabels.map((n, j) => (
-                      <span key={n.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        {j > 0 && <span style={{ color: 'var(--color-text-disabled)', fontSize: 11, opacity: 0.4 }}>→</span>}
-                        <span style={CHIP}>{n.data.label}</span>
+                  {/* Chips — single row, never wraps */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                    {labels.map((label, j) => (
+                      <span key={j} style={{ display: 'contents' }}>
+                        {j > 0 && <span style={ARROW}>→</span>}
+                        <span style={CHIP}>{label}</span>
                       </span>
                     ))}
-                    {extra > 0 && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ color: 'var(--color-text-disabled)', fontSize: 11, opacity: 0.4 }}>→</span>
-                        <span style={CHIP}>+{extra} more</span>
-                      </span>
-                    )}
+                    {extra > 0 && <>
+                      {labels.length > 0 && <span style={ARROW}>→</span>}
+                      <span style={{ ...CHIP, minWidth: 'fit-content' }}>+{extra} more</span>
+                    </>}
                   </div>
 
-                  {/* Metadata */}
-                  <div style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'auto' }}>
+                  {/* Metadata — pinned to bottom */}
+                  <div style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 12 }}>
                     {item.nodes.length} nodes · {fmt(item.savedAt)}
                   </div>
                 </div>
@@ -142,7 +147,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
         )}
       </div>
 
-      {/* Delete confirmation */}
+      {/* Delete dialog */}
       {deleteId && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)' }} onClick={() => setDeleteId(null)}>
           <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg-card)', borderRadius: 12, padding: 20, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid var(--color-border-default)', maxWidth: 340, width: '100%', fontFamily: 'var(--font-sans)' }}>
