@@ -13,7 +13,7 @@ import MobileNodePicker from './MobileNodePicker';
 import type { NodeDef } from '../../utils/nodeDefs';
 
 /* ── Detail sheet for nodes without output ── */
-function MobileNodeDetail({ node, onClose }: { node: ContentNode; onClose: () => void }) {
+function MobileNodeDetail({ node, onClose, onRun }: { node: ContentNode; onClose: () => void; onRun: () => void }) {
   const config = useGraphStore(s => s.nodes.find(n => n.id === node.id)?.data.config ?? {});
   const updateConfig = useGraphStore(s => s.updateNodeConfig);
   const status = useExecutionStore(s => s.status[node.id] ?? 'idle');
@@ -52,11 +52,12 @@ function MobileNodeDetail({ node, onClose }: { node: ContentNode; onClose: () =>
                 className="form-textarea" style={{ minHeight: 280, flex: 1, fontSize: 16 }} />
             </>
           )}
-          {status === 'idle' && node.data.category === 'generate' && (
-            <div style={{ textAlign: 'center', padding: 'var(--space-6)', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }}>
-              No output yet — run the workflow to generate content.
+          {status === 'idle' && node.data.category === 'generate' && (<>
+            <div style={{ textAlign: 'center', padding: 'var(--space-4)', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }}>
+              No output yet
             </div>
-          )}
+            <button onClick={() => { onClose(); onRun(); }} className="btn btn-primary" style={{ alignSelf: 'center', margin: '0 auto' }}>▶ Run workflow</button>
+          </>)}
           {status === 'running' && (
             <div style={{ textAlign: 'center', padding: 'var(--space-6)', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }}>
               Generating…
@@ -261,9 +262,9 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
           </div>
         )}
-        <button disabled={isRunning || nodes.length === 0} onClick={handleRunAll}
-          style={{ height: 44, padding: '0 var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-interactive-default)', border: '1px solid var(--color-border-default)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)', flexShrink: 0, opacity: nodes.length === 0 ? 0.4 : 1 }}>
-          {isRunning ? '⏳ Running…' : runDone ? '✓ Done' : '▶ Run'}
+        <button disabled={!isRunning && nodes.length === 0} onClick={isRunning ? cancelAll : handleRunAll}
+          style={{ height: 44, padding: '0 var(--space-4)', borderRadius: 'var(--radius-lg)', background: isRunning ? 'var(--color-danger-bg)' : 'var(--color-interactive-default)', border: `1px solid ${isRunning ? 'var(--color-danger-border)' : 'var(--color-border-default)'}`, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: isRunning ? 'var(--color-danger-text)' : 'var(--color-text-primary)', flexShrink: 0, opacity: !isRunning && nodes.length === 0 ? 0.4 : 1 }}>
+          {isRunning ? '■ Stop' : runDone ? '✓ Done' : '▶ Run'}
         </button>
       </div>
 
@@ -307,7 +308,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
         />
       )}
       {expandNode && !expandOutput && (
-        <MobileNodeDetail node={expandNode} onClose={() => setExpandId(null)} />
+        <MobileNodeDetail node={expandNode} onClose={() => setExpandId(null)} onRun={handleRunAll} />
       )}
 
       {/* Node picker bottom sheet */}
