@@ -81,17 +81,17 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 <div key={item.id} role="button" tabIndex={0} onClick={() => handleLoad(item)}
                   onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}
                   style={{
-                    cursor: 'pointer', outline: 'none', height: 156, padding: 'var(--space-4)',
+                    cursor: 'pointer', outline: 'none', height: 156,
                     background: 'var(--color-bg-card)', border: `1px solid var(--color-border-${hovered ? 'strong' : 'default'})`,
                     borderRadius: 'var(--radius-lg)', textAlign: 'left' as const,
                     transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out',
                     transform: hovered ? 'translateY(-1px)' : 'none',
                     boxShadow: hovered ? 'var(--shadow-md)' : 'none',
-                    display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
+                    display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden',
                   }}>
 
                   {/* 3-dot menu — top right */}
-                  <div style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', opacity: hovered || menuId === item.id ? 1 : 0, transition: 'opacity 150ms' }}>
+                  <div style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', opacity: hovered || menuId === item.id ? 1 : 0, transition: 'opacity 150ms', zIndex: 2 }}>
                     <div role="button" tabIndex={0} aria-label="More options"
                       style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', cursor: 'pointer' }}
                       onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
@@ -118,7 +118,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                   </div>
 
                   {/* Chips */}
-                  <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden', minWidth: 0, background: 'var(--color-bg-surface)', margin: 'calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) 0', padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'var(--color-bg-surface)', padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
                     {visible.map((label, j) => (
                       <span key={j} style={{ display: 'contents' }}>
                         {j > 0 && <span style={ARROW}>→</span>}
@@ -129,12 +129,12 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                   </div>
 
                   {/* Title */}
-                  <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 'var(--space-6)' }}>
+                  <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: 'var(--space-3) var(--space-4) 0', paddingRight: 'var(--space-8)' }}>
                     {item.name}
                   </div>
 
                   {/* Metadata */}
-                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'auto' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'auto', padding: '0 var(--space-4) var(--space-3)' }}>
                     {item.nodes.length} nodes · {fmt(item.savedAt)}
                   </div>
                 </div>
