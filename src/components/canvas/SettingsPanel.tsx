@@ -202,14 +202,14 @@ function APIKeysSection() {
     await useSettingsStore.getState().save();
   };
 
-  const TH: React.CSSProperties = { padding: '10px 16px', fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textAlign: 'left', background: 'var(--color-bg-surface)', borderBottom: '1px solid var(--color-border-subtle)' };
-  const TD: React.CSSProperties = { padding: '14px 16px', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', borderBottom: '1px solid var(--color-border-subtle)', verticalAlign: 'middle' };
+  const TH: React.CSSProperties = { padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textAlign: 'left', background: 'var(--color-bg-surface)', borderBottom: '1px solid var(--color-border-subtle)' };
+  const TD: React.CSSProperties = { padding: 'var(--space-4)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', borderBottom: '1px solid var(--color-border-subtle)', verticalAlign: 'middle' };
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
         <div>
-          <h2 style={{ fontWeight: 500, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>API Keys</h2>
+          <h2 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>API Keys</h2>
           <p style={HDESC}>Manage provider keys for AI generation.</p>
         </div>
         {saved && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>✓ Saved</span>}
@@ -231,10 +231,10 @@ function APIKeysSection() {
               return (
                 <tr key={p.key}>
                   <td style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom, whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: 'var(--color-text-tertiary)', flexShrink: 0 }}>{p.icon}</div>
-                      <span style={{ fontWeight: 500 }}>{p.label}</span>
-                      {value && !isEditing && <span style={{ fontSize: 11, padding: '1px 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-accent-bg, rgba(13,191,90,0.1))', color: 'var(--color-accent)', fontWeight: 500 }}>Active</span>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                      <div style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-tertiary)', flexShrink: 0 }}>{p.icon}</div>
+                      <span style={{ fontWeight: 'var(--weight-medium)' }}>{p.label}</span>
+                      {value && !isEditing && <span style={{ fontSize: 'var(--text-xs)', padding: 'var(--space-0) var(--space-2)', borderRadius: 'var(--radius-full)', background: 'var(--color-bg-subtle)', color: 'var(--color-accent)', fontWeight: 'var(--weight-medium)' }}>Active</span>}
                     </div>
                   </td>
                   <td style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom, color: 'var(--color-text-tertiary)' }}>
