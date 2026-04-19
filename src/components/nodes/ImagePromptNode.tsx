@@ -44,21 +44,28 @@ async function genImage(prompt: string, seed: number, w: number, h: number): Pro
   // Try Hugging Face Inference API (free tier)
   const hfKey = useSettingsStore.getState().hfKey;
   if (hfKey) {
-    const res = await fetchWithTimeout('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${hfKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inputs: prompt.slice(0, 1000), parameters: { width: snapToGrid(w), height: snapToGrid(h), seed } }),
-    }, 60000);
-    if (res.ok) {
-      const blob = await res.blob();
-      if (blob.size > 1000) return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    }
-    // Fall through to Pollinations on failure
+    const hfW = Math.min(snapToGrid(w), 1024);
+    const hfH = Math.min(snapToGrid(h), 1024);
+    try {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const res = await fetchWithTimeout('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${hfKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputs: prompt.slice(0, 1000), parameters: { width: hfW, height: hfH } }),
+        }, 60000);
+        if (res.status === 503) { await new Promise(r => setTimeout(r, 10000)); continue; }
+        if (res.ok) {
+          const blob = await res.blob();
+          if (blob.size > 1000 && blob.type.startsWith('image')) return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        }
+        break;
+      }
+    } catch { /* fall through */ }
   }
   // Pollinations fallback (free, no key)
   const shortPrompt = prompt.slice(0, 500);
