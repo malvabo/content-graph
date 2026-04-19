@@ -82,7 +82,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                   style={{
                     cursor: 'pointer', outline: 'none', height: 156, padding: 'var(--space-5)',
                     background: 'var(--color-bg-card)', border: `1px solid var(--color-border-${hovered ? 'strong' : 'default'})`,
-                    borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+                    borderRadius: 'var(--radius-lg)',
                     transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out',
                     transform: hovered ? 'translateY(-1px)' : 'none',
                     boxShadow: hovered ? 'var(--shadow-md)' : 'none',
