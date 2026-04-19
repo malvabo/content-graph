@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useVoiceStore } from '../../store/voiceStore';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
@@ -46,8 +47,9 @@ const statusBadge = (status: string) => {
 function RecordingOverlay({ onStop, startTime }: { onStop: () => void; startTime: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [visible, setVisible] = useState(false);
 
-  // Timer
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
   useEffect(() => {
     const iv = setInterval(() => setElapsed(Date.now() - startTime), 200);
     return () => clearInterval(iv);
@@ -60,7 +62,7 @@ function RecordingOverlay({ onStop, startTime }: { onStop: () => void; startTime
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
-    const bg = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#F2EFE9';
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--color-bg-card').trim() || '#fff';
     let t = 0, raf: number;
     const resize = () => { const r = canvas.getBoundingClientRect(); canvas.width = r.width * devicePixelRatio; canvas.height = r.height * devicePixelRatio; ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0); };
     resize(); window.addEventListener('resize', resize);
@@ -69,10 +71,10 @@ function RecordingOverlay({ onStop, startTime }: { onStop: () => void; startTime
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
       for (let i = 0; i < 5; i++) {
         const angle = t * 0.8 + i * 1.3;
-        const spread = 160 + Math.sin(t * 0.5 + i) * 80;
+        const spread = 80 + Math.sin(t * 0.5 + i) * 40;
         const x = cx + Math.cos(angle) * spread * 0.7;
         const y = cy + Math.sin(angle) * spread * 0.5;
-        const sz = 250 + Math.sin(t + i) * 60;
+        const sz = 120 + Math.sin(t + i) * 30;
         const grad = ctx.createRadialGradient(x, y, 0, x, y, sz);
         const hue = 145 + i * 5;
         grad.addColorStop(0, `hsla(${hue},60%,55%,0.22)`);
@@ -86,22 +88,24 @@ function RecordingOverlay({ onStop, startTime }: { onStop: () => void; startTime
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
   }, []);
 
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column' }}>
-      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
-      {/* Timer — top center */}
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-        <div style={{ fontSize: 48, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
-        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 4 }}>Recording</div>
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center" style={{ background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms' }}>
+      <div className="flex flex-col w-full overflow-hidden rounded-t-[16px] md:rounded-[16px]"
+        style={{ maxWidth: 480, maxHeight: '80vh', background: 'var(--color-bg-card)', boxShadow: '0 16px 48px rgba(0,0,0,0.18)', transform: visible ? 'translateY(0)' : 'translateY(16px)', transition: 'transform 150ms ease, opacity 150ms ease', position: 'relative' }}>
+        {/* Cloud canvas background */}
+        <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', borderRadius: 'inherit' }} />
+        {/* Content */}
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 24px 40px', gap: 16 }}>
+          <div style={{ fontSize: 48, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
+          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>Recording</div>
+          <button onClick={onStop} style={{ width: 64, height: 64, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)', marginTop: 16 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+          </button>
+          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Tap to stop</div>
+        </div>
       </div>
-      {/* Stop button — bottom third */}
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 48px)', gap: 12 }}>
-        <button onClick={onStop} style={{ width: 72, height: 72, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: 'var(--color-text-inverse)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)' }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-        </button>
-        <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)' }}>Tap to stop</div>
-      </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

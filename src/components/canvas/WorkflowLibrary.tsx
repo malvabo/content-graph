@@ -6,9 +6,9 @@ import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from 
 
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 
-const CHIP: React.CSSProperties = { fontSize: 11, fontWeight: 400, fontFamily: 'var(--font-sans)', padding: '3px 10px', borderRadius: 5, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' };
-const ARROW: React.CSSProperties = { color: 'var(--color-text-secondary)', fontSize: 11, opacity: 0.4, margin: '0 4px', flexShrink: 0 };
-const MORE: React.CSSProperties = { fontSize: 11, fontWeight: 400, fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', opacity: 0.4, whiteSpace: 'nowrap', flexShrink: 0 };
+const CHIP: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-normal)', fontFamily: 'var(--font-sans)', padding: 'var(--space-1) var(--space-3)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 };
+const ARROW: React.CSSProperties = { color: 'var(--color-text-secondary)', fontSize: 'var(--text-xs)', opacity: 0.4, margin: '0 var(--space-1)', flexShrink: 0 };
+const MORE: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', opacity: 0.4, whiteSpace: 'nowrap', flexShrink: 0 };
 
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<SavedWorkflow[]>([]);
@@ -48,7 +48,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
-            <h1 style={{ fontWeight: 600, fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
+            <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
             {items.length > 0 && <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{items.length}</span>}
           </div>
           {items.length > 0 && <button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New workflow</button>}
@@ -67,7 +67,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7m-3.5-3.5h7"/></svg>
             </div>
             <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>No workflows yet</div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 280, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>Create your first workflow to start repurposing content</div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 280, lineHeight: 'var(--leading-snug)', marginBottom: 'var(--space-6)' }}>Create your first workflow to start repurposing content</div>
             <button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New workflow</button>
           </div>
 
@@ -149,7 +149,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)' }} onClick={() => setDeleteId(null)}>
           <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-default)', maxWidth: 340, width: '100%', fontFamily: 'var(--font-sans)' }}>
             <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>Delete workflow?</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 'var(--space-4)' }}>This will permanently remove "{items.find(i => i.id === deleteId)?.name}".</div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-snug)', marginBottom: 'var(--space-4)' }}>This will permanently remove "{items.find(i => i.id === deleteId)?.name}".</div>
             <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>
               <button className="btn btn-destructive" onClick={confirmDelete}>Delete</button>
