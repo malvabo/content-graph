@@ -116,13 +116,8 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     )}
                   </div>
 
-                  {/* Title */}
-                  <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 'var(--space-6)' }}>
-                    {item.name}
-                  </div>
-
-                  {/* Chips — exactly 2 + overflow */}
-                  <div style={{ display: 'flex', alignItems: 'center', padding: '0 var(--space-4)', overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                  {/* Chips */}
+                  <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden', minWidth: 0 }}>
                     {visible.map((label, j) => (
                       <span key={j} style={{ display: 'contents' }}>
                         {j > 0 && <span style={ARROW}>→</span>}
@@ -130,6 +125,11 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                       </span>
                     ))}
                     {remaining > 0 && <span style={MORE}>&nbsp;+{remaining}</span>}
+                  </div>
+
+                  {/* Title */}
+                  <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 'var(--space-6)' }}>
+                    {item.name}
                   </div>
 
                   {/* Metadata */}
