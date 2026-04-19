@@ -21,21 +21,21 @@ async function fetchWithTimeout(url: string, opts: RequestInit, ms = 30000): Pro
 async function genImage(prompt: string, seed: number, w: number, h: number): Promise<string> {
   const togetherKey = useSettingsStore.getState().togetherKey;
   if (togetherKey) {
-    try {
-      const res = await fetchWithTimeout('https://api.together.xyz/v1/images/generations', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt: prompt.slice(0, 1000), width: snapToGrid(w), height: snapToGrid(h), n: 1, seed, response_format: 'b64_json' }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const b64 = data.data?.[0]?.b64_json;
-        if (b64) return `data:image/png;base64,${b64}`;
-      }
-      // Fall through to Pollinations on any Together failure
-    } catch { /* fall through */ }
+    const res = await fetchWithTimeout('https://api.together.xyz/v1/images/generations', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt: prompt.slice(0, 1000), width: snapToGrid(w), height: snapToGrid(h), n: 1, seed, response_format: 'b64_json' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Together API error: ${res.status}`);
+    }
+    const data = await res.json();
+    const b64 = data.data?.[0]?.b64_json;
+    if (b64) return `data:image/png;base64,${b64}`;
+    throw new Error('No image data in Together response');
   }
-  // Fallback to Pollinations (free, no key)
+  // No Together key — use Pollinations fallback
   const shortPrompt = prompt.slice(0, 500);
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(shortPrompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
   const res = await fetchWithTimeout(url, {});
@@ -59,22 +59,7 @@ export function ImagePromptInline({ id }: { id: string }) {
   const [viewImage, setViewImage] = useState<string | null>(null);
   const generatingRef = useRef(false);
 
-  // Generate a random image on mount if none exists
-  useEffect(() => {
-    if (!output?.imageBase64 && !generatingRef.current) {
-      generatingRef.current = true;
-      setGenerating(true);
-      const d = getDims(aspect);
-      const seed = Math.floor(Math.random() * 999999);
-      genImage('abstract colorful gradient background', seed, d.w, d.h).then(img => {
-        useOutputStore.getState().setOutput(id, { text: 'Demo image', imageBase64: img, imgWidth: d.w, imgHeight: d.h });
-        useExecutionStore.getState().setStatus(id, 'complete');
-      }).catch(e => {
-        console.error('Auto image gen failed:', e);
-        useExecutionStore.getState().setError(id, e instanceof Error ? e.message : 'Image generation failed');
-      }).finally(() => { generatingRef.current = false; setGenerating(false); });
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // No auto-generate on mount — wait for upstream text via Run All
 
   const generate = useCallback(async (text: string) => {
     if (generatingRef.current || !text.trim()) return;
