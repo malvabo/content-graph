@@ -95,12 +95,24 @@ export function ImagePromptInline({ id }: { id: string }) {
       {isError && error && !generating && (
         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-sans)' }}>
           {error}
-          <button onClick={() => { useExecutionStore.getState().setStatus(id, 'idle'); generate('abstract colorful gradient'); }}
+          <button onClick={() => { useExecutionStore.getState().setStatus(id, 'idle'); if (output?.text) generate(output.text); }}
             style={{ marginLeft: 'var(--space-2)', background: 'none', border: 'none', color: 'var(--color-danger-text)', textDecoration: 'underline', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>Retry</button>
         </div>
       )}
+
+      {!showImage && !showSkeleton && !isError && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
+          Connect a text source, then Run
+        </div>
+      )}
+
       {showSkeleton && (
-        <div className="rounded-lg skeleton-bar" style={{ flex: 1 }} />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-lg)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <div className="skeleton-bar" style={{ width: 24, height: 24, borderRadius: '50%' }} />
+            <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Generating image…</span>
+          </div>
+        </div>
       )}
 
       {showImage && (

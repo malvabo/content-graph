@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useGraphStore } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
+import { BADGE_COLORS } from '../../utils/nodeDefs';
 import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from '../../utils/workflowApi';
 
 /* SVG icons */
@@ -173,16 +174,20 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
 
                 {/* 2. Chips with arrows */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', overflow: 'hidden' }}>
-                  {labels.map((label, j) => (
-                    <span key={j} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      {j > 0 && <span style={{ color: '#B0A898', fontSize: 11, lineHeight: 1 }}>→</span>}
-                      <span style={{ fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '3px 8px', borderRadius: 6, background: '#F0EDE8', border: '1px solid #E0DDD8', color: '#5A5550', lineHeight: '16px', whiteSpace: 'nowrap' }}>{label}</span>
-                    </span>
-                  ))}
+                  {labels.map((label, j) => {
+                    const cat = item.nodes[j]?.data.category;
+                    const c = BADGE_COLORS[cat] || BADGE_COLORS.source;
+                    return (
+                      <span key={j} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        {j > 0 && <span style={{ color: '#B0A898', fontSize: 11, lineHeight: 1 }}>→</span>}
+                        <span style={{ fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '3px 8px', borderRadius: 6, background: c.bg, color: c.text, lineHeight: '16px', whiteSpace: 'nowrap' }}>{label}</span>
+                      </span>
+                    );
+                  })}
                   {extra > 0 && (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ color: '#B0A898', fontSize: 11, lineHeight: 1 }}>→</span>
-                      <span style={{ fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '3px 8px', borderRadius: 6, background: '#F0EDE8', border: '1px solid #E0DDD8', color: '#5A5550', lineHeight: '16px', whiteSpace: 'nowrap' }}>+{extra} more</span>
+                      <span style={{ fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '3px 8px', borderRadius: 6, background: 'var(--color-bg-surface)', color: 'var(--color-text-disabled)', lineHeight: '16px', whiteSpace: 'nowrap' }}>+{extra} more</span>
                     </span>
                   )}
                 </div>
