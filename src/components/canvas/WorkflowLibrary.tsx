@@ -87,7 +87,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     borderRadius: 12, overflow: 'hidden',
                     transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out',
                     transform: hovered ? 'translateY(-1px)' : 'none',
-                    boxShadow: hovered ? '0 8px 24px rgba(0,0,0,0.08)' : 'none',
+                    boxShadow: hovered ? 'var(--shadow-md)' : 'none',
                     display: 'flex', flexDirection: 'column',
                   }}>
 

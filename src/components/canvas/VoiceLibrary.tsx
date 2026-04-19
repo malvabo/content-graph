@@ -96,7 +96,7 @@ function RecordingOverlay({ onStop, startTime }: { onStop: () => void; startTime
       </div>
       {/* Stop button — bottom third */}
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 48px)', gap: 12 }}>
-        <button onClick={onStop} style={{ width: 72, height: 72, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: 'var(--color-text-inverse)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(13,191,90,0.35)' }}>
+        <button onClick={onStop} style={{ width: 72, height: 72, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: 'var(--color-text-inverse)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)' }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
         </button>
         <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)' }}>Tap to stop</div>
@@ -356,7 +356,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
         }} onClick={() => setDeleteId(null)}>
           <div onClick={e => e.stopPropagation()} style={{
             background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
-            boxShadow: '0 16px 48px rgba(0,0,0,0.18)', border: '1px solid var(--color-border-default)',
+            boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-border-default)',
             maxWidth: 340, width: '100%', fontFamily: 'var(--font-sans)',
             animation: 'scaleIn 150ms ease',
           }}>
