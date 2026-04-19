@@ -189,7 +189,7 @@ function ConnectionLine({ fromId, toId }: { fromId: string; toId: string }) {
 
 export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: () => void }) {
   const { nodes, graphName, setGraphName, addNode, removeNode } = useGraphStore();
-  const { runAll } = useNodeExecution();
+  const { runAll, cancelAll } = useNodeExecution();
   const isRunning = useExecutionStore(s => Object.values(s.status).some(v => v === 'running'));
   const [expandId, setExpandId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -253,7 +253,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         {editingName ? (
-          <input autoFocus value={graphName} onChange={e => setGraphName(e.target.value)} onBlur={() => setEditingName(false)} onKeyDown={e => { if (e.key === 'Enter') setEditingName(false); }}
+          <input autoFocus maxLength={60} value={graphName} onChange={e => setGraphName(e.target.value)} onBlur={() => setEditingName(false)} onKeyDown={e => { if (e.key === 'Enter') setEditingName(false); }}
             style={{ flex: 1, fontWeight: 500, fontSize: 16, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', outline: 'none', padding: 0 }} />
         ) : (
           <div onClick={() => setEditingName(true)} style={{ flex: 1, fontWeight: 500, fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>

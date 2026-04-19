@@ -324,6 +324,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 
 /* ── Dropdown/popover fade-in ── */
 .dropdown-fade { animation: fadeIn 100ms ease; }
+.dropdown-fade button, .dropdown-fade a { text-align: left; }
 .ctx-menu-fade { animation: fadeIn 100ms ease; }
 .palette-popover { animation: fadeSlideUp 150ms ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

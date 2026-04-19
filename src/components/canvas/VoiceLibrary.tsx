@@ -308,7 +308,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                           { label: 'Analyze in ScriptSense', action: () => { if (note.transcript) onSendToScript?.(note.transcript); setMenuId(null); } },
                         ].map(opt => (
                           <button key={opt.label} onClick={opt.action}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', transition: 'background 100ms' }}
+                            style={{ width: '100%', display: 'block', padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', transition: 'background 100ms', textAlign: 'left' }}
                             onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
                             onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
                             {opt.label}
