@@ -248,7 +248,10 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
           <input autoFocus value={graphName} onChange={e => setGraphName(e.target.value)} onBlur={() => setEditingName(false)} onKeyDown={e => { if (e.key === 'Enter') setEditingName(false); }}
             style={{ flex: 1, fontWeight: 500, fontSize: 16, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', outline: 'none', padding: 0 }} />
         ) : (
-          <div onClick={() => setEditingName(true)} style={{ flex: 1, fontWeight: 500, fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{graphName || 'Untitled'}</div>
+          <div onClick={() => setEditingName(true)} style={{ flex: 1, fontWeight: 500, fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
+            {graphName || 'Untitled'}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </div>
         )}
         <button disabled={isRunning || nodes.length === 0} onClick={handleRunAll}
           style={{ height: 44, padding: '0 var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-interactive-default)', border: '1px solid var(--color-border-default)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)', flexShrink: 0, opacity: nodes.length === 0 ? 0.4 : 1 }}>

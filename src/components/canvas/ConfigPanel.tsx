@@ -146,7 +146,7 @@ export default function ConfigPanel() {
   const hasModel = !!DEFAULT_MODELS[node.data.subtype] && node.data.subtype !== 'text-source' && node.data.subtype !== 'image-prompt';
 
   return (
-    <div className="absolute top-3 right-3 z-20 w-[280px] max-h-[calc(100%-24px)] overflow-y-auto"
+    <div className="absolute top-14 right-3 z-20 w-[280px] max-h-[calc(100%-72px)] overflow-y-auto"
       style={{ background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)', scrollbarWidth: 'thin' }}>
       {/* Header */}
       <div className="px-5 pt-5 pb-3">

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGraphStore } from '../../store/graphStore';
+import { useExecutionStore } from '../../store/executionStore';
+import { useOutputStore } from '../../store/outputStore';
 import { BADGE_COLORS } from '../../utils/nodeDefs';
 import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from '../../utils/workflowApi';
 
@@ -27,6 +29,8 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   }, [menuId]);
 
   const handleLoad = (item: SavedWorkflow) => {
+    useExecutionStore.getState().resetAll();
+    useOutputStore.getState().clearAll();
     setNodes(item.nodes);
     setEdges(item.edges);
     setGraphName(item.name);
@@ -60,6 +64,8 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
     setNodes([]);
     setEdges([]);
     setGraphName('Untitled');
+    useExecutionStore.getState().resetAll();
+    useOutputStore.getState().clearAll();
     onOpen();
   };
 

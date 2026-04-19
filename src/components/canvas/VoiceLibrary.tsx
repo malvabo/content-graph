@@ -20,11 +20,13 @@ const fmtDuration = (ms: number) => {
 };
 
 const fmtDate = (iso: string) => {
-  const diff = Date.now() - new Date(iso).getTime();
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
   if (diff < 60000) return 'Just now';
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  if (diff < 172800000) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
 const statusBadge = (status: string) => {
@@ -41,8 +43,19 @@ const statusBadge = (status: string) => {
   );
 };
 
-function RecordingOverlay({ onStop }: { onStop: () => void }) {
+function RecordingOverlay({ onStop, startTime }: { onStop: () => void; startTime: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [elapsed, setElapsed] = useState(0);
+
+  // Timer
+  useEffect(() => {
+    const iv = setInterval(() => setElapsed(Date.now() - startTime), 200);
+    return () => clearInterval(iv);
+  }, [startTime]);
+
+  const mm = String(Math.floor(elapsed / 60000)).padStart(2, '0');
+  const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -61,9 +74,9 @@ function RecordingOverlay({ onStop }: { onStop: () => void }) {
         const y = cy + Math.sin(angle) * spread * 0.5;
         const sz = 250 + Math.sin(t + i) * 60;
         const grad = ctx.createRadialGradient(x, y, 0, x, y, sz);
-        const hue = 145 + i * 10;
-        grad.addColorStop(0, `hsla(${hue},55%,65%,0.25)`);
-        grad.addColorStop(0.6, `hsla(${hue + 15},45%,60%,0.075)`);
+        const hue = 145 + i * 5;
+        grad.addColorStop(0, `hsla(${hue},60%,55%,0.22)`);
+        grad.addColorStop(0.6, `hsla(${hue},50%,50%,0.06)`);
         grad.addColorStop(1, 'transparent');
         ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
       }
@@ -74,13 +87,19 @@ function RecordingOverlay({ onStop }: { onStop: () => void }) {
   }, []);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', flexDirection: 'column' }}>
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-        <button onClick={onStop} style={{ width: 56, height: 56, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-md)' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+      {/* Timer — top center */}
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+        <div style={{ fontSize: 48, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
+        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 4 }}>Recording</div>
+      </div>
+      {/* Stop button — bottom third */}
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 48px)', gap: 12 }}>
+        <button onClick={onStop} style={{ width: 72, height: 72, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(13,191,90,0.35)' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
         </button>
-        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginTop: 8 }}>Tap to stop</div>
+        <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)' }}>Tap to stop</div>
       </div>
     </div>
   );
@@ -175,7 +194,7 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
   };
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
+    <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)', minWidth: 0, maxWidth: '100%' }}>
       <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
         {/* Header */}
@@ -201,7 +220,7 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
         </div>
 
         {/* Recording overlay — floating blobs */}
-        {recording && <RecordingOverlay onStop={stopRecording} />}
+        {recording && <RecordingOverlay onStop={stopRecording} startTime={startTimeRef.current} />}
 
         {/* Empty state */}
         {notes.length === 0 && !recording ? (
@@ -229,7 +248,7 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
           </div>
         ) : (
           /* Card grid */
-          <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(280px,1fr))]" style={{ gap: 'var(--space-3)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)' }}>
             {notes.filter(n => n.status !== 'recording').map(note => (
               <div key={note.id}
                 style={{
@@ -302,6 +321,13 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
                   </div>
                   {statusBadge(note.status)}
                 </div>
+
+                {/* Transcript preview */}
+                {note.transcript && expandedId !== note.id && (
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {note.transcript.slice(0, 120)}
+                  </div>
+                )}
 
                 {/* Expanded transcript */}
                 {expandedId === note.id && note.transcript && (
