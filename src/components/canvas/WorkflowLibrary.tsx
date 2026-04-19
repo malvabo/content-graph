@@ -156,9 +156,9 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 </div>
 
                 {/* Bottom: title, meta, preview */}
-                <div style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                <div style={{ padding: 'var(--space-3) var(--space-4)', overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 2 }}>
-                    <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                    <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                       {item.name}
                     </div>
                     <div style={{ position: 'relative', flexShrink: 0 }}>
