@@ -66,7 +66,7 @@ export const DEFAULT_MODELS: Record<string, string> = {
   'newsletter': 'claude-opus-4',
   'infographic': 'claude-opus-4',
   'quote-card': 'claude-opus-4',
-  'image-prompt': 'llama-3.3-70b',
+  'image-prompt': 'claude-sonnet-4',
   'text-source': 'claude-opus-4',
   'file-source': 'claude-opus-4',
   'brand-voice': 'claude-opus-4',
