@@ -28,9 +28,9 @@ export function ExportInline({ id }: { id: string }) {
               <span style={{ color: u!.done ? 'var(--color-accent)' : 'var(--color-text-disabled)' }}>{u!.done ? '✓' : '○'}</span> {u!.label}
             </div>
           ))}
-          {upstreamImageNodes.map((n) => (
-            <div key={n.id} className="text-sm text-[var(--color-text-secondary)] flex items-center gap-1">
-              <span className="text-[var(--p-amber-600)]">✓</span> {n.data.label} (image)
+          {upstreamImageNodes.map((n) => n && (
+            <div key={n!.id} className="text-sm text-[var(--color-text-secondary)] flex items-center gap-1">
+              <span className="text-[var(--p-amber-600)]">✓</span> {n!.data.label} (image)
             </div>
           ))}
         </div>
