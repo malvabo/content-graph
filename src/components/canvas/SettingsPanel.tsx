@@ -21,14 +21,14 @@ const PROVIDERS = [
   { key: 'hfKey' as const, setter: 'setHfKey' as const, label: 'Hugging Face (Images)', placeholder: 'hf_...', icon: 'H', validateUrl: 'https://huggingface.co/api/whoami-v2', validateHeaders: (k: string) => ({ Authorization: `Bearer ${k}` }), validateBody: null },
 ] as const;
 
-const LBL: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', display: 'block', marginBottom: 'var(--space-2)' };
+const LBL: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', display: 'block', marginBottom: 'var(--space-2)' };
 const CARD: React.CSSProperties = { background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)' };
 const HDESC: React.CSSProperties = { fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0', lineHeight: 'var(--leading-normal)' };
 
 function SectionHeader({ title, desc }: { title: string; desc: string }) {
   return (
     <div style={{ marginBottom: 'var(--space-5)' }}>
-      <h2 style={{ fontWeight: 500, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>{title}</h2>
+      <h2 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>{title}</h2>
       <p style={HDESC}>{desc}</p>
     </div>
   );
@@ -40,7 +40,7 @@ function ColorSwatch({ color, label, onChange }: { color: string; label: string;
       <label style={{ position: 'relative', width: 36, height: 36, borderRadius: 'var(--radius-full)', border: '2px solid var(--color-border-default)', background: color, cursor: 'pointer' }}>
         <input type="color" value={color} onChange={e => onChange(e.target.value)} style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
       </label>
-      <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+      <span style={{ fontSize: 'var(--text-micro)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>{label}</span>
     </div>
   );
 }
@@ -51,9 +51,9 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) 
     <div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginBottom: tags.length ? 'var(--space-2)' : 0 }}>
         {tags.map(t => (
-          <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-full)', padding: '3px 10px', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)' }}>
+          <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-full)', padding: 'var(--space-1) var(--space-3)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)' }}>
             {t}
-            <button onClick={() => onChange(tags.filter(x => x !== t))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--color-text-disabled)', fontSize: 10, lineHeight: 1 }}>×</button>
+            <button onClick={() => onChange(tags.filter(x => x !== t))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--color-text-disabled)', fontSize: 'var(--text-micro)', lineHeight: 'var(--leading-none)' }}>×</button>
           </span>
         ))}
       </div>
@@ -86,10 +86,10 @@ function BrandVisualSection() {
           <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)' }}>
             <label style={LBL}>Preview</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)' }}>
-              <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: b.colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-inverse)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>{b.name.charAt(0).toUpperCase()}</div>
+              <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: b.colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-inverse)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)' }}>{b.name.charAt(0).toUpperCase()}</div>
               <div>
-                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: b.colors.secondary }}>{b.name}</div>
-                <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', marginTop: 2 }}>{b.colors.primary} · {b.colors.secondary} · {b.colors.accent}</div>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: b.colors.secondary }}>{b.name}</div>
+                <div style={{ fontSize: 'var(--text-micro)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-0)' }}>{b.colors.primary} · {b.colors.secondary} · {b.colors.accent}</div>
               </div>
             </div>
           </div>
@@ -98,7 +98,7 @@ function BrandVisualSection() {
         {/* Reference images for image style */}
         <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)' }}>
           <label style={LBL}>Reference images</label>
-          <p style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', margin: '0 0 var(--space-3)', lineHeight: 1.5 }}>
+          <p style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', margin: '0 0 var(--space-3)', lineHeight: 'var(--leading-snug)' }}>
             Upload images that define your visual style. All generated images will reference this aesthetic.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
@@ -106,7 +106,7 @@ function BrandVisualSection() {
               <div key={i} style={{ position: 'relative', width: 72, height: 72, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--color-border-default)' }}>
                 <img src={img} alt={`Reference ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <button aria-label="Remove image" onClick={() => setBrand({ referenceImages: b.referenceImages.filter((_, j) => j !== i) })}
-                  style={{ position: 'absolute', top: 2, right: 2, width: 24, height: 24, borderRadius: '50%', background: 'var(--color-overlay-dark)', border: 'none', color: 'var(--color-text-inverse)', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                  style={{ position: 'absolute', top: 2, right: 2, width: 24, height: 24, borderRadius: '50%', background: 'var(--color-overlay-dark)', border: 'none', color: 'var(--color-text-inverse)', fontSize: 'var(--text-micro)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
               </div>
             ))}
             {(b.referenceImages || []).length < 4 && (

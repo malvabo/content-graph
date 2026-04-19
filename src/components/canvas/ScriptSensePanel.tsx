@@ -46,7 +46,7 @@ export default function ScriptSensePanel({ initialText }: Props) {
         key={iframeKey}
         src="/scriptsense/scriptsense.html"
         className="flex-1 w-full border-none"
-        style={{ opacity: iframeLoading ? 0 : 1, transition: 'opacity 200ms ease' }}
+        style={{ opacity: iframeLoading ? 0 : 1, transition: 'opacity var(--duration-slow) var(--ease-default)' }}
         title="ScriptSense"
         onLoad={handleLoad}
       />

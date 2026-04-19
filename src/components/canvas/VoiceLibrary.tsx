@@ -328,7 +328,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
                     {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
                   </div>
-                  {statusBadge(note.status)}
+                  {note.status === 'transcribing' && statusBadge(note.status)}
                 </div>
 
                 {/* Transcript preview */}
@@ -340,9 +340,12 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
 
                 {/* Expanded transcript */}
                 {expandedId === note.id && note.transcript && (
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.6, borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-3)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', lineHeight: 1.6, borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-3)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', marginTop: 'var(--space-1)' }}>
                     {note.transcript}
                   </div>
+                )}
+                {expandedId === note.id && !note.transcript && (
+                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-disabled)', fontStyle: 'italic', padding: 'var(--space-3)' }}>No transcript captured</div>
                 )}
               </div>
             ))}

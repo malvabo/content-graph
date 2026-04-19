@@ -19,29 +19,7 @@ async function fetchWithTimeout(url: string, opts: RequestInit, ms = 30000): Pro
 }
 
 async function genImage(prompt: string, seed: number, w: number, h: number): Promise<string> {
-  const togetherKey = useSettingsStore.getState().togetherKey;
-  if (togetherKey) {
-    const res = await fetchWithTimeout('https://api.together.xyz/v1/images/generations', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt: prompt.slice(0, 1000), width: snapToGrid(w), height: snapToGrid(h), n: 1, seed, response_format: 'b64_json' }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      const msg = err.error?.message || `Together API error: ${res.status}`;
-      if (msg.toLowerCase().includes('credit') || res.status === 402 || res.status === 429) {
-        // Fall through to Pollinations
-      } else {
-        throw new Error(msg);
-      }
-    } else {
-      const data = await res.json();
-      const b64 = data.data?.[0]?.b64_json;
-      if (b64) return `data:image/png;base64,${b64}`;
-      throw new Error('No image data in Together response');
-    }
-  }
-  // Try Hugging Face Inference API (free tier)
+  // Try Hugging Face Inference API first (free tier, good quality)
   const hfKey = useSettingsStore.getState().hfKey;
   if (hfKey) {
     const hfW = Math.min(snapToGrid(w), 1024);
@@ -66,6 +44,30 @@ async function genImage(prompt: string, seed: number, w: number, h: number): Pro
         break;
       }
     } catch { /* fall through */ }
+  }
+
+  // Try Together AI
+  const togetherKey = useSettingsStore.getState().togetherKey;
+  if (togetherKey) {
+    const res = await fetchWithTimeout('https://api.together.xyz/v1/images/generations', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt: prompt.slice(0, 1000), width: snapToGrid(w), height: snapToGrid(h), n: 1, seed, response_format: 'b64_json' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.error?.message || `Together API error: ${res.status}`;
+      if (msg.toLowerCase().includes('credit') || res.status === 402 || res.status === 429) {
+        // Fall through to Pollinations
+      } else {
+        throw new Error(msg);
+      }
+    } else {
+      const data = await res.json();
+      const b64 = data.data?.[0]?.b64_json;
+      if (b64) return `data:image/png;base64,${b64}`;
+      throw new Error('No image data in Together response');
+    }
   }
   // Pollinations fallback (free, no key)
   const shortPrompt = prompt.slice(0, 500);
