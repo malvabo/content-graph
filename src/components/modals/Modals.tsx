@@ -211,9 +211,9 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
 
         {/* ── Left: image viewer ── */}
-        <div className="flex-1 flex flex-col min-w-0 relative" style={{ background: 'var(--color-bg-dark)', borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)' }}>
+        <div className="flex-1 flex flex-col min-w-0 relative" style={{ background: 'var(--color-bg-dark)', borderRadius: /* on mobile should be top-only */ typeof window !== 'undefined' && window.innerWidth < 768 ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-xl) 0 0 var(--radius-xl)' }}>
           {/* Vignette */}
-          <div style={{ position: 'absolute', inset: 0, borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)', background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%)', pointerEvents: 'none', zIndex: 1 }} />
+          <div style={{ position: 'absolute', inset: 0, borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)', background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.2) 100%)', pointerEvents: 'none', zIndex: 1 }} />
           <div style={{ position: 'absolute', top: 'var(--space-3)', left: 'var(--space-3)', zIndex: 3, display: 'flex', gap: 'var(--space-1)' }}>
             <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? 'Exit fullscreen' : 'Expand preview'} style={toolBtn}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -391,7 +391,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               </>
             ) : (
               <button className="btn-sm btn-primary w-full" disabled={genLoading} onClick={generate4} style={{ position: 'relative', overflow: 'hidden' }}>
-                {genLoading && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${variants.length * 25}%`, background: 'rgba(255,255,255,0.15)', transition: 'width 300ms ease', borderRadius: 'inherit' }} />}
+                {genLoading && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${variants.length * 25}%`, background: 'var(--color-overlay-light)', transition: 'width 300ms ease', borderRadius: 'inherit' }} />}
                 <span style={{ position: 'relative' }}>{genLoading ? `Generating ${variants.length}/4…` : needsRegen ? 'Generate with changes' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}</span>
               </button>
             )}

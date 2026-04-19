@@ -79,7 +79,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
       <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', width: '100%' }}>
 
         {/* Header row — compact, full-width */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', paddingBottom: 'var(--space-3)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
             <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
             {items.length > 0 && (

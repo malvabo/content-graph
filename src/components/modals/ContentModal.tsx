@@ -29,7 +29,7 @@ const RegenIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 
 /* ── Standardized padding constants ── */
 const HP = 'var(--space-5) var(--space-6) var(--space-4)';   // header: 20 24 16
-const CP = 'var(--space-2) var(--space-4) 0';                // content: 8 16 0
+const CP = 'var(--space-2) var(--space-4) var(--space-4)';   // content: 8 16 16
 const FP = 'var(--space-4) var(--space-6) var(--space-5)';   // footer: 16 24 20
 
 /* ── Auto-resize textarea ── */
@@ -83,7 +83,7 @@ function Footer({ onClose, onRegenerate, onCopy, copied }: { onClose: () => void
       </div>
       <div className="flex items-center gap-2">
         <button className="btn btn-sm btn-ghost" onClick={onCopy}>{copied ? <><CheckIcon /> Copied</> : <><CopyIcon /> Copy</>}</button>
-        <button className="btn btn-lg btn-primary" onClick={onClose}>Done</button>
+        <button className="btn btn-sm btn-primary" onClick={onClose}>Done</button>
       </div>
     </div>
   );
@@ -151,7 +151,9 @@ function TwitterThreadModal({ title, text, onClose, onRegenerate }: ContentModal
                 }}>
                 {/* Header row: grip + number + char count + remove */}
                 <div className="flex items-center" style={{ padding: 'var(--space-2) var(--space-3)', gap: 'var(--space-2)' }}>
-                  <div style={{ cursor: 'grab', display: 'flex', alignItems: 'center', padding: '2px 0', flexShrink: 0 }}><GripDots /></div>
+                  <div style={{ cursor: 'grab', display: 'flex', alignItems: 'center', padding: '2px 0', flexShrink: 0 }}
+                    onMouseEnter={e => { e.currentTarget.querySelector('svg')!.setAttribute('fill', 'var(--color-text-secondary)'); }}
+                    onMouseLeave={e => { e.currentTarget.querySelector('svg')!.setAttribute('fill', 'var(--color-text-disabled)'); }}><GripDots /></div>
                   <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', flex: 1 }}>Tweet {i + 1}</span>
                   <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: over ? 'var(--color-danger)' : 'var(--color-text-disabled)' }}>{len}/280</span>
                   {tweets.length > 1 && (

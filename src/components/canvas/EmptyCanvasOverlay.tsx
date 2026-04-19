@@ -181,6 +181,7 @@ export default function EmptyCanvasOverlay() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)' }}>
           {/* Empty workflow */}
           <button onClick={handleNew}
+            aria-label="Empty Workflow"
             style={{
               textAlign: 'left', cursor: 'pointer', minWidth: 0,
               background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
@@ -195,7 +196,7 @@ export default function EmptyCanvasOverlay() {
                 background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
               </div>
             </div>
             <div style={{ padding: 'var(--space-3) var(--space-4)' }}>

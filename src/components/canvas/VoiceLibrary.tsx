@@ -179,7 +179,7 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
       <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)', flexWrap: 'wrap', gap: 'var(--space-3)', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', paddingBottom: 'var(--space-3)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Voice Notes</h1>
             {notes.length > 0 && (
@@ -305,7 +305,7 @@ export default function VoiceLibrary({ onUseInWorkflow }: { onUseInWorkflow?: ()
 
                 {/* Expanded transcript */}
                 {expandedId === note.id && note.transcript && (
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.6, borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-3)', whiteSpace: 'pre-wrap' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.6, borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-3)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                     {note.transcript}
                   </div>
                 )}

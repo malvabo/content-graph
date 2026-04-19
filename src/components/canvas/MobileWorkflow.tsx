@@ -88,6 +88,7 @@ function ConfigSummary({ config }: { config: Record<string, unknown> }) {
 
 function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExpand: () => void; onDelete: () => void }) {
   const status = useExecutionStore(s => s.status[node.id] ?? 'idle');
+  const error = useExecutionStore(s => s.errors[node.id]);
   const output = useOutputStore(s => s.outputs[node.id]?.text);
   const colors = BADGE_COLORS[node.data.category];
   const [swipeX, setSwipeX] = useState(0);
@@ -134,11 +135,25 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
           </div>
           {status === 'running' && <div className="skeleton-bar" style={{ width: 16, height: 16, borderRadius: '50%' }} />}
           {status === 'complete' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>}
+          {status === 'error' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-danger)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>}
+          {status === 'warning' && <span style={{ fontSize: 14 }}>⚠</span>}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="1.5" strokeLinecap="round"><path d="m9 18 6-6-6-6"/></svg>
         </div>
 
         {/* Config chips */}
         <ConfigSummary config={node.data.config} />
+
+        {/* Error message */}
+        {status === 'error' && error && (
+          <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.4, fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
+            {error}
+          </div>
+        )}
+        {status === 'warning' && (
+          <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.4, fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', padding: '6px 10px', borderRadius: 'var(--radius-sm)' }}>
+            No input — connect a source node above
+          </div>
+        )}
 
         {/* Output preview */}
         {output && (

@@ -153,7 +153,7 @@ export default function ConfigPanel() {
         <div className="flex items-center gap-2.5">
           <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.bg, color: colors.text }}>{NODE_ICONS[node.data.subtype]?.() ?? def?.badge}</div>
           <div className="flex-1" style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{node.data.label}</div>
-          <button className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-surface)] transition" title="Delete node"
+          <button className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-surface)] transition" title="Delete node" aria-label="Delete node"
             onClick={() => { if (confirm('Delete this node?')) { useGraphStore.getState().removeNode(node.id); useExecutionStore.getState().resetNode(node.id); useOutputStore.getState().clearNode(node.id); } }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-placeholder)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
           </button>

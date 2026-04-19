@@ -62,7 +62,7 @@
   --color-text-primary: var(--p-neutral-900);
   --color-text-secondary: var(--p-neutral-750);
   --color-text-tertiary: var(--p-neutral-700);
-  --color-text-disabled: var(--p-neutral-600);
+  --color-text-disabled: #6a6860;
   --color-text-placeholder: var(--p-neutral-650);
   --color-text-on-dark: var(--p-neutral-500);
 

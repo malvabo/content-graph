@@ -35,7 +35,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
         <input
           aria-label="Graph name"
           className="graph-name-input outline-none"
-          style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0' }}
+          style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}
           value={graphName}
           placeholder="Untitled"
           onChange={(e) => setGraphName(e.target.value)}
