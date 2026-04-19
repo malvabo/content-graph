@@ -6,9 +6,8 @@ import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from 
 
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 
-/* DS chip style */
-const CHIP: React.CSSProperties = { fontSize: 11, fontWeight: 400, fontFamily: 'var(--font-sans)', padding: '3px 8px', borderRadius: 5, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', color: 'var(--color-text-secondary)', lineHeight: '16px', whiteSpace: 'nowrap', flexShrink: 0 };
-const ARROW: React.CSSProperties = { color: 'var(--color-text-disabled)', fontSize: 11, opacity: 0.4, flexShrink: 0 };
+const CHIP: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-normal)', fontFamily: 'var(--font-sans)', padding: '3px var(--space-2)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', color: 'var(--color-text-secondary)', lineHeight: '16px', whiteSpace: 'nowrap', flexShrink: 0 };
+const ARROW: React.CSSProperties = { color: 'var(--color-text-disabled)', fontSize: 'var(--text-xs)', opacity: 0.4, flexShrink: 0 };
 
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<SavedWorkflow[]>([]);
@@ -34,7 +33,6 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   const handleNew = () => { setNodes([]); setEdges([]); setGraphName('Untitled'); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); onOpen(); };
   const fmt = (iso: string) => { const d = new Date(iso), diff = Date.now() - d.getTime(); if (diff < 60000) return 'Just now'; if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`; if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`; return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); };
 
-  /* Build chip list: up to 3 named + overflow count */
   const chipList = (item: SavedWorkflow) => {
     const MAX = 3;
     const labels = item.nodes.slice(0, MAX).map(n => n.data.label);
@@ -44,37 +42,37 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
 
   return (
     <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-      <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      <div style={{ padding: 'var(--space-6) var(--space-8)', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <h1 style={{ fontWeight: 600, fontSize: 20, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
-            {items.length > 0 && <span style={{ fontSize: 14, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{items.length}</span>}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
+            <h1 style={{ fontWeight: 600, fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Workflows</h1>
+            {items.length > 0 && <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{items.length}</span>}
           </div>
           {items.length > 0 && <button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New workflow</button>}
         </div>
 
-        {/* Loading skeleton */}
+        {/* Loading */}
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
-            {[0,1,2].map(i => <div key={i} className="skeleton-bar" style={{ height: 156, borderRadius: 12 }} />)}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
+            {[0,1,2].map(i => <div key={i} className="skeleton-bar" style={{ height: 156, borderRadius: 'var(--radius-lg)' }} />)}
           </div>
 
-        /* Empty state */
+        /* Empty */
         ) : items.length === 0 ? (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 40 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 20 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-10)' }}>
+            <div style={{ width: 'var(--space-12)', height: 'var(--space-12)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7m-3.5-3.5h7"/></svg>
             </div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 18, fontWeight: 500, color: 'var(--color-text-primary)', marginBottom: 8 }}>No workflows yet</div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--color-text-tertiary)', maxWidth: 280, lineHeight: 1.5, marginBottom: 24 }}>Create your first workflow to start repurposing content</div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>No workflows yet</div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 280, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>Create your first workflow to start repurposing content</div>
             <button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New workflow</button>
           </div>
 
-        /* Card grid */
+        /* Grid */
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
             {items.map(item => {
               const hovered = hoverId === item.id;
               const { labels, extra } = chipList(item);
@@ -82,36 +80,36 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 <div key={item.id} role="button" tabIndex={0} onClick={() => handleLoad(item)}
                   onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}
                   style={{
-                    cursor: 'pointer', outline: 'none', height: 156, padding: 20,
+                    cursor: 'pointer', outline: 'none', height: 156, padding: 'var(--space-5)',
                     background: 'var(--color-bg-card)', border: `1px solid var(--color-border-${hovered ? 'strong' : 'default'})`,
-                    borderRadius: 12, overflow: 'hidden',
+                    borderRadius: 'var(--radius-lg)', overflow: 'hidden',
                     transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out',
                     transform: hovered ? 'translateY(-1px)' : 'none',
                     boxShadow: hovered ? 'var(--shadow-md)' : 'none',
                     display: 'flex', flexDirection: 'column',
                   }}>
 
-                  {/* Title + 3-dot */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <div style={{ fontWeight: 500, fontSize: 14, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                  {/* Title + menu */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                    <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                       {item.name}
                     </div>
                     <div style={{ position: 'relative', flexShrink: 0, opacity: hovered || menuId === item.id ? 1 : 0, transition: 'opacity 150ms' }}>
                       <div role="button" tabIndex={0} aria-label="More options"
-                        style={{ width: 24, height: 24, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', cursor: 'pointer' }}
+                        style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', cursor: 'pointer' }}
                         onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                       </div>
                       {menuId === item.id && (
                         <div ref={menuRef} onClick={e => e.stopPropagation()}
-                          style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.08)', padding: 4, minWidth: 130 }}>
+                          style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', minWidth: 130 }}>
                           {[
                             { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
                             { label: 'Duplicate', action: () => handleDuplicate(item) },
                             { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
                           ].map(opt => (
                             <button key={opt.label} onClick={opt.action}
-                              style={{ width: '100%', padding: '6px 10px', background: 'none', border: 'none', borderRadius: 5, cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', textAlign: 'left', transition: 'background 100ms' }}
+                              style={{ width: '100%', padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', textAlign: 'left', transition: 'background 100ms' }}
                               onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-card)'; }}
                               onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
                               {opt.label}
@@ -122,8 +120,8 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     </div>
                   </div>
 
-                  {/* Chips — single row, never wraps */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                  {/* Chips — single row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', overflow: 'hidden', flex: 1, minWidth: 0 }}>
                     {labels.map((label, j) => (
                       <span key={j} style={{ display: 'contents' }}>
                         {j > 0 && <span style={ARROW}>→</span>}
@@ -136,8 +134,8 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     </>}
                   </div>
 
-                  {/* Metadata — pinned to bottom */}
-                  <div style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 12 }}>
+                  {/* Metadata */}
+                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-3)' }}>
                     {item.nodes.length} nodes · {fmt(item.savedAt)}
                   </div>
                 </div>
@@ -150,10 +148,10 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
       {/* Delete dialog */}
       {deleteId && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)' }} onClick={() => setDeleteId(null)}>
-          <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg-card)', borderRadius: 12, padding: 20, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid var(--color-border-default)', maxWidth: 340, width: '100%', fontFamily: 'var(--font-sans)' }}>
-            <div style={{ fontWeight: 500, fontSize: 16, color: 'var(--color-text-primary)', marginBottom: 8 }}>Delete workflow?</div>
-            <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 16 }}>This will permanently remove "{items.find(i => i.id === deleteId)?.name}".</div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-default)', maxWidth: 340, width: '100%', fontFamily: 'var(--font-sans)' }}>
+            <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>Delete workflow?</div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 'var(--space-4)' }}>This will permanently remove "{items.find(i => i.id === deleteId)?.name}".</div>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>
               <button className="btn btn-destructive" onClick={confirmDelete}>Delete</button>
             </div>
