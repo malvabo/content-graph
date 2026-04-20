@@ -133,7 +133,7 @@ export default function InfographicsPanel() {
               <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 280, lineHeight: 'var(--leading-snug)' }}>Generate an infographic in a workflow, then click it and send it here</div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)' }}>
               {items.map(item => {
                 const svg = getSvg(item);
                 const isSelected = selected?.id === item.id;
@@ -143,9 +143,11 @@ export default function InfographicsPanel() {
                       borderRadius: 'var(--radius-lg)', overflow: 'hidden', cursor: 'pointer',
                       border: `2px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border-default)'}`,
                       boxShadow: isSelected ? 'var(--shadow-md)' : 'none',
-                      transition: 'border-color 150ms, box-shadow 150ms',
+                      transition: 'transform 150ms ease-out, border-color 150ms, box-shadow 150ms',
                       position: 'relative',
-                    }}>
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; if (!isSelected) e.currentTarget.style.boxShadow = 'none'; }}>
                     {svg && <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', lineHeight: 0 }} />}
                     <button onClick={e => { e.stopPropagation(); remove(item.id); }}
                       style={{ position: 'absolute', top: 'var(--space-2)', right: 'var(--space-2)', width: 24, height: 24, borderRadius: 'var(--radius-md)', background: 'var(--color-overlay-light)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', opacity: 0, transition: 'opacity 150ms' }}
