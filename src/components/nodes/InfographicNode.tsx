@@ -8,47 +8,71 @@ import { useGraphStore } from '../../store/graphStore';
 export interface InfographicData {
   title: string;
   subtitle?: string;
-  theme?: { bg?: string; accent?: string; text?: string; cardBg?: string; cardBorder?: string; font?: string };
+  footer?: string;
+  theme?: {
+    bg?: string; accent?: string; text?: string; cardBg?: string; cardBorder?: string;
+    font?: string; fontSize?: number; borderRadius?: number;
+    cols?: number; gap?: number; align?: 'center' | 'left';
+  };
   points: { stat: string; label: string; detail?: string; color?: string }[];
 }
 
-export function renderSVG(data: InfographicData): string {
-  const { title, subtitle, points, theme } = data;
+const SYSTEM_FONTS = new Set(['system-ui','sans-serif','serif','monospace','cursive','-apple-system','blinkmacsystemfont','segoe ui','georgia','courier new','times new roman','arial','helvetica','verdana','trebuchet ms','comic sans ms']);
+
+function sanitizeFont(raw: string): string {
+  return raw.replace(/[<>"&]/g, '');
+}
+
+function loadGoogleFont(name: string) {
+  if (typeof document === 'undefined') return;
+  const id = `gfont-${name.replace(/\s+/g, '-')}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name)}:wght@400;500;700&display=swap`;
+  document.head.appendChild(link);
+}
+
+export function renderSVG(data: InfographicData, onFontLoad?: () => void): string {
+  const { title, subtitle, footer, points, theme } = data;
   const bg = theme?.bg || '#1a1a18';
   const accent = theme?.accent || '#0DBF5A';
   const textColor = theme?.text || '#e8e6e3';
   const cardBg = theme?.cardBg || '#2a2a26';
   const cardBorder = theme?.cardBorder || '#3a3a36';
-  const font = theme?.font || 'system-ui, sans-serif';
-  const subtitleColor = '#908e85';
+  const rawFont = theme?.font || 'system-ui, sans-serif';
+  const primaryFont = sanitizeFont(rawFont.split(',')[0].trim().replace(/['"]/g, ''));
+  const fontFamily = `${primaryFont}, system-ui, sans-serif`;
+  const isSystem = SYSTEM_FONTS.has(primaryFont.toLowerCase());
+  const titleSize = theme?.fontSize || 22;
+  const radius = theme?.borderRadius ?? 12;
+  const align = theme?.align || 'center';
+  const gap = theme?.gap ?? 16;
 
-  // Load Google Font dynamically if it's not a system font
-  const systemFonts = ['system-ui', 'sans-serif', 'serif', 'monospace', 'cursive', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI'];
-  const primaryFont = font.split(',')[0].trim().replace(/['"]/g, '');
-  const isSystemFont = systemFonts.some(sf => primaryFont.toLowerCase() === sf.toLowerCase());
-  const googleFontImport = !isSystemFont ? `<defs><style>@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(primaryFont)}:wght@400;500;700&amp;display=swap');</style></defs>` : '';
-
-  // Also inject into page for html-to-image export
-  if (!isSystemFont && typeof document !== 'undefined') {
-    const linkId = `gfont-${primaryFont.replace(/\s+/g, '-')}`;
-    if (!document.getElementById(linkId)) {
-      const link = document.createElement('link');
-      link.id = linkId;
-      link.rel = 'stylesheet';
-      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(primaryFont)}:wght@400;500;700&display=swap`;
-      document.head.appendChild(link);
+  // Load font + trigger re-render after load
+  if (!isSystem) {
+    loadGoogleFont(primaryFont);
+    if (onFontLoad && typeof document !== 'undefined') {
+      document.fonts?.ready?.then(onFontLoad);
     }
   }
 
-  const W = 960, cols = points.length <= 4 ? 2 : 3;
-  const cardW = cols === 2 ? 400 : 270, cardH = 100, gapX = 24, gapY = 16;
+  const W = 960;
+  const cols = theme?.cols || (points.length <= 4 ? 2 : 3);
+  const gapX = gap + 8, gapY = gap;
+  const cardW = Math.floor((W - 80 - (cols - 1) * gapX) / cols);
+  const cardH = 100;
   const gridW = cols * cardW + (cols - 1) * gapX;
   const startX = (W - gridW) / 2;
   const titleY = subtitle ? 50 : 60;
   const subtitleY = titleY + 26;
   const gridStartY = subtitle ? subtitleY + 32 : titleY + 40;
   const rows = Math.ceil(points.length / cols);
-  const H = Math.max(540, gridStartY + rows * (cardH + gapY) + 24);
+  const footerH = footer ? 40 : 0;
+  const H = Math.max(540, gridStartY + rows * (cardH + gapY) + 24 + footerH);
+  const titleAnchor = align === 'left' ? 'start' : 'middle';
+  const titleX = align === 'left' ? 40 : W / 2;
 
   let cards = '';
   points.forEach((p, i) => {
@@ -56,20 +80,22 @@ export function renderSVG(data: InfographicData): string {
     const x = startX + col * (cardW + gapX);
     const y = gridStartY + row * (cardH + gapY);
     const pointColor = p.color || accent;
-    cards += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="12" fill="${escSvg(cardBg)}" stroke="${escSvg(cardBorder)}" stroke-width="1"/>`;
-    cards += `<text x="${x + 20}" y="${y + 38}" font-size="26" font-weight="700" fill="${escSvg(pointColor)}" font-family="${primaryFont}, system-ui, sans-serif">${escSvg(p.stat)}</text>`;
-    cards += `<text x="${x + 20}" y="${y + 62}" font-size="13" font-weight="500" fill="${escSvg(textColor)}" font-family="${primaryFont}, system-ui, sans-serif">${escSvg(p.label)}</text>`;
+    cards += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="${radius}" fill="${escSvg(cardBg)}" stroke="${escSvg(cardBorder)}" stroke-width="1"/>`;
+    cards += `<text x="${x + 20}" y="${y + 38}" font-size="26" font-weight="700" fill="${escSvg(pointColor)}" font-family="${fontFamily}">${escSvg(p.stat)}</text>`;
+    cards += `<text x="${x + 20}" y="${y + 62}" font-size="13" font-weight="500" fill="${escSvg(textColor)}" font-family="${fontFamily}">${escSvg(p.label)}</text>`;
     if (p.detail) {
-      cards += `<text x="${x + 20}" y="${y + 82}" font-size="11" fill="${subtitleColor}" font-family="${primaryFont}, system-ui, sans-serif">${escSvg(p.detail.slice(0, 50))}</text>`;
+      cards += `<text x="${x + 20}" y="${y + 82}" font-size="11" fill="#908e85" font-family="${fontFamily}">${escSvg(p.detail.slice(0, 50))}</text>`;
     }
   });
 
+  const footerSvg = footer ? `<text x="${W / 2}" y="${H - 16}" text-anchor="middle" font-size="10" fill="#908e85" font-family="${fontFamily}">${escSvg(footer)}</text>` : '';
+
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
-${googleFontImport}
 <rect width="${W}" height="${H}" fill="${escSvg(bg)}" rx="16"/>
-<text x="${W / 2}" y="${titleY}" text-anchor="middle" font-size="22" font-weight="700" fill="${escSvg(textColor)}" font-family="${primaryFont}, system-ui, sans-serif">${escSvg(title)}</text>
-${subtitle ? `<text x="${W / 2}" y="${subtitleY}" text-anchor="middle" font-size="13" fill="${subtitleColor}" font-family="${primaryFont}, system-ui, sans-serif">${escSvg(subtitle)}</text>` : ''}
+<text x="${titleX}" y="${titleY}" text-anchor="${titleAnchor}" font-size="${titleSize}" font-weight="700" fill="${escSvg(textColor)}" font-family="${fontFamily}">${escSvg(title)}</text>
+${subtitle ? `<text x="${titleX}" y="${subtitleY}" text-anchor="${titleAnchor}" font-size="13" fill="#908e85" font-family="${fontFamily}">${escSvg(subtitle)}</text>` : ''}
 ${cards}
+${footerSvg}
 </svg>`;
 }
 

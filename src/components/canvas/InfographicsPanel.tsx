@@ -16,14 +16,35 @@ const SUGGESTION_CHIPS = [
 
 async function chatEdit(messages: ChatMsg[], currentJson: string, signal?: AbortSignal): Promise<string> {
   const { anthropicKey, groqKey } = useSettingsStore.getState();
-  const system = `You are an infographic editor. The user has an infographic defined as JSON. Apply their requested changes and return ONLY the updated JSON — no explanation, no markdown fences.
+  const system = `You are an infographic editor. The user has an infographic defined as JSON. Apply their requested changes and return ONLY the updated JSON — no explanation, no markdown fences. Always preserve all existing fields unless the user explicitly asks to remove them.
 
 Current infographic JSON:
 ${currentJson}
 
-The JSON schema is: { "title": string, "subtitle"?: string, "theme"?: { "bg"?: string, "accent"?: string, "text"?: string, "cardBg"?: string, "cardBorder"?: string, "font"?: string }, "points": [{ "stat": string, "label": string, "detail"?: string, "color"?: string }] }
+JSON schema:
+{
+  "title": string,
+  "subtitle"?: string,
+  "footer"?: string,
+  "theme"?: {
+    "bg"?: string, "accent"?: string, "text"?: string,
+    "cardBg"?: string, "cardBorder"?: string,
+    "font"?: string, "fontSize"?: number,
+    "borderRadius"?: number, "cols"?: number,
+    "gap"?: number, "align"?: "center" | "left"
+  },
+  "points": [{ "stat": string, "label": string, "detail"?: string, "color"?: string }]
+}
 
-For theme.font, use any Google Font name (e.g. "Inter", "Roboto", "Playfair Display", "Space Grotesk", "Merriweather") or system fonts like "Georgia", "Courier New". The font will be loaded automatically.`;
+Notes:
+- theme.font: any Google Font name (Inter, Roboto, Playfair Display, Space Grotesk, Merriweather, etc.) or system fonts (Georgia, Courier New). Loaded automatically.
+- theme.fontSize: title font size in px (default 22)
+- theme.cols: force column count (1, 2, 3, or 4)
+- theme.gap: spacing between cards in px (default 16)
+- theme.borderRadius: card corner radius in px (default 12, use 0 for sharp)
+- theme.align: "center" or "left" for title/subtitle alignment
+- footer: small text at bottom (source, attribution, etc.)
+- All colors are hex strings.`;
 
   const msgs = messages.map(m => ({ role: m.role, content: m.text }));
 
@@ -64,6 +85,8 @@ export default function InfographicsPanel() {
   const abortRef = useRef<AbortController | null>(null);
   const messagesRef = useRef<ChatMsg[]>(messages);
   messagesRef.current = messages;
+  const [undoStack, setUndoStack] = useState<string[]>([]);
+  const [, setFontTick] = useState(0);
 
   const editing = items.find(i => i.id === editingId) || null;
 
@@ -108,6 +131,7 @@ export default function InfographicsPanel() {
       }
       const parsed = parseInfographicData(jsonStr);
       if (parsed && parsed.points?.length) {
+        setUndoStack(s => [...s, freshItem.json]);
         update(editing.id, jsonStr);
         setMessages(m => [...m, { role: 'assistant', text: 'Done! I\'ve updated the infographic. Anything else?' }]);
       } else {
@@ -176,7 +200,7 @@ export default function InfographicsPanel() {
                         </div>
                         {menuId === item.id && (
                           <div ref={menuRef} onClick={e => e.stopPropagation()}
-                            style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
+                            style={{ position: 'absolute', top: 28, left: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
                             {[
                               { label: 'Edit', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>, action: () => { setEditingId(item.id); setMenuId(null); } },
                               { label: 'Rename', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 6H3"/><path d="M15 12H3"/><path d="M17 18H3"/></svg>, action: () => { const name = prompt('Rename', title); if (name?.trim()) { const d = parseInfographicData(item.json); if (d) { d.title = name.trim(); update(item.id, JSON.stringify(d)); } } setMenuId(null); } },
@@ -205,8 +229,17 @@ export default function InfographicsPanel() {
     );
   }
 
+  const undo = useCallback(() => {
+    if (!undoStack.length || !editing) return;
+    const prev = undoStack[undoStack.length - 1];
+    setUndoStack(s => s.slice(0, -1));
+    update(editing.id, prev);
+    setMessages(m => [...m, { role: 'assistant', text: 'Reverted to previous version.' }]);
+  }, [undoStack, editing, update]);
+
   // ─── EDITOR VIEW ───
-  const svg = editing ? (() => { const d = parseInfographicData(editing.json); return d ? renderSVG(d) : null; })() : null;
+  const fontRerender = useCallback(() => setFontTick(t => t + 1), []);
+  const svg = editing ? (() => { const d = parseInfographicData(editing.json); return d ? renderSVG(d, fontRerender) : null; })() : null;
 
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)' }}>
@@ -217,6 +250,7 @@ export default function InfographicsPanel() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
           </button>
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', flex: 1 }}>Infographics</span>
+          {undoStack.length > 0 && <button onClick={undo} className="btn btn-sm btn-ghost">↩ Undo</button>}
           <button onClick={async () => {
             const el = document.getElementById('ig-editor-preview');
             if (!el) return;
