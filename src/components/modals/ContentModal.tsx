@@ -372,47 +372,40 @@ function NewsletterModal({ title, text, onClose, onSave, onRegenerate }: Content
 /* ════════════════════════════════════════════
    VOICE — same as Newsletter without subject line
    ════════════════════════════════════════════ */
-function VoiceModal({ title, text, onClose, extraActions }: ContentModalProps) {
-  const parseSections = (t: string) => {
-    const parts = t.split(/\n---\n|\n##\s+/);
-    if (parts.length <= 1) return [{ label: 'Content', text: t }];
-    return parts.filter(Boolean).map((p, i) => {
-      const lines = p.trim().split('\n');
-      const label = i === 0 ? 'Intro' : lines[0]?.length < 40 ? lines.shift()! : `Section ${i}`;
-      return { label, text: lines.join('\n').trim() };
-    });
-  };
+function VoiceModal({ title, text, onClose, onSave, extraActions }: ContentModalProps) {
+  const [editTitle, setEditTitle] = useState(title);
+  const [content, setContent] = useState(text);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const { copied, copy } = useCopy(() => content);
 
-  const [sections, setSections] = useState(() => parseSections(text));
-  const sectionRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
-  const updateSection = (i: number, val: string) => { const n = [...sections]; n[i] = { ...n[i], text: val }; setSections(n); };
-
-  useEffect(() => {
-    sectionRefs.current.forEach(el => {
-      if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
-    });
-  }, [sections]);
+  useEffect(() => { const el = ref.current; if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }, [content]);
 
   return (
     <ModalShell onClose={onClose} maxWidth={640}>
-      <Header title={title} onClose={onClose} />
-      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-6) var(--space-4)', scrollbarWidth: 'thin' }}>
-        {sections.map((sec, i) => (
-          <div key={i} style={{ marginBottom: 'var(--space-4)' }}>
-            <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>{sec.label}</div>
-            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', transition: 'border-color 150ms' }}
-              onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-              onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
-              <textarea ref={el => { sectionRefs.current[i] = el; }} value={sec.text} onChange={e => updateSection(i, e.target.value)} aria-label={sec.label}
-                style={{ width: '100%', minHeight: 60, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-2) var(--space-3)' }} />
-            </div>
-          </div>
-        ))}
+      <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-4) var(--space-6)' }}>
+        <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
+          style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', outline: 'none', flex: 1 }}
+          onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-strong)'; }}
+          onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }} />
+        <button aria-label="Close" onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms', flexShrink: 0, marginLeft: 'var(--space-2)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
       </div>
+      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-6) var(--space-4)', scrollbarWidth: 'thin' }}>
+        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', transition: 'border-color 150ms' }}
+          onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
+          <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); }}
+            style={{ width: '100%', minHeight: 120, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-3) var(--space-4)' }} />
+        </div>
+      </div>
+      <Footer onClose={() => { onSave?.(content); onClose(); }} onCopy={copy} copied={copied} />
       {extraActions && extraActions.length > 0 && (
-        <div className="flex items-center gap-2 shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', borderTop: '1px solid var(--color-border-subtle)' }}>
+        <div className="flex items-center gap-2 shrink-0" style={{ padding: '0 var(--space-6) var(--space-5)' }}>
           {extraActions.map((a, i) => (
-            <button key={a.label} className={`btn btn-sm flex-1 ${i === 0 ? 'btn-ghost' : 'btn-primary'}`} onClick={() => { a.onClick(sections.map(s => s.text).join("\n\n")); onClose(); }}>{a.label}</button>
+            <button key={a.label} className={`btn btn-sm flex-1 ${i === 0 ? 'btn-ghost' : 'btn-primary'}`} onClick={() => { a.onClick(content); onClose(); }}>{a.label}</button>
           ))}
         </div>
       )}
