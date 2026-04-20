@@ -347,7 +347,7 @@ function RephraseBlock({ rephrase, onApply }) {
   return (
     <div style={{ marginTop:14, background:C.accentLt, borderRadius:12, padding:"12px 14px" }}>
       <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.accentDark, marginBottom:6 }}>Rephrase to</p>
-      <p style={{ fontSize:13, color:C.text, lineHeight:1.6, fontStyle:"italic", marginBottom:10 }}>"{rephrase}"</p>
+      <p style={{ fontSize:13, color:C.text, lineHeight:1.6, marginBottom:10 }}>"{rephrase}"</p>
       <button onClick={onApply} style={{
         background:"#0DBF5A", color:C.white, border:"none", borderRadius:8,
         fontSize:12, fontWeight:600, padding:"6px 16px", cursor:"pointer", transition:"opacity 100ms",
@@ -373,26 +373,12 @@ function ScienceCard({ data, elRef, onClose, onApply, highlighted }) {
 }
 
 /* ── Metaphor card ── */
-function MetaphorCard({ data, country, elRef, onClose, onApply, highlighted }) {
-  const ci = COUNTRIES.find(c => c.code === country) || COUNTRIES[0];
-  const localized = data.localizations?.[country] || data.localizations?.["US"] || "";
+function MetaphorCard({ data, elRef, onClose, onApply, highlighted }) {
   return (
     <Card elRef={elRef} highlighted={highlighted}>
-      <CardHeader type="metaphor" label="Metaphor" extra={`${ci.flag} ${ci.name}`} onClose={onClose} />
-      <p style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:14 }}>{data.headline}</p>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 32px 1fr", gap:8, alignItems:"stretch" }}>
-        <div style={{ background:C.surface, borderRadius:12, padding:"12px 14px" }}>
-          <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.mute, marginBottom:6 }}>Original</p>
-          <p style={{ fontSize:13, color:C.text, lineHeight:1.6, fontStyle:"italic" }}>"{data.original}"</p>
-        </div>
-        <div style={{ display:"flex", justifyContent:"center", alignItems:"center" }}>
-          <ArrowRight size={14} color={C.mute} />
-        </div>
-        <div style={{ background:C.accentLt, borderRadius:12, padding:"12px 14px" }}>
-          <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.accentDark, marginBottom:6 }}>Localized</p>
-          <p style={{ fontSize:13, color:C.text, lineHeight:1.6, fontStyle:"italic" }}>"{localized}"</p>
-        </div>
-      </div>
+      <CardHeader type="metaphor" label="Metaphor" onClose={onClose} />
+      <p style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:8 }}>{data.headline}</p>
+      <p style={{ fontSize:13, color:C.sub, lineHeight:1.7 }}>"{data.original}"</p>
       <RephraseBlock rephrase={data.rephrase} onApply={onApply} />
     </Card>
   );
@@ -406,7 +392,7 @@ function LogicCard({ data, elRef, onClose, onApply, highlighted }) {
       <CardHeader type="logic" label="Logic gap" onClose={onClose} />
       <p style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:8 }}>{data.headline}</p>
       <p style={{ fontSize:13, color:C.sub, lineHeight:1.7 }}>{data.body}</p>
-      {data.fix && <p style={{ fontSize:13, color:C.sub, lineHeight:1.7, marginTop:8, fontStyle:"italic" }}>{data.fix}</p>}
+      {data.fix && <p style={{ fontSize:13, color:C.sub, lineHeight:1.7, marginTop:8 }}>{data.fix}</p>}
       <RephraseBlock rephrase={data.rephrase} onApply={onApply} />
       <SourceList sources={sources} />
     </Card>
@@ -556,8 +542,7 @@ Return ONLY valid JSON — no markdown, no explanation:
 {
   "insights": [
     science/logic item:  { "phrase":"exact 2-8 word phrase from text", "type":"science"|"logic", "headline":"3-5 word title", "body":"1-2 sentences explaining the issue", "searchQuery":"search terms to find evidence", "rephrase":"improved replacement for just the flagged phrase — same meaning, more accurate or clearer" },
-    metaphor item:       { "phrase":"exact phrase", "type":"metaphor", "headline":"short title", "original":"the phrase as used", "rephrase":"a stronger, clearer version of the metaphor phrase", "localizations":{"US":"...","JP":"...","BR":"...","IN":"...","DE":"...","NG":"...","MX":"...","AU":"..."} }
-  IMPORTANT: All localizations and rephrase suggestions must be written in English. Localizations should use a culturally equivalent metaphor or analogy — not a translation. All text stays in English.
+    metaphor item:       { "phrase":"exact phrase", "type":"metaphor", "headline":"short title", "original":"the phrase as used", "rephrase":"a stronger, clearer version of the metaphor phrase" }
   ]
 }
 
@@ -650,23 +635,6 @@ ${text}`
                 <RotateCcw size={13} color={C.sub} />
               </button>
               <div style={{ width:1, height:14, background:C.border }} />
-              <div style={{ position:"relative" }}>
-                <button className="dd-btn" onClick={() => setDdOpen(v=>!v)}
-                  style={{ display:"flex", alignItems:"center", gap:5, background:"transparent", border:"none", color:C.text, fontSize:12, fontWeight:500, cursor:"pointer" }}>
-                  <span>{selC?.flag}</span><span>{selC?.name}</span><ChevronDown size={10} color={C.mute} style={{ marginLeft:1 }} />
-                </button>
-                {ddOpen && (
-                  <div style={{ position:"absolute", top:"calc(100% + 6px)", right:0, background:C.white, border:`1px solid ${C.border}`, borderRadius:14, boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:99, minWidth:180, padding:"6px 0", overflow:"hidden" }}>
-                    {COUNTRIES.map(c => (
-                      <button key={c.code} className="dd-item"
-                        onClick={() => { setCountry(c.code); setDdOpen(false); }}
-                        style={{ width:"100%", textAlign:"left", padding:"8px 14px", background: country===c.code ? "#EEF8F2" : "transparent", color: country===c.code ? C.accent : C.text, fontSize:13, display:"flex", gap:8, alignItems:"center", border:"none", fontWeight: country===c.code ? 600 : 400 }}>
-                        <span>{c.flag}</span><span>{c.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
@@ -769,7 +737,7 @@ ${text}`
               {!insightLoading && visibleInsights.map(({ kw, data }) => (
                 <div key={kw} style={{ animation:"fadeUp 0.2s ease" }}>
                   {data.type==="science"  && <ScienceCard  data={data} highlighted={highlighted===kw} elRef={el=>cardRefs.current[kw]=el} onClose={()=>setDismissed(d=>new Set([...d,kw]))} onApply={()=>handleApply(data.phrase, data.rephrase)} />}
-                  {data.type==="metaphor" && <MetaphorCard data={data} country={country} highlighted={highlighted===kw} elRef={el=>cardRefs.current[kw]=el} onClose={()=>setDismissed(d=>new Set([...d,kw]))} onApply={()=>handleApply(data.phrase, data.rephrase)} />}
+                  {data.type==="metaphor" && <MetaphorCard data={data} highlighted={highlighted===kw} elRef={el=>cardRefs.current[kw]=el} onClose={()=>setDismissed(d=>new Set([...d,kw]))} onApply={()=>handleApply(data.phrase, data.rephrase)} />}
                   {data.type==="logic"    && <LogicCard    data={data} highlighted={highlighted===kw} elRef={el=>cardRefs.current[kw]=el} onClose={()=>setDismissed(d=>new Set([...d,kw]))} onApply={()=>handleApply(data.phrase, data.rephrase)} />}
                 </div>
               ))}
