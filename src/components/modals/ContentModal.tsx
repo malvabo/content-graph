@@ -372,7 +372,7 @@ function NewsletterModal({ title, text, onClose, onSave, onRegenerate }: Content
 /* ════════════════════════════════════════════
    VOICE — same as Newsletter without subject line
    ════════════════════════════════════════════ */
-function VoiceModal({ title, text, onClose, onSave, onRegenerate, extraActions }: ContentModalProps) {
+function VoiceModal({ title, text, onClose, extraActions }: ContentModalProps) {
   const parseSections = (t: string) => {
     const parts = t.split(/\n---\n|\n##\s+/);
     if (parts.length <= 1) return [{ label: 'Content', text: t }];
