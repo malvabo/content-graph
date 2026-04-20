@@ -44,12 +44,13 @@ function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro'];
-  const getViewFromHash = () => { const h = window.location.hash.slice(1); return validViews.includes(h) ? h : 'library'; };
+  const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'library'; };
+  const getHashParam = () => window.location.hash.slice(1).split(':')[1] || undefined;
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
-  const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v); }, []);
-  useEffect(() => { const h = () => setActiveViewRaw(getViewFromHash()); window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
+  const [hashParam, setHashParam] = useState(getHashParam);
+  const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v.split(':')[0]); setHashParam(v.split(':')[1]); }, []);
+  useEffect(() => { const h = () => { setActiveViewRaw(getViewFromHash()); setHashParam(getHashParam()); }; window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
   const [voiceTranscript, setVoiceTranscript] = useState('');
-  const [cardSetId, setCardSetId] = useState<string | undefined>();
   useKeyboardShortcuts();
 
   useEffect(() => { init(); }, [init]);
@@ -111,11 +112,11 @@ function AppInner() {
 
         {activeView === 'settings' && <SettingsPanel />}
 
-        {activeView === 'cardslibrary' && <CardsLibrary onOpen={(id: string) => { setCardSetId(id); setActiveView('cards'); }} />}
+        {activeView === 'cardslibrary' && <CardsLibrary onOpen={(id: string) => { setActiveView('cards:' + id); }} />}
 
-        {activeView === 'cards' && <CardsPanel setId={cardSetId} />}
+        {activeView === 'cards' && <CardsPanel setId={hashParam} />}
 
-        {activeView === 'infographics' && <InfographicsPanel />}
+        {activeView === 'infographics' && <InfographicsPanel initialEditId={hashParam} />}
       </div>
     </div>
   );

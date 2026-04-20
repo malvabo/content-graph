@@ -260,7 +260,7 @@ export function InfographicInline({ id }: { id: string }) {
                 const a = document.createElement('a'); a.href = url; a.download = 'infographic.png'; a.click();
               }}>↓ Download PNG</button>
               <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                <button className="btn btn-primary btn-sm" onClick={() => { sendToPanel(); setModalOpen(false); window.location.hash = 'infographics'; }}>Edit infographic</button>
+                <button className="btn btn-primary btn-sm" onClick={() => { sendToPanel(); setModalOpen(false); window.location.hash = `infographics:${id}`; }}>Edit infographic</button>
               </div>
             </div>
           </div>

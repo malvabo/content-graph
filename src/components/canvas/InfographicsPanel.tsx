@@ -86,9 +86,9 @@ Notes:
 
 const DEFAULT_JSON = JSON.stringify({ title: 'New Infographic', subtitle: 'Edit me with the chat panel', points: [{ stat: '0', label: 'Your first data point' }] });
 
-export default function InfographicsPanel() {
+export default function InfographicsPanel({ initialEditId }: { initialEditId?: string }) {
   const { items, add, update, remove } = useInfographicStore();
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(initialEditId || null);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);

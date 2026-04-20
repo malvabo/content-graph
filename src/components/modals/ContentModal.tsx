@@ -167,8 +167,8 @@ function TwitterThreadModal({ title, text, onClose, onSave, onRegenerate }: Cont
                 {/* Textarea + char count below */}
                 <div style={{ borderTop: '1px solid var(--color-border-subtle)', padding: 'var(--space-2) var(--space-3)' }}>
                   <textarea ref={el => { refs.current[i] = el; }} value={tweet} onChange={e => update(i, e.target.value)} aria-label={`Tweet ${i + 1} content`}
-                    style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-2) var(--space-3)' }} />
-                  <div style={{ textAlign: 'right', padding: '0 var(--space-3) var(--space-1)' }}>
+                    style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-2) var(--space-3) 0' }} />
+                  <div style={{ textAlign: 'right', padding: 'var(--space-1) var(--space-3)' }}>
                     <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: over ? 'var(--color-danger)' : 'var(--color-text-disabled)' }}>{len}/280</span>
                   </div>
                 </div>

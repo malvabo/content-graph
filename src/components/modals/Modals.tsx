@@ -281,7 +281,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
         <div className="flex flex-col shrink-0 w-full md:w-[300px]">
           <ModalHeader title={nodeLabel || 'Image'} subtitle="Configure and generate variants" onClose={onClose} />
 
-          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', gap: 20, scrollbarWidth: 'thin' }}>
+          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', gap: 'var(--space-5)', scrollbarWidth: 'thin' }}>
 
             {/* #9: visual ratio picker with shape previews */}
             <div>
@@ -289,7 +289,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                 <span className="text-field-label" style={{ marginBottom: 0 }}>Ratio</span>
                 <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)' }}>{d.w}×{d.h}</span>
               </div>
-              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 {Object.entries(RATIO_DIMS).map(([r, dims]) => {
                   const active = r === ratio;
                   const maxW = 18, maxH = 24;
@@ -299,7 +299,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                   else { bh = maxH; bw = Math.round(maxH * aspect_r); }
                   return (
                     <button key={r} aria-pressed={active} onClick={() => { setRatio(r); setConfig('aspect', r); }}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)', padding: 'var(--space-1) var(--space-2)',
+                      style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)', padding: 'var(--space-2) 0',
                         background: active ? 'var(--color-interactive-active)' : 'transparent', border: active ? '1px solid var(--color-border-strong)' : '1px solid transparent',
                         borderRadius: 'var(--radius-md)', cursor: 'pointer', transition: 'background 100ms' }}>
                       <div style={{ width: bw, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -352,7 +352,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
 
             {/* Style / Mood tags */}
             {editPrompt !== undefined && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
                 {[
                   { label: 'Style', tags: ['cinematic', 'minimal', 'editorial', 'abstract', 'retro'] },
                   { label: 'Mood', tags: ['vibrant', 'moody', 'dreamy', 'warm', 'dark'] },
@@ -404,7 +404,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                 <span style={{ position: 'relative' }}>{genLoading ? `Generating ${variants.length}/4…` : needsRegen ? 'Generate with changes' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}</span>
               </button>
             )}
-            {genLoading && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', textAlign: 'center' }}>~15s per image</div>}
+            {genLoading && <div style={{ height: 'var(--space-4)' }} />}
             <div className="flex gap-2">
               <button className="btn btn-primary flex-1" onClick={downloadImage}>Download</button>
             </div>
