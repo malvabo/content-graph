@@ -287,7 +287,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
         {data.subtype === 'voice-source' && <VoiceSourceInline id={id} />}
         {data.subtype === 'refine' && <RefineInline id={id} />}
-        {(data.subtype === 'image-prompt' || data.subtype === 'video') && <ImagePromptInline id={id} />}
+        {(data.subtype === 'image-prompt' || data.subtype === 'video') && <ImagePromptInline id={id} expandOpen={expandOpen} onExpandClose={() => setExpandOpen(false)} />}
         {data.subtype === 'export' && <ExportInline id={id} />}
         {data.subtype === 'infographic' && <InfographicInline id={id} />}
         {data.category === 'generate' && !['image-prompt', 'video', 'infographic'].includes(data.subtype) && (

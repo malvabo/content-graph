@@ -252,11 +252,11 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               aspectRatio: `${d.w} / ${d.h}`,
               borderRadius: 'var(--radius-md)', overflow: 'hidden',
               border: '2px solid rgba(255,255,255,0.15)',
-              transition: 'aspect-ratio 600ms cubic-bezier(0.25, 0.1, 0.25, 1)',
+              transition: 'aspect-ratio 500ms cubic-bezier(0.22, 1, 0.36, 1), width 500ms cubic-bezier(0.22, 1, 0.36, 1), height 500ms cubic-bezier(0.22, 1, 0.36, 1)',
             }}>
               <img src={activeSrc} alt={editPrompt || 'Generated image'}
                 onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: zoomed ? 'zoom-out' : 'zoom-in' }} />
+                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'opacity 300ms ease' }} />
               <div style={{ position: 'absolute', bottom: 'var(--space-2)', left: 'var(--space-2)', background: 'rgba(0,0,0,0.6)', borderRadius: 'var(--radius-sm)', padding: '2px 8px', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.8)' }}>
                 {ratio}
               </div>

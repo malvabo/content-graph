@@ -80,13 +80,19 @@ async function genImage(prompt: string, seed: number, w: number, h: number): Pro
 }
 
 
-export function ImagePromptInline({ id }: { id: string }) {
+export function ImagePromptInline({ id, expandOpen, onExpandClose }: { id: string; expandOpen?: boolean; onExpandClose?: () => void }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
   const output = useOutputStore((s) => s.outputs[id]);
   const aspect = useGraphStore((s) => s.nodes.find(n => n.id === id)?.data.config.aspect as string | undefined);
   const [generating, setGenerating] = useState(false);
   const [viewImage, setViewImage] = useState<string | null>(null);
   const generatingRef = useRef(false);
+
+  // Open modal from parent expand button
+  useEffect(() => {
+    if (expandOpen && output?.imageBase64) { setViewImage(output.imageBase64); onExpandClose?.(); }
+    else if (expandOpen) { onExpandClose?.(); }
+  }, [expandOpen]);
 
   // No auto-generate on mount — wait for upstream text via Run All
 
