@@ -710,9 +710,9 @@ ${text}`
                     <FileText size={20} color={C.mute} style={{ marginBottom:12 }} />
                     <p style={{ fontSize:14, fontWeight:500, color:C.text, marginBottom:4 }}>Analyze your script</p>
                     <p style={{ fontSize:13, color:C.mute, lineHeight:1.5, marginBottom:16 }}>Find science claims, metaphors, and logic gaps — then get suggestions to strengthen them.</p>
-                    <button onClick={runAnalysis} style={{ height:32, padding:"0 14px", background:C.accent, color:C.accentText, border:`1px solid ${C.border2}`, borderRadius:8, fontSize:13, fontWeight:500, cursor:"pointer", transition:"background 100ms", letterSpacing:"-0.01em" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = C.accentHover; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = C.accent; }}>
+                    <button onClick={runAnalysis} style={{ height:32, padding:"0 14px", background:C.white, color:C.text, border:`1px solid ${C.border}`, borderRadius:10, fontSize:13, fontWeight:500, cursor:"pointer", transition:"background 100ms, border-color 100ms", letterSpacing:"-0.01em" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = C.surface; e.currentTarget.style.borderColor = C.border2; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = C.white; e.currentTarget.style.borderColor = C.border; }}>
                       Generate insights
                     </button>
                   </div>
