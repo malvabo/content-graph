@@ -195,17 +195,24 @@ export default function CardsPanel({ setId }: { setId?: string }) {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               {/* Named groups */}
-              {[...groups.entries()].map(([name, groupCards]) => (
-                <div key={name}>
+              {[...groups.entries()].map(([name, groupCards], gi) => {
+                const colors = [
+                  { bg: 'rgba(13,191,90,0.08)', border: 'rgba(13,191,90,0.2)', label: 'var(--color-accent-subtle)' },
+                  { bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.2)', label: '#3b82f6' },
+                  { bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.2)', label: 'var(--color-text-tertiary)' },
+                ];
+                const c = colors[gi % colors.length];
+                return (
+                <div key={name} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 'var(--radius-xl)', padding: 'var(--space-4)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{name}</span>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: c.label }}>{name}</span>
                     <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{groupCards.length}</span>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
                     {groupCards.map(renderCard)}
                   </div>
                 </div>
-              ))}
+              ); })}
               {/* Ungrouped */}
               {ungrouped.length > 0 && (
                 <div>
