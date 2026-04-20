@@ -144,7 +144,7 @@ export default function InfographicsPanel() {
                     {/* SVG preview */}
                     <div style={{ height: 140, overflow: 'hidden', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--color-border-subtle)' }}>
                       {svgStr ? (
-                        <div dangerouslySetInnerHTML={{ __html: svgStr }} style={{ width: '100%', height: '100%', lineHeight: 0, transform: 'scale(0.5)', transformOrigin: 'top center' }} />
+                        <div dangerouslySetInnerHTML={{ __html: svgStr }} style={{ width: '100%', height: '100%', lineHeight: 0, overflow: 'hidden' }} />
                       ) : (
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="1.5" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
                       )}
