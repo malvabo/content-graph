@@ -76,7 +76,10 @@ export default function InfographicsPanel() {
     setLoading(true);
     abortRef.current = new AbortController();
     try {
-      const reply = await chatEdit(next, selected.json, abortRef.current.signal);
+      // Read fresh JSON from store to avoid stale closure
+      const freshItem = useInfographicStore.getState().items.find(i => i.id === selected.id);
+      const currentJson = freshItem?.json || selected.json;
+      const reply = await chatEdit(next, currentJson, abortRef.current.signal);
       const cleaned = reply.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
       const parsed = parseInfographicData(cleaned);
       if (parsed && parsed.points?.length) {
@@ -148,7 +151,7 @@ export default function InfographicsPanel() {
                     }}
                     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = 'none'; if (!isSelected) e.currentTarget.style.boxShadow = 'none'; }}>
-                    {svg && <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', lineHeight: 0 }} />}
+                    {svg && <div key={item.json} dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', lineHeight: 0 }} />}
                     <button onClick={e => { e.stopPropagation(); remove(item.id); }}
                       style={{ position: 'absolute', top: 'var(--space-2)', right: 'var(--space-2)', width: 24, height: 24, borderRadius: 'var(--radius-md)', background: 'var(--color-overlay-light)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', opacity: 0, transition: 'opacity 150ms' }}
                       onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}

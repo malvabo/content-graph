@@ -562,7 +562,7 @@ Script:
 ${text}`
     ).then(raw => {
       try {
-        const d = JSON.parse(raw.replace(/```json|```/g, "").trim());
+        const d = typeof raw === 'string' ? JSON.parse(raw.replace(/```json|```/g, "").trim()) : raw;
         setAiInsights(d.insights || []);
       } catch { setAiInsights([]); }
       setInsightLoading(false);
