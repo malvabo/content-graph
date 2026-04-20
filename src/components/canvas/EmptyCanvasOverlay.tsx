@@ -190,12 +190,12 @@ export default function EmptyCanvasOverlay() {
         )}
 
         {/* Template grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)', paddingBottom: 'var(--space-8)' }}>
           {/* Empty workflow */}
           <button onClick={handleNew}
             aria-label="Empty Workflow"
             style={{
-              textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 220,
+              textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 200,
               background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
               borderRadius: 'var(--radius-xl)', overflow: 'hidden',
               transition: 'border-color 150ms, box-shadow 150ms',
@@ -203,6 +203,10 @@ export default function EmptyCanvasOverlay() {
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
+            <div style={{ padding: 'var(--space-4) var(--space-4) var(--space-2)' }}>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>Empty Workflow</div>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-1)' }}>Start from scratch</div>
+            </div>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-surface)' }}>
               <div style={{
                 width: 44, height: 44, borderRadius: 'var(--radius-full)',
@@ -212,10 +216,6 @@ export default function EmptyCanvasOverlay() {
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
               </div>
             </div>
-            <div style={{ padding: 'var(--space-3) var(--space-4)' }}>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>Empty Workflow</div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-1)' }}>Start from scratch</div>
-            </div>
           </button>
 
           {/* Templates */}
@@ -223,7 +223,7 @@ export default function EmptyCanvasOverlay() {
             <button key={t.name} onClick={() => loadTemplate(i)}
               aria-label={t.name}
               style={{
-                textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 220,
+                textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 200,
                 background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                 borderRadius: 'var(--radius-xl)', overflow: 'hidden',
                 transition: 'border-color 150ms, box-shadow 150ms',
@@ -231,12 +231,12 @@ export default function EmptyCanvasOverlay() {
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
-              <div style={{ flex: 1, background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', alignItems: 'center' }}>
-                <SchematicPreview idx={i} />
-              </div>
-              <div style={{ padding: 'var(--space-3) var(--space-4)', flexShrink: 0 }}>
+              <div style={{ padding: 'var(--space-4) var(--space-4) var(--space-2)', flexShrink: 0 }}>
                 <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</div>
                 <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-1)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.description}</div>
+              </div>
+              <div style={{ flex: 1, background: 'var(--color-bg-surface)', padding: 'var(--space-2) var(--space-3)', maxHeight: 120, overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
+                <SchematicPreview idx={i} />
               </div>
             </button>
           ))}
