@@ -1,0 +1,307 @@
+/* ============================================
+   up200 Design Tokens
+   Base unit: 4px
+   ============================================ */
+
+:root {
+  /* ── Primitive Colors ── */
+  --p-white: #FFFFFF;
+  --p-black: #1A2420;
+  --p-green-500: #0DBF5A;
+  --p-green-600: #0BAF52;
+  --p-green-700: #0A9F4A;
+  --p-red-500: #C93030;
+  --p-red-600: #B52828;
+  --p-red-700: #A02020;
+  --p-amber-500: #F0D8A0;
+  --p-amber-600: #f59e0b;
+
+  --p-neutral-50: #F9F8F5;
+  --p-neutral-100: #F7F5F1;
+  --p-neutral-200: #F2EFE9;
+  --p-neutral-300: #E0E4E0;
+  --p-neutral-350: #e6e3dd;
+  --p-neutral-400: #D5D0C8;
+  --p-neutral-450: #C8D4CC;
+  --p-neutral-500: #a8a29e;
+  --p-neutral-600: #8a8a86;
+  --p-neutral-650: #78716c;
+  --p-neutral-700: #6d6d6d;
+  --p-neutral-750: #57534e;
+  --p-neutral-800: #52524e;
+  --p-neutral-900: #1A2420;
+  --p-neutral-950: #1a1a1f;
+
+  /* Badge primitives */
+  --p-badge-source-bg: #2a2824;
+  --p-badge-source-text: #c8c0b4;
+  --p-badge-generate-bg: #222a20;
+  --p-badge-generate-text: #a8c8a0;
+  --p-badge-output-bg: #2a2a22;
+  --p-badge-output-text: #c0c4a0;
+  --p-badge-transform-bg: #2a2428;
+  --p-badge-transform-text: #c8a8c0;
+
+  /* Status primitives */
+  --p-status-idle: #C8D4CC;
+  --p-status-running: #F0D8A0;
+  --p-status-complete: #0DBF5A;
+  --p-status-error: #C93030;
+
+  /* ── Semantic Colors ── */
+
+  /* Backgrounds */
+  --color-bg: var(--p-neutral-200);
+  --color-bg-surface: var(--p-neutral-100);
+  --color-bg-card: var(--p-white);
+  --color-bg-popover: var(--p-neutral-100);
+  --color-bg-subtle: var(--p-neutral-50);
+  --color-bg-dark: var(--p-neutral-950);
+
+  /* Text */
+  --color-text-primary: var(--p-neutral-900);
+  --color-text-secondary: var(--p-neutral-750);
+  --color-text-tertiary: var(--p-neutral-700);
+  --color-text-disabled: #6a6860;
+  --color-text-placeholder: var(--p-neutral-650);
+  --color-text-on-dark: var(--p-neutral-500);
+
+  /* Borders */
+  --color-border-default: var(--p-neutral-300);
+  --color-border-subtle: var(--p-neutral-350);
+  --color-border-strong: var(--p-neutral-450);
+  --color-border-handle: #94a3b8;
+
+  /* Interactive */
+  --color-interactive-default: var(--p-white);
+  --color-interactive-hover: var(--p-neutral-100);
+  --color-interactive-active: #EBE8E2;
+  --color-interactive-focus: var(--p-green-500);
+
+  /* Accent */
+  --color-accent: var(--p-green-500);
+  --color-accent-hover: var(--p-green-600);
+  --color-accent-active: var(--p-green-700);
+  --color-accent-subtle: #0A5C2A;
+
+  /* Status: Success */
+  --color-success-bg: var(--p-neutral-50);
+  --color-success-border: #E0DCD6;
+  --color-success-text: var(--p-neutral-800);
+
+  /* Status: Warning */
+  --color-warning-bg: #FEF8E8;
+  --color-warning-border: var(--p-amber-500);
+  --color-warning-text: #6A4A10;
+
+  /* Status: Danger */
+  --color-danger-bg: #FEF4F4;
+  --color-danger-border: #ECC0C0;
+  --color-danger-text: #A83030;
+  --color-danger: var(--p-red-500);
+  --color-danger-hover: var(--p-red-600);
+  --color-danger-active: var(--p-red-700);
+
+  /* ── Typography ── */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Type scale (4px grid) */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+
+  /* Line heights */
+  --leading-none: 1;
+  --leading-tight: 1.3;
+  --leading-snug: 1.5;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.75;
+  --leading-loose: 1.8;
+  --leading-fixed: 20px;
+
+  /* Font weights */
+  --weight-normal: 400;
+  --weight-medium: 500;
+
+  /* Letter spacing */
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.1em;
+  --tracking-wider: 0.3em;
+
+  /* ── Spacing (4px base) ── */
+  --space-0: 0px;
+  --space-1: 4px;    /* xs */
+  --space-2: 8px;    /* sm */
+  --space-3: 12px;   /* md */
+  --space-4: 16px;   /* lg */
+  --space-5: 20px;   /* xl */
+  --space-6: 24px;   /* 2xl */
+  --space-8: 32px;   /* 3xl */
+  --space-10: 40px;  /* 4xl */
+  --space-12: 48px;  /* 5xl */
+
+  /* ── Border Radius ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ── Shadows (elevation levels) ── */
+  --shadow-sm: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+  --shadow-glow: 0 0 16px rgba(13,191,90,0.2);
+
+  /* ── Transitions ── */
+  --duration-fast: 80ms;
+  --duration-base: 100ms;
+  --duration-medium: 150ms;
+  --duration-slow: 200ms;
+  --duration-enter: 300ms;
+  --ease-default: ease;
+
+  /* ── Component sizes ── */
+  --size-icon-sm: 16px;
+  --size-icon-md: 20px;
+  --size-icon-lg: 24px;
+
+  --size-control-xs: 24px;
+  --size-control-sm: 28px;
+  --size-control-md: 32px;
+  --size-control-lg: 36px;
+
+  --size-badge: 28px;
+  --size-fab: 48px;
+  --size-nav: 64px;
+  --size-node: 480px;
+  --size-panel: 280px;
+  --size-modal-sm: 780px;
+  --size-modal-lg: 1100px;
+  --size-status-dot: 6px;
+  --size-node-content: 130px;
+  --size-swatch: 24px;
+
+  /* Z-index scale */
+  --z-dropdown: 50;
+  --z-sticky: 100;
+  --z-modal: 1000;
+  --z-sheet: 1100;
+  --z-toast: 1200;
+  --z-popover: 1300;
+
+  /* ── Overlay ── */
+  --color-overlay-light: rgba(255,255,255,0.85);
+  --color-overlay-dark: rgba(0,0,0,0.06);
+  --color-overlay-backdrop: rgba(0,0,0,0.40);
+
+  /* ── Hover / Tooltip ── */
+  --color-bg-hover: #EDEBE5;
+  --color-bg-tooltip: var(--p-neutral-900);
+  --color-text-inverse: var(--p-white);
+
+  /* ── Badge ── */
+  --color-badge-source-bg: #EDEAE5;
+  --color-badge-source-text: #5C5347;
+  --color-badge-generate-bg: #E8EDE5;
+  --color-badge-generate-text: #475C3A;
+  --color-badge-output-bg: #EDECE5;
+  --color-badge-output-text: #53573A;
+  --color-badge-transform-bg: #EDE8EB;
+  --color-badge-transform-text: #5C4753;
+
+  /* ── Edge/dot ── */
+  --color-dot: var(--p-neutral-300);
+  --color-edge: var(--p-neutral-500);
+  --dot-gap: 12px;
+  --dot-size: 0.12px;
+
+  /* ── Legacy aliases (backward compat) ── */
+  --cg-green: var(--color-accent);
+  --cg-green-hover: var(--color-accent-hover);
+  --cg-green-act: var(--color-accent-active);
+  --cg-green-lt: var(--color-bg-surface);
+  --cg-green-tint: var(--color-bg-subtle);
+  --cg-ink: var(--color-text-primary);
+  --cg-ink-2: var(--color-text-secondary);
+  --cg-ink-3: var(--color-text-tertiary);
+  --cg-canvas: var(--color-bg);
+  --cg-surface: var(--color-bg-surface);
+  --cg-card: var(--color-bg-card);
+  --cg-border: var(--color-border-default);
+  --cg-border-2: var(--color-border-strong);
+  --cg-red: var(--color-danger);
+  --cg-red-lt: var(--color-danger-bg);
+  --cg-red-text: var(--color-danger-text);
+  --cg-amber-text: var(--color-warning-text);
+  --cg-amber-lt: var(--color-warning-bg);
+  --cg-amber-bdr: var(--color-warning-border);
+  --cg-dark: var(--color-text-primary);
+  --cg-dark-text: var(--color-text-on-dark);
+}
+
+
+
+/* ── Dark Mode (manual toggle) ── */
+:root.dark {
+  --color-bg: #111114;
+  --color-bg-surface: #161619;
+  --color-bg-card: #1a1a1e;
+  --color-bg-popover: #1a1a1e;
+  --color-bg-subtle: #131316;
+  --color-bg-dark: #0a0a0c;
+  --color-bg-hover: #222228;
+  --color-bg-tooltip: #e8e6e3;
+  --color-text-primary: #e8e6e3;
+  --color-text-secondary: #a8a6a2;
+  --color-text-tertiary: #908e85;
+  --color-text-disabled: #78766e;
+  --color-text-placeholder: #8c8a80;
+  --color-text-on-dark: #a8a6a2;
+  --color-text-inverse: #111114;
+  --color-border-default: #2a2a30;
+  --color-border-subtle: #242428;
+  --color-border-strong: #4a4a54;
+  --color-border-handle: #4a4a54;
+  --color-interactive-default: #1e1e24;
+  --color-interactive-hover: #262630;
+  --color-interactive-active: #2e2e36;
+  --color-accent-subtle: #4ade80;
+  --color-accent: #0DBF5A;
+  --color-accent-hover: #0BAF52;
+  --color-accent-active: #0A9F4A;
+  --color-interactive-focus: #0DBF5A;
+  --color-danger: #f06060;
+  --color-danger-hover: #e04040;
+  --color-danger-active: #d03030;
+  --color-danger-bg: #2a1616;
+  --color-danger-border: #4a2424;
+  --color-danger-text: #f08080;
+  --color-warning-bg: #2a2616;
+  --color-warning-border: #4a3a16;
+  --color-warning-text: #f0c860;
+  --color-success-bg: #142418;
+  --color-success-border: #1e3a24;
+  --color-success-text: #80d0a0;
+  --color-overlay-light: rgba(18,18,22,0.90);
+  --color-overlay-dark: rgba(255,255,255,0.03);
+  --color-overlay-backdrop: rgba(0,0,0,0.70);
+  --color-dot: #2a2a32;
+  --color-edge: #3a3a42;
+  --shadow-sm: 0 2px 12px rgba(0,0,0,0.4);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+  --shadow-glow: 0 0 16px rgba(13,191,90,0.3);
+  --color-badge-source-bg: #201e1a;
+  --color-badge-source-text: #b0a898;
+  --color-badge-generate-bg: #1a201a;
+  --color-badge-generate-text: #90b080;
+  --color-badge-output-bg: #20201a;
+  --color-badge-output-text: #a0a480;
+  --color-badge-transform-bg: #201a1e;
+  --color-badge-transform-text: #b090a8;
+}

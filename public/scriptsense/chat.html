@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cards</title>
+  <link rel="stylesheet" href="/tokens.css">
   <link rel="stylesheet" href="chat.css">
 </head>
 <body>
@@ -49,5 +50,9 @@
   </div>
   <script src="https://unpkg.com/@rive-app/canvas@2.23.2"></script>
   <script src="chat.js"></script>
+  <script>
+    if(localStorage.getItem('dark-mode')==='true') document.documentElement.classList.add('dark');
+    window.addEventListener('message',e=>{if(e.data?.type==='set-theme')document.documentElement.classList.toggle('dark',e.data.dark)});
+  </script>
 </body>
 </html>

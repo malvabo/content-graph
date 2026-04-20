@@ -215,14 +215,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             )}
           </div>
           {!recording && notes.length > 0 && (
-            <button onClick={startRecording} aria-label="Record" style={{
-              width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: 'var(--color-text-inverse)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'opacity .15s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
-              onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}>
-              <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'var(--color-bg-card)' }} />
-            </button>
+            <button className="btn btn-primary" onClick={startRecording}>+ New recording</button>
           )}
         </div>
 
