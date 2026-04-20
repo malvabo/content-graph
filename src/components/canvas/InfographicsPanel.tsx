@@ -21,7 +21,7 @@ async function chatEdit(messages: ChatMsg[], currentJson: string, signal?: Abort
 Current infographic JSON:
 ${currentJson}
 
-The JSON schema is: { "title": string, "subtitle"?: string, "points": [{ "stat": string, "label": string, "detail"?: string }] }`;
+The JSON schema is: { "title": string, "subtitle"?: string, "theme"?: { "bg"?: string, "accent"?: string, "text"?: string, "cardBg"?: string, "cardBorder"?: string }, "points": [{ "stat": string, "label": string, "detail"?: string, "color"?: string }] }`;
 
   const msgs = messages.map(m => ({ role: m.role, content: m.text }));
 

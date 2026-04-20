@@ -140,7 +140,6 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
   const [activeSrc, setActiveSrc] = useState(src);
   const [editPrompt, setEditPrompt] = useState(prompt || '');
   const [zoomed, setZoomed] = useState(false);
-  const [copiedImg, setCopiedImg] = useState(false);
   const [ratio, setRatio] = useState(aspect || (config.aspect as string) || '16:9');
   const abortRef = useRef<AbortController | null>(null);
   const origPrompt = useRef(prompt || '');
@@ -216,11 +215,6 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
     }
   };
 
-  const copyImage = async () => {
-    try { const res = await fetch(activeSrc); const blob = await res.blob(); await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); setCopiedImg(true); }
-    catch { await navigator.clipboard.writeText(editPrompt); setCopiedImg(true); }
-    setTimeout(() => setCopiedImg(false), 1500);
-  };
   const downloadImage = () => { const a = document.createElement('a'); a.href = activeSrc; a.download = `${(nodeLabel || 'image').replace(/\s+/g, '-').toLowerCase()}-${d.w}x${d.h}.png`; a.click(); };
 
   /* #19: image viewer toolbar uses consistent token-based styling */

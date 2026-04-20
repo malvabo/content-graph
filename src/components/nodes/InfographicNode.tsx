@@ -8,11 +8,19 @@ import { useGraphStore } from '../../store/graphStore';
 export interface InfographicData {
   title: string;
   subtitle?: string;
-  points: { stat: string; label: string; detail?: string }[];
+  theme?: { bg?: string; accent?: string; text?: string; cardBg?: string; cardBorder?: string };
+  points: { stat: string; label: string; detail?: string; color?: string }[];
 }
 
 export function renderSVG(data: InfographicData): string {
-  const { title, subtitle, points } = data;
+  const { title, subtitle, points, theme } = data;
+  const bg = theme?.bg || '#1a1a18';
+  const accent = theme?.accent || '#0DBF5A';
+  const textColor = theme?.text || '#e8e6e3';
+  const cardBg = theme?.cardBg || '#2a2a26';
+  const cardBorder = theme?.cardBorder || '#3a3a36';
+  const subtitleColor = '#908e85';
+
   const W = 960, H = 540, cols = points.length <= 4 ? 2 : 3;
   const cardW = cols === 2 ? 400 : 270, cardH = 100, gapX = 24, gapY = 16;
   const gridW = cols * cardW + (cols - 1) * gapX;
@@ -26,18 +34,19 @@ export function renderSVG(data: InfographicData): string {
     const col = i % cols, row = Math.floor(i / cols);
     const x = startX + col * (cardW + gapX);
     const y = gridStartY + row * (cardH + gapY);
-    cards += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="12" fill="#2a2a26" stroke="#3a3a36" stroke-width="1"/>`;
-    cards += `<text x="${x + 20}" y="${y + 38}" font-size="26" font-weight="700" fill="#0DBF5A" font-family="Inter, system-ui, sans-serif">${escSvg(p.stat)}</text>`;
-    cards += `<text x="${x + 20}" y="${y + 62}" font-size="13" font-weight="500" fill="#e8e6e3" font-family="Inter, system-ui, sans-serif">${escSvg(p.label)}</text>`;
+    const pointColor = p.color || accent;
+    cards += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="12" fill="${escSvg(cardBg)}" stroke="${escSvg(cardBorder)}" stroke-width="1"/>`;
+    cards += `<text x="${x + 20}" y="${y + 38}" font-size="26" font-weight="700" fill="${escSvg(pointColor)}" font-family="Inter, system-ui, sans-serif">${escSvg(p.stat)}</text>`;
+    cards += `<text x="${x + 20}" y="${y + 62}" font-size="13" font-weight="500" fill="${escSvg(textColor)}" font-family="Inter, system-ui, sans-serif">${escSvg(p.label)}</text>`;
     if (p.detail) {
-      cards += `<text x="${x + 20}" y="${y + 82}" font-size="11" fill="#908e85" font-family="Inter, system-ui, sans-serif">${escSvg(p.detail.slice(0, 50))}</text>`;
+      cards += `<text x="${x + 20}" y="${y + 82}" font-size="11" fill="${subtitleColor}" font-family="Inter, system-ui, sans-serif">${escSvg(p.detail.slice(0, 50))}</text>`;
     }
   });
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
-<rect width="${W}" height="${H}" fill="#1a1a18" rx="16"/>
-<text x="${W / 2}" y="${titleY}" text-anchor="middle" font-size="22" font-weight="700" fill="#e8e6e3" font-family="Inter, system-ui, sans-serif">${escSvg(title)}</text>
-${subtitle ? `<text x="${W / 2}" y="${subtitleY}" text-anchor="middle" font-size="13" fill="#908e85" font-family="Inter, system-ui, sans-serif">${escSvg(subtitle)}</text>` : ''}
+<rect width="${W}" height="${H}" fill="${escSvg(bg)}" rx="16"/>
+<text x="${W / 2}" y="${titleY}" text-anchor="middle" font-size="22" font-weight="700" fill="${escSvg(textColor)}" font-family="Inter, system-ui, sans-serif">${escSvg(title)}</text>
+${subtitle ? `<text x="${W / 2}" y="${subtitleY}" text-anchor="middle" font-size="13" fill="${subtitleColor}" font-family="Inter, system-ui, sans-serif">${escSvg(subtitle)}</text>` : ''}
 ${cards}
 </svg>`;
 }
@@ -120,7 +129,6 @@ export function InfographicInline({ id }: { id: string }) {
               }}>↓ Download PNG</button>
               <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                 <button className="btn btn-outline btn-sm" onClick={sendToPanel}>{sent ? '✓ Sent' : 'Send to Infographics'}</button>
-                <button className="btn btn-primary btn-sm" onClick={() => setModalOpen(false)}>Done</button>
               </div>
             </div>
           </div>
