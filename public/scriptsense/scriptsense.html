@@ -215,22 +215,40 @@ const MOCK_INSIGHTS = JSON.stringify({
 });
 
 let _anthropicKey = '';
-window.addEventListener('message', e => { if (e.data?.type === 'set-api-key') _anthropicKey = e.data.key; });
+let _groqKey = '';
+window.addEventListener('message', e => {
+  if (e.data?.type === 'set-api-key') _anthropicKey = e.data.key;
+  if (e.data?.type === 'set-groq-key') _groqKey = e.data.key;
+});
 
 async function callClaude(prompt) {
-  if (!_anthropicKey) {
-    await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
-    return MOCK_INSIGHTS;
+  // Try Groq first (fast), then Anthropic
+  if (_groqKey) {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_groqKey}` },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const text = data.choices?.[0]?.message?.content ?? '';
+      try { return JSON.parse(text); } catch { return text; }
+    }
   }
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': _anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
-  });
-  if (!res.ok) throw new Error('API error: ' + res.status);
-  const data = await res.json();
-  const text = data.content?.[0]?.text ?? '';
-  try { return JSON.parse(text); } catch { return text; }
+  if (_anthropicKey) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': _anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
+    });
+    if (!res.ok) throw new Error('API error: ' + res.status);
+    const data = await res.json();
+    const text = data.content?.[0]?.text ?? '';
+    try { return JSON.parse(text); } catch { return text; }
+  }
+  // No key — return mock
+  await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
+  return MOCK_INSIGHTS;
 }
 
 /* ── shared components ── */

@@ -8,6 +8,7 @@ export default function ScriptSensePanel({ initialText }: Props) {
   const [iframeLoading, setIframeLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const anthropicKey = useSettingsStore(s => s.anthropicKey);
+  const groqKey = useSettingsStore(s => s.groqKey);
 
   useEffect(() => {
     if (initialText) {
@@ -19,8 +20,9 @@ export default function ScriptSensePanel({ initialText }: Props) {
   // Send API key to iframe on load
   const handleLoad = () => {
     setIframeLoading(false);
-    if (iframeRef.current?.contentWindow && anthropicKey) {
-      iframeRef.current.contentWindow.postMessage({ type: 'set-api-key', key: anthropicKey }, window.location.origin);
+    if (iframeRef.current?.contentWindow) {
+      if (anthropicKey) iframeRef.current.contentWindow.postMessage({ type: 'set-api-key', key: anthropicKey }, '*');
+      if (groqKey) iframeRef.current.contentWindow.postMessage({ type: 'set-groq-key', key: groqKey }, '*');
     }
   };
 

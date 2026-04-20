@@ -156,7 +156,7 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (content
         </div>
 
         {/* Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
           {/* New script card — always first */}
           <button onClick={handleNew} style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
@@ -184,7 +184,7 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (content
         )}
       </div>
 
-      <style>{`@media (max-width: 639px) { div[style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; } }`}</style>
+      <style>{`@media (max-width: 639px) { div[style*="grid-template-columns: repeat(auto"] { grid-template-columns: 1fr !important; } }`}</style>
     </div>
   );
 }
