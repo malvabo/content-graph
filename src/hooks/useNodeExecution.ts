@@ -58,7 +58,7 @@ export function useNodeExecution() {
   );
 
   const runAll = useCallback(
-    async (executor: (input: string, config: Record<string, unknown>, subtype: string) => Promise<string>) => {
+    async (executor: (input: string, config: Record<string, unknown>, subtype: string) => Promise<string>, filterIds?: Set<string>) => {
       // Race guard — abort any existing run
       if (abortRef.current) abortRef.current.abort();
       const ctrl = new AbortController();
@@ -74,7 +74,7 @@ export function useNodeExecution() {
       Object.keys(outputState.outputs).forEach(id => { if (!sourceIds.has(id)) outputState.setOutput(id, {}); });
 
       const nodeIds = nodes.map((n) => n.id);
-      const order = topologicalSort(nodeIds, edges);
+      const order = topologicalSort(nodeIds, edges).filter(id => !filterIds || filterIds.has(id));
 
       try {
         for (const id of order) {

@@ -14,6 +14,8 @@ import DotSpotlight from './DotSpotlight';
 import RunWaveOverlay from './RunWaveOverlay';
 import { useConnectionValidation } from '../../hooks/useConnectionValidation';
 import ContextMenu, { useContextMenu } from './ContextMenu';
+import { useNodeExecution } from '../../hooks/useNodeExecution';
+import { aiExecute } from '../../utils/aiExecutor';
 import type { NodeDef } from '../../utils/nodeDefs';
 
 const nodeTypes = { contentNode: BaseNode };
@@ -94,6 +96,14 @@ export default function GraphCanvas() {
     } catch { return; }
   }, [addNode, screenToFlowPosition]);
 
+  const selectedNodes = useMemo(() => nodes.filter(n => n.selected), [nodes]);
+  const { runAll } = useNodeExecution();
+
+  const handleRunSelected = useCallback(() => {
+    const ids = new Set(selectedNodes.map(n => n.id));
+    runAll(async (input, config, subtype) => aiExecute(input, config, subtype), ids);
+  }, [selectedNodes, runAll]);
+
   return (
     <div ref={wrapperRef} className="flex-1 h-full outline-none relative" tabIndex={0}
       onDragOver={onDragOver} onDrop={onDrop}
@@ -147,6 +157,22 @@ export default function GraphCanvas() {
       )}
 
       {menu && <ContextMenu x={menu.x} y={menu.y} nodeId={menu.nodeId} onClose={closeMenu} />}
+
+      {selectedNodes.length > 1 && (
+        <div style={{
+          position: 'absolute', top: 'var(--space-4)', left: '50%', transform: 'translateX(-50%)',
+          display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)',
+          background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-lg)', zIndex: 100, fontFamily: 'var(--font-sans)',
+          animation: 'fadeIn 150ms ease',
+        }}>
+          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)', padding: '0 var(--space-1)', whiteSpace: 'nowrap' }}>
+            {selectedNodes.length} selected
+          </span>
+          <div style={{ width: 1, height: 20, background: 'var(--color-border-default)' }} />
+          <button className="btn btn-run btn-sm" onClick={handleRunSelected}>▶ Run</button>
+        </div>
+      )}
     </div>
   );
 }

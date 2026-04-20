@@ -15,19 +15,12 @@
       body: 'This platform enforces <mark>modularity between data and views</mark>. Unlike current systems, every service on this system is available to every view.' }
   ];
 
-  // Load voice transcript if available
   const savedTranscript = localStorage.getItem('clade-transcript');
   if (savedTranscript) {
-    CARDS.unshift({
-      headline: 'Voice Transcript',
-      body: savedTranscript.replace(/\n/g, '<br>')
-    });
+    CARDS.unshift({ headline: 'Voice Transcript', body: savedTranscript.replace(/\n/g, '<br>') });
     localStorage.removeItem('clade-transcript');
   }
 
-  const toolbar = document.getElementById('selection-toolbar');
-  const selCount = document.getElementById('selection-count');
-  const selectedCards = new Set();
   let dragCard = null;
 
   CARDS.forEach((c, i) => {
@@ -46,16 +39,6 @@
       showExpandedCard(c);
     });
 
-    // Click to select/deselect — only if no text selected
-    card.addEventListener('click', e => {
-      if (e.target.closest('.card-expand') || window.getSelection().toString().length > 0) return;
-      card.classList.toggle('selected');
-      if (card.classList.contains('selected')) selectedCards.add(i);
-      else selectedCards.delete(i);
-      updateToolbar();
-    });
-
-    // Drag to reorder — only from headline
     const headline = card.querySelector('.story-card-headline');
     headline.addEventListener('dragstart', e => {
       dragCard = card; card.classList.add('dragging');
@@ -70,98 +53,6 @@
       else cardsEl.insertBefore(dragCard, card.nextSibling);
     });
     cardsEl.appendChild(card);
-  });
-
-  function updateToolbar() {
-    const n = selectedCards.size;
-    if (n > 0) { toolbar.classList.remove('hidden'); selCount.textContent = `${n} selected`; }
-    else toolbar.classList.add('hidden');
-  }
-
-  document.getElementById('toolbar-clear').addEventListener('click', () => {
-    selectedCards.clear();
-    cardsEl.querySelectorAll('.story-card.selected').forEach(c => c.classList.remove('selected'));
-    updateToolbar();
-  });
-
-  document.getElementById('toolbar-group').addEventListener('click', () => {
-    const indices = [...selectedCards].sort();
-    if (indices.length < 2) return;
-
-    const group = document.createElement('div');
-    group.className = 'card-group';
-
-    // Header with editable label + count
-    const header = document.createElement('div');
-    header.className = 'card-group-header';
-    const label = document.createElement('span');
-    label.className = 'card-group-label';
-    label.contentEditable = true;
-    label.textContent = 'Untitled group';
-    const count = document.createElement('span');
-    count.className = 'card-group-count';
-    count.textContent = indices.length;
-    header.append(label, count);
-
-    // Click label to select all cards in group
-    header.addEventListener('click', e => {
-      if (e.target === label && document.activeElement === label) return;
-      group.querySelectorAll('.story-card').forEach(c => {
-        c.classList.add('selected');
-        selectedCards.add(+c.dataset.index);
-      });
-      updateToolbar();
-    });
-
-    const cardsContainer = document.createElement('div');
-    cardsContainer.className = 'card-group-cards';
-
-    const allCards = [...cardsEl.querySelectorAll('.story-card')];
-    const firstSelected = allCards.find(c => selectedCards.has(+c.dataset.index));
-    cardsEl.insertBefore(group, firstSelected);
-    group.append(header, cardsContainer);
-
-    indices.forEach(i => {
-      const card = allCards.find(c => +c.dataset.index === i);
-      if (card) { card.classList.remove('selected'); cardsContainer.appendChild(card); }
-    });
-
-    // Watch for removals — reflow, dissolve if <=1
-    const observer = new MutationObserver(() => {
-      const remaining = cardsContainer.querySelectorAll('.story-card');
-      count.textContent = remaining.length;
-      if (remaining.length <= 1) {
-        // Dissolve group
-        remaining.forEach(c => group.before(c));
-        group.remove();
-        observer.disconnect();
-      }
-    });
-    observer.observe(cardsContainer, { childList: true });
-
-    selectedCards.clear();
-    updateToolbar();
-
-    const names = indices.map(i => `Card ${i + 1}`).join(', ');
-    addMessage('user', `Group: ${names}`);
-    showThinkingLoader();
-    setTimeout(() => {
-      addAIMessage({
-        text: `Grouped ${names}. These cards share a common thread around the <mark>View-Translator ecosystem</mark> — confidence, feedback, and modularity working together.`
-      });
-    }, 1800);
-  });
-
-  document.getElementById('toolbar-run').addEventListener('click', () => {
-    const indices = [...selectedCards].sort();
-    const names = indices.map(i => `Card ${i + 1}`).join(', ');
-    addMessage('user', `Run analysis: ${names}`);
-    showThinkingLoader();
-    setTimeout(() => {
-      addAIMessage({
-        text: `Analysis of ${names}:<br><br>1. Decentralization — no single authority controls schemas<br>2. Emergent quality — confidence scores create natural curation<br>3. Composability — any translator connects to any view<br><br>Strongest link: <mark>confidence propagation</mark> ↔ <mark>schema evolution</mark>.`
-      });
-    }, 1800);
   });
 
   function showExpandedCard(c) {
@@ -179,15 +70,9 @@
 
   // Chat
   const AI_RESPONSES = [
-    { thought: 'Searching across 4 story cards for relevant context...',
-      citations: [{ icon: '🔍', label: 'Searched in', source: 'Story Cards', range: 'Cards 1–4' }],
-      text: 'The core idea is a system where <mark>confidence is a first-class property</mark> of every piece of information.<br><br>1. Graceful degradation — low-confidence items fade rather than vanish<br>2. Backpropagation learning — user feedback flows backward through the chain<br>3. Organic schema evolution — protocols emerge through usage, not gatekeeping' },
-    { thought: 'Analyzing the relationship between translators and views...',
-      citations: [{ icon: '📄', label: 'Referenced', source: 'Card 3', range: 'Schema evolution' }, { icon: '📄', label: 'Referenced', source: 'Card 4', range: 'Modularity' }],
-      text: 'The translator model is a decentralized API layer. Each translator is a stateless function — no UI, no user-facing interface.<br><br>The <mark>market decides which translators survive</mark> based on output quality.' },
-    { thought: 'Connecting the feedback loop concept to modern ML systems...',
-      citations: [{ icon: '📄', label: 'Referenced', source: 'Card 2', range: 'Backpropagation' }],
-      text: 'The backpropagation described here is implicit reinforcement learning embedded in the architecture.<br><br>The result is a system that <mark>tailors itself to the individual user</mark> without any explicit preferences panel.' }
+    { text: 'The core idea is a system where <mark>confidence is a first-class property</mark> of every piece of information.<br><br>1. Graceful degradation — low-confidence items fade rather than vanish<br>2. Backpropagation learning — user feedback flows backward through the chain<br>3. Organic schema evolution — protocols emerge through usage, not gatekeeping' },
+    { text: 'The translator model is a decentralized API layer. Each translator is a stateless function — no UI, no user-facing interface.<br><br>The <mark>market decides which translators survive</mark> based on output quality.' },
+    { text: 'The backpropagation described here is implicit reinforcement learning embedded in the architecture.<br><br>The result is a system that <mark>tailors itself to the individual user</mark> without any explicit preferences panel.' }
   ];
 
   let responseIdx = 0, thinkingRive = null, isSending = false;
@@ -262,17 +147,14 @@
     text: 'I\'ve loaded your story about the View-Translator Information Ecosystem.<br><br>4 cards covering confidence-based rendering, backpropagation feedback, organic schema evolution, and data/UI separation.<br><br>Highlight text on any card, or ask me anything.'
   });
 
-  // Send to ScriptSense — collects all card text + AI responses
   document.getElementById('btn-scriptsense').addEventListener('click', () => {
     let content = '';
-    // Gather card text
     document.querySelectorAll('.story-card').forEach(card => {
       const h = card.querySelector('.story-card-headline');
       const b = card.querySelector('.story-card-body');
       if (h) content += h.innerText + '\n\n';
       if (b) content += b.innerText + '\n\n';
     });
-    // Gather AI responses
     document.querySelectorAll('.msg.ai .msg-bubble').forEach(bubble => {
       content += bubble.innerText + '\n\n';
     });
