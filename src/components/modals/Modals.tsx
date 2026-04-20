@@ -360,7 +360,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                 <div className="flex justify-end" style={{ marginTop: 'var(--space-2)' }}>
                   {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
                 </div>
-                <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border-subtle)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                   {[
                     { label: 'Style', tags: ['cinematic', 'minimal', 'editorial', 'abstract', 'retro'] },
                     { label: 'Mood', tags: ['vibrant', 'moody', 'dreamy', 'warm', 'dark'] },
