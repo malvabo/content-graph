@@ -39,10 +39,9 @@ function DarkModeToggle() {
   return (
     <button onClick={() => setDark(!dark)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="flex items-center gap-3 w-full rounded-lg transition-colors"
-      style={{ padding: '8px 12px', background: hover ? 'var(--color-bg-surface)' : 'transparent', color: 'var(--color-text-tertiary)' }}>
+      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '8px 12px', borderRadius: 8, background: hover ? 'var(--color-bg-surface)' : 'transparent', color: 'var(--color-text-tertiary)', transition: 'background 100ms', justifyContent: 'flex-start' }}>
       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, flexShrink: 0 }}>{dark ? <SunIcon /> : <MoonIcon />}</span>
-      <span className="hidden md:inline" style={{ fontSize: 14, fontFamily: 'var(--font-sans)' }}>{dark ? 'Light' : 'Dark'}</span>
+      <span style={{ fontSize: 14, fontFamily: 'var(--font-sans)' }}>{dark ? 'Light' : 'Dark'}</span>
     </button>
   );
 }
@@ -60,9 +59,9 @@ function UserMenu() {
   if (!user) return null;
   const initial = (user.email?.[0] ?? '?').toUpperCase();
   return (
-    <div ref={ref} className="relative flex md:w-full md:px-3 md:py-1">
-      <button onClick={() => setOpen(!open)} className="w-8 h-8 rounded-full flex items-center justify-center"
-        style={{ background: 'var(--color-border-strong)', color: 'var(--color-text-primary)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', border: 'none', cursor: 'pointer' }}>
+    <div ref={ref} style={{ position: 'relative', display: 'flex', width: '100%', padding: '4px 12px' }}>
+      <button onClick={() => setOpen(!open)}
+        style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-border-strong)', color: 'var(--color-text-primary)', fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
         {initial}
       </button>
       {open && (
