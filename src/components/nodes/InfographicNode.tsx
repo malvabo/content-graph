@@ -13,26 +13,29 @@ export interface InfographicData {
 
 export function renderSVG(data: InfographicData): string {
   const { title, subtitle, points } = data;
-  const W = 540, cardW = 460, cardH = 100, gapY = 16;
-  const startX = (W - cardW) / 2;
-  const titleY = subtitle ? 60 : 70;
-  const subtitleY = titleY + 28;
-  const gridStartY = subtitle ? subtitleY + 36 : titleY + 44;
-  const totalH = Math.max(960, gridStartY + points.length * (cardH + gapY) + 40);
+  const W = 960, H = 540, cols = points.length <= 4 ? 2 : 3;
+  const cardW = cols === 2 ? 400 : 270, cardH = 100, gapX = 24, gapY = 16;
+  const gridW = cols * cardW + (cols - 1) * gapX;
+  const startX = (W - gridW) / 2;
+  const titleY = subtitle ? 50 : 60;
+  const subtitleY = titleY + 26;
+  const gridStartY = subtitle ? subtitleY + 32 : titleY + 40;
 
   let cards = '';
   points.forEach((p, i) => {
-    const y = gridStartY + i * (cardH + gapY);
-    cards += `<rect x="${startX}" y="${y}" width="${cardW}" height="${cardH}" rx="12" fill="#2a2a26" stroke="#3a3a36" stroke-width="1"/>`;
-    cards += `<text x="${startX + 20}" y="${y + 38}" font-size="26" font-weight="700" fill="#0DBF5A" font-family="Inter, system-ui, sans-serif">${escSvg(p.stat)}</text>`;
-    cards += `<text x="${startX + 20}" y="${y + 62}" font-size="13" font-weight="500" fill="#e8e6e3" font-family="Inter, system-ui, sans-serif">${escSvg(p.label)}</text>`;
+    const col = i % cols, row = Math.floor(i / cols);
+    const x = startX + col * (cardW + gapX);
+    const y = gridStartY + row * (cardH + gapY);
+    cards += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="12" fill="#2a2a26" stroke="#3a3a36" stroke-width="1"/>`;
+    cards += `<text x="${x + 20}" y="${y + 38}" font-size="26" font-weight="700" fill="#0DBF5A" font-family="Inter, system-ui, sans-serif">${escSvg(p.stat)}</text>`;
+    cards += `<text x="${x + 20}" y="${y + 62}" font-size="13" font-weight="500" fill="#e8e6e3" font-family="Inter, system-ui, sans-serif">${escSvg(p.label)}</text>`;
     if (p.detail) {
-      cards += `<text x="${startX + 20}" y="${y + 82}" font-size="11" fill="#908e85" font-family="Inter, system-ui, sans-serif">${escSvg(p.detail.slice(0, 50))}</text>`;
+      cards += `<text x="${x + 20}" y="${y + 82}" font-size="11" fill="#908e85" font-family="Inter, system-ui, sans-serif">${escSvg(p.detail.slice(0, 50))}</text>`;
     }
   });
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${totalH}" style="width:100%;height:auto;display:block">
-<rect width="${W}" height="${totalH}" fill="#1a1a18" rx="16"/>
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
+<rect width="${W}" height="${H}" fill="#1a1a18" rx="16"/>
 <text x="${W / 2}" y="${titleY}" text-anchor="middle" font-size="22" font-weight="700" fill="#e8e6e3" font-family="Inter, system-ui, sans-serif">${escSvg(title)}</text>
 ${subtitle ? `<text x="${W / 2}" y="${subtitleY}" text-anchor="middle" font-size="13" fill="#908e85" font-family="Inter, system-ui, sans-serif">${escSvg(subtitle)}</text>` : ''}
 ${cards}
@@ -97,7 +100,7 @@ export function InfographicInline({ id }: { id: string }) {
       {modalOpen && createPortal(
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)' }}
           onClick={() => setModalOpen(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-default)', boxShadow: 'var(--shadow-lg)', maxWidth: 480, width: '90%', maxHeight: '90vh', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-default)', boxShadow: 'var(--shadow-lg)', maxWidth: 800, width: '90%', maxHeight: '90vh', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: 'var(--space-4) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>Infographic</span>
               <button onClick={() => setModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', display: 'flex', padding: 'var(--space-1)', borderRadius: 'var(--radius-sm)' }}>

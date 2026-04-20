@@ -246,12 +246,12 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               aspectRatio: `${d.w} / ${d.h}`,
               borderRadius: 'var(--radius-md)', overflow: 'hidden',
               border: '2px solid rgba(255,255,255,0.15)',
-              willChange: 'aspect-ratio',
-              transition: 'aspect-ratio 1.4s cubic-bezier(0.4, 0, 0, 1)',
+              willChange: 'aspect-ratio, transform',
+              transition: 'aspect-ratio 800ms cubic-bezier(0.22, 1, 0.36, 1), transform 800ms cubic-bezier(0.22, 1, 0.36, 1)',
             }}>
               <img src={activeSrc} alt={editPrompt || 'Generated image'}
                 onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'object-position 1.2s cubic-bezier(0.16, 1, 0.3, 1)' }} />
+                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'transform 800ms cubic-bezier(0.22, 1, 0.36, 1)', transform: 'scale(1)' }} />
               <div style={{ position: 'absolute', bottom: 'var(--space-2)', left: 'var(--space-2)', background: 'rgba(0,0,0,0.6)', borderRadius: 'var(--radius-sm)', padding: '2px 8px', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.8)' }}>
                 {ratio}
               </div>
@@ -292,7 +292,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
         <div className="flex flex-col shrink-0 w-full md:w-[300px]">
           <ModalHeader title={nodeLabel || 'Image'} subtitle="Configure and generate variants" onClose={onClose} />
 
-          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-6) var(--space-4)', gap: 20, scrollbarWidth: 'thin' }}>
+          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-6) var(--space-4)', gap: 0, scrollbarWidth: 'thin' }}>
 
             {/* #9: visual ratio picker with shape previews */}
             <div>
