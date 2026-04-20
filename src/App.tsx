@@ -5,6 +5,7 @@ import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import ScriptLibrary from './components/canvas/ScriptLibrary';
+import ScriptEditor from './components/canvas/ScriptEditor';
 import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
@@ -42,12 +43,13 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   
-  const validViews = ['workflow', 'library', 'voice', 'scriptsense', 'scriptview', 'cards', 'infographics', 'settings', 'intro'];
+  const validViews = ['workflow', 'library', 'voice', 'scriptsense', 'scriptview', 'scripteditor', 'cards', 'infographics', 'settings', 'intro'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1); return validViews.includes(h) ? h : 'library'; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
   const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v); }, []);
   useEffect(() => { const h = () => setActiveViewRaw(getViewFromHash()); window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [editScriptId, setEditScriptId] = useState('');
   useKeyboardShortcuts();
 
   useEffect(() => { init(); }, [init]);
@@ -104,7 +106,9 @@ function AppInner() {
 
         {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
 
-        {activeView === 'scriptview' && <ScriptLibrary onOpenScript={(t) => { setVoiceTranscript(t); setActiveView('scriptsense'); }} />}
+        {activeView === 'scriptview' && <ScriptLibrary onOpenScript={(id) => { setEditScriptId(id); setActiveView('scripteditor'); }} />}
+
+        {activeView === 'scripteditor' && editScriptId && <ScriptEditor scriptId={editScriptId} onBack={() => setActiveView('scriptview')} />}
 
         {activeView === 'settings' && <SettingsPanel />}
 
