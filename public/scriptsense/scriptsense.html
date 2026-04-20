@@ -222,18 +222,21 @@ window.addEventListener('message', e => {
 });
 
 async function callClaude(prompt) {
-  // Try Groq first (fast), then Anthropic
+  function parseResponse(text) {
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    return JSON.parse(cleaned);
+  }
+
   if (_groqKey) {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_groqKey}` },
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
     });
-    if (res.ok) {
-      const data = await res.json();
-      const text = data.choices?.[0]?.message?.content ?? '';
-      try { return JSON.parse(text); } catch { return text; }
-    }
+    if (!res.ok) throw new Error('Groq API error: ' + res.status);
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content ?? '';
+    return parseResponse(text);
   }
   if (_anthropicKey) {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -241,14 +244,14 @@ async function callClaude(prompt) {
       headers: { 'Content-Type': 'application/json', 'x-api-key': _anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
     });
-    if (!res.ok) throw new Error('API error: ' + res.status);
+    if (!res.ok) throw new Error('Anthropic API error: ' + res.status);
     const data = await res.json();
     const text = data.content?.[0]?.text ?? '';
-    try { return JSON.parse(text); } catch { return text; }
+    return parseResponse(text);
   }
-  // No key — return mock
+  // No key — return mock as parsed object
   await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
-  return MOCK_INSIGHTS;
+  return JSON.parse(MOCK_INSIGHTS);
 }
 
 /* ── shared components ── */
@@ -560,11 +563,8 @@ Return ONLY valid JSON — no markdown, no explanation:
 
 Script:
 ${text}`
-    ).then(raw => {
-      try {
-        const d = typeof raw === 'string' ? JSON.parse(raw.replace(/```json|```/g, "").trim()) : raw;
-        setAiInsights(d.insights || []);
-      } catch { setAiInsights([]); }
+    ).then(data => {
+      setAiInsights(data.insights || []);
       setInsightLoading(false);
     }).catch((err) => { setInsightError(err.message); setAiInsights([]); setInsightLoading(false); });
   }, [analysisVersion]);

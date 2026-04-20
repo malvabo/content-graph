@@ -30,7 +30,7 @@ export default function ScriptSensePanel({ initialText }: Props) {
   useEffect(() => {
     const obs = new MutationObserver(() => {
       const dark = document.documentElement.classList.contains('dark');
-      iframeRef.current?.contentWindow?.postMessage({ type: 'set-theme', dark }, window.location.origin);
+      iframeRef.current?.contentWindow?.postMessage({ type: 'set-theme', dark }, '*');
     });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     return () => obs.disconnect();
