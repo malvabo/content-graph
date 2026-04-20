@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useVoiceStore } from '../../store/voiceStore';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
-import { ModalShell } from '../modals/Modals';
+import ContentModal from '../modals/ContentModal';
 
 /* Icons */
 const MicIcon = () => (
@@ -344,28 +344,15 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       {/* Voice note modal */}
       {viewId && (() => {
         const note = notes.find(n => n.id === viewId);
-        if (!note) return null;
+        if (!note || !note.transcript) return null;
         return (
-          <ModalShell onClose={() => setViewId(null)} maxWidth={560}>
-            <div style={{ padding: 'var(--space-5) var(--space-6) var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)' }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)' }}>{note.title}</div>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}</div>
-              </div>
-              <button onClick={() => setViewId(null)} style={{ background: 'none', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>×</button>
-            </div>
-            <div style={{ padding: 'var(--space-4) var(--space-6)', flex: 1, overflow: 'auto', maxHeight: '60vh' }}>
-              {note.transcript ? (
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{note.transcript}</div>
-              ) : (
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-disabled)', fontStyle: 'italic' }}>No transcript captured</div>
-              )}
-            </div>
-            <div style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>
-              <button className="btn btn-ghost" onClick={() => { if (note.transcript) navigator.clipboard.writeText(note.transcript); }}>Copy</button>
-              <button className="btn btn-primary" onClick={() => { if (note.transcript) onSendToScript?.(note.transcript); setViewId(null); }}>Analyze in ScriptSense</button>
-            </div>
-          </ModalShell>
+          <ContentModal
+            subtype="voice-source"
+            title={note.title}
+            text={note.transcript}
+            onClose={() => setViewId(null)}
+            onSave={(t: string) => updateNote(note.id, { transcript: t })}
+          />
         );
       })()}
 
