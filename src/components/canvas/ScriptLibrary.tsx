@@ -138,25 +138,25 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (id: str
 
   return (
     <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-      <div style={{ padding: 'var(--space-6) var(--space-8)', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
-            <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Scripts</h1>
-            {scripts.length > 0 && <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{scripts.length}</span>}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            {scripts.length > 0 && (
-              <div style={{ position: 'relative' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') setSearch(''); }}
-                  placeholder="Search scripts…" aria-label="Search scripts" className="form-input" style={{ width: 200, paddingLeft: 32 }} />
-              </div>
-            )}
-            <button className="btn btn-primary" onClick={handleNew}>+ New script</button>
-          </div>
+      {/* Hero banner */}
+      <div style={{ height: '30vh', minHeight: 180, background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'flex-end', padding: 'var(--space-8)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Scripts</h1>
+          {scripts.length > 0 && <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>{scripts.length} script{scripts.length !== 1 ? 's' : ''}</p>}
         </div>
+        <div style={{ position: 'absolute', top: 'var(--space-6)', right: 'var(--space-8)', zIndex: 1, display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          {scripts.length > 0 && (
+            <div style={{ position: 'relative' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') setSearch(''); }}
+                placeholder="Search scripts…" aria-label="Search scripts" className="form-input" style={{ width: 200, paddingLeft: 32 }} />
+            </div>
+          )}
+          <button className="btn btn-primary" onClick={handleNew}>+ New script</button>
+        </div>
+      </div>
+
+      <div style={{ padding: 'var(--space-6) var(--space-8)', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
         {/* Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)' }}>

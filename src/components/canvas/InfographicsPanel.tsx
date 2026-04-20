@@ -112,58 +112,59 @@ export default function InfographicsPanel() {
   if (!editingId) {
     return (
       <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-        <div style={{ padding: 'var(--space-6) var(--space-8)', maxWidth: 900, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+        <div style={{ padding: 'var(--space-6) var(--space-8)', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
               <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Infographics</h1>
-              {items.length > 0 && <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)', background: 'var(--color-bg-surface)', padding: '2px 8px', borderRadius: 99 }}>{items.length}</span>}
+              {items.length > 0 && <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{items.length}</span>}
             </div>
-            <button onClick={createNew} className="btn btn-sm btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> New
-            </button>
+            <button className="btn btn-primary" onClick={createNew}>+ New infographic</button>
           </div>
 
           {items.length === 0 ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)', padding: 'var(--space-8) var(--space-6)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--color-border-strong)', background: 'var(--color-bg-card)', marginTop: 'calc(25vh - 80px)' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--color-text-tertiary)' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-8)' }}>
+              <div style={{ width: 64, height: 64, borderRadius: 'var(--radius-xl)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 2 }}>No infographics yet</div>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>Create one from scratch or generate from a workflow</div>
-              </div>
-              <button onClick={createNew} className="btn btn-sm btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Create
-              </button>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>No infographics yet</div>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 300, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>Create one from scratch or generate from a workflow.</div>
+              <button className="btn btn-primary" onClick={createNew}>+ Create infographic</button>
             </div>
           ) : (
-            <div style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-default)', overflow: 'hidden' }}>
-              {items.map((item, i) => {
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)' }}>
+              {items.map(item => {
                 const data = parseInfographicData(item.json);
                 const title = data?.title || item.label || 'Untitled';
-                const pointCount = data?.points?.length || 0;
+                const svgStr = data ? renderSVG(data) : null;
                 return (
                   <div key={item.id} onClick={() => setEditingId(item.id)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)', cursor: 'pointer', borderBottom: i < items.length - 1 ? '1px solid var(--color-border-subtle)' : 'none', transition: 'background 100ms' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--color-text-tertiary)' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
+                    style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', cursor: 'pointer', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out' }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
+                    {/* SVG preview */}
+                    <div style={{ height: 140, overflow: 'hidden', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                      {svgStr ? (
+                        <div dangerouslySetInnerHTML={{ __html: svgStr }} style={{ width: '100%', height: '100%', lineHeight: 0, transform: 'scale(0.5)', transformOrigin: 'top center' }} />
+                      ) : (
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="1.5" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
+                      )}
                     </div>
-                    <span style={{ flex: 1, fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)', flexShrink: 0 }}>{pointCount} points</span>
-                    <button onClick={e => { e.stopPropagation(); remove(item.id); }}
-                      style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 4, borderRadius: 'var(--radius-sm)', opacity: 0.4, transition: 'opacity 100ms' }}
-                      onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
-                      onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                    </button>
+                    {/* Title + delete */}
+                    <div style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{title}</span>
+                      <button onClick={e => { e.stopPropagation(); remove(item.id); }}
+                        style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 4, borderRadius: 'var(--radius-sm)', opacity: 0, transition: 'opacity 100ms' }}
+                        className="ig-card-delete">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
             </div>
           )}
         </div>
+        <style>{`.ig-card-delete { opacity: 0 !important; } div:hover > div > .ig-card-delete { opacity: 1 !important; } @media (max-width: 639px) { div[style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; } }`}</style>
       </div>
     );
   }
@@ -218,13 +219,8 @@ export default function InfographicsPanel() {
           {/* Welcome — only when no messages yet */}
           {messages.length === 0 && (
             <>
-              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                <div style={{ width: 24, height: 24, borderRadius: 'var(--radius-full)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><path d="M12 2v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="M2 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="M12 18v4"/><path d="m19.07 19.07-2.83-2.83"/><path d="M22 12h-4"/><path d="m19.07 4.93-2.83 2.83"/></svg>
-                </div>
-                <div style={{ padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-relaxed)' }}>
-                  Describe any change — I'll update the infographic instantly. Try one of the suggestions below.
-                </div>
+              <div style={{ padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-relaxed)' }}>
+                Describe any change — I'll update the infographic instantly. Try one of the suggestions below.
               </div>
               {/* Contextual suggestions — shown prominently in empty state */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
