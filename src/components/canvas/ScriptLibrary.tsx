@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useScriptStore, type Script } from '../../store/scriptStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import TemplateCard from '../ui/TemplateCard';
 
 const fmt = (iso: string) => {
   const d = new Date(iso);
@@ -156,20 +157,9 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (content
         </div>
 
         {/* Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
-          {/* New script card — always first */}
-          <button onClick={handleNew} style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
-            border: '1px dashed var(--color-border-default)', borderRadius: 'var(--radius-md)',
-            background: 'transparent', padding: 'var(--space-8) var(--space-4)',
-            cursor: 'pointer', transition: 'border-color 150ms, background 150ms',
-            minHeight: 140,
-          }}
-            onMouseEnter={e => { e.currentTarget.style.borderStyle = 'solid'; e.currentTarget.style.background = 'var(--color-bg-subtle)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderStyle = 'dashed'; e.currentTarget.style.background = 'transparent'; }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="1.5" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-disabled)' }}>New script</span>
-          </button>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)' }}>
+          {/* Empty doc — always first */}
+          <TemplateCard title="+ Empty doc" meta="Start from scratch" pills={[]} onClick={handleNew} />
 
           {filtered.map(s => (
             <ScriptCard key={s.id} script={s} onOpen={() => onOpenScript(s.content)} onDelete={() => removeScript(s.id)} />
@@ -184,7 +174,7 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (content
         )}
       </div>
 
-      <style>{`@media (max-width: 639px) { div[style*="grid-template-columns: repeat(auto"] { grid-template-columns: 1fr !important; } }`}</style>
+      <style>{`@media (max-width: 639px) { div[style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; } }`}</style>
     </div>
   );
 }

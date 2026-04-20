@@ -29,7 +29,7 @@ const CheckIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const RegenIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>;
 
 /* ── Standardized padding constants ── */
-const HP = 'var(--space-5) var(--space-6) var(--space-4)';   // header: 20 24 16
+const HP = 'var(--space-4) var(--space-6)';   // header: 16 24
 const CP = 'var(--space-2) var(--space-6) var(--space-4)';   // content: 8 24 16
 const FP = 'var(--space-4) var(--space-6) var(--space-5)';   // footer: 16 24 20
 
@@ -121,7 +121,6 @@ function TwitterThreadModal({ title, text, onClose, onSave, onRegenerate }: Cont
   };
   const onDragEnd = () => { dragIdx.current = null; };
 
-  const totalChars = tweets.reduce((s, t) => s + t.length, 0);
   const { copied, copy } = useCopy(() => tweets.map((t, i) => `${i + 1}/ ${t}`).join('\n\n'));
 
   useEffect(() => { refs.current.forEach(el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }); }, [tweets]);
@@ -136,7 +135,7 @@ function TwitterThreadModal({ title, text, onClose, onSave, onRegenerate }: Cont
 
   return (
     <ModalShell onClose={onClose} maxWidth={560}>
-      <Header title={title} subtitle={`${tweets.length} tweets · ${totalChars} chars`} onClose={onClose} />
+      <Header title={title} onClose={onClose} />
       <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-6) 0', scrollbarWidth: 'thin' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           {tweets.map((tweet, i) => {

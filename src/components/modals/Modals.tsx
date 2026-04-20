@@ -140,7 +140,6 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
   const [activeSrc, setActiveSrc] = useState(src);
   const [editPrompt, setEditPrompt] = useState(prompt || '');
   const [zoomed, setZoomed] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
   const [copiedImg, setCopiedImg] = useState(false);
   const [ratio, setRatio] = useState(aspect || (config.aspect as string) || '16:9');
   const abortRef = useRef<AbortController | null>(null);
@@ -228,7 +227,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
   const toolBtn: React.CSSProperties = { width: 'var(--size-control-sm)', height: 'var(--size-control-sm)', borderRadius: 'var(--radius-sm)', background: 'var(--color-overlay-dark)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-disabled)' };
 
   return (
-    <ModalShell onClose={onClose} maxWidth={fullscreen ? 1400 : 1000}>
+    <ModalShell onClose={onClose} maxWidth={1000}>
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
 
         {/* ── Left: image viewer ── */}
@@ -236,11 +235,6 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
           {/* Vignette */}
           <div style={{ position: 'absolute', inset: 0, borderRadius: 'var(--radius-xl) 0 0 var(--radius-xl)', background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.2) 100%)', pointerEvents: 'none', zIndex: 1 }} />
           <div style={{ position: 'absolute', top: 'var(--space-3)', left: 'var(--space-3)', zIndex: 3, display: 'flex', gap: 'var(--space-1)' }}>
-            <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? 'Exit fullscreen' : 'Expand preview'} style={toolBtn}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                {fullscreen ? <><path d="M4 14h6v6"/><path d="M20 10h-6V4"/></> : <><path d="M15 3h6v6"/><path d="M9 21H3v-6"/></>}
-              </svg>
-            </button>
             {zoomed && <button onClick={() => setZoomed(false)} style={{ ...toolBtn, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)' }}>Fit</button>}
           </div>
 
@@ -252,7 +246,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               aspectRatio: `${d.w} / ${d.h}`,
               borderRadius: 'var(--radius-md)', overflow: 'hidden',
               border: '2px solid rgba(255,255,255,0.15)',
-              transition: 'aspect-ratio 500ms cubic-bezier(0.22, 1, 0.36, 1), width 500ms cubic-bezier(0.22, 1, 0.36, 1), height 500ms cubic-bezier(0.22, 1, 0.36, 1)',
+              transition: 'aspect-ratio 800ms cubic-bezier(0.22, 1, 0.36, 1), width 800ms cubic-bezier(0.22, 1, 0.36, 1), height 800ms cubic-bezier(0.22, 1, 0.36, 1)',
             }}>
               <img src={activeSrc} alt={editPrompt || 'Generated image'}
                 onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}

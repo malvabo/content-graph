@@ -4,6 +4,7 @@ import CanvasToolbar from './components/canvas/CanvasToolbar';
 import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
+import ScriptLibrary from './components/canvas/ScriptLibrary';
 import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
@@ -102,6 +103,8 @@ function AppInner() {
         {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => { setVoiceTranscript(t); setActiveView('scriptsense'); }} />}
 
         {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
+
+        {activeView === 'scriptview' && <ScriptLibrary onOpenScript={(t) => { setVoiceTranscript(t); setActiveView('scriptsense'); }} />}
 
         {activeView === 'settings' && <SettingsPanel />}
 
