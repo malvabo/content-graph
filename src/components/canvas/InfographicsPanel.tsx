@@ -103,8 +103,11 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
   messagesRef.current = messages;
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [, setFontTick] = useState(0);
+  const [editVersion, setEditVersion] = useState(0);
 
   const editing = items.find(i => i.id === editingId) || null;
+  const { anthropicKey, groqKey } = useSettingsStore.getState();
+  const hasApiKey = !!(anthropicKey || groqKey);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
   useEffect(() => { setMessages([]); }, [editingId]);
@@ -135,20 +138,25 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
       if (!freshItem) { setMessages(m => [...m, { role: 'assistant', text: 'Infographic was removed.' }]); return; }
       const reply = await chatEdit(next, freshItem.json, abortRef.current.signal);
       const cleaned = reply.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      let jsonStr = cleaned;
-      const start = cleaned.indexOf('{');
-      if (start !== -1) {
-        let depth = 0, end = start;
-        for (let i = start; i < cleaned.length; i++) {
-          if (cleaned[i] === '{') depth++;
-          else if (cleaned[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+      // Try JSON.parse directly first, then extract
+      let parsed = parseInfographicData(cleaned);
+      if (!parsed) {
+        // Extract JSON from surrounding text — handle strings with braces via JSON.parse attempts
+        const start = cleaned.indexOf('{');
+        if (start !== -1) {
+          for (let end = cleaned.length - 1; end > start; end--) {
+            if (cleaned[end] === '}') {
+              parsed = parseInfographicData(cleaned.slice(start, end + 1));
+              if (parsed) break;
+            }
+          }
         }
-        jsonStr = cleaned.slice(start, end + 1);
       }
-      const parsed = parseInfographicData(jsonStr);
-      if (parsed && parsed.points?.length) {
+      if (parsed && parsed.points) {
         setUndoStack(s => [...s, freshItem.json]);
+        const jsonStr = JSON.stringify(parsed);
         update(editing.id, jsonStr);
+        setEditVersion(v => v + 1);
         setMessages(m => [...m, { role: 'assistant', text: 'Done! I\'ve updated the infographic. Anything else?' }]);
       } else {
         setMessages(m => [...m, { role: 'assistant', text: reply }]);
@@ -196,7 +204,7 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
               <button className="btn btn-primary" onClick={createNew}>+ Create infographic</button>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
               {items.map(item => {
                 const data = parseInfographicData(item.json);
                 const title = data?.title || item.label || 'Untitled';
@@ -242,7 +250,6 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
             </div>
           )}
         </div>
-        <style>{`@media (max-width: 639px) { div[style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr 1fr !important; } }`}</style>
       </div>
     );
   }
