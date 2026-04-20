@@ -157,7 +157,7 @@ export default function EmptyCanvasOverlay() {
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'var(--color-bg)', overflow: 'auto', opacity: shouldHide ? 0 : 1, transition: 'opacity 200ms ease', pointerEvents: shouldHide ? 'none' : 'auto' }}>
-      <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: 'var(--space-6) var(--space-8) var(--space-8)' }}>
+      <div style={{ width: '100%', margin: '0 auto', padding: 'var(--space-6) var(--space-8) var(--space-8)' }}>
 
         {/* Hero */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
