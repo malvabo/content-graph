@@ -161,7 +161,7 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (content
         {/* Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)' }}>
           {filtered.map(s => (
-            <ScriptCard key={s.id} script={s} onOpen={() => onOpenScript(s.id)} onDelete={() => removeScript(s.id)} />
+            <ScriptCard key={s.id} script={s} onOpen={() => onOpenScript(s.content)} onDelete={() => removeScript(s.id)} />
           ))}
         </div>
 

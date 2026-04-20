@@ -4,7 +4,7 @@ import CanvasToolbar from './components/canvas/CanvasToolbar';
 import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
-import { useScriptStore } from './store/scriptStore';
+import ScriptLibrary from './components/canvas/ScriptLibrary';
 import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
@@ -36,25 +36,6 @@ import CardsPanel from './components/canvas/CardsPanel';
 import CardsLibrary from './components/canvas/CardsLibrary';
 import InfographicsPanel from './components/canvas/InfographicsPanel';
 
-function ScriptSidebar({ onSelect }: { onSelect: (text: string) => void }) {
-  const scripts = useScriptStore(s => s.scripts);
-  return (
-    <div style={{ width: 240, borderRight: '1px solid var(--color-border-subtle)', overflow: 'auto', background: 'var(--color-bg)', flexShrink: 0 }}>
-      <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
-        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>Scripts</span>
-      </div>
-      {scripts.map(s => (
-        <div key={s.id} onClick={() => onSelect(s.content)}
-          style={{ padding: 'var(--space-2) var(--space-4)', cursor: 'pointer', borderBottom: '1px solid var(--color-border-subtle)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-          {s.title || s.content.slice(0, 40) || 'Untitled'}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function App() {
   return <ErrorBoundary><ReactFlowProvider><AppInner /></ReactFlowProvider></ErrorBoundary>;
 }
@@ -62,7 +43,7 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   
-  const validViews = ['workflow', 'library', 'voice', 'scriptsense', 'scriptview', 'scripteditor', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro'];
+  const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1); return validViews.includes(h) ? h : 'library'; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
   const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v); }, []);
