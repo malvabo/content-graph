@@ -246,7 +246,7 @@ function APIKeysSection() {
                         <button className="btn-sm btn-ghost" onClick={() => setEditKey(null)}>Cancel</button>
                       </div>
                     ) : value ? (
-                      <span style={{ letterSpacing: 2 }}>••••••••••••••••••••</span>
+                      <span style={{ letterSpacing: 'var(--tracking-wide)' }}>••••••••••••••••••••</span>
                     ) : (
                       <span style={{ color: 'var(--color-text-disabled)', fontStyle: 'italic' }}>Not set</span>
                     )}
@@ -254,20 +254,20 @@ function APIKeysSection() {
                   <td style={{ ...TD, borderBottom: isLast ? 'none' : TD.borderBottom, textAlign: 'center', position: 'relative' }}>
                     <div style={{ position: 'relative', display: 'inline-block' }}>
                       <button onClick={() => setMenuOpen(menuOpen === p.key ? null : p.key)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 'var(--radius-sm)', color: 'var(--color-text-disabled)', display: 'flex' }}>
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-1)', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-disabled)', display: 'flex' }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                       </button>
                       {menuOpen === p.key && (
                         <div ref={menuRef} style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', minWidth: 130, animation: 'fadeIn 100ms ease' }}>
                           <button onClick={() => { setEditValue(value); setEditKey(p.key); setMenuOpen(null); }}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}
                             onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
                             onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                             Edit
                           </button>
                           <button onClick={() => handleDelete(p.key)} disabled={!value}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: value ? 'pointer' : 'default', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: value ? 'var(--color-danger-text)' : 'var(--color-text-disabled)', opacity: value ? 1 : 0.5 }}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: value ? 'pointer' : 'default', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: value ? 'var(--color-danger-text)' : 'var(--color-text-disabled)', opacity: value ? 1 : 0.5 }}
                             onMouseEnter={e => { if (value) e.currentTarget.style.background = 'var(--color-danger-bg)'; }}
                             onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
@@ -296,14 +296,14 @@ export default function SettingsPanel() {
     <div style={{ flex: 1, display: 'flex', background: 'var(--color-bg)', overflow: 'hidden' }}>
       {/* Sidebar nav */}
       <nav className="hidden md:flex" style={{ width: 160, flexShrink: 0, borderRight: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', padding: 'var(--space-5) var(--space-4)', flexDirection: 'column', overflowY: 'auto' }}>
-          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-5)' }}>Settings</div>
+          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-5)' }}>Settings</div>
           {Object.entries(groups).map(([group, items], gi) => (
-            <div key={group} style={{ marginTop: gi > 0 ? 24 : 0 }}>
-              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginBottom: 8, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{group}</div>
+            <div key={group} style={{ marginTop: gi > 0 ? 'var(--space-6)' : 0 }}>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-2)', textTransform: 'uppercase' as const, letterSpacing: 'var(--tracking-wide)' }}>{group}</div>
               {items.map(s => {
                 const on = active === s.id;
                 return (
-                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'block', padding: '8px 0', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 500 : 400, color: on ? 'var(--color-accent)' : 'var(--color-text-primary)', transition: 'color 100ms', textAlign: 'left' }}>
+                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'block', margin: 0, padding: 'var(--space-2) 0', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 'var(--weight-medium)' : 'var(--weight-normal)', color: on ? 'var(--color-accent)' : 'var(--color-text-primary)', transition: `color var(--duration-base)`, textAlign: 'left' }}>
                     {s.label}
                   </button>
                 );
@@ -313,11 +313,11 @@ export default function SettingsPanel() {
       </nav>
 
       {/* Mobile tab bar */}
-      <div className="flex md:hidden" style={{ position: 'sticky', top: 0, left: 0, right: 0, zIndex: 10, background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border-subtle)', padding: '0 var(--space-3)', gap: 2, overflowX: 'auto' }}>
+      <div className="flex md:hidden" style={{ position: 'sticky', top: 0, left: 0, right: 0, zIndex: 10, background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border-subtle)', padding: '0 var(--space-3)', gap: 'var(--space-0)', overflowX: 'auto' }}>
         {SECTIONS.map(s => {
           const on = active === s.id;
           return (
-            <button key={s.id} onClick={() => setActive(s.id)} style={{ padding: '12px 14px', background: 'none', border: 'none', borderBottom: on ? '2px solid var(--color-accent)' : '2px solid transparent', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: on ? 500 : 400, color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <button key={s.id} onClick={() => setActive(s.id)} style={{ padding: 'var(--space-3) var(--space-4)', background: 'none', border: 'none', borderBottom: on ? '2px solid var(--color-accent)' : '2px solid transparent', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: on ? 'var(--weight-medium)' : 'var(--weight-normal)', color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {s.label}
             </button>
           );

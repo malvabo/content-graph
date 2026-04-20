@@ -70,22 +70,31 @@ function HeroBanner({ onNew }: { onNew: () => void }) {
       background: 'linear-gradient(135deg, var(--color-bg-dark) 0%, #2a3028 100%)',
       overflow: 'hidden',
     }}>
-      {/* Decorative graph */}
-      <svg viewBox="0 0 800 200" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.12 }}>
-        <rect x="400" y="35" width="110" height="55" rx="10" fill="none" stroke="#fff" strokeWidth="1" />
-        <rect x="550" y="15" width="95" height="45" rx="10" fill="none" stroke="#fff" strokeWidth="1" />
-        <rect x="550" y="85" width="95" height="45" rx="10" fill="none" stroke="#fff" strokeWidth="1" />
-        <rect x="690" y="45" width="95" height="55" rx="10" fill="none" stroke="#fff" strokeWidth="1" />
-        <path d="M510 62 Q530 37 550 37" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.5" />
-        <path d="M510 62 Q530 107 550 107" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.5" />
-        <path d="M645 37 Q667 72 690 72" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.35" />
-        <path d="M645 107 Q667 72 690 72" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.35" />
-        <circle cx="510" cy="62" r="3.5" fill="var(--color-accent)" opacity="0.5" />
-        <circle cx="550" cy="37" r="3.5" fill="var(--color-accent)" opacity="0.4" />
-        <circle cx="550" cy="107" r="3.5" fill="var(--color-accent)" opacity="0.4" />
-        <circle cx="645" cy="37" r="3" fill="var(--color-accent)" opacity="0.3" />
-        <circle cx="645" cy="107" r="3" fill="var(--color-accent)" opacity="0.3" />
-        <circle cx="690" cy="72" r="3" fill="var(--color-accent)" opacity="0.3" />
+      {/* Decorative node graph illustration */}
+      <svg viewBox="0 0 800 200" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} aria-hidden="true">
+        {/* Node rectangles */}
+        <rect x="400" y="35" width="110" height="55" rx="10" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
+        <text x="455" y="67" fontSize="11" fontFamily="var(--font-sans)" fill="rgba(255,255,255,0.25)" textAnchor="middle">Source</text>
+        <rect x="560" y="15" width="95" height="45" rx="10" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+        <text x="607" y="42" fontSize="10" fontFamily="var(--font-sans)" fill="rgba(255,255,255,0.2)" textAnchor="middle">LinkedIn</text>
+        <rect x="560" y="85" width="95" height="45" rx="10" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+        <text x="607" y="112" fontSize="10" fontFamily="var(--font-sans)" fill="rgba(255,255,255,0.2)" textAnchor="middle">Thread</text>
+        <rect x="700" y="45" width="85" height="55" rx="10" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5" />
+        <text x="742" y="77" fontSize="10" fontFamily="var(--font-sans)" fill="rgba(255,255,255,0.18)" textAnchor="middle">Export</text>
+        {/* Connecting lines with arrow tips */}
+        <path d="M510 55 Q535 37 560 37" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1.2" />
+        <path d="M510 70 Q535 107 560 107" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1.2" />
+        <path d="M655 37 Q677 65 700 65" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.2" />
+        <path d="M655 107 Q677 80 700 80" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.2" />
+        {/* Arrow tips */}
+        <polygon points="558,33 558,41 565,37" fill="rgba(255,255,255,0.2)" />
+        <polygon points="558,103 558,111 565,107" fill="rgba(255,255,255,0.2)" />
+        <polygon points="698,61 698,69 705,65" fill="rgba(255,255,255,0.15)" />
+        {/* Connection dots */}
+        <circle cx="510" cy="55" r="3" fill="rgba(255,255,255,0.25)" />
+        <circle cx="510" cy="70" r="3" fill="rgba(255,255,255,0.25)" />
+        <circle cx="655" cy="37" r="2.5" fill="rgba(255,255,255,0.18)" />
+        <circle cx="655" cy="107" r="2.5" fill="rgba(255,255,255,0.18)" />
       </svg>
 
       <div style={{ position: 'relative', padding: 'var(--space-8) var(--space-6) var(--space-8)' }}>
@@ -186,14 +195,15 @@ export default function EmptyCanvasOverlay() {
           <button onClick={handleNew}
             aria-label="Empty Workflow"
             style={{
-              textAlign: 'left', cursor: 'pointer', minWidth: 0,
+              textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 220,
               background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
               borderRadius: 'var(--radius-xl)', overflow: 'hidden',
               transition: 'border-color 150ms, box-shadow 150ms',
+              display: 'flex', flexDirection: 'column',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
-            <div style={{ height: 148, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-surface)' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-surface)' }}>
               <div style={{
                 width: 44, height: 44, borderRadius: 'var(--radius-full)',
                 background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
@@ -213,19 +223,20 @@ export default function EmptyCanvasOverlay() {
             <button key={t.name} onClick={() => loadTemplate(i)}
               aria-label={t.name}
               style={{
-                textAlign: 'left', cursor: 'pointer', minWidth: 0,
+                textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 220,
                 background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                 borderRadius: 'var(--radius-xl)', overflow: 'hidden',
                 transition: 'border-color 150ms, box-shadow 150ms',
+                display: 'flex', flexDirection: 'column',
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
-              <div style={{ height: 148, background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', alignItems: 'center' }}>
+              <div style={{ flex: 1, background: 'var(--color-bg-surface)', padding: 'var(--space-3)', display: 'flex', alignItems: 'center' }}>
                 <SchematicPreview idx={i} />
               </div>
-              <div style={{ padding: 'var(--space-3) var(--space-4)' }}>
+              <div style={{ padding: 'var(--space-3) var(--space-4)', flexShrink: 0 }}>
                 <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</div>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.description}</div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-1)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.description}</div>
               </div>
             </button>
           ))}
