@@ -174,14 +174,14 @@ export default function InfographicsPanel() {
                         </div>
                         {menuId === item.id && (
                           <div ref={menuRef} onClick={e => e.stopPropagation()}
-                            style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 4, minWidth: 120 }}>
+                            style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
                             {[
                               { label: 'Edit', action: () => { setEditingId(item.id); setMenuId(null); } },
                               { label: 'Rename', action: () => { const name = prompt('Rename', title); if (name?.trim()) { const d = parseInfographicData(item.json); if (d) { d.title = name.trim(); update(item.id, JSON.stringify(d)); } } setMenuId(null); } },
                               { label: 'Delete', danger: true, action: () => { remove(item.id); setMenuId(null); } },
                             ].map(opt => (
                               <button key={opt.label} onClick={opt.action}
-                                style={{ width: '100%', display: 'block', padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', transition: 'background 100ms', textAlign: 'left' }}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', textAlign: 'left', transition: 'background 100ms' }}
                                 onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
                                 onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
                                 {opt.label}
@@ -301,7 +301,9 @@ export default function InfographicsPanel() {
 
         {/* Input */}
         <div style={{ padding: 'var(--space-3) var(--space-4)', borderTop: '1px solid var(--color-border-subtle)' }}>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', background: 'var(--color-bg)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: '2px 2px 2px var(--space-3)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', background: 'var(--color-bg)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: '2px 2px 2px var(--space-3)', transition: 'border-color 150ms' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
             <input value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); send(); } }}
               placeholder={messages.length === 0 ? 'Try "Change the title to…"' : 'What else to change?'}
