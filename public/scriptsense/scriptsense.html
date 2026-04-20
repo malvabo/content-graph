@@ -813,7 +813,7 @@ ${text}`
 
 /* ─────────────────── Router ─────────────────── */
 function ContentGraph() {
-  const [view, setView]           = useState("home");
+  const [view, setView]           = useState("editor");
   const [currentDraft, setCurrentDraft] = useState(null);
   const [drafts, setDrafts]       = useState(() => {
     try { return JSON.parse(localStorage.getItem("ss_drafts") || "[]"); }
