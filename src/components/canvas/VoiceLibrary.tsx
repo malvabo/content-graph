@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useVoiceStore } from '../../store/voiceStore';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
+import { ModalShell } from '../modals/Modals';
 
 /* Icons */
 const MicIcon = () => (
@@ -115,7 +116,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
   const [micError, setMicError] = useState(false);
   const [finalText, setFinalText] = useState('');
   const [interimText, setInterimText] = useState('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [viewId, setViewId] = useState<string | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameName, setRenameName] = useState('');
@@ -254,7 +255,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
         ) : (
           /* Card grid */
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)' }}>
-            {notes.filter(n => n.status !== 'recording').map(note => (
+            {[...notes].filter(n => n.status !== 'recording').reverse().map(note => (
               <div key={note.id}
                 style={{
                   textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
@@ -265,7 +266,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
-                onClick={() => setExpandedId(expandedId === note.id ? null : note.id)}>
+                onClick={() => setViewId(note.id)}>
 
                 {/* Row 1: title + menu */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
@@ -329,26 +330,44 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                 </div>
 
                 {/* Transcript preview */}
-                {note.transcript && expandedId !== note.id && (
+                {note.transcript && (
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {note.transcript.slice(0, 120)}
                   </div>
-                )}
-
-                {/* Expanded transcript */}
-                {expandedId === note.id && note.transcript && (
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', lineHeight: 1.6, borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-3)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', marginTop: 'var(--space-1)' }}>
-                    {note.transcript}
-                  </div>
-                )}
-                {expandedId === note.id && !note.transcript && (
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-disabled)', fontStyle: 'italic', padding: 'var(--space-3)' }}>No transcript captured</div>
                 )}
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Voice note modal */}
+      {viewId && (() => {
+        const note = notes.find(n => n.id === viewId);
+        if (!note) return null;
+        return (
+          <ModalShell onClose={() => setViewId(null)} maxWidth={560}>
+            <div style={{ padding: 'var(--space-5) var(--space-6) var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)' }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 'var(--text-md)', color: 'var(--color-text-primary)' }}>{note.title}</div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}</div>
+              </div>
+              <button onClick={() => setViewId(null)} style={{ background: 'none', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ padding: 'var(--space-4) var(--space-6)', flex: 1, overflow: 'auto', maxHeight: '60vh' }}>
+              {note.transcript ? (
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{note.transcript}</div>
+              ) : (
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-disabled)', fontStyle: 'italic' }}>No transcript captured</div>
+              )}
+            </div>
+            <div style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>
+              <button className="btn btn-ghost" onClick={() => { if (note.transcript) navigator.clipboard.writeText(note.transcript); }}>Copy</button>
+              <button className="btn btn-primary" onClick={() => { if (note.transcript) onSendToScript?.(note.transcript); setViewId(null); }}>Analyze in ScriptSense</button>
+            </div>
+          </ModalShell>
+        );
+      })()}
 
       {/* Delete confirmation */}
       {deleteId && (

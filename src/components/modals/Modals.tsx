@@ -334,7 +334,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
 
             {/* Node settings */}
             {nodeId && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 <div>
                   <span className="text-field-label">Purpose</span>
                   <select className="form-select w-full" value={purpose} onChange={e => { setConfig('purpose', e.target.value); const r = PURPOSE_RATIO[e.target.value]; if (r) { setRatio(r); setConfig('aspect', r); } }}>

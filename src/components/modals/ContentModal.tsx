@@ -30,7 +30,7 @@ const RegenIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 
 /* ── Standardized padding constants ── */
 const HP = 'var(--space-5) var(--space-6) var(--space-4)';   // header: 20 24 16
-const CP = 'var(--space-2) var(--space-4) var(--space-4)';   // content: 8 16 16
+const CP = 'var(--space-2) var(--space-6) var(--space-4)';   // content: 8 24 16
 const FP = 'var(--space-4) var(--space-6) var(--space-5)';   // footer: 16 24 20
 
 /* ── Auto-resize textarea ── */
@@ -127,17 +127,17 @@ function TwitterThreadModal({ title, text, onClose, onSave, onRegenerate }: Cont
   useEffect(() => { refs.current.forEach(el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }); }, [tweets]);
 
   const GripDots = () => (
-    <svg width="10" height="16" viewBox="0 0 10 16" fill="var(--color-text-disabled)">
-      <circle cx="2.5" cy="2" r="1.2"/><circle cx="7.5" cy="2" r="1.2"/>
-      <circle cx="2.5" cy="8" r="1.2"/><circle cx="7.5" cy="8" r="1.2"/>
-      <circle cx="2.5" cy="14" r="1.2"/><circle cx="7.5" cy="14" r="1.2"/>
+    <svg width="7" height="11" viewBox="0 0 10 16" fill="var(--color-text-disabled)">
+      <circle cx="2.5" cy="2" r="1"/><circle cx="7.5" cy="2" r="1"/>
+      <circle cx="2.5" cy="8" r="1"/><circle cx="7.5" cy="8" r="1"/>
+      <circle cx="2.5" cy="14" r="1"/><circle cx="7.5" cy="14" r="1"/>
     </svg>
   );
 
   return (
     <ModalShell onClose={onClose} maxWidth={560}>
       <Header title={title} subtitle={`${tweets.length} tweets · ${totalChars} chars`} onClose={onClose} />
-      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-4) 0', scrollbarWidth: 'thin' }}>
+      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-6) 0', scrollbarWidth: 'thin' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           {tweets.map((tweet, i) => {
             const len = tweet.length;
@@ -150,13 +150,12 @@ function TwitterThreadModal({ title, text, onClose, onSave, onRegenerate }: Cont
                   borderRadius: 'var(--radius-lg)', overflow: 'hidden',
                   transition: 'border-color 150ms, box-shadow 150ms',
                 }}>
-                {/* Header row: grip + number + char count + remove */}
+                {/* Header row: grip + remove */}
                 <div className="flex items-center" style={{ padding: 'var(--space-2) var(--space-3)', gap: 'var(--space-2)' }}>
                   <div style={{ cursor: 'grab', display: 'flex', alignItems: 'center', padding: '2px 0', flexShrink: 0 }}
                     onMouseEnter={e => { e.currentTarget.querySelector('svg')!.setAttribute('fill', 'var(--color-text-secondary)'); }}
                     onMouseLeave={e => { e.currentTarget.querySelector('svg')!.setAttribute('fill', 'var(--color-text-disabled)'); }}><GripDots /></div>
-                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', flex: 1 }}>Tweet {i + 1}</span>
-                  <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: over ? 'var(--color-danger)' : 'var(--color-text-disabled)' }}>{len}/280</span>
+                  <span style={{ flex: 1 }} />
                   {tweets.length > 1 && (
                     <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 2, display: 'flex', borderRadius: 'var(--radius-sm)', transition: 'color 100ms' }}
                       onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-danger-text)'; }}
@@ -165,10 +164,13 @@ function TwitterThreadModal({ title, text, onClose, onSave, onRegenerate }: Cont
                     </button>
                   )}
                 </div>
-                {/* Divider + textarea */}
+                {/* Textarea + char count below */}
                 <div style={{ borderTop: '1px solid var(--color-border-subtle)', padding: 'var(--space-2) var(--space-3)' }}>
                   <textarea ref={el => { refs.current[i] = el; }} value={tweet} onChange={e => update(i, e.target.value)} aria-label={`Tweet ${i + 1} content`}
                     style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-2) var(--space-3)' }} />
+                  <div style={{ textAlign: 'right', padding: '0 var(--space-3) var(--space-1)' }}>
+                    <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: over ? 'var(--color-danger)' : 'var(--color-text-disabled)' }}>{len}/280</span>
+                  </div>
                 </div>
               </div>
             );
@@ -339,7 +341,7 @@ function NewsletterModal({ title, text, onClose, onSave, onRegenerate }: Content
   return (
     <ModalShell onClose={onClose} maxWidth={640}>
       <Header title={title} onClose={onClose} />
-      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-4) var(--space-4)', scrollbarWidth: 'thin' }}>
+      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-6) var(--space-4)', scrollbarWidth: 'thin' }}>
         {/* Subject line */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
           <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>Subject line</div>
