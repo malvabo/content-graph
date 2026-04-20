@@ -19,7 +19,6 @@ function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: str
     </div>
   );
 }
-
 const WorkflowIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7"/><path d="M17.5 14v7"/></svg>;
 const VoiceIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>;
 const ScriptIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 12l-2 2 2 2"/><path d="M14 12l2 2-2 2"/></svg>;
@@ -86,11 +85,8 @@ function UserMenu() {
 
 export default function IconNav({ activeView, onViewChange }: Props) {
   return (
-    <nav aria-label="Main navigation" className="
-      w-full h-[52px] flex flex-row items-center px-2 gap-1 shrink-0 order-last
-      md:h-auto md:flex-col md:py-4 md:px-3 md:gap-0.5 md:order-first
-    " style={{ background: 'var(--color-bg-card)', width: undefined }} >
-      <style>{`nav[aria-label="Main navigation"] { border-top: 1px solid var(--color-border-subtle); } @media(min-width:768px) { nav[aria-label="Main navigation"] { width: 200px !important; border-top: none; border-right: 1px solid var(--color-border-subtle); align-items: stretch; } }`}</style>
+    <nav aria-label="Main navigation" className="w-full h-[52px] flex flex-row items-center px-2 gap-1 shrink-0 order-last md:w-[200px] md:h-auto md:flex-col md:items-stretch md:py-4 md:px-3 md:gap-0.5 md:order-first" style={{ background: 'var(--color-bg-card)' }}>
+      <style>{`nav[aria-label="Main navigation"] { border-top: 1px solid var(--color-border-subtle); } @media(min-width:768px) { nav[aria-label="Main navigation"] { border-top: none; border-right: 1px solid var(--color-border-subtle); } }`}</style>
       <div className="hidden md:flex items-center gap-2 mb-4 px-3" style={{ color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
 
       <NavItem icon={<WorkflowIcon />} label="Workflows" active={activeView === 'library' || activeView === 'workflow'} onClick={() => onViewChange('library')} />
