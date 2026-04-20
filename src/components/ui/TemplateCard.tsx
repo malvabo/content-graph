@@ -15,7 +15,7 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       alignItems: 'stretch',
       borderRadius: 'var(--radius-lg)',
       border: '1px solid var(--color-border-default)',
-      background: 'var(--color-bg-dark)',
+      background: '#1A1A1E',
       cursor: 'pointer', textAlign: 'left', overflow: 'hidden',
       transition: 'border-color 150ms, box-shadow 150ms',
     }}
@@ -40,7 +40,7 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       <div style={{
         display: 'flex', alignItems: 'center', gap: 0,
         padding: '8px 16px',
-        background: '#161619',
+        background: '#1A1A1E',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
           {pills.map((label, i) => (

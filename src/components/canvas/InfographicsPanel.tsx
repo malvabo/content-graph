@@ -68,6 +68,12 @@ export default function InfographicsPanel() {
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
   useEffect(() => { setMessages([]); }, [editingId]);
   useEffect(() => { return () => { abortRef.current?.abort(); }; }, []);
+  useEffect(() => {
+    if (!menuId) return;
+    const h = (e: Event) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuId(null); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [menuId]);
 
   const createNew = () => {
     const id = `ig-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -155,14 +161,35 @@ export default function InfographicsPanel() {
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="1.5" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
                       )}
                     </div>
-                    {/* Title + delete */}
+                    {/* Title + menu */}
                     <div style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
                       <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{title}</span>
-                      <button onClick={e => { e.stopPropagation(); remove(item.id); }}
-                        style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 4, borderRadius: 'var(--radius-sm)', opacity: 0, transition: 'opacity 100ms' }}
-                        className="ig-card-delete">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                      </button>
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <div role="button" tabIndex={0} aria-label="More options"
+                          style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', background: 'transparent', transition: 'color .15s, background .15s', cursor: 'pointer' }}
+                          onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+                          onMouseLeave={e => { if (menuId !== item.id) { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'transparent'; } }}
+                          onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                        </div>
+                        {menuId === item.id && (
+                          <div ref={menuRef} onClick={e => e.stopPropagation()}
+                            style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 4, minWidth: 120 }}>
+                            {[
+                              { label: 'Edit', action: () => { setEditingId(item.id); setMenuId(null); } },
+                              { label: 'Rename', action: () => { const name = prompt('Rename', title); if (name?.trim()) { const d = parseInfographicData(item.json); if (d) { d.title = name.trim(); update(item.id, JSON.stringify(d)); } } setMenuId(null); } },
+                              { label: 'Delete', danger: true, action: () => { remove(item.id); setMenuId(null); } },
+                            ].map(opt => (
+                              <button key={opt.label} onClick={opt.action}
+                                style={{ width: '100%', display: 'block', padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-secondary)', transition: 'background 100ms', textAlign: 'left' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -170,7 +197,7 @@ export default function InfographicsPanel() {
             </div>
           )}
         </div>
-        <style>{`.ig-card-delete { opacity: 0 !important; } div:hover > div > .ig-card-delete { opacity: 1 !important; } @media (max-width: 639px) { div[style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; } }`}</style>
+        <style>{`@media (max-width: 639px) { div[style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; } }`}</style>
       </div>
     );
   }
