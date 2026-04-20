@@ -262,7 +262,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                   background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
                   fontFamily: 'var(--font-sans)', cursor: 'pointer', outline: 'none',
                   transition: 'border-color .15s, box-shadow .15s',
-                  display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
+                  display: 'flex', flexDirection: 'column', gap: 'var(--space-1)',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}

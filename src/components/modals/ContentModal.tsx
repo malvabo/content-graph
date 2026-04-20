@@ -386,7 +386,6 @@ function VoiceModal({ title, text, onClose, extraActions }: ContentModalProps) {
   const [sections, setSections] = useState(() => parseSections(text));
   const sectionRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const updateSection = (i: number, val: string) => { const n = [...sections]; n[i] = { ...n[i], text: val }; setSections(n); };
-  const { copied, copy } = useCopy(() => sections.map(s => `## ${s.label}\n${s.text}`).join('\n\n---\n\n'));
 
   useEffect(() => {
     sectionRefs.current.forEach(el => {
