@@ -107,7 +107,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
       <NavItem icon={<WorkflowIcon />} label="Workflows" active={activeView === 'library' || activeView === 'workflow'} onClick={() => onViewChange('library')} />
       <NavItem icon={<VoiceIcon />} label="Voice" active={activeView === 'voice'} onClick={() => onViewChange('voice')} />
       <NavItem icon={<ScriptIcon />} label="Script" active={activeView === 'scriptsense'} onClick={() => onViewChange('scriptsense')} />
-      <NavItem icon={<CardsIcon />} label="Cards" active={activeView === 'cards'} onClick={() => onViewChange('cards')} />
+      <NavItem icon={<CardsIcon />} label="Cards" active={activeView === 'cardslibrary' || activeView === 'cards'} onClick={() => onViewChange('cardslibrary')} />
       <NavItem icon={<InfographicsIcon />} label="Infographics" active={activeView === 'infographics'} onClick={() => onViewChange('infographics')} />
 
       <div className="flex-1" />
