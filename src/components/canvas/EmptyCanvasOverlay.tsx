@@ -16,51 +16,6 @@ function makeSourceNode(content: string): ContentNode {
 }
 
 /* ── Schematic SVG preview ── */
-function SchematicPreview({ idx }: { idx: number }) {
-  const card = 'var(--color-bg-hover, #222228)';
-  const border = 'var(--color-border-strong)';
-  const accent = 'var(--color-accent)';
-  const ns = { rx: 6, fill: card, stroke: border, strokeWidth: 1 };
-  const ts: React.SVGAttributes<SVGTextElement> = { fontSize: 7.5, fontFamily: 'var(--font-sans)', fill: 'var(--color-text-secondary)', fontWeight: 500, textAnchor: 'middle' as const };
-  const es = { fill: 'none', stroke: accent, strokeWidth: 1.2, opacity: 0.5 };
-  const dot = (cx: number, cy: number) => <circle cx={cx} cy={cy} r="2.5" fill={accent} opacity="0.5" />;
-
-  if (idx === 0) return (
-    <svg viewBox="0 0 260 140" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
-      <rect x="10" y="50" width="60" height="40" {...ns} /><text x="40" y="74" {...ts}>Text</text>
-      <rect x="100" y="10" width="60" height="34" {...ns} /><text x="130" y="31" {...ts}>LinkedIn</text>
-      <rect x="100" y="53" width="60" height="34" {...ns} /><text x="130" y="74" {...ts}>Newsletter</text>
-      <rect x="100" y="96" width="60" height="34" {...ns} /><text x="130" y="117" {...ts}>Thread</text>
-      <rect x="190" y="50" width="60" height="40" {...ns} /><text x="220" y="74" {...ts}>Export</text>
-      <path d="M70 65 Q85 27 100 27" {...es} /><path d="M70 70 L100 70" {...es} /><path d="M70 75 Q85 113 100 113" {...es} />
-      <path d="M160 27 Q175 65 190 65" {...es} /><path d="M160 70 L190 70" {...es} /><path d="M160 113 Q175 75 190 75" {...es} />
-      {dot(70, 70)}{dot(100, 27)}{dot(100, 70)}{dot(100, 113)}{dot(160, 27)}{dot(160, 70)}{dot(160, 113)}{dot(190, 70)}
-    </svg>
-  );
-  if (idx === 1) return (
-    <svg viewBox="0 0 260 140" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
-      <rect x="10" y="50" width="60" height="40" {...ns} /><text x="40" y="74" {...ts}>Text</text>
-      <rect x="100" y="10" width="60" height="34" {...ns} /><text x="130" y="31" {...ts}>Quote</text>
-      <rect x="100" y="53" width="60" height="34" {...ns} /><text x="130" y="74" {...ts}>Thread</text>
-      <rect x="100" y="96" width="60" height="34" {...ns} /><text x="130" y="117" {...ts}>LinkedIn</text>
-      <rect x="190" y="50" width="60" height="40" {...ns} /><text x="220" y="74" {...ts}>Export</text>
-      <path d="M70 65 Q85 27 100 27" {...es} /><path d="M70 70 L100 70" {...es} /><path d="M70 75 Q85 113 100 113" {...es} />
-      <path d="M160 27 Q175 65 190 65" {...es} />
-      {dot(70, 70)}{dot(100, 27)}{dot(100, 70)}{dot(100, 113)}{dot(160, 27)}{dot(190, 65)}
-    </svg>
-  );
-  return (
-    <svg viewBox="0 0 260 140" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
-      <rect x="10" y="50" width="60" height="40" {...ns} /><text x="40" y="74" {...ts}>Text</text>
-      <rect x="100" y="28" width="60" height="34" {...ns} /><text x="130" y="49" {...ts}>Infographic</text>
-      <rect x="100" y="78" width="60" height="34" {...ns} /><text x="130" y="99" {...ts}>Image</text>
-      <rect x="190" y="50" width="60" height="40" {...ns} /><text x="220" y="74" {...ts}>Export</text>
-      <path d="M70 65 Q85 45 100 45" {...es} /><path d="M70 75 Q85 95 100 95" {...es} />
-      <path d="M160 45 Q175 65 190 65" {...es} />
-      {dot(70, 70)}{dot(100, 45)}{dot(100, 95)}{dot(160, 45)}{dot(190, 65)}
-    </svg>
-  );
-}
 
 /* ── Hero banner ── */
 function HeroBanner({ onNew }: { onNew: () => void }) {
@@ -195,27 +150,17 @@ export default function EmptyCanvasOverlay() {
           <button onClick={handleNew}
             aria-label="Empty Workflow"
             style={{
-              textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 200,
-              background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
-              borderRadius: 'var(--radius-xl)', overflow: 'hidden',
+              textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 129,
+              background: 'var(--color-bg-dark)', border: '1px solid var(--color-border-default)',
+              borderRadius: 'var(--radius-lg)', overflow: 'hidden',
               transition: 'border-color 150ms, box-shadow 150ms',
-              display: 'flex', flexDirection: 'column',
+              display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-start',
+              padding: 'var(--space-4)',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
-            <div style={{ padding: 'var(--space-4) var(--space-4) var(--space-2)' }}>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>Empty Workflow</div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-1)' }}>Start from scratch</div>
-            </div>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-surface)' }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 'var(--radius-full)',
-                background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-              </div>
-            </div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--p-white)' }}>+ Empty Workflow</div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-on-dark)', marginTop: 'var(--space-1)' }}>Start from scratch</div>
           </button>
 
           {/* Templates */}
@@ -223,21 +168,17 @@ export default function EmptyCanvasOverlay() {
             <button key={t.name} onClick={() => loadTemplate(i)}
               aria-label={t.name}
               style={{
-                textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 200,
-                background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
-                borderRadius: 'var(--radius-xl)', overflow: 'hidden',
+                textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 129,
+                background: 'var(--color-bg-dark)', border: '1px solid var(--color-border-default)',
+                borderRadius: 'var(--radius-lg)', overflow: 'hidden',
                 transition: 'border-color 150ms, box-shadow 150ms',
-                display: 'flex', flexDirection: 'column',
+                display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-start',
+                padding: 'var(--space-4)',
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
-              <div style={{ padding: 'var(--space-4) var(--space-4) var(--space-2)', flexShrink: 0 }}>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</div>
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-1)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.description}</div>
-              </div>
-              <div style={{ flex: 1, background: 'var(--color-bg-surface)', padding: 'var(--space-2) var(--space-3)', maxHeight: 120, overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
-                <SchematicPreview idx={i} />
-              </div>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--p-white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{t.name}</div>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-on-dark)', marginTop: 'var(--space-1)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', maxWidth: '100%' }}>{t.description}</div>
             </button>
           ))}
         </div>
