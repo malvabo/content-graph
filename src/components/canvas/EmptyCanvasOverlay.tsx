@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
 import { NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
 
+import TemplateCard from '../ui/TemplateCard';
+
 function makeSourceNode(content: string): ContentNode {
   const def = NODE_DEFS_BY_SUBTYPE['text-source'];
   return {
@@ -146,41 +148,13 @@ export default function EmptyCanvasOverlay() {
 
         {/* Template grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)', paddingBottom: 'var(--space-8)' }}>
-          {/* Empty workflow */}
-          <button onClick={handleNew}
-            aria-label="Empty Workflow"
-            style={{
-              textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 129,
-              background: 'var(--color-bg-dark)', border: '1px solid var(--color-border-default)',
-              borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-              transition: 'border-color 150ms, box-shadow 150ms',
-              display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-start',
-              padding: 'var(--space-4)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--p-white)' }}>+ Empty Workflow</div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-on-dark)', marginTop: 'var(--space-1)' }}>Start from scratch</div>
-          </button>
-
-          {/* Templates */}
-          {TEMPLATES.map((t, i) => (
-            <button key={t.name} onClick={() => loadTemplate(i)}
-              aria-label={t.name}
-              style={{
-                textAlign: 'left', cursor: 'pointer', minWidth: 0, height: 129,
-                background: 'var(--color-bg-dark)', border: '1px solid var(--color-border-default)',
-                borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-                transition: 'border-color 150ms, box-shadow 150ms',
-                display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-start',
-                padding: 'var(--space-4)',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--p-white)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{t.name}</div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-on-dark)', marginTop: 'var(--space-1)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', maxWidth: '100%' }}>{t.description}</div>
-            </button>
-          ))}
+          <TemplateCard title="+ Empty Workflow" meta="Start from scratch" pills={[]} onClick={handleNew} />
+          {TEMPLATES.map((t, i) => {
+            const { nodes: n } = t.build();
+            const nodeLabels = n.slice(0, 2).map(nd => nd.data.label);
+            const extra = n.length - 2;
+            return <TemplateCard key={t.name} title={t.name} meta={`${n.length} nodes`} pills={nodeLabels} extraCount={extra > 0 ? extra : undefined} onClick={() => loadTemplate(i)} />;
+          })}
         </div>
       </div>
     </div>
