@@ -106,8 +106,8 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
   const [editVersion, setEditVersion] = useState(0);
 
   const editing = items.find(i => i.id === editingId) || null;
-  const { anthropicKey, groqKey } = useSettingsStore.getState();
-  const hasApiKey = !!(anthropicKey || groqKey);
+  const settings = useSettingsStore.getState();
+  const hasApiKey = !!(settings.anthropicKey || settings.groqKey);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
   useEffect(() => { setMessages([]); }, [editingId]);
@@ -284,7 +284,7 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
-          {svg && <div id="ig-editor-preview" key={editing?.json} dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', maxWidth: 800, lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }} />}
+          {svg && <div id="ig-editor-preview" key={editVersion} dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', maxWidth: 800, lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }} />}
         </div>
       </div>
 
@@ -292,7 +292,7 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
       <div style={{ width: 360, flexShrink: 0, borderLeft: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', display: 'flex', flexDirection: 'column' }}>
         {/* Header with mini preview */}
         <div style={{ padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-          {svg && <div key={editing?.json} dangerouslySetInnerHTML={{ __html: svg }} style={{ width: 48, height: 28, borderRadius: 4, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--color-border-subtle)' }} />}
+          {svg && <div key={editVersion} dangerouslySetInnerHTML={{ __html: svg }} style={{ width: 48, height: 28, borderRadius: 4, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--color-border-subtle)' }} />}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(() => { const d = editing ? parseInfographicData(editing.json) : null; return d?.title || 'Untitled'; })()}</div>
             <div style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{(() => { const d = editing ? parseInfographicData(editing.json) : null; return d?.points?.length || 0; })()} data points</div>
@@ -302,6 +302,13 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
 
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {/* API key warning */}
+          {!hasApiKey && (
+            <div style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', lineHeight: 'var(--leading-relaxed)' }}>
+              Add an API key in <button onClick={() => { window.location.hash = 'settings'; }} style={{ background: 'none', border: 'none', textDecoration: 'underline', color: 'inherit', cursor: 'pointer', font: 'inherit', padding: 0 }}>Settings</button> to enable AI editing.
+            </div>
+          )}
+
           {/* Empty state */}
           {messages.length === 0 && (
             <>
