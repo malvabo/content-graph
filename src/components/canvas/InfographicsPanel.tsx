@@ -150,11 +150,11 @@ export default function InfographicsPanel() {
                 const svgStr = data ? renderSVG(data) : null;
                 return (
                   <div key={item.id} onClick={() => setEditingId(item.id)}
-                    style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', cursor: 'pointer', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out' }}
+                    style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', flexDirection: 'column', transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out', position: 'relative' }}
                     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
                     {/* SVG preview */}
-                    <div style={{ height: 140, overflow: 'hidden', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                    <div style={{ height: 140, overflow: 'hidden', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0' }}>
                       {svgStr ? (
                         <div dangerouslySetInnerHTML={{ __html: svgStr }} style={{ width: '100%', height: '100%', lineHeight: 0, overflow: 'hidden' }} />
                       ) : (

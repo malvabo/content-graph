@@ -55,7 +55,7 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
                 display: 'inline-flex', alignItems: 'center',
                 padding: '4px 12px',
                 borderRadius: 'var(--radius-sm)',
-                background: 'transparent',
+                background: '#141416',
                 border: '1px solid var(--color-border-subtle)',
                 fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
                 fontWeight: 'var(--weight-normal)', color: 'var(--color-text-secondary)',

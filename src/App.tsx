@@ -4,8 +4,6 @@ import CanvasToolbar from './components/canvas/CanvasToolbar';
 import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
-import ScriptLibrary from './components/canvas/ScriptLibrary';
-import ScriptEditor from './components/canvas/ScriptEditor';
 import { useScriptStore } from './store/scriptStore';
 import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
