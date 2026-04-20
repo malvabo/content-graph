@@ -295,7 +295,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
 
             {/* #9: visual ratio picker with shape previews */}
             <div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
                 <span className="text-field-label">Ratio</span>
                 <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)' }}>{d.w}×{d.h}</span>
               </div>
