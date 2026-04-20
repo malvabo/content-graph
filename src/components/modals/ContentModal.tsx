@@ -411,13 +411,12 @@ function VoiceModal({ title, text, onClose, onSave, onRegenerate, extraActions }
         ))}
       </div>
       {extraActions && extraActions.length > 0 && (
-        <div className="flex gap-2 shrink-0" style={{ padding: '0 var(--space-6) var(--space-2)' }}>
-          {extraActions.map(a => (
-            <button key={a.label} className="btn btn-sm btn-outline flex-1" onClick={() => { a.onClick(sections.map(s => s.text).join("\n\n")); onClose(); }}>{a.label}</button>
+        <div className="flex items-center gap-2 shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', borderTop: '1px solid var(--color-border-subtle)' }}>
+          {extraActions.map((a, i) => (
+            <button key={a.label} className={`btn btn-sm flex-1 ${i === 0 ? 'btn-ghost' : 'btn-primary'}`} onClick={() => { a.onClick(sections.map(s => s.text).join("\n\n")); onClose(); }}>{a.label}</button>
           ))}
         </div>
       )}
-      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} onSave={() => onSave?.(sections.map(s => s.text).join("\n\n"))} />
     </ModalShell>
   );
 }
