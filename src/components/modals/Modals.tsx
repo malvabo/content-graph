@@ -303,7 +303,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
 
             {/* #9: visual ratio picker with shape previews */}
             <div>
-              <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-1)' }}>
+              <div className="flex items-center justify-between">
                 <span className="text-field-label">Ratio</span>
                 <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)' }}>{d.w}×{d.h}</span>
               </div>
@@ -367,17 +367,17 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
             {/* Prompt */}
             {editPrompt !== undefined && (
               <div>
-                <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-1)' }}>
+                <div className="flex items-center justify-between">
                   <span className="text-field-label">Prompt</span>
                   {promptChanged && <button className="btn-xs btn-ghost" style={{ color: 'var(--color-text-disabled)' }} onClick={() => setEditPrompt(origPrompt.current)}>Reset</button>}
                 </div>
                 <textarea value={editPrompt} onChange={(e) => setEditPrompt(e.target.value)}
                   className="form-textarea" style={{ minHeight: 160, scrollbarWidth: 'thin' }}
                 />
-                <div className="flex justify-end" style={{ marginTop: 'var(--space-1)' }}>
+                <div className="flex justify-end" style={{ marginTop: 'var(--space-2)' }}>
                   {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
                 </div>
-                <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                   {[
                     { label: 'Style', tags: ['cinematic', 'minimal', 'editorial', 'abstract', 'retro'] },
                     { label: 'Mood', tags: ['vibrant', 'moody', 'dreamy', 'warm', 'dark'] },
