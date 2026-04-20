@@ -5,6 +5,7 @@ import NodePalette from './components/canvas/NodePalette';
 import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
+import ScriptLibrary from './components/canvas/ScriptLibrary';
 import { useGraphStore, type ContentNode } from './store/graphStore';
 import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -34,6 +35,7 @@ import EmptyCanvasOverlay from './components/canvas/EmptyCanvasOverlay';
 import Intro from './components/Intro';
 import WorkflowLibraryView from './components/canvas/WorkflowLibrary';
 import SettingsPanel from './components/canvas/SettingsPanel';
+import CardsPanel from './components/canvas/CardsPanel';
 
 export default function App() {
   return <ErrorBoundary><ReactFlowProvider><AppInner /></ReactFlowProvider></ErrorBoundary>;
@@ -42,7 +44,7 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   const addNode = useGraphStore((s) => s.addNode);
-  const validViews = ['workflow', 'library', 'voice', 'scriptsense', 'settings', 'intro'];
+  const validViews = ['workflow', 'library', 'voice', 'scriptsense', 'scriptview', 'cards', 'settings', 'intro'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1); return validViews.includes(h) ? h : 'library'; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
   const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v); }, []);
@@ -113,9 +115,12 @@ function AppInner() {
 
         {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => { setVoiceTranscript(t); setActiveView('scriptsense'); }} />}
 
-        {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
+        {activeView === 'scriptsense' && <ScriptLibrary onOpenScript={(t) => { setVoiceTranscript(t); setActiveView('scriptview'); }} />}
+        {activeView === 'scriptview' && <ScriptSensePanel initialText={voiceTranscript} />}
 
         {activeView === 'settings' && <SettingsPanel />}
+
+        {activeView === 'cards' && <CardsPanel />}
       </div>
     </div>
   );
