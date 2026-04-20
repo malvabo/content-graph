@@ -310,7 +310,11 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                 {Object.entries(RATIO_DIMS).map(([r, dims]) => {
                   const active = r === ratio;
-                  const bw = 18, bh = Math.round(18 * dims.h / dims.w);
+                  const maxW = 18, maxH = 24;
+                  const aspect_r = dims.w / dims.h;
+                  let bw, bh;
+                  if (aspect_r >= 1) { bw = maxW; bh = Math.round(maxW / aspect_r); }
+                  else { bh = maxH; bw = Math.round(maxH * aspect_r); }
                   return (
                     <button key={r} aria-pressed={active} onClick={() => { setRatio(r); setConfig('aspect', r); }}
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)', padding: 'var(--space-1) var(--space-2)',
