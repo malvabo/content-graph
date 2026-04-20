@@ -21,6 +21,7 @@ interface ContentModalProps {
   onClose: () => void;
   onRegenerate?: () => void;
   onSave?: (text: string) => void;
+  extraActions?: { label: string; onClick: (text: string) => void }[];
 }
 
 /* ── Icons ── */
@@ -371,7 +372,7 @@ function NewsletterModal({ title, text, onClose, onSave, onRegenerate }: Content
 /* ════════════════════════════════════════════
    VOICE — same as Newsletter without subject line
    ════════════════════════════════════════════ */
-function VoiceModal({ title, text, onClose, onSave, onRegenerate }: ContentModalProps) {
+function VoiceModal({ title, text, onClose, onSave, onRegenerate, extraActions }: ContentModalProps) {
   const parseSections = (t: string) => {
     const parts = t.split(/\n---\n|\n##\s+/);
     if (parts.length <= 1) return [{ label: 'Content', text: t }];
@@ -409,6 +410,13 @@ function VoiceModal({ title, text, onClose, onSave, onRegenerate }: ContentModal
           </div>
         ))}
       </div>
+      {extraActions && extraActions.length > 0 && (
+        <div className="flex gap-2 shrink-0" style={{ padding: '0 var(--space-6) var(--space-2)' }}>
+          {extraActions.map(a => (
+            <button key={a.label} className="btn btn-sm btn-outline flex-1" onClick={() => { a.onClick(sections.map(s => s.text).join("\n\n")); onClose(); }}>{a.label}</button>
+          ))}
+        </div>
+      )}
       <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} onSave={() => onSave?.(sections.map(s => s.text).join("\n\n"))} />
     </ModalShell>
   );

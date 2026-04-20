@@ -292,11 +292,11 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
         <div className="flex flex-col shrink-0 w-full md:w-[300px]">
           <ModalHeader title={nodeLabel || 'Image'} subtitle="Configure and generate variants" onClose={onClose} />
 
-          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-6) var(--space-4)', gap: 0, scrollbarWidth: 'thin' }}>
+          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: 'var(--space-5) var(--space-6) var(--space-4)', gap: 20, scrollbarWidth: 'thin' }}>
 
             {/* #9: visual ratio picker with shape previews */}
             <div>
-              <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
                 <span className="text-field-label">Ratio</span>
                 <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)' }}>{d.w}×{d.h}</span>
               </div>
@@ -325,7 +325,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
 
             {/* Node settings */}
             {nodeId && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', paddingTop: 10, marginTop: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 <div>
                   <span className="text-field-label">Purpose</span>
                   <select className="form-select w-full" value={purpose} onChange={e => { setConfig('purpose', e.target.value); const r = PURPOSE_RATIO[e.target.value]; if (r) { setRatio(r); setConfig('aspect', r); } }}>
@@ -349,7 +349,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
 
             {/* Prompt */}
             {editPrompt !== undefined && (
-              <div style={{ paddingTop: 10, marginTop: 10 }}>
+              <div>
                 <div className="flex items-center justify-between">
                   <span className="text-field-label">Prompt</span>
                   {promptChanged && <button className="btn-xs btn-ghost" style={{ color: 'var(--color-text-disabled)' }} onClick={() => setEditPrompt(origPrompt.current)}>Reset</button>}
@@ -360,7 +360,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                 <div className="flex justify-end" style={{ marginTop: 'var(--space-2)' }}>
                   {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
                 </div>
-                <div style={{ marginTop: 10, paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                   {[
                     { label: 'Style', tags: ['cinematic', 'minimal', 'editorial', 'abstract', 'retro'] },
                     { label: 'Mood', tags: ['vibrant', 'moody', 'dreamy', 'warm', 'dark'] },

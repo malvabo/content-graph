@@ -352,6 +352,21 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             text={note.transcript}
             onClose={() => setViewId(null)}
             onSave={(t: string) => updateNote(note.id, { transcript: t })}
+            extraActions={[
+              { label: 'Send to Script Writing', onClick: (t: string) => { onSendToScript?.(t); } },
+              { label: 'Push to Workflow', onClick: (t: string) => {
+                const node = {
+                  id: `text-source-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+                  type: 'contentNode' as const,
+                  position: { x: 200, y: 150 },
+                  deletable: true,
+                  data: { subtype: 'text-source', label: 'Voice: ' + note.title.slice(0, 30), badge: '📝', category: 'source' as const, description: 'From voice note', config: { text: t } },
+                };
+                useGraphStore.getState().addNode(node);
+                useOutputStore.getState().setOutput(node.id, { text: t });
+                onUseInWorkflow?.();
+              }},
+            ]}
           />
         );
       })()}
