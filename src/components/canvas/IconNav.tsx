@@ -20,7 +20,7 @@ function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: str
         style={{ background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-accent-subtle)' : 'var(--color-text-tertiary)' }}>
         {icon}
       </button>
-      <span className="md:hidden" style={{ fontSize: 9, fontFamily: 'var(--font-sans)', color: active ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)', lineHeight: 1 }}>{label}</span>
+      <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: active ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)', lineHeight: 1 }}>{label}</span>
       {showTip && window.matchMedia('(hover: hover)').matches && (
         <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50"
           style={{ background: 'var(--color-text-primary)', color: 'var(--color-text-inverse)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 'var(--weight-medium)', boxShadow: 'var(--shadow-sm)', animation: 'fadeIn 100ms ease' }}>
@@ -99,7 +99,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
   return (
     <nav aria-label="Main navigation" className="
       w-full h-[52px] flex flex-row items-center px-2 gap-1 shrink-0 order-last
-      md:w-[52px] md:h-auto md:flex-col md:py-3 md:px-0 md:order-first
+      md:w-[72px] md:h-auto md:flex-col md:py-3 md:px-0 md:order-first
     " style={{ background: 'var(--color-bg-card)' }}>
       <style>{`nav[aria-label="Main navigation"] { border-top: 1px solid var(--color-border-subtle); } @media(min-width:768px) { nav[aria-label="Main navigation"] { border-top: none; border-right: 1px solid var(--color-border-subtle); } }`}</style>
       <div className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center mb-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
