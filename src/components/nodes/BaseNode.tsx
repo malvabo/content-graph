@@ -281,7 +281,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       )}
 
       {/* Inline content — flex:1 so it fills between header and chips */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: data.subtype === 'infographic' ? 'visible' : 'hidden' }}>
         {data.subtype === 'text-source' && <TextSourceInline id={id} />}
         {data.subtype === 'file-source' && <FileSourceInline id={id} />}
         {data.subtype === 'image-source' && <ImageSourceInline id={id} />}

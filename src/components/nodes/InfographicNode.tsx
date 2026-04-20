@@ -94,7 +94,7 @@ export function InfographicInline({ id }: { id: string }) {
       <div
         onMouseDown={e => e.stopPropagation()}
         onClick={() => setModalOpen(true)}
-        style={{ marginTop: 'var(--space-2)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--color-border-default)', cursor: 'pointer', transition: 'box-shadow 150ms' }}
+        style={{ marginTop: 'var(--space-2)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--color-border-default)', cursor: 'pointer', transition: 'box-shadow 150ms', width: '100%', minWidth: 0 }}
         onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
         onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
       >
