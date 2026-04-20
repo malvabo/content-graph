@@ -121,22 +121,22 @@ export default function CardsPanel({ setId }: { setId?: string }) {
           <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{cards.length} cards</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
           {cards.map(card => (
             <div key={card.id} style={{
               background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
-              borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+              borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
               display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
-              transition: 'border-color 150ms, box-shadow 150ms',
+              transition: 'border-color 150ms, box-shadow 150ms', textAlign: 'left',
             }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
               {/* Remove button */}
               <button onClick={() => removeCard(card.id)}
-                style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 'var(--space-1)', borderRadius: 'var(--radius-sm)', display: 'flex', opacity: 0.4, transition: 'opacity 150ms' }}
+                style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', background: 'var(--color-overlay-light)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 150ms', backdropFilter: 'blur(4px)' }}
                 onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; }}>
+                onMouseLeave={e => { e.currentTarget.style.opacity = '0'; }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               </button>
 
@@ -145,10 +145,10 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 <input value={card.headline} onChange={e => updateCard(card.id, 'headline', e.target.value)}
                   onBlur={() => setEditingId(null)} onKeyDown={e => { if (e.key === 'Enter') setEditingId(null); }}
                   autoFocus
-                  style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-1) var(--space-2)', outline: 'none', width: '100%' }} />
+                  style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-1) var(--space-2)', outline: 'none', width: '100%', lineHeight: 'var(--leading-tight)' }} />
               ) : (
                 <div onClick={() => setEditingId(card.id)}
-                  style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-tight)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', cursor: 'text', paddingRight: 'var(--space-6)' }}>
+                  style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', lineHeight: 'var(--leading-tight)', color: 'var(--color-text-primary)', cursor: 'text', paddingRight: 'var(--space-6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {card.headline}
                 </div>
               )}
@@ -157,13 +157,13 @@ export default function CardsPanel({ setId }: { setId?: string }) {
               <div contentEditable suppressContentEditableWarning
                 onBlur={e => updateCard(card.id, 'body', e.currentTarget.innerHTML)}
                 dangerouslySetInnerHTML={{ __html: card.body }}
-                style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', outline: 'none', minHeight: 'var(--space-8)', cursor: 'text' }} />
+                style={{ fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', outline: 'none', minHeight: 'var(--space-4)', cursor: 'text' }} />
             </div>
           ))}
 
           {/* Add card button */}
           <button onClick={addCard}
-            style={{ minHeight: 120, background: 'none', border: '1px dashed var(--color-border-default)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', transition: 'background 150ms, border-color 150ms' }}
+            style={{ minHeight: 80, background: 'none', border: '1px dashed var(--color-border-default)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', transition: 'background 150ms, border-color 150ms' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>

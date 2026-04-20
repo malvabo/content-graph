@@ -26,24 +26,37 @@ JSON schema:
   "title": string,
   "subtitle"?: string,
   "footer"?: string,
+  "type"?: "cards" | "bar" | "pie",
+  "image"?: string (URL for logo/image in top-right),
   "theme"?: {
     "bg"?: string, "accent"?: string, "text"?: string,
     "cardBg"?: string, "cardBorder"?: string,
-    "font"?: string, "fontSize"?: number,
+    "font"?: string, "titleFont"?: string, "bodyFont"?: string,
+    "fontSize"?: number, "statSize"?: number,
     "borderRadius"?: number, "cols"?: number,
-    "gap"?: number, "align"?: "center" | "left"
+    "gap"?: number, "align"?: "center" | "left",
+    "gradient"?: { "from": string, "to": string, "direction"?: string (degrees, e.g. "135") },
+    "dividers"?: boolean, "animate"?: boolean
   },
-  "points": [{ "stat": string, "label": string, "detail"?: string, "color"?: string }]
+  "points": [{
+    "stat": string, "label": string, "detail"?: string,
+    "color"?: string, "icon"?: string (emoji),
+    "max"?: number (shows progress bar, stat value / max),
+    "size"?: "sm" | "md" | "lg",
+    "fontWeight"?: string, "fontStyle"?: string
+  }]
 }
 
 Notes:
-- theme.font: any Google Font name (Inter, Roboto, Playfair Display, Space Grotesk, Merriweather, etc.) or system fonts (Georgia, Courier New). Loaded automatically.
-- theme.fontSize: title font size in px (default 22)
-- theme.cols: force column count (1, 2, 3, or 4)
-- theme.gap: spacing between cards in px (default 16)
-- theme.borderRadius: card corner radius in px (default 12, use 0 for sharp)
-- theme.align: "center" or "left" for title/subtitle alignment
-- footer: small text at bottom (source, attribution, etc.)
+- type: "cards" (default grid), "bar" (horizontal bar chart), "pie" (pie chart with legend)
+- theme.font: any Google Font (Inter, Roboto, Playfair Display, Space Grotesk, etc.) or system font. Auto-loaded.
+- theme.titleFont / theme.bodyFont: separate fonts for title vs data. Falls back to theme.font.
+- theme.gradient: replaces bg with a linear gradient
+- theme.animate: adds fade-in animation to elements
+- theme.dividers: adds dashed lines between card rows
+- points[].icon: emoji displayed above the stat
+- points[].max: renders a progress bar (stat value as proportion of max)
+- points[].size: "lg" for tall cards, "sm" for compact
 - All colors are hex strings.`;
 
   const msgs = messages.map(m => ({ role: m.role, content: m.text }));

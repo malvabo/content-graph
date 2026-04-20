@@ -64,27 +64,25 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
 }
 
 function CardSetItem({ set, onOpen, onDelete }: { set: CardSet; onOpen: () => void; onDelete: () => void }) {
-  const [hover, setHover] = useState(false);
   return (
-    <div role="button" tabIndex={0} onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{
-        cursor: 'pointer', outline: 'none', height: 140,
-        background: 'var(--color-bg-card)', border: `1px solid var(--color-border-${hover ? 'strong' : 'default'})`,
+    <div role="button" tabIndex={0} onClick={onOpen} style={{ position: 'relative' }}>
+      <div style={{
+        cursor: 'pointer', outline: 'none',
+        background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
         borderRadius: 'var(--radius-lg)', textAlign: 'left',
-        transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out',
-        transform: hover ? 'translateY(-1px)' : 'none',
-        boxShadow: hover ? 'var(--shadow-md)' : 'none',
-        display: 'flex', flexDirection: 'column', padding: 'var(--space-4)', position: 'relative',
-      }}>
-      <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>{set.name}</div>
-      <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{set.cards.length} cards</div>
-      <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'auto' }}>{fmt(set.createdAt)}</div>
-      {hover && (
-        <button onClick={e => { e.stopPropagation(); onDelete(); }}
-          style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 'var(--space-1)', borderRadius: 'var(--radius-sm)' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
-      )}
+        transition: 'border-color 150ms, box-shadow 150ms',
+        display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-4)',
+      }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.parentElement!.querySelector<HTMLElement>('.del-btn')!.style.opacity = '1'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.parentElement!.querySelector<HTMLElement>('.del-btn')!.style.opacity = '0'; }}
+      >
+        <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-tight)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{set.name}</div>
+        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', lineHeight: 'var(--leading-tight)' }}>{set.cards.length} cards · {fmt(set.createdAt)}</div>
+      </div>
+      <button className="del-btn" onClick={e => { e.stopPropagation(); onDelete(); }}
+        style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', background: 'var(--color-overlay-light)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 150ms', backdropFilter: 'blur(4px)' }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
     </div>
   );
 }
