@@ -8,25 +8,14 @@ interface Props {
 
 function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: string; active: boolean; onClick: () => void }) {
   const [hover, setHover] = useState(false);
-  const [showTip, setShowTip] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const enter = () => { setHover(true); timerRef.current = setTimeout(() => setShowTip(true), 200); };
-  const leave = () => { setHover(false); setShowTip(false); clearTimeout(timerRef.current); };
   return (
-    <div className="relative flex flex-col items-center md:flex-row md:justify-center md:w-full" style={{ gap: 1 }}>
-      {active && <div className="absolute bottom-0 left-1 right-1 h-[3px] rounded-t-full md:bottom-auto md:top-1 md:left-0 md:right-auto md:h-auto md:w-[3px] md:rounded-r-full md:rounded-t-none" style={{ background: 'var(--color-accent)' }} />}
-      <button onClick={onClick} onMouseEnter={enter} onMouseLeave={leave} aria-label={label}
-        className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
-        style={{ background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-accent-subtle)' : 'var(--color-text-tertiary)' }}>
-        {icon}
+    <div className="relative md:w-full">
+      <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} aria-label={label}
+        className="flex items-center gap-3 w-full rounded-lg transition-colors"
+        style={{ padding: '8px 12px', background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)' }}>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, flexShrink: 0 }}>{icon}</span>
+        <span className="hidden md:inline" style={{ fontSize: 14, fontFamily: 'var(--font-sans)', fontWeight: active ? 'var(--weight-medium)' : 'var(--weight-normal)', whiteSpace: 'nowrap' }}>{label}</span>
       </button>
-      <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: active ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)', lineHeight: 1 }}>{label}</span>
-      {showTip && window.matchMedia('(hover: hover)').matches && (
-        <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-50"
-          style={{ background: 'var(--color-text-primary)', color: 'var(--color-text-inverse)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 'var(--weight-medium)', boxShadow: 'var(--shadow-sm)', animation: 'fadeIn 100ms ease' }}>
-          {label}
-        </div>
-      )}
     </div>
   );
 }
@@ -99,10 +88,10 @@ export default function IconNav({ activeView, onViewChange }: Props) {
   return (
     <nav aria-label="Main navigation" className="
       w-full h-[52px] flex flex-row items-center px-2 gap-1 shrink-0 order-last
-      md:w-[72px] md:h-auto md:flex-col md:py-3 md:px-0 md:order-first
+      md:w-[200px] md:h-auto md:flex-col md:py-4 md:px-3 md:gap-0.5 md:order-first
     " style={{ background: 'var(--color-bg-card)' }}>
       <style>{`nav[aria-label="Main navigation"] { border-top: 1px solid var(--color-border-subtle); } @media(min-width:768px) { nav[aria-label="Main navigation"] { border-top: none; border-right: 1px solid var(--color-border-subtle); } }`}</style>
-      <div className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center mb-2" style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
+      <div className="hidden md:flex items-center gap-2 mb-4 px-3" style={{ color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
 
       <NavItem icon={<WorkflowIcon />} label="Workflows" active={activeView === 'library' || activeView === 'workflow'} onClick={() => onViewChange('library')} />
       <NavItem icon={<VoiceIcon />} label="Voice" active={activeView === 'voice'} onClick={() => onViewChange('voice')} />
