@@ -205,24 +205,24 @@ export default function InfographicsPanel() {
 
       {/* Right — Chat */}
       <div style={{ width: 360, flexShrink: 0, borderLeft: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <div style={{ padding: 'var(--space-4) var(--space-4) var(--space-3)', borderBottom: '1px solid var(--color-border-subtle)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 2 }}>
-            <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'var(--color-success-text, #22c55e)' }} />
-            <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>AI Editor</span>
+        {/* Header with mini preview */}
+        <div style={{ padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+          {svg && <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: 48, height: 28, borderRadius: 4, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--color-border-subtle)' }} />}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(() => { const d = editing ? parseInfographicData(editing.json) : null; return d?.title || 'Untitled'; })()}</div>
+            <div style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{(() => { const d = editing ? parseInfographicData(editing.json) : null; return d?.points?.length || 0; })()} data points</div>
           </div>
-          <div style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', paddingLeft: 14 }}>Editing: {(() => { const d = editing ? parseInfographicData(editing.json) : null; return d?.title || 'Untitled'; })()}</div>
+          <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'var(--color-success-text, #22c55e)', flexShrink: 0 }} />
         </div>
 
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {/* Welcome — only when no messages yet */}
+          {/* Empty state */}
           {messages.length === 0 && (
             <>
               <div style={{ padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-relaxed)' }}>
-                Describe any change — I'll update the infographic instantly. Try one of the suggestions below.
+                Describe any change — I'll update the infographic instantly.
               </div>
-              {/* Contextual suggestions — shown prominently in empty state */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
                 {SUGGESTION_CHIPS.map(chip => (
                   <button key={chip} onClick={() => send(chip)}
@@ -235,39 +235,24 @@ export default function InfographicsPanel() {
             </>
           )}
 
-          {/* Conversation */}
+          {/* Conversation — no differentiation, no avatars */}
           {messages.map((msg, i) => (
-            <div key={i} style={{ display: 'flex', gap: 'var(--space-2)', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}>
-              {msg.role === 'assistant' && (
-                <div style={{ width: 20, height: 20, borderRadius: 'var(--radius-full)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2v4"/><path d="M22 12h-4"/><path d="M12 18v4"/><path d="M2 12h4"/></svg>
-                </div>
-              )}
-              <div style={{
-                maxWidth: '80%', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)',
-                background: msg.role === 'user' ? 'var(--color-accent)' : 'var(--color-bg-surface)',
-                fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)',
-                color: msg.role === 'user' ? 'var(--color-text-inverse)' : 'var(--color-text-primary)',
-                lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap',
-              }}>{msg.text}</div>
+            <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+              <div style={{ maxWidth: '85%', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap' }}>{msg.text}</div>
             </div>
           ))}
 
-          {/* Loading indicator with context */}
+          {/* Loading */}
           {loading && (
-            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-              <div style={{ width: 20, height: 20, borderRadius: 'var(--radius-full)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}><path d="M12 2v4"/><path d="M22 12h-4"/><path d="M12 18v4"/><path d="M2 12h4"/></svg>
-              </div>
-              <div style={{ padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
-                Updating infographic…
-              </div>
+            <div style={{ padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}><path d="M12 2v4"/><path d="M22 12h-4"/><path d="M12 18v4"/><path d="M2 12h4"/></svg>
+              Updating infographic…
             </div>
           )}
 
-          {/* Inline quick actions after conversation starts */}
+          {/* Quick actions after conversation starts */}
           {!loading && messages.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 'var(--space-1)' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {['Add point', 'Change colors', 'Edit title'].map(chip => (
                 <button key={chip} onClick={() => send(chip)}
                   style={{ padding: '3px 10px', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)', background: 'transparent', fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'border-color 120ms' }}
@@ -282,7 +267,7 @@ export default function InfographicsPanel() {
         </div>
 
         {/* Input */}
-        <div style={{ padding: 'var(--space-3) var(--space-4)', borderTop: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)' }}>
+        <div style={{ padding: 'var(--space-3) var(--space-4)', borderTop: '1px solid var(--color-border-subtle)' }}>
           <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', background: 'var(--color-bg)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: '2px 2px 2px var(--space-3)', transition: 'border-color 150ms' }}
             onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
             onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
