@@ -8,7 +8,7 @@ import { useGraphStore } from '../../store/graphStore';
 export interface InfographicData {
   title: string;
   subtitle?: string;
-  theme?: { bg?: string; accent?: string; text?: string; cardBg?: string; cardBorder?: string };
+  theme?: { bg?: string; accent?: string; text?: string; cardBg?: string; cardBorder?: string; font?: string };
   points: { stat: string; label: string; detail?: string; color?: string }[];
 }
 
@@ -19,6 +19,7 @@ export function renderSVG(data: InfographicData): string {
   const textColor = theme?.text || '#e8e6e3';
   const cardBg = theme?.cardBg || '#2a2a26';
   const cardBorder = theme?.cardBorder || '#3a3a36';
+  const font = theme?.font || 'Geist Variable, system-ui, sans-serif';
   const subtitleColor = '#908e85';
 
   const W = 960, cols = points.length <= 4 ? 2 : 3;
