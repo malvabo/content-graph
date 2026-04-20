@@ -178,14 +178,15 @@ export default function InfographicsPanel() {
                           <div ref={menuRef} onClick={e => e.stopPropagation()}
                             style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
                             {[
-                              { label: 'Edit', action: () => { setEditingId(item.id); setMenuId(null); } },
-                              { label: 'Rename', action: () => { const name = prompt('Rename', title); if (name?.trim()) { const d = parseInfographicData(item.json); if (d) { d.title = name.trim(); update(item.id, JSON.stringify(d)); } } setMenuId(null); } },
-                              { label: 'Delete', danger: true, action: () => { remove(item.id); setMenuId(null); } },
+                              { label: 'Edit', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>, action: () => { setEditingId(item.id); setMenuId(null); } },
+                              { label: 'Rename', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 6H3"/><path d="M15 12H3"/><path d="M17 18H3"/></svg>, action: () => { const name = prompt('Rename', title); if (name?.trim()) { const d = parseInfographicData(item.json); if (d) { d.title = name.trim(); update(item.id, JSON.stringify(d)); } } setMenuId(null); } },
+                              { label: 'Delete', danger: true, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>, action: () => { remove(item.id); setMenuId(null); } },
                             ].map(opt => (
                               <button key={opt.label} onClick={opt.action}
                                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', textAlign: 'left', transition: 'background 100ms' }}
                                 onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
                                 onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                                <span style={{ color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-tertiary)', display: 'flex' }}>{opt.icon}</span>
                                 {opt.label}
                               </button>
                             ))}

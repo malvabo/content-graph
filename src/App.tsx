@@ -68,6 +68,7 @@ function AppInner() {
   const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v); }, []);
   useEffect(() => { const h = () => setActiveViewRaw(getViewFromHash()); window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [cardSetId, setCardSetId] = useState<string | undefined>();
   useKeyboardShortcuts();
 
   useEffect(() => { init(); }, [init]);
@@ -132,9 +133,9 @@ function AppInner() {
 
         {activeView === 'settings' && <SettingsPanel />}
 
-        {activeView === 'cardslibrary' && <CardsLibrary onOpen={() => setActiveView('cards')} />}
+        {activeView === 'cardslibrary' && <CardsLibrary onOpen={(id: string) => { setCardSetId(id); setActiveView('cards'); }} />}
 
-        {activeView === 'cards' && <CardsPanel />}
+        {activeView === 'cards' && <CardsPanel setId={cardSetId} />}
 
         {activeView === 'infographics' && <InfographicsPanel />}
       </div>
