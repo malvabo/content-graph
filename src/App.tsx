@@ -3,7 +3,6 @@ import GraphCanvas from './components/canvas/GraphCanvas';
 import CanvasToolbar from './components/canvas/CanvasToolbar';
 import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
-import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import ScriptLibrary from './components/canvas/ScriptLibrary';
 import ScriptEditor from './components/canvas/ScriptEditor';
 import { useCallback, useState, useEffect } from 'react';
@@ -12,6 +11,7 @@ import { Component, type ReactNode } from 'react';
 import MobileWorkflow from './components/canvas/MobileWorkflow';
 import { useAuthStore } from './store/authStore';
 import { useSettingsStore } from './store/settingsStore';
+import { useScriptStore } from './store/scriptStore';
 import { supabase } from './lib/supabase';
 import AuthGate from './components/auth/AuthGate';
 
@@ -43,12 +43,11 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   
-  const validViews = ['workflow', 'library', 'voice', 'scriptsense', 'scriptview', 'scripteditor', 'cards', 'infographics', 'settings', 'intro'];
+  const validViews = ['workflow', 'library', 'voice', 'scriptview', 'scripteditor', 'cards', 'infographics', 'settings', 'intro'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1); return validViews.includes(h) ? h : 'library'; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
   const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v); }, []);
   useEffect(() => { const h = () => setActiveViewRaw(getViewFromHash()); window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
-  const [voiceTranscript, setVoiceTranscript] = useState('');
   const [editScriptId, setEditScriptId] = useState('');
   useKeyboardShortcuts();
 
@@ -102,9 +101,7 @@ function AppInner() {
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
-        {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => { setVoiceTranscript(t); setActiveView('scriptsense'); }} />}
-
-        {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
+        {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => { const id = useScriptStore.getState().addScript(t); setEditScriptId(id); setActiveView('scripteditor'); }} />}
 
         {activeView === 'scriptview' && <ScriptLibrary onOpenScript={(id) => { setEditScriptId(id); setActiveView('scripteditor'); }} />}
 
