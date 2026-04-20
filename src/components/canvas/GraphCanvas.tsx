@@ -127,7 +127,7 @@ export default function GraphCanvas() {
         onNodeContextMenu={(e, node) => onNodeContextMenu(e, node.id)}
         onPaneClick={() => { setSelectedNodeId(null); setSpotlight(null); dismissFirstRun(); closeMenu(); }}
         deleteKeyCode={['Backspace', 'Delete']}
-        fitView={false} panOnScroll selectionOnDrag={false}
+        fitView={false} panOnScroll selectionOnDrag selectionKeyCode="Shift"
         proOptions={{ hideAttribution: true }}
         style={{ background: 'var(--color-bg)' }}>
         <DotSpotlight />
