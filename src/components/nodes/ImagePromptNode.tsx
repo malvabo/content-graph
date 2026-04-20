@@ -55,13 +55,8 @@ async function genImage(prompt: string, seed: number, w: number, h: number): Pro
       body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt: prompt.slice(0, 1000), width: snapToGrid(w), height: snapToGrid(h), n: 1, seed, response_format: 'b64_json' }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      const msg = err.error?.message || `Together API error: ${res.status}`;
-      if (msg.toLowerCase().includes('credit') || res.status === 402 || res.status === 429) {
-        // Fall through to Pollinations
-      } else {
-        throw new Error(msg);
-      }
+      console.warn('Together API error:', res.status, await res.text().catch(() => ''));
+      // Fall through to Pollinations on any error
     } else {
       const data = await res.json();
       const b64 = data.data?.[0]?.b64_json;
@@ -72,7 +67,7 @@ async function genImage(prompt: string, seed: number, w: number, h: number): Pro
   // Pollinations fallback (free, no key)
   const shortPrompt = prompt.slice(0, 500);
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(shortPrompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
-  const res = await fetchWithTimeout(url, {});
+  const res = await fetchWithTimeout(url, {}, 60000);
   if (!res.ok) throw new Error(`Image generation failed: ${res.status}`);
   const blob = await res.blob();
   if (blob.size < 1000) throw new Error('Empty image returned');
