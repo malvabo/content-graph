@@ -23,7 +23,7 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
       {/* Top: title + meta */}
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', background: '#1A1A1E' }}>
         <div style={{ padding: '12px 32px 0 16px' }}>
           <div style={{
             fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
