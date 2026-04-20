@@ -43,7 +43,7 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       <div style={{
         display: 'flex', alignItems: 'center', gap: 0,
         padding: '12px 16px',
-        background: 'var(--color-bg-surface)',
+        background: 'var(--color-bg-dark)',
         borderTop: '1px solid var(--color-border-subtle)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
