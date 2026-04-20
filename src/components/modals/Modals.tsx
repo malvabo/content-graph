@@ -297,7 +297,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
             {/* #9: visual ratio picker with shape previews */}
             <div>
               <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
-                <span className="text-field-label">Ratio</span>
+                <span className="text-field-label" style={{ marginBottom: 0 }}>Ratio</span>
                 <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)' }}>{d.w}×{d.h}</span>
               </div>
               <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
@@ -350,8 +350,8 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
             {/* Prompt */}
             {editPrompt !== undefined && (
               <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-field-label">Prompt</span>
+                <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-2)' }}>
+                  <span className="text-field-label" style={{ marginBottom: 0 }}>Prompt</span>
                   {promptChanged && <button className="btn-xs btn-ghost" style={{ color: 'var(--color-text-disabled)' }} onClick={() => setEditPrompt(origPrompt.current)}>Reset</button>}
                 </div>
                 <textarea value={editPrompt} onChange={(e) => setEditPrompt(e.target.value)}
@@ -360,33 +360,37 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                 <div className="flex justify-end" style={{ marginTop: 'var(--space-2)' }}>
                   {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                  {[
-                    { label: 'Style', tags: ['cinematic', 'minimal', 'editorial', 'abstract', 'retro'] },
-                    { label: 'Mood', tags: ['vibrant', 'moody', 'dreamy', 'warm', 'dark'] },
-                  ].map(group => (
-                    <div key={group.label}>
-                      <span className="text-field-label">{group.label}</span>
-                      <div className="flex flex-wrap gap-1">
-                        {group.tags.map(s => {
-                          const active = editPrompt.toLowerCase().includes(s);
-                          return (
-                            <button key={s}
-                              onClick={() => setEditPrompt(p => active ? p.replace(new RegExp(`,?\\s*${s}`, 'gi'), '').trim() : `${p.trimEnd()}, ${s}`)}
-                              style={{
-                                fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500,
-                                padding: '3px 10px', borderRadius: 'var(--radius-full)', cursor: 'pointer',
-                                border: active ? '1px solid var(--color-accent)' : '1px solid var(--color-border-default)',
-                                background: active ? 'var(--color-accent)' : 'transparent',
-                                color: active ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
-                                transition: 'all 100ms',
-                              }}>{s}</button>
-                          );
-                        })}
-                      </div>
+              </div>
+            )}
+
+            {/* Style / Mood tags */}
+            {editPrompt !== undefined && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                {[
+                  { label: 'Style', tags: ['cinematic', 'minimal', 'editorial', 'abstract', 'retro'] },
+                  { label: 'Mood', tags: ['vibrant', 'moody', 'dreamy', 'warm', 'dark'] },
+                ].map(group => (
+                  <div key={group.label}>
+                    <span className="text-field-label">{group.label}</span>
+                    <div className="flex flex-wrap gap-1">
+                      {group.tags.map(s => {
+                        const active = editPrompt.toLowerCase().includes(s);
+                        return (
+                          <button key={s}
+                            onClick={() => setEditPrompt(p => active ? p.replace(new RegExp(`,?\\s*${s}`, 'gi'), '').trim() : `${p.trimEnd()}, ${s}`)}
+                            style={{
+                              fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500,
+                              padding: '3px 10px', borderRadius: 'var(--radius-full)', cursor: 'pointer',
+                              border: active ? '1px solid var(--color-accent)' : '1px solid var(--color-border-default)',
+                              background: active ? 'var(--color-accent)' : 'transparent',
+                              color: active ? 'var(--color-text-inverse)' : 'var(--color-text-secondary)',
+                              transition: 'all 100ms',
+                            }}>{s}</button>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
