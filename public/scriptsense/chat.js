@@ -195,7 +195,7 @@
   function addMessage(role, content) {
     const div = document.createElement('div');
     div.className = `msg ${role}`;
-    div.innerHTML = `<span class="msg-sender">${role === 'user' ? 'You' : '✦ Clade AI'}</span>
+    div.innerHTML = `<span class="msg-sender">${role === 'user' ? 'You' : '✦ AI'}</span>
       <div class="msg-bubble">${content}</div>`;
     msgsEl.appendChild(div);
     msgsEl.scrollTop = msgsEl.scrollHeight;
@@ -212,7 +212,7 @@
     const label = document.createElement('span');
     label.className = 'thinking-label'; label.textContent = 'Thinking…';
     loader.append(rc, label);
-    div.innerHTML = '<span class="msg-sender">✦ Clade AI</span>';
+    div.innerHTML = '<span class="msg-sender">✦ AI</span>';
     div.appendChild(loader);
     msgsEl.appendChild(div);
     msgsEl.scrollTop = msgsEl.scrollHeight;
@@ -233,7 +233,7 @@
     removeThinkingLoader();
     const div = document.createElement('div');
     div.className = 'msg ai';
-    div.innerHTML = `<span class="msg-sender">✦ Clade AI</span>
+    div.innerHTML = `<span class="msg-sender">✦ AI</span>
       <div class="msg-bubble">${resp.text}</div>`;
     msgsEl.appendChild(div);
     msgsEl.scrollTop = msgsEl.scrollHeight;
