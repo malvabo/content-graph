@@ -158,7 +158,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 onBlur={e => updateCard(card.id, 'body', e.currentTarget.innerHTML)}
                 dangerouslySetInnerHTML={{ __html: card.body }}
                 data-placeholder="Write something…"
-                style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', outline: 'none', minHeight: 'var(--space-10)', cursor: 'text', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' }} />
+                style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', outline: 'none', minHeight: 'var(--space-10)', cursor: 'text' }} />
             </div>
           ))}
 
