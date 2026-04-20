@@ -88,7 +88,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
   return (
     <nav aria-label="Main navigation" className="
       w-full h-[52px] flex flex-row items-center px-2 gap-1 shrink-0 order-last
-      md:w-[200px] md:h-auto md:flex-col md:py-4 md:px-3 md:gap-0.5 md:order-first
+      md:w-[200px] md:h-auto md:flex-col md:items-stretch md:py-4 md:px-3 md:gap-0.5 md:order-first
     " style={{ background: 'var(--color-bg-card)' }}>
       <style>{`nav[aria-label="Main navigation"] { border-top: 1px solid var(--color-border-subtle); } @media(min-width:768px) { nav[aria-label="Main navigation"] { border-top: none; border-right: 1px solid var(--color-border-subtle); } }`}</style>
       <div className="hidden md:flex items-center gap-2 mb-4 px-3" style={{ color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
