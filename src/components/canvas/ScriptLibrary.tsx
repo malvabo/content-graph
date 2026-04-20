@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useScriptStore, type Script } from '../../store/scriptStore';
 import { useSettingsStore } from '../../store/settingsStore';
 
@@ -10,6 +10,16 @@ const fmt = (iso: string) => {
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
+
+const ScriptIcon = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+    <path d="M10 12l-2 2 2 2"/><path d="M14 12l2 2-2 2"/>
+  </svg>
+);
+const DotsIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+);
 
 async function generateTitle(content: string): Promise<string> {
   const { anthropicKey, groqKey } = useSettingsStore.getState();
@@ -36,144 +46,134 @@ async function generateTitle(content: string): Promise<string> {
 function ScriptCard({ script, onOpen, onDelete }: { script: Script; onOpen: () => void; onDelete: () => void }) {
   const updateScript = useScriptStore(s => s.updateScript);
   const [titleLoading, setTitleLoading] = useState(!script.title);
-  const [editing, setEditing] = useState(false);
-  const [editVal, setEditVal] = useState(script.title);
-  const [deleting, setDeleting] = useState(false);
-  const delTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(false);
 
-  // Auto-generate title
   useEffect(() => {
     if (script.title) { setTitleLoading(false); return; }
     let cancelled = false;
     generateTitle(script.content).then(t => {
-      if (!cancelled && t) { updateScript(script.id, { title: t }); setEditVal(t); }
+      if (!cancelled && t) updateScript(script.id, { title: t });
       if (!cancelled) setTitleLoading(false);
     }).catch(() => { if (!cancelled) setTitleLoading(false); });
     return () => { cancelled = true; };
   }, [script.id, script.title, script.content, updateScript]);
 
-  const confirmEdit = () => {
-    setEditing(false);
-    if (editVal.trim() && editVal !== script.title) updateScript(script.id, { title: editVal.trim() });
-  };
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (deleting) { clearTimeout(delTimer.current); onDelete(); setDeleting(false); }
-    else { setDeleting(true); delTimer.current = setTimeout(() => setDeleting(false), 3000); }
-  };
-
   return (
-    <div onClick={onOpen} style={{
-      background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
-      borderRadius: 'var(--radius-md)', padding: 'var(--space-4)',
-      cursor: 'pointer', position: 'relative', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
-      transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out',
-    }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
-    >
-      {/* Delete — hover only */}
-      <button onClick={handleDelete} style={{
-        position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)',
-        background: 'none', border: 'none', color: deleting ? 'var(--color-danger-text)' : 'var(--color-text-disabled)',
-        fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', cursor: 'pointer', opacity: 0,
-        transition: 'opacity 150ms',
-      }} className="script-card-delete">
-        {deleting ? 'Delete?' : '×'}
-      </button>
+    <>
+      <div onClick={onOpen} style={{
+        textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+        background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
+        fontFamily: 'var(--font-sans)', cursor: 'pointer', outline: 'none',
+        transition: 'border-color .15s, box-shadow .15s',
+        display: 'flex', flexDirection: 'column', gap: 'var(--space-1)',
+      }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
+      >
+        {/* Title + menu */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
+          {titleLoading ? (
+            <div className="skeleton-bar" style={{ height: 'var(--text-sm)', width: '70%', borderRadius: 'var(--radius-sm)' }} />
+          ) : (
+            <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+              {script.title || 'Untitled'}
+            </div>
+          )}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <div role="button" tabIndex={0} aria-label="More options"
+              style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', background: 'transparent', transition: 'color .15s, background .15s', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+              onMouseLeave={e => { if (!menuOpen) { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'transparent'; } }}
+              onClick={e => { e.stopPropagation(); setMenuOpen(!menuOpen); }}>
+              <DotsIcon />
+            </div>
+            {menuOpen && (
+              <div onClick={e => e.stopPropagation()}
+                style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 4, minWidth: 120 }}>
+                <button onClick={() => { setDeleteId(true); setMenuOpen(false); }}
+                  style={{ width: '100%', display: 'block', padding: '6px 10px', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: 'var(--color-danger-text)', textAlign: 'left', transition: 'background 100ms' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-danger-bg)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
-      {/* Title */}
-      {editing ? (
-        <input autoFocus value={editVal} onChange={e => setEditVal(e.target.value)}
-          onBlur={confirmEdit} onKeyDown={e => { if (e.key === 'Enter') confirmEdit(); if (e.key === 'Escape') setEditing(false); }}
-          onClick={e => e.stopPropagation()}
-          style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', background: 'none', border: 'none', outline: 'none', padding: 0, width: '100%' }} />
-      ) : titleLoading ? (
-        <div className="skeleton-bar" style={{ height: 'var(--text-sm)', width: '70%', borderRadius: 'var(--radius-sm)' }} />
-      ) : (
-        <div onClick={e => { e.stopPropagation(); setEditing(true); }} style={{
-          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-          color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{script.title || 'Untitled'}</div>
-      )}
+        {/* Meta */}
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+          {fmt(script.createdAt)}
+          {script.analysed && <span style={{ marginLeft: 8, color: 'var(--color-accent-subtle)' }}>· Analysed</span>}
+        </div>
 
-      {/* Preview */}
-      <div style={{
-        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)',
-        overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-        lineHeight: 'var(--leading-snug)',
-      }}>{script.content}</div>
-
-      {/* Footer */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'var(--space-1)' }}>
-        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>{fmt(script.createdAt)}</span>
-        <span style={{
-          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)',
-          padding: '2px 8px', borderRadius: 'var(--radius-full)',
-          background: script.analysed ? 'var(--color-success-bg)' : 'var(--color-bg-surface)',
-          color: script.analysed ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)',
-        }}>{script.analysed ? 'Analysed' : 'Not analysed'}</span>
+        {/* Preview */}
+        {script.content && (
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {script.content.slice(0, 120)}
+          </div>
+        )}
       </div>
 
-      <style>{`.script-card-delete { opacity: 0 !important; } div:hover > .script-card-delete { opacity: 1 !important; }`}</style>
-    </div>
+      {/* Delete confirmation modal */}
+      {deleteId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)' }} onClick={() => setDeleteId(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-default)', maxWidth: 340, width: '100%', fontFamily: 'var(--font-sans)' }}>
+            <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>Delete script?</div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-snug)', marginBottom: 'var(--space-4)' }}>This will permanently remove "{script.title || 'Untitled'}".</div>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setDeleteId(false)}>Cancel</button>
+              <button className="btn btn-destructive" onClick={() => { onDelete(); setDeleteId(false); }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
 export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (content: string) => void }) {
   const { scripts, addScript, removeScript } = useScriptStore();
-  const [search, setSearch] = useState('');
 
   const handleNew = useCallback(() => {
     addScript('');
     onOpenScript('');
   }, [addScript, onOpenScript]);
 
-  const filtered = scripts.filter(s => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return s.title.toLowerCase().includes(q) || s.content.toLowerCase().includes(q);
-  });
-
   return (
-    <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-      {/* Hero banner */}
+    <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)', minWidth: 0, maxWidth: '100%' }}>
+      {/* Hero banner — matches Voice */}
       <div style={{ height: '30vh', minHeight: 180, background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'flex-end', padding: 'var(--space-8)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Scripts</h1>
           {scripts.length > 0 && <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>{scripts.length} script{scripts.length !== 1 ? 's' : ''}</p>}
         </div>
-        <div style={{ position: 'absolute', top: 'var(--space-6)', right: 'var(--space-8)', zIndex: 1, display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          {scripts.length > 0 && (
-            <div style={{ position: 'relative' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') setSearch(''); }}
-                placeholder="Search scripts…" aria-label="Search scripts" className="form-input" style={{ width: 200, paddingLeft: 32 }} />
-            </div>
-          )}
-          <button className="btn btn-primary" onClick={handleNew}>+ New script</button>
-        </div>
-      </div>
-
-      <div style={{ padding: 'var(--space-6) var(--space-8)', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-
-        {/* Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-4)' }}>
-          {filtered.map(s => (
-            <ScriptCard key={s.id} script={s} onOpen={() => onOpenScript(s.content)} onDelete={() => removeScript(s.id)} />
-          ))}
-        </div>
-
-        {/* Empty state */}
-        {scripts.length === 0 && (
-          <div style={{ textAlign: 'center', padding: 'var(--space-4) 0', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>
-            Record a voice note or paste a script to begin
+        {scripts.length > 0 && (
+          <div style={{ position: 'absolute', top: 'var(--space-6)', right: 'var(--space-8)', zIndex: 1 }}>
+            <button className="btn btn-primary" onClick={handleNew}>+ New script</button>
           </div>
         )}
       </div>
 
-      <style>{`@media (max-width: 639px) { div[style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; } }`}</style>
+      <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+        {scripts.length === 0 ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-8)' }}>
+            <div style={{ width: 64, height: 64, borderRadius: 'var(--radius-xl)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)' }}>
+              <ScriptIcon />
+            </div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>No scripts yet</div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 300, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>Paste a talk script and get AI-powered insights on claims, metaphors, and logic.</div>
+            <button className="btn btn-primary" onClick={handleNew} style={{ padding: '10px 24px', fontSize: 'var(--text-sm)' }}>Create your first script</button>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)' }}>
+            {scripts.map(s => (
+              <ScriptCard key={s.id} script={s} onOpen={() => onOpenScript(s.content)} onDelete={() => removeScript(s.id)} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

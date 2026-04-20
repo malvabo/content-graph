@@ -4,7 +4,6 @@ import { useSettingsStore } from '../../store/settingsStore';
 
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
-function cardId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
 
 async function chatWithCards(messages: ChatMsg[], cards: Card[], signal?: AbortSignal): Promise<string> {
   const { anthropicKey, groqKey } = useSettingsStore.getState();
@@ -74,10 +73,6 @@ export default function CardsPanel({ setId }: { setId?: string }) {
     setSelected(new Set());
   };
 
-  const ungroupCard = (id: string) => {
-    const updated = cards.map(c => c.id === id ? { ...c, group: undefined } : c);
-    updateCards(currentSet!.id, updated);
-  };
   const chatEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -87,9 +82,6 @@ export default function CardsPanel({ setId }: { setId?: string }) {
     if (currentSet) updateCards(currentSet.id, newCards);
   }, [currentSet, updateCards]);
 
-  const addCard = () => {
-    setCards([...cards, { id: cardId(), headline: 'New card', body: '' }]);
-  };
 
   const updateCard = (id: string, field: 'headline' | 'body', value: string) => {
     setCards(cards.map(c => c.id === id ? { ...c, [field]: value } : c));
@@ -98,6 +90,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
   const removeCard = (id: string) => {
     setCards(cards.filter(c => c.id !== id));
   };
+
 
   const send = useCallback(async () => {
     if (!input.trim() || loading || !currentSet) return;
@@ -157,15 +150,18 @@ export default function CardsPanel({ setId }: { setId?: string }) {
             if (c.group) { const g = groups.get(c.group) || []; g.push(c); groups.set(c.group, g); }
             else ungrouped.push(c);
           });
-          const renderCard = (card: typeof cards[0]) => (
-            <div key={card.id} onClick={e => { if (!e.shiftKey && !editingId) return; toggleSelect(card.id); }} style={{
-              background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
+          const renderCard = (card: typeof cards[0]) => {
+            const isSel = selected.has(card.id);
+            return (
+            <div key={card.id} onClick={e => { if (e.target instanceof HTMLElement && (e.target.contentEditable === 'true' || e.target.tagName === 'INPUT')) return; toggleSelect(card.id); }} style={{
+              background: 'var(--color-bg-card)', border: isSel ? '2px solid var(--color-accent)' : '1px solid var(--color-border-default)',
               borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
               display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
               transition: 'border-color 150ms, box-shadow 150ms', textAlign: 'left', minHeight: 120,
+              cursor: 'pointer',
             }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
+              onMouseEnter={e => { if (!isSel) { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; } }}
+              onMouseLeave={e => { if (!isSel) { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; } }}
             >
               {/* Remove button */}
               <button onClick={() => removeCard(card.id)}
@@ -195,7 +191,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 data-placeholder="Write something…"
                 style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', outline: 'none', minHeight: 'var(--space-10)', cursor: 'text' }} />
             </div>
-          );
+          ); };
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               {/* Named groups */}
@@ -222,16 +218,6 @@ export default function CardsPanel({ setId }: { setId?: string }) {
             </div>
           );
         })()}
-
-          {/* Add card button */}
-          <button onClick={addCard}
-            style={{ minHeight: 80, background: 'none', border: '1px dashed var(--color-border-default)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', transition: 'background 150ms, border-color 150ms' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-            Add card
-          </button>
-        </div>
       </div>
 
       {/* Right — Chat */}
