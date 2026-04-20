@@ -57,17 +57,18 @@ export function renderSVG(data: InfographicData): string {
     const y = gridStartY + row * (cardH + gapY);
     const pointColor = p.color || accent;
     cards += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="12" fill="${escSvg(cardBg)}" stroke="${escSvg(cardBorder)}" stroke-width="1"/>`;
-    cards += `<text x="${x + 20}" y="${y + 38}" font-size="26" font-weight="700" fill="${escSvg(pointColor)}" font-family="${escSvg(font)}">${escSvg(p.stat)}</text>`;
-    cards += `<text x="${x + 20}" y="${y + 62}" font-size="13" font-weight="500" fill="${escSvg(textColor)}" font-family="${escSvg(font)}">${escSvg(p.label)}</text>`;
+    cards += `<text x="${x + 20}" y="${y + 38}" font-size="26" font-weight="700" fill="${escSvg(pointColor)}" font-family="${primaryFont}, system-ui, sans-serif">${escSvg(p.stat)}</text>`;
+    cards += `<text x="${x + 20}" y="${y + 62}" font-size="13" font-weight="500" fill="${escSvg(textColor)}" font-family="${primaryFont}, system-ui, sans-serif">${escSvg(p.label)}</text>`;
     if (p.detail) {
-      cards += `<text x="${x + 20}" y="${y + 82}" font-size="11" fill="${subtitleColor}" font-family="${escSvg(font)}">${escSvg(p.detail.slice(0, 50))}</text>`;
+      cards += `<text x="${x + 20}" y="${y + 82}" font-size="11" fill="${subtitleColor}" font-family="${primaryFont}, system-ui, sans-serif">${escSvg(p.detail.slice(0, 50))}</text>`;
     }
   });
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
+${googleFontImport}
 <rect width="${W}" height="${H}" fill="${escSvg(bg)}" rx="16"/>
-<text x="${W / 2}" y="${titleY}" text-anchor="middle" font-size="22" font-weight="700" fill="${escSvg(textColor)}" font-family="${escSvg(font)}">${escSvg(title)}</text>
-${subtitle ? `<text x="${W / 2}" y="${subtitleY}" text-anchor="middle" font-size="13" fill="${subtitleColor}" font-family="${escSvg(font)}">${escSvg(subtitle)}</text>` : ''}
+<text x="${W / 2}" y="${titleY}" text-anchor="middle" font-size="22" font-weight="700" fill="${escSvg(textColor)}" font-family="${primaryFont}, system-ui, sans-serif">${escSvg(title)}</text>
+${subtitle ? `<text x="${W / 2}" y="${subtitleY}" text-anchor="middle" font-size="13" fill="${subtitleColor}" font-family="${primaryFont}, system-ui, sans-serif">${escSvg(subtitle)}</text>` : ''}
 ${cards}
 </svg>`;
 }

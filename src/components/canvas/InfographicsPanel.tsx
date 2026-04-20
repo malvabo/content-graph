@@ -21,7 +21,9 @@ async function chatEdit(messages: ChatMsg[], currentJson: string, signal?: Abort
 Current infographic JSON:
 ${currentJson}
 
-The JSON schema is: { "title": string, "subtitle"?: string, "theme"?: { "bg"?: string, "accent"?: string, "text"?: string, "cardBg"?: string, "cardBorder"?: string, "font"?: string }, "points": [{ "stat": string, "label": string, "detail"?: string, "color"?: string }] }`;
+The JSON schema is: { "title": string, "subtitle"?: string, "theme"?: { "bg"?: string, "accent"?: string, "text"?: string, "cardBg"?: string, "cardBorder"?: string, "font"?: string }, "points": [{ "stat": string, "label": string, "detail"?: string, "color"?: string }] }
+
+For theme.font, use any Google Font name (e.g. "Inter", "Roboto", "Playfair Display", "Space Grotesk", "Merriweather") or system fonts like "Georgia", "Courier New". The font will be loaded automatically.`;
 
   const msgs = messages.map(m => ({ role: m.role, content: m.text }));
 
