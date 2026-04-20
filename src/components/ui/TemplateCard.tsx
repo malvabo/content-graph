@@ -23,7 +23,7 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
       {/* Top: title + meta */}
-      <div style={{ background: '#1A1A1E', padding: '12px 16px' }}>
+      <div style={{ background: '#1A1A1E', padding: '12px 16px 0 16px', borderBottom: '1px solid var(--color-border-subtle)' }}>
         <div style={{
           fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
           color: 'var(--p-neutral-200)', lineHeight: '21px',
@@ -41,7 +41,6 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
         display: 'flex', alignItems: 'center', gap: 0,
         padding: '8px 16px',
         background: 'var(--color-bg-dark)',
-        borderTop: '1px solid var(--color-border-subtle)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
           {pills.map((label, i) => (
