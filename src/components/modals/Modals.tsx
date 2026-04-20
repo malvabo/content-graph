@@ -168,25 +168,47 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
     setGenError(null);
     setVariants([]);
     const dims = getDims(ratio);
-    const openaiKey = useSettingsStore.getState().openaiKey;
-    if (!openaiKey) { setGenError('No OpenAI API key set. Go to Settings to add one.'); setGenLoading(false); return; }
-    const size = dims.w > dims.h ? '1792x1024' : dims.h > dims.w ? '1024x1792' : '1024x1024';
+    const { openaiKey, togetherKey } = useSettingsStore.getState();
+    const prompt = editPrompt.trim().slice(0, 1000);
+    const w = dims.w, h = dims.h;
+    const snap = (n: number) => Math.round(n / 64) * 64;
+
+    const genOne = async (seed: number): Promise<string | null> => {
+      // Try OpenAI DALL-E 3
+      if (openaiKey) {
+        const size = w > h ? '1792x1024' : h > w ? '1024x1792' : '1024x1024';
+        const res = await fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST', signal: ctrl.signal,
+          headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size, response_format: 'b64_json' }),
+        });
+        if (res.ok) { const d = await res.json(); const b = d.data?.[0]?.b64_json; if (b) return `data:image/png;base64,${b}`; }
+      }
+      // Try Together AI
+      if (togetherKey) {
+        const res = await fetch('https://api.together.xyz/v1/images/generations', {
+          method: 'POST', signal: ctrl.signal,
+          headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt, width: snap(w), height: snap(h), n: 1, seed, response_format: 'b64_json' }),
+        });
+        if (res.ok) { const d = await res.json(); const b = d.data?.[0]?.b64_json; if (b) return `data:image/png;base64,${b}`; }
+      }
+      // Pollinations fallback
+      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
+      const res = await fetch(url, { signal: ctrl.signal });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      if (blob.size < 1000) return null;
+      return new Promise(resolve => { const r = new FileReader(); r.onloadend = () => resolve(r.result as string); r.onerror = () => resolve(null); r.readAsDataURL(blob); });
+    };
+
     try {
       for (let i = 0; i < 4; i++) {
         if (ctrl.signal.aborted) return;
         try {
-          const res = await fetch('https://api.openai.com/v1/images/generations', {
-            method: 'POST', signal: ctrl.signal,
-            headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: 'dall-e-3', prompt: editPrompt.trim().slice(0, 1000), n: 1, size, response_format: 'b64_json' }),
-          });
-          if (!res.ok) continue;
-          const data = await res.json();
-          const b64raw = data.data?.[0]?.b64_json;
-          if (!b64raw) continue;
-          const b64 = `data:image/png;base64,${b64raw}`;
+          const img = await genOne(Date.now() + i);
           if (ctrl.signal.aborted) return;
-          setVariants(prev => { const next = [...prev, b64]; if (next.length === 1) setActiveSrc(b64); return next; });
+          if (img) setVariants(prev => { const next = [...prev, img]; if (next.length === 1) setActiveSrc(img); return next; });
         } catch { if (ctrl.signal.aborted) return; }
       }
     } catch (error) {
