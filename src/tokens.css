@@ -271,6 +271,13 @@
   --color-interactive-hover: #262630;
   --color-interactive-active: #2e2e36;
   --color-accent-subtle: #4ade80;
+  --color-accent: #0DBF5A;
+  --color-accent-hover: #0BAF52;
+  --color-accent-active: #0A9F4A;
+  --color-interactive-focus: #0DBF5A;
+  --color-danger: #f06060;
+  --color-danger-hover: #e04040;
+  --color-danger-active: #d03030;
   --color-danger-bg: #2a1616;
   --color-danger-border: #4a2424;
   --color-danger-text: #f08080;
