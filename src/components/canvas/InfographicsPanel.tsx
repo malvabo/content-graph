@@ -155,6 +155,17 @@ export default function InfographicsPanel() {
     } finally { setLoading(false); }
   }, [input, loading, editing, update]);
 
+  const undo = useCallback(() => {
+    if (!undoStack.length || !editing) return;
+    const prev = undoStack[undoStack.length - 1];
+    setUndoStack(s => s.slice(0, -1));
+    update(editing.id, prev);
+    setMessages(m => [...m, { role: 'assistant', text: 'Reverted to previous version.' }]);
+  }, [undoStack, editing, update]);
+
+  const fontRerender = useCallback(() => setFontTick(t => t + 1), []);
+  const svg = editing ? (() => { const d = parseInfographicData(editing.json); return d ? renderSVG(d, fontRerender) : null; })() : null;
+
   // ─── HOME VIEW ───
   if (!editingId) {
     return (
@@ -193,7 +204,7 @@ export default function InfographicsPanel() {
                     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
                     {/* SVG preview */}
-                    <div style={{ height: 140, overflow: 'hidden', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0' }}>
+                    <div style={{ height: 200, overflow: 'hidden', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0' }}>
                       {svgStr ? (
                         <div dangerouslySetInnerHTML={{ __html: svgStr }} style={{ width: '100%', height: '100%', lineHeight: 0, overflow: 'hidden' }} />
                       ) : (
@@ -242,17 +253,7 @@ export default function InfographicsPanel() {
     );
   }
 
-  const undo = useCallback(() => {
-    if (!undoStack.length || !editing) return;
-    const prev = undoStack[undoStack.length - 1];
-    setUndoStack(s => s.slice(0, -1));
-    update(editing.id, prev);
-    setMessages(m => [...m, { role: 'assistant', text: 'Reverted to previous version.' }]);
-  }, [undoStack, editing, update]);
-
   // ─── EDITOR VIEW ───
-  const fontRerender = useCallback(() => setFontTick(t => t + 1), []);
-  const svg = editing ? (() => { const d = parseInfographicData(editing.json); return d ? renderSVG(d, fontRerender) : null; })() : null;
 
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)' }}>

@@ -626,11 +626,6 @@ ${text}`
         {/* ── Column labels + tabs ── */}
         <div style={{ display:"flex", background:C.white, borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
           <div style={{ width:"50%", padding:"0 16px", display:"flex", alignItems:"center", gap:10, borderRight:`1px solid ${C.border}`, height:44 }}>
-            <button className="back-btn" onClick={onBack} style={{ width:28, height:28, borderRadius:8, background:C.surface, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center", color:C.mute, padding:0, transition:"background 100ms, color 100ms" }}
-              onMouseEnter={e => { e.currentTarget.style.background = C.border; e.currentTarget.style.color = C.text; }}
-              onMouseLeave={e => { e.currentTarget.style.background = C.surface; e.currentTarget.style.color = C.mute; }}>
-              <span style={{ fontSize:14, lineHeight:1 }}>←</span>
-            </button>
             <span style={{ fontSize:13, fontWeight:500, color:C.text }}>Script</span>
           </div>
           <div style={{ width:"50%", display:"flex", alignItems:"stretch" }}>
@@ -838,7 +833,7 @@ function ContentGraph() {
     });
   }, []);
 
-  if (view === "home") return (
+  if (false && view === "home") return (
     <HomePage
       drafts={drafts}
       onNew={() => { setCurrentDraft(null); setView("editor"); }}

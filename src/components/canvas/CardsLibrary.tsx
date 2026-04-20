@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useCardsStore, type CardSet } from '../../store/cardsStore';
+import { useCardsStore } from '../../store/cardsStore';
+import TemplateCard from '../ui/TemplateCard';
 
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 const CardsIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="8" height="8" rx="1.5"/><rect x="14" y="3" width="8" height="8" rx="1.5"/><rect x="2" y="13" width="8" height="8" rx="1.5"/><rect x="14" y="13" width="8" height="8" rx="1.5"/></svg>;
@@ -40,9 +41,27 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
-            {sets.map(set => (
-              <CardSetItem key={set.id} set={set} onOpen={() => onOpen(set.id)} onDelete={() => setDeleteId(set.id)} />
-            ))}
+            {sets.map(set => {
+              const pills = set.cards.slice(0, 3).map(c => c.headline);
+              const extra = set.cards.length > 3 ? set.cards.length - 3 : undefined;
+              return (
+                <div key={set.id} style={{ position: 'relative' }}
+                  onMouseEnter={e => { const b = e.currentTarget.querySelector<HTMLElement>('.del-btn'); if (b) b.style.opacity = '1'; }}
+                  onMouseLeave={e => { const b = e.currentTarget.querySelector<HTMLElement>('.del-btn'); if (b) b.style.opacity = '0'; }}>
+                  <TemplateCard
+                    title={set.name}
+                    meta={`${set.cards.length} cards · ${fmt(set.createdAt)}`}
+                    pills={pills}
+                    extraCount={extra}
+                    onClick={() => onOpen(set.id)}
+                  />
+                  <button className="del-btn" onClick={e => { e.stopPropagation(); setDeleteId(set.id); }}
+                    style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', background: 'var(--color-overlay-light)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 150ms', backdropFilter: 'blur(4px)', zIndex: 2 }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -59,40 +78,6 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function CardSetItem({ set, onOpen, onDelete }: { set: CardSet; onOpen: () => void; onDelete: () => void }) {
-  return (
-    <div role="button" tabIndex={0} onClick={onOpen} style={{ position: 'relative' }}>
-      <div style={{
-        cursor: 'pointer', outline: 'none',
-        background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
-        borderRadius: 'var(--radius-lg)', textAlign: 'left',
-        transition: 'border-color 150ms, box-shadow 150ms',
-        display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-4)',
-      }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.parentElement!.querySelector<HTMLElement>('.del-btn')!.style.opacity = '1'; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.parentElement!.querySelector<HTMLElement>('.del-btn')!.style.opacity = '0'; }}
-      >
-        <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-tight)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{set.name}</div>
-        {/* Preview pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          {set.cards.slice(0, 3).map((c, i) => (
-            <span key={c.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              {i > 0 && <span style={{ color: 'var(--color-text-disabled)', fontSize: 10 }}>·</span>}
-              <span style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)', lineHeight: '16px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }}>{c.headline}</span>
-            </span>
-          ))}
-          {set.cards.length > 3 && <span style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>+{set.cards.length - 3}</span>}
-        </div>
-        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', lineHeight: 'var(--leading-tight)' }}>{set.cards.length} cards · {fmt(set.createdAt)}</div>
-      </div>
-      <button className="del-btn" onClick={e => { e.stopPropagation(); onDelete(); }}
-        style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', background: 'var(--color-overlay-light)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 150ms', backdropFilter: 'blur(4px)' }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-      </button>
     </div>
   );
 }
