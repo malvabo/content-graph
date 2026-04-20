@@ -81,9 +81,13 @@ export default function InfographicsPanel() {
       const currentJson = freshItem?.json || selected.json;
       const reply = await chatEdit(next, currentJson, abortRef.current.signal);
       const cleaned = reply.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      const parsed = parseInfographicData(cleaned);
+      // Try to extract JSON object from response even if surrounded by text
+      let jsonStr = cleaned;
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) jsonStr = jsonMatch[0];
+      const parsed = parseInfographicData(jsonStr);
       if (parsed && parsed.points?.length) {
-        update(selected.id, cleaned);
+        update(selected.id, jsonStr);
         setMessages(m => [...m, { role: 'assistant', text: 'Done! I\'ve updated the infographic. Anything else?' }]);
       } else {
         setMessages(m => [...m, { role: 'assistant', text: reply }]);

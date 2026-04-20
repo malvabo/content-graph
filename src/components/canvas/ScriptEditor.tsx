@@ -6,7 +6,7 @@ export default function ScriptEditor({ scriptId, onBack }: { scriptId: string; o
   const updateScript = useScriptStore(s => s.updateScript);
   const [content, setContent] = useState(script?.content ?? '');
   const ref = useRef<HTMLTextAreaElement>(null);
-  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Auto-save on change
   const handleChange = useCallback((val: string) => {
