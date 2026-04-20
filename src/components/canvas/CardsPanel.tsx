@@ -127,7 +127,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
               background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
               borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
               display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
-              transition: 'border-color 150ms, box-shadow 150ms', textAlign: 'left',
+              transition: 'border-color 150ms, box-shadow 150ms', textAlign: 'left', minHeight: 120,
             }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
@@ -145,10 +145,10 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 <input value={card.headline} onChange={e => updateCard(card.id, 'headline', e.target.value)}
                   onBlur={() => setEditingId(null)} onKeyDown={e => { if (e.key === 'Enter') setEditingId(null); }}
                   autoFocus
-                  style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-1) var(--space-2)', outline: 'none', width: '100%', lineHeight: 'var(--leading-tight)' }} />
+                  style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-1) var(--space-2)', outline: 'none', width: '100%', lineHeight: 'var(--leading-tight)' }} />
               ) : (
                 <div onClick={() => setEditingId(card.id)}
-                  style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', lineHeight: 'var(--leading-tight)', color: 'var(--color-text-primary)', cursor: 'text', paddingRight: 'var(--space-6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', lineHeight: 'var(--leading-tight)', color: 'var(--color-text-primary)', cursor: 'text', paddingRight: 'var(--space-6)' }}>
                   {card.headline}
                 </div>
               )}
@@ -157,7 +157,8 @@ export default function CardsPanel({ setId }: { setId?: string }) {
               <div contentEditable suppressContentEditableWarning
                 onBlur={e => updateCard(card.id, 'body', e.currentTarget.innerHTML)}
                 dangerouslySetInnerHTML={{ __html: card.body }}
-                style={{ fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', outline: 'none', minHeight: 'var(--space-4)', cursor: 'text' }} />
+                data-placeholder="Write something…"
+                style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', outline: 'none', minHeight: 'var(--space-10)', cursor: 'text', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' }} />
             </div>
           ))}
 

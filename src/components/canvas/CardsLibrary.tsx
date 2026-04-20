@@ -77,6 +77,16 @@ function CardSetItem({ set, onOpen, onDelete }: { set: CardSet; onOpen: () => vo
         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.parentElement!.querySelector<HTMLElement>('.del-btn')!.style.opacity = '0'; }}
       >
         <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-tight)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{set.name}</div>
+        {/* Preview pills */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          {set.cards.slice(0, 3).map((c, i) => (
+            <span key={c.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              {i > 0 && <span style={{ color: 'var(--color-text-disabled)', fontSize: 10 }}>·</span>}
+              <span style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '2px 8px', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)', lineHeight: '16px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }}>{c.headline}</span>
+            </span>
+          ))}
+          {set.cards.length > 3 && <span style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>+{set.cards.length - 3}</span>}
+        </div>
         <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', lineHeight: 'var(--leading-tight)' }}>{set.cards.length} cards · {fmt(set.createdAt)}</div>
       </div>
       <button className="del-btn" onClick={e => { e.stopPropagation(); onDelete(); }}

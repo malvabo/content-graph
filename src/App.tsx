@@ -123,12 +123,9 @@ function AppInner() {
 
         {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => { setVoiceTranscript(t); setActiveView('scriptsense'); }} />}
 
-        {activeView === 'scriptsense' && (
-          <div className="flex flex-1 min-h-0">
-            <ScriptSidebar onSelect={setVoiceTranscript} />
-            <ScriptSensePanel initialText={voiceTranscript} />
-          </div>
-        )}
+        {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(content) => { setVoiceTranscript(content); setActiveView('scriptsense'); }} />}
+
+        {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
 
 
         {activeView === 'settings' && <SettingsPanel />}

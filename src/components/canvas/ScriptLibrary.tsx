@@ -121,13 +121,13 @@ function ScriptCard({ script, onOpen, onDelete }: { script: Script; onOpen: () =
   );
 }
 
-export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (id: string) => void }) {
+export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (content: string) => void }) {
   const { scripts, addScript, removeScript } = useScriptStore();
   const [search, setSearch] = useState('');
 
   const handleNew = useCallback(() => {
-    const id = addScript('');
-    onOpenScript(id);
+    addScript('');
+    onOpenScript('');
   }, [addScript, onOpenScript]);
 
   const filtered = scripts.filter(s => {

@@ -393,3 +393,5 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
     }
   }
 }
+/* contentEditable placeholder */
+[contenteditable]:empty::before { content: attr(data-placeholder); color: var(--color-text-disabled); pointer-events: none; }
