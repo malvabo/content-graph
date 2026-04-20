@@ -98,7 +98,7 @@ function HeroBanner({ onNew }: { onNew: () => void }) {
       </svg>
 
       <div style={{ position: 'relative', padding: 'var(--space-8) var(--space-6) var(--space-8)' }}>
-        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--color-text-inverse)', margin: 0, letterSpacing: '-.02em' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--p-white)', margin: 0, letterSpacing: '-.02em' }}>
           Content Graph
         </h1>
         <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-on-dark)', margin: 'var(--space-2) 0 var(--space-5)', maxWidth: 360, lineHeight: 1.5 }}>
