@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
 
-interface Props { initialText?: string }
+interface Props { initialText?: string; onOpenInCards?: () => void }
 
-export default function ScriptSensePanel({ initialText }: Props) {
+export default function ScriptSensePanel({ initialText, onOpenInCards }: Props) {
   const [iframeKey, setIframeKey] = useState(0);
   const [iframeLoading, setIframeLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -37,7 +37,12 @@ export default function ScriptSensePanel({ initialText }: Props) {
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)' }}>
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)', position: 'relative' }}>
+      {onOpenInCards && (
+        <button onClick={onOpenInCards} className="btn btn-primary" style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-4)', zIndex: 10 }}>
+          Open in Cards
+        </button>
+      )}
       {iframeLoading && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
           <div className="skeleton-bar" style={{ width: 200, height: 24, borderRadius: 'var(--radius-md)' }} />

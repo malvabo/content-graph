@@ -242,7 +242,7 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
             </div>
           )}
         </div>
-        <style>{`@media (max-width: 639px) { div[style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; } }`}</style>
+        <style>{`@media (max-width: 639px) { div[style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr 1fr !important; } }`}</style>
       </div>
     );
   }
