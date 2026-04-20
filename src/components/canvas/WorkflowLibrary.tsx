@@ -4,11 +4,10 @@ import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from '../../utils/workflowApi';
 
+import TemplateCard from '../ui/TemplateCard';
+
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 
-const CHIP: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-normal)', fontFamily: 'var(--font-sans)', padding: 'var(--space-1) var(--space-3)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 };
-const ARROW: React.CSSProperties = { color: 'var(--color-text-secondary)', fontSize: 'var(--text-xs)', opacity: 0.4, margin: '0 var(--space-1)', flexShrink: 0 };
-const MORE: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', opacity: 0.4, whiteSpace: 'nowrap', flexShrink: 0 };
 
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<SavedWorkflow[]>([]);
@@ -75,25 +74,21 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
             {items.map(item => {
-              const hovered = hoverId === item.id;
               const { visible, remaining } = chipList(item);
               return (
-                <div key={item.id} role="button" tabIndex={0} onClick={() => handleLoad(item)}
-                  onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}
-                  style={{
-                    cursor: 'pointer', outline: 'none', height: 156,
-                    background: 'var(--color-bg-card)', border: `1px solid var(--color-border-${hovered ? 'strong' : 'default'})`,
-                    borderRadius: 'var(--radius-lg)', textAlign: 'left' as const,
-                    transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out',
-                    transform: hovered ? 'translateY(-1px)' : 'none',
-                    boxShadow: hovered ? 'var(--shadow-md)' : 'none',
-                    display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden',
-                  }}>
-
-                  {/* 3-dot menu — top right */}
-                  <div style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', opacity: hovered || menuId === item.id ? 1 : 0, transition: 'opacity 150ms', zIndex: 2 }}>
+                <div key={item.id} style={{ position: 'relative' }}
+                  onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}>
+                  <TemplateCard
+                    title={item.name}
+                    meta={`${item.nodes.length} nodes · ${fmt(item.savedAt)}`}
+                    pills={visible}
+                    extraCount={remaining > 0 ? remaining : undefined}
+                    onClick={() => handleLoad(item)}
+                  />
+                  {/* 3-dot menu */}
+                  <div style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', opacity: hoverId === item.id || menuId === item.id ? 1 : 0, transition: 'opacity 150ms', zIndex: 2 }}>
                     <div role="button" tabIndex={0} aria-label="More options"
-                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', cursor: 'pointer' }}
+                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-on-dark)', cursor: 'pointer' }}
                       onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                     </div>
@@ -101,41 +96,19 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                       <div ref={menuRef} onClick={e => e.stopPropagation()}
                         style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
                         {[
-                          { label: 'Rename', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>, action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
-                          { label: 'Duplicate', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>, action: () => handleDuplicate(item) },
-                          { label: 'Delete', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>, danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
+                          { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
+                          { label: 'Duplicate', action: () => handleDuplicate(item) },
+                          { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
                         ].map(opt => (
                           <button key={opt.label} onClick={opt.action}
                             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', textAlign: 'left', transition: 'background 100ms' }}
                             onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
                             onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                            <span style={{ color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-tertiary)', display: 'flex' }}>{opt.icon}</span>
                             {opt.label}
                           </button>
                         ))}
                       </div>
                     )}
-                  </div>
-
-                  {/* Chips */}
-                  <div style={{ display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'var(--color-bg-surface)', padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
-                    {visible.map((label, j) => (
-                      <span key={j} style={{ display: 'contents' }}>
-                        {j > 0 && <span style={ARROW}>→</span>}
-                        <span style={CHIP}>{label}</span>
-                      </span>
-                    ))}
-                    {remaining > 0 && <span style={MORE}>&nbsp;+{remaining}</span>}
-                  </div>
-
-                  {/* Title */}
-                  <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: 'var(--space-3) var(--space-4) 0', paddingRight: 'var(--space-8)' }}>
-                    {item.name}
-                  </div>
-
-                  {/* Metadata */}
-                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'auto', padding: '0 var(--space-4) var(--space-3)' }}>
-                    {item.nodes.length} nodes · {fmt(item.savedAt)}
                   </div>
                 </div>
               );
