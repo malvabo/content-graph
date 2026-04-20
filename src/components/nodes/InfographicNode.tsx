@@ -21,13 +21,15 @@ export function renderSVG(data: InfographicData): string {
   const cardBorder = theme?.cardBorder || '#3a3a36';
   const subtitleColor = '#908e85';
 
-  const W = 960, H = 540, cols = points.length <= 4 ? 2 : 3;
+  const W = 960, cols = points.length <= 4 ? 2 : 3;
   const cardW = cols === 2 ? 400 : 270, cardH = 100, gapX = 24, gapY = 16;
   const gridW = cols * cardW + (cols - 1) * gapX;
   const startX = (W - gridW) / 2;
   const titleY = subtitle ? 50 : 60;
   const subtitleY = titleY + 26;
   const gridStartY = subtitle ? subtitleY + 32 : titleY + 40;
+  const rows = Math.ceil(points.length / cols);
+  const H = Math.max(540, gridStartY + rows * (cardH + gapY) + 24);
 
   let cards = '';
   points.forEach((p, i) => {

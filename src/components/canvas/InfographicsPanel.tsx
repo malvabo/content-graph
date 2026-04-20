@@ -56,11 +56,14 @@ export default function InfographicsPanel() {
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const messagesRef = useRef<ChatMsg[]>(messages);
+  messagesRef.current = messages;
 
   const selected = items.find(i => i.id === selectedId) || items[0] || null;
   useEffect(() => { if (!selectedId && items.length) setSelectedId(items[0].id); }, [items, selectedId]);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
   useEffect(() => { setMessages([]); }, [selectedId]);
+  useEffect(() => { return () => { abortRef.current?.abort(); }; }, []);
 
   const getSvg = (item: InfographicItem) => {
     const data = parseInfographicData(item.json);
@@ -71,20 +74,32 @@ export default function InfographicsPanel() {
     const msg = (text || input).trim();
     if (!msg || loading || !selected) return;
     if (!text) setInput('');
-    const next: ChatMsg[] = [...messages, { role: 'user', text: msg }];
+    const next: ChatMsg[] = [...messagesRef.current, { role: 'user', text: msg }];
     setMessages(next);
     setLoading(true);
     abortRef.current = new AbortController();
     try {
-      // Read fresh JSON from store to avoid stale closure
       const freshItem = useInfographicStore.getState().items.find(i => i.id === selected.id);
-      const currentJson = freshItem?.json || selected.json;
-      const reply = await chatEdit(next, currentJson, abortRef.current.signal);
+      if (!freshItem) { setMessages(m => [...m, { role: 'assistant', text: 'Infographic was removed.' }]); return; }
+      const reply = await chatEdit(next, freshItem.json, abortRef.current.signal);
       const cleaned = reply.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      // Try to extract JSON object from response even if surrounded by text
+      // Non-greedy: find first complete JSON object
       let jsonStr = cleaned;
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (jsonMatch) jsonStr = jsonMatch[0];
+      const jsonMatch = cleaned.match(/\{[\s\S]*?\}(?=[^}]*$)/);
+      if (!jsonMatch) {
+        // fallback: try balanced brace extraction
+        const start = cleaned.indexOf('{');
+        if (start !== -1) {
+          let depth = 0, end = start;
+          for (let i = start; i < cleaned.length; i++) {
+            if (cleaned[i] === '{') depth++;
+            else if (cleaned[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+          }
+          jsonStr = cleaned.slice(start, end + 1);
+        }
+      } else {
+        jsonStr = jsonMatch[0];
+      }
       const parsed = parseInfographicData(jsonStr);
       if (parsed && parsed.points?.length) {
         update(selected.id, jsonStr);
@@ -95,7 +110,7 @@ export default function InfographicsPanel() {
     } catch (e: any) {
       if (e.name !== 'AbortError') setMessages(m => [...m, { role: 'assistant', text: `Error: ${e.message}` }]);
     } finally { setLoading(false); }
-  }, [input, loading, messages, selected, update]);
+  }, [input, loading, selected, update]);
 
   const exportPng = async () => {
     const el = document.getElementById('ig-panel-preview');
