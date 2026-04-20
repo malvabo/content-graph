@@ -247,11 +247,11 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               borderRadius: 'var(--radius-md)', overflow: 'hidden',
               border: '2px solid rgba(255,255,255,0.15)',
               willChange: 'aspect-ratio, transform',
-              transition: 'aspect-ratio 800ms cubic-bezier(0.22, 1, 0.36, 1), transform 800ms cubic-bezier(0.22, 1, 0.36, 1)',
+              transition: 'aspect-ratio 1200ms cubic-bezier(0.25, 0, 0.15, 1), transform 1200ms cubic-bezier(0.25, 0, 0.15, 1)',
             }}>
               <img src={activeSrc} alt={editPrompt || 'Generated image'}
                 onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'transform 800ms cubic-bezier(0.22, 1, 0.36, 1)', transform: 'scale(1)' }} />
+                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'transform 1200ms cubic-bezier(0.25, 0, 0.15, 1)', transform: 'scale(1)' }} />
               <div style={{ position: 'absolute', bottom: 'var(--space-2)', left: 'var(--space-2)', background: 'rgba(0,0,0,0.6)', borderRadius: 'var(--radius-sm)', padding: '2px 8px', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.8)' }}>
                 {ratio}
               </div>
