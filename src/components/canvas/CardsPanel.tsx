@@ -1,42 +1,224 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useCardsStore, type Card } from '../../store/cardsStore';
 import { useSettingsStore } from '../../store/settingsStore';
 
-export default function CardsPanel() {
-  const [loading, setLoading] = useState(true);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const anthropicKey = useSettingsStore(s => s.anthropicKey);
+interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
-  const handleLoad = () => {
-    setLoading(false);
-    if (iframeRef.current?.contentWindow && anthropicKey) {
-      iframeRef.current.contentWindow.postMessage({ type: 'set-api-key', key: anthropicKey }, window.location.origin);
-    }
+function cardId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+
+async function chatWithCards(messages: ChatMsg[], cards: Card[], signal?: AbortSignal): Promise<string> {
+  const { anthropicKey, groqKey } = useSettingsStore.getState();
+  const cardsJson = JSON.stringify(cards);
+  const system = `You are a card editor. The user has a set of content cards. Each card has an id, headline, and body (supports basic HTML: <mark>, <ul>, <li>, <strong>).
+
+Current cards JSON:
+${cardsJson}
+
+When the user asks to add, edit, remove, or reorganize cards, return ONLY a JSON object:
+{ "cards": [...updated cards array...], "message": "short description of what you did" }
+
+When the user asks a question that doesn't require editing, respond with plain text (no JSON).
+
+Rules:
+- Keep existing card ids when editing
+- Generate new ids (like "c${Date.now().toString(36)}") for new cards
+- Return the COMPLETE cards array, not just changed ones
+- No markdown fences, no explanation outside the JSON`;
+
+  const msgs = messages.map(m => ({ role: m.role, content: m.text }));
+
+  if (anthropicKey) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', signal,
+      headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, system, messages: msgs }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+    return data.content?.[0]?.text ?? '';
+  }
+  if (groqKey) {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST', signal,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey}` },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 4096, messages: [{ role: 'system', content: system }, ...msgs] }),
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content ?? '';
+  }
+  throw new Error('No API key configured. Add one in Settings.');
+}
+
+export default function CardsPanel({ setId }: { setId?: string }) {
+  const { sets, updateCards } = useCardsStore();
+  const currentSet = sets.find(s => s.id === setId) || sets[0];
+  const cards = currentSet?.cards || [];
+
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  const setCards = useCallback((newCards: Card[]) => {
+    if (currentSet) updateCards(currentSet.id, newCards);
+  }, [currentSet, updateCards]);
+
+  const addCard = () => {
+    setCards([...cards, { id: cardId(), headline: 'New card', body: '' }]);
   };
 
-  useEffect(() => {
-    const obs = new MutationObserver(() => {
-      const dark = document.documentElement.classList.contains('dark');
-      iframeRef.current?.contentWindow?.postMessage({ type: 'set-theme', dark }, window.location.origin);
-    });
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => obs.disconnect();
-  }, []);
+  const updateCard = (id: string, field: 'headline' | 'body', value: string) => {
+    setCards(cards.map(c => c.id === id ? { ...c, [field]: value } : c));
+  };
+
+  const removeCard = (id: string) => {
+    setCards(cards.filter(c => c.id !== id));
+  };
+
+  const send = useCallback(async () => {
+    if (!input.trim() || loading || !currentSet) return;
+    const msg = input.trim();
+    setInput('');
+    const next: ChatMsg[] = [...messages, { role: 'user', text: msg }];
+    setMessages(next);
+    setLoading(true);
+    abortRef.current = new AbortController();
+    try {
+      const reply = await chatWithCards(next, cards, abortRef.current.signal);
+      // Try to parse as card update
+      const cleaned = reply.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      try {
+        const parsed = JSON.parse(cleaned);
+        if (parsed.cards && Array.isArray(parsed.cards)) {
+          setCards(parsed.cards);
+          setMessages(m => [...m, { role: 'assistant', text: parsed.message || 'Updated cards.' }]);
+        } else {
+          setMessages(m => [...m, { role: 'assistant', text: reply }]);
+        }
+      } catch {
+        setMessages(m => [...m, { role: 'assistant', text: reply }]);
+      }
+    } catch (e: any) {
+      if (e.name !== 'AbortError') setMessages(m => [...m, { role: 'assistant', text: `Error: ${e.message}` }]);
+    } finally { setLoading(false); }
+  }, [input, loading, messages, cards, currentSet, setCards]);
+
+  if (!currentSet) return null;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)' }}>
-      {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-          <div className="skeleton-bar" style={{ width: 200, height: 24, borderRadius: 'var(--radius-md)' }} />
+    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)' }}>
+      {/* Left — Cards */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
+          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>
+            {currentSet.name}
+          </h1>
+          <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{cards.length} cards</span>
         </div>
-      )}
-      <iframe
-        ref={iframeRef}
-        src="/scriptsense/chat.html"
-        className="flex-1 w-full border-none"
-        style={{ opacity: loading ? 0 : 1, transition: `opacity var(--duration-slow) var(--ease-default)` }}
-        title="Cards"
-        onLoad={handleLoad}
-      />
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
+          {cards.map(card => (
+            <div key={card.id} style={{
+              background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
+              borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+              display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
+              transition: 'border-color 150ms, box-shadow 150ms',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
+            >
+              {/* Remove button */}
+              <button onClick={() => removeCard(card.id)}
+                style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 'var(--space-1)', borderRadius: 'var(--radius-sm)', display: 'flex', opacity: 0.4, transition: 'opacity 150ms' }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+
+              {/* Headline */}
+              {editingId === card.id ? (
+                <input value={card.headline} onChange={e => updateCard(card.id, 'headline', e.target.value)}
+                  onBlur={() => setEditingId(null)} onKeyDown={e => { if (e.key === 'Enter') setEditingId(null); }}
+                  autoFocus
+                  style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-1) var(--space-2)', outline: 'none', width: '100%' }} />
+              ) : (
+                <div onClick={() => setEditingId(card.id)}
+                  style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', lineHeight: 'var(--leading-tight)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', cursor: 'text', paddingRight: 'var(--space-6)' }}>
+                  {card.headline}
+                </div>
+              )}
+
+              {/* Body */}
+              <div contentEditable suppressContentEditableWarning
+                onBlur={e => updateCard(card.id, 'body', e.currentTarget.innerHTML)}
+                dangerouslySetInnerHTML={{ __html: card.body }}
+                style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', outline: 'none', minHeight: 'var(--space-8)', cursor: 'text' }} />
+            </div>
+          ))}
+
+          {/* Add card button */}
+          <button onClick={addCard}
+            style={{ minHeight: 120, background: 'none', border: '1px dashed var(--color-border-default)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', transition: 'background 150ms, border-color 150ms' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            Add card
+          </button>
+        </div>
+      </div>
+
+      {/* Right — Chat */}
+      <div style={{ width: 320, flexShrink: 0, borderLeft: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>Chat</div>
+          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>Add, edit, or reorganize cards</div>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {messages.length === 0 && (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-6)' }}>
+              <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', lineHeight: 'var(--leading-snug)' }}>
+                "Add 3 cards about AI safety" · "Make the first card shorter" · "Remove the last card" · "Rewrite all cards as questions"
+              </div>
+            </div>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+              <div style={{
+                maxWidth: '85%', padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)',
+                background: msg.role === 'user' ? 'var(--color-bg-surface)' : 'var(--color-bg-card)',
+                border: msg.role === 'assistant' ? '1px solid var(--color-border-subtle)' : 'none',
+                fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)',
+                lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap',
+              }}>{msg.text}</div>
+            </div>
+          ))}
+          {loading && (
+            <div style={{ display: 'flex', gap: 'var(--space-1)', padding: 'var(--space-3)' }}>
+              {[0, 1, 2].map(i => <div key={i} style={{ width: 'var(--size-status-dot)', height: 'var(--size-status-dot)', borderRadius: 'var(--radius-full)', background: 'var(--color-text-disabled)', animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />)}
+            </div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+
+        <div style={{ padding: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end' }}>
+            <textarea value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+              placeholder="Ask to add or edit cards…" rows={1}
+              style={{ flex: 1, resize: 'none', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', outline: 'none', lineHeight: 'var(--leading-relaxed)' }} />
+            <button onClick={send} disabled={loading || !input.trim()}
+              style={{ width: 'var(--size-control-md)', height: 'var(--size-control-md)', borderRadius: 'var(--radius-md)', border: 'none', background: input.trim() ? 'var(--color-accent)' : 'var(--color-bg-surface)', color: input.trim() ? 'var(--color-text-inverse)' : 'var(--color-text-disabled)', cursor: input.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background var(--duration-base) var(--ease-default)' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="m22 2-11 11"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
