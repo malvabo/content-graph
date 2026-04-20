@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useScriptStore, type Script } from '../../store/scriptStore';
 import { useSettingsStore } from '../../store/settingsStore';
-import TemplateCard from '../ui/TemplateCard';
 
 const fmt = (iso: string) => {
   const d = new Date(iso);

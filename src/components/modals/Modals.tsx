@@ -323,11 +323,9 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               </div>
             </div>
 
-            <div style={{ height: 1, background: 'var(--color-border-subtle)' }} />
-
             {/* Node settings */}
             {nodeId && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', paddingTop: 10, marginTop: 10, borderTop: '1px solid var(--color-border-subtle)' }}>
                 <div>
                   <span className="text-field-label">Purpose</span>
                   <select className="form-select w-full" value={purpose} onChange={e => { setConfig('purpose', e.target.value); const r = PURPOSE_RATIO[e.target.value]; if (r) { setRatio(r); setConfig('aspect', r); } }}>
@@ -349,11 +347,9 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               </div>
             )}
 
-            <div style={{ height: 1, background: 'var(--color-border-subtle)' }} />
-
             {/* Prompt */}
             {editPrompt !== undefined && (
-              <div>
+              <div style={{ paddingTop: 10, marginTop: 10, borderTop: '1px solid var(--color-border-subtle)' }}>
                 <div className="flex items-center justify-between">
                   <span className="text-field-label">Prompt</span>
                   {promptChanged && <button className="btn-xs btn-ghost" style={{ color: 'var(--color-text-disabled)' }} onClick={() => setEditPrompt(origPrompt.current)}>Reset</button>}
