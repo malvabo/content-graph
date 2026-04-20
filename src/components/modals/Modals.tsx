@@ -254,7 +254,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               aspectRatio: `${d.w} / ${d.h}`,
               borderRadius: 'var(--radius-md)', overflow: 'hidden',
               border: '2px solid rgba(255,255,255,0.15)',
-              transition: 'aspect-ratio 300ms ease',
+              transition: 'width 400ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)',
             }}>
               <img src={activeSrc} alt={editPrompt || 'Generated image'}
                 onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}

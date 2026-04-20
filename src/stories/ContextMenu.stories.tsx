@@ -11,7 +11,7 @@ function ContextMenu({ items = ['Duplicate', 'Delete', 'Disconnect all'], withOu
   return (
     <div className="ctx-menu-fade bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-lg shadow-lg py-1 min-w-[160px]" style={{ fontFamily: 'var(--font-sans)' }}>
       {all.map((label) => (
-        <button key={label} style={{ width: '100%', textAlign: 'left', padding: '6px 12px', fontSize: 'var(--text-sm)', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', color: isDanger(label) ? 'var(--color-danger)' : 'var(--color-text-primary)' }}>
+        <button key={label} style={{ display: 'flex', width: '100%', justifyContent: 'flex-start', padding: '6px 12px', fontSize: 'var(--text-sm)', background: 'none', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontFamily: 'var(--font-sans)', color: isDanger(label) ? 'var(--color-danger)' : 'var(--color-text-primary)' }}>
           {label}
         </button>
       ))}
