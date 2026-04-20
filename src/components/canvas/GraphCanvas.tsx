@@ -9,7 +9,6 @@ import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import BaseNode from '../nodes/BaseNode';
 import DeletableEdge from './DeletableEdge';
-import NodeSpotlight from './NodeSpotlight';
 import DotSpotlight from './DotSpotlight';
 import RunWaveOverlay from './RunWaveOverlay';
 import { useConnectionValidation } from '../../hooks/useConnectionValidation';
@@ -26,7 +25,6 @@ export default function GraphCanvas() {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId, setConnectingNodeId, addNode } = useGraphStore();
   const { screenToFlowPosition } = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const [spotlight, setSpotlight] = useState<{ x: number; y: number; flowX: number; flowY: number } | null>(null);
   const { isValidConnection, tooltip } = useConnectionValidation(nodes, edges);
   const { menu, onNodeContextMenu, close: closeMenu } = useContextMenu();
   const executionStatus = useExecutionStore((s) => s.status);
@@ -106,14 +104,7 @@ export default function GraphCanvas() {
 
   return (
     <div ref={wrapperRef} className="flex-1 h-full outline-none relative" tabIndex={0}
-      onDragOver={onDragOver} onDrop={onDrop}
-      onDoubleClick={(e) => {
-        if ((e.target as HTMLElement).closest('.react-flow__node')) return;
-        const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-        const bounds = wrapperRef.current?.getBoundingClientRect();
-        if (!bounds) return;
-        setSpotlight({ x: e.clientX - bounds.left, y: e.clientY - bounds.top, flowX: pos.x, flowY: pos.y });
-      }}>
+      onDragOver={onDragOver} onDrop={onDrop}>
       <ReactFlow
         nodes={nodes} edges={styledEdges}
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
@@ -125,7 +116,7 @@ export default function GraphCanvas() {
         nodeTypes={nodeTypes} edgeTypes={edgeTypes} defaultEdgeOptions={defaultEdgeOptions}
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
         onNodeContextMenu={(e, node) => onNodeContextMenu(e, node.id)}
-        onPaneClick={() => { setSelectedNodeId(null); setSpotlight(null); dismissFirstRun(); closeMenu(); }}
+        onPaneClick={() => { setSelectedNodeId(null); dismissFirstRun(); closeMenu(); }}
         deleteKeyCode={['Backspace', 'Delete']}
         fitView={false} panOnScroll selectionOnDrag selectionKeyCode="Shift"
         proOptions={{ hideAttribution: true }}
@@ -143,7 +134,7 @@ export default function GraphCanvas() {
         </div>
       )}
 
-      {spotlight && <NodeSpotlight x={spotlight.x} y={spotlight.y} flowX={spotlight.flowX} flowY={spotlight.flowY} onClose={() => setSpotlight(null)} onSelect={() => setSpotlight(null)} />}
+
 
       {showFirstRun && (
         <div onClick={dismissFirstRun} style={{

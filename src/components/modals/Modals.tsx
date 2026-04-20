@@ -376,14 +376,14 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                 <div className="flex justify-end" style={{ marginTop: 'var(--space-2)' }}>
                   {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
                 </div>
-                <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <div style={{ borderTop: '1px solid var(--color-border-subtle)', marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                   {[
                     { label: 'Style', tags: ['cinematic', 'minimal', 'editorial', 'abstract', 'retro'] },
                     { label: 'Mood', tags: ['vibrant', 'moody', 'dreamy', 'warm', 'dark'] },
                   ].map(group => (
                     <div key={group.label}>
                       <span className="text-field-label">{group.label}</span>
-                      <div className="flex flex-wrap gap-1" style={{ marginTop: 4 }}>
+                      <div className="flex flex-wrap gap-1">
                         {group.tags.map(s => {
                           const active = editPrompt.toLowerCase().includes(s);
                           return (
