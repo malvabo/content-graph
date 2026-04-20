@@ -90,11 +90,6 @@ function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.Rea
       <div role="dialog" aria-modal="true" aria-label="Image Prompt" className="flex flex-col w-full overflow-hidden rounded-t-[var(--radius-xl)] md:rounded-[var(--radius-xl)]"
         style={{ maxWidth: isMobile ? '100%' : maxWidth, maxHeight: isMobile ? '95vh' : `min(92vh, calc(100vh - 48px))`, background: 'var(--color-bg-card)', boxShadow: '0 16px 48px rgba(0,0,0,0.18), 0 0 0 1px var(--color-border-default)', transform: visible ? 'translateY(0)' : 'translateY(16px)', opacity: visible ? 1 : 0, transition: 'transform 150ms ease, opacity 150ms ease', position: 'relative' }}
         onClick={(e) => e.stopPropagation()}>
-        <button aria-label="Close" onClick={onClose} style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms, color 100ms' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
         {children}
       </div>
     </div>,
