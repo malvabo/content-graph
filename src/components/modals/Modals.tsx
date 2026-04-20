@@ -248,13 +248,12 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
           <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-6)', overflow: 'hidden' }}>
             <div style={{
               position: 'relative',
-              width: d.w >= d.h ? '100%' : 'auto',
-              height: d.h >= d.w ? '100%' : 'auto',
-              maxWidth: '100%', maxHeight: '100%',
+              width: '100%',
+              maxHeight: '100%',
               aspectRatio: `${d.w} / ${d.h}`,
               borderRadius: 'var(--radius-md)', overflow: 'hidden',
               border: '2px solid rgba(255,255,255,0.15)',
-              transition: 'width 400ms cubic-bezier(0.4, 0, 0.2, 1), height 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'aspect-ratio 600ms cubic-bezier(0.25, 0.1, 0.25, 1)',
             }}>
               <img src={activeSrc} alt={editPrompt || 'Generated image'}
                 onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}

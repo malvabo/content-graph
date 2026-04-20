@@ -13,6 +13,7 @@ import { RefineInline } from './TransformNodes';
 import { ExportInline } from './OutputNodes';
 import { ImagePromptInline } from './ImagePromptNode';
 import { VoiceSourceInline } from './VoiceSourceNode';
+import { InfographicInline } from './InfographicNode';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import { useGraphStore } from '../../store/graphStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -288,7 +289,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         {data.subtype === 'refine' && <RefineInline id={id} />}
         {(data.subtype === 'image-prompt' || data.subtype === 'video') && <ImagePromptInline id={id} />}
         {data.subtype === 'export' && <ExportInline id={id} />}
-        {data.category === 'generate' && !['image-prompt', 'video'].includes(data.subtype) && (
+        {data.subtype === 'infographic' && <InfographicInline id={id} />}
+        {data.category === 'generate' && !['image-prompt', 'video', 'infographic'].includes(data.subtype) && (
           <GenerateNodeInline id={id} subtype={data.subtype} expandOpen={expandOpen} onExpand={() => setExpandOpen(true)} onExpandClose={() => setExpandOpen(false)} />
         )}
       </div>

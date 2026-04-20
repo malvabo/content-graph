@@ -24,7 +24,7 @@ export function mockExecute(input: string, subtype: string): string {
       const takeaway = lastPara.length > 20 ? lastPara : `The key takeaway: ${firstSentence}`;
       return `SUBJECT: ${subject}\n\nHey there,\n\n${hook}\n\n${body}\n\nHere's what this means for you:\n\n${takeaway}\n\nOne thing to try this week: take the core idea above and apply it to your current project. See what shifts.\n\nHit reply and let me know what you think — I read every response.\n\nUntil next time.`;
     },
-    'infographic': () => `TITLE: ${firstSentence.split(' ').slice(0, 6).join(' ')}\nSUBTITLE: Key insights visualized\n\n${sentences.slice(0, 4).map((s, i) => `SECTION ${i + 1}: ${s.split(' ').slice(0, 4).join(' ')}\nContent: ${s.trim()}\nVisual element: icon ${i + 1}`).join('\n\n')}\n\nDESIGN DIRECTION:\nLayout: vertical flow\nMood: Clean, data-driven`,
+    'infographic': () => JSON.stringify({ title: firstSentence.split(' ').slice(0, 5).join(' '), subtitle: 'Key insights visualized', points: sentences.slice(0, 4).map((s, i) => ({ stat: `${(i + 1) * 23}%`, label: s.split(' ').slice(0, 5).join(' '), detail: s.trim().slice(0, 50) })) }),
     'image-prompt': () => {
       const orientation = input.includes('9:16') || input.includes('portrait') ? 'vertical portrait' : input.includes('1:1') || input.includes('square') ? 'square' : 'wide landscape';
       return `A cinematic ${orientation} photograph of ${firstSentence.toLowerCase()}, golden hour lighting, shallow depth of field, rich color palette, editorial style, 8k resolution`;
