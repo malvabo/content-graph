@@ -114,9 +114,9 @@ function AppInner() {
 
         {activeView === 'cardslibrary' && <CardsLibrary onOpen={(id: string) => { setActiveView('cards:' + id); }} />}
 
-        {activeView === 'cards' && <CardsPanel setId={hashParam} />}
+        {activeView === 'cards' && <CardsPanel key={hashParam} setId={hashParam} />}
 
-        {activeView === 'infographics' && <InfographicsPanel initialEditId={hashParam} />}
+        {activeView === 'infographics' && <InfographicsPanel key={hashParam} initialEditId={hashParam} />}
       </div>
     </div>
   );

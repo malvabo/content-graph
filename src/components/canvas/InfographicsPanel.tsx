@@ -89,6 +89,7 @@ const DEFAULT_JSON = JSON.stringify({ title: 'New Infographic', subtitle: 'Edit 
 export default function InfographicsPanel({ initialEditId }: { initialEditId?: string }) {
   const { items, add, update, remove } = useInfographicStore();
   const [editingId, setEditingId] = useState<string | null>(initialEditId || null);
+  useEffect(() => { if (initialEditId) setEditingId(initialEditId); }, [initialEditId]);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
