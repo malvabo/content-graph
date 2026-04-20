@@ -40,7 +40,7 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       <div style={{
         display: 'flex', alignItems: 'center', gap: 0,
         padding: '8px 16px',
-        background: 'var(--color-bg-dark)',
+        background: '#161619',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
           {pills.map((label, i) => (

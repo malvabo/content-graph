@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import '../index.css';
-function Select({ label = 'Label', value = 'Option 1', options = ['Option 1','Option 2','Option 3'] }: { label?: string; value?: string; options?: string[] }) {
-  const [open, setOpen] = useState(false);
+function Select({ label = 'Label', value = 'Option 1', options = ['Option 1','Option 2','Option 3'], defaultOpen = false }: { label?: string; value?: string; options?: string[]; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   const [selected, setSelected] = useState(value);
   return (<div style={{ fontFamily: 'var(--font-sans)', maxWidth: 'var(--size-panel)', position: 'relative' }}>
     <div className="text-field-label">{label}</div>
@@ -18,4 +18,4 @@ function Select({ label = 'Label', value = 'Option 1', options = ['Option 1','Op
 const meta: Meta<typeof Select> = { title: 'Components/Form/Select', component: Select, tags: ['autodocs'], argTypes: { label: { control: 'text' }, value: { control: 'text' } } };
 export default meta;
 export const Default: StoryObj<typeof Select> = { args: { label: 'Goal', value: 'Thought leadership', options: ['Thought leadership','Personal story','Industry insight'] } };
-export const OpenState: StoryObj<typeof Select> = { name: 'Open', args: { label: 'Model', value: 'claude-haiku-4', options: ['claude-haiku-4','claude-sonnet-4','claude-opus-4'] } };
+export const OpenState: StoryObj<typeof Select> = { name: 'Open', args: { label: 'Model', value: 'claude-haiku-4', options: ['claude-haiku-4','claude-sonnet-4','claude-opus-4'], defaultOpen: true } };
