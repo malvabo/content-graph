@@ -11,8 +11,8 @@ interface TemplateCardProps {
 export default function TemplateCard({ title, meta, pills, extraCount, onClick }: TemplateCardProps) {
   return (
     <button onClick={onClick} style={{
-      display: 'flex', width: '100%', height: 129, flexDirection: 'column',
-      justifyContent: 'space-between', alignItems: 'stretch',
+      display: 'flex', width: '100%', flexDirection: 'column',
+      alignItems: 'stretch',
       borderRadius: 'var(--radius-lg)',
       border: '1px solid var(--color-border-default)',
       background: 'var(--color-bg-dark)',
