@@ -338,8 +338,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                 <textarea value={editPrompt} onChange={(e) => setEditPrompt(e.target.value)}
                   className="form-textarea" style={{ minHeight: 160, scrollbarWidth: 'thin' }}
                 />
-                <div className="flex justify-between" style={{ marginTop: 'var(--space-1)' }}>
-                  <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: editPrompt.length > 500 ? 'var(--color-warning-text)' : 'var(--color-text-disabled)' }}>{editPrompt.length} / 500</span>
+                <div className="flex justify-end" style={{ marginTop: 'var(--space-1)' }}>
                   {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
                 </div>
                 <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
