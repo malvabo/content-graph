@@ -168,22 +168,26 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
     const genOne = async (seed: number): Promise<string | null> => {
       // Try OpenAI DALL-E 3
       if (openaiKey) {
-        const size = w > h ? '1792x1024' : h > w ? '1024x1792' : '1024x1024';
-        const res = await fetch('https://api.openai.com/v1/images/generations', {
-          method: 'POST', signal: ctrl.signal,
-          headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size, response_format: 'b64_json' }),
-        });
-        if (res.ok) { const d = await res.json(); const b = d.data?.[0]?.b64_json; if (b) return `data:image/png;base64,${b}`; }
+        try {
+          const size = w > h ? '1792x1024' : h > w ? '1024x1792' : '1024x1024';
+          const res = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST', signal: ctrl.signal,
+            headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size, response_format: 'b64_json' }),
+          });
+          if (res.ok) { const d = await res.json(); const b = d.data?.[0]?.b64_json; if (b) return `data:image/png;base64,${b}`; }
+        } catch { /* fall through */ }
       }
       // Try Together AI
       if (togetherKey) {
-        const res = await fetch('https://api.together.xyz/v1/images/generations', {
-          method: 'POST', signal: ctrl.signal,
-          headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt, width: snap(w), height: snap(h), n: 1, seed, response_format: 'b64_json' }),
-        });
-        if (res.ok) { const d = await res.json(); const b = d.data?.[0]?.b64_json; if (b) return `data:image/png;base64,${b}`; }
+        try {
+          const res = await fetch('https://api.together.xyz/v1/images/generations', {
+            method: 'POST', signal: ctrl.signal,
+            headers: { Authorization: `Bearer ${togetherKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'black-forest-labs/FLUX.1-schnell-Free', prompt, width: snap(w), height: snap(h), n: 1, seed, response_format: 'b64_json' }),
+          });
+          if (res.ok) { const d = await res.json(); const b = d.data?.[0]?.b64_json; if (b) return `data:image/png;base64,${b}`; }
+        } catch { /* fall through to Pollinations */ }
       }
       // Pollinations fallback
       const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
