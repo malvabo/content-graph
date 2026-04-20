@@ -9,14 +9,11 @@ interface Props {
 function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: string; active: boolean; onClick: () => void }) {
   const [hover, setHover] = useState(false);
   return (
-    <div className="relative md:w-full">
-      <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} aria-label={label}
-        className="flex items-center gap-3 w-full rounded-lg transition-colors"
-        style={{ padding: '8px 12px', background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, flexShrink: 0 }}>{icon}</span>
-        <span className="hidden md:inline" style={{ fontSize: 14, fontFamily: 'var(--font-sans)', fontWeight: active ? 'var(--weight-medium)' : 'var(--weight-normal)', whiteSpace: 'nowrap' }}>{label}</span>
-      </button>
-    </div>
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} aria-label={label}
+      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '8px 12px', borderRadius: 8, background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms' }}>
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, flexShrink: 0 }}>{icon}</span>
+      <span style={{ fontSize: 14, fontFamily: 'var(--font-sans)', fontWeight: active ? 500 : 400, whiteSpace: 'nowrap' }}>{label}</span>
+    </button>
   );
 }
 const WorkflowIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7"/><path d="M17.5 14v7"/></svg>;
@@ -86,9 +83,8 @@ function UserMenu() {
 
 export default function IconNav({ activeView, onViewChange }: Props) {
   return (
-    <nav aria-label="Main navigation" className="w-full h-[52px] flex flex-row items-center px-2 gap-1 shrink-0 order-last md:w-[200px] md:h-auto md:flex-col md:items-stretch md:py-4 md:px-2 md:gap-0.5 md:order-first" style={{ background: 'var(--color-bg-card)' }}>
-      <style>{`nav[aria-label="Main navigation"] { border-top: 1px solid var(--color-border-subtle); } @media(min-width:768px) { nav[aria-label="Main navigation"] { border-top: none; border-right: 1px solid var(--color-border-subtle); } }`}</style>
-      <div className="hidden md:flex items-center gap-2 mb-3 px-3 py-1" style={{ color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
+    <nav aria-label="Main navigation" style={{ width: 200, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', padding: '16px 8px', gap: 2, flexShrink: 0, background: 'var(--color-bg-card)', borderRight: '1px solid var(--color-border-subtle)' }}>
+      <div style={{ color: 'var(--color-text-primary)', fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', userSelect: 'none', padding: '4px 12px', marginBottom: 12 }}>up</div>
 
       <NavItem icon={<WorkflowIcon />} label="Workflows" active={activeView === 'library' || activeView === 'workflow'} onClick={() => onViewChange('library')} />
       <NavItem icon={<VoiceIcon />} label="Voice" active={activeView === 'voice'} onClick={() => onViewChange('voice')} />
@@ -96,7 +92,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
       <NavItem icon={<CardsIcon />} label="Cards" active={activeView === 'cardslibrary' || activeView === 'cards'} onClick={() => onViewChange('cardslibrary')} />
       <NavItem icon={<InfographicsIcon />} label="Infographics" active={activeView === 'infographics'} onClick={() => onViewChange('infographics')} />
 
-      <div className="flex-1" />
+      <div style={{ flex: 1 }} />
       <NavItem icon={<SettingsIcon />} label="Settings" active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
       <DarkModeToggle />
       <UserMenu />

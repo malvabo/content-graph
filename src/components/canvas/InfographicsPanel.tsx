@@ -346,9 +346,9 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
 
         {/* Input */}
         <div style={{ padding: 'var(--space-3) var(--space-4)', borderTop: '1px solid var(--color-border-subtle)' }}>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', background: 'var(--color-bg)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: '2px 2px 2px var(--space-3)', transition: 'border-color 150ms' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', background: 'var(--color-bg)', border: `1px solid ${input.trim() ? 'var(--color-accent)' : 'var(--color-border-default)'}`, borderRadius: 'var(--radius-lg)', padding: '2px 2px 2px var(--space-3)', transition: 'border-color 150ms' }}
+            onMouseEnter={e => { if (!input.trim()) e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+            onMouseLeave={e => { if (!input.trim()) e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
             <input value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); send(); } }}
               placeholder={messages.length === 0 ? 'Try "Change the title to…"' : 'What else to change?'}
