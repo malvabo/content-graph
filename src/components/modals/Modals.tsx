@@ -251,7 +251,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
             }}>
               <img src={activeSrc} alt={editPrompt || 'Generated image'}
                 onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'opacity 300ms ease' }} />
+                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'object-position 1.2s cubic-bezier(0.16, 1, 0.3, 1)' }} />
               <div style={{ position: 'absolute', bottom: 'var(--space-2)', left: 'var(--space-2)', background: 'rgba(0,0,0,0.6)', borderRadius: 'var(--radius-sm)', padding: '2px 8px', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.8)' }}>
                 {ratio}
               </div>

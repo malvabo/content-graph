@@ -13,6 +13,7 @@ import DotSpotlight from './DotSpotlight';
 import RunWaveOverlay from './RunWaveOverlay';
 import { useConnectionValidation } from '../../hooks/useConnectionValidation';
 import ContextMenu, { useContextMenu } from './ContextMenu';
+import NodePalette from './NodePalette';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { aiExecute } from '../../utils/aiExecutor';
 import type { NodeDef } from '../../utils/nodeDefs';
@@ -94,6 +95,18 @@ export default function GraphCanvas() {
     } catch { return; }
   }, [addNode, screenToFlowPosition]);
 
+  const handleAddNode = useCallback((def: NodeDef) => {
+    const center = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    const node: ContentNode = {
+      id: `${def.subtype}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+      type: 'contentNode',
+      position: { x: center.x - 120, y: center.y - 40 },
+      deletable: true,
+      data: { subtype: def.subtype, label: def.label, badge: def.badge, category: def.category, description: def.description, config: {} },
+    };
+    addNode(node);
+  }, [addNode, screenToFlowPosition]);
+
   const selectedNodes = useMemo(() => nodes.filter(n => n.selected), [nodes]);
   const { runAll } = useNodeExecution();
 
@@ -148,6 +161,8 @@ export default function GraphCanvas() {
       )}
 
       {menu && <ContextMenu x={menu.x} y={menu.y} nodeId={menu.nodeId} onClose={closeMenu} />}
+
+      <NodePalette onAddNode={handleAddNode} />
 
       {selectedNodes.length > 1 && (
         <div style={{
