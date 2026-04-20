@@ -42,9 +42,10 @@ function DarkModeToggle() {
   return (
     <button onClick={() => setDark(!dark)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
-      style={{ background: hover ? 'var(--color-bg-surface)' : 'transparent', color: 'var(--color-text-tertiary)' }}>
-      {dark ? <SunIcon /> : <MoonIcon />}
+      className="flex items-center gap-3 w-full rounded-lg transition-colors"
+      style={{ padding: '8px 12px', background: hover ? 'var(--color-bg-surface)' : 'transparent', color: 'var(--color-text-tertiary)' }}>
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, flexShrink: 0 }}>{dark ? <SunIcon /> : <MoonIcon />}</span>
+      <span className="hidden md:inline" style={{ fontSize: 14, fontFamily: 'var(--font-sans)' }}>{dark ? 'Light' : 'Dark'}</span>
     </button>
   );
 }
@@ -62,7 +63,7 @@ function UserMenu() {
   if (!user) return null;
   const initial = (user.email?.[0] ?? '?').toUpperCase();
   return (
-    <div ref={ref} className="relative flex justify-center">
+    <div ref={ref} className="relative flex md:w-full md:px-3 md:py-1">
       <button onClick={() => setOpen(!open)} className="w-8 h-8 rounded-full flex items-center justify-center"
         style={{ background: 'var(--color-border-strong)', color: 'var(--color-text-primary)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', border: 'none', cursor: 'pointer' }}>
         {initial}
@@ -85,9 +86,9 @@ function UserMenu() {
 
 export default function IconNav({ activeView, onViewChange }: Props) {
   return (
-    <nav aria-label="Main navigation" className="w-full h-[52px] flex flex-row items-center px-2 gap-1 shrink-0 order-last md:w-[200px] md:h-auto md:flex-col md:items-stretch md:py-4 md:px-3 md:gap-0.5 md:order-first" style={{ background: 'var(--color-bg-card)' }}>
+    <nav aria-label="Main navigation" className="w-full h-[52px] flex flex-row items-center px-2 gap-1 shrink-0 order-last md:w-[200px] md:h-auto md:flex-col md:items-stretch md:py-4 md:px-2 md:gap-0.5 md:order-first" style={{ background: 'var(--color-bg-card)' }}>
       <style>{`nav[aria-label="Main navigation"] { border-top: 1px solid var(--color-border-subtle); } @media(min-width:768px) { nav[aria-label="Main navigation"] { border-top: none; border-right: 1px solid var(--color-border-subtle); } }`}</style>
-      <div className="hidden md:flex items-center gap-2 mb-4 px-3" style={{ color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
+      <div className="hidden md:flex items-center gap-2 mb-3 px-3 py-1" style={{ color: 'var(--color-text-primary)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>up</div>
 
       <NavItem icon={<WorkflowIcon />} label="Workflows" active={activeView === 'library' || activeView === 'workflow'} onClick={() => onViewChange('library')} />
       <NavItem icon={<VoiceIcon />} label="Voice" active={activeView === 'voice'} onClick={() => onViewChange('voice')} />
