@@ -629,10 +629,10 @@ ${text}`
               )}
               <div style={{ width:1, height:14, background:C.border }} />
               <button title="Re-run analysis" onClick={runAnalysis}
-                style={{ width:36, height:36, borderRadius:"50%", border:`1px solid ${C.border}`, background:"transparent", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"background 100ms" }}
-                onMouseEnter={e => { e.currentTarget.style.background = C.surface; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
-                <RotateCcw size={13} color={C.sub} />
+                style={{ width:36, height:36, borderRadius:8, border:"none", background:"transparent", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"background 100ms, color 100ms", color:C.mute }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.surface; e.currentTarget.style.color = C.text; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.mute; }}>
+                <RotateCcw size={16} color="currentColor" />
               </button>
               <div style={{ width:1, height:14, background:C.border }} />
             </div>

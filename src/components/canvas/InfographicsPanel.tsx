@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useInfographicStore } from '../../store/infographicStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { renderSVG, parseInfographicData } from '../nodes/InfographicNode';
+import TemplateCard from '../ui/TemplateCard';
 
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
@@ -94,6 +95,7 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -198,50 +200,41 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
               {items.map(item => {
                 const data = parseInfographicData(item.json);
                 const title = data?.title || item.label || 'Untitled';
-                const svgStr = data ? renderSVG(data) : null;
+                const pointCount = data?.points?.length || 0;
+                const chartType = data?.type || 'cards';
                 return (
-                  <div key={item.id} onClick={() => setEditingId(item.id)}
-                    style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', flexDirection: 'column', transition: 'transform 150ms ease-out, box-shadow 150ms ease-out, border-color 150ms ease-out', position: 'relative' }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
-                    {/* SVG preview */}
-                    <div style={{ height: 200, overflow: 'hidden', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0' }}>
-                      {svgStr ? (
-                        <div dangerouslySetInnerHTML={{ __html: svgStr }} style={{ width: '100%', height: '100%', lineHeight: 0, overflow: 'hidden' }} />
-                      ) : (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="1.5" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
-                      )}
-                    </div>
-                    {/* Title + menu */}
-                    <div style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{title}</span>
-                      <div style={{ position: 'relative', flexShrink: 0 }}>
-                        <div role="button" tabIndex={0} aria-label="More options"
-                          style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-disabled)', background: 'transparent', transition: 'color .15s, background .15s', cursor: 'pointer' }}
-                          onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-secondary)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                          onMouseLeave={e => { if (menuId !== item.id) { e.currentTarget.style.color = 'var(--color-text-disabled)'; e.currentTarget.style.background = 'transparent'; } }}
-                          onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                        </div>
-                        {menuId === item.id && (
-                          <div ref={menuRef} onClick={e => e.stopPropagation()}
-                            style={{ position: 'absolute', top: 28, left: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
-                            {[
-                              { label: 'Edit', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>, action: () => { setEditingId(item.id); setMenuId(null); } },
-                              { label: 'Rename', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 6H3"/><path d="M15 12H3"/><path d="M17 18H3"/></svg>, action: () => { const name = prompt('Rename', title); if (name?.trim()) { const d = parseInfographicData(item.json); if (d) { d.title = name.trim(); update(item.id, JSON.stringify(d)); } } setMenuId(null); } },
-                              { label: 'Delete', danger: true, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>, action: () => { remove(item.id); setMenuId(null); } },
-                            ].map(opt => (
-                              <button key={opt.label} onClick={opt.action}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', textAlign: 'left', transition: 'background 100ms' }}
-                                onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                                <span style={{ color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-tertiary)', display: 'flex' }}>{opt.icon}</span>
-                                {opt.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                  <div key={item.id} style={{ position: 'relative' }}
+                    onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}>
+                    <TemplateCard
+                      title={title}
+                      meta={`${pointCount} points · ${chartType}`}
+                      pills={data?.points?.slice(0, 3).map(p => p.label) || []}
+                      extraCount={pointCount > 3 ? pointCount - 3 : undefined}
+                      onClick={() => setEditingId(item.id)}
+                    />
+                    {/* 3-dot menu — matches WorkflowLibrary */}
+                    <div style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', opacity: hoverId === item.id || menuId === item.id ? 1 : 0, transition: 'opacity 150ms', zIndex: 2 }}>
+                      <div role="button" tabIndex={0} aria-label="More options"
+                        style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-secondary)', background: 'var(--color-overlay-light)', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+                        onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                       </div>
+                      {menuId === item.id && (
+                        <div ref={menuRef} onClick={e => e.stopPropagation()}
+                          style={{ position: 'absolute', top: 28, left: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
+                          {[
+                            { label: 'Rename', action: () => { const name = prompt('Rename', title); if (name?.trim()) { const d = parseInfographicData(item.json); if (d) { d.title = name.trim(); update(item.id, JSON.stringify(d)); } } setMenuId(null); } },
+                            { label: 'Delete', danger: true, action: () => { remove(item.id); setMenuId(null); } },
+                          ].map(opt => (
+                            <button key={opt.label} onClick={opt.action}
+                              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', textAlign: 'left', transition: 'background 100ms' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
