@@ -23,20 +23,17 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
       {/* Top: title + meta */}
-      <div style={{ display: 'flex', flexDirection: 'column', background: '#1A1A1E' }}>
-        <div style={{ padding: '12px 32px 0 16px' }}>
-          <div style={{
-            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-            color: 'var(--p-neutral-200)', lineHeight: '21px',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{title}</div>
-        </div>
-        <div style={{ padding: '8px 16px 12px 16px' }}>
-          <div style={{
-            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-normal)',
-            color: 'var(--color-text-tertiary)', lineHeight: '18px',
-          }}>{meta}</div>
-        </div>
+      <div style={{ background: '#1A1A1E', padding: '12px 16px' }}>
+        <div style={{
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
+          color: 'var(--p-neutral-200)', lineHeight: '21px',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          paddingRight: 16,
+        }}>{title}</div>
+        <div style={{
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-normal)',
+          color: 'var(--color-text-tertiary)', lineHeight: '18px', marginTop: 4,
+        }}>{meta}</div>
       </div>
 
       {/* Bottom: node pill bar */}
