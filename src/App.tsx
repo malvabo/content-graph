@@ -6,6 +6,7 @@ import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import ScriptLibrary from './components/canvas/ScriptLibrary';
 import ScriptEditor from './components/canvas/ScriptEditor';
+import { useScriptStore } from './store/scriptStore';
 import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
@@ -104,7 +105,17 @@ function AppInner() {
 
         {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => { setVoiceTranscript(t); setActiveView('scriptsense'); }} />}
 
-        {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
+        {activeView === 'scriptsense' && (
+          <div className="flex flex-1 min-h-0">
+            <div style={{ width: 260, borderRight: '1px solid var(--color-border-subtle)', overflow: 'auto', background: 'var(--color-bg)', flexShrink: 0 }}>
+              <ScriptLibrary onOpenScript={(id) => {
+                const script = useScriptStore.getState().scripts.find(s => s.id === id);
+                if (script?.content) setVoiceTranscript(script.content);
+              }} />
+            </div>
+            <ScriptSensePanel initialText={voiceTranscript} />
+          </div>
+        )}
 
         {activeView === 'scriptview' && <ScriptLibrary onOpenScript={(id) => { setEditScriptId(id); setActiveView('scripteditor'); }} />}
 

@@ -56,7 +56,9 @@ export default function InfographicsPanel() {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [menuId, setMenuId] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const messagesRef = useRef<ChatMsg[]>(messages);
   messagesRef.current = messages;
