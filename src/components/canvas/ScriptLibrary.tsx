@@ -148,8 +148,11 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (id: str
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             {scripts.length > 0 && (
-              <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') setSearch(''); }}
-                placeholder="Search scripts…" className="form-input" style={{ width: 200, fontSize: 16 }} />
+              <div style={{ position: 'relative' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') setSearch(''); }}
+                  placeholder="Search scripts…" aria-label="Search scripts" className="form-input" style={{ width: 200, paddingLeft: 32 }} />
+              </div>
             )}
             <button className="btn btn-primary" onClick={handleNew}>+ New script</button>
           </div>
