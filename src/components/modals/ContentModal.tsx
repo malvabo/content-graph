@@ -64,7 +64,7 @@ function Header({ title, subtitle, onClose }: { title: string; subtitle?: string
 }
 
 /* ── Footer: regenerate (loading), copy (icon), done ── */
-function Footer({ onClose, onRegenerate, onCopy, copied }: { onClose: () => void; onRegenerate?: () => void; onCopy: () => void; copied: boolean }) {
+function Footer({ onClose, onRegenerate, onCopy, copied, onSave }: { onClose: () => void; onRegenerate?: () => void; onCopy: () => void; copied: boolean; onSave?: () => void }) {
   const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const regen = () => {
@@ -85,6 +85,7 @@ function Footer({ onClose, onRegenerate, onCopy, copied }: { onClose: () => void
       </div>
       <div className="flex items-center gap-2">
         <button className="btn btn-sm btn-ghost" onClick={onCopy}>{copied ? <><CheckIcon /> Copied</> : <><CopyIcon /> Copy</>}</button>
+        <button className="btn btn-sm btn-primary" onClick={() => { onSave?.(); onClose(); }}>Done</button>
       </div>
     </div>
   );
