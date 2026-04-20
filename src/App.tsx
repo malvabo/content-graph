@@ -5,7 +5,6 @@ import NodePalette from './components/canvas/NodePalette';
 import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
-import ScriptLibrary from './components/canvas/ScriptLibrary';
 import { useGraphStore, type ContentNode } from './store/graphStore';
 import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -115,8 +114,7 @@ function AppInner() {
 
         {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => { setVoiceTranscript(t); setActiveView('scriptsense'); }} />}
 
-        {activeView === 'scriptsense' && <ScriptLibrary onOpenScript={(t) => { setVoiceTranscript(t); setActiveView('scriptview'); }} />}
-        {activeView === 'scriptview' && <ScriptSensePanel initialText={voiceTranscript} />}
+        {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} />}
 
         {activeView === 'settings' && <SettingsPanel />}
 

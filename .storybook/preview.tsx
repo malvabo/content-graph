@@ -26,7 +26,7 @@ const preview: Preview = {
       document.documentElement.classList.toggle('dark', theme === 'dark');
       const bg = theme === 'dark' ? '#111114' : '#F2EFE9';
       return (
-        <div style={{ background: bg, padding: 24, minHeight: '100%', borderRadius: 8 }}>
+        <div style={{ background: bg, padding: 24 }}>
           <Story />
         </div>
       );
