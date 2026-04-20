@@ -4,6 +4,7 @@ import CanvasToolbar from './components/canvas/CanvasToolbar';
 import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
+import ScriptLibrary from './components/canvas/ScriptLibrary';
 import { useScriptStore } from './store/scriptStore';
 import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -49,7 +50,6 @@ function AppInner() {
   const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v); }, []);
   useEffect(() => { const h = () => setActiveViewRaw(getViewFromHash()); window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
   const [voiceTranscript, setVoiceTranscript] = useState('');
-  const [editScriptId, setEditScriptId] = useState('');
   useKeyboardShortcuts();
 
   useEffect(() => { init(); }, [init]);
@@ -116,9 +116,6 @@ function AppInner() {
           </div>
         )}
 
-        {activeView === 'scriptview' && <ScriptLibrary onOpenScript={(id) => { setEditScriptId(id); setActiveView('scripteditor'); }} />}
-
-        {activeView === 'scripteditor' && editScriptId && <ScriptEditor scriptId={editScriptId} onBack={() => setActiveView('scriptview')} />}
 
         {activeView === 'settings' && <SettingsPanel />}
 

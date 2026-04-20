@@ -21,7 +21,7 @@ async function chatEdit(messages: ChatMsg[], currentJson: string, signal?: Abort
 Current infographic JSON:
 ${currentJson}
 
-The JSON schema is: { "title": string, "subtitle"?: string, "theme"?: { "bg"?: string, "accent"?: string, "text"?: string, "cardBg"?: string, "cardBorder"?: string }, "points": [{ "stat": string, "label": string, "detail"?: string, "color"?: string }] }`;
+The JSON schema is: { "title": string, "subtitle"?: string, "theme"?: { "bg"?: string, "accent"?: string, "text"?: string, "cardBg"?: string, "cardBorder"?: string, "font"?: string }, "points": [{ "stat": string, "label": string, "detail"?: string, "color"?: string }] }`;
 
   const msgs = messages.map(m => ({ role: m.role, content: m.text }));
 
@@ -232,7 +232,7 @@ export default function InfographicsPanel() {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
-          {svg && <div id="ig-editor-preview" dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', maxWidth: 800, lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }} />}
+          {svg && <div id="ig-editor-preview" key={editing?.json} dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', maxWidth: 800, lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }} />}
         </div>
       </div>
 
@@ -240,7 +240,7 @@ export default function InfographicsPanel() {
       <div style={{ width: 360, flexShrink: 0, borderLeft: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', display: 'flex', flexDirection: 'column' }}>
         {/* Header with mini preview */}
         <div style={{ padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-          {svg && <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: 48, height: 28, borderRadius: 4, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--color-border-subtle)' }} />}
+          {svg && <div key={editing?.json} dangerouslySetInnerHTML={{ __html: svg }} style={{ width: 48, height: 28, borderRadius: 4, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--color-border-subtle)' }} />}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(() => { const d = editing ? parseInfographicData(editing.json) : null; return d?.title || 'Untitled'; })()}</div>
             <div style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{(() => { const d = editing ? parseInfographicData(editing.json) : null; return d?.points?.length || 0; })()} data points</div>
