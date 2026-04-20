@@ -68,7 +68,6 @@ export function InfographicInline({ id }: { id: string }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
   const text = useOutputStore((s) => s.outputs[id]?.text);
   const [modalOpen, setModalOpen] = useState(false);
-  const [sent, setSent] = useState(false);
 
   if (status === 'idle' || status === 'stale') return null;
   if (status === 'running') return (
@@ -92,8 +91,6 @@ export function InfographicInline({ id }: { id: string }) {
   const sendToPanel = () => {
     const node = useGraphStore.getState().nodes.find(n => n.id === id);
     useInfographicStore.getState().add({ id, nodeId: id, label: node?.data.label || 'Infographic', json: text });
-    setSent(true);
-    setTimeout(() => setSent(false), 1500);
   };
 
   return (
@@ -130,7 +127,7 @@ export function InfographicInline({ id }: { id: string }) {
                 const a = document.createElement('a'); a.href = url; a.download = 'infographic.png'; a.click();
               }}>↓ Download PNG</button>
               <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                <button className="btn btn-outline btn-sm" onClick={sendToPanel}>{sent ? '✓ Sent' : 'Send to Infographics'}</button>
+                <button className="btn btn-primary btn-sm" onClick={() => { sendToPanel(); setModalOpen(false); window.location.hash = 'infographics'; }}>Edit infographic</button>
               </div>
             </div>
           </div>
