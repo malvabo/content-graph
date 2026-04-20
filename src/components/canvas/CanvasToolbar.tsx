@@ -70,13 +70,13 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
       {published && (
         <div style={{
           position: 'fixed', top: 'var(--space-5)', left: '50%', transform: 'translateX(-50%)', zIndex: 1200,
-          background: 'var(--color-bg-card)', border: '1px solid var(--color-accent)',
+          background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
           borderRadius: 'var(--radius-lg)', padding: 'var(--space-3) var(--space-5)',
           boxShadow: 'var(--shadow-lg)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
           color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
           animation: 'fadeIn 150ms ease',
         }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
           Workflow published successfully
         </div>
       )}

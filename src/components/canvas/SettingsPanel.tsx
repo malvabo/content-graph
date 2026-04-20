@@ -212,7 +212,7 @@ function APIKeysSection() {
           <h2 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>API Keys</h2>
           <p style={HDESC}>Manage provider keys for AI generation.</p>
         </div>
-        {saved && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>✓ Saved</span>}
+        {saved && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>✓ Saved</span>}
       </div>
       <div style={{ ...CARD, padding: 0 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
