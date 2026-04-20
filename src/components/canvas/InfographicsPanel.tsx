@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useInfographicStore, type InfographicItem } from '../../store/infographicStore';
+import { useInfographicStore } from '../../store/infographicStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { renderSVG, parseInfographicData } from '../nodes/InfographicNode';
 
@@ -48,9 +48,11 @@ The JSON schema is: { "title": string, "subtitle"?: string, "theme"?: { "bg"?: s
   throw new Error('No API key configured. Add one in Settings.');
 }
 
+const DEFAULT_JSON = JSON.stringify({ title: 'New Infographic', subtitle: 'Edit me with the chat panel', points: [{ stat: '0', label: 'Your first data point' }] });
+
 export default function InfographicsPanel() {
-  const { items, update, remove } = useInfographicStore();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { items, add, update, remove } = useInfographicStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,50 +61,44 @@ export default function InfographicsPanel() {
   const messagesRef = useRef<ChatMsg[]>(messages);
   messagesRef.current = messages;
 
-  const selected = items.find(i => i.id === selectedId) || items[0] || null;
-  useEffect(() => { if (!selectedId && items.length) setSelectedId(items[0].id); }, [items, selectedId]);
+  const editing = items.find(i => i.id === editingId) || null;
+
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-  useEffect(() => { setMessages([]); }, [selectedId]);
+  useEffect(() => { setMessages([]); }, [editingId]);
   useEffect(() => { return () => { abortRef.current?.abort(); }; }, []);
 
-  const getSvg = (item: InfographicItem) => {
-    const data = parseInfographicData(item.json);
-    return data ? renderSVG(data) : null;
+  const createNew = () => {
+    const id = `ig-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    add({ id, nodeId: id, label: 'New Infographic', json: DEFAULT_JSON });
+    setEditingId(id);
   };
 
   const send = useCallback(async (text?: string) => {
     const msg = (text || input).trim();
-    if (!msg || loading || !selected) return;
+    if (!msg || loading || !editing) return;
     if (!text) setInput('');
     const next: ChatMsg[] = [...messagesRef.current, { role: 'user', text: msg }];
     setMessages(next);
     setLoading(true);
     abortRef.current = new AbortController();
     try {
-      const freshItem = useInfographicStore.getState().items.find(i => i.id === selected.id);
+      const freshItem = useInfographicStore.getState().items.find(i => i.id === editing.id);
       if (!freshItem) { setMessages(m => [...m, { role: 'assistant', text: 'Infographic was removed.' }]); return; }
       const reply = await chatEdit(next, freshItem.json, abortRef.current.signal);
       const cleaned = reply.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      // Non-greedy: find first complete JSON object
       let jsonStr = cleaned;
-      const jsonMatch = cleaned.match(/\{[\s\S]*?\}(?=[^}]*$)/);
-      if (!jsonMatch) {
-        // fallback: try balanced brace extraction
-        const start = cleaned.indexOf('{');
-        if (start !== -1) {
-          let depth = 0, end = start;
-          for (let i = start; i < cleaned.length; i++) {
-            if (cleaned[i] === '{') depth++;
-            else if (cleaned[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
-          }
-          jsonStr = cleaned.slice(start, end + 1);
+      const start = cleaned.indexOf('{');
+      if (start !== -1) {
+        let depth = 0, end = start;
+        for (let i = start; i < cleaned.length; i++) {
+          if (cleaned[i] === '{') depth++;
+          else if (cleaned[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
         }
-      } else {
-        jsonStr = jsonMatch[0];
+        jsonStr = cleaned.slice(start, end + 1);
       }
       const parsed = parseInfographicData(jsonStr);
       if (parsed && parsed.points?.length) {
-        update(selected.id, jsonStr);
+        update(editing.id, jsonStr);
         setMessages(m => [...m, { role: 'assistant', text: 'Done! I\'ve updated the infographic. Anything else?' }]);
       } else {
         setMessages(m => [...m, { role: 'assistant', text: reply }]);
@@ -110,71 +106,56 @@ export default function InfographicsPanel() {
     } catch (e: any) {
       if (e.name !== 'AbortError') setMessages(m => [...m, { role: 'assistant', text: `Error: ${e.message}` }]);
     } finally { setLoading(false); }
-  }, [input, loading, selected, update]);
+  }, [input, loading, editing, update]);
 
-  const exportPng = async () => {
-    const el = document.getElementById('ig-panel-preview');
-    if (!el) return;
-    const { toPng } = await import('html-to-image');
-    const url = await toPng(el, { pixelRatio: 3 });
-    const a = document.createElement('a'); a.href = url; a.download = 'infographic.png'; a.click();
-  };
-
-  const exportSvg = () => {
-    if (!selected) return;
-    const data = parseInfographicData(selected.json);
-    if (!data) return;
-    const svg = renderSVG(data);
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'infographic.svg'; a.click();
-  };
-
-  return (
-    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)' }}>
-      {/* Left — Infographic Canvas */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Top Bar */}
-        <div style={{ padding: 'var(--space-3) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Infographics</h1>
-          {selected && (
-            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-              <button onClick={exportPng} className="btn btn-sm btn-ghost">Export PNG</button>
-              <button onClick={exportSvg} className="btn btn-sm btn-ghost">Export SVG</button>
+  // ─── HOME VIEW ───
+  if (!editingId) {
+    return (
+      <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
+        <div style={{ padding: 'var(--space-6) var(--space-8)', maxWidth: 900, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Infographics</h1>
+              {items.length > 0 && <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)', background: 'var(--color-bg-surface)', padding: '2px 8px', borderRadius: 99 }}>{items.length}</span>}
             </div>
-          )}
-        </div>
+            <button onClick={createNew} className="btn btn-sm btn-outline" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> New
+            </button>
+          </div>
 
-        {/* Canvas */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)' }}>
           {items.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-10)', minHeight: 300 }}>
-              <div style={{ width: 'var(--space-12)', height: 'var(--space-12)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)', padding: 'var(--space-8) var(--space-6)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--color-border-strong)', background: 'var(--color-bg-card)', marginTop: 'calc(25vh - 80px)' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--color-text-tertiary)' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
               </div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>No infographics yet</div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 280, lineHeight: 'var(--leading-snug)' }}>Generate an infographic in a workflow, then click it and send it here</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 2 }}>No infographics yet</div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>Create one from scratch or generate from a workflow</div>
+              </div>
+              <button onClick={createNew} className="btn btn-sm btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Create
+              </button>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)' }}>
-              {items.map(item => {
-                const svg = getSvg(item);
-                const isSelected = selected?.id === item.id;
+            <div style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-default)', overflow: 'hidden' }}>
+              {items.map((item, i) => {
+                const data = parseInfographicData(item.json);
+                const title = data?.title || item.label || 'Untitled';
+                const pointCount = data?.points?.length || 0;
                 return (
-                  <div key={item.id} onClick={() => setSelectedId(item.id)} id={isSelected ? 'ig-panel-preview' : undefined}
-                    style={{
-                      borderRadius: 'var(--radius-lg)', overflow: 'hidden', cursor: 'pointer',
-                      border: `2px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border-default)'}`,
-                      boxShadow: isSelected ? 'var(--shadow-md)' : 'none',
-                      transition: 'transform 150ms ease-out, border-color 150ms, box-shadow 150ms',
-                      position: 'relative',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; if (!isSelected) e.currentTarget.style.boxShadow = 'none'; }}>
-                    {svg && <div key={item.json} dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', lineHeight: 0 }} />}
+                  <div key={item.id} onClick={() => setEditingId(item.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)', cursor: 'pointer', borderBottom: i < items.length - 1 ? '1px solid var(--color-border-subtle)' : 'none', transition: 'background 100ms' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--color-text-tertiary)' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
+                    </div>
+                    <span style={{ flex: 1, fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)', flexShrink: 0 }}>{pointCount} points</span>
                     <button onClick={e => { e.stopPropagation(); remove(item.id); }}
-                      style={{ position: 'absolute', top: 'var(--space-2)', right: 'var(--space-2)', width: 24, height: 24, borderRadius: 'var(--radius-md)', background: 'var(--color-overlay-light)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', opacity: 0, transition: 'opacity 150ms' }}
+                      style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', padding: 4, borderRadius: 'var(--radius-sm)', opacity: 0.4, transition: 'opacity 100ms' }}
                       onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
-                      onMouseLeave={e => { e.currentTarget.style.opacity = '0'; }}>
+                      onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     </button>
                   </div>
@@ -184,48 +165,62 @@ export default function InfographicsPanel() {
           )}
         </div>
       </div>
+    );
+  }
+
+  // ─── EDITOR VIEW ───
+  const svg = editing ? (() => { const d = parseInfographicData(editing.json); return d ? renderSVG(d) : null; })() : null;
+
+  return (
+    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)' }}>
+      {/* Left — Full-width infographic */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ padding: 'var(--space-3) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
+          <button onClick={() => setEditingId(null)} className="btn btn-ghost" style={{ padding: 'var(--space-1) var(--space-2)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          </button>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', flex: 1 }}>Infographics</span>
+          <button onClick={async () => {
+            const el = document.getElementById('ig-editor-preview');
+            if (!el) return;
+            const { toPng } = await import('html-to-image');
+            const url = await toPng(el, { pixelRatio: 3 });
+            const a = document.createElement('a'); a.href = url; a.download = 'infographic.png'; a.click();
+          }} className="btn btn-sm btn-ghost">Export PNG</button>
+          <button onClick={() => {
+            if (!editing) return;
+            const d = parseInfographicData(editing.json);
+            if (!d) return;
+            const s = renderSVG(d);
+            const blob = new Blob([s], { type: 'image/svg+xml' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'infographic.svg'; a.click();
+          }} className="btn btn-sm btn-ghost">Export SVG</button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
+          {svg && <div id="ig-editor-preview" dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', maxWidth: 800, lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }} />}
+        </div>
+      </div>
 
       {/* Right — Chat */}
       <div style={{ width: 340, flexShrink: 0, borderLeft: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
           <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>Edit with AI</div>
-          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
-            {selected ? 'Describe changes to your infographic' : 'Select an infographic to start'}
-          </div>
+          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>Describe changes to your infographic</div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {/* AI Greeting */}
-          {messages.length === 0 && selected && (
+          {messages.length === 0 && (
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <div style={{
-                maxWidth: '85%', padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)',
-                background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)',
-                fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)',
-                lineHeight: 'var(--leading-relaxed)',
-              }}>
-                I can edit this infographic for you. Try changing the title, adding data points, updating stats, or adjusting the layout. What would you like to change?
-              </div>
-            </div>
-          )}
-
-          {messages.length === 0 && !selected && (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-6)' }}>
-              <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', lineHeight: 'var(--leading-snug)' }}>
-                Send an infographic here from a workflow to start editing
+              <div style={{ maxWidth: '85%', padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-relaxed)' }}>
+                I can edit this infographic for you. Try changing the title, adding data points, updating stats, or adjusting colors. What would you like to change?
               </div>
             </div>
           )}
 
           {messages.map((msg, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-              <div style={{
-                maxWidth: '85%', padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)',
-                background: msg.role === 'user' ? 'var(--color-bg-surface)' : 'var(--color-bg-card)',
-                border: msg.role === 'assistant' ? '1px solid var(--color-border-subtle)' : 'none',
-                fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)',
-                lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap',
-              }}>{msg.text}</div>
+              <div style={{ maxWidth: '85%', padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)', background: msg.role === 'user' ? 'var(--color-bg-surface)' : 'var(--color-bg-card)', border: msg.role === 'assistant' ? '1px solid var(--color-border-subtle)' : 'none', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap' }}>{msg.text}</div>
             </div>
           ))}
 
@@ -235,24 +230,17 @@ export default function InfographicsPanel() {
             </div>
           )}
 
-          {/* Suggestion Chips */}
-          {!loading && selected && (
+          {!loading && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
               {SUGGESTION_CHIPS.map(chip => (
                 <button key={chip} onClick={() => send(chip)}
-                  style={{
-                    padding: 'var(--space-1) var(--space-3)', borderRadius: 'var(--radius-full)',
-                    border: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)',
-                    fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)',
-                    cursor: 'pointer', transition: 'border-color 150ms, background 150ms',
-                  }}
+                  style={{ padding: 'var(--space-1) var(--space-3)', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', cursor: 'pointer', transition: 'border-color 150ms, background 150ms' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.background = 'var(--color-bg-card)'; }}
                 >{chip}</button>
               ))}
             </div>
           )}
-
           <div ref={chatEndRef} />
         </div>
 
@@ -260,22 +248,10 @@ export default function InfographicsPanel() {
           <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end' }}>
             <textarea value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-              placeholder={selected ? 'Describe what to change…' : 'Send an infographic first'}
-              disabled={!selected} rows={1}
-              style={{
-                flex: 1, resize: 'none', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)',
-                padding: 'var(--space-2) var(--space-3)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)',
-                color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', outline: 'none',
-                lineHeight: 'var(--leading-relaxed)',
-              }} />
-            <button onClick={() => send()} disabled={loading || !input.trim() || !selected}
-              style={{
-                width: 'var(--size-control-md)', height: 'var(--size-control-md)', borderRadius: 'var(--radius-md)',
-                border: 'none', background: input.trim() && selected ? 'var(--color-accent)' : 'var(--color-bg-surface)',
-                color: input.trim() && selected ? 'var(--color-text-inverse)' : 'var(--color-text-disabled)',
-                cursor: input.trim() && selected ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'background var(--duration-base) var(--ease-default)',
-              }}>
+              placeholder="Describe what to change…" rows={1}
+              style={{ flex: 1, resize: 'none', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', outline: 'none', lineHeight: 'var(--leading-relaxed)' }} />
+            <button onClick={() => send()} disabled={loading || !input.trim()}
+              style={{ width: 'var(--size-control-md)', height: 'var(--size-control-md)', borderRadius: 'var(--radius-md)', border: 'none', background: input.trim() ? 'var(--color-accent)' : 'var(--color-bg-surface)', color: input.trim() ? 'var(--color-text-inverse)' : 'var(--color-text-disabled)', cursor: input.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background var(--duration-base) var(--ease-default)' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="m22 2-11 11"/></svg>
             </button>
           </div>
