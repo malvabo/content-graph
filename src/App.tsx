@@ -1,15 +1,12 @@
 import { ReactFlowProvider } from '@xyflow/react';
 import GraphCanvas from './components/canvas/GraphCanvas';
 import CanvasToolbar from './components/canvas/CanvasToolbar';
-import NodePalette from './components/canvas/NodePalette';
 import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
-import { useGraphStore, type ContentNode } from './store/graphStore';
 import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
-import type { NodeDef } from './utils/nodeDefs';
 import MobileWorkflow from './components/canvas/MobileWorkflow';
 import { useAuthStore } from './store/authStore';
 import { useSettingsStore } from './store/settingsStore';
@@ -42,7 +39,7 @@ export default function App() {
 
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
-  const addNode = useGraphStore((s) => s.addNode);
+  
   const validViews = ['workflow', 'library', 'voice', 'scriptsense', 'scriptview', 'cards', 'settings', 'intro'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1); return validViews.includes(h) ? h : 'library'; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
@@ -61,16 +58,6 @@ function AppInner() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleAddNode = useCallback((def: NodeDef) => {
-    const node: ContentNode = {
-      id: `${def.subtype}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
-      type: 'contentNode',
-      position: { x: 200 + Math.random() * 200, y: 150 + Math.random() * 200 },
-      deletable: true,
-      data: { subtype: def.subtype, label: def.label, badge: def.badge, category: def.category, description: def.description, config: {} },
-    };
-    addNode(node);
-  }, [addNode]);
 
   if (authLoading) return (
     <div role="status" aria-label="Loading" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
@@ -102,7 +89,6 @@ function AppInner() {
               <CanvasToolbar onBackToLibrary={() => setActiveView('library')} />
               <EmptyCanvasOverlay />
               <GraphCanvas />
-              <NodePalette onAddNode={handleAddNode} />
             </div>
             <div className="flex md:hidden flex-1 min-h-0">
               <MobileWorkflow onBackToLibrary={() => setActiveView('library')} />

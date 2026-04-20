@@ -277,7 +277,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
         <div className="flex flex-col shrink-0 w-full md:w-[300px]">
           <ModalHeader title={nodeLabel || 'Image'} subtitle="Configure and generate variants" onClose={onClose} />
 
-          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-6) var(--space-4)', gap: 'var(--space-5)', scrollbarWidth: 'thin' }}>
+          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: '0 var(--space-6) var(--space-4)', gap: 'var(--space-4)', scrollbarWidth: 'thin' }}>
 
             {/* #9: visual ratio picker with shape previews */}
             <div>
@@ -304,12 +304,11 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               </div>
             </div>
 
-            {/* #18: divider between sections */}
-            <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: '0 calc(var(--space-1) * -1)' }} />
+            <div style={{ height: 1, background: 'var(--color-border-subtle)' }} />
 
             {/* Node settings */}
             {nodeId && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 <div>
                   <span className="text-field-label">Purpose</span>
                   <select className="form-select w-full" value={purpose} onChange={e => { setConfig('purpose', e.target.value); const r = PURPOSE_RATIO[e.target.value]; if (r) { setRatio(r); setConfig('aspect', r); } }}>
@@ -337,8 +336,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               </div>
             )}
 
-            {/* #18: divider between sections */}
-            <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: '0 calc(var(--space-1) * -1)' }} />
+            <div style={{ height: 1, background: 'var(--color-border-subtle)' }} />
 
             {/* Prompt */}
             {editPrompt !== undefined && (
