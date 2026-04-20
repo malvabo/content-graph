@@ -5,6 +5,7 @@ export interface Card {
   id: string;
   headline: string;
   body: string;
+  group?: string;
 }
 
 export interface CardSet {

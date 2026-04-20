@@ -59,6 +59,25 @@ export default function CardsPanel({ setId }: { setId?: string }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const toggleSelect = (id: string) => {
+    setSelected(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  };
+
+  const groupSelected = () => {
+    if (selected.size < 2) return;
+    const groupName = prompt('Group name', 'Untitled group');
+    if (!groupName) return;
+    const updated = cards.map(c => selected.has(c.id) ? { ...c, group: groupName } : c);
+    updateCards(currentSet!.id, updated);
+    setSelected(new Set());
+  };
+
+  const ungroupCard = (id: string) => {
+    const updated = cards.map(c => c.id === id ? { ...c, group: undefined } : c);
+    updateCards(currentSet!.id, updated);
+  };
   const chatEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -121,9 +140,25 @@ export default function CardsPanel({ setId }: { setId?: string }) {
           <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{cards.length} cards</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
-          {cards.map(card => (
-            <div key={card.id} style={{
+        {/* Selection toolbar */}
+        {selected.size > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)', padding: 'var(--space-2) var(--space-4)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)' }}>
+            <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', fontWeight: 500 }}>{selected.size} selected</span>
+            <button className="btn btn-sm btn-primary" onClick={groupSelected} disabled={selected.size < 2}>Group</button>
+            <button className="btn btn-sm btn-ghost" onClick={() => setSelected(new Set())}>Cancel</button>
+          </div>
+        )}
+
+        {/* Grouped cards */}
+        {(() => {
+          const groups = new Map<string, typeof cards>();
+          const ungrouped: typeof cards = [];
+          cards.forEach(c => {
+            if (c.group) { const g = groups.get(c.group) || []; g.push(c); groups.set(c.group, g); }
+            else ungrouped.push(c);
+          });
+          const renderCard = (card: typeof cards[0]) => (
+            <div key={card.id} onClick={e => { if (!e.shiftKey && !editingId) return; toggleSelect(card.id); }} style={{
               background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
               borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
               display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
@@ -160,7 +195,33 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 data-placeholder="Write something…"
                 style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', outline: 'none', minHeight: 'var(--space-10)', cursor: 'text' }} />
             </div>
-          ))}
+          );
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+              {/* Named groups */}
+              {[...groups.entries()].map(([name, groupCards]) => (
+                <div key={name}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>{name}</span>
+                    <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{groupCards.length}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
+                    {groupCards.map(renderCard)}
+                  </div>
+                </div>
+              ))}
+              {/* Ungrouped */}
+              {ungrouped.length > 0 && (
+                <div>
+                  {groups.size > 0 && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginBottom: 'var(--space-3)' }}>Ungrouped</div>}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
+                    {ungrouped.map(renderCard)}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
           {/* Add card button */}
           <button onClick={addCard}
