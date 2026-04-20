@@ -6,7 +6,7 @@ import { useOutputStore } from '../../store/outputStore';
 
 /* Icons */
 const MicIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><path d="M12 17v4" /><path d="M8 21h8" />
   </svg>
 );
@@ -215,7 +215,10 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             )}
           </div>
           {!recording && notes.length > 0 && (
-            <button className="btn btn-primary" onClick={startRecording}>+ New recording</button>
+            <button className="btn btn-primary" onClick={startRecording}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg>
+              New recording
+            </button>
           )}
         </div>
 
@@ -243,6 +246,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
               Capture ideas, feedback, or narration with a quick voice recording.
             </div>
             <button className="btn btn-primary" onClick={startRecording} style={{ padding: '10px 24px', fontSize: 'var(--text-sm)' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg>
               Record your first note
             </button>
             {micError && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)' }}>Microphone access denied. Check browser permissions.</div>}
