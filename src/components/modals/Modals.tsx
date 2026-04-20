@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { getDims, RATIO_DIMS, PURPOSE_RATIO } from '../../utils/imageDims';
-import { IMAGE_MODEL_OPTIONS, IMAGE_RESOLUTION_OPTIONS } from '../../utils/nodeDefs';
+import { IMAGE_MODEL_OPTIONS } from '../../utils/nodeDefs';
 import { useGraphStore } from '../../store/graphStore';
 import { useSettingsStore } from '../../store/settingsStore';
 
@@ -149,7 +149,6 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
   const purpose = (config.purpose as string) ?? 'Blog hero';
   const style = (config.style as string) ?? 'Photography';
   const imageModel = (config.imageModel as string) ?? 'FLUX.1 schnell';
-  const resolution = (config.resolution as string) ?? '1024x1024';
 
   const d = getDims(ratio);
   const promptChanged = editPrompt.trim() !== origPrompt.current.trim();
@@ -350,12 +349,6 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                   <span className="text-field-label">Image model</span>
                   <select className="form-select w-full" value={imageModel} onChange={e => setConfig('imageModel', e.target.value)}>
                     {IMAGE_MODEL_OPTIONS.map(o => <option key={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <span className="text-field-label">Resolution</span>
-                  <select className="form-select w-full" value={resolution} onChange={e => setConfig('resolution', e.target.value)}>
-                    {IMAGE_RESOLUTION_OPTIONS.map(o => <option key={o}>{o}</option>)}
                   </select>
                 </div>
               </div>
