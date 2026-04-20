@@ -27,7 +27,7 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
         <div style={{ padding: '12px 32px 0 16px' }}>
           <div style={{
             fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-            color: 'var(--color-text-primary)', lineHeight: '21px',
+            color: 'var(--p-neutral-200)', lineHeight: '21px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{title}</div>
         </div>
