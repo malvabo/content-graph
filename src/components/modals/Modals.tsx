@@ -248,7 +248,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
           <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-6)', overflow: 'hidden' }}>
             <div style={{
               position: 'relative',
-              width: '100%',
+              maxWidth: '100%',
               maxHeight: '100%',
               aspectRatio: `${d.w} / ${d.h}`,
               borderRadius: 'var(--radius-md)', overflow: 'hidden',

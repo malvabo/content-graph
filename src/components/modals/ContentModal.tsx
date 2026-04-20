@@ -370,6 +370,52 @@ function NewsletterModal({ title, text, onClose, onSave, onRegenerate }: Content
 }
 
 /* ════════════════════════════════════════════
+   VOICE — same as Newsletter without subject line
+   ════════════════════════════════════════════ */
+function VoiceModal({ title, text, onClose, onSave, onRegenerate }: ContentModalProps) {
+  const parseSections = (t: string) => {
+    const parts = t.split(/\n---\n|\n##\s+/);
+    if (parts.length <= 1) return [{ label: 'Content', text: t }];
+    return parts.filter(Boolean).map((p, i) => {
+      const lines = p.trim().split('\n');
+      const label = i === 0 ? 'Intro' : lines[0]?.length < 40 ? lines.shift()! : `Section ${i}`;
+      return { label, text: lines.join('\n').trim() };
+    });
+  };
+
+  const [sections, setSections] = useState(() => parseSections(text));
+  const sectionRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
+  const updateSection = (i: number, val: string) => { const n = [...sections]; n[i] = { ...n[i], text: val }; setSections(n); };
+  const { copied, copy } = useCopy(() => sections.map(s => `## ${s.label}\n${s.text}`).join('\n\n---\n\n'));
+
+  useEffect(() => {
+    sectionRefs.current.forEach(el => {
+      if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+    });
+  }, [sections]);
+
+  return (
+    <ModalShell onClose={onClose} maxWidth={640}>
+      <Header title={title} onClose={onClose} />
+      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-6) var(--space-4)', scrollbarWidth: 'thin' }}>
+        {sections.map((sec, i) => (
+          <div key={i} style={{ marginBottom: 'var(--space-4)' }}>
+            <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>{sec.label}</div>
+            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', transition: 'border-color 150ms' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
+              <textarea ref={el => { sectionRefs.current[i] = el; }} value={sec.text} onChange={e => updateSection(i, e.target.value)} aria-label={sec.label}
+                style={{ width: '100%', minHeight: 60, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-2) var(--space-3)' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <Footer onClose={onClose} onRegenerate={onRegenerate} onCopy={copy} copied={copied} onSave={() => onSave?.(sections.map(s => s.text).join("\n\n"))} />
+    </ModalShell>
+  );
+}
+
+/* ════════════════════════════════════════════
    TWITTER SINGLE — no duplicate counter
    ════════════════════════════════════════════ */
 function TwitterSingleModal({ title, text, onClose, onSave, onRegenerate }: ContentModalProps) {
@@ -453,6 +499,8 @@ const MODAL_MAP: Record<string, React.FC<ContentModalProps>> = {
   'linkedin-post': LinkedInModal,
   'quote-card': QuoteCardModal,
   'newsletter': NewsletterModal,
+  'voice-source': VoiceModal,
+  'brand-voice': VoiceModal,
 };
 
 export default function ContentModal(props: ContentModalProps) {
