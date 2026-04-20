@@ -376,7 +376,6 @@ function VoiceModal({ title, text, onClose, onSave, extraActions }: ContentModal
   const [editTitle, setEditTitle] = useState(title);
   const [content, setContent] = useState(text);
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { copied, copy } = useCopy(() => content);
 
   useEffect(() => { const el = ref.current; if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }, [content]);
 
@@ -401,14 +400,11 @@ function VoiceModal({ title, text, onClose, onSave, extraActions }: ContentModal
             style={{ width: '100%', minHeight: 120, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-3) var(--space-4)' }} />
         </div>
       </div>
-      <Footer onClose={() => { onSave?.(content); onClose(); }} onCopy={copy} copied={copied} />
-      {extraActions && extraActions.length > 0 && (
-        <div className="flex items-center gap-2 shrink-0" style={{ padding: '0 var(--space-6) var(--space-5)' }}>
-          {extraActions.map((a, i) => (
-            <button key={a.label} className={`btn btn-sm flex-1 ${i === 0 ? 'btn-ghost' : 'btn-primary'}`} onClick={() => { a.onClick(content); onClose(); }}>{a.label}</button>
-          ))}
-        </div>
-      )}
+      <div className="flex items-center justify-end gap-2 shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', borderTop: '1px solid var(--color-border-subtle)' }}>
+        {extraActions && extraActions.map((a, i) => (
+          <button key={a.label} className={`btn btn-sm ${i === 0 ? 'btn-outline' : 'btn-primary'}`} onClick={() => { onSave?.(content); a.onClick(content); onClose(); }}>{a.label}</button>
+        ))}
+      </div>
     </ModalShell>
   );
 }
