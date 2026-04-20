@@ -35,6 +35,7 @@ import Intro from './components/Intro';
 import WorkflowLibraryView from './components/canvas/WorkflowLibrary';
 import SettingsPanel from './components/canvas/SettingsPanel';
 import CardsPanel from './components/canvas/CardsPanel';
+import CardsLibrary from './components/canvas/CardsLibrary';
 import InfographicsPanel from './components/canvas/InfographicsPanel';
 
 export default function App() {
@@ -44,7 +45,7 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   
-  const validViews = ['workflow', 'library', 'voice', 'scriptsense', 'scriptview', 'scripteditor', 'cards', 'infographics', 'settings', 'intro'];
+  const validViews = ['workflow', 'library', 'voice', 'scriptsense', 'scriptview', 'scripteditor', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1); return validViews.includes(h) ? h : 'library'; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
   const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v); }, []);
@@ -122,6 +123,8 @@ function AppInner() {
         {activeView === 'scripteditor' && editScriptId && <ScriptEditor scriptId={editScriptId} onBack={() => setActiveView('scriptview')} />}
 
         {activeView === 'settings' && <SettingsPanel />}
+
+        {activeView === 'cardslibrary' && <CardsLibrary onOpen={() => setActiveView('cards')} />}
 
         {activeView === 'cards' && <CardsPanel />}
 
