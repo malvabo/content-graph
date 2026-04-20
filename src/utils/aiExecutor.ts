@@ -107,6 +107,17 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
     if (!apiKey) throw new Error('No API key set. Go to Settings to add one.');
   }
 
+  // Infographic: force claude-sonnet-4 for reliable JSON extraction
+  if (subtype === 'infographic') {
+    const { anthropicKey, openaiKey, groqKey, googleKey } = useSettingsStore.getState();
+    const sys = SYSTEM_PROMPTS['infographic'];
+    if (anthropicKey) return callAnthropic(anthropicKey, 'claude-sonnet-4', sys, input, signal);
+    if (openaiKey) return callOpenAI(openaiKey, 'gpt-4o-mini', sys, input, signal);
+    if (groqKey) return callGroq(groqKey, 'llama-3.3-70b', sys + '\n\nYou MUST return valid JSON only. No markdown, no explanation.', input, signal);
+    if (googleKey) return callGoogle(googleKey, 'gemini-2.0-flash', sys, input, signal);
+    throw new Error('No API key set. Go to Settings to add one.');
+  }
+
   let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
 
   // Inject brand voice context
