@@ -1,4 +1,4 @@
-/* ── TemplateCard — DS component ── */
+/* ── TemplateCard — DS component matching Figma node 8-298 ── */
 
 interface TemplateCardProps {
   title: string;
@@ -10,49 +10,68 @@ interface TemplateCardProps {
 
 export default function TemplateCard({ title, meta, pills, extraCount, onClick }: TemplateCardProps) {
   return (
-    <div role="button" tabIndex={0} onClick={onClick} style={{
-      display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
-      padding: 'var(--space-4)',
+    <button onClick={onClick} style={{
+      display: 'flex', width: '100%', flexDirection: 'column',
+      alignItems: 'stretch',
       borderRadius: 'var(--radius-lg)',
       border: '1px solid var(--color-border-default)',
-      background: 'var(--color-bg-card)',
-      cursor: 'pointer', textAlign: 'left',
+      background: '#1A1A1E',
+      cursor: 'pointer', textAlign: 'left', overflow: 'hidden',
       transition: 'border-color 150ms, box-shadow 150ms',
     }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
-      {/* Title */}
-      <div style={{
-        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-        color: 'var(--color-text-primary)', lineHeight: 'var(--leading-tight)',
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-      }}>{title}</div>
-
-      {/* Pills with arrows */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        {pills.map((label, i) => (
-          <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            {i > 0 && <span style={{ color: 'var(--color-text-disabled)', fontSize: 10 }}>→</span>}
-            <span style={{
-              fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)',
-              padding: '2px 8px', borderRadius: 'var(--radius-sm)',
-              background: 'var(--color-bg-surface)',
-              color: 'var(--color-text-secondary)',
-              lineHeight: '16px', whiteSpace: 'nowrap',
-            }}>{label}</span>
-          </span>
-        ))}
-        {extraCount && extraCount > 0 && (
-          <span style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>+{extraCount}</span>
-        )}
+      {/* Top: title + meta */}
+      <div style={{ background: '#1A1A1E', padding: '12px 16px 0 16px', borderBottom: '1px solid var(--color-border-subtle)', height: 75, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
+          color: 'var(--p-neutral-200)', lineHeight: '21px',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          paddingRight: 16,
+        }}>{title}</div>
+        <div style={{
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-normal)',
+          color: 'var(--color-text-tertiary)', lineHeight: '18px', marginTop: 4,
+        }}>{meta}</div>
       </div>
 
-      {/* Meta */}
+      {/* Bottom: node pill bar */}
       <div style={{
-        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
-        color: 'var(--color-text-disabled)', lineHeight: 'var(--leading-tight)',
-      }}>{meta}</div>
-    </div>
+        display: 'flex', alignItems: 'center', gap: 0,
+        padding: '8px 16px',
+        background: '#1A1A1E',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
+          {pills.map((label, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+              {i > 0 && (
+                <span style={{
+                  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
+                  color: 'var(--color-text-tertiary)', padding: '0 4px',
+                }}>→</span>
+              )}
+              <span style={{
+                display: 'inline-flex', alignItems: 'center',
+                padding: '4px 12px',
+                borderRadius: 'var(--radius-sm)',
+                background: '#111114',
+                border: '1px solid var(--color-border-subtle)',
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--weight-normal)', color: 'var(--color-text-secondary)',
+                lineHeight: '18px', whiteSpace: 'nowrap',
+              }}>{label}</span>
+            </div>
+          ))}
+          {extraCount && extraCount > 0 && (
+            <span style={{
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
+              color: 'var(--color-text-tertiary)', marginLeft: 'var(--space-1)',
+              whiteSpace: 'nowrap',
+            }}> +{extraCount}</span>
+          )}
+        </div>
+      </div>
+    </button>
   );
 }
