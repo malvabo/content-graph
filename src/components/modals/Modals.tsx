@@ -406,24 +406,23 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
             {/* #17: "Use this" is primary when variants exist, generate is secondary */}
             {onUse && variants.length > 0 ? (
               <>
-                <button className="btn-sm btn-primary w-full" onClick={() => { onUse(activeSrc); onClose(); }}>Use variant {variants.indexOf(activeSrc) + 1}</button>
-                <button className="btn-sm btn-ghost w-full" disabled={genLoading} onClick={generate4}>
+                <button className="btn btn-primary w-full" onClick={() => { onUse(activeSrc); onClose(); }}>Use variant {variants.indexOf(activeSrc) + 1}</button>
+                <button className="btn btn-ghost w-full" disabled={genLoading} onClick={generate4}>
                 {genLoading ? `Generating ${variants.length}/4…` : 'Regenerate 4'}
                 </button>
               </>
             ) : (
-              <button className="btn-sm btn-primary w-full" disabled={genLoading} onClick={generate4} style={{ position: 'relative', overflow: 'hidden' }}>
+              <button className="btn btn-primary w-full" disabled={genLoading} onClick={generate4} style={{ position: 'relative', overflow: 'hidden' }}>
                 {genLoading && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${variants.length * 25}%`, background: 'var(--color-overlay-light)', transition: 'width 300ms ease', borderRadius: 'inherit' }} />}
                 <span style={{ position: 'relative' }}>{genLoading ? `Generating ${variants.length}/4…` : needsRegen ? 'Generate with changes' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}</span>
               </button>
             )}
             {genLoading && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', textAlign: 'center' }}>~15s per image</div>}
             <div className="flex gap-2">
-              <button className={`btn-sm flex-1 ${copiedImg ? 'btn-tonal' : 'btn-ghost'}`} onClick={copyImage}>{copiedImg ? 'Copied ✓' : 'Copy image'}</button>
-              <button className="btn-sm btn-ghost flex-1" onClick={downloadImage}>Download</button>
+              <button className="btn btn-primary flex-1" onClick={downloadImage}>Download</button>
             </div>
             {variants.length > 1 && (
-              <button className="btn-sm btn-ghost w-full" onClick={() => { const name = (nodeLabel || 'image').replace(/\s+/g, '-').toLowerCase(); variants.forEach((v, i) => { const a = document.createElement('a'); a.href = v; a.download = `${name}-v${i + 1}-${d.w}x${d.h}.png`; a.click(); }); }}>Download all {variants.length}</button>
+              <button className="btn btn-ghost w-full" onClick={() => { const name = (nodeLabel || 'image').replace(/\s+/g, '-').toLowerCase(); variants.forEach((v, i) => { const a = document.createElement('a'); a.href = v; a.download = `${name}-v${i + 1}-${d.w}x${d.h}.png`; a.click(); }); }}>Download all {variants.length}</button>
             )}
           </div>
         </div>
