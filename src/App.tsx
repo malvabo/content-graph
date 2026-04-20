@@ -4,7 +4,6 @@ import CanvasToolbar from './components/canvas/CanvasToolbar';
 import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
-import ScriptLibrary from './components/canvas/ScriptLibrary';
 import { useScriptStore } from './store/scriptStore';
 import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -36,6 +35,25 @@ import SettingsPanel from './components/canvas/SettingsPanel';
 import CardsPanel from './components/canvas/CardsPanel';
 import CardsLibrary from './components/canvas/CardsLibrary';
 import InfographicsPanel from './components/canvas/InfographicsPanel';
+
+function ScriptSidebar({ onSelect }: { onSelect: (text: string) => void }) {
+  const scripts = useScriptStore(s => s.scripts);
+  return (
+    <div style={{ width: 240, borderRight: '1px solid var(--color-border-subtle)', overflow: 'auto', background: 'var(--color-bg)', flexShrink: 0 }}>
+      <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>Scripts</span>
+      </div>
+      {scripts.map(s => (
+        <div key={s.id} onClick={() => onSelect(s.content)}
+          style={{ padding: 'var(--space-2) var(--space-4)', cursor: 'pointer', borderBottom: '1px solid var(--color-border-subtle)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+          {s.title || s.content.slice(0, 40) || 'Untitled'}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function App() {
   return <ErrorBoundary><ReactFlowProvider><AppInner /></ReactFlowProvider></ErrorBoundary>;
@@ -106,12 +124,7 @@ function AppInner() {
 
         {activeView === 'scriptsense' && (
           <div className="flex flex-1 min-h-0">
-            <div style={{ width: 260, borderRight: '1px solid var(--color-border-subtle)', overflow: 'auto', background: 'var(--color-bg)', flexShrink: 0 }}>
-              <ScriptLibrary onOpenScript={(id) => {
-                const script = useScriptStore.getState().scripts.find(s => s.id === id);
-                if (script?.content) setVoiceTranscript(script.content);
-              }} />
-            </div>
+            <ScriptSidebar onSelect={setVoiceTranscript} />
             <ScriptSensePanel initialText={voiceTranscript} />
           </div>
         )}

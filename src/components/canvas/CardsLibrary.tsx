@@ -12,7 +12,7 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
 
   const handleNew = () => {
     const id = `cards-${Date.now()}`;
-    add({ id, name: 'Untitled', cardCount: 4, createdAt: new Date().toISOString() });
+    add({ id, name: 'Untitled', cards: [{ id: 'c1', headline: 'New card', body: 'Start writing here…' }], createdAt: new Date().toISOString() });
     onOpen(id);
   };
 
@@ -77,7 +77,7 @@ function CardSetItem({ set, onOpen, onDelete }: { set: CardSet; onOpen: () => vo
         display: 'flex', flexDirection: 'column', padding: 'var(--space-4)', position: 'relative',
       }}>
       <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>{set.name}</div>
-      <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{set.cardCount} cards</div>
+      <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{set.cards.length} cards</div>
       <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 'auto' }}>{fmt(set.createdAt)}</div>
       {hover && (
         <button onClick={e => { e.stopPropagation(); onDelete(); }}

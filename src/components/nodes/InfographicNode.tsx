@@ -19,8 +19,26 @@ export function renderSVG(data: InfographicData): string {
   const textColor = theme?.text || '#e8e6e3';
   const cardBg = theme?.cardBg || '#2a2a26';
   const cardBorder = theme?.cardBorder || '#3a3a36';
-  const font = theme?.font || 'Geist Variable, system-ui, sans-serif';
+  const font = theme?.font || 'system-ui, sans-serif';
   const subtitleColor = '#908e85';
+
+  // Load Google Font dynamically if it's not a system font
+  const systemFonts = ['system-ui', 'sans-serif', 'serif', 'monospace', 'cursive', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI'];
+  const primaryFont = font.split(',')[0].trim().replace(/['"]/g, '');
+  const isSystemFont = systemFonts.some(sf => primaryFont.toLowerCase() === sf.toLowerCase());
+  const googleFontImport = !isSystemFont ? `<defs><style>@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(primaryFont)}:wght@400;500;700&amp;display=swap');</style></defs>` : '';
+
+  // Also inject into page for html-to-image export
+  if (!isSystemFont && typeof document !== 'undefined') {
+    const linkId = `gfont-${primaryFont.replace(/\s+/g, '-')}`;
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(primaryFont)}:wght@400;500;700&display=swap`;
+      document.head.appendChild(link);
+    }
+  }
 
   const W = 960, cols = points.length <= 4 ? 2 : 3;
   const cardW = cols === 2 ? 400 : 270, cardH = 100, gapX = 24, gapY = 16;
