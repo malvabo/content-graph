@@ -224,10 +224,20 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
           </div>
 
           <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-8) var(--space-6)', overflow: zoomed ? 'auto' : 'hidden' }}>
-            <div style={{ width: '100%', maxWidth: d.w >= d.h ? '100%' : `${Math.round(62 * d.w / d.h)}vh`, aspectRatio: `${d.w} / ${d.h}`, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'aspect-ratio 200ms ease, max-width 200ms ease' }}>
+            <div style={{
+              position: 'relative', width: '100%', maxWidth: d.w >= d.h ? '100%' : `${Math.round(62 * d.w / d.h)}vh`,
+              aspectRatio: `${d.w} / ${d.h}`, maxHeight: '62vh',
+              borderRadius: 'var(--radius-md)', overflow: 'hidden',
+              border: '2px solid rgba(255,255,255,0.15)',
+              transition: 'aspect-ratio 300ms ease, max-width 300ms ease',
+            }}>
               <img src={activeSrc} alt={editPrompt || 'Generated image'}
                 onClick={(e) => { e.stopPropagation(); setZoomed(!zoomed); }}
-                style={{ maxWidth: zoomed ? 'none' : '100%', maxHeight: zoomed ? 'none' : '100%', width: zoomed ? `${Math.max(d.w, 800)}px` : undefined, objectFit: 'contain', borderRadius: 'var(--radius-md)', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'opacity 150ms ease' }} />
+                style={{ width: '100%', height: '100%', objectFit: zoomed ? 'contain' : 'cover', cursor: zoomed ? 'zoom-out' : 'zoom-in', transition: 'object-fit 200ms ease' }} />
+              {/* Ratio label */}
+              <div style={{ position: 'absolute', bottom: 'var(--space-2)', left: 'var(--space-2)', background: 'rgba(0,0,0,0.6)', borderRadius: 'var(--radius-sm)', padding: '2px 8px', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.8)' }}>
+                {ratio}
+              </div>
             </div>
           </div>
 
