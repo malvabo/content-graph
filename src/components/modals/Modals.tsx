@@ -286,7 +286,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
         <div className="flex flex-col shrink-0 w-full md:w-[300px]">
           <ModalHeader title={nodeLabel || 'Image'} subtitle="Configure and generate variants" onClose={onClose} />
 
-          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: 'var(--space-5) var(--space-6) var(--space-4)', gap: 20, scrollbarWidth: 'thin' }}>
+          <div className="flex-1 overflow-y-auto flex flex-col" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', gap: 20, scrollbarWidth: 'thin' }}>
 
             {/* #9: visual ratio picker with shape previews */}
             <div>
@@ -351,9 +351,7 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                 <textarea value={editPrompt} onChange={(e) => setEditPrompt(e.target.value)}
                   className="form-textarea" style={{ minHeight: 160, scrollbarWidth: 'thin' }}
                 />
-                <div className="flex justify-end" style={{ marginTop: 'var(--space-2)' }}>
-                  {needsRegen && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span>}
-                </div>
+                {needsRegen && <div className="flex justify-end" style={{ marginTop: 'var(--space-2)' }}><span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)' }}>Regenerate to apply</span></div>}
               </div>
             )}
 
