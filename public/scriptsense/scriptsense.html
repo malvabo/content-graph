@@ -667,21 +667,6 @@ ${text}`
               }}>{label}</button>
             ))}
             <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8, paddingRight:16 }}>
-              {staleInsights && aiInsights && aiInsights.length > 0 && (
-                <span style={{ fontSize:10, fontWeight:600, color:C.amberText, background:C.amberLt, padding:"2px 8px", borderRadius:99 }}>Stale</span>
-              )}
-              {undoStack.length > 0 && (
-                <button onClick={handleUndo} title="Undo last rephrase" style={{ fontSize:11, fontWeight:500, color:C.mute, background:"none", border:"none", cursor:"pointer", padding:"4px 8px", borderRadius:6, transition:"color 100ms" }}
-                  onMouseEnter={e => { e.currentTarget.style.color = C.text; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = C.mute; }}>
-                  ↩ Undo
-                </button>
-              )}
-              {allInsights.length > 0 && dismissed.size > 0 && (
-                <button onClick={() => setShowDismissed(v => !v)} style={{ fontSize:11, fontWeight:500, color: showDismissed ? C.text : C.mute, background:"none", border:"none", cursor:"pointer", padding:"4px 8px", borderRadius:6, transition:"color 100ms" }}>
-                  {showDismissed ? "Hide dismissed" : `Show ${dismissed.size} dismissed`}
-                </button>
-              )}
               {saveStatus && (
                 <span style={{ fontSize:11, color: saveStatus==="saved" ? C.accent : C.mute, fontWeight:500, transition:"color 0.2s" }}>
                   {saveStatus==="saving" ? "Saving…" : "✓ Saved"}
@@ -706,7 +691,7 @@ ${text}`
           <div style={{ width:"50%", borderRight:`1px solid ${C.border}`, position:"relative", display:"flex", flexDirection:"column", background:C.white }}>
 
             {/* highlight overlay */}
-            <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"inherit", letterSpacing:"-0.01em" }}>
+            <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"-apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
               {paras.map((p,pi) => (
                 <p key={pi} style={{ marginBottom:28 }}>
                   {tokenize(p, aiInsights || []).map((s,i) =>
@@ -719,7 +704,7 @@ ${text}`
             </div>
 
             {/* click layer */}
-            <div style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"inherit", letterSpacing:"-0.01em" }}>
+            <div style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"-apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
               {paras.map((p,pi) => (
                 <p key={pi} style={{ marginBottom:28 }}>
                   {tokenize(p, aiInsights || []).map((s,i) =>
@@ -795,7 +780,7 @@ ${text}`
                 </div>
               )}
               {!insightLoading && visibleInsights.map(({ kw, data }) => (
-                <div key={kw} style={{ animation:"fadeUp 0.2s ease", opacity: dismissed.has(kw) ? 0.45 : 1, cursor:"pointer" }} onClick={() => handleCardClick(kw)}>
+                <div key={kw} style={{ animation:"fadeUp 0.2s ease" }}>
                   {data.type==="science"  && <ScienceCard  data={data} highlighted={highlighted===kw} elRef={el=>cardRefs.current[kw]=el} onClose={()=>setDismissed(d=>new Set([...d,kw]))} onApply={()=>handleApply(data.phrase, data.rephrase)} />}
                   {data.type==="metaphor" && <MetaphorCard data={data} highlighted={highlighted===kw} elRef={el=>cardRefs.current[kw]=el} onClose={()=>setDismissed(d=>new Set([...d,kw]))} onApply={()=>handleApply(data.phrase, data.rephrase)} />}
                   {data.type==="logic"    && <LogicCard    data={data} highlighted={highlighted===kw} elRef={el=>cardRefs.current[kw]=el} onClose={()=>setDismissed(d=>new Set([...d,kw]))} onApply={()=>handleApply(data.phrase, data.rephrase)} />}
@@ -815,11 +800,11 @@ ${text}`
               <span style={{ opacity:0.3 }}>·</span>
               <span>{paras.length} paragraphs</span>
               <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: visibleInsights.filter(i=>i.data.type==="science").length > 0 ? TAG.science.text : C.mute }}>{visibleInsights.filter(i=>i.data.type==="science").length} science</span>
+              <span style={{ color: allInsights.filter(i=>i.data.type==="science").length > 0 ? TAG.science.text : C.mute }}>{allInsights.filter(i=>i.data.type==="science").length} science</span>
               <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: visibleInsights.filter(i=>i.data.type==="metaphor").length > 0 ? TAG.metaphor.text : C.mute }}>{visibleInsights.filter(i=>i.data.type==="metaphor").length} metaphors</span>
+              <span style={{ color: allInsights.filter(i=>i.data.type==="metaphor").length > 0 ? TAG.metaphor.text : C.mute }}>{allInsights.filter(i=>i.data.type==="metaphor").length} metaphors</span>
               <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: visibleInsights.filter(i=>i.data.type==="logic").length > 0 ? TAG.logic.text : C.mute }}>{visibleInsights.filter(i=>i.data.type==="logic").length} logic gaps</span>
+              <span style={{ color: allInsights.filter(i=>i.data.type==="logic").length > 0 ? TAG.logic.text : C.mute }}>{allInsights.filter(i=>i.data.type==="logic").length} logic gaps</span>
               {rate !== null && <>
                 <span style={{ opacity:0.3 }}>·</span>
                 <span style={{ color: rate >= 60 ? TAG.metaphor.text : rate >= 30 ? TAG.logic.text : C.mute }}>
@@ -836,7 +821,7 @@ ${text}`
 
 /* ─────────────────── Router ─────────────────── */
 function ContentGraph() {
-  const [view, setView]           = useState("home");
+  const [view, setView]           = useState("editor");
   const [currentDraft, setCurrentDraft] = useState(null);
   const [drafts, setDrafts]       = useState(() => {
     try { return JSON.parse(localStorage.getItem("ss_drafts") || "[]"); }
@@ -861,7 +846,7 @@ function ContentGraph() {
     });
   }, []);
 
-  if (view === "home") return (
+  if (false && view === "home") return (
     <HomePage
       drafts={drafts}
       onNew={() => { setCurrentDraft(null); setView("editor"); }}
