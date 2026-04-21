@@ -19,7 +19,7 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
   const confirmDelete = () => { if (deleteId) { remove(deleteId); setDeleteId(null); } };
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
+    <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
       {/* Hero banner — matches Voice */}
       <div className="p-4 md:p-8" style={{ height: '30vh', minHeight: 180, background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'flex-end', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'relative', zIndex: 1 }}>

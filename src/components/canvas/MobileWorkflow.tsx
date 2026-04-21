@@ -27,7 +27,7 @@ function MobileNodeDetail({ node, onClose, onRun }: { node: ContentNode; onClose
       <div onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" style={{
         position: 'relative', background: 'var(--color-bg-card)',
         borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
-        maxHeight: '92vh', paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex', flexDirection: 'column',
+        maxHeight: 'calc(92vh - 52px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex', flexDirection: 'column',
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-3) 0 var(--space-2)' }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-border-default)' }} />
@@ -276,7 +276,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
       </div>
 
       {/* Node list */}
-      <div style={{ flex: 1, overflow: 'auto', padding: 'var(--space-4)', WebkitOverflowScrolling: 'touch' }}>
+      <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', padding: 'var(--space-4)', WebkitOverflowScrolling: 'touch' }}>
         {sorted.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 'var(--space-3)' }}>
             <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>No nodes yet</div>

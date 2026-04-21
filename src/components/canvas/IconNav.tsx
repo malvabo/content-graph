@@ -72,6 +72,9 @@ export default function IconNav({ activeView, onViewChange }: Props) {
           .icon-nav .nav-label { font-size: 9px !important; }
           .icon-nav .nav-spacer, .icon-nav .nav-logo, .icon-nav .nav-bottom-utils { display: none !important; }
         }
+        @media (max-width: 767px) {
+          .mobile-safe-scroll { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important; }
+        }
       `}</style>
       <nav aria-label="Main navigation" className="icon-nav"
         style={{ width: 200, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', padding: '16px 8px', gap: 2, flexShrink: 0, background: 'var(--color-bg-card)', borderRight: '1px solid var(--color-border-subtle)' }}>
@@ -81,7 +84,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
         <NavItem icon={<VoiceIcon />} label="Voice" active={activeView === 'voice'} onClick={() => onViewChange('voice')} />
         <NavItem icon={<ScriptIcon />} label="Script" active={activeView === 'scriptlist' || activeView === 'scriptsense'} onClick={() => onViewChange('scriptlist')} />
         <NavItem icon={<CardsIcon />} label="Cards" active={activeView === 'cardslibrary' || activeView === 'cards'} onClick={() => onViewChange('cardslibrary')} />
-        <NavItem icon={<InfographicsIcon />} label="Infographics" active={activeView === 'infographics'} onClick={() => onViewChange('infographics')} />
+        <NavItem icon={<InfographicsIcon />} label="Charts" active={activeView === 'infographics'} onClick={() => onViewChange('infographics')} />
 
         <div className="nav-spacer" style={{ flex: 1 }} />
         <NavItem icon={<SettingsIcon />} label="Settings" active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
