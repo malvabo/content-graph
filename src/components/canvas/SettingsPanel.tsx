@@ -325,7 +325,7 @@ export default function SettingsPanel() {
       </div>
 
       {/* Content */}
-      <div className="flex-1" style={{ overflowY: 'auto', padding: 'var(--space-4) var(--space-4)' }}>
+      <div className="flex-1 p-4 md:p-6" style={{ overflowY: 'auto' }}>
         <div style={{ maxWidth: active === 'api-keys' ? '100%' : 520 }}>
           {active === 'brand-visual' && <BrandVisualSection />}
           {active === 'brand-voice' && <BrandVoiceSection />}

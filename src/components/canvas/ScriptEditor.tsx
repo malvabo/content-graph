@@ -31,7 +31,7 @@ export default function ScriptEditor({ scriptId, onBack }: { scriptId: string; o
 
   return (
     <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: 'var(--space-6) var(--space-8)', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      <div className="p-4 md:px-8 md:py-6" style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
           <button onClick={onBack} className="btn btn-ghost" style={{ padding: 'var(--space-1) var(--space-2)' }}>
