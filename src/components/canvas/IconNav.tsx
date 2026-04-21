@@ -8,14 +8,14 @@ interface Props {
 
 /* ── Mobile: icon-only bottom bar. Desktop: 200px sidebar with labels ── */
 
-function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: string; active: boolean; onClick: () => void }) {
+function NavItem({ icon, label, active, onClick, ariaLabel, ariaPressed }: { icon: ReactNode; label: string; active?: boolean; onClick: () => void; ariaLabel?: string; ariaPressed?: boolean }) {
   const [hover, setHover] = useState(false);
   return (
-    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} aria-label={label}
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} aria-label={ariaLabel ?? label} aria-pressed={ariaPressed}
       className="nav-item"
       style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '8px 12px', borderRadius: 8, background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms', justifyContent: 'flex-start', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, flexShrink: 0 }}>{icon}</span>
-      <span className="nav-label" style={{ fontSize: 14, fontWeight: active ? 500 : 400, whiteSpace: 'nowrap' }}>{label}</span>
+      {label && <span className="nav-label" style={{ fontSize: 14, fontWeight: active ? 500 : 400, whiteSpace: 'nowrap' }}>{label}</span>}
     </button>
   );
 }
@@ -31,14 +31,15 @@ const SettingsIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill=
 
 function DarkModeToggle() {
   const [dark, setDark] = useState(() => localStorage.getItem('dark-mode') === 'true');
-  const [hover, setHover] = useState(false);
   useEffect(() => { document.documentElement.classList.toggle('dark', dark); localStorage.setItem('dark-mode', String(dark)); }, [dark]);
   return (
-    <button onClick={() => setDark(!dark)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      aria-label={dark ? 'Light mode' : 'Dark mode'}
-      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: 8, background: hover ? 'var(--color-bg-surface)' : 'transparent', color: 'var(--color-text-tertiary)', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
-      {dark ? <SunIcon /> : <MoonIcon />}
-    </button>
+    <NavItem
+      icon={dark ? <SunIcon /> : <MoonIcon />}
+      label=""
+      ariaLabel={dark ? 'Light mode' : 'Dark mode'}
+      ariaPressed={dark}
+      onClick={() => setDark(!dark)}
+    />
   );
 }
 
@@ -50,14 +51,16 @@ function UserMenu() {
   if (!user) return null;
   const initial = (user.email?.[0] ?? '?').toUpperCase();
   return (
-    <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-border-strong)', color: 'var(--color-text-primary)', fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', border: 'none', cursor: 'pointer' }}>{initial}</button>
-      {open && (
-        <div className="absolute z-50 dropdown-fade" style={{ bottom: '100%', marginBottom: 8, left: 0, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-2)', minWidth: 160 }}>
-          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: 'var(--space-1) var(--space-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
-          <button onClick={() => { signOut(); setOpen(false); }} style={{ width: '100%', textAlign: 'left', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 'var(--space-1)' }}>Sign out</button>
-        </div>
-      )}
+    <div style={{ padding: '8px 12px' }}>
+      <div ref={ref} className="relative">
+        <button onClick={() => setOpen(!open)} style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-border-strong)', color: 'var(--color-text-primary)', fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', border: 'none', cursor: 'pointer' }}>{initial}</button>
+        {open && (
+          <div className="absolute z-50 dropdown-fade" style={{ bottom: '100%', marginBottom: 8, left: 0, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-2)', minWidth: 160 }}>
+            <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: 'var(--space-1) var(--space-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+            <button onClick={() => { signOut(); setOpen(false); }} style={{ width: '100%', textAlign: 'left', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 'var(--space-1)' }}>Sign out</button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -88,7 +91,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
 
         <div className="nav-spacer" style={{ flex: 1 }} />
         <NavItem icon={<SettingsIcon />} label="Settings" active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
-        <div className="nav-bottom-utils" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px' }}>
+        <div className="nav-bottom-utils" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <DarkModeToggle />
           <UserMenu />
         </div>
