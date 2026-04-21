@@ -181,7 +181,8 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
     return (
       <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
         {/* Hero banner */}
-        <div className="p-4 md:p-8" style={{ height: '30vh', minHeight: 180, background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'flex-end', position: 'relative', overflow: 'hidden' }}>
+        <div className="p-4 md:p-8" style={{ height: '30vh', minHeight: 180, backgroundImage: 'url(/infographics-hero.png)', backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', alignItems: 'flex-end', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Infographics</h1>
             {items.length > 0 && <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>{items.length} infographic{items.length !== 1 ? 's' : ''}</p>}
