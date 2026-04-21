@@ -57,7 +57,7 @@ function UserMenu() {
         {open && (
           <div className="absolute z-50 dropdown-fade" style={{ bottom: '100%', marginBottom: 8, left: 0, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-2)', minWidth: 160 }}>
             <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: 'var(--space-1) var(--space-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
-            <button onClick={() => { signOut(); setOpen(false); }} style={{ width: '100%', textAlign: 'left', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 'var(--space-1)' }}>Sign out</button>
+            <button onClick={() => { signOut(); setOpen(false); }} style={{ width: '100%', display: 'flex', justifyContent: 'flex-start', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 'var(--space-1)' }}>Sign out</button>
           </div>
         )}
       </div>
