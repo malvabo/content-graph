@@ -222,19 +222,9 @@ window.addEventListener('message', e => {
 });
 
 async function callClaude(prompt) {
-  function parseResponse(raw) {
-    const cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    try { return JSON.parse(cleaned); } catch {}
-    // Fallback: extract first {...} via scanning
-    const start = cleaned.indexOf('{');
-    if (start !== -1) {
-      for (let end = cleaned.length - 1; end > start; end--) {
-        if (cleaned[end] === '}') {
-          try { return JSON.parse(cleaned.slice(start, end + 1)); } catch {}
-        }
-      }
-    }
-    throw new Error('Could not parse AI response as JSON');
+  function parseResponse(text) {
+    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    return JSON.parse(cleaned);
   }
 
   if (_anthropicKey) {
@@ -244,8 +234,9 @@ async function callClaude(prompt) {
       body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
     });
     if (!res.ok) throw new Error('Anthropic API error: ' + res.status);
-    const d = await res.json();
-    return parseResponse(d.content?.[0]?.text ?? '');
+    const data = await res.json();
+    const text = data.content?.[0]?.text ?? '';
+    return parseResponse(text);
   }
   if (_groqKey) {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -254,14 +245,13 @@ async function callClaude(prompt) {
       body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
     });
     if (!res.ok) throw new Error('Groq API error: ' + res.status);
-    const d = await res.json();
-    return parseResponse(d.choices?.[0]?.message?.content ?? '');
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content ?? '';
+    return parseResponse(text);
   }
-  // No key — return mock with flag
+  // No key — return mock as parsed object
   await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
-  const mock = JSON.parse(MOCK_INSIGHTS);
-  mock._isMock = true;
-  return mock;
+  return JSON.parse(MOCK_INSIGHTS);
 }
 
 /* ── shared components ── */
@@ -569,13 +559,12 @@ Return ONLY valid JSON — no markdown, no explanation:
 Script:
 ${text}`
     ).then(data => {
-      if (data._isMock) setInsightError('No API key configured — showing example insights. Add a key in Settings.');
       setAiInsights(data.insights || []);
       setInsightLoading(false);
       analysisTextRef.current = text;
       setStaleInsights(false);
     }).catch((err) => { setInsightError(err.message); setAiInsights([]); setInsightLoading(false); });
-  }, [analysisVersion, text]);
+  }, [analysisVersion]);
 
   /* ── Trigger analysis with confirmation ── */
   const runAnalysis = useCallback(() => {

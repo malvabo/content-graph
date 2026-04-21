@@ -26,13 +26,6 @@ export default function ScriptSensePanel({ initialText, onOpenInCards }: Props) 
     }
   };
 
-  // Re-send keys when they change (e.g. user configures key after iframe loaded)
-  useEffect(() => {
-    if (iframeLoading || !iframeRef.current?.contentWindow) return;
-    if (anthropicKey) iframeRef.current.contentWindow.postMessage({ type: 'set-api-key', key: anthropicKey }, '*');
-    if (groqKey) iframeRef.current.contentWindow.postMessage({ type: 'set-groq-key', key: groqKey }, '*');
-  }, [anthropicKey, groqKey, iframeLoading]);
-
   // Notify iframe of dark mode change instead of reloading
   useEffect(() => {
     const obs = new MutationObserver(() => {
