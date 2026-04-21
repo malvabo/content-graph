@@ -48,8 +48,8 @@ export default function NodePalette({ onAddNode }: Props) {
     setSearch('');
     setTimeout(() => searchRef.current?.focus(), 50);
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('pointerdown', handler, true);
-    return () => document.removeEventListener('pointerdown', handler, true);
+    const t = setTimeout(() => document.addEventListener('mousedown', handler), 100);
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
   }, [open]);
 
   const q = search.toLowerCase().trim();
@@ -58,13 +58,13 @@ export default function NodePalette({ onAddNode }: Props) {
 
   return (
     <div ref={ref} className="absolute bottom-4 left-4 z-20">
-      {/* Fluid iOS + button */}
+      <style>{`@keyframes paletteIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+      {/* Fluid + button */}
       <motion.button
         onClick={() => setOpen(!open)}
         aria-label="Add node" aria-expanded={open}
         whileHover={{ scale: 1.04 }}
-        whileTap={{ scale: 0.94 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 28, mass: 0.5 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
         className="relative w-12 h-12 rounded-full flex items-center justify-center overflow-hidden"
         style={{
           background: 'var(--color-bg-card)',
@@ -87,9 +87,9 @@ export default function NodePalette({ onAddNode }: Props) {
 
       {/* Popover */}
       {open && (
-        <div className="palette-popover absolute bottom-14 left-0 w-[280px] max-h-[420px] flex flex-col"
-          onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}
-          style={{ background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)' }}>
+        <div className="palette-popover absolute left-0 w-[280px] max-h-[420px] flex flex-col"
+          style={{ bottom: 52, background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)', animation: 'paletteIn 150ms ease' }}
+          onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}>
           {/* Search */}
           <div style={{ padding: 'var(--space-3) var(--space-3) var(--space-2)' }}>
             <input
