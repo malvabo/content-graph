@@ -481,22 +481,25 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
     if (voice) { localStorage.removeItem('scriptsense-content'); return voice; }
     return draft?.text ?? '';
   });
-  const [country, setCountry]         = useState("US");
-  const [ddOpen, setDdOpen]           = useState(false);
+  const [title, setTitle]             = useState(draft?.title || '');
   const [activeTab, setActiveTab]     = useState("insights");
   const [dismissed, setDismissed]     = useState(new Set());
+  const [showDismissed, setShowDismissed] = useState(false);
   const [highlighted, setHighlighted] = useState(null);
   const [analysisVersion, setAnalysisVersion] = useState(0);
-  const [aiInsights, setAiInsights]   = useState(null);   // null = not yet run
+  const [aiInsights, setAiInsights]   = useState(null);
   const [insightLoading, setInsightLoading] = useState(false);
   const [insightError, setInsightError]   = useState(null);
-  const [accepted, setAccepted]       = useState(new Set()); // phrases user applied
+  const [accepted, setAccepted]       = useState(new Set());
+  const [staleInsights, setStaleInsights] = useState(false);
+  const [undoStack, setUndoStack]     = useState([]);
+  const analysisTextRef = useRef('');
   const taRef      = useRef(null);
   const overlayRef = useRef(null);
   const insightRef = useRef(null);
   const cardRefs    = useRef({});
   const autoSaveRef = useRef(null);
-  const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved"
+  const [saveStatus, setSaveStatus] = useState(null);
 
   /* ── Escape to close dropdown ── */
   useEffect(() => {
@@ -506,16 +509,18 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
     return () => document.removeEventListener('keydown', h);
   }, [ddOpen]);
 
-  /* ── Auto-save (debounced 1.2s) ── */
+  /* ── Auto-save (debounced 1.2s, min 10 words) ── */
   useEffect(() => {
-    if (!text.trim()) return;
+    const wc = text.split(/\s+/).filter(Boolean).length;
+    if (wc < 10) return;
     setSaveStatus("saving");
     clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(() => {
       onSave({
         id: draft?.id ?? Date.now().toString(),
+        title,
         text,
-        wordCount: text.split(/\s+/).filter(Boolean).length,
+        wordCount: wc,
         createdAt: draft?.createdAt ?? Date.now(),
         updatedAt: Date.now(),
       });
@@ -523,6 +528,11 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
       setTimeout(() => setSaveStatus(null), 2000);
     }, 1200);
     return () => clearTimeout(autoSaveRef.current);
+  }, [text, title]);
+
+  /* ── Mark insights stale when text changes after analysis ── */
+  useEffect(() => {
+    if (analysisTextRef.current && text !== analysisTextRef.current) setStaleInsights(true);
   }, [text]);
 
   const paras = text.split("\n\n").filter(Boolean);
@@ -551,17 +561,21 @@ ${text}`
     ).then(data => {
       setAiInsights(data.insights || []);
       setInsightLoading(false);
+      analysisTextRef.current = text;
+      setStaleInsights(false);
     }).catch((err) => { setInsightError(err.message); setAiInsights([]); setInsightLoading(false); });
   }, [analysisVersion]);
 
-  /* ── Trigger both tabs at once ── */
+  /* ── Trigger analysis with confirmation ── */
   const runAnalysis = useCallback(() => {
     if (!text.trim()) return;
+    if (aiInsights && aiInsights.length > 0 && !window.confirm('Re-run will replace current insights. Continue?')) return;
     setAnalysisVersion(v => v + 1);
-  }, [text]);
+  }, [text, aiInsights]);
 
-  /* ── Apply rephrase suggestion ── */
+  /* ── Apply rephrase suggestion (with undo) ── */
   const handleApply = useCallback((phrase, rephrase) => {
+    setUndoStack(s => [...s, { phrase, rephrase, originalText: text }]);
     setText(t => {
       const i = t.toLowerCase().indexOf(phrase.toLowerCase());
       if (i === -1) return t;
@@ -569,15 +583,41 @@ ${text}`
     });
     setAccepted(a => new Set([...a, phrase]));
     setDismissed(d => new Set([...d, phrase]));
-  }, []);
+  }, [text]);
+
+  const handleUndo = useCallback(() => {
+    if (!undoStack.length) return;
+    const last = undoStack[undoStack.length - 1];
+    setText(last.originalText);
+    setUndoStack(s => s.slice(0, -1));
+    setAccepted(a => { const n = new Set(a); n.delete(last.phrase); return n; });
+    setDismissed(d => { const n = new Set(d); n.delete(last.phrase); return n; });
+  }, [undoStack]);
 
   const allInsights    = (aiInsights || []).map(ins => ({ kw: ins.phrase, data: ins }));
-  const visibleInsights = allInsights.filter(({ kw }) => !dismissed.has(kw));
+  const visibleInsights = showDismissed ? allInsights : allInsights.filter(({ kw }) => !dismissed.has(kw));
 
   const onScroll = useCallback(() => {
     if (!taRef.current) return;
     const el = taRef.current;
     if (overlayRef.current) overlayRef.current.scrollTop = el.scrollTop;
+  }, []);
+
+  /* ── Reverse linking: click card scrolls editor to phrase ── */
+  const handleCardClick = useCallback((kw) => {
+    const ta = taRef.current;
+    if (!ta) return;
+    const idx = ta.value.toLowerCase().indexOf(kw.toLowerCase());
+    if (idx === -1) return;
+    ta.focus();
+    ta.setSelectionRange(idx, idx + kw.length);
+    // Scroll textarea to show the phrase
+    const lineH = 15 * 1.85;
+    const charsBefore = ta.value.slice(0, idx);
+    const linesBefore = charsBefore.split('\n').length - 1;
+    ta.scrollTop = Math.max(0, linesBefore * lineH - 80);
+    setHighlighted(kw);
+    setTimeout(() => setHighlighted(null), 3000);
   }, []);
 
   const handleSpanClick = useCallback((kw, e) => {
@@ -599,8 +639,7 @@ ${text}`
     }, 40);
   }, []);
 
-  const selC = COUNTRIES.find(c => c.code === country);
-  const wc   = text.split(/\s+/).filter(Boolean).length;
+  const wc = text.split(/\s+/).filter(Boolean).length;
 
   return (
     <>
@@ -611,7 +650,13 @@ ${text}`
         {/* ── Column labels + tabs ── */}
         <div style={{ display:"flex", background:C.white, borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
           <div style={{ width:"50%", padding:"0 16px", display:"flex", alignItems:"center", gap:10, borderRight:`1px solid ${C.border}`, height:44 }}>
-            <span style={{ fontSize:13, fontWeight:500, color:C.text }}>Script</span>
+            <button onClick={onBack} className="back-btn" style={{ background:"none", border:"none", color:C.mute, display:"flex", padding:4, borderRadius:6 }}>
+              <span style={{ fontSize:14 }}>←</span>
+            </button>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Untitled script"
+              style={{ flex:1, fontSize:13, fontWeight:500, color:C.text, background:"none", border:"none", outline:"none", padding:"2px 0", borderBottom:"1px solid transparent", fontFamily:"inherit" }}
+              onFocus={e => { e.currentTarget.style.borderBottomColor = C.border2; }}
+              onBlur={e => { e.currentTarget.style.borderBottomColor = "transparent"; }} />
           </div>
           <div style={{ width:"50%", display:"flex", alignItems:"stretch" }}>
             {[["insights", analysisVersion > 0 ? `Insights · ${visibleInsights.length}` : "Insights"]].map(([tab,label]) => (
