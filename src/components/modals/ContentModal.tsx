@@ -379,7 +379,7 @@ function VoiceModal({ title, text, onClose, onSave, extraActions }: ContentModal
   useEffect(() => { const el = ref.current; if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }, [content]);
 
   return (
-    <ModalShell onClose={onClose} maxWidth={640}>
+    <ModalShell onClose={onClose} maxWidth={1200}>
       <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-4) var(--space-6)' }}>
         <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
           style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', outline: 'none', flex: 1 }}
@@ -396,7 +396,7 @@ function VoiceModal({ title, text, onClose, onSave, extraActions }: ContentModal
           onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
           onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
           <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); }}
-            style={{ width: '100%', minHeight: 120, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-3) var(--space-4)' }} />
+            style={{ width: '100%', minHeight: 400, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-3) var(--space-4)' }} />
         </div>
       </div>
       <div className="flex items-center justify-end gap-2 shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', borderTop: '1px solid var(--color-border-subtle)' }}>

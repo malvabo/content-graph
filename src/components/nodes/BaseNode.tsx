@@ -277,7 +277,12 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
 
       {/* Error */}
       {isError && error && (
-        <div style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', color: 'var(--color-danger-text)' }} className="mt-2">{error}</div>
+        <div style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-snug)', color: 'var(--color-danger-text)' }} className="mt-2">
+          {error}
+          {error.includes('Settings') && (
+            <button onMouseDown={e => e.stopPropagation()} onClick={() => { window.location.hash = '#settings'; }} style={{ display: 'block', marginTop: 4, background: 'none', border: 'none', color: 'var(--color-accent-subtle)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', padding: 0, textDecoration: 'underline' }}>Open Settings →</button>
+          )}
+        </div>
       )}
 
       {/* Inline content — flex:1 so it fills between header and chips */}
