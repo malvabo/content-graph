@@ -15,7 +15,7 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       alignItems: 'stretch',
       borderRadius: 'var(--radius-lg)',
       border: '1px solid var(--color-border-default)',
-      background: '#1A1A1E',
+      background: 'var(--color-bg-card)',
       cursor: 'pointer', textAlign: 'left', overflow: 'hidden',
       transition: 'border-color 150ms, box-shadow 150ms',
     }}
@@ -23,10 +23,10 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
       {/* Top: title + meta */}
-      <div style={{ background: '#1A1A1E', padding: '12px 16px 0 16px', borderBottom: '1px solid var(--color-border-subtle)', height: 75, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div style={{ padding: '12px 16px 0 16px', borderBottom: '1px solid var(--color-border-subtle)', height: 75, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{
           fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-          color: 'var(--p-neutral-200)', lineHeight: '21px',
+          color: 'var(--color-text-primary)', lineHeight: '21px',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           paddingRight: 16,
         }}>{title}</div>
@@ -40,7 +40,6 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       <div style={{
         display: 'flex', alignItems: 'center', gap: 0,
         padding: '8px 16px',
-        background: '#1A1A1E',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
           {pills.map((label, i) => (
@@ -55,7 +54,7 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
                 display: 'inline-flex', alignItems: 'center',
                 padding: '4px 12px',
                 borderRadius: 'var(--radius-sm)',
-                background: '#111114',
+                background: 'var(--color-bg-surface)',
                 border: '1px solid var(--color-border-subtle)',
                 fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
                 fontWeight: 'var(--weight-normal)', color: 'var(--color-text-secondary)',
