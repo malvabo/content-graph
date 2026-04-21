@@ -64,13 +64,29 @@ export default function CardsPanel({ setId }: { setId?: string }) {
     setSelected(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   };
 
+  const [groupInput, setGroupInput] = useState('');
+  const [showGroupInput, setShowGroupInput] = useState(false);
+
   const groupSelected = () => {
     if (selected.size < 2) return;
-    const groupName = prompt('Group name', 'Untitled group');
-    if (!groupName) return;
-    const updated = cards.map(c => selected.has(c.id) ? { ...c, group: groupName } : c);
+    if (!showGroupInput) { setShowGroupInput(true); setGroupInput('Untitled group'); return; }
+    const name = groupInput.trim() || 'Untitled group';
+    const updated = cards.map(c => selected.has(c.id) ? { ...c, group: name } : c);
     updateCards(currentSet!.id, updated);
     setSelected(new Set());
+    setShowGroupInput(false);
+  };
+
+  const renameGroup = (oldName: string) => {
+    const name = window.prompt('Rename group', oldName);
+    if (!name?.trim()) return;
+    const updated = cards.map(c => c.group === oldName ? { ...c, group: name.trim() } : c);
+    updateCards(currentSet!.id, updated);
+  };
+
+  const ungroupAll = (groupName: string) => {
+    const updated = cards.map(c => c.group === groupName ? { ...c, group: undefined } : c);
+    updateCards(currentSet!.id, updated);
   };
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -87,8 +103,15 @@ export default function CardsPanel({ setId }: { setId?: string }) {
     setCards(cards.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
 
+  const [toast, setToast] = useState<{ msg: string; undo: () => void } | null>(null);
+
   const removeCard = (id: string) => {
+    const removed = cards.find(c => c.id === id);
+    if (!removed) return;
+    const prev = [...cards];
     setCards(cards.filter(c => c.id !== id));
+    setToast({ msg: `"${removed.headline}" deleted`, undo: () => { setCards(prev); setToast(null); } });
+    setTimeout(() => setToast(t => t?.msg === `"${removed.headline}" deleted` ? null : t), 5000);
   };
 
 
@@ -137,8 +160,9 @@ export default function CardsPanel({ setId }: { setId?: string }) {
         {selected.size > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)', padding: 'var(--space-2) var(--space-4)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)' }}>
             <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', fontWeight: 500 }}>{selected.size} selected</span>
-            <button className="btn btn-sm btn-primary" onClick={groupSelected} disabled={selected.size < 2}>Group</button>
-            <button className="btn btn-sm btn-ghost" onClick={() => setSelected(new Set())}>Cancel</button>
+            {showGroupInput && <input autoFocus className="form-input" value={groupInput} onChange={e => setGroupInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') groupSelected(); if (e.key === 'Escape') { setShowGroupInput(false); } }} style={{ width: 160 }} />}
+            <button className="btn btn-sm btn-primary" onClick={groupSelected} disabled={selected.size < 2}>{showGroupInput ? 'Create group' : 'Group'}</button>
+            <button className="btn btn-sm btn-ghost" onClick={() => { setSelected(new Set()); setShowGroupInput(false); }}>Cancel</button>
           </div>
         )}
 
@@ -207,6 +231,9 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
                     <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: c.label }}>{name}</span>
                     <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{groupCards.length}</span>
+                    <span style={{ flex: 1 }} />
+                    <button onClick={() => renameGroup(name)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Rename</button>
+                    <button onClick={() => ungroupAll(name)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Ungroup</button>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
                     {groupCards.map(renderCard)}
@@ -274,6 +301,12 @@ export default function CardsPanel({ setId }: { setId?: string }) {
           </div>
         </div>
       </div>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3) var(--space-4)', boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>
+          <span style={{ color: 'var(--color-text-primary)' }}>{toast.msg}</span>
+          <button onClick={toast.undo} style={{ background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, padding: 0 }}>Undo</button>
+        </div>
+      )}
     </div>
   );
 }

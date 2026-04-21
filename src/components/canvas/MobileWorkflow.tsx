@@ -9,6 +9,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { NODE_DEFS_BY_SUBTYPE, BADGE_COLORS } from '../../utils/nodeDefs';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import ContentModal from '../modals/ContentModal';
+import { ImageModal } from '../modals/Modals';
 import MobileNodePicker from './MobileNodePicker';
 import type { NodeDef } from '../../utils/nodeDefs';
 
@@ -92,6 +93,7 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
   const status = useExecutionStore(s => s.status[node.id] ?? 'idle');
   const error = useExecutionStore(s => s.errors[node.id]);
   const output = useOutputStore(s => s.outputs[node.id]?.text);
+  const imageOutput = useOutputStore(s => s.outputs[node.id]?.imageBase64);
   const colors = BADGE_COLORS[node.data.category];
   const [swipeX, setSwipeX] = useState(0);
   const [startX, setStartX] = useState(0);
@@ -158,7 +160,10 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
         )}
 
         {/* Output preview */}
-        {output && (
+        {imageOutput && (
+          <img src={imageOutput} alt="Generated" style={{ marginTop: 'var(--space-2)', width: '100%', borderRadius: 'var(--radius-md)', maxHeight: 120, objectFit: 'cover' }} />
+        )}
+        {output && !imageOutput && (
           <div style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-xs)', lineHeight: 'var(--leading-snug)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
             {output}
           </div>
@@ -237,6 +242,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
 
   const expandNode = nodes.find(n => n.id === expandId);
   const expandOutput = useOutputStore(s => expandId ? s.outputs[expandId]?.text : undefined);
+  const expandImage = useOutputStore(s => expandId ? s.outputs[expandId]?.imageBase64 : undefined);
 
   // Sort: sources → transforms → generates → outputs
   const order: Record<string, number> = { source: 0, transform: 1, generate: 2, output: 3 };
@@ -305,7 +311,11 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
       </div>
 
       {/* Expand modal */}
-      {expandNode && expandOutput && (
+      {expandNode && expandImage && (
+        <ImageModal src={expandImage} prompt={expandOutput} nodeLabel={expandNode.data.label} onClose={() => setExpandId(null)} nodeId={expandNode.id}
+          onUse={(img: string) => { useOutputStore.getState().setOutput(expandNode.id, { ...useOutputStore.getState().outputs[expandNode.id], imageBase64: img }); setExpandId(null); }} />
+      )}
+      {expandNode && expandOutput && !expandImage && (
         <ContentModal
           subtype={expandNode.data.subtype}
           title={expandNode.data.label}
@@ -314,7 +324,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
           onSave={(t: string) => useOutputStore.getState().setOutput(expandNode.id, { text: t })}
         />
       )}
-      {expandNode && !expandOutput && (
+      {expandNode && !expandOutput && !expandImage && (
         <MobileNodeDetail node={expandNode} onClose={() => setExpandId(null)} onRun={handleRunAll} />
       )}
 

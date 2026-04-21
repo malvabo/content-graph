@@ -45,7 +45,7 @@ const statusBadge = (status: string) => {
   );
 };
 
-function RecordingOverlay({ onStop, startTime }: { onStop: () => void; startTime: number }) {
+function RecordingOverlay({ onStop, onCancel, startTime }: { onStop: () => void; onCancel: () => void; startTime: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [elapsed, setElapsed] = useState(0);
   const [visible, setVisible] = useState(false);
@@ -103,6 +103,7 @@ function RecordingOverlay({ onStop, startTime }: { onStop: () => void; startTime
             <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
           </button>
           <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Tap to stop</div>
+          <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', marginTop: 'var(--space-2)' }}>Cancel</button>
         </div>
       </div>
     </div>,
@@ -189,6 +190,14 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
     setRecording(false);
   }, [finalText, interimText, updateNote]);
 
+  const cancelRecording = useCallback(() => {
+    mediaRef.current?.getTracks().forEach(t => t.stop());
+    recognitionRef.current?.stop();
+    clearInterval(timerRef.current);
+    removeNote(noteIdRef.current);
+    setRecording(false);
+  }, [removeNote]);
+
   const handleRename = () => {
     if (!renameId || !renameName.trim()) return;
     updateNote(renameId, { title: renameName.trim() });
@@ -222,7 +231,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
         {/* Recording overlay — floating blobs */}
-        {recording && <RecordingOverlay onStop={stopRecording} startTime={startTimeRef.current} />}
+        {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} />}
 
         {/* Empty state */}
         {notes.length === 0 && !recording ? (
