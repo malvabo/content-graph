@@ -126,6 +126,7 @@ export const useGraphStore = create<GraphState>()(
           nodes: state.nodes.map(n => ({ id: n.id, type: n.type, position: n.position, deletable: n.deletable, data: n.data })),
           edges: state.edges,
           graphName: state.graphName,
+          workflowId: state.workflowId,
         }),
         onRehydrateStorage: () => (_state, error) => {
           if (error) { localStorage.removeItem('content-graph-store'); }

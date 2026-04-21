@@ -68,8 +68,8 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                   </div>
                 </div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>{set.cards.length} card{set.cards.length !== 1 ? 's' : ''} · {fmt(set.createdAt)}</div>
-                {set.cards.length > 0 && (
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>{(set.cards || []).length} card{(set.cards || []).length !== 1 ? 's' : ''} · {fmt(set.createdAt)}</div>
+                {set.cards?.length > 0 && (
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {set.cards.map(c => c.headline).join(', ')}
                   </div>
