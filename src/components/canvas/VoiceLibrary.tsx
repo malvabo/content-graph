@@ -45,7 +45,7 @@ const statusBadge = (status: string) => {
   );
 };
 
-function RecordingOverlay({ onStop, onCancel, startTime }: { onStop: () => void; onCancel: () => void; startTime: number }) {
+function RecordingOverlay({ onStop, onCancel, startTime, errorMsg }: { onStop: () => void; onCancel: () => void; startTime: number; errorMsg?: string | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [elapsed, setElapsed] = useState(0);
   const [visible, setVisible] = useState(false);
@@ -103,6 +103,7 @@ function RecordingOverlay({ onStop, onCancel, startTime }: { onStop: () => void;
             <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
           </button>
           <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Tap to stop</div>
+          {errorMsg && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)', textAlign: 'center', maxWidth: 320 }}>{errorMsg}</div>}
           <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', marginTop: 'var(--space-2)' }}>Cancel</button>
         </div>
       </div>
@@ -115,8 +116,6 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
   const [recording, setRecording] = useState(false);
   const [micError, setMicError] = useState(false);
-  const [finalText, setFinalText] = useState('');
-  const [interimText, setInterimText] = useState('');
   const [viewId, setViewId] = useState<string | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [renameId, setRenameId] = useState<string | null>(null);
@@ -129,6 +128,10 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const noteIdRef = useRef('');
   const menuRef = useRef<HTMLDivElement>(null);
+  const finalRef = useRef('');
+  const interimRef = useRef('');
+  const shouldRestartRef = useRef(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Close menu on outside click
   useEffect(() => {
@@ -140,33 +143,63 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
   }, [menuId]);
 
   const startRecording = useCallback(async () => {
+    setErrorMsg(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRef.current = stream;
+
+      finalRef.current = '';
+      interimRef.current = '';
 
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       if (SpeechRecognition) {
         const recog = new SpeechRecognition();
         recog.continuous = true;
         recog.interimResults = true;
+        recog.lang = navigator.language || 'en-US';
         recog.onresult = (e: any) => {
-          let final = '', interim = '';
-          for (let i = 0; i < e.results.length; i++) {
-            if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
-            else interim += e.results[i][0].transcript;
+          let interim = '';
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const t = e.results[i][0].transcript;
+            if (e.results[i].isFinal) finalRef.current += t + ' ';
+            else interim += t;
           }
-          setFinalText(final.trim());
-          setInterimText(interim);
+          interimRef.current = interim;
         };
-        recog.start();
-        recognitionRef.current = recog;
+        recog.onerror = (e: any) => {
+          console.error('SpeechRecognition error', e?.error, e);
+          if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
+            setErrorMsg('Microphone blocked. Check browser permissions.');
+            shouldRestartRef.current = false;
+          } else if (e?.error === 'no-speech' || e?.error === 'audio-capture') {
+            // keep going — onend will restart
+          } else if (e?.error === 'network') {
+            setErrorMsg('Speech recognition needs an internet connection.');
+          } else if (e?.error === 'language-not-supported') {
+            setErrorMsg(`Language ${recog.lang} not supported for transcription.`);
+            shouldRestartRef.current = false;
+          }
+        };
+        recog.onend = () => {
+          if (shouldRestartRef.current) {
+            try { recog.start(); } catch { /* already started */ }
+          }
+        };
+        try {
+          shouldRestartRef.current = true;
+          recog.start();
+          recognitionRef.current = recog;
+        } catch (err) {
+          console.error('recog.start failed', err);
+          shouldRestartRef.current = false;
+        }
+      } else {
+        setErrorMsg('Live transcription not supported in this browser. Try Chrome or Edge.');
       }
 
       const id = `vn-${Date.now()}`;
       noteIdRef.current = id;
       startTimeRef.current = Date.now();
-      setFinalText('');
-      setInterimText('');
       setRecording(true);
 
       addNote({ id, title: 'Recording…', durationMs: 0, transcript: '', status: 'recording', createdAt: new Date().toISOString() });
@@ -178,21 +211,23 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
   }, [addNote]);
 
   const stopRecording = useCallback(() => {
+    shouldRestartRef.current = false;
     mediaRef.current?.getTracks().forEach(t => t.stop());
-    recognitionRef.current?.stop();
+    try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
     clearInterval(timerRef.current);
 
     const duration = Date.now() - startTimeRef.current;
-    const transcript = [finalText, interimText].filter(Boolean).join(' ').trim();
+    const transcript = [finalRef.current.trim(), interimRef.current.trim()].filter(Boolean).join(' ').trim();
     const title = transcript ? transcript.split(/\s+/).slice(0, 5).join(' ') : 'Untitled note';
 
     updateNote(noteIdRef.current, { title, durationMs: duration, transcript, status: 'ready' });
     setRecording(false);
-  }, [finalText, interimText, updateNote]);
+  }, [updateNote]);
 
   const cancelRecording = useCallback(() => {
+    shouldRestartRef.current = false;
     mediaRef.current?.getTracks().forEach(t => t.stop());
-    recognitionRef.current?.stop();
+    try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
     clearInterval(timerRef.current);
     removeNote(noteIdRef.current);
     setRecording(false);
@@ -231,7 +266,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
         {/* Recording overlay — floating blobs */}
-        {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} />}
+        {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} errorMsg={errorMsg} />}
 
         {/* Empty state */}
         {notes.length === 0 && !recording ? (
@@ -258,6 +293,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
               Record your first note
             </button>
             {micError && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)' }}>Microphone access denied. Check browser permissions.</div>}
+            {errorMsg && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)' }}>{errorMsg}</div>}
           </div>
         ) : (
           /* Card grid */
