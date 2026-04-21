@@ -20,9 +20,7 @@ const I = ({size=24,children,...p}) => (
     {children}
   </svg>
 );
-const ChevronDown = ({size,...p}) => <I size={size} {...p}><path d="m6 9 6 6 6-6"/></I>;
 const FileText = ({size,...p}) => <I size={size} {...p}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></I>;
-const ArrowRight = ({size,...p}) => <I size={size} {...p}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></I>;
 const ExternalLink = ({size,...p}) => <I size={size} {...p}><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></I>;
 const Loader = ({size,...p}) => <I size={size} {...p}><path d="M12 2v4"/><path d="M12 18v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="m14.24 14.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="m14.24 9.76 2.83-2.83"/></I>;
 const X = ({size,...p}) => <I size={size} {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></I>;
@@ -101,21 +99,12 @@ const DARK = {
   hlAmber:   { bg:"rgba(240,200,96,0.08)",  activeBg:"rgba(240,200,96,0.2)",  line:"rgba(240,200,96,0.4)"  },
 };
 
-const C = isDark ? DARK : LIGHT;
+let C = isDark ? DARK : LIGHT;
 
-const HL = {
-  science:  C.hlIndigo,
-  metaphor: C.hlEmerald,
-  logic:    C.hlAmber,
-};
+let HL = { science: C.hlIndigo, metaphor: C.hlEmerald, logic: C.hlAmber };
+let TAG = { science: C.tagIndigo, metaphor: C.tagEmerald, logic: C.tagAmber };
 
-const TAG = {
-  science:  C.tagIndigo,
-  metaphor: C.tagEmerald,
-  logic:    C.tagAmber,
-};
-
-const FONT_STYLE = `
+const getFontStyle = () => `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body, input, button, select, textarea { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
@@ -161,26 +150,6 @@ const FONT_STYLE = `
   }
 `;
 
-/* ── sample content ── */
-const SAMPLE_TEXT = `The human brain processes visual information 60,000 times faster than text. When we craft our stories, we're essentially rewiring the neural pathways of our audience.
-
-Consider the butterfly effect — a small change in how we open our talk can cascade into a completely different emotional journey for our listeners. This is why the first 30 seconds matter most.
-
-Science shows that people remember 10% of what they hear, but 65% of what they see combined with what they hear. Your slides aren't decoration; they're memory anchors.
-
-The hero's journey isn't just a storytelling framework — it's a mirror of how the human psyche processes transformation. Every great talk follows this ancient pattern without exception.`;
-
-const COUNTRIES = [
-  { code:"US", name:"United States", flag:"🇺🇸" },
-  { code:"JP", name:"Japan",         flag:"🇯🇵" },
-  { code:"BR", name:"Brazil",        flag:"🇧🇷" },
-  { code:"IN", name:"India",         flag:"🇮🇳" },
-  { code:"DE", name:"Germany",       flag:"🇩🇪" },
-  { code:"NG", name:"Nigeria",       flag:"🇳🇬" },
-  { code:"MX", name:"Mexico",        flag:"🇲🇽" },
-  { code:"AU", name:"Australia",     flag:"🇦🇺" },
-];
-
 /* Insights are AI-generated — see runAnalysis() in main component */
 
 function tokenize(text, insights = []) {
@@ -216,9 +185,17 @@ const MOCK_INSIGHTS = JSON.stringify({
 
 let _anthropicKey = '';
 let _groqKey = '';
+let _onThemeChange = null;
 window.addEventListener('message', e => {
   if (e.data?.type === 'set-api-key') _anthropicKey = e.data.key;
   if (e.data?.type === 'set-groq-key') _groqKey = e.data.key;
+  if (e.data?.type === 'set-theme') {
+    C = e.data.dark ? DARK : LIGHT;
+    HL = { science: C.hlIndigo, metaphor: C.hlEmerald, logic: C.hlAmber };
+    TAG = { science: C.tagIndigo, metaphor: C.tagEmerald, logic: C.tagAmber };
+    localStorage.setItem('dark-mode', e.data.dark ? 'true' : 'false');
+    _onThemeChange && _onThemeChange(v => v + 1);
+  }
 });
 
 async function callClaude(prompt) {
@@ -399,85 +376,6 @@ function LogicCard({ data, elRef, onClose, onApply, highlighted }) {
   );
 }
 
-/* ─────────────────── Home Page ─────────────────── */
-function HomePage({ drafts, onNew, onOpen, onDelete }) {
-  const fmt = (ts) => new Date(ts).toLocaleDateString("en-US", { month:"short", day:"numeric" });
-  const getTitle = (text) => {
-    const s = text.trim().split(/[.\n!?]/)[0].trim();
-    return s.length > 60 ? s.slice(0, 60) + "…" : s || "Untitled";
-  };
-
-  return (
-    <>
-      <style>{FONT_STYLE}</style>
-      <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.pageBg, color:C.text, overflow:"auto" }}>
-        {/* Hero header image */}
-        <div style={{ width:"100%", height:200, overflow:"hidden", flexShrink:0, position:"relative" }}>
-          <img src="header.png" alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
-        </div>
-        <div style={{ padding:"24px 32px" }}>
-
-          {/* Header — matches Workflows */}
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:12 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <h1 style={{ fontSize:20, fontWeight:500, margin:0 }}>Scripts</h1>
-              {drafts.length > 0 && (
-                <span style={{ fontSize:11, color:C.mute, background:C.surface, padding:"2px 8px", borderRadius:99 }}>{drafts.length}</span>
-              )}
-            </div>
-            <button onClick={onNew} style={{ display:"flex", alignItems:"center", gap:6, background:C.white, color:C.text, border:`1px solid ${C.border2}`, borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}
-              onMouseEnter={e => { e.currentTarget.style.background = C.surface; }}
-              onMouseLeave={e => { e.currentTarget.style.background = C.white; }}>
-              <span style={{ fontSize:16, lineHeight:1 }}>+</span> New script
-            </button>
-          </div>
-
-          {drafts.length === 0 ? (
-            /* Empty state — horizontal row, matches Workflows, vertically centered */
-            <div style={{
-              display:"flex", alignItems:"center", gap:24,
-              padding:"32px 24px", borderRadius:12,
-              border:`1px dashed ${C.border2}`, background:C.white,
-              marginTop:"calc(35vh - 100px)",
-            }}>
-              <div style={{ width:48, height:48, borderRadius:12, background:C.surface, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:C.mute }}>
-                <FileText size={20} />
-              </div>
-              <div style={{ flex:1 }}>
-                <p style={{ fontSize:14, fontWeight:500, color:C.sub, marginBottom:2 }}>No saved scripts yet</p>
-                <p style={{ fontSize:12, color:C.mute }}>Paste a talk script and get AI-powered insights on claims, metaphors, and logic</p>
-              </div>
-              <button onClick={onNew} style={{ flexShrink:0, display:"flex", alignItems:"center", gap:6, background:C.accent, color:C.white, border:"none", borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
-                <span style={{ fontSize:16, lineHeight:1 }}>+</span> Create script
-              </button>
-            </div>
-          ) : (
-            <div style={{ background:C.white, borderRadius:12, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-              {drafts.map((draft, i) => (
-                <div key={draft.id} onClick={() => onOpen(draft)}
-                  style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", cursor:"pointer", borderBottom: i < drafts.length - 1 ? `1px solid ${C.border}` : "none", transition:"background 100ms" }}
-                  onMouseEnter={e => e.currentTarget.style.background = C.surface}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <FileText size={14} color={C.mute} style={{ flexShrink:0 }} />
-                  <span style={{ flex:1, fontSize:13, fontWeight:500, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{getTitle(draft.text)}</span>
-                  <span style={{ fontSize:11, color:C.mute, whiteSpace:"nowrap", flexShrink:0 }}>{draft.wordCount}w</span>
-                  <span style={{ fontSize:11, color:C.mute, whiteSpace:"nowrap", flexShrink:0 }}>{fmt(draft.updatedAt)}</span>
-                  <button onClick={(e) => { e.stopPropagation(); onDelete(draft.id); }}
-                    className="close-btn" style={{ flexShrink:0, opacity:0.4 }}
-                    onMouseEnter={e => e.currentTarget.style.opacity = "1"}
-                    onMouseLeave={e => e.currentTarget.style.opacity = "0.4"}>
-                    <X size={12} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
 /* ─────────────────── Main App ─────────────────── */
 function ContentGraphEditor({ draft, onSave, onBack }) {
   const [text, setText]               = useState(() => {
@@ -504,14 +402,6 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
   const cardRefs    = useRef({});
   const autoSaveRef = useRef(null);
   const [saveStatus, setSaveStatus] = useState(null);
-
-  /* ── Escape to close dropdown ── */
-  useEffect(() => {
-    if (!ddOpen) return;
-    const h = e => { if (e.key === 'Escape') setDdOpen(false); };
-    document.addEventListener('keydown', h);
-    return () => document.removeEventListener('keydown', h);
-  }, [ddOpen]);
 
   /* ── Auto-save (debounced 1.2s, min 10 words) ── */
   useEffect(() => {
@@ -647,7 +537,7 @@ ${text}`
 
   return (
     <>
-      <style>{FONT_STYLE}</style>
+      <style>{getFontStyle()}</style>
       <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.pageBg, color:C.text }}>
 
 
@@ -825,45 +715,30 @@ ${text}`
 
 /* ─────────────────── Router ─────────────────── */
 function ContentGraph() {
-  const [view, setView]           = useState("editor");
+  const [, forceTheme] = useState(0);
   const [currentDraft, setCurrentDraft] = useState(null);
-  const [drafts, setDrafts]       = useState(() => {
-    try { return JSON.parse(localStorage.getItem("ss_drafts") || "[]"); }
-    catch { return []; }
-  });
+
+  useEffect(() => {
+    _onThemeChange = forceTheme;
+    return () => { _onThemeChange = null; };
+  }, [forceTheme]);
 
   const saveDraft = useCallback((d) => {
-    setDrafts(prev => {
-      const exists = prev.find(p => p.id === d.id);
-      const next   = exists ? prev.map(p => p.id === d.id ? d : p) : [d, ...prev];
-      localStorage.setItem("ss_drafts", JSON.stringify(next));
-      return next;
-    });
     setCurrentDraft(d);
-  }, []);
-
-  const deleteDraft = useCallback((id) => {
-    setDrafts(prev => {
-      const next = prev.filter(p => p.id !== id);
+    try {
+      const existing = JSON.parse(localStorage.getItem("ss_drafts") || "[]");
+      const next = existing.find(p => p.id === d.id)
+        ? existing.map(p => p.id === d.id ? d : p)
+        : [d, ...existing];
       localStorage.setItem("ss_drafts", JSON.stringify(next));
-      return next;
-    });
+    } catch {}
   }, []);
-
-  if (false && view === "home") return (
-    <HomePage
-      drafts={drafts}
-      onNew={() => { setCurrentDraft(null); setView("editor"); }}
-      onOpen={(d) => { setCurrentDraft(d); setView("editor"); }}
-      onDelete={deleteDraft}
-    />
-  );
 
   return (
     <ContentGraphEditor
       draft={currentDraft}
       onSave={saveDraft}
-      onBack={() => setView("home")}
+      onBack={() => {}}
     />
   );
 }
