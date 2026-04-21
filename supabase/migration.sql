@@ -32,8 +32,14 @@ create table if not exists user_settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
   anthropic_key text default '',
   openai_key text default '',
-  google_key text default ''
+  google_key text default '',
+  groq_key text default '',
+  together_key text default ''
 );
+
+-- Idempotent backfill for databases provisioned before groq_key/together_key were added
+alter table user_settings add column if not exists groq_key text default '';
+alter table user_settings add column if not exists together_key text default '';
 
 alter table user_settings enable row level security;
 

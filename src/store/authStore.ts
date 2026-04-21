@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
+import { useSettingsStore } from './settingsStore';
 
 let authSub: { unsubscribe: () => void } | null = null;
 
@@ -34,6 +35,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
     authSub?.unsubscribe();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       set({ session, user: session?.user ?? null });
+      if (session?.user) useSettingsStore.getState().load();
     });
     authSub = subscription;
   },
@@ -57,7 +59,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   signInWithGoogle: async () => {
     if (!supabase) return 'Auth not configured';
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+    const redirectTo = (import.meta.env.VITE_APP_URL as string | undefined) || window.location.origin;
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
     return error?.message ?? null;
   },
 

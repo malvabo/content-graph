@@ -10,8 +10,6 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
 import MobileWorkflow from './components/canvas/MobileWorkflow';
 import { useAuthStore } from './store/authStore';
-import { useSettingsStore } from './store/settingsStore';
-import { supabase } from './lib/supabase';
 import AuthGate from './components/auth/AuthGate';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; btnHover: boolean }> {
@@ -54,14 +52,6 @@ function AppInner() {
   useKeyboardShortcuts();
 
   useEffect(() => { init(); }, [init]);
-  useEffect(() => { if (user) useSettingsStore.getState().load(); }, [user]);
-  useEffect(() => {
-    if (!supabase) return;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      if (session?.user) useSettingsStore.getState().load();
-    });
-    return () => subscription.unsubscribe();
-  }, []);
 
 
   if (authLoading) return (

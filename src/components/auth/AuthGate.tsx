@@ -9,9 +9,10 @@ export default function AuthGate() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(() => {
     const p = new URLSearchParams(window.location.search);
-    const h = new URLSearchParams(window.location.hash.replace('#', '?'));
-    const desc = p.get('error_description') || h.get('error_description');
-    if (desc) window.history.replaceState({}, '', window.location.pathname);
+    const desc = p.get('error_description');
+    // Only wipe the URL when there is an error and no PKCE code in flight.
+    // If ?code= is present, Supabase's _initialize() is mid-exchange — leave the URL intact.
+    if (desc && !p.get('code')) window.history.replaceState({}, '', window.location.pathname);
     try { return desc ? decodeURIComponent(desc) : null; } catch { return desc; }
   });
   const [loading, setLoading] = useState(false);
