@@ -3,7 +3,30 @@ import { createPortal } from 'react-dom';
 import { useVoiceStore } from '../../store/voiceStore';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import ContentModal from '../modals/ContentModal';
+
+async function transcribeWithGroq(blob: Blob, apiKey: string): Promise<string> {
+  const form = new FormData();
+  form.append('file', blob, 'recording.webm');
+  form.append('model', 'whisper-large-v3');
+  form.append('response_format', 'json');
+  const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form,
+  });
+  if (!res.ok) throw new Error(`Groq ${res.status}: ${await res.text().catch(() => '')}`);
+  const data = await res.json();
+  return (data.text || '').trim();
+}
+
+function pickMimeType(): string | undefined {
+  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+  const MR: any = (window as any).MediaRecorder;
+  if (!MR?.isTypeSupported) return undefined;
+  return types.find(t => MR.isTypeSupported(t));
+}
 
 /* Icons */
 const MicIcon = () => (
@@ -114,6 +137,7 @@ function RecordingOverlay({ onStop, onCancel, startTime, errorMsg }: { onStop: (
 
 export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUseInWorkflow?: () => void; onSendToScript?: (text: string) => void }) {
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
+  const groqKey = useSettingsStore(s => s.groqKey);
   const [recording, setRecording] = useState(false);
   const [micError, setMicError] = useState(false);
   const [viewId, setViewId] = useState<string | null>(null);
@@ -124,13 +148,16 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
 
   const mediaRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
   const startTimeRef = useRef(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const noteIdRef = useRef('');
   const menuRef = useRef<HTMLDivElement>(null);
   const finalRef = useRef('');
   const interimRef = useRef('');
   const shouldRestartRef = useRef(false);
+  const groqKeyRef = useRef(groqKey);
+  useEffect(() => { groqKeyRef.current = groqKey; }, [groqKey]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Close menu on outside click
@@ -144,15 +171,15 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
 
   const startRecording = useCallback(async () => {
     setErrorMsg(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRef.current = stream;
+    finalRef.current = '';
+    interimRef.current = '';
+    chunksRef.current = [];
 
-      finalRef.current = '';
-      interimRef.current = '';
-
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      if (SpeechRecognition) {
+    // 1. Kick off SpeechRecognition synchronously inside the user gesture.
+    //    iOS Safari requires .start() to be called before any await.
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (SpeechRecognition) {
+      try {
         const recog = new SpeechRecognition();
         recog.continuous = true;
         recog.interimResults = true;
@@ -172,11 +199,11 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             setErrorMsg('Microphone blocked. Check browser permissions.');
             shouldRestartRef.current = false;
           } else if (e?.error === 'no-speech' || e?.error === 'audio-capture') {
-            // keep going — onend will restart
+            // swallow — onend will restart
           } else if (e?.error === 'network') {
-            setErrorMsg('Speech recognition needs an internet connection.');
+            // don't alarm the user; Whisper fallback may still produce a transcript
+            console.warn('Live transcription offline — will try Whisper on stop.');
           } else if (e?.error === 'language-not-supported') {
-            setErrorMsg(`Language ${recog.lang} not supported for transcription.`);
             shouldRestartRef.current = false;
           }
         };
@@ -185,50 +212,95 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             try { recog.start(); } catch { /* already started */ }
           }
         };
-        try {
-          shouldRestartRef.current = true;
-          recog.start();
-          recognitionRef.current = recog;
-        } catch (err) {
-          console.error('recog.start failed', err);
-          shouldRestartRef.current = false;
-        }
-      } else {
-        setErrorMsg('Live transcription not supported in this browser. Try Chrome or Edge.');
+        shouldRestartRef.current = true;
+        recog.start();
+        recognitionRef.current = recog;
+      } catch (err) {
+        console.error('SpeechRecognition unavailable', err);
+        shouldRestartRef.current = false;
       }
+    }
 
-      const id = `vn-${Date.now()}`;
-      noteIdRef.current = id;
-      startTimeRef.current = Date.now();
-      setRecording(true);
-
-      addNote({ id, title: 'Recording…', durationMs: 0, transcript: '', status: 'recording', createdAt: new Date().toISOString() });
+    // 2. Request mic + wire MediaRecorder — provides audio for Whisper fallback.
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRef.current = stream;
+      const mime = pickMimeType();
+      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.start(1000);
+      recorderRef.current = mr;
     } catch (err) {
       console.error('Mic access denied', err);
+      shouldRestartRef.current = false;
+      try { recognitionRef.current?.stop(); } catch { /* noop */ }
+      recognitionRef.current = null;
       setMicError(true);
       setTimeout(() => setMicError(false), 3000);
+      return;
     }
+
+    const id = `vn-${Date.now()}`;
+    noteIdRef.current = id;
+    startTimeRef.current = Date.now();
+    setRecording(true);
+    addNote({ id, title: 'Recording…', durationMs: 0, transcript: '', status: 'recording', createdAt: new Date().toISOString() });
   }, [addNote]);
 
-  const stopRecording = useCallback(() => {
+  const stopRecording = useCallback(async () => {
     shouldRestartRef.current = false;
-    mediaRef.current?.getTracks().forEach(t => t.stop());
     try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
-    clearInterval(timerRef.current);
+    recognitionRef.current = null;
 
+    // Flush MediaRecorder so all chunks land in chunksRef before we assemble the blob.
+    const mr = recorderRef.current;
+    if (mr && mr.state !== 'inactive') {
+      await new Promise<void>(resolve => {
+        mr.addEventListener('stop', () => resolve(), { once: true });
+        try { mr.stop(); } catch { resolve(); }
+      });
+    }
+    recorderRef.current = null;
+    mediaRef.current?.getTracks().forEach(t => t.stop());
+    mediaRef.current = null;
+
+    const noteId = noteIdRef.current;
     const duration = Date.now() - startTimeRef.current;
-    const transcript = [finalRef.current.trim(), interimRef.current.trim()].filter(Boolean).join(' ').trim();
-    const title = transcript ? transcript.split(/\s+/).slice(0, 5).join(' ') : 'Untitled note';
+    let transcript = [finalRef.current.trim(), interimRef.current.trim()].filter(Boolean).join(' ').trim();
 
-    updateNote(noteIdRef.current, { title, durationMs: duration, transcript, status: 'ready' });
+    const mimeType = (chunksRef.current[0] as Blob | undefined)?.type || 'audio/webm';
+    const blob = chunksRef.current.length ? new Blob(chunksRef.current, { type: mimeType }) : null;
+    chunksRef.current = [];
+
     setRecording(false);
+
+    // If Web Speech produced nothing, fall back to Groq Whisper when the user has a key.
+    if (!transcript && blob && blob.size > 0 && groqKeyRef.current) {
+      updateNote(noteId, { durationMs: duration, status: 'transcribing' });
+      try {
+        transcript = await transcribeWithGroq(blob, groqKeyRef.current);
+      } catch (err: any) {
+        console.error('Whisper fallback failed', err);
+        setErrorMsg(`Transcription failed: ${err?.message || 'unknown error'}`);
+      }
+    } else if (!transcript && blob && blob.size > 0 && !groqKeyRef.current) {
+      setErrorMsg('No transcript captured. Add a Groq API key in Settings for Whisper transcription.');
+    }
+
+    const title = transcript ? transcript.split(/\s+/).slice(0, 5).join(' ') : 'Untitled note';
+    updateNote(noteId, { title, durationMs: duration, transcript, status: 'ready' });
   }, [updateNote]);
 
   const cancelRecording = useCallback(() => {
     shouldRestartRef.current = false;
-    mediaRef.current?.getTracks().forEach(t => t.stop());
     try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
-    clearInterval(timerRef.current);
+    recognitionRef.current = null;
+    const mr = recorderRef.current;
+    if (mr && mr.state !== 'inactive') { try { mr.stop(); } catch { /* noop */ } }
+    recorderRef.current = null;
+    mediaRef.current?.getTracks().forEach(t => t.stop());
+    mediaRef.current = null;
+    chunksRef.current = [];
     removeNote(noteIdRef.current);
     setRecording(false);
   }, [removeNote]);
