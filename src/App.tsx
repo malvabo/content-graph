@@ -107,7 +107,7 @@ function AppInner() {
 
         {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(content) => { setVoiceTranscript(content); setActiveView('scriptsense'); }} />}
 
-        {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} onOpenInCards={() => setActiveView('cardslibrary')} />}
+        {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} onBack={() => setActiveView('scriptlist')} onOpenInCards={() => setActiveView('cardslibrary')} />}
 
 
         {activeView === 'settings' && <SettingsPanel />}

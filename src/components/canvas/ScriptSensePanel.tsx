@@ -1,11 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
 
-interface Props { initialText?: string; onOpenInCards?: () => void }
+interface Props { initialText?: string; onBack?: () => void; onOpenInCards?: () => void }
 
-export default function ScriptSensePanel({ initialText, onOpenInCards }: Props) {
-  // Bug 5: write to localStorage synchronously before first iframe mount so key=0
-  // always loads with the correct content — no wasted double-load on initial render.
+export default function ScriptSensePanel({ initialText, onBack, onOpenInCards }: Props) {
   const [iframeKey, setIframeKey] = useState(() => {
     if (initialText) {
       localStorage.setItem('scriptsense-content', initialText);
@@ -15,24 +13,35 @@ export default function ScriptSensePanel({ initialText, onOpenInCards }: Props) 
   });
   const [iframeLoading, setIframeLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const isFirstRender = useRef(true);
+  const prevInitialTextRef = useRef(initialText);
   const anthropicKey = useSettingsStore(s => s.anthropicKey);
   const groqKey = useSettingsStore(s => s.groqKey);
 
+  // Only reload the iframe when initialText genuinely changes, not on StrictMode double-mount
   useEffect(() => {
-    // Skip initial mount — localStorage was already set in useState initializer
-    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (initialText === prevInitialTextRef.current) return;
+    prevInitialTextRef.current = initialText;
     if (initialText) {
       localStorage.setItem('scriptsense-content', initialText);
-      setIframeLoading(true); // Bug 2: reset loading state before key bump
+      setIframeLoading(true);
       setIframeKey((k) => k + 1);
     }
   }, [initialText]);
 
-  // Send API key to iframe on load
+  // Listen for navigate-back from iframe
+  useEffect(() => {
+    if (!onBack) return;
+    const handler = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === 'navigate-back') onBack();
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [onBack]);
+
   const handleLoad = () => {
     setIframeLoading(false);
-    const origin = window.location.origin; // Bug 6: scope postMessage to same origin
+    const origin = window.location.origin;
     if (iframeRef.current?.contentWindow) {
       if (anthropicKey) iframeRef.current.contentWindow.postMessage({ type: 'set-api-key', key: anthropicKey }, origin);
       if (groqKey) iframeRef.current.contentWindow.postMessage({ type: 'set-groq-key', key: groqKey }, origin);
@@ -51,6 +60,11 @@ export default function ScriptSensePanel({ initialText, onOpenInCards }: Props) 
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)', position: 'relative' }}>
+      {onBack && (
+        <button onClick={onBack} style={{ position: 'absolute', top: 'var(--space-3)', left: 'var(--space-4)', zIndex: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 6 }}>
+          ← Scripts
+        </button>
+      )}
       {onOpenInCards && (
         <button onClick={onOpenInCards} className="btn btn-primary" style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-4)', zIndex: 10 }}>
           Open in Cards
