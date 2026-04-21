@@ -36,7 +36,7 @@ function DarkModeToggle() {
   return (
     <button onClick={() => setDark(!dark)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       aria-label={dark ? 'Light mode' : 'Dark mode'}
-      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: 8, background: hover ? 'var(--color-bg-surface)' : 'transparent', color: 'var(--color-text-tertiary)', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', width: 40, height: 40, borderRadius: 8, background: hover ? 'var(--color-bg-surface)' : 'transparent', color: 'var(--color-text-tertiary)', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
       {dark ? <SunIcon /> : <MoonIcon />}
     </button>
   );
