@@ -55,7 +55,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
 
         {/* Loading */}
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
             {[0,1,2].map(i => <div key={i} className="skeleton-bar" style={{ height: 156, borderRadius: 'var(--radius-lg)' }} />)}
           </div>
 
@@ -72,7 +72,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
 
         /* Grid */
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
             {items.map(item => {
               const { visible, remaining } = chipList(item);
               return (

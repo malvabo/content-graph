@@ -252,7 +252,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
           </div>
         ) : (
           /* Card grid */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-3)' }}>
             {[...notes].filter(n => n.status !== 'recording').reverse().map(note => (
               <div key={note.id}
                 style={{
