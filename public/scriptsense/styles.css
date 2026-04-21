@@ -2,7 +2,7 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
   --navy:#0d0f2c;--blue:#3e57da;--blue-light:#5b72f0;--blue-pale:#eef1ff;
-  --bg:#f5f6fa;--surface:#ffffff;--surface2:#f9fafb;
+  --bg:#f5f5f5;--surface:#ffffff;--surface2:#f9f9f9;
   --border:#e5e7ef;--border2:#d1d5e0;
   --text:#0d0f2c;--text2:#6b7280;--text3:#9ca3af;
   --green:#10b981;--orange:#f59e0b;--purple:#7c3aed;--pink:#ec4899;--red:#ef4444;
@@ -35,7 +35,7 @@ body{font-family:'Geist Sans','Geist',-apple-system,BlinkMacSystemFont,sans-seri
 
 /* Palette node — Figma menu item style */
 .palette-node{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:4px;
-  cursor:grab;transition:background .12s;background:#fafafb}
+  cursor:grab;transition:background .12s;background:#fafafa}
 .palette-node:hover{background:#f0f0f1}
 .palette-node:active{cursor:grabbing;transform:scale(.98)}
 .palette-node-text{display:flex;flex-direction:column;gap:1px}
@@ -97,8 +97,8 @@ body{font-family:'Geist Sans','Geist',-apple-system,BlinkMacSystemFont,sans-seri
 .node-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
 .node-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;
   justify-content:center;font-size:11px;font-weight:700;color:#71717a;
-  background:#f4f4f5;order:2;flex-shrink:0;letter-spacing:-.2px}
-.node.source .node-icon,.node.transform .node-icon,.node.specifics .node-icon,.node.output .node-icon{background:#f4f4f5}
+  background:#f4f4f4;order:2;flex-shrink:0;letter-spacing:-.2px}
+.node.source .node-icon,.node.transform .node-icon,.node.specifics .node-icon,.node.output .node-icon{background:#f4f4f4}
 .node-title{font-size:14px;font-weight:700;color:#18181b;letter-spacing:-.2px;
   line-height:1.3;order:1;flex:1}
 .node-subtitle{font-size:12.5px;color:#71717a;font-weight:400;line-height:1.5;padding:0}
@@ -175,7 +175,7 @@ body{font-family:'Geist Sans','Geist',-apple-system,BlinkMacSystemFont,sans-seri
   background:#fff;font-size:12px;font-weight:500;font-family:inherit;color:#18181b;
   cursor:pointer;transition:all .1s;white-space:nowrap;line-height:1.4;
   box-shadow:0 1px 2px rgba(0,0,0,.04)}
-.popover-action-btn:hover{background:#f4f4f5;border-color:#d4d4d8}
+.popover-action-btn:hover{background:#f4f4f4;border-color:#d4d4d8}
 .popover-action-btn:active{background:#e4e4e7}
 
 /* shadcn-style dropdown — dark theme model picker */

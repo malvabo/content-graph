@@ -2,7 +2,7 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
   --navy:#0d0f2c;--blue:#3e57da;--accent:#D8EAFA;
-  --bg:#f5f6fa;--surface:#fff;--surface2:#f4f4f5;
+  --bg:#f5f5f5;--surface:#fff;--surface2:#f4f4f4;
   --border:#e8e8ec;--border2:#d4d4d8;
   --text:#0d0f2c;--text2:#71717a;--text3:#a1a1aa;
   --radius:10px;

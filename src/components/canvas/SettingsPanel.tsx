@@ -214,8 +214,8 @@ function APIKeysSection() {
         </div>
         {saved && <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>✓ Saved</span>}
       </div>
-      <div style={{ ...CARD, padding: 0 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div style={{ ...CARD, padding: 0, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 400 }}>
           <thead>
             <tr>
               <th style={TH}>Name</th>
@@ -313,7 +313,7 @@ export default function SettingsPanel() {
       </nav>
 
       {/* Mobile tab bar */}
-      <div className="flex md:hidden" style={{ position: 'sticky', top: 0, left: 0, right: 0, zIndex: 10, background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border-subtle)', padding: '0 var(--space-3)', gap: 'var(--space-0)', overflowX: 'auto' }}>
+      <div className="flex md:hidden" style={{ position: 'sticky', top: 0, left: 0, right: 0, zIndex: 10, background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border-subtle)', padding: '0 var(--space-3)', gap: 'var(--space-0)', overflowX: 'auto', scrollbarWidth: 'none' }}>
         {SECTIONS.map(s => {
           const on = active === s.id;
           return (
@@ -325,7 +325,7 @@ export default function SettingsPanel() {
       </div>
 
       {/* Content */}
-      <div className="flex-1" style={{ overflowY: 'auto', padding: 'var(--space-6) var(--space-6)' }}>
+      <div className="flex-1" style={{ overflowY: 'auto', padding: 'var(--space-4) var(--space-4)' }}>
         <div style={{ maxWidth: active === 'api-keys' ? '100%' : 520 }}>
           {active === 'brand-visual' && <BrandVisualSection />}
           {active === 'brand-voice' && <BrandVoiceSection />}
