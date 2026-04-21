@@ -147,7 +147,6 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
   const promptChanged = editPrompt.trim() !== origPrompt.current.trim();
   const ratioChanged = ratio !== (aspect || (config.aspect as string) || '16:9');
   const needsRegen = promptChanged || ratioChanged;
-  const thumbH = Math.round(56 * d.h / d.w);
 
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
@@ -199,14 +198,10 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
     };
 
     try {
-      for (let i = 0; i < 4; i++) {
-        if (ctrl.signal.aborted) return;
-        try {
-          const img = await genOne(Date.now() + i);
-          if (ctrl.signal.aborted) return;
-          if (img) setVariants(prev => { const next = [...prev, img]; if (next.length === 1) setActiveSrc(img); return next; });
-        } catch { if (ctrl.signal.aborted) return; }
-      }
+      if (ctrl.signal.aborted) return;
+      const img = await genOne(Date.now());
+      if (ctrl.signal.aborted) return;
+      if (img) { setVariants([img]); setActiveSrc(img); }
     } catch (error) {
       if (!ctrl.signal.aborted) setGenError(error instanceof Error ? error.message : 'Generation failed');
     } finally {
@@ -251,34 +246,6 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
               </div>
             </div>
           </div>
-
-          {(variants.length > 0 || genLoading) && (
-            <div style={{ padding: '0 var(--space-6) var(--space-4)', display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', scrollbarWidth: 'thin' }}>
-              {Array.from({ length: 4 }).map((_, i) => {
-                const img = variants[i];
-                return (
-                  <div key={i} className="shrink-0 flex flex-col items-center" style={{ gap: 3 }}>
-                    <div className="relative" style={{ width: 56, height: thumbH }}>
-                      {img ? (
-                        <>
-                          <img src={img} alt={`Variant ${i + 1}`} onClick={() => { setActiveSrc(img); setZoomed(false); }}
-                            style={{ width: 56, height: thumbH, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: img === activeSrc ? '2px solid var(--color-accent)' : '2px solid transparent', opacity: img === activeSrc ? 1 : 0.6, transition: 'opacity 150ms' }} />
-                          {img === activeSrc && (
-                            <div style={{ position: 'absolute', top: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: 'var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>
-                            </div>
-                          )}
-                        </>
-                      ) : genLoading ? (
-                        <div className="skeleton-bar" style={{ width: 56, height: thumbH, borderRadius: 'var(--radius-sm)' }} />
-                      ) : null}
-                    </div>
-                    <span style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: img && img === activeSrc ? 'var(--color-text-secondary)' : 'var(--color-text-disabled)' }}>{i + 1}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {/* ── Right panel ── */}
@@ -395,27 +362,22 @@ export function ImageModal({ src, prompt, onClose, nodeLabel, aspect, onUse, nod
                 <button className="btn-xs btn-ghost" style={{ color: 'var(--color-danger-text)' }} onClick={generate4}>Retry</button>
               </div>
             )}
-            {/* #17: "Use this" is primary when variants exist, generate is secondary */}
             {onUse && variants.length > 0 ? (
               <>
-                <button className="btn btn-primary w-full" onClick={() => { onUse(activeSrc); onClose(); }}>Use variant {variants.indexOf(activeSrc) + 1}</button>
+                <button className="btn btn-primary w-full" onClick={() => { onUse(activeSrc); onClose(); }}>Use this image</button>
                 <button className="btn btn-ghost w-full" disabled={genLoading} onClick={generate4}>
-                {genLoading ? `Generating ${variants.length}/4…` : 'Regenerate 4'}
+                {genLoading ? 'Generating…' : 'Regenerate'}
                 </button>
               </>
             ) : (
               <button className="btn btn-primary w-full" disabled={genLoading} onClick={generate4} style={{ position: 'relative', overflow: 'hidden' }}>
-                {genLoading && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${variants.length * 25}%`, background: 'var(--color-overlay-light)', transition: 'width 300ms ease', borderRadius: 'inherit' }} />}
-                <span style={{ position: 'relative' }}>{genLoading ? `Generating ${variants.length}/4…` : needsRegen ? 'Generate with changes' : variants.length ? 'Regenerate 4' : 'Generate 4 variants'}</span>
+                {genLoading && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '60%', background: 'var(--color-overlay-light)', transition: 'width 300ms ease', borderRadius: 'inherit', animation: 'pulse 1.5s ease-in-out infinite' }} />}
+                <span style={{ position: 'relative' }}>{genLoading ? 'Generating…' : needsRegen ? 'Generate with changes' : variants.length ? 'Regenerate' : 'Generate image'}</span>
               </button>
             )}
-            {genLoading && <div style={{ height: 'var(--space-4)' }} />}
             <div className="flex gap-2">
               <button className="btn btn-primary flex-1" onClick={downloadImage}>Download</button>
             </div>
-            {variants.length > 1 && (
-              <button className="btn btn-ghost w-full" onClick={() => { const name = (nodeLabel || 'image').replace(/\s+/g, '-').toLowerCase(); variants.forEach((v, i) => { const a = document.createElement('a'); a.href = v; a.download = `${name}-v${i + 1}-${d.w}x${d.h}.png`; a.click(); }); }}>Download all {variants.length}</button>
-            )}
           </div>
         </div>
       </div>
