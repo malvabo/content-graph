@@ -19,4 +19,5 @@ export const NODE_ICONS: Record<string, () => ReactNode> = {
   'refine': () => <svg {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
   'video': () => <svg {...p}><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>,
   'brand-voice': () => <svg {...p}><path d="m2 16 6 4V8l-6 4z"/><path d="M8 8c5.5 0 8-2 8-5"/><path d="M8 20c5.5 0 8 2 8 5"/><path d="M8 14h8"/></svg>,
+  'open-graph': () => <svg {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
 };

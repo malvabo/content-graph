@@ -12,6 +12,7 @@ const SYSTEM_PROMPTS: Record<string, string> = {
   'text-source': 'You are a text processor. Process and clean up the input text. If there are preparation instructions, follow them. Output the processed text.',
   'video': 'You are a video script writer. Write a short video script based on the input, with scene descriptions and narration. Output only the script.',
   'brand-voice': 'You are a brand voice analyst and writer. Based on the input content and the brand voice guidelines provided, rewrite the input to perfectly match the brand voice. Preserve the core message and facts but transform the tone, word choice, and style to be unmistakably on-brand. Output only the rewritten text.',
+  'open-graph': 'You are an SEO and social media metadata expert. Based on the input content, generate optimized Open Graph metadata. Return ONLY a JSON object, no markdown:\n{\n  \"title\": \"string (50-60 characters, compelling and specific)\",\n  \"description\": \"string (140-160 characters, includes value prop)\",\n  \"type\": \"article\" | \"website\" | \"product\",\n  \"twitterCard\": \"summary_large_image\" | \"summary\",\n  \"keywords\": [\"keyword1\", \"keyword2\", \"keyword3\", \"keyword4\", \"keyword5\"],\n  \"imageAlt\": \"string (descriptive alt text for the OG image, 10-20 words)\"\n}\nKeep title under 60 chars and description under 160 chars for optimal display across platforms.',
 };
 
 function getProvider(model: string): 'anthropic' | 'openai' | 'google' | 'groq' {

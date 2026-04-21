@@ -26,6 +26,7 @@ export const NODE_DEFS: NodeDef[] = [
   { subtype: 'quote-card', label: 'Quote Card', badge: 'Qc', category: 'generate', description: 'Strongest quote', hasInput: true, hasOutput: true },
   { subtype: 'image-prompt', label: 'Image Prompt', badge: 'Ip', category: 'generate', description: 'AI image generation prompt', hasInput: true, hasOutput: false },
   { subtype: 'video', label: 'Video', badge: 'Vd', category: 'generate', description: 'AI video generation', hasInput: true, hasOutput: false },
+  { subtype: 'open-graph', label: 'Open Graph', badge: 'Og', category: 'generate', description: 'OG & social meta tags', hasInput: true, hasOutput: true },
   // Output
   { subtype: 'export', label: 'Export', badge: 'Ex', category: 'output', description: 'Platform-ready package', hasInput: true, hasOutput: false, maxInputs: 8 },
   { subtype: 'brand-voice', label: 'Brand Voice', badge: 'Bv', category: 'output', description: 'Rewrite in your brand voice', hasInput: true, hasOutput: true },
@@ -67,6 +68,7 @@ export const DEFAULT_MODELS: Record<string, string> = {
   'infographic': 'claude-opus-4',
   'quote-card': 'claude-opus-4',
   'image-prompt': 'llama-3.3-70b',
+  'open-graph': 'claude-opus-4',
   'text-source': 'claude-opus-4',
   'file-source': 'claude-opus-4',
   'brand-voice': 'claude-opus-4',
