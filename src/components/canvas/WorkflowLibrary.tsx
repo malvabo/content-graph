@@ -88,7 +88,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                   {/* 3-dot menu */}
                   <div style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', opacity: hoverId === item.id || menuId === item.id ? 1 : 0, transition: 'opacity 150ms', zIndex: 2 }}>
                     <div role="button" tabIndex={0} aria-label="More options"
-                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-secondary)', background: 'var(--color-overlay-light)', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', background: 'transparent', cursor: 'pointer', transition: 'color 150ms, background 150ms' }}
                       onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                     </div>

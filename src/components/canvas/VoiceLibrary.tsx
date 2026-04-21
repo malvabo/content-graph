@@ -289,7 +289,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                   )}
                   <div style={{ position: 'relative', flexShrink: 0 }}>
                     <div role="button" tabIndex={0} aria-label="More options"
-                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-secondary)', background: 'var(--color-overlay-light)', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', background: 'transparent', cursor: 'pointer', transition: 'color 150ms, background 150ms' }}
                       onClick={e => { e.stopPropagation(); setMenuId(menuId === note.id ? null : note.id); }}>
                       <DotsIcon />
                     </div>
