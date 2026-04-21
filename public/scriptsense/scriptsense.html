@@ -227,17 +227,6 @@ async function callClaude(prompt) {
     return JSON.parse(cleaned);
   }
 
-  if (_groqKey) {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_groqKey}` },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
-    });
-    if (!res.ok) throw new Error('Groq API error: ' + res.status);
-    const data = await res.json();
-    const text = data.choices?.[0]?.message?.content ?? '';
-    return parseResponse(text);
-  }
   if (_anthropicKey) {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -247,6 +236,17 @@ async function callClaude(prompt) {
     if (!res.ok) throw new Error('Anthropic API error: ' + res.status);
     const data = await res.json();
     const text = data.content?.[0]?.text ?? '';
+    return parseResponse(text);
+  }
+  if (_groqKey) {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_groqKey}` },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
+    });
+    if (!res.ok) throw new Error('Groq API error: ' + res.status);
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content ?? '';
     return parseResponse(text);
   }
   // No key — return mock as parsed object
