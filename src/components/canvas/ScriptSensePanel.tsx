@@ -11,7 +11,6 @@ export default function ScriptSensePanel({ initialText, onBack, onOpenInCards }:
     }
     return 0;
   });
-  const [iframeLoading, setIframeLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const prevInitialTextRef = useRef(initialText);
   const anthropicKey = useSettingsStore(s => s.anthropicKey);
@@ -23,7 +22,6 @@ export default function ScriptSensePanel({ initialText, onBack, onOpenInCards }:
     prevInitialTextRef.current = initialText;
     if (initialText) {
       localStorage.setItem('scriptsense-content', initialText);
-      setIframeLoading(true);
       setIframeKey((k) => k + 1);
     }
   }, [initialText]);
@@ -39,8 +37,8 @@ export default function ScriptSensePanel({ initialText, onBack, onOpenInCards }:
     return () => window.removeEventListener('message', handler);
   }, [onBack]);
 
+  // Send API keys after iframe loads
   const handleLoad = () => {
-    setIframeLoading(false);
     const origin = window.location.origin;
     if (iframeRef.current?.contentWindow) {
       if (anthropicKey) iframeRef.current.contentWindow.postMessage({ type: 'set-api-key', key: anthropicKey }, origin);
@@ -59,28 +57,17 @@ export default function ScriptSensePanel({ initialText, onBack, onOpenInCards }:
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)', position: 'relative' }}>
-      {onBack && (
-        <button onClick={onBack} style={{ position: 'absolute', top: 'var(--space-3)', left: 'var(--space-4)', zIndex: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 6 }}>
-          ← Scripts
-        </button>
-      )}
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ position: 'relative' }}>
       {onOpenInCards && (
         <button onClick={onOpenInCards} className="btn btn-primary" style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-4)', zIndex: 10 }}>
           Open in Cards
         </button>
-      )}
-      {iframeLoading && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-          <div className="skeleton-bar" style={{ width: 200, height: 24, borderRadius: 'var(--radius-md)' }} />
-        </div>
       )}
       <iframe
         ref={iframeRef}
         key={iframeKey}
         src="/scriptsense/scriptsense.html"
         className="flex-1 w-full border-none"
-        style={{ opacity: iframeLoading ? 0 : 1, transition: 'opacity var(--duration-slow) var(--ease-default)' }}
         title="ScriptSense"
         onLoad={handleLoad}
       />

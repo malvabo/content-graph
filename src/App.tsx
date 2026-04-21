@@ -5,7 +5,7 @@ import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import ScriptLibrary from './components/canvas/ScriptLibrary';
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
 import MobileWorkflow from './components/canvas/MobileWorkflow';
@@ -51,6 +51,16 @@ function AppInner() {
   const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v.split(':')[0]); setHashParam(v.split(':')[1]); }, []);
   useEffect(() => { const h = () => { setActiveViewRaw(getViewFromHash()); setHashParam(getHashParam()); }; window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  // Track last script sub-view so clicking "Script" nav returns to where you were
+  const lastScriptViewRef = useRef<string>('scriptlist');
+  useEffect(() => {
+    if (activeView === 'scriptlist' || activeView === 'scriptsense') {
+      lastScriptViewRef.current = activeView;
+    }
+  }, [activeView]);
+  const handleNavChange = useCallback((v: string) => {
+    setActiveView(v === 'scriptlist' ? lastScriptViewRef.current : v);
+  }, [setActiveView]);
   useKeyboardShortcuts();
 
   useEffect(() => { init(); }, [init]);
@@ -80,7 +90,7 @@ function AppInner() {
         </div>
       )}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
-        {activeView !== 'intro' && <IconNav activeView={activeView} onViewChange={setActiveView} />}
+        {activeView !== 'intro' && <IconNav activeView={activeView} onViewChange={handleNavChange} />}
 
         {activeView === 'intro' && (
           <div className="flex-1 overflow-auto">

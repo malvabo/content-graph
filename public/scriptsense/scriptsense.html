@@ -17,6 +17,10 @@
 <div id="cdn-err" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;font-family:system-ui;font-size:14px;color:#C93030;background:#F2EFE9;text-align:center;padding:32px">
   Failed to load script libraries. Check your internet connection and reload.
 </div>
+<div id="ss-loading" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+  <div style="width:20px;height:20px;border-radius:50%;border:2px solid #0DBF5A;border-top-color:transparent;animation:ss-spin 0.75s linear infinite;"></div>
+</div>
+<style>@keyframes ss-spin{to{transform:rotate(360deg)}}</style>
 <div id="root"></div>
 <script type="text/babel">
 /* @jsxRuntime classic */
@@ -716,6 +720,11 @@ ${text}`
 function ContentGraph() {
   const [, forceTheme] = useState(0);
   const [currentDraft, setCurrentDraft] = useState(null);
+
+  useEffect(() => {
+    const el = document.getElementById('ss-loading');
+    if (el) el.style.display = 'none';
+  }, []);
 
   useEffect(() => {
     _onThemeChange = forceTheme;
