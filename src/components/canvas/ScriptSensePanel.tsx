@@ -135,7 +135,7 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
   }, [iframeLoading]);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)', position: 'relative' }}>
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg-card)', position: 'relative', margin: 8, height: 'calc(100% - 16px)', borderRadius: 16, border: '1px solid var(--color-border-subtle)', boxShadow: '0px 2px 10px 0px rgba(0, 0, 0, 0.1)' }}>
       {/* Top-left: back + inline name (matches CanvasToolbar) */}
       <div className="absolute top-2 left-2 md:top-3 md:left-3 z-10 flex items-center gap-2">
         {onBack && (
