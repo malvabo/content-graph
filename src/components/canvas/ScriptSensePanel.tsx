@@ -3,11 +3,14 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useBrandsStore, getActiveBrand } from '../../store/brandsStore';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
+import { useScriptStore } from '../../store/scriptStore';
 import { computeSafePosition } from '../../utils/nodePlacement';
 
-interface Props { initialText?: string; onOpenInCards?: () => void; onSendToWorkflow?: () => void; onDelete?: () => void }
+interface Props { scriptId?: string; initialText?: string; onBack?: () => void; onOpenInCards?: () => void; onSendToWorkflow?: () => void; onDelete?: () => void }
 
-export default function ScriptSensePanel({ initialText, onOpenInCards, onSendToWorkflow, onDelete }: Props) {
+export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpenInCards, onSendToWorkflow, onDelete }: Props) {
+  const title = useScriptStore(s => s.scripts.find(sc => sc.id === scriptId)?.title ?? '');
+  const updateScript = useScriptStore(s => s.updateScript);
   const [iframeLoading, setIframeLoading] = useState(true);
   const [iframeFailed, setIframeFailed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -133,6 +136,30 @@ export default function ScriptSensePanel({ initialText, onOpenInCards, onSendToW
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg)', position: 'relative' }}>
+      {/* Top-left: back + inline name (matches CanvasToolbar) */}
+      <div className="absolute top-2 left-2 md:top-3 md:left-3 z-10 flex items-center gap-2">
+        {onBack && (
+          <button onClick={onBack} className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ background: 'var(--color-bg-card)', backdropFilter: 'blur(12px)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', transition: 'background 150ms' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-bg-card)'; }}
+            aria-label="Back to scripts">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+        )}
+        {scriptId && (
+          <input
+            aria-label="Script name"
+            className="outline-none"
+            style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}
+            value={title}
+            placeholder="Untitled"
+            onChange={e => updateScript(scriptId, { title: e.target.value })}
+            onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
+            onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
+          />
+        )}
+      </div>
       <div ref={menuWrapRef} style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-4)', zIndex: 10 }}>
         <button
           type="button"

@@ -5,6 +5,7 @@ import IconNav from './components/canvas/IconNav';
 import VoiceLibrary from './components/canvas/VoiceLibrary';
 import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import ScriptLibrary from './components/canvas/ScriptLibrary';
+import { useScriptStore } from './store/scriptStore';
 import { useCallback, useState, useEffect } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
@@ -68,6 +69,7 @@ function AppInner() {
   const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v.split(':')[0]); setHashParam(v.split(':')[1]); }, []);
   useEffect(() => { const h = () => { setActiveViewRaw(getViewFromHash()); setHashParam(getHashParam()); }; window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [activeScriptId, setActiveScriptId] = useState<string | undefined>(undefined);
   // Track first entry into ScriptSense so we can keep its iframe mounted for
   // the rest of the session (otherwise unmounting on nav blows away draft state,
   // accepted insights, undo stack, etc.).
@@ -150,7 +152,8 @@ function AppInner() {
           setVoiceTranscript('');
         }} />}
 
-        {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(content) => {
+        {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(id, content) => {
+          setActiveScriptId(id);
           setVoiceTranscript(content);
           setActiveView('scriptsense');
           setVoiceTranscript('');
@@ -163,10 +166,12 @@ function AppInner() {
           <div style={{ flex: activeView === 'scriptsense' ? 1 : '0 0 0', minHeight: 0, display: activeView === 'scriptsense' ? 'flex' : 'none' }}>
             <ViewErrorBoundary label="ScriptSense">
               <ScriptSensePanel
+                scriptId={activeScriptId}
                 initialText={voiceTranscript}
+                onBack={() => setActiveView('scriptlist')}
                 onOpenInCards={() => setActiveView('cardslibrary')}
                 onSendToWorkflow={() => setActiveView('workflow')}
-                onDelete={() => setActiveView('scriptlist')}
+                onDelete={() => { if (activeScriptId) useScriptStore.getState().removeScript(activeScriptId); setActiveScriptId(undefined); setActiveView('scriptlist'); }}
               />
             </ViewErrorBoundary>
           </div>

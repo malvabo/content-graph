@@ -136,12 +136,12 @@ function ScriptCard({ script, onOpen, onDelete }: { script: Script; onOpen: () =
   );
 }
 
-export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (content: string) => void }) {
+export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (id: string, content: string) => void }) {
   const { scripts, addScript, removeScript } = useScriptStore();
 
   const handleNew = useCallback(() => {
-    addScript('');
-    onOpenScript('');
+    const id = addScript('');
+    onOpenScript(id, '');
   }, [addScript, onOpenScript]);
 
   return (
@@ -171,7 +171,7 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (content
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-3)' }}>
             {scripts.map(s => (
-              <ScriptCard key={s.id} script={s} onOpen={() => onOpenScript(s.content)} onDelete={() => removeScript(s.id)} />
+              <ScriptCard key={s.id} script={s} onOpen={() => onOpenScript(s.id, s.content)} onDelete={() => removeScript(s.id)} />
             ))}
           </div>
         )}
