@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useBrandsStore, getActiveBrand } from '../../store/brandsStore';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 import { computeSafePosition } from '../../utils/nodePlacement';
@@ -24,7 +25,13 @@ export default function ScriptSensePanel({ initialText, onOpenInCards, onSendToW
   }, [menuOpen]);
   const anthropicKey = useSettingsStore(s => s.anthropicKey);
   const groqKey = useSettingsStore(s => s.groqKey);
-  const brand = useSettingsStore(s => s.brand);
+  // Subscribe to every input that could change the resolved active brand so
+  // flush() reposts on change; the actual resolution uses getActiveBrand().
+  useSettingsStore(s => s.brand);
+  useBrandsStore(s => s.activeBrandId);
+  useBrandsStore(s => s.brands);
+  useGraphStore(s => s.brandId);
+  const brand = getActiveBrand();
 
   // Buffer the last non-empty initialText seen, so a parent-side clear on the
   // next tick can't race the iframe's ready handshake. Works across panel

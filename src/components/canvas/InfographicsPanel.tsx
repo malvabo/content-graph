@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useInfographicStore } from '../../store/infographicStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useBrandsStore } from '../../store/brandsStore';
 import { renderSVG, parseInfographicData, type InfographicData } from '../nodes/InfographicNode';
 
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
@@ -170,9 +171,12 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
   const editing = items.find(i => i.id === editingId) || null;
   const anthropicKey = useSettingsStore(s => s.anthropicKey);
   const groqKey = useSettingsStore(s => s.groqKey);
-  // Subscribe to brand so SVG previews re-render when colors/fonts change in Settings.
-  // renderSVG reads brand via getState(), but that's not reactive on its own.
+  // Subscribe to brand so SVG previews re-render when colors/fonts change in
+  // Settings or when the active library brand (global or per-flow) changes.
+  // renderSVG reads via getState(), which isn't reactive on its own.
   useSettingsStore(s => s.brand);
+  useBrandsStore(s => s.activeBrandId);
+  useBrandsStore(s => s.brands);
   const hasApiKey = !!(anthropicKey || groqKey);
 
   // If the item being edited is deleted (e.g. via the library grid 3-dot menu),

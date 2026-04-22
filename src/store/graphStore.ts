@@ -29,10 +29,13 @@ export interface GraphState {
   graphName: string;
   selectedNodeId: string | null;
   connectingNodeId: string | null;
+  /** Per-flow brand override; null → fall back to global active brand. */
+  brandId: string | null;
 
   setGraphName: (name: string) => void;
   setConnectingNodeId: (id: string | null) => void;
   setSelectedNodeId: (id: string | null) => void;
+  setBrandId: (id: string | null) => void;
   addNode: (node: ContentNode) => void;
   removeNode: (id: string) => void;
   updateNodeConfig: (id: string, config: Partial<NodeConfig>) => void;
@@ -58,6 +61,7 @@ export const useGraphStore = create<GraphState>()(
         graphName: 'Untitled Graph',
         selectedNodeId: null,
         connectingNodeId: null,
+        brandId: null,
         workflowId: null,
         _hydrated: false,
 
@@ -65,6 +69,7 @@ export const useGraphStore = create<GraphState>()(
         setWorkflowId: (id) => set({ workflowId: id }),
         setConnectingNodeId: (id) => set({ connectingNodeId: id }),
         setSelectedNodeId: (id) => set({ selectedNodeId: id }),
+        setBrandId: (id) => set({ brandId: id }),
 
         addNode: (node) => set((s) => ({ nodes: [...s.nodes, node] })),
 
@@ -116,7 +121,7 @@ export const useGraphStore = create<GraphState>()(
         setEdges: (edges) => set({ edges }),
 
         clearGraph: () => {
-          set({ nodes: [], edges: [], selectedNodeId: null, workflowId: null });
+          set({ nodes: [], edges: [], selectedNodeId: null, workflowId: null, brandId: null });
           useExecutionStore.getState().resetAll();
           useOutputStore.getState().clearAll();
         },
@@ -127,6 +132,7 @@ export const useGraphStore = create<GraphState>()(
           edges: state.edges,
           graphName: state.graphName,
           workflowId: state.workflowId,
+          brandId: state.brandId,
         }),
         onRehydrateStorage: () => (_state, error) => {
           if (error) { localStorage.removeItem('content-graph-store'); }

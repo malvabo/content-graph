@@ -3,12 +3,19 @@ import { useGraphStore } from '../../store/graphStore';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { useExecutionStore } from '../../store/executionStore';
+import { useBrandsStore } from '../../store/brandsStore';
 import { aiExecute } from '../../utils/aiExecutor';
+import BrandSetupModal from '../modals/BrandSetupModal';
 
 import { saveWorkflow } from '../../utils/workflowApi';
 
 export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: () => void }) {
   const { graphName, setGraphName, clearGraph, nodes } = useGraphStore();
+  const brandId = useGraphStore(s => s.brandId);
+  const setBrandId = useGraphStore(s => s.setBrandId);
+  const brands = useBrandsStore(s => s.brands);
+  const addBrand = useBrandsStore(s => s.addBrand);
+  const [newBrandId, setNewBrandId] = useState<string | null>(null);
   const { autoLayout } = useGraphLayout();
   const { runAll } = useNodeExecution();
   const isRunning = useExecutionStore((s) => Object.values(s.status).some((v) => v === 'running'));
@@ -46,6 +53,25 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
 
       {/* Top-right: floating action buttons */}
       <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 flex items-center gap-1 md:gap-1.5">
+        {/* Brand picker for this flow */}
+        <select aria-label="Brand kit for this workflow"
+          value={brandId || ''}
+          onChange={e => {
+            const v = e.target.value;
+            if (v === '__new__') {
+              const id = addBrand({ kitName: `Brand ${brands.length + 1}` });
+              setBrandId(id);
+              setNewBrandId(id);
+            } else {
+              setBrandId(v || null);
+            }
+          }}
+          className="hidden md:inline-flex"
+          style={{ height: 28, padding: '0 var(--space-2)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', cursor: 'pointer' }}>
+          <option value="">Default brand</option>
+          {brands.map(b => <option key={b.id} value={b.id}>{b.kitName || 'Untitled kit'}</option>)}
+          <option value="__new__">+ New brand…</option>
+        </select>
         <button className="btn-ghost btn-sm hidden md:inline-flex" style={{ borderRadius: 'var(--radius-md)' }} onClick={autoLayout}>Auto-layout</button>
           {confirmClear ? (
             <span className="hidden md:contents">
@@ -61,7 +87,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
           const s = useGraphStore.getState();
           const id = s.workflowId || `wf-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
           s.setWorkflowId(id);
-          try { await saveWorkflow({ id, name: s.graphName || 'Untitled', nodes: s.nodes as any, edges: s.edges as any, savedAt: new Date().toISOString() }); } catch { /* handled */ }
+          try { await saveWorkflow({ id, name: s.graphName || 'Untitled', nodes: s.nodes as any, edges: s.edges as any, savedAt: new Date().toISOString(), brandId: s.brandId }); } catch { /* handled */ }
           setPublished(true); setTimeout(() => setPublished(false), 2000);
         }}>{published ? '✓ Published' : 'Publish'}</button>
       </div>
@@ -80,6 +106,8 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
           Workflow published successfully
         </div>
       )}
+
+      {newBrandId && <BrandSetupModal brandId={newBrandId} onClose={() => setNewBrandId(null)} />}
     </>
   );
 }

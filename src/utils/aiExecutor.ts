@@ -1,4 +1,5 @@
 import { useSettingsStore } from '../store/settingsStore';
+import { getActiveBrand } from '../store/brandsStore';
 
 const SYSTEM_PROMPTS: Record<string, string> = {
   'linkedin-post': 'You are a LinkedIn content writer. Write a compelling 150–300 word LinkedIn post based on the input. Use hooks, line breaks, and end with a question or CTA. Output only the post text.',
@@ -120,8 +121,8 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
 
   let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
 
-  // Inject brand voice context
-  const brand = useSettingsStore.getState().brand;
+  // Inject brand voice context (per-flow override via Brands library > global active > legacy settings).
+  const brand = getActiveBrand();
   if (brand?.voice?.personality) {
     const parts = [
       'BRAND VOICE GUIDELINES:',

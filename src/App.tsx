@@ -11,6 +11,7 @@ import { Component, type ReactNode } from 'react';
 import MobileWorkflow from './components/canvas/MobileWorkflow';
 import { useAuthStore } from './store/authStore';
 import { useSettingsStore } from './store/settingsStore';
+import { useBrandsStore } from './store/brandsStore';
 import { supabase } from './lib/supabase';
 import { injectCustomFonts } from './utils/customFonts';
 import AuthGate from './components/auth/AuthGate';
@@ -76,10 +77,22 @@ function AppInner() {
 
   useEffect(() => { init(); }, [init]);
   useEffect(() => { if (user) useSettingsStore.getState().load(); }, [user]);
-  // Register user-uploaded @font-face rules globally so they work
-  // everywhere the brand fonts are referenced (infographics, SVG previews, etc).
-  const customFonts = useSettingsStore(s => s.brand?.customFonts);
-  useEffect(() => { injectCustomFonts(customFonts || []); }, [customFonts]);
+  // Register user-uploaded @font-face rules globally — gather every custom
+  // font from the legacy settings brand plus every saved library brand so
+  // switching brand kits on a flow doesn't unload its fonts.
+  const settingsFonts = useSettingsStore(s => s.brand?.customFonts);
+  const libraryBrands = useBrandsStore(s => s.brands);
+  useEffect(() => {
+    const combined: { name: string; dataUrl: string }[] = [];
+    const seen = new Set<string>();
+    const push = (f?: { name: string; dataUrl: string }) => {
+      if (!f?.name || !f.dataUrl || seen.has(f.name)) return;
+      seen.add(f.name); combined.push(f);
+    };
+    (settingsFonts || []).forEach(push);
+    libraryBrands.forEach(b => (b.customFonts || []).forEach(push));
+    injectCustomFonts(combined);
+  }, [settingsFonts, libraryBrands]);
   useEffect(() => {
     if (!supabase) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {

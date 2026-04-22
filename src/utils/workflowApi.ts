@@ -8,6 +8,8 @@ export interface SavedWorkflow {
   nodes: ContentNode[];
   edges: Edge[];
   savedAt: string;
+  /** Per-flow brand override (library id). Optional for backwards compatibility. */
+  brandId?: string | null;
 }
 
 const API = '/api/workflows';

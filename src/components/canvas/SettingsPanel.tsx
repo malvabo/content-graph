@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSettingsStore, EMPTY_BRAND, FONT_PRESETS, type CustomFont } from '../../store/settingsStore';
+import { useBrandsStore } from '../../store/brandsStore';
+import BrandSetupModal from '../modals/BrandSetupModal';
 
 const PaletteIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/><circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/><circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/><circle cx="6.5" cy="12" r="0.5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>;
 const MicIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>;
 const KeyIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>;
 
-type SectionId = 'brand-visual' | 'brand-voice' | 'api-keys';
+type SectionId = 'brand-kits' | 'brand-visual' | 'brand-voice' | 'api-keys';
 const SECTIONS: { id: SectionId; label: string; icon: () => React.ReactNode; group: string }[] = [
+  { id: 'brand-kits', label: 'Brand Kits', icon: PaletteIcon, group: 'Brand' },
   { id: 'brand-visual', label: 'Brand Visual', icon: PaletteIcon, group: 'Brand' },
   { id: 'brand-voice', label: 'Brand Voice', icon: MicIcon, group: 'Brand' },
   { id: 'api-keys', label: 'API Keys', icon: KeyIcon, group: 'Connections' },
@@ -96,6 +99,74 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) 
       </div>
       <input className="form-input" value={val} onChange={e => setVal(e.target.value)} placeholder="Type and press Enter" style={{ width: '100%' }}
         onKeyDown={e => { if (e.key === 'Enter' && val.trim()) { e.preventDefault(); onChange([...tags, val.trim()]); setVal(''); } }} />
+    </div>
+  );
+}
+
+function BrandKitsSection() {
+  const brands = useBrandsStore(s => s.brands);
+  const activeBrandId = useBrandsStore(s => s.activeBrandId);
+  const addBrand = useBrandsStore(s => s.addBrand);
+  const removeBrand = useBrandsStore(s => s.removeBrand);
+  const duplicateBrand = useBrandsStore(s => s.duplicateBrand);
+  const setActiveBrand = useBrandsStore(s => s.setActiveBrand);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleNew = () => { const id = addBrand({ kitName: `Brand ${brands.length + 1}` }); setEditingId(id); };
+
+  return (
+    <div>
+      <SectionHeader title="Brand Kits" desc="Save named brand kits (colors, fonts, voice) and apply them to workflows." />
+      <div style={{ ...CARD, display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        {brands.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
+            <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', maxWidth: 320, lineHeight: 1.5 }}>
+              No brand kits yet. Create one to apply a consistent look and voice to a specific workflow.
+            </div>
+            <button className="btn btn-primary" onClick={handleNew}>+ New brand kit</button>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-3)' }}>
+              {brands.map(b => {
+                const isActive = b.id === activeBrandId;
+                return (
+                  <div key={b.id}
+                    style={{ padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-lg)', border: `1px solid ${isActive ? 'var(--color-accent)' : 'var(--color-border-default)'}`, background: 'var(--color-bg-surface)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                      {(['primary', 'secondary', 'accent'] as const).map(k => (
+                        <div key={k} style={{ width: 16, height: 16, borderRadius: 'var(--radius-sm)', background: b.colors[k], border: '1px solid var(--color-border-subtle)' }} title={`${k}: ${b.colors[k]}`} />
+                      ))}
+                      <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {b.kitName || 'Untitled kit'}
+                      </span>
+                      {isActive && <span style={{ fontSize: 'var(--text-micro)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)', fontWeight: 'var(--weight-medium)' }}>Default</span>}
+                    </div>
+                    {(b.name || b.voice?.personality) && (
+                      <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2 as any, WebkitBoxOrient: 'vertical' as any }}>
+                        {[b.name, b.voice?.personality].filter(Boolean).join(' · ')}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+                      <button className="btn btn-sm btn-ghost" onClick={() => setEditingId(b.id)}>Edit</button>
+                      {!isActive && <button className="btn btn-sm btn-ghost" onClick={() => setActiveBrand(b.id)}>Set default</button>}
+                      <button className="btn btn-sm btn-ghost" onClick={() => duplicateBrand(b.id)}>Duplicate</button>
+                      <button className="btn btn-sm btn-ghost" style={{ color: 'var(--color-danger-text)' }}
+                        onClick={() => {
+                          if (!confirm(`Delete brand kit "${b.kitName || 'Untitled kit'}"?`)) return;
+                          removeBrand(b.id);
+                        }}>Delete</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <button className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-start' }} onClick={handleNew}>+ New brand kit</button>
+          </>
+        )}
+      </div>
+
+      {editingId && <BrandSetupModal brandId={editingId} onClose={() => setEditingId(null)} />}
     </div>
   );
 }
@@ -387,7 +458,7 @@ function APIKeysSection() {
 }
 
 export default function SettingsPanel() {
-  const [active, setActive] = useState<SectionId>('api-keys');
+  const [active, setActive] = useState<SectionId>('brand-kits');
   const groups: Record<string, typeof SECTIONS> = {};
   SECTIONS.forEach(s => { (groups[s.group] ??= []).push(s); });
 
@@ -426,6 +497,7 @@ export default function SettingsPanel() {
       {/* Content */}
       <div className="flex-1 p-4 md:p-6" style={{ overflowY: 'auto' }}>
         <div style={{ width: '100%' }}>
+          {active === 'brand-kits' && <BrandKitsSection />}
           {active === 'brand-visual' && <BrandVisualSection />}
           {active === 'brand-voice' && <BrandVoiceSection />}
           {active === 'api-keys' && <APIKeysSection />}

@@ -5,6 +5,7 @@ import { useOutputStore } from '../../store/outputStore';
 import { useInfographicStore } from '../../store/infographicStore';
 import { useGraphStore } from '../../store/graphStore';
 import { useSettingsStore, EMPTY_BRAND, type BrandKit } from '../../store/settingsStore';
+import { useBrandsStore, getActiveBrand } from '../../store/brandsStore';
 
 // Content-only schema. Styling comes from BrandKit — not from the LLM, not the user.
 export interface InfographicData {
@@ -111,7 +112,7 @@ function stripLegacyStyle(raw: any): InfographicData {
 export function renderSVG(data: InfographicData, onFontLoad?: () => void): string {
   const clean = stripLegacyStyle(data);
   const { title, subtitle, footer, points, type = 'cards' } = clean;
-  const brand = useSettingsStore.getState().brand || EMPTY_BRAND;
+  const brand = getActiveBrand();
   const palette = brandPalette(brand, onFontLoad);
   const { bg, accent, text: textColor, cardBg, cardBorder, titleFontFamily: titleFont, bodyFontFamily: bodyFont } = palette;
   const titleSize = 22;
@@ -237,9 +238,11 @@ export function parseInfographicData(text: string): InfographicData | null {
 export function InfographicInline({ id }: { id: string }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
   const text = useOutputStore((s) => s.outputs[id]?.text);
-  // Subscribe so brand color/font changes in Settings trigger a re-render.
-  // renderSVG reads brand via getState() internally; this keeps it live.
+  // Subscribe so brand color/font changes in Settings or the Brands library
+  // trigger a re-render. renderSVG reads via getState() internally.
   useSettingsStore((s) => s.brand);
+  useBrandsStore((s) => s.activeBrandId);
+  useBrandsStore((s) => s.brands);
   const [modalOpen, setModalOpen] = useState(false);
 
   if (status === 'idle' || status === 'stale') return null;
