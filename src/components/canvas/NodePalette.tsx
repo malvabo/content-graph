@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { NODE_DEFS, CATEGORY_LABELS, BADGE_COLORS, type NodeDef } from '../../utils/nodeDefs';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import type { NodeCategory } from '../../store/graphStore';
@@ -35,6 +36,7 @@ export default function NodePalette({ onAddNode }: Props) {
   const [advancedOpen, setAdvancedOpen] = useState(true);
   const [search, setSearch] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const toggle = () => setOpen(o => !o);
@@ -46,7 +48,15 @@ export default function NodePalette({ onAddNode }: Props) {
     if (!open) return;
     setSearch('');
     const focusT = setTimeout(() => searchRef.current?.focus(), 50);
-    return () => clearTimeout(focusT);
+    const el = backdropRef.current;
+    const close = () => setOpen(false);
+    el?.addEventListener('pointerdown', close);
+    el?.addEventListener('click', close);
+    return () => {
+      clearTimeout(focusT);
+      el?.removeEventListener('pointerdown', close);
+      el?.removeEventListener('click', close);
+    };
   }, [open]);
 
   const q = search.toLowerCase().trim();
@@ -55,14 +65,15 @@ export default function NodePalette({ onAddNode }: Props) {
 
   return (
     <>
-      {open && (
+      {open && createPortal(
         <div
-          onPointerDown={() => setOpen(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 19, background: 'transparent' }}
+          ref={backdropRef}
+          style={{ position: 'fixed', inset: 0, zIndex: 2147483000, background: 'transparent' }}
           aria-hidden
-        />
+        />,
+        document.body,
       )}
-      <div className="absolute bottom-4 left-4 z-20">
+      <div className="absolute bottom-4 left-4 z-20" style={{ zIndex: 2147483001 }}>
       <style>{`@keyframes paletteIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       {/* Fluid + button */}
       <motion.button
