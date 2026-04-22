@@ -102,6 +102,11 @@
   --color-danger-hover: var(--p-red-600);
   --color-danger-active: var(--p-red-700);
 
+  /* ── Left nav (floating panel) ── */
+  --color-nav-bg: #eaecef;            /* slightly darker than the app background */
+  --color-nav-item-active: #f7f8fa;   /* slightly off-white so the active pill reads as raised */
+  --color-nav-item-hover: rgba(255, 255, 255, 0.45);
+
   /* ── Typography ── */
   --font-sans: 'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -248,6 +253,9 @@
 
 /* ── Dark Mode (manual toggle) ── */
 :root.dark {
+  --color-nav-bg: #17171a;
+  --color-nav-item-active: #24242a;
+  --color-nav-item-hover: rgba(255, 255, 255, 0.05);
   --color-bg: #111114;
   --color-bg-surface: #161619;
   --color-bg-card: #1a1a1e;

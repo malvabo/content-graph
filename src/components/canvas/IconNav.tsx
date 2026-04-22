@@ -14,7 +14,7 @@ function NavItem({ icon, label, active, onClick, ariaLabel, ariaPressed }: { ico
   return (
     <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} aria-label={ariaLabel ?? label} aria-pressed={ariaPressed}
       className="nav-item"
-      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '7px 10px', borderRadius: 18, background: active ? '#fafbfc' : hover ? 'rgba(255,255,255,0.4)' : 'transparent', color: active ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', boxShadow: active ? '0 1px 2px 0 rgba(0,0,0,0.04)' : 'none', transition: 'none', justifyContent: 'flex-start', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '7px 10px', borderRadius: 18, background: active ? 'var(--color-nav-item-active)' : hover ? 'var(--color-nav-item-hover)' : 'transparent', color: active ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', boxShadow: active ? '0 1px 2px 0 rgba(0,0,0,0.04)' : 'none', transition: 'none', justifyContent: 'flex-start', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, flexShrink: 0 }}>{icon}</span>
       {label && <span className="nav-label" style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>{label}</span>}
     </button>
@@ -75,7 +75,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
         }
       `}</style>
       <nav aria-label="Main navigation" className="icon-nav"
-        style={{ width: 200, height: 'calc(100% - 16px)', margin: '8px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', padding: '12px 4px', gap: 2, flexShrink: 0, background: '#f4f5f7', borderRadius: 16, boxShadow: '0px 2px 10px 0px rgba(0, 0, 0, 0.1)', position: 'relative', zIndex: 2 }}>
+        style={{ width: 200, height: 'calc(100% - 16px)', margin: '8px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', padding: '12px 4px', gap: 2, flexShrink: 0, background: 'var(--color-nav-bg)', borderRadius: 16, boxShadow: '0px 2px 10px 0px rgba(0, 0, 0, 0.1)', position: 'relative', zIndex: 2 }}>
         <div className="nav-logo" style={{ color: 'var(--color-text-primary)', fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', userSelect: 'none', padding: '4px 12px', marginBottom: 10 }}>up</div>
 
         <NavItem icon={<WorkflowIcon />} label="Workflows" active={activeView === 'library' || activeView === 'workflow'} onClick={() => onViewChange('library')} />
