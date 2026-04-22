@@ -562,7 +562,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       <header className="p-4 md:px-8 md:py-6" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-6)', flexShrink: 0 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
           <h1 style={{
-            margin: 0, fontFamily: 'var(--font-sans)', fontSize: 28, fontWeight: 600,
+            margin: 0, fontFamily: 'var(--font-sans)', fontSize: 28, fontWeight: 500,
             lineHeight: '32px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)',
           }}>
             Voice Notes
@@ -625,8 +625,8 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             {groupNotesByDate([...notes].filter(n => n.status !== 'recording').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())).map(group => (
               <section key={group.label} aria-labelledby={`grp-${group.label}`}>
                 <div id={`grp-${group.label}`} style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, lineHeight: 1,
-                  textTransform: 'uppercase', letterSpacing: '0.2em',
+                  // Matches the "N notes" count in the hero: 14/400/20 sans tertiary.
+                  fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: '20px',
                   color: 'var(--color-text-tertiary)', padding: '0 0 var(--space-2) var(--space-4)',
                 }}>
                   {group.label}
@@ -657,7 +657,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                             columnGap: 'var(--space-4)',
                             minHeight: 64,
                             cursor: isError || isTranscribing ? 'default' : 'pointer',
-                            opacity: isTranscribing ? 0.7 : 1,
+                            opacity: isTranscribing ? 0.5 : 1,
                           }}
                         >
                           {/* Leading play button (visual affordance; opens sheet) */}
@@ -676,7 +676,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                           {/* Title + preview */}
                           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <span style={{
-                              fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, lineHeight: '20px',
+                              fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, lineHeight: '20px',
                               color: isError ? 'var(--color-danger-text, #A83030)' : 'var(--color-text-primary)',
                               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                             }}>
