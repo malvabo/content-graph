@@ -10,8 +10,7 @@ interface AuthState {
   loading: boolean;
   guest: boolean;
   init: () => Promise<void>;
-  signUp: (email: string, password: string) => Promise<{ error: string | null; needsConfirmation: boolean }>;
-  resendConfirmation: (email: string) => Promise<string | null>;
+  signUp: (email: string, password: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<string | null>;
   signInWithGoogle: () => Promise<string | null>;
   signOut: () => Promise<void>;
@@ -45,28 +44,11 @@ export const useAuthStore = create<AuthState>()((set) => ({
   },
 
   signUp: async (email, password) => {
-    if (!supabase) return { error: 'Auth not configured', needsConfirmation: false };
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    if (error) return { error: error.message, needsConfirmation: false };
-    if (data.session) {
-      set({ session: data.session, user: data.session.user });
-      return { error: null, needsConfirmation: false };
-    }
-    return { error: null, needsConfirmation: true };
-  },
-
-  resendConfirmation: async (email) => {
-    if (!supabase) return 'Auth not configured';
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    return error?.message ?? null;
+    if (!supabase) return { error: 'Auth not configured' };
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) return { error: error.message };
+    if (data.session) set({ session: data.session, user: data.session.user });
+    return { error: null };
   },
 
   signIn: async (email, password) => {

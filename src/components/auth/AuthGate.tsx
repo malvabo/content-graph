@@ -3,7 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { FormInput } from '../ui/FormField';
 
 export default function AuthGate() {
-  const { signIn, signUp, signInWithGoogle, continueAsGuest, resendConfirmation } = useAuthStore();
+  const { signIn, signUp, signInWithGoogle, continueAsGuest } = useAuthStore();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,8 +15,6 @@ export default function AuthGate() {
     try { return desc ? decodeURIComponent(desc) : null; } catch { return desc; }
   });
   const [loading, setLoading] = useState(false);
-  const [signupDone, setSignupDone] = useState(false);
-  const [resendMsg, setResendMsg] = useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,10 +25,9 @@ export default function AuthGate() {
       setLoading(false);
       if (err) setError(err);
     } else {
-      const { error: err, needsConfirmation } = await signUp(email, password);
+      const { error: err } = await signUp(email, password);
       setLoading(false);
       if (err) setError(err);
-      else if (needsConfirmation) setSignupDone(true);
     }
   };
 
@@ -44,27 +41,7 @@ export default function AuthGate() {
           </h1>
         </div>
 
-        {signupDone ? (
-          <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', textAlign: 'center' }}>
-            <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>Check your email</div>
-            <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-3)' }}>Click the link we sent to {email} to confirm your account. Check spam / Promotions if you don't see it.</div>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={async () => {
-                setResendMsg(null);
-                setLoading(true);
-                const err = await resendConfirmation(email);
-                setLoading(false);
-                setResendMsg(err ?? 'Email resent. Check your inbox.');
-              }}
-              style={{ background: 'none', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2) var(--space-3)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
-              {loading ? 'Sending…' : 'Resend email'}
-            </button>
-            {resendMsg && <div style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{resendMsg}</div>}
-          </div>
-        ) : (
-          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', boxShadow: 'var(--shadow-lg)' }}>
               <FormInput label="Email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoFocus />
               <FormInput label="Password" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
@@ -97,7 +74,6 @@ export default function AuthGate() {
               Continue as guest
             </button>
           </form>
-        )}
       </div>
     </div>
   );
