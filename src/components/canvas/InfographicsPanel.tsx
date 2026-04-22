@@ -39,7 +39,7 @@ function InlineInfographic({ svg, data, editVersion, onPointsChange }: InlineInf
     return () => ro.disconnect();
   }, []);
 
-  const inputStyle = (f: TextField, extra: React.CSSProperties = {}): React.CSSProperties => ({
+  const inputStyle = (f: TextField): React.CSSProperties => ({
     position: 'absolute',
     left: f.anchor === 'middle' ? (f.x - f.w / 2) * scale : f.x * scale,
     top: f.y * scale,
@@ -57,18 +57,25 @@ function InlineInfographic({ svg, data, editVersion, onPointsChange }: InlineInf
     caretColor: 'var(--color-text-primary)',
     fontFamily: 'inherit',
     cursor: 'text',
-    ...extra,
+    borderRadius: 'var(--radius-sm)',
+    transition: 'background 160ms var(--ease-default, ease), color 160ms var(--ease-default, ease)',
   });
 
+  const onEnter = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (document.activeElement === e.currentTarget) return;
+    e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+  };
+  const onLeave = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (document.activeElement === e.currentTarget) return;
+    e.currentTarget.style.background = 'transparent';
+  };
   const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.currentTarget.style.color = 'var(--color-text-primary)';
     e.currentTarget.style.background = 'var(--color-bg-card)';
-    e.currentTarget.style.boxShadow = '0 0 0 2px var(--color-accent)';
   };
   const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     e.currentTarget.style.color = 'transparent';
     e.currentTarget.style.background = 'transparent';
-    e.currentTarget.style.boxShadow = 'none';
   };
 
   return (
@@ -81,14 +88,14 @@ function InlineInfographic({ svg, data, editVersion, onPointsChange }: InlineInf
             aria-label={`Point ${i + 1} stat`}
             value={data.points[i]?.stat ?? ''}
             onChange={e => onPointsChange(points => points.map((p, idx) => idx === i ? { ...p, stat: e.target.value } : p))}
-            onFocus={onFocus} onBlur={onBlur}
+            onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
             style={inputStyle(pf.stat)}
           />
           <input
             aria-label={`Point ${i + 1} label`}
             value={data.points[i]?.label ?? ''}
             onChange={e => onPointsChange(points => points.map((p, idx) => idx === i ? { ...p, label: e.target.value } : p))}
-            onFocus={onFocus} onBlur={onBlur}
+            onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
             style={inputStyle(pf.label)}
           />
         </span>
