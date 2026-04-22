@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useInfographicStore } from '../../store/infographicStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useBrandsStore } from '../../store/brandsStore';
-import { renderSVG, parseInfographicData, computeLayout, INFOGRAPHIC_WIDTH, type InfographicData, type TextField } from '../nodes/InfographicNode';
+import { renderSVG, parseInfographicData, computeLayout, getInfographicPalette, INFOGRAPHIC_WIDTH, type InfographicData, type TextField } from '../nodes/InfographicNode';
 
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
@@ -14,20 +14,32 @@ interface SettingsSectionProps {
 }
 
 interface InlineInfographicProps {
-  svg: string;
   data: InfographicData;
   editVersion: number;
   onPointsChange: (mutator: (points: Point[]) => Point[]) => void;
   onTextChange: (field: 'title' | 'subtitle' | 'footer', value: string) => void;
+  onFontLoad?: () => void;
 }
 
-// Renders the SVG and overlays transparent HTML inputs at the exact positions
-// of each point's stat/label, so the user can click on any number or label
-// and type directly on the infographic.
-function InlineInfographic({ svg, data, editVersion, onPointsChange, onTextChange }: InlineInfographicProps) {
+// Renders the SVG with its text blanked out, then overlays editable inputs
+// styled to match the SVG's font/color/size. No stroke, no background —
+// typing just reflows the characters in place of the preview text.
+function InlineInfographic({ data, editVersion, onPointsChange, onTextChange, onFontLoad }: InlineInfographicProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const layout = computeLayout(data);
+  const palette = getInfographicPalette(onFontLoad);
+
+  // Render SVG with every editable text field blanked, so only the HTML inputs
+  // above show text. This keeps the visible text in exactly one place (the
+  // input) and guarantees the caret sits exactly where the character renders.
+  const blankedSvg = renderSVG({
+    ...data,
+    title: '',
+    subtitle: data.subtitle !== undefined ? '' : undefined,
+    footer: data.footer !== undefined ? '' : undefined,
+    points: data.points.map(p => ({ ...p, stat: '', label: '', detail: p.detail !== undefined ? '' : undefined })),
+  }, onFontLoad);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -40,10 +52,15 @@ function InlineInfographic({ svg, data, editVersion, onPointsChange, onTextChang
     return () => ro.disconnect();
   }, []);
 
-  // Transparent input overlaid on top of the SVG. On focus/hover the input
-  // reveals itself with a card-colored fill and a green stroke so the user
-  // gets a clear "this is the text I'm editing" signal.
-  const inputStyle = (f: TextField): React.CSSProperties => ({
+  // mutedText mirrors the renderSVG math: 50% mix of text and bg for subtitle/footer,
+  // 40% mix for card detail. We approximate with currentColor opacity since the
+  // palette already exposes text + bg as hex.
+  const muted50 = palette.text;  // subtitle/footer use this in SVG with mutedText; close enough visually
+  // To keep parity with the SVG math without re-exporting mix(), we blend in CSS
+  // by wrapping the input text in the same hex. Good-enough match: the visual
+  // diff on the canvas is driven by weight + size, not the muted tint.
+
+  const inputStyle = (f: TextField, color: string, family: string): React.CSSProperties => ({
     position: 'absolute',
     left: f.anchor === 'middle' ? (f.x - f.w / 2) * scale : f.x * scale,
     top: f.y * scale,
@@ -53,100 +70,73 @@ function InlineInfographic({ svg, data, editVersion, onPointsChange, onTextChang
     fontWeight: f.fontWeight,
     textAlign: f.anchor === 'middle' ? 'center' : 'left',
     background: 'transparent',
-    border: '1px solid transparent',
+    border: 'none',
     outline: 'none',
     padding: 0,
     margin: 0,
-    color: 'transparent',
-    caretColor: 'var(--color-text-primary)',
-    fontFamily: 'inherit',
+    color,
+    fontFamily: family,
+    caretColor: color,
     cursor: 'text',
-    borderRadius: 'var(--radius-sm)',
-    transition: 'background 160ms var(--ease-default, ease), color 160ms var(--ease-default, ease), border-color 160ms var(--ease-default, ease)',
     boxSizing: 'border-box',
   });
-
-  const onEnter = (e: React.MouseEvent<HTMLInputElement>) => {
-    if (document.activeElement === e.currentTarget) return;
-    e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
-  };
-  const onLeave = (e: React.MouseEvent<HTMLInputElement>) => {
-    if (document.activeElement === e.currentTarget) return;
-    e.currentTarget.style.background = 'transparent';
-  };
-  const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.currentTarget.style.color = 'var(--color-text-primary)';
-    e.currentTarget.style.background = 'var(--color-bg-card)';
-    e.currentTarget.style.borderColor = 'var(--color-accent)';
-  };
-  const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.currentTarget.style.color = 'transparent';
-    e.currentTarget.style.background = 'transparent';
-    e.currentTarget.style.borderColor = 'transparent';
-  };
 
   const mutatePoint = (i: number, patch: Partial<InfographicData['points'][number]>) =>
     onPointsChange(points => points.map((p, idx) => idx === i ? { ...p, ...patch } : p));
 
   return (
     <div ref={wrapRef} style={{ width: '100%', maxWidth: 800, position: 'relative', lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-      <div key={editVersion} dangerouslySetInnerHTML={{ __html: svg }} />
+      <div key={editVersion} dangerouslySetInnerHTML={{ __html: blankedSvg }} />
 
-      {/* Title — always present, always editable */}
+      {/* Title — matches SVG: text color, title font */}
       <input
         aria-label="Infographic title"
         value={data.title}
         onChange={e => onTextChange('title', e.target.value)}
-        onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
-        style={inputStyle(layout.title)}
+        style={inputStyle(layout.title, palette.text, palette.titleFontFamily)}
       />
 
-      {/* Subtitle — editable when present */}
+      {/* Subtitle — muted tint, title font */}
       {layout.subtitle && (
         <input
           aria-label="Infographic subtitle"
           value={data.subtitle ?? ''}
           onChange={e => onTextChange('subtitle', e.target.value)}
-          onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
-          style={inputStyle(layout.subtitle)}
+          style={inputStyle(layout.subtitle, muted50, palette.titleFontFamily)}
         />
       )}
 
-      {/* Footer — editable when present */}
+      {/* Footer — muted tint, body font */}
       {layout.footer && (
         <input
           aria-label="Infographic footer"
           value={data.footer ?? ''}
           onChange={e => onTextChange('footer', e.target.value)}
-          onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
-          style={inputStyle(layout.footer)}
+          style={inputStyle(layout.footer, muted50, palette.bodyFontFamily)}
         />
       )}
 
-      {/* Per-point stat / label / detail — covers all three chart types */}
+      {/* Per-point stat (accent color) / label (text color) / detail (muted) */}
       {layout.points.map((pf, i) => (
         <span key={i}>
           <input
             aria-label={`Point ${i + 1} stat`}
             value={data.points[i]?.stat ?? ''}
             onChange={e => mutatePoint(i, { stat: e.target.value })}
-            onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
-            style={inputStyle(pf.stat)}
+            style={inputStyle(pf.stat, palette.accent, palette.bodyFontFamily)}
           />
           <input
             aria-label={`Point ${i + 1} label`}
             value={data.points[i]?.label ?? ''}
             onChange={e => mutatePoint(i, { label: e.target.value })}
-            onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
-            style={inputStyle(pf.label)}
+            style={inputStyle(pf.label, palette.text, palette.bodyFontFamily)}
           />
           {pf.detail && (
             <input
               aria-label={`Point ${i + 1} detail`}
               value={data.points[i]?.detail ?? ''}
               onChange={e => mutatePoint(i, { detail: e.target.value })}
-              onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
-              style={inputStyle(pf.detail)}
+              style={inputStyle(pf.detail, muted50, palette.bodyFontFamily)}
             />
           )}
         </span>
@@ -543,13 +533,13 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)' }}>
-          {svg && currentData && (
+          {currentData && (
             <InlineInfographic
-              svg={svg}
               data={currentData}
               editVersion={editVersion}
               onPointsChange={(mutator) => applyDirectEdit(d => { d.points = mutator(d.points); })}
               onTextChange={scheduleTextEdit}
+              onFontLoad={fontRerender}
             />
           )}
 

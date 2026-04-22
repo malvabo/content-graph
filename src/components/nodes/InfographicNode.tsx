@@ -80,6 +80,10 @@ interface Palette {
   titleFontFamily: string; bodyFontFamily: string;
 }
 
+export function getInfographicPalette(onFontLoad?: () => void): Palette {
+  return brandPalette(getActiveBrand(), onFontLoad);
+}
+
 function brandPalette(brand: BrandKit, onFontLoad?: () => void): Palette {
   const primary = brand.colors.primary || EMPTY_BRAND.colors.primary;
   const secondary = brand.colors.secondary || EMPTY_BRAND.colors.secondary;
