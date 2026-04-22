@@ -7,9 +7,9 @@ const PaletteIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="
 const KeyIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>;
 
 type SectionId = 'brand-kits' | 'api-keys';
-const SECTIONS: { id: SectionId; label: string; icon: () => React.ReactNode; group: string }[] = [
-  { id: 'brand-kits', label: 'Brand Kits', icon: PaletteIcon, group: 'Brand' },
-  { id: 'api-keys', label: 'API Keys', icon: KeyIcon, group: 'Connections' },
+const SECTIONS: { id: SectionId; label: string; icon: () => React.ReactNode }[] = [
+  { id: 'brand-kits', label: 'Brand Kits', icon: PaletteIcon },
+  { id: 'api-keys', label: 'API Keys', icon: KeyIcon },
 ];
 
 const PROVIDERS = [
@@ -258,27 +258,21 @@ function APIKeysSection() {
 
 export default function SettingsPanel() {
   const [active, setActive] = useState<SectionId>('brand-kits');
-  const groups: Record<string, typeof SECTIONS> = {};
-  SECTIONS.forEach(s => { (groups[s.group] ??= []).push(s); });
 
   return (
     <div style={{ flex: 1, display: 'flex', background: 'var(--color-bg)', overflow: 'hidden' }}>
-      {/* Sidebar nav */}
-      <nav className="hidden md:flex" style={{ width: 160, flexShrink: 0, borderRight: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', padding: 'var(--space-5) var(--space-4)', flexDirection: 'column', overflowY: 'auto' }}>
-          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-5)' }}>Settings</div>
-          {Object.entries(groups).map(([group, items], gi) => (
-            <div key={group} style={{ marginTop: gi > 0 ? 'var(--space-6)' : 0 }}>
-              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-2)', textTransform: 'uppercase' as const, letterSpacing: 'var(--tracking-wide)' }}>{group}</div>
-              {items.map(s => {
-                const on = active === s.id;
-                return (
-                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'block', margin: 0, padding: 'var(--space-2) var(--space-3)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 120ms, color 120ms', textAlign: 'left' }}>
-                    {s.label}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+      {/* Sidebar nav — flat, no group headings, all items left-aligned */}
+      <nav className="hidden md:flex" style={{ width: 160, flexShrink: 0, borderRight: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', padding: 'var(--space-5) var(--space-4)', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
+        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-4)' }}>Settings</div>
+        {SECTIONS.map(s => {
+          const on = active === s.id;
+          return (
+            <button key={s.id} onClick={() => setActive(s.id)}
+              style={{ width: '100%', display: 'block', margin: 0, padding: 'var(--space-2) var(--space-3)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 120ms, color 120ms', textAlign: 'left' }}>
+              {s.label}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Mobile tab bar */}

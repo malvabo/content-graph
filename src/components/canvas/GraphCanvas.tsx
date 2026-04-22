@@ -7,6 +7,7 @@ import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import BaseNode from '../nodes/BaseNode';
 import DeletableEdge from './DeletableEdge';
 import DotSpotlight from './DotSpotlight';
@@ -29,6 +30,7 @@ export default function GraphCanvas() {
   const { isValidConnection, tooltip } = useConnectionValidation(nodes, edges);
   const { menu, onNodeContextMenu, close: closeMenu } = useContextMenu();
   const executionStatus = useExecutionStore((s) => s.status);
+  const showMinimap = useSettingsStore((s) => s.showMinimap);
 
   // First-run tooltip: show once when nodes appear for the first time
   const [showFirstRun, setShowFirstRun] = useState(false);
@@ -137,7 +139,7 @@ export default function GraphCanvas() {
         <DotSpotlight />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
-        <MiniMap position="bottom-right" pannable zoomable nodeColor="var(--color-border-strong)" maskColor="var(--color-overlay-backdrop)" style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', right: 60, background: 'var(--color-bg-surface)' }} />
+        {showMinimap && <MiniMap position="bottom-right" pannable zoomable nodeColor="var(--color-border-strong)" maskColor="var(--color-overlay-backdrop)" style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', right: 60, background: 'var(--color-bg-surface)' }} />}
       </ReactFlow>
 
       {tooltip && (

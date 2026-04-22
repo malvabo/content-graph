@@ -56,6 +56,8 @@ interface SettingsState {
   togetherKey: string;
   hfKey: string;
   brand: BrandKit;
+  showMinimap: boolean;
+  setShowMinimap: (v: boolean) => void;
   loaded: boolean;
   setAnthropicKey: (key: string) => void;
   setOpenaiKey: (key: string) => void;
@@ -78,6 +80,8 @@ export const useSettingsStore = create<SettingsState>()(
       togetherKey: '',
       hfKey: '',
       brand: { ...EMPTY_BRAND },
+      showMinimap: true,
+      setShowMinimap: (v) => set({ showMinimap: v }),
       loaded: false,
 
       setAnthropicKey: (key) => set({ anthropicKey: key }),
@@ -133,7 +137,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'content-graph-settings',
-      partialize: (state) => ({ anthropicKey: state.anthropicKey, openaiKey: state.openaiKey, googleKey: state.googleKey, groqKey: state.groqKey, togetherKey: state.togetherKey, hfKey: state.hfKey, brand: state.brand }),
+      partialize: (state) => ({ anthropicKey: state.anthropicKey, openaiKey: state.openaiKey, googleKey: state.googleKey, groqKey: state.groqKey, togetherKey: state.togetherKey, hfKey: state.hfKey, brand: state.brand, showMinimap: state.showMinimap }),
       merge: (persisted: any, current: any) => ({ ...current, ...persisted, brand: { ...EMPTY_BRAND, ...(persisted as any)?.brand } }),
     }
   )
