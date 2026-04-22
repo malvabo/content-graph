@@ -117,21 +117,26 @@ function NoteCard({ note, onDelete, onRerecord }: { note: VoiceNote; onDelete: (
   // Error notes get their own compact layout — no expand, inline recovery.
   if (isError) {
     return (
-      <div style={{ borderRadius: 'var(--radius-lg)', background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border, var(--color-danger-text))', padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+      <div style={{ borderRadius: 'var(--radius-lg)', background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border, var(--color-danger-text))', padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', width: '100%' }}>
+          <span style={{
+            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500,
+            color: 'var(--color-text-primary)', flex: 1, minWidth: 0,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+            overflow: 'hidden', wordBreak: 'break-word', lineHeight: 1.35,
+          }}>
             {note.title}
           </span>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 500, padding: '1px 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-danger-bg, #fde8e8)', color: 'var(--color-danger-text, #c53030)', lineHeight: '16px', flexShrink: 0 }}>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 500, padding: '1px 8px', borderRadius: 'var(--radius-full)', background: 'rgba(197, 48, 48, 0.12)', color: 'var(--color-danger-text, #c53030)', lineHeight: '16px', flexShrink: 0, marginTop: 2 }}>
             Failed
           </span>
         </div>
-        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', lineHeight: 1.5 }}>
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', lineHeight: 1.5, wordBreak: 'break-word' }}>
           {note.errorReason || 'Transcription failed.'}
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-          <button onClick={onRerecord} className="btn btn-primary" style={{ padding: '4px 12px', fontSize: 'var(--text-xs)' }}>Re-record</button>
-          <button onClick={onDelete} className="btn btn-ghost" style={{ padding: '4px 12px', fontSize: 'var(--text-xs)' }}>Delete</button>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+          <button onClick={onRerecord} className="btn btn-primary" style={{ padding: '6px 14px', fontSize: 'var(--text-xs)' }}>Re-record</button>
+          <button onClick={onDelete} className="btn btn-ghost" style={{ padding: '6px 14px', fontSize: 'var(--text-xs)' }}>Delete</button>
         </div>
       </div>
     );

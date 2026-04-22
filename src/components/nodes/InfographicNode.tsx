@@ -33,12 +33,26 @@ function loadGoogleFont(name: string) {
   document.head.appendChild(link);
 }
 
+// Tracks fonts we've already subscribed to `fonts.ready` for, so we don't
+// attach a new `.then(onFontLoad)` on every render. fonts.ready is typically
+// already resolved, so re-attaching schedules a microtask that re-renders,
+// which re-attaches, which re-renders… freezing the editor the moment a
+// non-system font is active. Cleared once the font resolves.
+const _fontListenersPending = new Set<string>();
+
 function resolveFont(raw: string | undefined, onFontLoad?: () => void): { family: string; primary: string } {
   const r = raw || 'system-ui, sans-serif';
   const primary = sanitizeFont(r.split(',')[0].trim().replace(/['"]/g, ''));
   if (!SYSTEM_FONTS.has(primary.toLowerCase())) {
     loadGoogleFont(primary);
-    if (onFontLoad && typeof document !== 'undefined') document.fonts?.ready?.then(onFontLoad);
+    if (onFontLoad && typeof document !== 'undefined' && document.fonts?.check && document.fonts?.ready) {
+      const key = primary.toLowerCase();
+      const alreadyLoaded = (() => { try { return document.fonts.check(`16px "${primary}"`); } catch { return true; } })();
+      if (!alreadyLoaded && !_fontListenersPending.has(key)) {
+        _fontListenersPending.add(key);
+        document.fonts.ready.then(() => { _fontListenersPending.delete(key); onFontLoad(); }).catch(() => { _fontListenersPending.delete(key); });
+      }
+    }
   }
   return { family: `${primary}, system-ui, sans-serif`, primary };
 }
