@@ -10,6 +10,7 @@ export default function ScriptSensePanel({ initialText, onOpenInCards }: Props) 
   const readyRef = useRef(false);
   const anthropicKey = useSettingsStore(s => s.anthropicKey);
   const groqKey = useSettingsStore(s => s.groqKey);
+  const brand = useSettingsStore(s => s.brand);
 
   const post = useCallback((msg: Record<string, unknown>) => {
     const w = iframeRef.current?.contentWindow;
@@ -21,8 +22,9 @@ export default function ScriptSensePanel({ initialText, onOpenInCards }: Props) 
     post({ type: 'set-api-key', key: anthropicKey || '' });
     post({ type: 'set-groq-key', key: groqKey || '' });
     post({ type: 'set-theme', dark: document.documentElement.classList.contains('dark') });
-    if (initialText) post({ type: 'set-initial-text', text: initialText });
-  }, [post, anthropicKey, groqKey, initialText]);
+    if (brand?.voice?.personality || brand?.name) post({ type: 'set-brand', brand });
+    if (initialText) post({ type: 'set-content', text: initialText });
+  }, [post, anthropicKey, groqKey, brand, initialText]);
 
   // Parent-side listener: the iframe posts 'scriptsense-ready' when it boots.
   useEffect(() => {

@@ -81,6 +81,24 @@ function setInitialText(t) {
   _pendingInitialText = t;
   initialTextListeners.forEach(fn => { try { fn(t); } catch {} });
 }
+
+// Brand voice context — received from parent over postMessage. Exposed via
+// useBrand() so any component can surface it in headers or prompt prefixes.
+let _brand = null;
+const brandListeners = new Set();
+function setBrandKit(b) {
+  _brand = b && typeof b === 'object' ? b : null;
+  brandListeners.forEach(fn => { try { fn(_brand); } catch {} });
+}
+function useBrand() {
+  const [, force] = useState(0);
+  useEffect(() => {
+    const fn = () => force(n => n + 1);
+    brandListeners.add(fn);
+    return () => brandListeners.delete(fn);
+  }, []);
+  return _brand;
+}
 function useTheme() {
   const [, force] = useState(0);
   useEffect(() => {
@@ -270,10 +288,23 @@ window.addEventListener('message', e => {
   if (d.type === 'set-api-key')  _anthropicKey = d.key || '';
   if (d.type === 'set-groq-key') _groqKey      = d.key || '';
   if (d.type === 'set-theme')    setDark(!!d.dark);
-  if (d.type === 'set-initial-text' && typeof d.text === 'string') setInitialText(d.text);
+  // set-content is the canonical name; set-initial-text kept for back-compat.
+  if ((d.type === 'set-content' || d.type === 'set-initial-text') && typeof d.text === 'string') setInitialText(d.text);
+  if (d.type === 'set-brand')    setBrandKit(d.brand);
 });
 // Announce to the parent that the iframe is ready so it can flush pending keys/text/theme.
 try { parent.postMessage({ type: 'scriptsense-ready' }, '*'); } catch {}
+
+function brandPromptPrefix() {
+  const b = _brand;
+  if (!b || !(b.name || b.voice?.personality || b.voice?.audience || b.voice?.avoidWords?.length)) return '';
+  const parts = [];
+  if (b.name) parts.push(`Brand: ${b.name}.`);
+  if (b.voice?.personality) parts.push(`Voice personality: ${b.voice.personality}.`);
+  if (b.voice?.audience) parts.push(`Audience: ${b.voice.audience}.`);
+  if (b.voice?.avoidWords?.length) parts.push(`Words to avoid: ${b.voice.avoidWords.join(', ')}.`);
+  return `Brand voice context (honor this in your analysis and any rephrasings):\n${parts.join(' ')}\n\n`;
+}
 
 async function callClaude(prompt) {
   function parseResponse(text) {
@@ -281,11 +312,13 @@ async function callClaude(prompt) {
     return JSON.parse(cleaned);
   }
 
+  const brandedPrompt = brandPromptPrefix() + prompt;
+
   if (_anthropicKey) {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': _anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, messages: [{ role: 'user', content: brandedPrompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
     });
     if (!res.ok) throw new Error('Anthropic API error: ' + res.status);
     const data = await res.json();
@@ -296,7 +329,7 @@ async function callClaude(prompt) {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_groqKey}` },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 4096, messages: [{ role: 'user', content: prompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 4096, messages: [{ role: 'user', content: brandedPrompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
     });
     if (!res.ok) throw new Error('Groq API error: ' + res.status);
     const data = await res.json();
@@ -534,6 +567,7 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
 
 /* ─────────────────── Main App ─────────────────── */
 function ContentGraphEditor({ draft, onSave, onBack }) {
+  const brand = useBrand();
   const [text, setText]               = useState(() => {
     if (_pendingInitialText) { const v = _pendingInitialText; _pendingInitialText = null; return v; }
     try {
@@ -699,11 +733,22 @@ ${text}`
 
   const wc = text.split(/\s+/).filter(Boolean).length;
 
+  const brandTag = brand && (brand.name || brand.voice?.personality)
+    ? `Brand: ${brand.name || 'Unnamed'}${brand.voice?.personality ? ` · Tone: ${brand.voice.personality}` : ''}`
+    : null;
+
   return (
     <>
       <style>{FONT_STYLE}</style>
       <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.pageBg, color:C.text }}>
 
+        {brandTag && (
+          <div aria-label="Brand voice active"
+            style={{ padding:"6px 16px", fontSize:11, fontWeight:500, color:C.mute, background:C.surface, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+            <span style={{ width:6, height:6, borderRadius:"50%", background:C.accent, display:"inline-block" }} />
+            {brandTag}
+          </div>
+        )}
 
         {/* ── Column labels + tabs ── */}
         <div style={{ display:"flex", background:C.white, borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>

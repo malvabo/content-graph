@@ -118,9 +118,18 @@ function AppInner() {
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
-        {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => { setVoiceTranscript(t); setActiveView('scriptsense'); }} />}
+        {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => {
+          setVoiceTranscript(t);
+          setActiveView('scriptsense');
+          // Clear immediately so a stale transcript can't re-fire into ScriptSense on a later re-render.
+          setTimeout(() => setVoiceTranscript(''), 0);
+        }} />}
 
-        {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(content) => { setVoiceTranscript(content); setActiveView('scriptsense'); }} />}
+        {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(content) => {
+          setVoiceTranscript(content);
+          setActiveView('scriptsense');
+          setTimeout(() => setVoiceTranscript(''), 0);
+        }} />}
 
         {activeView === 'scriptsense' && (
           <ViewErrorBoundary label="ScriptSense">
