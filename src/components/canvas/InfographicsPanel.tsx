@@ -390,7 +390,7 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
                 let svg: string | null = null;
                 if (canRender) try { svg = renderSVG(data); } catch { svg = null; }
                 return (
-                  <div key={item.id} style={{ position: 'relative', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', cursor: 'pointer', transition: 'border-color .15s, box-shadow .15s' }}
+                  <div key={item.id} style={{ position: 'relative', zIndex: menuId === item.id ? 60 : 'auto', borderRadius: 'var(--radius-lg)', overflow: menuId === item.id ? 'visible' : 'hidden', border: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', cursor: 'pointer', transition: 'border-color .15s, box-shadow .15s' }}
                     onMouseEnter={e => { setHoverId(item.id); e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                     onMouseLeave={e => { setHoverId(null); e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
                     onClick={() => setEditingId(item.id)}>

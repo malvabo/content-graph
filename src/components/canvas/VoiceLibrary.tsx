@@ -639,7 +639,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                     const displayTitle = isAudioOnly && note.title === 'Untitled note' ? 'Audio recording' : note.title;
                     const ariaLabel = `${displayTitle}, ${fmtDuration(note.durationMs)}${isError ? ', failed' : isTranscribing ? ', transcribing' : ''}. Open.`;
                     return (
-                      <div key={note.id} style={{ position: 'relative' }}>
+                      <div key={note.id} style={{ position: 'relative', zIndex: menuId === note.id ? 60 : 'auto' }}>
                         <button
                           onClick={() => { if (!isError && !isTranscribing) setViewId(note.id); }}
                           disabled={isTranscribing}

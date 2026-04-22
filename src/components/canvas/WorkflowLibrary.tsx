@@ -158,7 +158,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             {items.map(item => {
               const { visible, remaining } = chipList(item);
               return (
-                <div key={item.id} style={{ position: 'relative' }}
+                <div key={item.id} style={{ position: 'relative', zIndex: menuId === item.id ? 60 : 'auto' }}
                   onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}>
                   <TemplateCard
                     title={item.name}
