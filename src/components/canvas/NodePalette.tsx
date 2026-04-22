@@ -34,7 +34,6 @@ export default function NodePalette({ onAddNode }: Props) {
   const [open, setOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(true);
   const [search, setSearch] = useState('');
-  const ref = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -47,16 +46,7 @@ export default function NodePalette({ onAddNode }: Props) {
     if (!open) return;
     setSearch('');
     const focusT = setTimeout(() => searchRef.current?.focus(), 50);
-    const handler = (e: Event) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('pointerdown', handler, true);
-    document.addEventListener('touchstart', handler, true);
-    return () => {
-      clearTimeout(focusT);
-      document.removeEventListener('pointerdown', handler, true);
-      document.removeEventListener('touchstart', handler, true);
-    };
+    return () => clearTimeout(focusT);
   }, [open]);
 
   const q = search.toLowerCase().trim();
@@ -64,7 +54,15 @@ export default function NodePalette({ onAddNode }: Props) {
   const hasResults = allFiltered.length > 0;
 
   return (
-    <div ref={ref} className="absolute bottom-4 left-4 z-20">
+    <>
+      {open && (
+        <div
+          onPointerDown={() => setOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 19, background: 'transparent' }}
+          aria-hidden
+        />
+      )}
+      <div className="absolute bottom-4 left-4 z-20">
       <style>{`@keyframes paletteIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       {/* Fluid + button */}
       <motion.button
@@ -144,6 +142,7 @@ export default function NodePalette({ onAddNode }: Props) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
