@@ -102,12 +102,10 @@
   --color-danger-hover: var(--p-red-600);
   --color-danger-active: var(--p-red-700);
 
-  /* ── Left nav (floating panel) ──
-     Cool blue-tinted slate to contrast the warm canvas (#F2EFE9) and read as
-     a separate surface rather than part of the same neutral wash. */
-  --color-nav-bg: #eef1f6;            /* cool slate, a touch lighter than before for a softer panel */
-  --color-nav-item-active: #f8fafc;   /* matching cooler off-white for the active pill */
-  --color-nav-item-hover: rgba(220, 228, 240, 0.55);
+  /* ── Left nav (floating panel) ── */
+  --color-nav-bg: #fafafa;            /* neutral near-white panel */
+  --color-nav-item-active: #ffffff;   /* pure white raised pill for contrast against #fafafa */
+  --color-nav-item-hover: rgba(0, 0, 0, 0.04);
 
   /* ── Typography ── */
   --font-sans: 'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
