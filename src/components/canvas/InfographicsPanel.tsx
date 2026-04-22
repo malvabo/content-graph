@@ -8,23 +8,22 @@ interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
 type Point = InfographicData['points'][number];
 
-interface StructuredEditorProps {
+interface SettingsSectionProps {
   data: InfographicData;
-  onPointsChange: (mutator: (points: Point[]) => Point[]) => void;
+  onTextChange: (field: 'title' | 'subtitle' | 'footer', value: string) => void;
 }
 
 interface InlineInfographicProps {
   svg: string;
   data: InfographicData;
   editVersion: number;
-  onTextChange: (field: 'title' | 'subtitle' | 'footer', value: string) => void;
   onPointsChange: (mutator: (points: Point[]) => Point[]) => void;
 }
 
 // Renders the SVG and overlays transparent HTML inputs at the exact positions
-// of each text element, so the user can click on any title/subtitle/footer or
-// card stat/label and type directly on the infographic.
-function InlineInfographic({ svg, data, editVersion, onTextChange, onPointsChange }: InlineInfographicProps) {
+// of each point's stat/label, so the user can click on any number or label
+// and type directly on the infographic.
+function InlineInfographic({ svg, data, editVersion, onPointsChange }: InlineInfographicProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const layout = computeLayout(data);
@@ -75,32 +74,6 @@ function InlineInfographic({ svg, data, editVersion, onTextChange, onPointsChang
   return (
     <div ref={wrapRef} style={{ width: '100%', maxWidth: 800, position: 'relative', lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
       <div key={editVersion} dangerouslySetInnerHTML={{ __html: svg }} />
-      {/* Title */}
-      <input
-        aria-label="Title"
-        value={data.title}
-        onChange={e => onTextChange('title', e.target.value)}
-        onFocus={onFocus} onBlur={onBlur}
-        style={inputStyle(layout.title)}
-      />
-      {/* Subtitle (always editable; if empty, user can click to add one) */}
-      <input
-        aria-label="Subtitle"
-        placeholder="Add subtitle"
-        value={data.subtitle || ''}
-        onChange={e => onTextChange('subtitle', e.target.value)}
-        onFocus={onFocus} onBlur={onBlur}
-        style={inputStyle(layout.subtitle ?? { x: INFOGRAPHIC_WIDTH / 2, y: 76 - 13, w: INFOGRAPHIC_WIDTH * 0.9, h: 18, fontSize: 13, fontWeight: 400, anchor: 'middle' })}
-      />
-      {/* Footer */}
-      <input
-        aria-label="Footer"
-        placeholder="Add footer"
-        value={data.footer || ''}
-        onChange={e => onTextChange('footer', e.target.value)}
-        onFocus={onFocus} onBlur={onBlur}
-        style={inputStyle(layout.footer ?? { x: INFOGRAPHIC_WIDTH / 2, y: layout.height - 26, w: INFOGRAPHIC_WIDTH * 0.9, h: 14, fontSize: 10, fontWeight: 400, anchor: 'middle' })}
-      />
       {/* Per-point stat/label (cards layout only) */}
       {layout.points.map((pf, i) => (
         <span key={i}>
@@ -124,50 +97,53 @@ function InlineInfographic({ svg, data, editVersion, onTextChange, onPointsChang
   );
 }
 
-// Lightweight ordering/add/remove control only — text editing happens inline
-// on the infographic canvas itself (see InlineInfographic).
-function StructuredEditor({ data, onPointsChange }: StructuredEditorProps) {
-  const addPoint = () => onPointsChange(p => [...p, { stat: '0', label: 'New point' }]);
-  const removePoint = (i: number) => onPointsChange(p => p.filter((_, idx) => idx !== i));
-  const movePoint = (i: number, dir: -1 | 1) => onPointsChange(p => {
-    const j = i + dir;
-    if (j < 0 || j >= p.length) return p;
-    const next = [...p];
-    const [a, b] = [next[i], next[j]];
-    next[i] = b; next[j] = a;
-    return next;
-  });
+// Collapsible per-infographic settings: title, subtitle, footer. Points are
+// edited inline on the infographic itself.
+function SettingsSection({ data, onTextChange }: SettingsSectionProps) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState(data.title);
+  const [subtitle, setSubtitle] = useState(data.subtitle || '');
+  const [footer, setFooter] = useState(data.footer || '');
+  useEffect(() => { setTitle(data.title); }, [data.title]);
+  useEffect(() => { setSubtitle(data.subtitle || ''); }, [data.subtitle]);
+  useEffect(() => { setFooter(data.footer || ''); }, [data.footer]);
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '6px 10px', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)',
+    color: 'var(--color-text-primary)', background: 'var(--color-bg-card)',
+    border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', outline: 'none',
+  };
   const labelStyle: React.CSSProperties = {
     fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500,
     color: 'var(--color-text-tertiary)', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em',
   };
 
   return (
-    <div style={{ width: '100%', maxWidth: 800, padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <label style={labelStyle}>Data points</label>
-        <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{data.points.length}</span>
-      </div>
-      {data.points.map((p, i) => (
-        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 'var(--space-2)', alignItems: 'center' }}>
-          <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)', marginRight: 8 }}>{p.stat}</span>
-            {p.label}
+    <div style={{ width: '100%', maxWidth: 800, borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', overflow: 'hidden' }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-3) var(--space-4)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>
+        <span>Settings</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 150ms', color: 'var(--color-text-tertiary)' }}><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      {open && (
+        <div style={{ padding: '0 var(--space-4) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <div>
+            <label style={labelStyle}>Title</label>
+            <input style={inputStyle} value={title}
+              onChange={e => { setTitle(e.target.value); onTextChange('title', e.target.value); }} />
           </div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <button aria-label="Move up" disabled={i === 0} onClick={() => movePoint(i, -1)}
-              style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: i === 0 ? 'default' : 'pointer', color: i === 0 ? 'var(--color-text-disabled)' : 'var(--color-text-secondary)', fontSize: 12 }}>↑</button>
-            <button aria-label="Move down" disabled={i === data.points.length - 1} onClick={() => movePoint(i, 1)}
-              style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: i === data.points.length - 1 ? 'default' : 'pointer', color: i === data.points.length - 1 ? 'var(--color-text-disabled)' : 'var(--color-text-secondary)', fontSize: 12 }}>↓</button>
-            <button aria-label="Delete point" onClick={() => removePoint(i)}
-              style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: 'pointer', color: 'var(--color-danger-text)', fontSize: 14 }}>×</button>
+          <div>
+            <label style={labelStyle}>Subtitle</label>
+            <input style={inputStyle} value={subtitle} placeholder="Optional"
+              onChange={e => { setSubtitle(e.target.value); onTextChange('subtitle', e.target.value); }} />
+          </div>
+          <div>
+            <label style={labelStyle}>Footer</label>
+            <input style={inputStyle} value={footer} placeholder="Optional"
+              onChange={e => { setFooter(e.target.value); onTextChange('footer', e.target.value); }} />
           </div>
         </div>
-      ))}
-      <button onClick={addPoint} className="btn btn-ghost" style={{ alignSelf: 'flex-start', fontSize: 'var(--text-sm)', marginTop: 4 }}>
-        + Add point
-      </button>
+      )}
     </div>
   );
 }
@@ -515,16 +491,15 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
               svg={svg}
               data={currentData}
               editVersion={editVersion}
-              onTextChange={scheduleTextEdit}
               onPointsChange={(mutator) => applyDirectEdit(d => { d.points = mutator(d.points); })}
             />
           )}
 
           {currentData && editing && (
-            <StructuredEditor
+            <SettingsSection
               key={editing.id}
               data={currentData}
-              onPointsChange={(mutator) => applyDirectEdit(d => { d.points = mutator(d.points); })}
+              onTextChange={scheduleTextEdit}
             />
           )}
         </div>
