@@ -22,10 +22,16 @@ export default function AuthGate() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const err = mode === 'login' ? await signIn(email, password) : await signUp(email, password);
-    setLoading(false);
-    if (err) setError(err);
-    else if (mode === 'signup') setSignupDone(true);
+    if (mode === 'login') {
+      const err = await signIn(email, password);
+      setLoading(false);
+      if (err) setError(err);
+    } else {
+      const { error: err, needsConfirmation } = await signUp(email, password);
+      setLoading(false);
+      if (err) setError(err);
+      else if (needsConfirmation) setSignupDone(true);
+    }
   };
 
   return (
