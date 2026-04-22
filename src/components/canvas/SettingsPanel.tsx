@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useSettingsStore, EMPTY_BRAND } from '../../store/settingsStore';
+import { useSettingsStore, EMPTY_BRAND, BRAND_FONT_OPTIONS } from '../../store/settingsStore';
 
 const PaletteIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/><circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/><circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/><circle cx="6.5" cy="12" r="0.5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>;
 const MicIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>;
@@ -79,6 +79,22 @@ function BrandVisualSection() {
           <div style={{ display: 'flex', gap: 'var(--space-5)' }}>
             {(['primary', 'secondary', 'accent'] as const).map(k => (
               <ColorSwatch key={k} label={k} color={b.colors[k]} onChange={c => setBrand({ colors: { ...b.colors, [k]: c } })} />
+            ))}
+          </div>
+        </div>
+        <div>
+          <label style={LBL}>Brand fonts</label>
+          <p style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', margin: '0 0 var(--space-3)', lineHeight: 'var(--leading-snug)' }}>
+            Applied to all infographics. Google Fonts are loaded automatically.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+            {(['title', 'body'] as const).map(k => (
+              <div key={k}>
+                <label style={{ ...LBL, textTransform: 'capitalize' }}>{k}</label>
+                <select className="form-input" value={b.fonts[k]} onChange={e => setBrand({ fonts: { ...b.fonts, [k]: e.target.value } })} style={{ width: '100%', fontFamily: b.fonts[k] === 'system-ui' ? 'var(--font-sans)' : `'${b.fonts[k]}', sans-serif` }}>
+                  {BRAND_FONT_OPTIONS.map(f => <option key={f} value={f} style={{ fontFamily: f === 'system-ui' ? 'inherit' : `'${f}', sans-serif` }}>{f === 'system-ui' ? 'System default' : f}</option>)}
+                </select>
+              </div>
             ))}
           </div>
         </div>

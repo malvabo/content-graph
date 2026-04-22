@@ -6,58 +6,33 @@ import { renderSVG, parseInfographicData } from '../nodes/InfographicNode';
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
 const SUGGESTION_CHIPS = [
-  'Change the title',
-  'Add a new data point',
-  'Make stats percentages',
-  'Change color to warm tones',
+  'Rewrite the title to be punchier',
+  'Add 2 more data points',
+  'Convert stats to percentages',
+  'Shorten all labels',
   'Add a subtitle',
-  'Remove last point',
+  'Remove the last point',
 ];
 
 async function chatEdit(messages: ChatMsg[], currentJson: string, signal?: AbortSignal): Promise<string> {
   const { anthropicKey, groqKey } = useSettingsStore.getState();
-  const system = `You are an infographic editor. The user has an infographic defined as JSON. Apply their requested changes and return ONLY the updated JSON — no explanation, no markdown fences. Always preserve all existing fields unless the user explicitly asks to remove them.
+  const system = `You edit the CONTENT of an infographic. Styling (colors, fonts, layout) is controlled by the user's brand kit and is NOT your concern — never output theme, color, or font fields.
 
-Current infographic JSON:
-${currentJson}
+Return ONLY the updated JSON object. No markdown fences, no commentary.
 
-JSON schema:
+Schema (these are the ONLY allowed fields):
 {
   "title": string,
   "subtitle"?: string,
   "footer"?: string,
   "type"?: "cards" | "bar" | "pie",
-  "image"?: string (URL for logo/image in top-right),
-  "theme"?: {
-    "bg"?: string, "accent"?: string, "text"?: string,
-    "cardBg"?: string, "cardBorder"?: string,
-    "font"?: string, "titleFont"?: string, "bodyFont"?: string,
-    "fontSize"?: number, "statSize"?: number,
-    "borderRadius"?: number, "cols"?: number,
-    "gap"?: number, "align"?: "center" | "left",
-    "gradient"?: { "from": string, "to": string, "direction"?: string (degrees, e.g. "135") },
-    "dividers"?: boolean, "animate"?: boolean
-  },
-  "points": [{
-    "stat": string, "label": string, "detail"?: string,
-    "color"?: string, "icon"?: string (emoji),
-    "max"?: number (shows progress bar, stat value / max),
-    "size"?: "sm" | "md" | "lg",
-    "fontWeight"?: string, "fontStyle"?: string
-  }]
+  "points": [{ "stat": string, "label": string, "detail"?: string, "icon"?: string (single emoji), "max"?: number }]
 }
 
-Notes:
-- type: "cards" (default grid), "bar" (horizontal bar chart), "pie" (pie chart with legend)
-- theme.font: any Google Font (Inter, Roboto, Playfair Display, Space Grotesk, etc.) or system font. Auto-loaded.
-- theme.titleFont / theme.bodyFont: separate fonts for title vs data. Falls back to theme.font.
-- theme.gradient: replaces bg with a linear gradient
-- theme.animate: adds fade-in animation to elements
-- theme.dividers: adds dashed lines between card rows
-- points[].icon: emoji displayed above the stat
-- points[].max: renders a progress bar (stat value as proportion of max)
-- points[].size: "lg" for tall cards, "sm" for compact
-- All colors are hex strings.`;
+Rules: preserve all fields unless the user asks to remove them. Keep points ordered. Stats are short strings like "73%", "$2.4B", "10x".
+
+Current JSON:
+${currentJson}`;
 
   const msgs = messages.map(m => ({ role: m.role, content: m.text }));
 
@@ -88,6 +63,8 @@ const DEFAULT_JSON = JSON.stringify({ title: 'New Infographic', subtitle: 'Edit 
 
 export default function InfographicsPanel({ initialEditId }: { initialEditId?: string }) {
   const { items, add, update, remove } = useInfographicStore();
+  const migratedFrom = useInfographicStore(s => s.migratedFrom);
+  const clearMigrationNotice = useInfographicStore(s => s.clearMigrationNotice);
   const [editingId, setEditingId] = useState<string | null>(initialEditId || null);
   useEffect(() => { if (initialEditId) setEditingId(initialEditId); }, [initialEditId]);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -151,14 +128,14 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
           }
         }
       }
-      if (parsed && parsed.points) {
+      if (parsed && parsed.points?.length) {
         setUndoStack(s => [...s, freshItem.json]);
         const jsonStr = JSON.stringify(parsed);
         update(editing.id, jsonStr);
         setEditVersion(v => v + 1);
         setMessages(m => [...m, { role: 'assistant', text: 'Done! I\'ve updated the infographic. Anything else?' }]);
       } else {
-        setMessages(m => [...m, { role: 'assistant', text: reply }]);
+        setMessages(m => [...m, { role: 'assistant', text: 'I couldn\'t produce a valid update for that. Try rephrasing — e.g. "rewrite the title to be punchier" or "add 2 more points about X".' }]);
       }
     } catch (e: any) {
       if (e.name !== 'AbortError') setMessages(m => [...m, { role: 'assistant', text: `Error: ${e.message}` }]);
@@ -193,6 +170,12 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
         </div>
 
         <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+          {migratedFrom !== undefined && (
+            <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-default)', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+              <span style={{ flex: 1 }}>Styling is now controlled by your <button onClick={() => { window.location.hash = 'settings'; }} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--color-accent)', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>Brand Kit</button>. Per-infographic theme overrides from older versions have been reset — set your fonts and colors in Settings.</span>
+              <button onClick={clearMigrationNotice} className="btn btn-sm btn-ghost" style={{ flexShrink: 0 }}>Dismiss</button>
+            </div>
+          )}
 
           {items.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-8)' }}>

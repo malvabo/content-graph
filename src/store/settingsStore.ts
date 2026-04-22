@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 export interface BrandKit {
   name: string;
   colors: { primary: string; secondary: string; accent: string };
+  fonts: { title: string; body: string };
   voice: {
     personality: string;
     audience: string;
@@ -15,9 +16,25 @@ export interface BrandKit {
   imageStyleNote: string;
 }
 
+export const BRAND_FONT_OPTIONS = [
+  'system-ui',
+  'Inter',
+  'Roboto',
+  'Playfair Display',
+  'Space Grotesk',
+  'Merriweather',
+  'Poppins',
+  'DM Sans',
+  'IBM Plex Sans',
+  'JetBrains Mono',
+  'Lora',
+  'Work Sans',
+] as const;
+
 export const EMPTY_BRAND: BrandKit = {
   name: '',
   colors: { primary: '#0DBF5A', secondary: '#1A2420', accent: '#F2EFE9' },
+  fonts: { title: 'system-ui', body: 'system-ui' },
   voice: { personality: '', audience: '', avoidWords: [], examplePost: '' },
   referenceImages: [],
   imageStyleNote: '',
@@ -63,7 +80,7 @@ export const useSettingsStore = create<SettingsState>()(
       setHfKey: (key) => set({ hfKey: key }),
       setBrand: (partial) => set((s: any) => {
         const b = s.brand || EMPTY_BRAND;
-        return { brand: { ...b, ...partial, colors: { ...b.colors, ...(partial.colors || {}) }, voice: { ...b.voice, ...(partial.voice || {}) } } };
+        return { brand: { ...b, ...partial, colors: { ...b.colors, ...(partial.colors || {}) }, fonts: { ...b.fonts, ...(partial.fonts || {}) }, voice: { ...b.voice, ...(partial.voice || {}) } } };
       }),
 
       load: async () => {

@@ -4,22 +4,14 @@ import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useInfographicStore } from '../../store/infographicStore';
 import { useGraphStore } from '../../store/graphStore';
+import { useSettingsStore } from '../../store/settingsStore';
 
 export interface InfographicData {
   title: string;
   subtitle?: string;
   footer?: string;
   type?: 'cards' | 'bar' | 'pie';
-  image?: string;
-  theme?: {
-    bg?: string; accent?: string; text?: string; cardBg?: string; cardBorder?: string;
-    font?: string; titleFont?: string; bodyFont?: string;
-    fontSize?: number; statSize?: number; borderRadius?: number;
-    cols?: number; gap?: number; align?: 'center' | 'left';
-    gradient?: { from: string; to: string; direction?: string };
-    dividers?: boolean; animate?: boolean;
-  };
-  points: { stat: string; label: string; detail?: string; color?: string; icon?: string; max?: number; size?: 'sm' | 'md' | 'lg'; fontWeight?: string; fontStyle?: string }[];
+  points: { stat: string; label: string; detail?: string; icon?: string; max?: number }[];
 }
 
 const SYSTEM_FONTS = new Set(['system-ui','sans-serif','serif','monospace','cursive','-apple-system','blinkmacsystemfont','segoe ui','georgia','courier new','times new roman','arial','helvetica','verdana','trebuchet ms','comic sans ms']);
@@ -48,47 +40,55 @@ function resolveFont(raw: string | undefined, onFontLoad?: () => void): { family
   return { family: `${primary}, system-ui, sans-serif`, primary };
 }
 
-export function renderSVG(data: InfographicData, onFontLoad?: () => void): string {
-  const { title, subtitle, footer, points, theme, type = 'cards' } = data;
-  const bg = theme?.bg || '#1a1a18';
-  const accent = theme?.accent || '#0DBF5A';
-  const textColor = theme?.text || '#e8e6e3';
-  const cardBg = theme?.cardBg || '#2a2a26';
-  const cardBorder = theme?.cardBorder || '#3a3a36';
-  const titleSize = theme?.fontSize || 22;
-  const statSize = theme?.statSize || 26;
-  const radius = theme?.borderRadius ?? 12;
-  const align = theme?.align || 'center';
-  const gap = theme?.gap ?? 16;
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const m = hex.replace('#', '').match(/^([0-9a-f]{6}|[0-9a-f]{3})$/i);
+  if (!m) return null;
+  const h = m[1].length === 3 ? m[1].split('').map(c => c + c).join('') : m[1];
+  return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
+}
+function mix(hex: string, target: string, amount: number): string {
+  const a = hexToRgb(hex); const b = hexToRgb(target);
+  if (!a || !b) return hex;
+  const m = (x: number, y: number) => Math.round(x + (y - x) * amount);
+  return `#${[m(a.r, b.r), m(a.g, b.g), m(a.b, b.b)].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+}
+function luminance(hex: string): number {
+  const rgb = hexToRgb(hex); if (!rgb) return 0.5;
+  const f = (v: number) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(rgb.r) + 0.7152 * f(rgb.g) + 0.0722 * f(rgb.b);
+}
 
-  const titleFontRes = resolveFont(theme?.titleFont || theme?.font, onFontLoad);
-  const bodyFontRes = resolveFont(theme?.bodyFont || theme?.font, onFontLoad);
+export function renderSVG(data: InfographicData, onFontLoad?: () => void): string {
+  const { title, subtitle, footer, points, type = 'cards' } = data;
+  const brand = useSettingsStore.getState().brand;
+
+  const bg = brand.colors.secondary;
+  const accent = brand.colors.primary;
+  const isDarkBg = luminance(bg) < 0.5;
+  const textColor = isDarkBg ? '#e8e6e3' : '#1a1a18';
+  const mutedText = isDarkBg ? '#908e85' : '#6a6a66';
+  const cardBg = mix(bg, isDarkBg ? '#ffffff' : '#000000', 0.06);
+  const cardBorder = mix(bg, isDarkBg ? '#ffffff' : '#000000', 0.12);
+  const titleSize = 22;
+  const statSize = 26;
+  const radius = 12;
+  const gap = 16;
+
+  const titleFontRes = resolveFont(brand.fonts.title, onFontLoad);
+  const bodyFontRes = resolveFont(brand.fonts.body, onFontLoad);
   const titleFont = titleFontRes.family;
   const bodyFont = bodyFontRes.family;
 
   const W = 960;
-  const titleAnchor = align === 'left' ? 'start' : 'middle';
-  const titleX = align === 'left' ? 40 : W / 2;
+  const titleX = W / 2;
   const titleY = subtitle ? 50 : 60;
   const subtitleY = titleY + 26;
   const contentStartY = subtitle ? subtitleY + 32 : titleY + 40;
-
-  // Gradient defs
-  let defs = '';
-  if (theme?.gradient) {
-    const dir = theme.gradient.direction || '180';
-    defs += `<defs><linearGradient id="bg-grad" gradientTransform="rotate(${escSvg(dir)})"><stop offset="0%" stop-color="${escSvg(theme.gradient.from)}"/><stop offset="100%" stop-color="${escSvg(theme.gradient.to)}"/></linearGradient></defs>`;
-  }
-  const bgFill = theme?.gradient ? 'url(#bg-grad)' : escSvg(bg);
-
-  // Animation style
-  const animStyle = theme?.animate ? `<style>@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.anim-card{animation:fadeUp 0.3s ease both}</style>` : '';
 
   let content = '';
   let H = 540;
 
   if (type === 'bar') {
-    // ─── BAR CHART ───
     const barH = 32, barGap = gap + 4;
     const maxVal = Math.max(...points.map(p => parseFloat(p.stat.replace(/[^0-9.]/g, '')) || 0), 1);
     const chartX = 140, chartW = W - chartX - 60;
@@ -97,31 +97,35 @@ export function renderSVG(data: InfographicData, onFontLoad?: () => void): strin
       const y = contentStartY + i * (barH + barGap);
       const val = parseFloat(p.stat.replace(/[^0-9.]/g, '')) || 0;
       const w = Math.max(4, (val / maxVal) * chartW);
-      const pointColor = p.color || accent;
-      const animDelay = theme?.animate ? ` class="anim-card" style="animation-delay:${i * 0.08}s"` : '';
-      content += `<text x="${chartX - 12}" y="${y + barH / 2 + 5}" text-anchor="end" font-size="12" font-weight="500" fill="${escSvg(textColor)}" font-family="${bodyFont}"${animDelay}>${escSvg(p.label)}</text>`;
-      content += `<rect x="${chartX}" y="${y}" width="${chartW}" height="${barH}" rx="${Math.min(radius, barH / 2)}" fill="${escSvg(cardBg)}"${animDelay}/>`;
-      content += `<rect x="${chartX}" y="${y}" width="${w}" height="${barH}" rx="${Math.min(radius, barH / 2)}" fill="${escSvg(pointColor)}"${animDelay}/>`;
-      content += `<text x="${chartX + w + 8}" y="${y + barH / 2 + 5}" font-size="12" font-weight="700" fill="${escSvg(pointColor)}" font-family="${bodyFont}"${animDelay}>${escSvg(p.stat)}</text>`;
+      content += `<text x="${chartX - 12}" y="${y + barH / 2 + 5}" text-anchor="end" font-size="12" font-weight="500" fill="${escSvg(textColor)}" font-family="${bodyFont}">${escSvg(p.label)}</text>`;
+      content += `<rect x="${chartX}" y="${y}" width="${chartW}" height="${barH}" rx="${Math.min(radius, barH / 2)}" fill="${escSvg(cardBg)}"/>`;
+      content += `<rect x="${chartX}" y="${y}" width="${w}" height="${barH}" rx="${Math.min(radius, barH / 2)}" fill="${escSvg(accent)}"/>`;
+      content += `<text x="${chartX + w + 8}" y="${y + barH / 2 + 5}" font-size="12" font-weight="700" fill="${escSvg(accent)}" font-family="${bodyFont}">${escSvg(p.stat)}</text>`;
     });
   } else if (type === 'pie') {
-    // ─── PIE CHART ───
     const cx = W / 2, cy = contentStartY + 180, r = 140;
     H = Math.max(540, cy + r + 80 + (footer ? 40 : 0));
     const values = points.map(p => parseFloat(p.stat.replace(/[^0-9.]/g, '')) || 1);
     const total = values.reduce((a, b) => a + b, 0);
     let startAngle = -Math.PI / 2;
-    const defaultColors = ['#6366f1', '#0DBF5A', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6'];
+    const palette = [
+      accent,
+      mix(accent, isDarkBg ? '#ffffff' : '#000000', 0.3),
+      mix(accent, isDarkBg ? '#ffffff' : '#000000', 0.5),
+      mix(accent, brand.colors.accent, 0.5),
+      brand.colors.accent,
+      mix(brand.colors.accent, isDarkBg ? '#ffffff' : '#000000', 0.3),
+      mix(accent, '#ffffff', 0.15),
+      mix(accent, '#000000', 0.25),
+    ];
     points.forEach((p, i) => {
       const slice = (values[i] / total) * Math.PI * 2;
       const endAngle = startAngle + slice;
       const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle);
       const x2 = cx + r * Math.cos(endAngle), y2 = cy + r * Math.sin(endAngle);
       const large = slice > Math.PI ? 1 : 0;
-      const color = p.color || defaultColors[i % defaultColors.length];
-      const animDelay = theme?.animate ? ` class="anim-card" style="animation-delay:${i * 0.1}s"` : '';
-      content += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z" fill="${escSvg(color)}"${animDelay}/>`;
-      // Legend
+      const color = palette[i % palette.length];
+      content += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z" fill="${escSvg(color)}"/>`;
       const ly = cy + r + 30 + i * 20;
       content += `<rect x="${W / 2 - 120}" y="${ly - 8}" width="10" height="10" rx="2" fill="${escSvg(color)}"/>`;
       content += `<text x="${W / 2 - 104}" y="${ly}" font-size="11" fill="${escSvg(textColor)}" font-family="${bodyFont}">${escSvg(p.label)} — ${escSvg(p.stat)}</text>`;
@@ -129,62 +133,45 @@ export function renderSVG(data: InfographicData, onFontLoad?: () => void): strin
     });
     H = Math.max(H, cy + r + 30 + points.length * 20 + 30);
   } else {
-    // ─── CARDS (default) ───
-    const cols = theme?.cols || (points.length <= 4 ? 2 : 3);
+    const cols = points.length <= 4 ? 2 : 3;
     const gapX = gap + 8, gapY = gap;
     const cardW = Math.floor((W - 80 - (cols - 1) * gapX) / cols);
     const gridW = cols * cardW + (cols - 1) * gapX;
     const startX = (W - gridW) / 2;
     const rows = Math.ceil(points.length / cols);
-    H = Math.max(540, contentStartY + rows * (100 + gapY) + 24 + (footer ? 40 : 0));
+    const cardH = 100;
+    H = Math.max(540, contentStartY + rows * (cardH + gapY) + 24 + (footer ? 40 : 0));
 
     points.forEach((p, i) => {
-      const cardH = p.size === 'lg' ? 130 : p.size === 'sm' ? 70 : 100;
       const col = i % cols, row = Math.floor(i / cols);
       const x = startX + col * (cardW + gapX);
-      const y = contentStartY + row * (100 + gapY);
-      const pointColor = p.color || accent;
-      const weight = p.fontWeight || '700';
-      const style = p.fontStyle || 'normal';
-      const animDelay = theme?.animate ? ` class="anim-card" style="animation-delay:${i * 0.06}s"` : '';
-      content += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="${radius}" fill="${escSvg(cardBg)}" stroke="${escSvg(cardBorder)}" stroke-width="1"${animDelay}/>`;
-      // Icon
+      const y = contentStartY + row * (cardH + gapY);
+      content += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="${radius}" fill="${escSvg(cardBg)}" stroke="${escSvg(cardBorder)}" stroke-width="1"/>`;
       if (p.icon) {
-        content += `<text x="${x + 20}" y="${y + 22}" font-size="16"${animDelay}>${escSvg(p.icon)}</text>`;
+        content += `<text x="${x + 20}" y="${y + 22}" font-size="16">${escSvg(p.icon)}</text>`;
       }
       const statY = p.icon ? y + 50 : y + 38;
-      content += `<text x="${x + 20}" y="${statY}" font-size="${statSize}" font-weight="${weight}" font-style="${style}" fill="${escSvg(pointColor)}" font-family="${bodyFont}"${animDelay}>${escSvg(p.stat)}</text>`;
-      content += `<text x="${x + 20}" y="${statY + 24}" font-size="13" font-weight="500" fill="${escSvg(textColor)}" font-family="${bodyFont}"${animDelay}>${escSvg(p.label)}</text>`;
+      content += `<text x="${x + 20}" y="${statY}" font-size="${statSize}" font-weight="700" fill="${escSvg(accent)}" font-family="${bodyFont}">${escSvg(p.stat)}</text>`;
+      content += `<text x="${x + 20}" y="${statY + 24}" font-size="13" font-weight="500" fill="${escSvg(textColor)}" font-family="${bodyFont}">${escSvg(p.label)}</text>`;
       if (p.detail) {
-        content += `<text x="${x + 20}" y="${statY + 44}" font-size="11" fill="#908e85" font-family="${bodyFont}"${animDelay}>${escSvg(p.detail.slice(0, 50))}</text>`;
+        content += `<text x="${x + 20}" y="${statY + 44}" font-size="11" fill="${escSvg(mutedText)}" font-family="${bodyFont}">${escSvg(p.detail.slice(0, 50))}</text>`;
       }
-      // Progress bar
       if (p.max) {
         const val = parseFloat(p.stat.replace(/[^0-9.]/g, '')) || 0;
         const pct = Math.min(val / p.max, 1);
         const barY = statY + (p.detail ? 52 : 32);
-        content += `<rect x="${x + 20}" y="${barY}" width="${cardW - 40}" height="4" rx="2" fill="${escSvg(cardBorder)}"${animDelay}/>`;
-        content += `<rect x="${x + 20}" y="${barY}" width="${(cardW - 40) * pct}" height="4" rx="2" fill="${escSvg(pointColor)}"${animDelay}/>`;
-      }
-      // Divider
-      if (theme?.dividers && i < points.length - 1 && col === cols - 1) {
-        const divY = y + cardH + gapY / 2;
-        content += `<line x1="${startX}" y1="${divY}" x2="${startX + gridW}" y2="${divY}" stroke="${escSvg(cardBorder)}" stroke-width="1" stroke-dasharray="4,4"/>`;
+        content += `<rect x="${x + 20}" y="${barY}" width="${cardW - 40}" height="4" rx="2" fill="${escSvg(cardBorder)}"/>`;
+        content += `<rect x="${x + 20}" y="${barY}" width="${(cardW - 40) * pct}" height="4" rx="2" fill="${escSvg(accent)}"/>`;
       }
     });
   }
 
-  // Image embed
-  const imageSvg = data.image ? `<image href="${escSvg(data.image)}" x="${W - 140}" y="20" width="100" height="40" preserveAspectRatio="xMidYMid meet"/>` : '';
-
-  const footerSvg = footer ? `<text x="${W / 2}" y="${H - 16}" text-anchor="middle" font-size="10" fill="#908e85" font-family="${bodyFont}">${escSvg(footer)}</text>` : '';
+  const footerSvg = footer ? `<text x="${W / 2}" y="${H - 16}" text-anchor="middle" font-size="10" fill="${escSvg(mutedText)}" font-family="${bodyFont}">${escSvg(footer)}</text>` : '';
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
-${defs}${animStyle}
-<rect width="${W}" height="${H}" fill="${bgFill}" rx="16"/>
-${imageSvg}
-<text x="${titleX}" y="${titleY}" text-anchor="${titleAnchor}" font-size="${titleSize}" font-weight="700" fill="${escSvg(textColor)}" font-family="${titleFont}">${escSvg(title)}</text>
-${subtitle ? `<text x="${titleX}" y="${subtitleY}" text-anchor="${titleAnchor}" font-size="13" fill="#908e85" font-family="${titleFont}">${escSvg(subtitle)}</text>` : ''}
+<rect width="${W}" height="${H}" fill="${escSvg(bg)}" rx="16"/>
+<text x="${titleX}" y="${titleY}" text-anchor="middle" font-size="${titleSize}" font-weight="700" fill="${escSvg(textColor)}" font-family="${titleFont}">${escSvg(title)}</text>
+${subtitle ? `<text x="${titleX}" y="${subtitleY}" text-anchor="middle" font-size="13" fill="${escSvg(mutedText)}" font-family="${titleFont}">${escSvg(subtitle)}</text>` : ''}
 ${content}
 ${footerSvg}
 </svg>`;
@@ -193,8 +180,32 @@ ${footerSvg}
 export function parseInfographicData(text: string): InfographicData | null {
   try {
     const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    return JSON.parse(cleaned);
+    const raw = JSON.parse(cleaned);
+    return normalizeInfographicData(raw);
   } catch { return null; }
+}
+
+export function normalizeInfographicData(raw: any): InfographicData | null {
+  if (!raw || typeof raw !== 'object') return null;
+  if (typeof raw.title !== 'string') return null;
+  if (!Array.isArray(raw.points) || raw.points.length === 0) return null;
+  const points = raw.points
+    .filter((p: any) => p && typeof p.stat === 'string' && typeof p.label === 'string')
+    .map((p: any) => ({
+      stat: p.stat,
+      label: p.label,
+      ...(typeof p.detail === 'string' ? { detail: p.detail } : {}),
+      ...(typeof p.icon === 'string' ? { icon: p.icon } : {}),
+      ...(typeof p.max === 'number' ? { max: p.max } : {}),
+    }));
+  if (!points.length) return null;
+  return {
+    title: raw.title,
+    ...(typeof raw.subtitle === 'string' ? { subtitle: raw.subtitle } : {}),
+    ...(typeof raw.footer === 'string' ? { footer: raw.footer } : {}),
+    ...(['cards', 'bar', 'pie'].includes(raw.type) ? { type: raw.type } : {}),
+    points,
+  };
 }
 
 export function InfographicInline({ id }: { id: string }) {
