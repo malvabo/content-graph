@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type GeneratedAssetKind = 'linkedin-post' | 'twitter-thread' | 'twitter-single';
+
+export interface GeneratedAsset {
+  kind: GeneratedAssetKind;
+  text: string;
+  createdAt: string;
+}
+
 export interface VoiceNote {
   id: string;
   title: string;
@@ -9,6 +17,9 @@ export interface VoiceNote {
   status: 'recording' | 'transcribing' | 'ready' | 'error';
   errorReason?: string;
   createdAt: string;
+  /** Last successful generation — persisted so the user doesn't lose an asset
+   *  they just crafted on mobile if they scroll the card out of view or reload. */
+  lastGeneration?: GeneratedAsset;
 }
 
 interface VoiceState {
