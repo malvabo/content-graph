@@ -4,76 +4,103 @@
 
 ### 1.1 Color Tokens
 
-#### Core Palette
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--cg-ink` | `#1A2420` | Primary text, headings |
-| `--cg-ink-2` | `#6B7B70` | Secondary text |
-| `--cg-ink-3` | `#526858` | Tertiary/muted text |
-| `--cg-canvas` | `#F2EFE9` | Page background |
-| `--cg-surface` | `#F7F5F1` | Elevated surface, hover states |
-| `--cg-card` | `#FFFFFF` | Card/node backgrounds |
+> Source of truth: [`src/tokens.css`](src/tokens.css). Values below are the **light-mode** defaults; dark-mode overrides live in `:root.dark` in the same file. The older `--cg-*` names are kept as aliases mapped to the semantic `--color-*` tokens — prefer the semantic ones in new code.
 
-#### Border Tokens
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--cg-border` | `#E0E4E0` | Default borders |
-| `--cg-border-2` | `#C8D4CC` | Hover/active borders |
-| `--cg-border-dot` | `#D5D0C8` | Background dots |
-| `popover-border` | `#e6e3dd` | Floating panel borders |
+#### Primitives (palette)
+Raw values; avoid referencing directly — use the semantic tokens below.
 
-#### Accent (Green)
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--cg-green` | `#0DBF5A` | Focus rings, wave animation, edge flow |
-| `--cg-green-hover` | `#0BAF52` | Green hover state |
-| `--cg-green-act` | `#0A9F4A` | Green active state |
-| `--cg-green-lt` | `#F7F5F1` | Tonal button background |
-| `--cg-green-tint` | `#F9F8F5` | Success tint |
-
-#### Semantic Colors
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--cg-red` | `#C93030` | Destructive actions |
-| `--cg-red-lt` | `#FEF4F4` | Error background |
-| `--cg-red-text` | `#A83030` | Error text |
-| `--cg-amber-text` | `#6A4A10` | Warning text |
-| `--cg-amber-lt` | `#FEF8E8` | Warning background |
-| `--cg-amber-bdr` | `#F0D8A0` | Warning border |
-
-#### Dark Mode (used in image modal)
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--cg-dark` | `#1A2420` | Dark backgrounds |
-| `--cg-dark-text` | `#A8C4B0` | Dark mode text |
-| `dark-surface` | `#1a1a1f` | Image modal background |
-
-#### Neutral Greys (hardcoded)
-| Value | Usage |
+| Token | Value |
 |-------|-------|
-| `#6d6d6d` | Tag/label text |
-| `#78716c` | Placeholder text |
-| `#57534e` | Secondary content text |
-| `#52524e` | Status pill text (active) |
-| `#8a8a86` | Status pill text (idle) |
-| `#a8a29e` | Dashed borders |
+| `--p-white` | `#FFFFFF` |
+| `--p-black` | `#1A1A1A` |
+| `--p-green-500` / `-600` / `-700` | `#0DBF5A` / `#0BAF52` / `#0A9F4A` |
+| `--p-red-500` / `-600` / `-700` | `#C93030` / `#B52828` / `#A02020` |
+| `--p-amber-500` / `-600` | `#F0D8A0` / `#f59e0b` |
+| `--p-neutral-50` / `-100` / `-200` / `-300` | `#F8F9FB` / `#F4F5F7` / `#F1F2F5` / `#E0E0E0` |
+| `--p-neutral-350` / `-400` / `-450` / `-500` | `#E3E3E3` / `#D0D0D0` / `#C8C8C8` / `#A3A3A3` |
+| `--p-neutral-600` / `-650` / `-700` / `-750` | `#8A8A8A` / `#737373` / `#6D6D6D` / `#545454` |
+| `--p-neutral-800` / `-900` / `-950` | `#525252` / `#1A1A1A` / `#1a1a1f` |
+
+#### Surfaces
+| Token | Light | Dark | Usage |
+|-------|-------|------|-------|
+| `--color-bg` | `#F1F2F5` | `#111114` | Page/canvas background |
+| `--color-bg-surface` | `#F4F5F7` | `#161619` | Elevated surface, hover states |
+| `--color-bg-card` | `#FFFFFF` | `#1a1a1e` | Cards, nodes, inputs |
+| `--color-bg-popover` | `#F4F5F7` | `#1a1a1e` | Floating panels, menus |
+| `--color-bg-subtle` | `#F8F9FB` | `#131316` | Subtle fills |
+| `--color-bg-dark` | `#1a1a1f` | `#0a0a0c` | Dark backdrops |
+| `--color-bg-hover` | `#EBEBEB` | `#222228` | Generic hover |
+
+#### Text
+| Token | Light | Dark | Usage |
+|-------|-------|------|-------|
+| `--color-text-primary` | `#1A1A1A` | `#e8e6e3` | Headings, body |
+| `--color-text-secondary` | `#545454` | `#a8a6a2` | Secondary copy |
+| `--color-text-tertiary` | `#6D6D6D` | `#908e85` | Muted / labels |
+| `--color-text-disabled` | `#6A6A6A` | `#78766e` | Disabled state |
+| `--color-text-placeholder` | `#737373` | `#8c8a80` | Input placeholders |
+| `--color-text-inverse` | — | `#111114` | Text on dark buttons |
+
+#### Borders
+| Token | Light | Dark | Usage |
+|-------|-------|------|-------|
+| `--color-border-default` | `#E5E7EB` | `#2a2a30` | Standard borders |
+| `--color-border-subtle` | `#ECEDF0` | `#242428` | Hairline dividers |
+| `--color-border-strong` | `#D1D5DB` | `#4a4a54` | Hover/active, focus rings |
+| `--color-border-handle` | `#94a3b8` | `#4a4a54` | React Flow handles |
+
+#### Interactive
+| Token | Light | Dark | Usage |
+|-------|-------|------|-------|
+| `--color-interactive-default` | `#FFFFFF` | `#1e1e24` | Default button bg |
+| `--color-interactive-hover` | `#F4F5F7` | `#262630` | Ghost button hover |
+| `--color-interactive-active` | `#E8E8E8` | `#2e2e36` | Pressed state |
+| `--color-interactive-focus` | `#0DBF5A` | `#0DBF5A` | Focus rings |
+
+#### Accent
+| Token | Light | Dark | Usage |
+|-------|-------|------|-------|
+| `--color-accent` | `#0DBF5A` | `#0DBF5A` | Primary/focus, edge flow |
+| `--color-accent-hover` | `#0BAF52` | `#0BAF52` | Accent hover |
+| `--color-accent-active` | `#0A9F4A` | `#0A9F4A` | Accent pressed |
+| `--color-accent-subtle` | `#0A5C2A` | `#4ade80` | Link/underline text |
+
+#### Semantic (success / warning / danger)
+| Token | Light | Dark |
+|-------|-------|------|
+| `--color-success-bg` / `-border` / `-text` | `#F8F9FB` / `#DCDCDC` / `#525252` | `#142418` / `#1e3a24` / `#80d0a0` |
+| `--color-warning-bg` / `-border` / `-text` | `#FEF8E8` / `#F0D8A0` / `#6A4A10` | `#2a2616` / `#4a3a16` / `#f0c860` |
+| `--color-danger` / `-hover` / `-active` | `#C93030` / `#B52828` / `#A02020` | `#f06060` / `#e04040` / `#d03030` |
+| `--color-danger-bg` / `-border` / `-text` | `#FEF4F4` / `#ECC0C0` / `#A83030` | `#2a1616` / `#4a2424` / `#f08080` |
+
+#### Navigation
+| Token | Light | Dark |
+|-------|-------|------|
+| `--color-nav-bg` | `#eaecef` | `#17171a` |
+| `--color-nav-item-active` | `#f7f8fa` | `#24242a` |
+| `--color-nav-item-hover` | `rgba(255,255,255,.45)` | `rgba(255,255,255,.05)` |
 
 #### Node Badge Colors
+Light mode values; dark mode mirrors with `--color-badge-*-bg/-text` overrides.
+
 | Category | Background | Text |
 |----------|-----------|------|
-| Source | `#EDEAE5` | `#5C5347` |
-| Generate | `#E8EDE5` | `#475C3A` |
-| Output | `#EDECE5` | `#53573A` |
-| Transform | `#EDE8EB` | `#5C4753` |
+| Source | `#282828` | `#c0c0c0` |
+| Generate | `#222822` | `#a8c8a0` |
+| Output | `#282828` | `#c0c0a0` |
+| Transform | `#282428` | `#c0a8c0` |
 
 #### Status Colors
-| Status | Dot Color | Pill BG | Pill Border |
-|--------|-----------|---------|-------------|
-| Idle | `#C8D4CC` | `var(--cg-surface)` | transparent |
-| Running | `#F0D8A0` | `var(--cg-amber-lt)` | `var(--cg-amber-bdr)` |
-| Complete | `#0DBF5A` | `var(--cg-green-tint)` | `#E0DCD6` |
-| Error | `#C93030` | `var(--cg-red-lt)` | `#ECC0C0` |
-| Warning | `#F0D8A0` | `var(--cg-amber-lt)` | `var(--cg-amber-bdr)` |
+Dot colors come from `--p-status-*` primitives; pills reuse the semantic bg/border.
+
+| Status | Dot | Pill |
+|--------|-----|------|
+| Idle | `#C8C8C8` | `--color-bg-surface` |
+| Running | `#F0D8A0` | `--color-warning-bg` / `-border` |
+| Complete | `#0DBF5A` | `--color-success-bg` / `-border` |
+| Error | `#C93030` | `--color-danger-bg` / `-border` |
+| Warning | `#F0D8A0` | `--color-warning-bg` / `-border` |
 
 ---
 
