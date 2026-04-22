@@ -138,7 +138,7 @@ interface OverlayProps {
   hasCapturedAudio: boolean;
 }
 
-function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, transcriptSoFar, liveOffline, hasCapturedAudio }: OverlayProps) {
+function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, transcriptSoFar, hasCapturedAudio }: OverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -204,8 +204,6 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, trans
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
   }, []);
 
-  const showLive = !!transcriptSoFar.trim();
-
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center" style={{ background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms' }}>
       <div className="flex flex-col w-full overflow-hidden rounded-t-[16px] md:rounded-[16px]"
@@ -214,35 +212,16 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, trans
         <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', borderRadius: 'inherit' }} />
         {/* Content */}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 24px 32px', gap: 14 }}>
+          <div ref={transcriptRef} aria-hidden style={{ display: 'none' }} />
           <div style={{ fontSize: 48, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
           <div aria-live="polite" style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: fatal ? 'var(--color-danger-text)' : 'var(--color-text-tertiary)' }}>
             {fatal ? 'Recording stopped' : 'Recording'}
           </div>
 
-          {liveOffline && !fatal && (
-            <div role="status" style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', padding: '6px 10px', borderRadius: 'var(--radius-md)', textAlign: 'center', maxWidth: 360 }}>
-              Live transcription offline — audio still captured, we'll transcribe on stop.
-            </div>
-          )}
-
-          {/* Live transcript — the single highest-trust signal recording is working. */}
-          <div ref={transcriptRef}
-            aria-live="polite"
-            style={{
-              width: '100%', maxWidth: 400, minHeight: 72, maxHeight: 160, overflowY: 'auto',
-              padding: '10px 14px', borderRadius: 'var(--radius-md)',
-              background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)',
-              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
-              color: showLive ? 'var(--color-text-primary)' : 'var(--color-text-disabled)',
-              lineHeight: 1.5, textAlign: 'left', whiteSpace: 'pre-wrap',
-            }}>
-            {showLive ? transcriptSoFar : (liveOffline ? 'Audio capturing…' : 'Listening…')}
-          </div>
-
           {!fatal && (
             <button onClick={onStop} aria-label="Stop recording and save"
-              style={{ width: 64, height: 64, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)', marginTop: 8 }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+              style={{ width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)', marginTop: 8 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
             </button>
           )}
           {!fatal && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Tap to stop</div>}
