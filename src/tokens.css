@@ -103,7 +103,7 @@
   --color-danger-active: var(--p-red-700);
 
   /* ── Typography ── */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-sans: 'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   /* Type scale (4px grid) */

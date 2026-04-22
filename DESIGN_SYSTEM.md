@@ -82,7 +82,7 @@
 #### Font Families
 | Token | Value | Usage |
 |-------|-------|-------|
-| `--font-sans` | `-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif` | All UI text |
+| `--font-sans` | `'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif` | All UI text — Graphik primary, system stack fallback |
 | `--font-mono` | `'IBM Plex Mono', ui-monospace, monospace` | Tags, labels, logo, code |
 
 #### Type Scale
