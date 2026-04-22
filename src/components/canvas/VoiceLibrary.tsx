@@ -285,6 +285,12 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
     // 1. Kick off SpeechRecognition synchronously inside the user gesture.
     //    iOS Safari requires .start() to be called before any await.
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SpeechRecognition) {
+      // No live transcription available — flag the overlay now so it shows
+      // "Audio capturing…" instead of "Listening…" forever. Whisper (if
+      // a Groq key is set) still runs on stop.
+      setLiveOffline(true);
+    }
     if (SpeechRecognition) {
       try {
         const recog = new SpeechRecognition();

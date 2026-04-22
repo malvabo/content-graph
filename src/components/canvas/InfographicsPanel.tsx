@@ -18,7 +18,12 @@ function StructuredEditor({ data, onTextChange, onPointsChange }: StructuredEdit
   const [title, setTitle] = useState(data.title);
   const [subtitle, setSubtitle] = useState(data.subtitle || '');
   const [footer, setFooter] = useState(data.footer || '');
-  useEffect(() => { setTitle(data.title); setSubtitle(data.subtitle || ''); setFooter(data.footer || ''); }, [data]);
+  // Depend on the actual field values, NOT the `data` object reference. Otherwise
+  // every parent re-render creates a new `data` object and stomps in-progress
+  // typing with the old persisted text before the debounce fires.
+  useEffect(() => { setTitle(data.title); }, [data.title]);
+  useEffect(() => { setSubtitle(data.subtitle || ''); }, [data.subtitle]);
+  useEffect(() => { setFooter(data.footer || ''); }, [data.footer]);
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '6px 10px', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)',
@@ -245,18 +250,36 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
     setEditVersion(v => v + 1);
   }, [editing, update, pushHistory]);
 
-  // Debounced text-field saves avoid flooding history during typing.
-  const debounceRef = useRef<number | null>(null);
+  // Debounced text-field saves. One timer per field so editing subtitle
+  // never cancels a pending title save. Each flush reads fresh store state
+  // so overlapping flushes don't overwrite each other with stale snapshots.
+  const debounceRefs = useRef<{ title: number | null; subtitle: number | null; footer: number | null }>({ title: null, subtitle: null, footer: null });
+  const editingIdRef = useRef<string | null>(null);
+  useEffect(() => { editingIdRef.current = editingId; }, [editingId]);
   const scheduleTextEdit = useCallback((field: 'title' | 'subtitle' | 'footer', value: string) => {
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(() => {
-      applyDirectEdit(d => {
-        if (field === 'title') d.title = value;
-        else if (value) d[field] = value; else delete d[field];
-      });
+    const refs = debounceRefs.current;
+    if (refs[field]) window.clearTimeout(refs[field]!);
+    refs[field] = window.setTimeout(() => {
+      const id = editingIdRef.current;
+      if (!id) return;
+      const fresh = useInfographicStore.getState().items.find(i => i.id === id);
+      if (!fresh) return;
+      const parsed = parseInfographicData(fresh.json);
+      if (!parsed) return;
+      const next: InfographicData = JSON.parse(JSON.stringify(parsed));
+      if (field === 'title') next.title = value;
+      else if (value) next[field] = value; else delete next[field];
+      pushHistory(id, fresh.json);
+      update(id, JSON.stringify(next));
+      setEditVersion(v => v + 1);
+      refs[field] = null;
     }, 350);
-  }, [applyDirectEdit]);
-  useEffect(() => () => { if (debounceRef.current) window.clearTimeout(debounceRef.current); }, []);
+  }, [update, pushHistory]);
+  useEffect(() => () => {
+    // On unmount, clear any pending timers so they don't fire after the component is gone.
+    const refs = debounceRefs.current;
+    (['title', 'subtitle', 'footer'] as const).forEach(k => { if (refs[k]) window.clearTimeout(refs[k]!); });
+  }, []);
 
   const fontRerender = useCallback(() => setFontTick(t => t + 1), []);
   const svg = editing ? (() => { const d = parseInfographicData(editing.json); return d ? renderSVG(d, fontRerender) : null; })() : null;
