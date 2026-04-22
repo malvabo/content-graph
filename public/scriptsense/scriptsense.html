@@ -496,7 +496,7 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
 
   return (
     <>
-      <style>{FONT_STYLE}</style>
+      <style>{fontStyle()}</style>
       <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.pageBg, color:C.text, overflow:"auto" }}>
         {/* Hero header image */}
         <div style={{ width:"100%", height:200, overflow:"hidden", flexShrink:0, position:"relative" }}>
@@ -739,7 +739,7 @@ ${text}`
 
   return (
     <>
-      <style>{FONT_STYLE}</style>
+      <style>{fontStyle()}</style>
       <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.pageBg, color:C.text }}>
 
         {brandTag && (
