@@ -148,7 +148,7 @@ ${currentJson}`;
   throw new Error('No API key configured. Add one in Settings.');
 }
 
-const DEFAULT_JSON = JSON.stringify({ title: 'New Infographic', subtitle: 'Edit me with the chat panel', points: [{ stat: '0', label: 'Your first data point' }] });
+const DEFAULT_JSON = JSON.stringify({ title: 'New Infographic', subtitle: 'Edit fields directly or chat for AI changes', points: [{ stat: '0', label: 'Your first data point' }] });
 
 export default function InfographicsPanel({ initialEditId }: { initialEditId?: string }) {
   const { items, add, update, remove, pushHistory, popHistory } = useInfographicStore();
@@ -237,15 +237,22 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
     setMessages(m => [...m, { role: 'assistant', text: 'Reverted to previous version.' }]);
   }, [editing, update, popHistory]);
 
-  // Direct (non-LLM) mutations used by the structured editor. Every edit
-  // snapshots the prior JSON onto history so Undo covers direct edits too.
+  // Direct (non-LLM) mutations used by the structured editor. Coalesce
+  // rapid consecutive edits (typing in a point field) into a single undo
+  // boundary so a 20-entry history cap isn't exhausted by one word.
+  const coalesceRef = useRef<{ time: number; id: string | null }>({ time: 0, id: null });
   const applyDirectEdit = useCallback((mutator: (d: InfographicData) => void) => {
     if (!editing) return;
     const current = parseInfographicData(editing.json);
     if (!current) return;
     const next: InfographicData = JSON.parse(JSON.stringify(current));
     mutator(next);
-    pushHistory(editing.id, editing.json);
+    const now = Date.now();
+    const c = coalesceRef.current;
+    if (c.id !== editing.id || now - c.time > 600) {
+      pushHistory(editing.id, editing.json);
+    }
+    coalesceRef.current = { time: now, id: editing.id };
     update(editing.id, JSON.stringify(next));
     setEditVersion(v => v + 1);
   }, [editing, update, pushHistory]);
