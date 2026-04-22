@@ -119,10 +119,18 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
 
   let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
 
-  // Inject brand voice context (active brand). Per-node opt-out via useBrandVoice !== false (default ON).
-  const brand = useSettingsStore.getState().brand;
-  const useBrandVoice = config.useBrandVoice !== false;
-  if (useBrandVoice && brand?.voice?.personality) {
+  // Resolve which brand to inject for this node.
+  //   config.brandId === 'none'   → opt out (no voice injection)
+  //   config.brandId === '<id>'   → use that specific brand
+  //   config.brandId === undefined → fall back to the currently active brand
+  const { brands, activeBrandId } = useSettingsStore.getState();
+  const nodeBrandId = config.brandId as string | undefined;
+  const brand = nodeBrandId === 'none'
+    ? null
+    : (brands.find((b) => b.id === (nodeBrandId ?? activeBrandId))
+      ?? brands.find((b) => b.id === activeBrandId)
+      ?? null);
+  if (brand?.voice?.personality) {
     const parts = [
       'BRAND VOICE GUIDELINES:',
       brand.name ? `Brand: ${brand.name}` : '',
@@ -142,7 +150,7 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
 
   // Node-level tone override
   const tone = config.tone as string | undefined;
-  if (tone && useBrandVoice && brand?.voice?.personality) {
+  if (tone && brand?.voice?.personality) {
     system += `\n\nFor this specific piece, adjust the tone to be more ${tone} while staying within the brand voice.`;
   }
 

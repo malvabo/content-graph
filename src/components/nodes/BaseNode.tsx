@@ -105,24 +105,43 @@ const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string,
   'voice-source': () => <></>,
 };
 
+const NONE_BRAND_LABEL = 'No brand voice';
+const brandLabel = (b: { name: string }) => b.name || 'Untitled brand';
+
 function InlineConfig({ id, subtype }: { id: string; subtype: string }) {
   const config = useGraphStore(s => s.nodes.find(n => n.id === id)?.data.config ?? {});
   const updateConfig = useGraphStore(s => s.updateNodeConfig);
+  const brands = useSettingsStore(s => s.brands);
+  const activeBrandId = useSettingsStore(s => s.activeBrandId);
   const render = INLINE_CONFIGS[subtype];
   const def = NODE_DEFS_BY_SUBTYPE[subtype];
   const isGenerate = def?.category === 'generate';
   if (!render && !isGenerate) return null;
   const c = config as Record<string, unknown>;
   const set = (k: string, v: unknown) => updateConfig(id, { [k]: v });
-  const voiceOn = c.useBrandVoice !== false;
+
+  const nodeBrandId = c.brandId as string | undefined;
+  let currentBrandValue: string;
+  if (nodeBrandId === 'none') {
+    currentBrandValue = NONE_BRAND_LABEL;
+  } else {
+    const resolved = brands.find(b => b.id === (nodeBrandId ?? activeBrandId)) ?? brands.find(b => b.id === activeBrandId) ?? brands[0];
+    currentBrandValue = resolved ? brandLabel(resolved) : NONE_BRAND_LABEL;
+  }
+  const brandOptions = [...brands.map(brandLabel), NONE_BRAND_LABEL];
+
   return (
     <div className="flex flex-wrap gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid var(--color-border-subtle)' }}>
       {render?.(c, set)}
       {isGenerate && (
         <MiniSelect
-          value={voiceOn ? 'Voice on' : 'Voice off'}
-          options={['Voice on', 'Voice off']}
-          onChange={v => set('useBrandVoice', v === 'Voice on')}
+          value={currentBrandValue}
+          options={brandOptions}
+          onChange={v => {
+            if (v === NONE_BRAND_LABEL) { set('brandId', 'none'); return; }
+            const picked = brands.find(b => brandLabel(b) === v);
+            if (picked) set('brandId', picked.id);
+          }}
         />
       )}
     </div>
@@ -198,8 +217,15 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const hiSource = isDragSource || selected || connectionState === 'compatible';
 
   const [glowIntensity, setGlowIntensity] = useState(0);
-  const brandActive = useSettingsStore(s => !!s.brand?.voice?.personality);
-  const brandColor = useSettingsStore(s => s.brand?.colors?.primary ?? '#0DBF5A');
+  const nodeBrand = useSettingsStore(s => {
+    const cfgBrandId = data.config?.brandId as string | undefined;
+    if (cfgBrandId === 'none') return null;
+    return s.brands.find(b => b.id === (cfgBrandId ?? s.activeBrandId))
+      ?? s.brands.find(b => b.id === s.activeBrandId)
+      ?? null;
+  });
+  const brandActive = !!nodeBrand?.voice?.personality;
+  const brandColor = nodeBrand?.colors?.primary ?? '#0DBF5A';
   useEffect(() => {
     if (!isRunning) { setGlowIntensity(0); return; }
     let raf: number;
@@ -262,8 +288,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
           <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ backgroundColor: colors.bg, color: colors.text }}>
             {NODE_ICONS[data.subtype]?.() ?? data.badge}
           </div>
-          {brandActive && data.category === 'generate' && data.config?.useBrandVoice !== false && (
-            <div style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: 'var(--radius-full)', background: brandColor, border: '1.5px solid var(--color-bg-card)' }} title="Brand voice on for this node" />
+          {brandActive && data.category === 'generate' && (
+            <div style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: 'var(--radius-full)', background: brandColor, border: '1.5px solid var(--color-bg-card)' }} title={`${nodeBrand?.name || 'Brand'} voice active for this node`} />
           )}
         </div>
         <div className="flex-1 min-w-0">
