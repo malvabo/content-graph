@@ -92,8 +92,8 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
     <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
       {/* Hero banner — matches Voice Notes layout, button stacked below subtitle */}
       {!loading && (
-        <div className="p-4 md:p-8" style={{ minHeight: '30vh', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'flex-end', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
+        <div className="p-4 md:p-8" style={{ display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
             <div>
               <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>
                 {items.length === 0 ? 'Content Graph' : 'Workflows'}
