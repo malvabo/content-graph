@@ -34,6 +34,53 @@ function SectionHeader({ title, desc }: { title: string; desc: string }) {
   );
 }
 
+function BrandSwitcher() {
+  const brands = useSettingsStore(s => s.brands);
+  const activeBrandId = useSettingsStore(s => s.activeBrandId);
+  const setActiveBrandId = useSettingsStore(s => s.setActiveBrandId);
+  const addBrand = useSettingsStore(s => s.addBrand);
+  const deleteBrand = useSettingsStore(s => s.deleteBrand);
+  const canDelete = brands.length > 1;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+      <label style={{ ...LBL, marginBottom: 0, marginRight: 'var(--space-1)' }}>Brand</label>
+      <select
+        className="form-input"
+        value={activeBrandId}
+        onChange={e => setActiveBrandId(e.target.value)}
+        style={{ flex: 1, minWidth: 0, padding: 'var(--space-2) var(--space-3)' }}
+      >
+        {brands.map(b => (
+          <option key={b.id} value={b.id}>{b.name || 'Untitled brand'}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={() => addBrand()}
+        title="Add a new brand"
+        aria-label="Add a new brand"
+        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          if (!canDelete) return;
+          if (window.confirm('Delete this brand? This cannot be undone.')) deleteBrand(activeBrandId);
+        }}
+        disabled={!canDelete}
+        title={canDelete ? 'Delete this brand' : 'At least one brand is required'}
+        aria-label="Delete this brand"
+        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)', cursor: canDelete ? 'pointer' : 'default', color: canDelete ? 'var(--color-danger-text)' : 'var(--color-text-disabled)', opacity: canDelete ? 1 : 0.5 }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+      </button>
+    </div>
+  );
+}
+
 function ColorSwatch({ color, label, onChange }: { color: string; label: string; onChange: (c: string) => void }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -69,6 +116,7 @@ function BrandVisualSection() {
   return (
     <div>
       <SectionHeader title="Brand Visual" desc="Define your brand's visual identity. Colors are applied to visual content nodes." />
+      <BrandSwitcher />
       <div style={{ ...CARD, display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
         <div>
           <label style={LBL}>Brand name</label>
@@ -142,8 +190,13 @@ function BrandVoiceSection() {
   const b = brand || EMPTY_BRAND;
   return (
     <div>
-      <SectionHeader title="Brand Voice" desc="Teach the AI how your brand sounds. Injected into every content generation prompt." />
+      <SectionHeader title="Brand Voice" desc="Teach the AI how your brand sounds. Injected into every generate node by default (can be toggled off per node)." />
+      <BrandSwitcher />
       <div style={{ ...CARD, display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+        <div>
+          <label style={LBL}>Brand name</label>
+          <input className="form-input" value={b.name} onChange={e => setBrand({ name: e.target.value })} placeholder="Acme Corp" style={{ width: '100%' }} />
+        </div>
         <div>
           <label style={LBL}>Personality</label>
           <textarea className="form-textarea" value={b.voice.personality} onChange={e => setBrand({ voice: { ...b.voice, personality: e.target.value } })}
@@ -166,7 +219,7 @@ function BrandVoiceSection() {
         <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: b.voice.personality ? 'var(--color-accent)' : 'var(--color-border-default)' }} />
           <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: b.voice.personality ? 'var(--color-accent-subtle)' : 'var(--color-text-disabled)' }}>
-            {b.voice.personality ? 'Brand voice active — applied to all generate nodes' : 'No voice configured yet'}
+            {b.voice.personality ? `${b.name || 'Brand'} voice active — applied to generate nodes unless toggled off` : 'No voice configured yet'}
           </span>
         </div>
       </div>

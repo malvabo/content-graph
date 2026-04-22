@@ -4,6 +4,7 @@ import { temporal } from 'zundo';
 import { type Node, type Edge } from '@xyflow/react';
 import { useExecutionStore } from './executionStore';
 import { useOutputStore } from './outputStore';
+import { NODE_DEFS_BY_SUBTYPE } from '../utils/nodeDefs';
 
 export type NodeCategory = 'source' | 'transform' | 'generate' | 'output';
 export type NodeStatus = 'idle' | 'running' | 'complete' | 'error' | 'warning' | 'stale';
@@ -128,6 +129,17 @@ export const useGraphStore = create<GraphState>()(
           graphName: state.graphName,
           workflowId: state.workflowId,
         }),
+        merge: ((persisted: unknown, current: GraphState): GraphState => {
+          const p = (persisted ?? {}) as Partial<GraphState>;
+          const rawNodes = Array.isArray(p.nodes) ? (p.nodes as ContentNode[]) : [];
+          // Drop any node whose subtype is no longer registered (e.g. removed 'brand-voice'),
+          // and drop edges that referenced those orphaned ids.
+          const keptNodes = rawNodes.filter((n) => n?.data?.subtype && !!NODE_DEFS_BY_SUBTYPE[n.data.subtype]);
+          const keptIds = new Set(keptNodes.map((n) => n.id));
+          const rawEdges = Array.isArray(p.edges) ? (p.edges as Edge[]) : [];
+          const keptEdges = rawEdges.filter((e) => keptIds.has(e.source) && keptIds.has(e.target));
+          return { ...current, ...p, nodes: keptNodes, edges: keptEdges };
+        }) as any,
         onRehydrateStorage: () => (_state, error) => {
           if (error) { localStorage.removeItem('content-graph-store'); }
           // Use queueMicrotask to ensure store is fully initialized

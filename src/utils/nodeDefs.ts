@@ -28,7 +28,6 @@ export const NODE_DEFS: NodeDef[] = [
   { subtype: 'video', label: 'Video', badge: 'Vd', category: 'generate', description: 'AI video generation', hasInput: true, hasOutput: false },
   // Output
   { subtype: 'export', label: 'Export', badge: 'Ex', category: 'output', description: 'Platform-ready package', hasInput: true, hasOutput: false, maxInputs: 8 },
-  { subtype: 'brand-voice', label: 'Brand Voice', badge: 'Bv', category: 'output', description: 'Rewrite in your brand voice', hasInput: true, hasOutput: true },
   // Advanced (collapsed in palette)
   { subtype: 'refine', label: 'Refine', badge: 'Rf', category: 'transform', description: 'Directive for what to extract or change', hasInput: true, hasOutput: true },
 ];
@@ -69,5 +68,4 @@ export const DEFAULT_MODELS: Record<string, string> = {
   'image-prompt': 'llama-3.3-70b',
   'text-source': 'claude-opus-4',
   'file-source': 'claude-opus-4',
-  'brand-voice': 'claude-opus-4',
 };

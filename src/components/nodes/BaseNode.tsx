@@ -102,10 +102,6 @@ const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string,
     <MiniSelect value={c.aspect as string ?? '16:9'} options={['1:1', '4:5', '16:9', '9:16', '1.91:1']} onChange={v => s('aspect', v)} />
     <MiniSelect value={c.model as string ?? DEFAULT_MODELS['image-prompt']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
   </>,
-  'brand-voice': (c, s) => <>
-    <MiniSelect value={c.strength as string ?? 'Full rewrite'} options={['Light touch', 'Moderate', 'Full rewrite']} onChange={v => s('strength', v)} />
-    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['brand-voice']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
-  </>,
   'voice-source': () => <></>,
 };
 
@@ -113,11 +109,22 @@ function InlineConfig({ id, subtype }: { id: string; subtype: string }) {
   const config = useGraphStore(s => s.nodes.find(n => n.id === id)?.data.config ?? {});
   const updateConfig = useGraphStore(s => s.updateNodeConfig);
   const render = INLINE_CONFIGS[subtype];
-  if (!render) return null;
+  const def = NODE_DEFS_BY_SUBTYPE[subtype];
+  const isGenerate = def?.category === 'generate';
+  if (!render && !isGenerate) return null;
+  const c = config as Record<string, unknown>;
   const set = (k: string, v: unknown) => updateConfig(id, { [k]: v });
+  const voiceOn = c.useBrandVoice !== false;
   return (
     <div className="flex flex-wrap gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid var(--color-border-subtle)' }}>
-      {render(config as Record<string, unknown>, set)}
+      {render?.(c, set)}
+      {isGenerate && (
+        <MiniSelect
+          value={voiceOn ? 'Voice on' : 'Voice off'}
+          options={['Voice on', 'Voice off']}
+          onChange={v => set('useBrandVoice', v === 'Voice on')}
+        />
+      )}
     </div>
   );
 }
@@ -255,8 +262,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
           <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ backgroundColor: colors.bg, color: colors.text }}>
             {NODE_ICONS[data.subtype]?.() ?? data.badge}
           </div>
-          {brandActive && (data.category === 'generate' || data.subtype === 'brand-voice') && (
-            <div style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: 'var(--radius-full)', background: brandColor, border: '1.5px solid var(--color-bg-card)' }} title="Brand voice active" />
+          {brandActive && data.category === 'generate' && data.config?.useBrandVoice !== false && (
+            <div style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: 'var(--radius-full)', background: brandColor, border: '1.5px solid var(--color-bg-card)' }} title="Brand voice on for this node" />
           )}
         </div>
         <div className="flex-1 min-w-0">

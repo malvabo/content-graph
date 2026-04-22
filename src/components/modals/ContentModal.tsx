@@ -493,7 +493,6 @@ const MODAL_MAP: Record<string, React.FC<ContentModalProps>> = {
   'quote-card': QuoteCardModal,
   'newsletter': NewsletterModal,
   'voice-source': VoiceModal,
-  'brand-voice': VoiceModal,
 };
 
 export default function ContentModal(props: ContentModalProps) {

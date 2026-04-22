@@ -11,7 +11,6 @@ const SYSTEM_PROMPTS: Record<string, string> = {
   'refine': 'You are an editor. Refine and improve the input text based on any instructions provided. Output only the refined text.',
   'text-source': 'You are a text processor. Process and clean up the input text. If there are preparation instructions, follow them. Output the processed text.',
   'video': 'You are a video script writer. Write a short video script based on the input, with scene descriptions and narration. Output only the script.',
-  'brand-voice': 'You are a brand voice analyst and writer. Based on the input content and the brand voice guidelines provided, rewrite the input to perfectly match the brand voice. Preserve the core message and facts but transform the tone, word choice, and style to be unmistakably on-brand. Output only the rewritten text.',
 };
 
 function getProvider(model: string): 'anthropic' | 'openai' | 'google' | 'groq' {
@@ -120,9 +119,10 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
 
   let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
 
-  // Inject brand voice context
+  // Inject brand voice context (active brand). Per-node opt-out via useBrandVoice !== false (default ON).
   const brand = useSettingsStore.getState().brand;
-  if (brand?.voice?.personality) {
+  const useBrandVoice = config.useBrandVoice !== false;
+  if (useBrandVoice && brand?.voice?.personality) {
     const parts = [
       'BRAND VOICE GUIDELINES:',
       brand.name ? `Brand: ${brand.name}` : '',
@@ -142,14 +142,8 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
 
   // Node-level tone override
   const tone = config.tone as string | undefined;
-  if (tone && brand?.voice?.personality) {
+  if (tone && useBrandVoice && brand?.voice?.personality) {
     system += `\n\nFor this specific piece, adjust the tone to be more ${tone} while staying within the brand voice.`;
-  }
-
-  // Enrich brand-voice with strength config
-  if (subtype === 'brand-voice') {
-    const strength = config.strength as string || 'Full rewrite';
-    system += `\n\nRewrite strength: "${strength}". Light touch = preserve most original phrasing, just adjust tone. Moderate = rewrite ~50% of sentences. Full rewrite = completely transform while keeping the message.`;
   }
 
   // Enrich image-prompt with node config
