@@ -28,6 +28,7 @@ const InfographicsIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" f
 const SunIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>;
 const MoonIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>;
 const SettingsIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
+const AccountIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 
 function useDarkMode(): [boolean, (v: boolean) => void] {
   const [dark, setDark] = useState(() => localStorage.getItem('dark-mode') === 'true');
@@ -42,27 +43,24 @@ function UserMenu() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { if (!open) return; const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h); }, [open]);
   if (!user) return null;
-  const initial = (user.email?.[0] ?? '?').toUpperCase();
   const itemStyle: React.CSSProperties = { width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', justifyContent: 'flex-start', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer' };
   return (
-    <div style={{ padding: '8px 12px' }}>
-      <div ref={ref} className="relative">
-        <button onClick={() => setOpen(!open)} style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-border-strong)', color: 'var(--color-text-primary)', fontSize: 'var(--text-xs)', fontWeight: 500, fontFamily: 'var(--font-sans)', border: 'none', cursor: 'pointer' }}>{initial}</button>
-        {open && (
-          <div className="absolute z-50 dropdown-fade" style={{ bottom: '100%', marginBottom: 8, left: 0, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-2)', minWidth: 200 }}>
-            <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: 'var(--space-1) var(--space-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
-            <button onClick={() => { setDark(!dark); }} style={itemStyle}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-              <span style={{ display: 'flex' }}>{dark ? <SunIcon /> : <MoonIcon />}</span>
-              {dark ? 'Light mode' : 'Dark mode'}
-            </button>
-            <button onClick={() => { signOut(); setOpen(false); }} style={itemStyle}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>Sign out</button>
-          </div>
-        )}
-      </div>
+    <div ref={ref} className="relative">
+      <NavItem icon={<AccountIcon />} label="Account" active={open} ariaLabel="Account menu" ariaPressed={open} onClick={() => setOpen(!open)} />
+      {open && (
+        <div className="absolute z-50 dropdown-fade" style={{ bottom: '100%', marginBottom: 8, left: 10, right: 10, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-2)', minWidth: 180 }}>
+          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: 'var(--space-1) var(--space-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+          <button onClick={() => { setDark(!dark); }} style={itemStyle}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+            <span style={{ display: 'flex' }}>{dark ? <SunIcon /> : <MoonIcon />}</span>
+            {dark ? 'Light mode' : 'Dark mode'}
+          </button>
+          <button onClick={() => { signOut(); setOpen(false); }} style={itemStyle}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>Sign out</button>
+        </div>
+      )}
     </div>
   );
 }
