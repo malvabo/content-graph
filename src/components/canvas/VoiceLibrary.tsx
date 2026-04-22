@@ -113,19 +113,56 @@ const fmtDate = (iso: string) => {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
-const statusBadge = (status: string) => {
-  const map: Record<string, { bg: string; color: string; label: string }> = {
-    ready: { bg: 'var(--color-success-bg, #e6f9e6)', color: 'var(--color-success-text, #1a7f1a)', label: 'Ready' },
-    recording: { bg: 'var(--color-danger-bg, #fde8e8)', color: 'var(--color-danger-text, #c53030)', label: 'Recording' },
-    transcribing: { bg: 'var(--color-warning-bg, #fef3cd)', color: 'var(--color-warning-text, #856404)', label: 'Transcribing' },
+/** Bucket notes into date groups for the header-separated list.
+ *  Order preserved so groups show up top-to-bottom: Today → Yesterday → Earlier this week → This month → Older. */
+function groupNotesByDate<T extends { createdAt: string }>(notes: T[]): { label: string; items: T[] }[] {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfYesterday = startOfToday - 86400000;
+  const startOfWeek = startOfToday - 6 * 86400000;
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const buckets: Record<string, T[]> = { Today: [], Yesterday: [], 'Earlier this week': [], 'This month': [], Older: [] };
+  for (const n of notes) {
+    const t = new Date(n.createdAt).getTime();
+    if (t >= startOfToday) buckets.Today.push(n);
+    else if (t >= startOfYesterday) buckets.Yesterday.push(n);
+    else if (t >= startOfWeek) buckets['Earlier this week'].push(n);
+    else if (t >= startOfMonth) buckets['This month'].push(n);
+    else buckets.Older.push(n);
+  }
+  return Object.entries(buckets).filter(([, items]) => items.length > 0).map(([label, items]) => ({ label, items }));
+}
+
+/** Deterministic ~32-bar waveform derived from the note id.
+ *  Decorative: no real FFT — just gives each row a unique-looking sparkline. */
+function Waveform({ seed, durationMs, width = 104, height = 20 }: { seed: string; durationMs: number; width?: number; height?: number }) {
+  const bars = 32;
+  const step = width / bars;
+  // Cheap deterministic hash — fine for decoration.
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+  const rnd = (i: number) => {
+    const x = Math.sin((h + i * 9301) * 0.0001) * 10000;
+    return Math.abs(x - Math.floor(x));
   };
-  const s = map[status] || map.ready;
+  // Envelope ramps up then tails down so the waveform feels like speech.
+  const envelope = (i: number) => {
+    const t = i / (bars - 1);
+    return Math.min(1, 1.1 * Math.sin(Math.PI * t) + 0.15);
+  };
+  const minLen = Math.max(1, Math.log10(durationMs / 1000 + 1) * 2);
   return (
-    <span style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '1px 6px', borderRadius: 'var(--radius-full)', background: s.bg, color: s.color, lineHeight: '16px' }}>
-      {s.label}
-    </span>
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden style={{ flexShrink: 0, display: 'block' }}>
+      {Array.from({ length: bars }).map((_, i) => {
+        const amp = envelope(i) * (0.35 + rnd(i) * 0.65);
+        const barH = Math.max(minLen, amp * height * 0.9);
+        const x = i * step + step * 0.25;
+        const y = (height - barH) / 2;
+        return <rect key={i} x={x} y={y} width={step * 0.5} height={barH} rx={0.5} fill="var(--color-text-disabled, #a8a29e)" />;
+      })}
+    </svg>
   );
-};
+}
 
 interface OverlayProps {
   onStop: () => void;
@@ -521,30 +558,36 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
 
   return (
     <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)', minWidth: 0, maxWidth: '100%' }}>
-      {/* Hero banner — title on the left, animated record button on the right */}
-      <div className="p-4 md:p-8" style={{ background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'relative', zIndex: 1, minWidth: 0, flex: 1 }}>
-          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Voice Notes</h1>
-          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+      {/* Hero — large title + count on the left, record button on the right */}
+      <header className="p-4 md:px-8 md:py-6" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-6)', flexShrink: 0 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <h1 style={{
+            margin: 0, fontFamily: 'var(--font-sans)', fontSize: 28, fontWeight: 600,
+            lineHeight: '32px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)',
+          }}>
+            Voice Notes
+          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-2)', marginTop: 6 }}>
             {notes.length > 0 && (
-              <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 400, lineHeight: '20px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 0 }}>
                 {notes.length} note{notes.length !== 1 ? 's' : ''}
               </p>
             )}
             {notes.some(n => n.status === 'transcribing') && (
               <span title="A previous recording is still being transcribed in the background"
-                style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '1px 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)', lineHeight: '16px' }}>
-                Transcribing previous note…
+                style={{ height: 20, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-warning-bg, #FEF8E8)', border: '1px solid var(--color-warning-border, #F0D8A0)', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--color-warning-text, #6A4A10)' }}>
+                <span aria-hidden style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: '#F0D8A0' }} />
+                Transcribing previous note
               </span>
             )}
           </div>
         </div>
         {!recording && notes.length > 0 && (
-          <RecordButton size={96} onClick={startRecording} state="idle" />
+          <RecordButton size={56} onClick={startRecording} state="idle" />
         )}
-      </div>
+      </header>
 
-      <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      <div className="px-4 md:px-8 pb-8" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
 
         {/* Recording overlay — floating blobs */}
         {recording && (
@@ -577,105 +620,158 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             {errorMsg && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)' }}>{errorMsg}</div>}
           </div>
         ) : (
-          /* Card grid */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-3)' }}>
-            {[...notes].filter(n => n.status !== 'recording').reverse().map(note => (
-              <div key={note.id}
-                style={{
-                  textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
-                  background: note.status === 'error' ? 'var(--color-danger-bg)' : 'var(--color-bg-card)',
-                  border: `1px solid ${note.status === 'error' ? 'var(--color-danger-border, var(--color-danger-text))' : 'var(--color-border-default)'}`,
-                  fontFamily: 'var(--font-sans)', cursor: note.status === 'error' ? 'default' : 'pointer', outline: 'none',
-                  transition: 'border-color .15s, box-shadow .15s',
-                  display: 'flex', flexDirection: 'column', gap: 'var(--space-1)',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = note.status === 'error' ? 'var(--color-danger-border, var(--color-danger-text))' : 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = note.status === 'error' ? 'var(--color-danger-border, var(--color-danger-text))' : 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
-                onClick={() => { if (note.status !== 'error') setViewId(note.id); }}>
+          // Date-grouped rows: TODAY / YESTERDAY / … sections separated by tag-style labels.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+            {groupNotesByDate([...notes].filter(n => n.status !== 'recording').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())).map(group => (
+              <section key={group.label} aria-labelledby={`grp-${group.label}`}>
+                <div id={`grp-${group.label}`} style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, lineHeight: 1,
+                  textTransform: 'uppercase', letterSpacing: '0.2em',
+                  color: 'var(--color-text-tertiary)', padding: '0 0 var(--space-2) var(--space-4)',
+                }}>
+                  {group.label}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                  {group.items.map(note => {
+                    const isError = note.status === 'error';
+                    const isTranscribing = note.status === 'transcribing';
+                    const isAudioOnly = note.status === 'ready' && !note.transcript;
+                    const displayTitle = isAudioOnly && note.title === 'Untitled note' ? 'Audio recording' : note.title;
+                    const ariaLabel = `${displayTitle}, ${fmtDuration(note.durationMs)}${isError ? ', failed' : isTranscribing ? ', transcribing' : ''}. Open.`;
+                    return (
+                      <div key={note.id} style={{ position: 'relative' }}>
+                        <button
+                          onClick={() => { if (!isError && !isTranscribing) setViewId(note.id); }}
+                          disabled={isTranscribing}
+                          aria-label={ariaLabel}
+                          className="voice-note-row"
+                          style={{
+                            width: '100%', textAlign: 'left',
+                            background: isError ? 'var(--color-danger-bg, #FEF4F4)' : 'var(--color-bg-card)',
+                            border: `1px solid ${isError ? '#ECC0C0' : 'var(--color-border-default)'}`,
+                            borderRadius: 'var(--radius-xl)',
+                            padding: '12px 16px',
+                            display: 'grid',
+                            gridTemplateColumns: 'auto 1fr auto auto auto',
+                            alignItems: 'center',
+                            columnGap: 'var(--space-4)',
+                            minHeight: 64,
+                            cursor: isError || isTranscribing ? 'default' : 'pointer',
+                            opacity: isTranscribing ? 0.7 : 1,
+                          }}
+                        >
+                          {/* Leading play button (visual affordance; opens sheet) */}
+                          <span aria-hidden style={{
+                            width: 32, height: 32, borderRadius: 'var(--radius-full)',
+                            background: isError ? 'rgba(197,48,48,0.12)' : 'var(--color-bg-surface)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: isError ? 'var(--color-danger-text, #A83030)' : 'var(--color-text-secondary, #57534e)',
+                            flexShrink: 0,
+                          }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </span>
 
-                {/* Row 1: title + menu */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-                  {renameId === note.id ? (
-                    <input autoFocus value={renameName} onChange={e => setRenameName(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') setRenameId(null); }}
-                      onBlur={handleRename} onClick={e => e.stopPropagation()}
-                      style={{ flex: 1, minWidth: 0, fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-sm)', padding: '2px 6px', outline: 'none' }} />
-                  ) : (
-                    <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                      {note.title}
-                    </div>
-                  )}
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <div role="button" tabIndex={0} aria-label="More options"
-                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', background: 'transparent', cursor: 'pointer', transition: 'color 150ms, background 150ms' }}
-                      onClick={e => { e.stopPropagation(); setMenuId(menuId === note.id ? null : note.id); }}>
-                      <DotsIcon />
-                    </div>
-                    {menuId === note.id && (
-                      <div ref={menuRef} onClick={e => e.stopPropagation()}
-                        style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
-                        {[
-                          { label: 'Rename', action: () => { setRenameName(note.title); setRenameId(note.id); setMenuId(null); } },
-                          { label: 'Use in workflow', action: () => {
-                            const result = pushVoiceNoteToWorkflow(note.id, note.title);
-                            setMenuId(null);
-                            if (result === 'ok') {
-                              onUseInWorkflow?.();
-                            } else if (result === 'no-workflow') {
-                              setErrorMsg('Open a workflow first — voice notes are pushed into the active graph.');
-                              setTimeout(() => setErrorMsg(null), 4000);
-                            } else if (result === 'empty-transcript') {
-                              setErrorMsg('This note has no transcript yet. Wait for transcription to finish or retry it.');
-                              setTimeout(() => setErrorMsg(null), 4000);
-                            }
-                          } },
-                          { label: 'Analyze in ScriptSense', action: () => { if (note.transcript) onSendToScript?.(note.transcript); setMenuId(null); } },
-                          { label: 'Delete', danger: true, action: () => { setDeleteId(note.id); setMenuId(null); } },
-                        ].map(opt => (
-                          <button key={opt.label} onClick={opt.action}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                            {opt.label}
-                          </button>
-                        ))}
+                          {/* Title + preview */}
+                          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span style={{
+                              fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, lineHeight: '20px',
+                              color: isError ? 'var(--color-danger-text, #A83030)' : 'var(--color-text-primary)',
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}>
+                              {displayTitle}
+                            </span>
+                            {isError ? (
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 400, lineHeight: '16px', color: 'var(--color-danger-text, #A83030)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {note.errorReason || 'Transcription failed.'}
+                              </span>
+                            ) : note.transcript ? (
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 400, lineHeight: '16px', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {note.transcript}
+                              </span>
+                            ) : isTranscribing ? (
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px', color: 'var(--color-warning-text, #6A4A10)' }}>
+                                Transcribing…
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {/* Waveform (decorative) */}
+                          {!isError && <Waveform seed={note.id} durationMs={note.durationMs} />}
+
+                          {/* Duration */}
+                          <span style={{
+                            fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px',
+                            color: 'var(--color-text-tertiary)', fontVariantNumeric: 'tabular-nums',
+                            minWidth: 36, textAlign: 'right',
+                          }}>
+                            {fmtDuration(note.durationMs)}
+                          </span>
+
+                          {/* Menu dots — separate click target inside the grid cell */}
+                          <span aria-hidden style={{ width: 24 }} />
+                        </button>
+
+                        {/* Menu dots are absolutely-positioned to capture their own click */}
+                        {!isTranscribing && (
+                          <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }}>
+                            <button
+                              aria-label="More options"
+                              className="btn-icon-xs"
+                              style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)' }}
+                              onClick={e => { e.stopPropagation(); setMenuId(menuId === note.id ? null : note.id); }}
+                            >
+                              <DotsIcon />
+                            </button>
+                            {menuId === note.id && (
+                              <div ref={menuRef} onClick={e => e.stopPropagation()} role="menu"
+                                style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 180 }}>
+                                {([
+                                  ...(isError ? [{ label: 'Re-record', action: () => { reRecord(note.id); setMenuId(null); } }] : []),
+                                  ...(!isError ? [{ label: 'Rename', action: () => { setRenameName(note.title); setRenameId(note.id); setMenuId(null); } }] : []),
+                                  ...(!isError ? [{ label: 'Use in workflow', action: () => {
+                                    const result = pushVoiceNoteToWorkflow(note.id, note.title);
+                                    setMenuId(null);
+                                    if (result === 'ok') onUseInWorkflow?.();
+                                    else if (result === 'no-workflow') { setErrorMsg('Open a workflow first — voice notes are pushed into the active graph.'); setTimeout(() => setErrorMsg(null), 4000); }
+                                    else if (result === 'empty-transcript') { setErrorMsg('This note has no transcript yet. Wait for transcription to finish or retry it.'); setTimeout(() => setErrorMsg(null), 4000); }
+                                  } }] : []),
+                                  ...(!isError ? [{ label: 'Analyze in ScriptSense', action: () => { if (note.transcript) onSendToScript?.(note.transcript); setMenuId(null); } }] : []),
+                                  { label: 'Delete', danger: true, action: () => { setDeleteId(note.id); setMenuId(null); } },
+                                ] as Array<{ label: string; action: () => void; danger?: boolean }>).map(opt => (
+                                  <button key={opt.label} role="menuitem" onClick={opt.action}
+                                    style={{ width: '100%', textAlign: 'left', padding: 'var(--space-2) var(--space-3)', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, color: opt.danger ? 'var(--color-danger-text, #A83030)' : 'var(--color-text-primary)' }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = opt.danger ? 'var(--color-danger-bg, #FEF4F4)' : 'var(--color-bg-surface)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                                    {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Inline rename overlays the title */}
+                        {renameId === note.id && (
+                          <div style={{ position: 'absolute', inset: 12, display: 'flex', alignItems: 'center', gap: 'var(--space-4)', pointerEvents: 'none' }}>
+                            <span style={{ width: 32, height: 32, flexShrink: 0 }} aria-hidden />
+                            <input
+                              autoFocus
+                              value={renameName}
+                              onChange={e => setRenameName(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') setRenameId(null); }}
+                              onBlur={handleRename}
+                              onClick={e => e.stopPropagation()}
+                              style={{ pointerEvents: 'auto', flex: 1, minWidth: 0, fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-md)', padding: '4px 8px', outline: 'none' }}
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
-
-                {/* Row 2: duration, date, status */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
-                    {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
-                  </div>
-                  {note.status === 'transcribing' && statusBadge(note.status)}
-                </div>
-
-                {note.status === 'error' ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', lineHeight: 1.5 }}>
-                      {note.errorReason || 'Transcription failed.'}
-                    </div>
-                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                      <button onClick={e => { e.stopPropagation(); reRecord(note.id); }}
-                        className="btn btn-primary"
-                        style={{ padding: '4px 12px', fontSize: 'var(--text-xs)' }}>
-                        Re-record
-                      </button>
-                      <button onClick={e => { e.stopPropagation(); setDeleteId(note.id); }}
-                        className="btn btn-ghost"
-                        style={{ padding: '4px 12px', fontSize: 'var(--text-xs)' }}>
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ) : note.transcript && (
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {note.transcript.slice(0, 120)}
-                  </div>
-                )}
-              </div>
+              </section>
             ))}
           </div>
         )}
