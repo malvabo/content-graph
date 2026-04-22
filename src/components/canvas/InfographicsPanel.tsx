@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useInfographicStore } from '../../store/infographicStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useBrandsStore } from '../../store/brandsStore';
-import { renderSVG, parseInfographicData, type InfographicData } from '../nodes/InfographicNode';
+import { renderSVG, parseInfographicData, computeLayout, INFOGRAPHIC_WIDTH, type InfographicData, type TextField } from '../nodes/InfographicNode';
 
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
@@ -10,32 +10,123 @@ type Point = InfographicData['points'][number];
 
 interface StructuredEditorProps {
   data: InfographicData;
+  onPointsChange: (mutator: (points: Point[]) => Point[]) => void;
+}
+
+interface InlineInfographicProps {
+  svg: string;
+  data: InfographicData;
+  editVersion: number;
   onTextChange: (field: 'title' | 'subtitle' | 'footer', value: string) => void;
   onPointsChange: (mutator: (points: Point[]) => Point[]) => void;
 }
 
-function StructuredEditor({ data, onTextChange, onPointsChange }: StructuredEditorProps) {
-  // Local mirror so the inputs stay responsive while the debounced save runs.
-  const [title, setTitle] = useState(data.title);
-  const [subtitle, setSubtitle] = useState(data.subtitle || '');
-  const [footer, setFooter] = useState(data.footer || '');
-  // Depend on the actual field values, NOT the `data` object reference. Otherwise
-  // every parent re-render creates a new `data` object and stomps in-progress
-  // typing with the old persisted text before the debounce fires.
-  useEffect(() => { setTitle(data.title); }, [data.title]);
-  useEffect(() => { setSubtitle(data.subtitle || ''); }, [data.subtitle]);
-  useEffect(() => { setFooter(data.footer || ''); }, [data.footer]);
+// Renders the SVG and overlays transparent HTML inputs at the exact positions
+// of each text element, so the user can click on any title/subtitle/footer or
+// card stat/label and type directly on the infographic.
+function InlineInfographic({ svg, data, editVersion, onTextChange, onPointsChange }: InlineInfographicProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const layout = computeLayout(data);
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '6px 10px', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)',
-    color: 'var(--color-text-primary)', background: 'var(--color-bg-card)',
-    border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', outline: 'none',
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width || el.clientWidth;
+      setScale(w / INFOGRAPHIC_WIDTH);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const inputStyle = (f: TextField, extra: React.CSSProperties = {}): React.CSSProperties => ({
+    position: 'absolute',
+    left: f.anchor === 'middle' ? (f.x - f.w / 2) * scale : f.x * scale,
+    top: f.y * scale,
+    width: f.w * scale,
+    height: (f.h + 8) * scale,
+    fontSize: f.fontSize * scale,
+    fontWeight: f.fontWeight,
+    textAlign: f.anchor === 'middle' ? 'center' : 'left',
+    background: 'transparent',
+    border: 'none',
+    outline: 'none',
+    padding: 0,
+    margin: 0,
+    color: 'transparent',
+    caretColor: 'var(--color-text-primary)',
+    fontFamily: 'inherit',
+    cursor: 'text',
+    ...extra,
+  });
+
+  const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.color = 'var(--color-text-primary)';
+    e.currentTarget.style.background = 'var(--color-bg-card)';
+    e.currentTarget.style.boxShadow = '0 0 0 2px var(--color-accent)';
   };
-  const labelStyle: React.CSSProperties = {
-    fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500,
-    color: 'var(--color-text-tertiary)', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em',
+  const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.color = 'transparent';
+    e.currentTarget.style.background = 'transparent';
+    e.currentTarget.style.boxShadow = 'none';
   };
 
+  return (
+    <div ref={wrapRef} style={{ width: '100%', maxWidth: 800, position: 'relative', lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+      <div key={editVersion} dangerouslySetInnerHTML={{ __html: svg }} />
+      {/* Title */}
+      <input
+        aria-label="Title"
+        value={data.title}
+        onChange={e => onTextChange('title', e.target.value)}
+        onFocus={onFocus} onBlur={onBlur}
+        style={inputStyle(layout.title)}
+      />
+      {/* Subtitle (always editable; if empty, user can click to add one) */}
+      <input
+        aria-label="Subtitle"
+        placeholder="Add subtitle"
+        value={data.subtitle || ''}
+        onChange={e => onTextChange('subtitle', e.target.value)}
+        onFocus={onFocus} onBlur={onBlur}
+        style={inputStyle(layout.subtitle ?? { x: INFOGRAPHIC_WIDTH / 2, y: 76 - 13, w: INFOGRAPHIC_WIDTH * 0.9, h: 18, fontSize: 13, fontWeight: 400, anchor: 'middle' })}
+      />
+      {/* Footer */}
+      <input
+        aria-label="Footer"
+        placeholder="Add footer"
+        value={data.footer || ''}
+        onChange={e => onTextChange('footer', e.target.value)}
+        onFocus={onFocus} onBlur={onBlur}
+        style={inputStyle(layout.footer ?? { x: INFOGRAPHIC_WIDTH / 2, y: layout.height - 26, w: INFOGRAPHIC_WIDTH * 0.9, h: 14, fontSize: 10, fontWeight: 400, anchor: 'middle' })}
+      />
+      {/* Per-point stat/label (cards layout only) */}
+      {layout.points.map((pf, i) => (
+        <span key={i}>
+          <input
+            aria-label={`Point ${i + 1} stat`}
+            value={data.points[i]?.stat ?? ''}
+            onChange={e => onPointsChange(points => points.map((p, idx) => idx === i ? { ...p, stat: e.target.value } : p))}
+            onFocus={onFocus} onBlur={onBlur}
+            style={inputStyle(pf.stat)}
+          />
+          <input
+            aria-label={`Point ${i + 1} label`}
+            value={data.points[i]?.label ?? ''}
+            onChange={e => onPointsChange(points => points.map((p, idx) => idx === i ? { ...p, label: e.target.value } : p))}
+            onFocus={onFocus} onBlur={onBlur}
+            style={inputStyle(pf.label)}
+          />
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// Lightweight ordering/add/remove control only — text editing happens inline
+// on the infographic canvas itself (see InlineInfographic).
+function StructuredEditor({ data, onPointsChange }: StructuredEditorProps) {
   const addPoint = () => onPointsChange(p => [...p, { stat: '0', label: 'New point' }]);
   const removePoint = (i: number) => onPointsChange(p => p.filter((_, idx) => idx !== i));
   const movePoint = (i: number, dir: -1 | 1) => onPointsChange(p => {
@@ -46,59 +137,37 @@ function StructuredEditor({ data, onTextChange, onPointsChange }: StructuredEdit
     next[i] = b; next[j] = a;
     return next;
   });
-  const patchPoint = (i: number, patch: Partial<Point>) => onPointsChange(p =>
-    p.map((pt, idx) => idx === i ? { ...pt, ...patch } : pt)
-  );
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500,
+    color: 'var(--color-text-tertiary)', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em',
+  };
 
   return (
-    <div style={{ width: '100%', maxWidth: 800, display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-      {/* Text fields */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)' }}>
-        <div style={{ gridColumn: '1 / -1' }}>
-          <label style={labelStyle}>Title</label>
-          <input style={inputStyle} value={title}
-            onChange={e => { setTitle(e.target.value); onTextChange('title', e.target.value); }} />
-        </div>
-        <div>
-          <label style={labelStyle}>Subtitle</label>
-          <input style={inputStyle} value={subtitle} placeholder="Optional"
-            onChange={e => { setSubtitle(e.target.value); onTextChange('subtitle', e.target.value); }} />
-        </div>
-        <div>
-          <label style={labelStyle}>Footer</label>
-          <input style={inputStyle} value={footer} placeholder="Optional"
-            onChange={e => { setFooter(e.target.value); onTextChange('footer', e.target.value); }} />
-        </div>
+    <div style={{ width: '100%', maxWidth: 800, padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <label style={labelStyle}>Data points</label>
+        <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{data.points.length}</span>
       </div>
-
-      {/* Points editor */}
-      <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <label style={labelStyle}>Data points</label>
-          <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{data.points.length}</span>
-        </div>
-
-        {data.points.map((p, i) => (
-          <div key={i} style={{ display: 'grid', gridTemplateColumns: '110px 1fr auto', gap: 'var(--space-2)', alignItems: 'center' }}>
-            <input style={{ ...inputStyle, fontWeight: 600 }} value={p.stat} placeholder="Stat" aria-label={`Point ${i + 1} stat`}
-              onChange={e => patchPoint(i, { stat: e.target.value })} />
-            <input style={inputStyle} value={p.label} placeholder="Label" aria-label={`Point ${i + 1} label`}
-              onChange={e => patchPoint(i, { label: e.target.value })} />
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button aria-label="Move up" disabled={i === 0} onClick={() => movePoint(i, -1)}
-                style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: i === 0 ? 'default' : 'pointer', color: i === 0 ? 'var(--color-text-disabled)' : 'var(--color-text-secondary)', fontSize: 12 }}>↑</button>
-              <button aria-label="Move down" disabled={i === data.points.length - 1} onClick={() => movePoint(i, 1)}
-                style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: i === data.points.length - 1 ? 'default' : 'pointer', color: i === data.points.length - 1 ? 'var(--color-text-disabled)' : 'var(--color-text-secondary)', fontSize: 12 }}>↓</button>
-              <button aria-label="Delete point" onClick={() => removePoint(i)}
-                style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: 'pointer', color: 'var(--color-danger-text)', fontSize: 14 }}>×</button>
-            </div>
+      {data.points.map((p, i) => (
+        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 'var(--space-2)', alignItems: 'center' }}>
+          <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)', marginRight: 8 }}>{p.stat}</span>
+            {p.label}
           </div>
-        ))}
-
-        <button onClick={addPoint} className="btn btn-ghost" style={{ alignSelf: 'flex-start', fontSize: 'var(--text-sm)', marginTop: 4 }}>
-          + Add point
-        </button>
-      </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button aria-label="Move up" disabled={i === 0} onClick={() => movePoint(i, -1)}
+              style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: i === 0 ? 'default' : 'pointer', color: i === 0 ? 'var(--color-text-disabled)' : 'var(--color-text-secondary)', fontSize: 12 }}>↑</button>
+            <button aria-label="Move down" disabled={i === data.points.length - 1} onClick={() => movePoint(i, 1)}
+              style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: i === data.points.length - 1 ? 'default' : 'pointer', color: i === data.points.length - 1 ? 'var(--color-text-disabled)' : 'var(--color-text-secondary)', fontSize: 12 }}>↓</button>
+            <button aria-label="Delete point" onClick={() => removePoint(i)}
+              style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: 'pointer', color: 'var(--color-danger-text)', fontSize: 14 }}>×</button>
+          </div>
+        </div>
+      ))}
+      <button onClick={addPoint} className="btn btn-ghost" style={{ alignSelf: 'flex-start', fontSize: 'var(--text-sm)', marginTop: 4 }}>
+        + Add point
+      </button>
     </div>
   );
 }
@@ -441,13 +510,20 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)' }}>
-          {svg && <div id="ig-editor-preview" key={editVersion} dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', maxWidth: 800, lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }} />}
+          {svg && currentData && (
+            <InlineInfographic
+              svg={svg}
+              data={currentData}
+              editVersion={editVersion}
+              onTextChange={scheduleTextEdit}
+              onPointsChange={(mutator) => applyDirectEdit(d => { d.points = mutator(d.points); })}
+            />
+          )}
 
           {currentData && editing && (
             <StructuredEditor
               key={editing.id}
               data={currentData}
-              onTextChange={scheduleTextEdit}
               onPointsChange={(mutator) => applyDirectEdit(d => { d.points = mutator(d.points); })}
             />
           )}

@@ -242,6 +242,81 @@ ${footerSvg}
 </svg>`;
 }
 
+// Mirror of the coordinate math inside renderSVG so inline HTML overlays can
+// position editable inputs exactly on top of the rendered SVG text.
+export const INFOGRAPHIC_WIDTH = 960;
+
+export interface TextField {
+  x: number; y: number;          // SVG coords of top-left of the text box
+  w: number; h: number;          // nominal box size in SVG units
+  fontSize: number;
+  fontWeight: number;
+  anchor: 'start' | 'middle';
+}
+
+export interface InfographicLayout {
+  width: number;
+  height: number;
+  title: TextField;
+  subtitle?: TextField;
+  footer?: TextField;
+  points: { stat: TextField; label: TextField }[];
+}
+
+export function computeLayout(data: InfographicData): InfographicLayout {
+  const clean = stripLegacyStyle(data);
+  const { subtitle, footer, points, type = 'cards' } = clean;
+  const W = INFOGRAPHIC_WIDTH;
+  const titleSize = 22;
+  const statSize = 26;
+  const radius = 12;
+  const gap = 16;
+  const titleY = subtitle ? 50 : 60;
+  const subtitleY = titleY + 26;
+  const contentStartY = subtitle ? subtitleY + 32 : titleY + 40;
+  let H = 540;
+
+  const pointFields: { stat: TextField; label: TextField }[] = [];
+
+  if (type === 'bar') {
+    const barH = 32, barGap = gap + 4;
+    H = Math.max(540, contentStartY + points.length * (barH + barGap) + 60 + (footer ? 40 : 0));
+  } else if (type === 'pie') {
+    const cy = contentStartY + 180, r = 140;
+    H = Math.max(540, cy + r + 80 + (footer ? 40 : 0));
+    H = Math.max(H, cy + r + 30 + points.length * 20 + 30);
+  } else {
+    // Cards (default) — only this mode supports per-point inline editing.
+    const cols = points.length <= 4 ? 2 : 3;
+    const gapX = gap + 8, gapY = gap;
+    const cardW = Math.floor((W - 80 - (cols - 1) * gapX) / cols);
+    const gridW = cols * cardW + (cols - 1) * gapX;
+    const startX = (W - gridW) / 2;
+    const rows = Math.ceil(points.length / cols);
+    H = Math.max(540, contentStartY + rows * (100 + gapY) + 24 + (footer ? 40 : 0));
+    points.forEach((p, i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      const x = startX + col * (cardW + gapX);
+      const y = contentStartY + row * (100 + gapY);
+      const statY = p.icon ? y + 50 : y + 38;
+      pointFields.push({
+        stat: { x: x + 20, y: statY - statSize, w: cardW - 40, h: statSize + 4, fontSize: statSize, fontWeight: 700, anchor: 'start' },
+        label: { x: x + 20, y: statY + 24 - 13, w: cardW - 40, h: 18, fontSize: 13, fontWeight: 500, anchor: 'start' },
+      });
+    });
+    void radius;
+  }
+
+  return {
+    width: W,
+    height: H,
+    title: { x: W / 2, y: titleY - titleSize, w: W * 0.9, h: titleSize + 4, fontSize: titleSize, fontWeight: 700, anchor: 'middle' },
+    subtitle: subtitle !== undefined ? { x: W / 2, y: subtitleY - 13, w: W * 0.9, h: 18, fontSize: 13, fontWeight: 400, anchor: 'middle' } : undefined,
+    footer: footer !== undefined ? { x: W / 2, y: H - 16 - 10, w: W * 0.9, h: 14, fontSize: 10, fontWeight: 400, anchor: 'middle' } : undefined,
+    points: pointFields,
+  };
+}
+
 export function parseInfographicData(text: string): InfographicData | null {
   try {
     const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
