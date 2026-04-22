@@ -29,6 +29,39 @@ function canConnect(fromSubtype: string, toSubtype: string): boolean {
 
 const HANDLE_CLS = "!w-3 !h-3 !border-[1.5px] border-[var(--color-border-handle)] bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)] !transition-colors";
 
+/* Compact list of upstream sources, shown only when 2+ inputs are fanned into a node. */
+function UpstreamInputsList({ id }: { id: string }) {
+  const edges = useGraphStore(s => s.edges);
+  const nodes = useGraphStore(s => s.nodes);
+  const status = useExecutionStore(s => s.status);
+  const upstream = edges
+    .filter(e => e.target === id)
+    .map(e => {
+      const n = nodes.find(x => x.id === e.source);
+      if (!n) return null;
+      return {
+        id: n.id,
+        label: n.data.label,
+        y: n.position.y,
+        x: n.position.x,
+        done: status[n.id] === 'complete' || n.data.category === 'source',
+      };
+    })
+    .filter((u): u is NonNullable<typeof u> => u !== null)
+    .sort((a, b) => (a.y - b.y) || (a.x - b.x));
+  if (upstream.length < 2) return null;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingBottom: 6, marginBottom: 6, borderBottom: '1px solid var(--color-border-subtle)' }}>
+      {upstream.map(u => (
+        <span key={u.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-full)', padding: '2px 8px', maxWidth: '100%' }}>
+          <span style={{ color: u.done ? 'var(--color-accent)' : 'var(--color-text-disabled)', flexShrink: 0 }}>{u.done ? '✓' : '○'}</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.label}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /* ── Chip-style MiniSelect ── */
 function MiniSelect({ value, options, onChange }: { value: string; options: readonly string[]; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -233,7 +266,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {/* Run button (bottom-right, hover only) — hide for source nodes */}
       {data.category !== 'source' && <button
         onMouseDown={e => e.stopPropagation()}
-        onClick={() => runNode(id, async (input, config) => aiExecute(input, config, data.subtype))}
+        onClick={() => runNode(id, async (input, config, meta) => aiExecute(input, config, data.subtype, meta))}
         style={{
           position: 'absolute', bottom: 'var(--space-3)', right: 'var(--space-3)',
           width: 28, height: 28, borderRadius: 'var(--radius-full)',
@@ -287,6 +320,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
 
       {/* Inline content — flex:1 so it fills between header and chips */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: data.subtype === 'infographic' ? 'visible' : 'hidden' }}>
+        {data.category === 'generate' && <UpstreamInputsList id={id} />}
         {data.subtype === 'text-source' && <TextSourceInline id={id} />}
         {data.subtype === 'file-source' && <FileSourceInline id={id} />}
         {data.subtype === 'image-source' && <ImageSourceInline id={id} />}

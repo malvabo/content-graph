@@ -211,7 +211,7 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
       return;
     }
     setRunDone(false);
-    runAll(async (input, config, subtype) => aiExecute(input, config, subtype))
+    runAll(async (input, config, subtype, meta) => aiExecute(input, config, subtype, meta))
       .then(() => { setRunDone(true); setTimeout(() => setRunDone(false), 3000); });
   }, [runAll]);
 

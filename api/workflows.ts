@@ -45,13 +45,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'POST') {
       const { id, name, nodes, edges, savedAt } = req.body;
       if (!id || !name) return res.status(400).json({ error: 'id and name required' });
-      // Use compound conflict to prevent cross-user overwrites
-      const { error } = await sb.from('workflows').upsert(
-        { id, user_id: user.id, name, nodes, edges, saved_at: savedAt || new Date().toISOString() },
-        { onConflict: 'id,user_id' }
-      );
-      if (error) throw error;
-      return res.json({ id, name, nodes, edges, savedAt });
+      const saved_at = savedAt || new Date().toISOString();
+      // Check-then-update-or-insert (scoped to user_id) so we never overwrite
+      // another user's row and don't require a compound unique index.
+      const existing = await sb.from('workflows').select('id').eq('id', id).eq('user_id', user.id).maybeSingle();
+      if (existing.error) throw existing.error;
+      if (existing.data) {
+        const { error } = await sb.from('workflows').update({ name, nodes, edges, saved_at }).eq('id', id).eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from('workflows').insert({ id, user_id: user.id, name, nodes, edges, saved_at });
+        if (error) throw error;
+      }
+      return res.json({ id, name, nodes, edges, savedAt: saved_at });
     }
 
     if (req.method === 'DELETE') {
@@ -63,7 +69,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     res.status(405).json({ error: 'Method not allowed' });
-  } catch {
-    res.status(500).json({ error: 'Server error' });
+  } catch (e) {
+    const err = e as { message?: string; code?: string; details?: string; hint?: string };
+    console.error('workflows handler:', err);
+    res.status(500).json({ error: err?.message || 'Server error', code: err?.code, details: err?.details, hint: err?.hint });
   }
 }
