@@ -168,8 +168,13 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
   const [editVersion, setEditVersion] = useState(0);
 
   const editing = items.find(i => i.id === editingId) || null;
-  const settings = useSettingsStore.getState();
-  const hasApiKey = !!(settings.anthropicKey || settings.groqKey);
+  const anthropicKey = useSettingsStore(s => s.anthropicKey);
+  const groqKey = useSettingsStore(s => s.groqKey);
+  const hasApiKey = !!(anthropicKey || groqKey);
+
+  // If the item being edited is deleted (e.g. via the library grid 3-dot menu),
+  // drop back to the home view instead of showing an editor with null data.
+  useEffect(() => { if (editingId && !editing) setEditingId(null); }, [editingId, editing]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
   useEffect(() => { setMessages([]); }, [editingId]);

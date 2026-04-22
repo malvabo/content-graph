@@ -12,6 +12,11 @@ export default function ScriptSensePanel({ initialText, onOpenInCards }: Props) 
   const groqKey = useSettingsStore(s => s.groqKey);
   const brand = useSettingsStore(s => s.brand);
 
+  // Freeze initialText at mount. The parent clears voiceTranscript on the next
+  // tick (to prevent stale re-fires on later re-renders); without this snapshot
+  // the clear would race the iframe's first "ready" message and post empty text.
+  const mountInitialTextRef = useRef(initialText);
+
   const post = useCallback((msg: Record<string, unknown>) => {
     const w = iframeRef.current?.contentWindow;
     if (!w) return;
@@ -23,8 +28,9 @@ export default function ScriptSensePanel({ initialText, onOpenInCards }: Props) 
     post({ type: 'set-groq-key', key: groqKey || '' });
     post({ type: 'set-theme', dark: document.documentElement.classList.contains('dark') });
     if (brand?.voice?.personality || brand?.name) post({ type: 'set-brand', brand });
-    if (initialText) post({ type: 'set-content', text: initialText });
-  }, [post, anthropicKey, groqKey, brand, initialText]);
+    const txt = mountInitialTextRef.current;
+    if (txt) post({ type: 'set-content', text: txt });
+  }, [post, anthropicKey, groqKey, brand]);
 
   // Parent-side listener: the iframe posts 'scriptsense-ready' when it boots.
   useEffect(() => {
