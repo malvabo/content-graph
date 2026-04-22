@@ -47,9 +47,16 @@ export default function NodePalette({ onAddNode }: Props) {
     if (!open) return;
     setSearch('');
     setTimeout(() => searchRef.current?.focus(), 50);
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    const t = setTimeout(() => document.addEventListener('mousedown', handler), 100);
-    return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
+    const handler = (e: Event) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const t = setTimeout(() => {
+      document.addEventListener('pointerdown', handler, true);
+      document.addEventListener('touchstart', handler, true);
+    }, 100);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('pointerdown', handler, true);
+      document.removeEventListener('touchstart', handler, true);
+    };
   }, [open]);
 
   const q = search.toLowerCase().trim();
