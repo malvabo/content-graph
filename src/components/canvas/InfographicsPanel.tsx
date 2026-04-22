@@ -170,6 +170,9 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
   const editing = items.find(i => i.id === editingId) || null;
   const anthropicKey = useSettingsStore(s => s.anthropicKey);
   const groqKey = useSettingsStore(s => s.groqKey);
+  // Subscribe to brand so SVG previews re-render when colors/fonts change in Settings.
+  // renderSVG reads brand via getState(), but that's not reactive on its own.
+  useSettingsStore(s => s.brand);
   const hasApiKey = !!(anthropicKey || groqKey);
 
   // If the item being edited is deleted (e.g. via the library grid 3-dot menu),

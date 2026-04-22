@@ -237,6 +237,9 @@ export function parseInfographicData(text: string): InfographicData | null {
 export function InfographicInline({ id }: { id: string }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
   const text = useOutputStore((s) => s.outputs[id]?.text);
+  // Subscribe so brand color/font changes in Settings trigger a re-render.
+  // renderSVG reads brand via getState() internally; this keeps it live.
+  useSettingsStore((s) => s.brand);
   const [modalOpen, setModalOpen] = useState(false);
 
   if (status === 'idle' || status === 'stale') return null;

@@ -17,6 +17,7 @@ function getSelectionY(ta: HTMLTextAreaElement, selStart: number): number {
 interface ContentModalProps {
   subtype: string;
   title: string;
+  subtitle?: string;
   text: string;
   onClose: () => void;
   onRegenerate?: () => void;
@@ -371,7 +372,7 @@ function NewsletterModal({ title, text, onClose, onSave, onRegenerate }: Content
 /* ════════════════════════════════════════════
    VOICE — same as Newsletter without subject line
    ════════════════════════════════════════════ */
-function VoiceModal({ title, text, onClose, onSave, extraActions }: ContentModalProps) {
+function VoiceModal({ title, subtitle, text, onClose, onSave, extraActions }: ContentModalProps) {
   const [editTitle, setEditTitle] = useState(title);
   const [content, setContent] = useState(text);
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -380,16 +381,21 @@ function VoiceModal({ title, text, onClose, onSave, extraActions }: ContentModal
 
   return (
     <ModalShell onClose={onClose} maxWidth={1200}>
-      <div className="flex items-center justify-between shrink-0" style={{ padding: 'var(--space-4) var(--space-6)' }}>
-        <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
-          style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', outline: 'none', flex: 1 }}
-          onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-strong)'; }}
-          onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }} />
-        <button aria-label="Close" onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms', flexShrink: 0, marginLeft: 'var(--space-2)' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
+      <div className="shrink-0" style={{ padding: 'var(--space-4) var(--space-6)' }}>
+        <div className="flex items-center justify-between">
+          <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
+            style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', outline: 'none', flex: 1 }}
+            onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-strong)'; }}
+            onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }} />
+          <button aria-label="Close" onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms', flexShrink: 0, marginLeft: 'var(--space-2)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        {subtitle && (
+          <div style={{ marginTop: 'var(--space-1)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{subtitle}</div>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-6) var(--space-4)', scrollbarWidth: 'thin' }}>
         <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', transition: 'border-color 150ms' }}
