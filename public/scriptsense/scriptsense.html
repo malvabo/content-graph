@@ -7,10 +7,31 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js" crossorigin></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
+<style>
+  #boot-fallback { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #57534e; max-width: 360px; margin: 80px auto; padding: 16px 20px; border: 1px solid #e0e4e0; border-radius: 12px; background: #fff; font-size: 14px; line-height: 1.5; text-align: center; }
+  #boot-fallback b { color: #1a2420; display: block; margin-bottom: 6px; }
+  #boot-fallback button { margin-top: 12px; padding: 6px 14px; border-radius: 6px; border: 1px solid #d4d1cb; background: #f7f5f1; cursor: pointer; font: inherit; color: #1a2420; }
+</style>
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
+<div id="boot-fallback" style="display:none">
+  <b>ScriptSense couldn't load.</b>
+  The editor's runtime dependencies (React + Babel CDN) may be blocked by your network, ad blocker, or a browser extension.
+  <button onclick="location.reload()">Retry</button>
+</div>
+<script>
+  // Watchdog: if babel never transforms the inline script (CDN blocked, parse error),
+  // show the fallback so the iframe isn't just blank.
+  window.__scriptsenseBooted = false;
+  setTimeout(function () {
+    if (!window.__scriptsenseBooted) {
+      var el = document.getElementById('boot-fallback');
+      if (el) el.style.display = 'block';
+    }
+  }, 4000);
+</script>
+<script type="text/babel" data-presets="react">
 /* @jsxRuntime classic */
 const { useState, useRef, useCallback, useEffect } = React;
 
@@ -39,7 +60,36 @@ const RotateCcw = ({size,...p}) => <I size={size} {...p}><path d="M3 12a9 9 0 1 
    • 3 tag colors: indigo, emerald, amber tints
    • Cards: shadow-only elevation, no borders
 ───────────────────────────────────────────── */
-const isDark = localStorage.getItem('dark-mode') === 'true';
+/* Theme state lives in a module-level holder and is kept in sync with
+   parent postMessage + our own storage. Components subscribe via useTheme(). */
+window.__scriptsenseBooted = true;
+
+const themeListeners = new Set();
+let _isDark = false;
+try { _isDark = localStorage.getItem('dark-mode') === 'true'; } catch {}
+function setDark(v) {
+  if (_isDark === v) return;
+  _isDark = v;
+  try { localStorage.setItem('dark-mode', String(v)); } catch {}
+  themeListeners.forEach(fn => fn());
+}
+
+// Pending initial-text buffer: parent may post before the editor mounts.
+let _pendingInitialText = null;
+const initialTextListeners = new Set();
+function setInitialText(t) {
+  _pendingInitialText = t;
+  initialTextListeners.forEach(fn => { try { fn(t); } catch {} });
+}
+function useTheme() {
+  const [, force] = useState(0);
+  useEffect(() => {
+    const fn = () => force(n => n + 1);
+    themeListeners.add(fn);
+    return () => themeListeners.delete(fn);
+  }, []);
+  return _isDark;
+}
 
 const LIGHT = {
   pageBg:  "#F2EFE9",
@@ -101,21 +151,19 @@ const DARK = {
   hlAmber:   { bg:"rgba(240,200,96,0.08)",  activeBg:"rgba(240,200,96,0.2)",  line:"rgba(240,200,96,0.4)"  },
 };
 
-const C = isDark ? DARK : LIGHT;
+/* Module-level palette that re-binds on theme change.
+   Components read `C`/`HL`/`TAG` lexically — the root calls useTheme() so a
+   theme flip re-renders the whole tree with the refreshed bindings. */
+let C  = _isDark ? DARK : LIGHT;
+let HL = { science: C.hlIndigo, metaphor: C.hlEmerald, logic: C.hlAmber };
+let TAG = { science: C.tagIndigo, metaphor: C.tagEmerald, logic: C.tagAmber };
+themeListeners.add(() => {
+  C  = _isDark ? DARK : LIGHT;
+  HL = { science: C.hlIndigo, metaphor: C.hlEmerald, logic: C.hlAmber };
+  TAG = { science: C.tagIndigo, metaphor: C.tagEmerald, logic: C.tagAmber };
+});
 
-const HL = {
-  science:  C.hlIndigo,
-  metaphor: C.hlEmerald,
-  logic:    C.hlAmber,
-};
-
-const TAG = {
-  science:  C.tagIndigo,
-  metaphor: C.tagEmerald,
-  logic:    C.tagAmber,
-};
-
-const FONT_STYLE = `
+const fontStyle = () => `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body, input, button, select, textarea { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
@@ -217,9 +265,15 @@ const MOCK_INSIGHTS = JSON.stringify({
 let _anthropicKey = '';
 let _groqKey = '';
 window.addEventListener('message', e => {
-  if (e.data?.type === 'set-api-key') _anthropicKey = e.data.key;
-  if (e.data?.type === 'set-groq-key') _groqKey = e.data.key;
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+  if (d.type === 'set-api-key')  _anthropicKey = d.key || '';
+  if (d.type === 'set-groq-key') _groqKey      = d.key || '';
+  if (d.type === 'set-theme')    setDark(!!d.dark);
+  if (d.type === 'set-initial-text' && typeof d.text === 'string') setInitialText(d.text);
 });
+// Announce to the parent that the iframe is ready so it can flush pending keys/text/theme.
+try { parent.postMessage({ type: 'scriptsense-ready' }, '*'); } catch {}
 
 async function callClaude(prompt) {
   function parseResponse(text) {
@@ -481,10 +535,18 @@ function HomePage({ drafts, onNew, onOpen, onDelete }) {
 /* ─────────────────── Main App ─────────────────── */
 function ContentGraphEditor({ draft, onSave, onBack }) {
   const [text, setText]               = useState(() => {
-    const voice = localStorage.getItem('scriptsense-content');
-    if (voice) { localStorage.removeItem('scriptsense-content'); return voice; }
+    if (_pendingInitialText) { const v = _pendingInitialText; _pendingInitialText = null; return v; }
+    try {
+      const voice = localStorage.getItem('scriptsense-content');
+      if (voice) { localStorage.removeItem('scriptsense-content'); return voice; }
+    } catch {}
     return draft?.text ?? '';
   });
+  useEffect(() => {
+    const fn = t => { if (typeof t === 'string' && t.length) setText(t); };
+    initialTextListeners.add(fn);
+    return () => initialTextListeners.delete(fn);
+  }, []);
   const [title, setTitle]             = useState(draft?.title || '');
   const [activeTab, setActiveTab]     = useState("insights");
   const [dismissed, setDismissed]     = useState(new Set());
@@ -504,14 +566,6 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
   const cardRefs    = useRef({});
   const autoSaveRef = useRef(null);
   const [saveStatus, setSaveStatus] = useState(null);
-
-  /* ── Escape to close dropdown ── */
-  useEffect(() => {
-    if (!ddOpen) return;
-    const h = e => { if (e.key === 'Escape') setDdOpen(false); };
-    document.addEventListener('keydown', h);
-    return () => document.removeEventListener('keydown', h);
-  }, [ddOpen]);
 
   /* ── Auto-save (debounced 1.2s, min 10 words) ── */
   useEffect(() => {

@@ -28,6 +28,21 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
     return this.props.children;
   }
 }
+
+class ViewErrorBoundary extends Component<{ children: ReactNode; label: string }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)', fontFamily: 'var(--font-sans)', padding: 'var(--space-6)' }}>
+        <div style={{ fontSize: 'var(--text-md)', fontWeight: 500, color: 'var(--color-text-primary)' }}>{this.props.label} failed to load</div>
+        <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 400, textAlign: 'center' }}>{this.state.error.message}</div>
+        <button onClick={() => this.setState({ error: null })} className="btn btn-primary" style={{ marginTop: 'var(--space-2)' }}>Retry</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
 import EmptyCanvasOverlay from './components/canvas/EmptyCanvasOverlay';
 import Intro from './components/Intro';
 import WorkflowLibraryView from './components/canvas/WorkflowLibrary';
@@ -107,7 +122,11 @@ function AppInner() {
 
         {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(content) => { setVoiceTranscript(content); setActiveView('scriptsense'); }} />}
 
-        {activeView === 'scriptsense' && <ScriptSensePanel initialText={voiceTranscript} onOpenInCards={() => setActiveView('cardslibrary')} />}
+        {activeView === 'scriptsense' && (
+          <ViewErrorBoundary label="ScriptSense">
+            <ScriptSensePanel initialText={voiceTranscript} onOpenInCards={() => setActiveView('cardslibrary')} />
+          </ViewErrorBoundary>
+        )}
 
 
         {activeView === 'settings' && <SettingsPanel />}

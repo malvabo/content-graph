@@ -25,8 +25,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   init: async () => {
     if (!supabase) { set({ loading: false }); return; }
+    // Safety net: if getSession() hangs (edge network issues, blocked domain),
+    // release the loading gate after 5s so the app can still render AuthGate.
+    const timeout = new Promise<{ data: { session: null } }>(resolve =>
+      setTimeout(() => resolve({ data: { session: null } }), 5000)
+    );
     try {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await Promise.race([supabase.auth.getSession(), timeout]);
       set({ session: data.session, user: data.session?.user ?? null, loading: false });
     } catch {
       set({ loading: false });
