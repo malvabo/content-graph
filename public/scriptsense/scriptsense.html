@@ -87,6 +87,11 @@ function setInitialText(t) {
 let _getCurrentText = null;
 function registerGetText(fn) { _getCurrentText = fn; }
 
+// Analysis trigger registered by the Editor so parent can fire re-run
+// from its own toolbar (toolbar moved up to the parent window).
+let _runAnalysis = null;
+function registerRunAnalysis(fn) { _runAnalysis = fn; }
+
 // Brand voice context — received from parent over postMessage. Exposed via
 // useBrand() so any component can surface it in headers or prompt prefixes.
 let _brand = null;
@@ -303,6 +308,9 @@ window.addEventListener('message', e => {
     let text = '';
     try { text = _getCurrentText ? _getCurrentText() : ''; } catch {}
     try { parent.postMessage({ type: 'script-content', text: typeof text === 'string' ? text : '' }, '*'); } catch {}
+  }
+  if (d.type === 'run-analysis') {
+    try { _runAnalysis && _runAnalysis(); } catch {}
   }
 });
 // Announce to the parent that the iframe is ready so it can flush pending keys/text/theme.
@@ -683,6 +691,12 @@ ${text}`
     setAnalysisVersion(v => v + 1);
   }, [text, aiInsights]);
 
+  // Expose runAnalysis so the parent can trigger it from its toolbar.
+  useEffect(() => {
+    registerRunAnalysis(runAnalysis);
+    return () => registerRunAnalysis(null);
+  }, [runAnalysis]);
+
   /* ── Apply rephrase suggestion (with undo) ── */
   const handleApply = useCallback((phrase, rephrase) => {
     setUndoStack(s => [...s, { phrase, rephrase, originalText: text }]);
@@ -768,34 +782,8 @@ ${text}`
           </div>
         )}
 
-        {/* ── Column labels + tabs ── */}
-        <div style={{ display:"flex", background:C.white, borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
-          <div style={{ width:"50%", borderRight:`1px solid ${C.border}`, height:44 }} />
-          <div style={{ width:"50%", display:"flex", alignItems:"stretch" }}>
-            {[["insights", analysisVersion > 0 ? `Insights · ${visibleInsights.length}` : "Insights"]].map(([tab,label]) => (
-              <button key={tab} className="tab-btn" onClick={() => setActiveTab(tab)} style={{
-                padding:"0 16px", fontSize:12, fontWeight:500, letterSpacing:"-0.01em",
-                color: activeTab===tab ? C.text : C.mute,
-                borderBottom: activeTab===tab ? `2px solid ${C.accent}` : "2px solid transparent",
-              }}>{label}</button>
-            ))}
-            <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8, paddingRight:16 }}>
-              {saveStatus && (
-                <span style={{ fontSize:11, color: saveStatus==="saved" ? C.accent : C.mute, fontWeight:500, transition:"color 0.2s" }}>
-                  {saveStatus==="saving" ? "Saving…" : "✓ Saved"}
-                </span>
-              )}
-              <div style={{ width:1, height:14, background:C.border }} />
-              <button title="Re-run analysis" onClick={runAnalysis}
-                style={{ width:36, height:36, borderRadius:8, border:"none", background:"transparent", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"background 100ms, color 100ms", color:C.mute }}
-                onMouseEnter={e => { e.currentTarget.style.background = C.surface; e.currentTarget.style.color = C.text; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.mute; }}>
-                <RotateCcw size={16} color="currentColor" />
-              </button>
-              <div style={{ width:1, height:14, background:C.border }} />
-            </div>
-          </div>
-        </div>
+        {/* Top reserved space so the parent's floating toolbar doesn't cover the content */}
+        <div style={{ height:44, flexShrink:0 }} />
 
         {/* ── Split ── */}
         <div style={{ display:"flex", flex:1, minHeight:0 }}>

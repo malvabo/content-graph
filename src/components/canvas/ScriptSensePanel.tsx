@@ -160,14 +160,28 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
           />
         )}
       </div>
-      <div ref={menuWrapRef} style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-4)', zIndex: 10 }}>
+      <div ref={menuWrapRef} style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-4)', zIndex: 10, display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+        <button
+          type="button"
+          disabled={iframeLoading}
+          onClick={() => post({ type: 'run-analysis' })}
+          aria-label="Re-run analysis"
+          title="Re-run analysis"
+          style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', cursor: iframeLoading ? 'default' : 'pointer', color: 'var(--color-text-tertiary)', transition: 'background 150ms, color 150ms' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        </button>
         <button
           type="button"
           disabled={iframeLoading}
           onClick={() => setMenuOpen(o => !o)}
           aria-label="Script actions"
           aria-expanded={menuOpen}
-          style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', cursor: iframeLoading ? 'default' : 'pointer', color: 'var(--color-text-primary)' }}
+          style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', cursor: iframeLoading ? 'default' : 'pointer', color: 'var(--color-text-tertiary)', transition: 'background 150ms, color 150ms' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
         </button>
