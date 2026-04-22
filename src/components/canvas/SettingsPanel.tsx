@@ -310,7 +310,7 @@ export default function SettingsPanel() {
               {items.map(s => {
                 const on = active === s.id;
                 return (
-                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'block', margin: 0, padding: 'var(--space-2) 0', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: on ? 'var(--weight-medium)' : 'var(--weight-normal)', color: on ? 'var(--color-accent)' : 'var(--color-text-primary)', transition: `color var(--duration-base)`, textAlign: 'left' }}>
+                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'block', margin: 0, padding: 'var(--space-2) 0', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: on ? 'var(--color-accent)' : 'var(--color-text-primary)', transition: `color var(--duration-base)`, textAlign: 'left' }}>
                     {s.label}
                   </button>
                 );
@@ -324,7 +324,7 @@ export default function SettingsPanel() {
         {SECTIONS.map(s => {
           const on = active === s.id;
           return (
-            <button key={s.id} onClick={() => setActive(s.id)} style={{ padding: 'var(--space-3) var(--space-4)', background: 'none', border: 'none', borderBottom: on ? '2px solid var(--color-accent)' : '2px solid transparent', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: on ? 'var(--weight-medium)' : 'var(--weight-normal)', color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <button key={s.id} onClick={() => setActive(s.id)} style={{ padding: 'var(--space-3) var(--space-4)', background: 'none', border: 'none', borderBottom: on ? '2px solid var(--color-accent)' : '2px solid transparent', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {s.label}
             </button>
           );

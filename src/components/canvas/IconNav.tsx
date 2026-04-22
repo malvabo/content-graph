@@ -15,7 +15,7 @@ function NavItem({ icon, label, active, onClick, ariaLabel, ariaPressed }: { ico
       className="nav-item"
       style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '8px 12px', borderRadius: 8, background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms', justifyContent: 'flex-start', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, flexShrink: 0 }}>{icon}</span>
-      {label && <span className="nav-label" style={{ fontSize: 14, fontWeight: active ? 500 : 400, whiteSpace: 'nowrap' }}>{label}</span>}
+      {label && <span className="nav-label" style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>{label}</span>}
     </button>
   );
 }
