@@ -138,7 +138,7 @@ function NoteCard({ note, onDelete, onRerecord }: { note: VoiceNote; onDelete: (
   }
 
   return (
-    <div style={{ borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', overflow: 'hidden' }}>
+    <div style={{ borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', overflow: 'hidden', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
       <button onClick={() => setExpanded(v => !v)} disabled={isTranscribing}
         style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4, cursor: isTranscribing ? 'default' : 'pointer', opacity: isTranscribing ? 0.75 : 1, minWidth: 0 }}>
         {/* Row 1: title alone — gets full row width, wraps to 2 lines max */}
@@ -385,7 +385,7 @@ export default function MobileHome() {
   const visibleNotes = [...notes].filter(n => n.status !== 'recording').reverse();
 
   return (
-    <div className="mobile-safe-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--color-bg)' }}>
+    <div className="mobile-safe-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--color-bg)', position: 'relative', minWidth: 0 }}>
       {guest && !user && (
         <div style={{ background: 'var(--color-warning-bg)', borderBottom: '1px solid var(--color-warning-border)', padding: '6px 14px', fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', textAlign: 'center' }}>
           Guest mode — your work won't be saved.
@@ -401,7 +401,7 @@ export default function MobileHome() {
       </div>
 
       {/* Scrollable notes list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 var(--space-4) 120px', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 var(--space-4) 140px', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', minWidth: 0 }}>
         {!hasKey && (
           <div style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', lineHeight: 1.4 }}>
             Add an Anthropic or Groq API key on a desktop session to enable transcription and generation.
