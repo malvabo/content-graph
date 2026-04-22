@@ -93,9 +93,11 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
   );
 }
 
-function NoteCard({ note, onDelete }: { note: VoiceNote; onDelete: () => void }) {
+function NoteCard({ note, onDelete, onRerecord }: { note: VoiceNote; onDelete: () => void; onRerecord: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [gen, setGen] = useState<Generation | null>(null);
+  const isError = note.status === 'error';
+  const isTranscribing = note.status === 'transcribing';
 
   const generate = useCallback(async (kind: AssetKind) => {
     setGen({ kind, text: '', loading: true });
@@ -112,17 +114,46 @@ function NoteCard({ note, onDelete }: { note: VoiceNote; onDelete: () => void })
     try { await navigator.clipboard.writeText(gen.text); } catch { /* clipboard may be blocked */ }
   };
 
-  return (
-    <div style={{ borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', overflow: 'hidden' }}>
-      <button onClick={() => setExpanded(v => !v)}
-        style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 2, cursor: 'pointer' }}>
+  // Error notes get their own compact layout — no expand, inline recovery.
+  if (isError) {
+    return (
+      <div style={{ borderRadius: 'var(--radius-lg)', background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border, var(--color-danger-text))', padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
             {note.title}
           </span>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
-            {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 500, padding: '1px 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-danger-bg, #fde8e8)', color: 'var(--color-danger-text, #c53030)', lineHeight: '16px', flexShrink: 0 }}>
+            Failed
           </span>
+        </div>
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', lineHeight: 1.5 }}>
+          {note.errorReason || 'Transcription failed.'}
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <button onClick={onRerecord} className="btn btn-primary" style={{ padding: '4px 12px', fontSize: 'var(--text-xs)' }}>Re-record</button>
+          <button onClick={onDelete} className="btn btn-ghost" style={{ padding: '4px 12px', fontSize: 'var(--text-xs)' }}>Delete</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', overflow: 'hidden' }}>
+      <button onClick={() => setExpanded(v => !v)} disabled={isTranscribing}
+        style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4, cursor: isTranscribing ? 'default' : 'pointer', opacity: isTranscribing ? 0.75 : 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+            {note.title}
+          </span>
+          {isTranscribing ? (
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 500, padding: '1px 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)', lineHeight: '16px', flexShrink: 0 }}>
+              Transcribing…
+            </span>
+          ) : (
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+              {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
+            </span>
+          )}
         </div>
         {note.transcript && !expanded && (
           <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -378,7 +409,18 @@ export default function MobileHome() {
           </div>
         ) : (
           visibleNotes.map(n => (
-            <NoteCard key={n.id} note={n} onDelete={() => removeNote(n.id)} />
+            <NoteCard
+              key={n.id}
+              note={n}
+              onDelete={() => removeNote(n.id)}
+              onRerecord={async () => {
+                // Atomic re-record: start first, remove old only if new session actually begins.
+                const before = useVoiceStore.getState().notes.length;
+                await startRecording();
+                const after = useVoiceStore.getState().notes.length;
+                if (after > before) removeNote(n.id);
+              }}
+            />
           ))
         )}
       </div>
