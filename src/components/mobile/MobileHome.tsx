@@ -4,6 +4,7 @@ import { useVoiceStore, type VoiceNote } from '../../store/voiceStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useAuthStore } from '../../store/authStore';
 import { aiExecute } from '../../utils/aiExecutor';
+import RecordButton from '../canvas/RecordButton';
 
 type AssetKind = 'linkedin-post' | 'twitter-thread' | 'twitter-single';
 
@@ -207,6 +208,22 @@ export default function MobileHome() {
   const groqKeyRef = useRef(groqKey);
   useEffect(() => { groqKeyRef.current = groqKey; }, [groqKey]);
 
+  // Reconcile orphaned transient states on mount: if a previous session was
+  // killed mid-recording or mid-transcribe, flip the note to 'error' so it
+  // surfaces in the list with a clear reason instead of being invisible or
+  // blocking the UI forever.
+  useEffect(() => {
+    const state = useVoiceStore.getState();
+    for (const n of state.notes) {
+      if (n.status === 'recording') {
+        state.updateNote(n.id, { status: 'error', errorReason: 'Recording was interrupted. Please record again.' });
+      } else if (n.status === 'transcribing') {
+        state.updateNote(n.id, { status: 'error', errorReason: 'Transcription was interrupted. Please record again.' });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const startRecording = useCallback(async () => {
     setErrorMsg(null);
     setLiveText('');
@@ -265,11 +282,16 @@ export default function MobileHome() {
     try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
     recognitionRef.current = null;
 
+    // 2s watchdog on the stop flush — iOS Safari webm path has been seen to
+    // hang the 'stop' event, which would freeze the overlay indefinitely.
     const mr = recorderRef.current;
     if (mr && mr.state !== 'inactive') {
       await new Promise<void>(resolve => {
-        mr.addEventListener('stop', () => resolve(), { once: true });
-        try { mr.stop(); } catch { resolve(); }
+        let done = false;
+        const finish = () => { if (!done) { done = true; resolve(); } };
+        const timer = setTimeout(finish, 2000);
+        mr.addEventListener('stop', () => { clearTimeout(timer); finish(); }, { once: true });
+        try { mr.stop(); } catch { clearTimeout(timer); finish(); }
       });
     }
     recorderRef.current = null;
@@ -363,14 +385,9 @@ export default function MobileHome() {
 
       {/* Sticky record button */}
       <div style={{ position: 'absolute', bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
-        <button
-          aria-label="Start recording"
-          onClick={startRecording}
-          style={{ pointerEvents: 'auto', width: 72, height: 72, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-lg)' }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><path d="M12 17v4" /><path d="M8 21h8" />
-          </svg>
-        </button>
+        <div style={{ pointerEvents: 'auto' }}>
+          <RecordButton size={88} onClick={startRecording} state="idle" />
+        </div>
       </div>
 
       {recording && (
