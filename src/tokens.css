@@ -228,6 +228,10 @@
   --color-edge: var(--p-neutral-500);
   --dot-gap: 12px;
   --dot-size: 0.12px;
+  --color-edge-source: #8BA8C0;
+  --color-edge-generate: #5CB87A;
+  --color-edge-transform: #9E84B0;
+  --color-edge-output: #B8A854;
 
   /* ── Legacy aliases (backward compat) ── */
   --cg-green: var(--color-accent);
@@ -305,6 +309,10 @@
   --color-overlay-backdrop: rgba(0,0,0,0.70);
   --color-dot: #3a3a42;
   --color-edge: #5a5a64;
+  --color-edge-source: #4A6878;
+  --color-edge-generate: #2D7048;
+  --color-edge-transform: #624878;
+  --color-edge-output: #705E28;
   --shadow-sm: 0 2px 12px rgba(0,0,0,0.4);
   --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);

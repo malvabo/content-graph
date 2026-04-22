@@ -1,12 +1,25 @@
 import { memo, useState, useCallback } from 'react';
-import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react';
+import { EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react';
 import { useGraphStore } from '../../store/graphStore';
 
 function DeletableEdge({
-  id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style, animated,
+  id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style, animated, data,
 }: EdgeProps) {
   const [hovered, setHovered] = useState(false);
   const [edgePath, labelX, labelY] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
+  const gradId = `edge-grad-${id}`;
+
+  const sourceCategory = (data as Record<string, unknown> | undefined)?.sourceCategory as string | undefined;
+  const targetCategory = (data as Record<string, unknown> | undefined)?.targetCategory as string | undefined;
+  const hasGrad = !animated && !hovered && !!sourceCategory && !!targetCategory;
+
+  const strokeColor = animated
+    ? 'var(--color-accent)'
+    : hovered
+    ? 'var(--color-border-strong)'
+    : hasGrad
+    ? `url(#${gradId})`
+    : 'var(--color-edge)';
 
   const onDelete = useCallback(() => {
     useGraphStore.getState().setEdges(useGraphStore.getState().edges.filter((e) => e.id !== id));
@@ -14,30 +27,36 @@ function DeletableEdge({
 
   return (
     <>
-      <BaseEdge
+      {hasGrad && (
+        <defs>
+          <linearGradient id={gradId} gradientUnits="userSpaceOnUse"
+            x1={sourceX} y1={sourceY} x2={targetX} y2={targetY}>
+            <stop offset="0%" style={{ stopColor: `var(--color-edge-${sourceCategory})` }} />
+            <stop offset="100%" style={{ stopColor: `var(--color-edge-${targetCategory})` }} />
+          </linearGradient>
+        </defs>
+      )}
+
+      {/* Visual edge path */}
+      <path
         id={id}
-        path={edgePath}
-        style={{
-          ...style,
-          stroke: animated ? 'var(--color-accent)' : hovered ? 'var(--color-border-strong)' : style?.stroke,
-          strokeWidth: animated ? 1.5 : style?.strokeWidth,
-          strokeDasharray: animated ? 'none' : style?.strokeDasharray,
-          transition: 'stroke 150ms',
-        }}
-        interactionWidth={24}
+        d={edgePath}
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth={animated ? 2 : 1.5}
+        strokeLinecap="round"
+        style={{ transition: 'stroke 150ms', ...(style ?? {}) }}
       />
+
+      {/* Animated pulse when running */}
       {animated && (
-        <path
-          d={edgePath}
-          fill="none"
-          stroke="var(--color-accent)"
-          strokeLinecap="round"
-        >
-          <animate attributeName="stroke-width" values="1.5;3;1.5" dur="2s" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1" repeatCount="indefinite" />
+        <path d={edgePath} fill="none" stroke="var(--color-accent)" strokeLinecap="round">
+          <animate attributeName="stroke-width" values="2;4;2" dur="2s" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1" repeatCount="indefinite" />
           <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1" repeatCount="indefinite" />
         </path>
       )}
-      {/* Hit area on top of everything */}
+
+      {/* Wide transparent hit area */}
       <path
         d={edgePath}
         fill="none"
@@ -47,6 +66,7 @@ function DeletableEdge({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       />
+
       <EdgeLabelRenderer>
         <div
           className="nodrag nopan"

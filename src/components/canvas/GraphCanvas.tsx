@@ -15,13 +15,15 @@ import RunWaveOverlay from './RunWaveOverlay';
 import { useConnectionValidation } from '../../hooks/useConnectionValidation';
 import ContextMenu, { useContextMenu } from './ContextMenu';
 import NodePalette from './NodePalette';
+import NodeSpotlight from './NodeSpotlight';
+import ExecutionHUD from './ExecutionHUD';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { aiExecute } from '../../utils/aiExecutor';
 import type { NodeDef } from '../../utils/nodeDefs';
 
 const nodeTypes = { contentNode: BaseNode };
 const edgeTypes = { deletable: DeletableEdge };
-const defaultEdgeOptions = { type: 'deletable', style: { stroke: 'var(--color-edge)', strokeWidth: 1.5, strokeDasharray: '5 4' } };
+const defaultEdgeOptions = { type: 'deletable', style: { stroke: 'var(--color-edge)', strokeWidth: 1.5 } };
 
 export default function GraphCanvas() {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId, setConnectingNodeId, addNode } = useGraphStore();
@@ -44,10 +46,15 @@ export default function GraphCanvas() {
     localStorage.setItem('cg-first-run-seen', '1');
   }, []);
 
-  const styledEdges = useMemo(() => edges.map((e) => ({
-    ...e,
-    animated: executionStatus[e.source] === 'running' || executionStatus[e.target] === 'running',
-  })), [edges, executionStatus]);
+  const styledEdges = useMemo(() => edges.map((e) => {
+    const srcNode = nodes.find(n => n.id === e.source);
+    const tgtNode = nodes.find(n => n.id === e.target);
+    return {
+      ...e,
+      animated: executionStatus[e.source] === 'running' || executionStatus[e.target] === 'running',
+      data: { ...e.data, sourceCategory: srcNode?.data.category, targetCategory: tgtNode?.data.category },
+    };
+  }), [edges, nodes, executionStatus]);
 
   useEffect(() => { wrapperRef.current?.focus(); }, []);
 
@@ -109,6 +116,8 @@ export default function GraphCanvas() {
     addNode(node);
   }, [addNode, screenToFlowPosition]);
 
+  const [spotlight, setSpotlight] = useState<{ x: number; y: number; flowX: number; flowY: number } | null>(null);
+
   const selectedNodes = useMemo(() => nodes.filter(n => n.selected), [nodes]);
   const { runAll } = useNodeExecution();
 
@@ -131,13 +140,15 @@ export default function GraphCanvas() {
         nodeTypes={nodeTypes} edgeTypes={edgeTypes} defaultEdgeOptions={defaultEdgeOptions}
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
         onNodeContextMenu={(e, node) => onNodeContextMenu(e, node.id)}
-        onPaneClick={() => { setSelectedNodeId(null); dismissFirstRun(); closeMenu(); }}
+        onPaneClick={() => { setSelectedNodeId(null); dismissFirstRun(); closeMenu(); setSpotlight(null); }}
+        onPaneDoubleClick={(e) => { const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY }); setSpotlight({ x: e.clientX, y: e.clientY, flowX: pos.x, flowY: pos.y }); }}
         deleteKeyCode={['Backspace', 'Delete']}
         fitView={false} panOnScroll selectionOnDrag selectionKeyCode="Shift"
         proOptions={{ hideAttribution: true }}
         style={{ background: 'var(--color-bg)' }}>
         <DotSpotlight />
         <RunWaveOverlay />
+        <ExecutionHUD />
         <Controls showInteractive={false} position="bottom-right" />
         {showMinimap && <MiniMap position="bottom-right" pannable zoomable nodeColor="var(--color-border-strong)" maskColor="var(--color-overlay-backdrop)" style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', right: 60, background: 'var(--color-bg-surface)' }} />}
       </ReactFlow>
@@ -163,6 +174,15 @@ export default function GraphCanvas() {
       )}
 
       {menu && <ContextMenu x={menu.x} y={menu.y} nodeId={menu.nodeId} onClose={closeMenu} />}
+
+      {spotlight && (
+        <NodeSpotlight
+          x={spotlight.x} y={spotlight.y}
+          flowX={spotlight.flowX} flowY={spotlight.flowY}
+          onClose={() => setSpotlight(null)}
+          onSelect={() => setSpotlight(null)}
+        />
+      )}
 
       <NodePalette onAddNode={handleAddNode} />
 

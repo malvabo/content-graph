@@ -168,10 +168,8 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)', paddingBottom: 'var(--space-6)' }}>
               {TEMPLATES.map((t, i) => {
-                const { nodes: n } = t.build();
-                const nodeLabels = n.slice(0, 2).map(nd => nd.data.label);
-                const extra = n.length - 2;
-                return <TemplateCard key={t.name} title={t.name} meta={`${t.category} · ${n.length} nodes`} pills={nodeLabels} extraCount={extra > 0 ? extra : undefined} onClick={() => handleLoadTemplate(i)} />;
+                const { nodes: n, edges: e } = t.build();
+                return <TemplateCard key={t.name} title={t.name} meta={`${t.category} · ${n.length} nodes`} pills={[]} graphData={{ nodes: n, edges: e }} onClick={() => handleLoadTemplate(i)} />;
               })}
             </div>
             <div style={{ textAlign: 'center', paddingBottom: 'var(--space-8)' }}>
@@ -193,8 +191,8 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                   <TemplateCard
                     title={item.name}
                     meta={`${item.nodes.length} nodes · ${fmt(item.savedAt)}`}
-                    pills={visible}
-                    extraCount={remaining > 0 ? remaining : undefined}
+                    pills={[]}
+                    graphData={{ nodes: item.nodes, edges: item.edges }}
                     onClick={() => handleLoad(item)}
                   />
                   {/* 3-dot menu */}

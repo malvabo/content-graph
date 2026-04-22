@@ -135,7 +135,7 @@ function AppInner() {
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
         {/* Hide the left nav in full-screen editor modes (node canvas, infographic edit)
             so the user can focus on the thing they're editing. */}
-        {activeView !== 'intro' && !(activeView === 'infographics' && hashParam) && (
+        {activeView !== 'intro' && activeView !== 'workflow' && !(activeView === 'infographics' && hashParam) && (
           <IconNav activeView={activeView} onViewChange={setActiveView} />
         )}
 
@@ -151,10 +151,12 @@ function AppInner() {
 
         {activeView === 'workflow' && (
           <>
-            <div className="hidden md:flex flex-1 relative">
+            <div className="hidden md:flex flex-1 relative flex-col">
               <CanvasToolbar onBackToLibrary={() => setActiveView('library')} />
-              <EmptyCanvasOverlay />
-              <GraphCanvas />
+              <div className="flex-1 relative" style={{ marginTop: 48 }}>
+                <EmptyCanvasOverlay />
+                <GraphCanvas />
+              </div>
             </div>
             <div className="flex md:hidden flex-1 min-h-0">
               <MobileWorkflow onBackToLibrary={() => setActiveView('library')} />

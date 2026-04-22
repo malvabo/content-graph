@@ -3,7 +3,7 @@ import { useRef, useState, useEffect, memo } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import ContentModal from '../modals/ContentModal';
-import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
+import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
 import { aiExecute } from '../../utils/aiExecutor';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import type { ContentNode } from '../../store/graphStore';
@@ -17,8 +17,6 @@ import { InfographicInline } from './InfographicNode';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import { useGraphStore } from '../../store/graphStore';
 import { useSettingsStore } from '../../store/settingsStore';
-
-import { PURPOSE_RATIO } from '../../utils/imageDims';
 
 function canConnect(fromSubtype: string, toSubtype: string): boolean {
   const from = NODE_DEFS_BY_SUBTYPE[fromSubtype];
@@ -62,98 +60,6 @@ function UpstreamInputsList({ id }: { id: string }) {
   );
 }
 
-/* ── Chip-style MiniSelect ── */
-function MiniSelect({ value, options, onChange }: { value: string; options: readonly string[]; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as globalThis.Node)) setOpen(false); };
-    window.addEventListener('mousedown', h, true);
-    return () => window.removeEventListener('mousedown', h, true);
-  }, [open]);
-  return (
-    <div ref={ref} className="relative"
-      onMouseLeave={() => { if (open) setTimeout(() => { if (!ref.current?.matches(':hover')) setOpen(false); }, 100); }}>
-      <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="h-6 text-xs rounded-full px-3 flex items-center gap-1"
-        style={{ background: 'var(--color-bg-surface)', border: 'none', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap' }}>
-        <span style={{ color: 'var(--color-text-secondary)' }}>{value}</span>
-        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ opacity: 0.35, flexShrink: 0 }}><path d="m6 9 6 6 6-6"/></svg>
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 pt-1 z-50">
-        <div className="dropdown-fade rounded-lg" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'thin', minWidth: 160, padding: 'var(--space-1) 0' }}>
-          {options.map((o, i) => (
-            <button key={o} className="w-full px-3 py-2" style={{ textAlign: 'left', display: 'block', background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: o === value ? 500 : 400, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', borderBottom: i < options.length - 1 ? '1px solid var(--color-border-subtle)' : 'none', transition: 'background 100ms' }}
-              onMouseEnter={e => { if (o !== value) e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-              onMouseLeave={e => { if (o !== value) e.currentTarget.style.background = 'transparent'; }}
-              onClick={(e) => { e.stopPropagation(); onChange(o); setOpen(false); }}>{o}</button>
-          ))}
-        </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Inline config per node type — vertical stack with labels ── */
-const INLINE_CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unknown) => void) => React.ReactNode> = {
-  'linkedin-post': (c, s) => <>
-    <MiniSelect value={c.goal as string ?? 'Thought leadership'} options={['Thought leadership', 'Personal story', 'Industry insight', 'Announcement', 'Call to action']} onChange={v => s('goal', v)} />
-    <MiniSelect value={c.tone as string ?? 'Authoritative'} options={['Authoritative', 'Conversational', 'Vulnerable', 'Data-driven', 'Contrarian']} onChange={v => s('tone', v)} />
-    <MiniSelect value={c.length as string ?? 'Medium ~280w'} options={['Short ~150w', 'Medium ~280w', 'Long ~450w']} onChange={v => s('length', v)} />
-    <MiniSelect value={c.hook as string ?? 'Bold statement'} options={['Bold statement', 'Surprising stat', 'Personal micro-story', 'Counter-intuitive claim', 'Question']} onChange={v => s('hook', v)} />
-    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['linkedin-post']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
-  </>,
-  'twitter-thread': (c, s) => <>
-    <MiniSelect value={c.style as string ?? 'Numbered 1/ 2/ 3/'} options={['Numbered 1/ 2/ 3/', 'Hook + thread', 'Narrative']} onChange={v => s('style', v)} />
-    <MiniSelect value={c.tone as string ?? 'Analytical'} options={['Analytical', 'Personal', 'Educational', 'Provocative']} onChange={v => s('tone', v)} />
-    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['twitter-thread']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
-  </>,
-  'twitter-single': (c, s) => <>
-    <MiniSelect value={c.angle as string ?? 'Most quotable insight'} options={['Most quotable insight', 'Strongest stat', 'Contrarian take', 'Call to action']} onChange={v => s('angle', v)} />
-    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['twitter-single']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
-  </>,
-  'newsletter': (c, s) => <>
-    <MiniSelect value={c.type as string ?? 'Full issue'} options={['Full issue', 'Feature section', 'TL;DR', 'Deep dive', 'Roundup intro']} onChange={v => s('type', v)} />
-    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['newsletter']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
-  </>,
-  'infographic': (c, s) => <>
-    <MiniSelect value={c.type as string ?? 'Process'} options={['Process', 'Statistical', 'Comparison', 'Timeline', 'Listicle', 'Anatomy']} onChange={v => s('type', v)} />
-    <MiniSelect value={c.style as string ?? 'Clean Corporate'} options={['Clean Corporate', 'Bold Editorial', 'Illustrated', 'Dark Premium', 'Minimalist']} onChange={v => s('style', v)} />
-    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['infographic']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
-  </>,
-  'quote-card': (c, s) => <>
-    <MiniSelect value={c.format as string ?? 'Single quote'} options={['Single quote', 'Multiple options']} onChange={v => s('format', v)} />
-    <MiniSelect value={c.aspect as string ?? '1:1'} options={['1:1', '4:5', '16:9', '9:16', '1.91:1']} onChange={v => s('aspect', v)} />
-    <MiniSelect value={c.style as string ?? 'Minimal'} options={['Minimal', 'Bold', 'Editorial', 'Dark', 'Gradient']} onChange={v => s('style', v)} />
-    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['quote-card']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
-  </>,
-  'image-prompt': (c, s) => <>
-    <MiniSelect value={c.purpose as string ?? 'Blog hero'} options={['Blog hero', 'LinkedIn post', 'Newsletter header', 'Instagram slide', 'Social concept']} onChange={v => { s('purpose', v); if (PURPOSE_RATIO[v]) s('aspect', PURPOSE_RATIO[v]); }} />
-    <MiniSelect value={c.style as string ?? 'Photography'} options={['Photography', 'Flat illustration', '3D render', 'Abstract', 'Editorial graphic']} onChange={v => s('style', v)} />
-    <MiniSelect value={c.aspect as string ?? '16:9'} options={['1:1', '4:5', '16:9', '9:16', '1.91:1']} onChange={v => s('aspect', v)} />
-    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['image-prompt']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
-  </>,
-  'brand-voice': (c, s) => <>
-    <MiniSelect value={c.strength as string ?? 'Full rewrite'} options={['Light touch', 'Moderate', 'Full rewrite']} onChange={v => s('strength', v)} />
-    <MiniSelect value={c.model as string ?? DEFAULT_MODELS['brand-voice']} options={MODEL_OPTIONS} onChange={v => s('model', v)} />
-  </>,
-  'voice-source': () => <></>,
-};
-
-function InlineConfig({ id, subtype }: { id: string; subtype: string }) {
-  const config = useGraphStore(s => s.nodes.find(n => n.id === id)?.data.config ?? {});
-  const updateConfig = useGraphStore(s => s.updateNodeConfig);
-  const render = INLINE_CONFIGS[subtype];
-  if (!render) return null;
-  const set = (k: string, v: unknown) => updateConfig(id, { [k]: v });
-  return (
-    <div className="flex flex-wrap gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid var(--color-border-subtle)' }}>
-      {render(config as Record<string, unknown>, set)}
-    </div>
-  );
-}
 
 function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const status = useExecutionStore(s => s.status[id] ?? 'idle');
@@ -333,9 +239,6 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
           <GenerateNodeInline id={id} subtype={data.subtype} expandOpen={expandOpen} onExpand={() => setExpandOpen(true)} onExpandClose={() => setExpandOpen(false)} />
         )}
       </div>
-
-      {/* Inline config dropdowns */}
-      <InlineConfig id={id} subtype={data.subtype} />
 
       {/* Expand modal for source/transform nodes */}
       {expandOpen && ["text-source", "file-source", "refine", "voice-source"].includes(data.subtype) && (() => {
