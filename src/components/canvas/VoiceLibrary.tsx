@@ -111,6 +111,14 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, trans
   const transcriptRef = useRef<HTMLDivElement>(null);
   const [elapsed, setElapsed] = useState(0);
   const [visible, setVisible] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  useEffect(() => {
+    // Auto-clear the discard confirm state after a few seconds so stale prompts
+    // don't stick around if the user decides not to confirm.
+    if (!confirmDiscard) return;
+    const t = setTimeout(() => setConfirmDiscard(false), 4000);
+    return () => clearTimeout(t);
+  }, [confirmDiscard]);
 
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
   useEffect(() => {
@@ -213,20 +221,34 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, trans
             </div>
           )}
 
-          {!fatal && (
-            <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-1)' }}>
-              <button onClick={onDiscard}
-                style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', padding: '4px 8px' }}>
-                Discard
-              </button>
-              {hasCapturedAudio && (
-                <button onClick={onStop}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', padding: '4px 8px' }}>
-                  Save anyway
-                </button>
-              )}
-            </div>
-          )}
+          {!fatal && (() => {
+            // Any captured content (live words or audio chunks) makes discard a
+            // destructive action — require a second click so a long dictation isn't
+            // thrown away on a mis-tap.
+            const hasContent = !!transcriptSoFar.trim() || hasCapturedAudio;
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)', marginTop: 'var(--space-1)' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                  <button
+                    onClick={() => { if (!hasContent || confirmDiscard) onDiscard(); else setConfirmDiscard(true); }}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', padding: '4px 8px', fontWeight: confirmDiscard ? 600 : 400 }}>
+                    {confirmDiscard && hasContent ? 'Tap again to discard' : 'Discard'}
+                  </button>
+                  {hasCapturedAudio && (
+                    <button onClick={onStop}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', padding: '4px 8px' }}>
+                      Save anyway
+                    </button>
+                  )}
+                </div>
+                {confirmDiscard && hasContent && (
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
+                    This throws away the current recording.
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>,
@@ -467,7 +489,15 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
           <div>
             <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Voice Notes</h1>
-            {notes.length > 0 && <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>{notes.length} note{notes.length !== 1 ? 's' : ''}</p>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+              {notes.length > 0 && <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 0 }}>{notes.length} note{notes.length !== 1 ? 's' : ''}</p>}
+              {notes.some(n => n.status === 'transcribing') && (
+                <span title="A previous recording is still being transcribed in the background"
+                  style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '1px 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)', lineHeight: '16px' }}>
+                  Transcribing previous note…
+                </span>
+              )}
+            </div>
           </div>
           {!recording && notes.length > 0 && (
             <button className="btn btn-primary" onClick={startRecording}>
@@ -560,20 +590,19 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                       <div ref={menuRef} onClick={e => e.stopPropagation()}
                         style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
                         {[
-                          { label: 'Rename', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>, action: () => { setRenameName(note.title); setRenameId(note.id); setMenuId(null); } },
-                          { label: 'Use in workflow', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>, action: () => {
+                          { label: 'Rename', action: () => { setRenameName(note.title); setRenameId(note.id); setMenuId(null); } },
+                          { label: 'Use in workflow', action: () => {
                             pushVoiceNoteToWorkflow(note.id, note.title);
                             setMenuId(null);
                             onUseInWorkflow?.();
                           } },
-                          { label: 'Analyze in ScriptSense', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>, action: () => { if (note.transcript) onSendToScript?.(note.transcript); setMenuId(null); } },
-                          { label: 'Delete', danger: true, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>, action: () => { setDeleteId(note.id); setMenuId(null); } },
+                          { label: 'Analyze in ScriptSense', action: () => { if (note.transcript) onSendToScript?.(note.transcript); setMenuId(null); } },
+                          { label: 'Delete', danger: true, action: () => { setDeleteId(note.id); setMenuId(null); } },
                         ].map(opt => (
                           <button key={opt.label} onClick={opt.action}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
                             onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
                             onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                            <span style={{ color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-tertiary)', display: 'flex' }}>{opt.icon}</span>
                             {opt.label}
                           </button>
                         ))}
@@ -623,19 +652,33 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       {viewId && (() => {
         const note = notes.find(n => n.id === viewId);
         if (!note || !note.transcript) return null;
+        const wordCount = note.transcript.trim().split(/\s+/).filter(Boolean).length;
+        const subtitle = `Recorded ${fmtDate(note.createdAt)} · ${fmtDuration(note.durationMs)} · ${wordCount} word${wordCount === 1 ? '' : 's'}`;
+        // Transcript edits in the library should flow through to workflow nodes that
+        // reference this note. Voice-source nodes read text from outputStore on render,
+        // so we sync every matching node's output alongside the note update.
+        const persistTranscript = (t: string) => {
+          if (t === note.transcript) return;
+          updateNote(note.id, { transcript: t });
+          const matches = useGraphStore.getState().nodes.filter(
+            n => n.data?.subtype === 'voice-source' && (n.data as any)?.config?.voiceNoteId === note.id,
+          );
+          for (const n of matches) useOutputStore.getState().setOutput(n.id, { text: t });
+        };
         return (
           <ContentModal
             subtype="voice-source"
             title={note.title}
+            subtitle={subtitle}
             text={note.transcript}
             onClose={() => setViewId(null)}
-            onSave={(t: string) => updateNote(note.id, { transcript: t })}
+            onSave={persistTranscript}
             extraActions={[
-              { label: 'Send to Script Writing', onClick: (t: string) => { onSendToScript?.(t); } },
+              { label: 'Send to Script Writing', onClick: (t: string) => { persistTranscript(t); setViewId(null); onSendToScript?.(t); } },
               { label: 'Push to Workflow', onClick: (t: string) => {
                 // ContentModal may have edits the user hasn't saved yet; persist them
                 // first so the voice-source node references the same text the user sees.
-                if (t && t !== note.transcript) updateNote(note.id, { transcript: t });
+                persistTranscript(t);
                 pushVoiceNoteToWorkflow(note.id, note.title);
                 onUseInWorkflow?.();
               }},
