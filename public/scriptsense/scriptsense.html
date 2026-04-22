@@ -117,6 +117,7 @@ function useTheme() {
 const LIGHT = {
   pageBg:  "#F2EFE9",
   surface: "#F7F5F1",
+  canvasGrey: "#F1F2F5",
   white:   "#FFFFFF",
   border:  "#E0E4E0",
   border2: "#d4d1cb",
@@ -147,6 +148,7 @@ const LIGHT = {
 const DARK = {
   pageBg:  "#111114",
   surface: "#161619",
+  canvasGrey: "#131316",
   white:   "#1a1a1e",
   border:  "#2a2a30",
   border2: "#4a4a54",
@@ -768,19 +770,11 @@ ${text}`
 
         {/* ── Column labels + tabs ── */}
         <div style={{ display:"flex", background:C.white, borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
-          <div style={{ width:"50%", padding:"0 16px", display:"flex", alignItems:"center", gap:10, borderRight:`1px solid ${C.border}`, height:44 }}>
-            <button onClick={onBack} className="back-btn" style={{ background:"none", border:"none", color:C.mute, display:"flex", padding:4, borderRadius:6 }}>
-              <span style={{ fontSize:14 }}>←</span>
-            </button>
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Untitled script"
-              style={{ flex:1, fontSize:13, fontWeight:500, color:C.text, background:"none", border:"none", outline:"none", padding:"2px 0", borderBottom:"1px solid transparent", fontFamily:"inherit" }}
-              onFocus={e => { e.currentTarget.style.borderBottomColor = C.border2; }}
-              onBlur={e => { e.currentTarget.style.borderBottomColor = "transparent"; }} />
-          </div>
+          <div style={{ width:"50%", borderRight:`1px solid ${C.border}`, height:44 }} />
           <div style={{ width:"50%", display:"flex", alignItems:"stretch" }}>
             {[["insights", analysisVersion > 0 ? `Insights · ${visibleInsights.length}` : "Insights"]].map(([tab,label]) => (
               <button key={tab} className="tab-btn" onClick={() => setActiveTab(tab)} style={{
-                padding:"0 16px", fontSize:12, fontWeight:500, letterSpacing:"0.04em",
+                padding:"0 16px", fontSize:12, fontWeight:500, letterSpacing:"-0.01em",
                 color: activeTab===tab ? C.text : C.mute,
                 borderBottom: activeTab===tab ? `2px solid ${C.accent}` : "2px solid transparent",
               }}>{label}</button>
@@ -845,7 +839,7 @@ ${text}`
           </div>
 
           {/* Right — insights panel */}
-          <div ref={insightRef} className="scroll-area" style={{ width:"50%", overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:12, background:C.white }}>
+          <div ref={insightRef} className="scroll-area" style={{ width:"50%", overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:12, background:C.canvasGrey }}>
 
             <div style={{ display: activeTab==="insights" ? "contents" : "none" }}>
               {/* ── Empty / loading / results states ── */}

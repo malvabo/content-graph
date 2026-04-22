@@ -140,9 +140,9 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
       <div className="absolute top-2 left-2 md:top-3 md:left-3 z-10 flex items-center gap-2">
         {onBack && (
           <button onClick={onBack} className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: 'var(--color-bg-card)', backdropFilter: 'blur(12px)', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', transition: 'background 150ms' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-bg-card)'; }}
+            style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 150ms, color 150ms' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
             aria-label="Back to scripts">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
@@ -151,7 +151,7 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
           <input
             aria-label="Script name"
             className="outline-none"
-            style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}
+            style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', width: 420, maxWidth: '50vw', overflow: 'hidden', textOverflow: 'ellipsis' }}
             value={title}
             placeholder="Untitled"
             onChange={e => updateScript(scriptId, { title: e.target.value })}
