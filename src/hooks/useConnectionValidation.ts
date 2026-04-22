@@ -22,19 +22,6 @@ export function useConnectionValidation(_nodes: ContentNode[], _edges: Edge[]) {
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // Diagnostic: log the nodeDefs the running bundle actually sees. If this
-  // shows maxInputs undefined/1 for a generate subtype, the served bundle is
-  // stale and needs a Vite server restart (not just a hard refresh).
-  if (typeof window !== 'undefined' && !(window as any).__cgNodeDefsLogged) {
-    (window as any).__cgNodeDefsLogged = true;
-    // eslint-disable-next-line no-console
-    console.info('[connection-validation] nodeDefs loaded', {
-      'linkedin-post.maxInputs': NODE_DEFS_BY_SUBTYPE['linkedin-post']?.maxInputs,
-      'twitter-thread.maxInputs': NODE_DEFS_BY_SUBTYPE['twitter-thread']?.maxInputs,
-      'export.maxInputs': NODE_DEFS_BY_SUBTYPE['export']?.maxInputs,
-    });
-  }
-
   const showTooltip = useCallback((msg: string) => {
     const el = document.querySelector('.react-flow__pane');
     const rect = el?.getBoundingClientRect();
@@ -65,16 +52,12 @@ export function useConnectionValidation(_nodes: ContentNode[], _edges: Edge[]) {
       const maxInputs = tgtDef.maxInputs ?? 1;
       const currentInputs = edges.filter((e) => e.target === target).length;
       if (currentInputs >= maxInputs) {
-        // eslint-disable-next-line no-console
-        console.warn('[connection-validation] rejected', { targetSubtype: tgtNode.data.subtype, tgtDef, maxInputs, currentInputs });
         showTooltip(maxInputs === 1 ? 'This node already has an input' : `Max ${maxInputs} inputs reached`);
         return false;
       }
 
       if (hasCycle(source, target, edges)) { showTooltip('Connection would create a cycle'); return false; }
 
-      // eslint-disable-next-line no-console
-      console.info('[connection-validation] accepted', { source, target, targetSubtype: tgtNode.data.subtype, maxInputs, currentInputs });
       return true;
     },
     [showTooltip]
