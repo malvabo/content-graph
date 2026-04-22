@@ -60,7 +60,7 @@ export default function BrandSetupModal({ brandId, onClose }: { brandId: string;
     <div onClick={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)' }}>
       <div onClick={e => e.stopPropagation()}
-        style={{ width: '92%', maxWidth: 720, maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-default)', boxShadow: 'var(--shadow-lg)', fontFamily: 'var(--font-sans)' }}>
+        style={{ width: '92%', maxWidth: 720, height: 'min(720px, 92vh)', display: 'flex', flexDirection: 'column', background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-default)', boxShadow: 'var(--shadow-lg)', fontFamily: 'var(--font-sans)' }}>
         {/* Header */}
         <div style={{ padding: 'var(--space-4) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <input value={brand.kitName} onChange={e => updateBrand(brand.id, { kitName: e.target.value })}
