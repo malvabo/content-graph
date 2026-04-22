@@ -4,7 +4,34 @@ import { useVoiceStore } from '../../store/voiceStore';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { computeSafePosition } from '../../utils/nodePlacement';
 import ContentModal from '../modals/ContentModal';
+
+// Push a saved voice note into the active workflow as a voice-source node.
+// The node references the note by id (not a baked-in string), so later edits
+// to the transcript flow through on re-run. Selects the new node so the user
+// sees exactly what was added when we navigate to the workflow.
+function pushVoiceNoteToWorkflow(noteId: string, noteTitle: string) {
+  const id = `voice-source-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const node: ContentNode = {
+    id,
+    type: 'contentNode',
+    position: computeSafePosition(),
+    deletable: true,
+    data: {
+      subtype: 'voice-source',
+      label: 'Voice: ' + noteTitle.slice(0, 30),
+      badge: 'Vc',
+      category: 'source',
+      description: 'From voice note',
+      config: { voiceNoteId: noteId },
+    },
+  };
+  useGraphStore.getState().addNode(node);
+  const transcript = useVoiceStore.getState().notes.find((n) => n.id === noteId)?.transcript ?? '';
+  useOutputStore.getState().setOutput(id, { text: transcript });
+  useGraphStore.getState().setSelectedNodeId(id);
+}
 
 async function transcribeWithGroq(blob: Blob, apiKey: string): Promise<string> {
   const form = new FormData();
@@ -529,15 +556,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                         {[
                           { label: 'Rename', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>, action: () => { setRenameName(note.title); setRenameId(note.id); setMenuId(null); } },
                           { label: 'Use in workflow', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>, action: () => {
-                            const node: ContentNode = {
-                              id: `text-source-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
-                              type: 'contentNode',
-                              position: { x: 200, y: 150 },
-                              deletable: true,
-                              data: { subtype: 'text-source', label: 'Voice: ' + note.title.slice(0, 30), badge: '📝', category: 'source', description: 'From voice note', config: { text: note.transcript } },
-                            };
-                            useGraphStore.getState().addNode(node);
-                            useOutputStore.getState().setOutput(node.id, { text: note.transcript });
+                            pushVoiceNoteToWorkflow(note.id, note.title);
                             setMenuId(null);
                             onUseInWorkflow?.();
                           } },
@@ -608,15 +627,10 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             extraActions={[
               { label: 'Send to Script Writing', onClick: (t: string) => { onSendToScript?.(t); } },
               { label: 'Push to Workflow', onClick: (t: string) => {
-                const node = {
-                  id: `text-source-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
-                  type: 'contentNode' as const,
-                  position: { x: 200, y: 150 },
-                  deletable: true,
-                  data: { subtype: 'text-source', label: 'Voice: ' + note.title.slice(0, 30), badge: '📝', category: 'source' as const, description: 'From voice note', config: { text: t } },
-                };
-                useGraphStore.getState().addNode(node);
-                useOutputStore.getState().setOutput(node.id, { text: t });
+                // ContentModal may have edits the user hasn't saved yet; persist them
+                // first so the voice-source node references the same text the user sees.
+                if (t && t !== note.transcript) updateNote(note.id, { transcript: t });
+                pushVoiceNoteToWorkflow(note.id, note.title);
                 onUseInWorkflow?.();
               }},
             ]}
