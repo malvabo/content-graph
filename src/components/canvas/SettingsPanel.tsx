@@ -24,77 +24,121 @@ const PROVIDERS = [
 const CARD: React.CSSProperties = { background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)' };
 const HDESC: React.CSSProperties = { fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0', lineHeight: 'var(--leading-normal)' };
 
-function SectionHeader({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div style={{ marginBottom: 'var(--space-5)' }}>
-      <h2 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>{title}</h2>
-      <p style={HDESC}>{desc}</p>
-    </div>
-  );
-}
-
 function BrandKitsSection() {
   const brands = useBrandsStore(s => s.brands);
-  const activeBrandId = useBrandsStore(s => s.activeBrandId);
   const addBrand = useBrandsStore(s => s.addBrand);
   const removeBrand = useBrandsStore(s => s.removeBrand);
   const duplicateBrand = useBrandsStore(s => s.duplicateBrand);
   const setActiveBrand = useBrandsStore(s => s.setActiveBrand);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuId) return;
+    const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuId(null); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [menuId]);
 
   const handleNew = () => { const id = addBrand({ kitName: `Brand ${brands.length + 1}` }); setEditingId(id); };
 
+  const TH: React.CSSProperties = { padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textAlign: 'left', background: 'var(--color-bg-surface)', borderBottom: '1px solid var(--color-border-subtle)' };
+  const TD: React.CSSProperties = { padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', borderBottom: '1px solid var(--color-border-subtle)', verticalAlign: 'middle' };
+
   return (
     <div>
-      <SectionHeader title="Brand Kits" desc="Save named brand kits (colors, fonts, voice) and apply them to workflows." />
-      <div style={{ ...CARD, display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-        {brands.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', maxWidth: 320, lineHeight: 1.5 }}>
-              No brand kits yet. Create one to apply a consistent look and voice to a specific workflow.
-            </div>
-            <button className="btn btn-primary" onClick={handleNew}>+ New brand kit</button>
-          </div>
-        ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-3)' }}>
-              {brands.map(b => {
-                const isActive = b.id === activeBrandId;
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
+        <div>
+          <h2 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Brand Kits</h2>
+          <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>Save named kits (colors, fonts, voice) and apply them to specific workflows.</p>
+        </div>
+        <button className="btn btn-primary" onClick={handleNew}>+ New brand kit</button>
+      </div>
+
+      {brands.length === 0 ? (
+        <div style={{ ...CARD, textAlign: 'center', padding: 'var(--space-8)', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }}>
+          No brand kits yet. Click "+ New brand kit" to create your first.
+        </div>
+      ) : (
+        <div style={{ ...CARD, padding: 0, overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+            <thead>
+              <tr>
+                <th style={TH}>Name</th>
+                <th style={TH}>Colors</th>
+                <th style={TH}>Font</th>
+                <th style={TH}>Type</th>
+                <th style={{ ...TH, width: 48 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {brands.map((b, i) => {
+                const isLast = i === brands.length - 1;
+                const cellBase: React.CSSProperties = { ...TD, borderBottom: isLast ? 'none' : TD.borderBottom };
                 return (
-                  <div key={b.id}
-                    style={{ padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-lg)', border: `1px solid ${isActive ? 'var(--color-accent)' : 'var(--color-border-default)'}`, background: 'var(--color-bg-surface)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                      {(['primary', 'secondary', 'accent'] as const).map(k => (
-                        <div key={k} style={{ width: 16, height: 16, borderRadius: 'var(--radius-sm)', background: b.colors[k], border: '1px solid var(--color-border-subtle)' }} title={`${k}: ${b.colors[k]}`} />
-                      ))}
-                      <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {b.kitName || 'Untitled kit'}
-                      </span>
-                      {isActive && <span style={{ fontSize: 'var(--text-micro)', fontFamily: 'var(--font-sans)', color: 'var(--color-accent)', fontWeight: 'var(--weight-medium)' }}>Default</span>}
-                    </div>
-                    {(b.name || b.voice?.personality) && (
-                      <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2 as any, WebkitBoxOrient: 'vertical' as any }}>
-                        {[b.name, b.voice?.personality].filter(Boolean).join(' · ')}
+                  <tr key={b.id} onClick={() => setEditingId(b.id)}
+                    style={{ cursor: 'pointer', transition: 'background 120ms' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                    <td style={{ ...cellBase, whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                        <span style={{ fontWeight: 'var(--weight-medium)' }}>{b.kitName || 'Untitled kit'}</span>
+                        {b.name && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>{b.name}</span>}
                       </div>
-                    )}
-                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
-                      <button className="btn btn-sm btn-ghost" onClick={() => setEditingId(b.id)}>Edit</button>
-                      {!isActive && <button className="btn btn-sm btn-ghost" onClick={() => setActiveBrand(b.id)}>Set default</button>}
-                      <button className="btn btn-sm btn-ghost" onClick={() => duplicateBrand(b.id)}>Duplicate</button>
-                      <button className="btn btn-sm btn-ghost" style={{ color: 'var(--color-danger-text)' }}
-                        onClick={() => {
-                          if (!confirm(`Delete brand kit "${b.kitName || 'Untitled kit'}"?`)) return;
-                          removeBrand(b.id);
-                        }}>Delete</button>
-                    </div>
-                  </div>
+                    </td>
+                    <td style={cellBase}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {(['primary', 'secondary', 'accent'] as const).map(k => (
+                          <span key={k}
+                            title={`${k}: ${b.colors[k]}`}
+                            style={{ width: 18, height: 18, borderRadius: '50%', background: b.colors[k], border: '1px solid var(--color-border-subtle)', display: 'inline-block' }} />
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{ ...cellBase, color: (b.fonts?.title || b.fonts?.body) ? 'var(--color-text-primary)' : 'var(--color-text-disabled)' }}>
+                      {b.fonts?.title || b.fonts?.body || '—'}
+                    </td>
+                    <td style={{ ...cellBase, color: b.typeLabel ? 'var(--color-text-secondary)' : 'var(--color-text-disabled)' }}>
+                      {b.typeLabel || ''}
+                    </td>
+                    <td style={{ ...cellBase, textAlign: 'center', position: 'relative' }}
+                      onClick={e => e.stopPropagation()}>
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <button aria-label="Brand kit options"
+                          onClick={e => { e.stopPropagation(); setMenuId(menuId === b.id ? null : b.id); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-1)', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-disabled)', display: 'flex' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                        </button>
+                        {menuId === b.id && (
+                          <div ref={menuRef}
+                            style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 160 }}>
+                            {[
+                              { label: 'Set as default', action: () => { setActiveBrand(b.id); setMenuId(null); } },
+                              { label: 'Duplicate', action: () => { duplicateBrand(b.id); setMenuId(null); } },
+                              { label: 'Delete', danger: true, action: () => {
+                                if (confirm(`Delete brand kit "${b.kitName || 'Untitled kit'}"?`)) removeBrand(b.id);
+                                setMenuId(null);
+                              } },
+                            ].map(opt => (
+                              <button key={opt.label} onClick={opt.action}
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
                 );
               })}
-            </div>
-            <button className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-start' }} onClick={handleNew}>+ New brand kit</button>
-          </>
-        )}
-      </div>
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {editingId && <BrandSetupModal brandId={editingId} onClose={() => setEditingId(null)} />}
     </div>

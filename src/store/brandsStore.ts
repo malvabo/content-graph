@@ -7,14 +7,16 @@ export interface SavedBrand extends BrandKit {
   id: string;
   /** Human label for the kit (distinct from BrandKit.name, the brand's marketing name). */
   kitName: string;
+  /** Short AI-generated type tag (e.g., "Editorial", "Playful") derived from the brand description. */
+  typeLabel?: string;
 }
 
 interface BrandsState {
   brands: SavedBrand[];
   /** The brand applied by default when a workflow has no per-flow override. */
   activeBrandId: string | null;
-  addBrand: (initial?: Partial<BrandKit> & { kitName?: string }) => string;
-  updateBrand: (id: string, patch: Partial<BrandKit> & { kitName?: string }) => void;
+  addBrand: (initial?: Partial<BrandKit> & { kitName?: string; typeLabel?: string }) => string;
+  updateBrand: (id: string, patch: Partial<BrandKit> & { kitName?: string; typeLabel?: string }) => void;
   removeBrand: (id: string) => void;
   duplicateBrand: (id: string) => string;
   setActiveBrand: (id: string | null) => void;
@@ -58,6 +60,7 @@ export const useBrandsStore = create<BrandsState>()(
           voice: { ...b.voice, ...(patch.voice || {}) },
           customFonts: patch.customFonts ?? b.customFonts,
           kitName: patch.kitName ?? b.kitName,
+          typeLabel: patch.typeLabel ?? b.typeLabel,
         }),
       })),
 

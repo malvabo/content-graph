@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useBrandsStore } from '../../store/brandsStore';
 import { EMPTY_BRAND, FONT_PRESETS, type CustomFont } from '../../store/settingsStore';
+import { summarizeBrandType } from '../../utils/summarizeBrandType';
 
 const LBL: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', display: 'block', marginBottom: 'var(--space-2)' };
 const UPLOAD_SENTINEL = '__upload__';
@@ -12,6 +13,19 @@ export default function BrandSetupModal({ brandId, onClose }: { brandId: string;
   const fileRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<'visual' | 'voice'>('visual');
   const [fontError, setFontError] = useState<string | null>(null);
+
+  // When the user closes the modal, kick off a type-label summary if we have
+  // something to summarize and an API key. The label populates the Type column
+  // in the Brand Kits list — failure silently leaves it blank.
+  const handleClose = () => {
+    const current = useBrandsStore.getState().brands.find(b => b.id === brandId);
+    if (current && (current.voice?.personality || current.imageStyleNote)) {
+      summarizeBrandType(current).then(label => {
+        if (label) useBrandsStore.getState().updateBrand(brandId, { typeLabel: label } as any);
+      });
+    }
+    onClose();
+  };
 
   if (!brand) return null;
   const customFonts: CustomFont[] = brand.customFonts || [];
@@ -57,7 +71,7 @@ export default function BrandSetupModal({ brandId, onClose }: { brandId: string;
   );
 
   return createPortal(
-    <div onClick={onClose}
+    <div onClick={handleClose}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)' }}>
       <div onClick={e => e.stopPropagation()}
         style={{ width: '92%', maxWidth: 720, height: 'min(720px, 92vh)', display: 'flex', flexDirection: 'column', background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-default)', boxShadow: 'var(--shadow-lg)', fontFamily: 'var(--font-sans)' }}>
@@ -68,7 +82,7 @@ export default function BrandSetupModal({ brandId, onClose }: { brandId: string;
             style={{ flex: 1, fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', outline: 'none' }}
             onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
             onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }} />
-          <button aria-label="Close" onClick={onClose}
+          <button aria-label="Close" onClick={handleClose}
             style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
@@ -189,7 +203,7 @@ export default function BrandSetupModal({ brandId, onClose }: { brandId: string;
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)' }}>
             {(brand.voice?.personality || brand.name || (brand.colors.primary && brand.colors.primary !== EMPTY_BRAND.colors.primary)) ? 'Changes save automatically' : 'Fill out the kit, then assign it to a workflow'}
           </span>
-          <button className="btn btn-primary btn-sm" onClick={onClose}>Done</button>
+          <button className="btn btn-primary btn-sm" onClick={handleClose}>Done</button>
         </div>
       </div>
     </div>,
