@@ -131,7 +131,7 @@ function InlineConfig({ id, subtype }: { id: string; subtype: string }) {
   const brandOptions = [...brands.map(brandLabel), NONE_BRAND_LABEL];
 
   return (
-    <div className="flex flex-wrap gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid var(--color-border-subtle)' }}>
+    <div className="flex flex-wrap gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid var(--color-border-subtle)', paddingRight: 40 }}>
       {render?.(c, set)}
       {isGenerate && (
         <MiniSelect
