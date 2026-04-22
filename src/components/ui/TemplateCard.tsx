@@ -9,6 +9,9 @@ interface TemplateCardProps {
 }
 
 export default function TemplateCard({ title, meta, pills, extraCount, onClick }: TemplateCardProps) {
+  // One horizontal inset used by both rows so the divider, title, and pill bar
+  // all hang from the same gutter. Vertical rhythm: 16 top, 16 bottom, 14 between.
+  const HP = 20;
   return (
     <button onClick={onClick} style={{
       display: 'flex', width: '100%', flexDirection: 'column',
@@ -22,54 +25,57 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
-      {/* Top: title + meta */}
-      <div style={{ padding: '12px 16px 0 16px', borderBottom: '1px solid var(--color-border-subtle)', height: 75, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      {/* Top: title + meta — padding matches the bottom row */}
+      <div style={{
+        padding: `16px ${HP}px`,
+        borderBottom: '1px solid var(--color-border-subtle)',
+        display: 'flex', flexDirection: 'column', gap: 4,
+      }}>
         <div style={{
           fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-          color: 'var(--color-text-primary)', lineHeight: '21px',
+          color: 'var(--color-text-primary)', lineHeight: 1.4,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          paddingRight: 16,
         }}>{title}</div>
         <div style={{
           fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-normal)',
-          color: 'var(--color-text-tertiary)', lineHeight: '18px', marginTop: 4,
+          color: 'var(--color-text-tertiary)', lineHeight: 1.4,
         }}>{meta}</div>
       </div>
 
       {/* Bottom: node pill bar */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 0,
-        padding: '8px 16px',
+        display: 'flex', alignItems: 'center',
+        padding: `12px ${HP}px`,
+        gap: 8,
+        overflow: 'hidden',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
-          {pills.map((label, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              {i > 0 && (
-                <span style={{
-                  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
-                  color: 'var(--color-text-tertiary)', padding: '0 4px',
-                }}>→</span>
-              )}
+        {pills.map((label, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {i > 0 && (
               <span style={{
-                display: 'inline-flex', alignItems: 'center',
-                padding: '4px 12px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--color-bg-surface)',
-                border: '1px solid var(--color-border-subtle)',
                 fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
-                fontWeight: 'var(--weight-normal)', color: 'var(--color-text-secondary)',
-                lineHeight: '18px', whiteSpace: 'nowrap',
-              }}>{label}</span>
-            </div>
-          ))}
-          {extraCount && extraCount > 0 && (
+                color: 'var(--color-text-tertiary)', lineHeight: 1,
+              }}>→</span>
+            )}
             <span style={{
+              display: 'inline-flex', alignItems: 'center',
+              padding: '5px 10px',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--color-bg-surface)',
+              border: '1px solid var(--color-border-subtle)',
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
-              color: 'var(--color-text-tertiary)', marginLeft: 'var(--space-1)',
-              whiteSpace: 'nowrap',
-            }}> +{extraCount}</span>
-          )}
-        </div>
+              fontWeight: 'var(--weight-normal)', color: 'var(--color-text-secondary)',
+              lineHeight: 1.25, whiteSpace: 'nowrap',
+            }}>{label}</span>
+          </div>
+        ))}
+        {extraCount && extraCount > 0 && (
+          <span style={{
+            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
+            color: 'var(--color-text-tertiary)',
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>+{extraCount}</span>
+        )}
       </div>
     </button>
   );
