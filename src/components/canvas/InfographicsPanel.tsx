@@ -248,6 +248,13 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
   const { items, add, update, remove, pushHistory, popHistory } = useInfographicStore();
   const [editingId, setEditingId] = useState<string | null>(initialEditId || null);
   useEffect(() => { if (initialEditId) setEditingId(initialEditId); }, [initialEditId]);
+  // Reflect editor state in the URL hash so App.tsx can detect the editor
+  // (via hashParam) and hide the left nav.
+  useEffect(() => {
+    const base = 'infographics';
+    const target = editingId ? `${base}:${editingId}` : base;
+    if (window.location.hash !== `#${target}`) window.location.hash = target;
+  }, [editingId]);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
