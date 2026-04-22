@@ -77,9 +77,9 @@ Raw values; avoid referencing directly — use the semantic tokens below.
 #### Navigation
 | Token | Light | Dark |
 |-------|-------|------|
-| `--color-nav-bg` | `#eaecef` | `#17171a` |
-| `--color-nav-item-active` | `#f7f8fa` | `#24242a` |
-| `--color-nav-item-hover` | `rgba(255,255,255,.45)` | `rgba(255,255,255,.05)` |
+| `--color-nav-bg` | `#eef1f6` | `#1c1f26` |
+| `--color-nav-item-active` | `#f8fafc` | `#272a33` |
+| `--color-nav-item-hover` | `rgba(220,228,240,.55)` | `rgba(200,210,230,.07)` |
 
 #### Node Badge Colors
 Light mode values; dark mode mirrors with `--color-badge-*-bg/-text` overrides.

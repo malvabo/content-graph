@@ -105,9 +105,9 @@
   /* ── Left nav (floating panel) ──
      Cool blue-tinted slate to contrast the warm canvas (#F2EFE9) and read as
      a separate surface rather than part of the same neutral wash. */
-  --color-nav-bg: #e4e8ef;            /* cool slate, +blue/−warm vs. #eaecef */
-  --color-nav-item-active: #f4f7fb;   /* matching cooler off-white for the active pill */
-  --color-nav-item-hover: rgba(210, 220, 235, 0.55);
+  --color-nav-bg: #eef1f6;            /* cool slate, a touch lighter than before for a softer panel */
+  --color-nav-item-active: #f8fafc;   /* matching cooler off-white for the active pill */
+  --color-nav-item-hover: rgba(220, 228, 240, 0.55);
 
   /* ── Typography ── */
   --font-sans: 'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -255,9 +255,9 @@
 
 /* ── Dark Mode (manual toggle) ── */
 :root.dark {
-  --color-nav-bg: #15171c;            /* cooler dark slate */
-  --color-nav-item-active: #20232b;   /* slightly blue-tinted raised pill */
-  --color-nav-item-hover: rgba(200, 210, 230, 0.06);
+  --color-nav-bg: #1c1f26;            /* dark slate, lifted a notch lighter */
+  --color-nav-item-active: #272a33;   /* slightly blue-tinted raised pill */
+  --color-nav-item-hover: rgba(200, 210, 230, 0.07);
   --color-bg: #111114;
   --color-bg-surface: #161619;
   --color-bg-card: #1a1a1e;
