@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
@@ -141,25 +142,47 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                 </div>
               </div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)', paddingBottom: 'var(--space-8)' }}>
-              <TemplateCard title="+ Empty Workflow" meta="Start from scratch" pills={[]} onClick={handleNew} />
-              {TEMPLATES.map((t, i) => {
-                const { nodes: n } = t.build();
-                const nodeLabels = n.slice(0, 2).map(nd => nd.data.label);
-                const extra = n.length - 2;
-                return <TemplateCard key={t.name} title={t.name} meta={`${n.length} nodes`} pills={nodeLabels} extraCount={extra > 0 ? extra : undefined} onClick={() => handleLoadTemplate(i)} />;
-              })}
-            </div>
+            <motion.div
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)', paddingBottom: 'var(--space-8)' }}
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.04 } } }}
+            >
+              {[
+                <TemplateCard key="__empty" title="+ Empty Workflow" meta="Start from scratch" pills={[]} onClick={handleNew} />,
+                ...TEMPLATES.map((t, i) => {
+                  const { nodes: n } = t.build();
+                  const nodeLabels = n.slice(0, 2).map(nd => nd.data.label);
+                  const extra = n.length - 2;
+                  return <TemplateCard key={t.name} title={t.name} meta={`${n.length} nodes`} pills={nodeLabels} extraCount={extra > 0 ? extra : undefined} onClick={() => handleLoadTemplate(i)} />;
+                })
+              ].map((card, idx) => (
+                <motion.div key={idx} variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.32, 0.72, 0, 1] } } }}>
+                  {card}
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
 
         /* Grid */
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
+          <motion.div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}
+            initial="hidden"
+            animate="visible"
+            variants={{ visible: { transition: { staggerChildren: 0.045 } } }}
+          >
+            <AnimatePresence mode="popLayout">
             {items.map(item => {
               const { visible, remaining } = chipList(item);
               return (
-                <div key={item.id} style={{ position: 'relative', zIndex: menuId === item.id ? 60 : 'auto' }}
-                  onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}>
+                <motion.div
+                  key={item.id}
+                  variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.32, 0.72, 0, 1] } } }}
+                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                  style={{ position: 'relative', zIndex: menuId === item.id ? 60 : 'auto' }}
+                  onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}
+                >
                   <TemplateCard
                     title={item.name}
                     meta={`${item.nodes.length} nodes · ${fmt(item.savedAt)}`}
@@ -192,10 +215,11 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                       </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+            </AnimatePresence>
+          </motion.div>
         )}
       </div>
 

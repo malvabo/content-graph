@@ -99,23 +99,13 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
       <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 flex items-center gap-1 md:gap-1.5">
         <button className="btn-ghost btn-sm hidden md:inline-flex" style={{ borderRadius: 'var(--radius-md)' }} onClick={autoLayout}>Auto-layout</button>
 
-        {/* Run — primary button with stroke */}
+        {/* Run — btn-run for always-on gradient border */}
         <button
           onClick={handleRunAll}
           disabled={isRunning}
-          className={isRunning ? 'loading' : ''}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 14px', height: 32,
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--color-accent)',
-            color: 'var(--color-text-inverse)',
-            border: '1px solid var(--color-accent)',
-            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-            cursor: isRunning ? 'default' : 'pointer',
-            opacity: isRunning ? 0.7 : 1,
-          }}>
-          ▶ Run nodes
+          className={`btn btn-sm btn-run${isRunning ? ' loading' : ''}`}
+        >
+          {!isRunning && '▶ '}Run {isRunning ? 'running…' : 'nodes'}
         </button>
 
         {/* Settings gear popover */}

@@ -20,10 +20,10 @@ export default function TemplateCard({ title, meta, pills, extraCount, onClick }
       border: '1px solid var(--color-border-default)',
       background: 'var(--color-bg-card)',
       cursor: 'pointer', textAlign: 'left', overflow: 'hidden',
-      transition: 'border-color 150ms, box-shadow 150ms',
+      transition: 'border-color 150ms, box-shadow 150ms, transform 150ms cubic-bezier(0.32, 0.72, 0, 1)',
     }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
     >
       {/* Top: title + meta — padding matches the bottom row */}
       <div style={{

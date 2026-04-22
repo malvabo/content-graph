@@ -1,6 +1,7 @@
 import { type ReactNode, useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import { motion } from 'motion/react';
 
 interface Props {
   activeView: string;
@@ -14,9 +15,34 @@ function NavItem({ icon, label, active, onClick, ariaLabel, ariaPressed }: { ico
   return (
     <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} aria-label={ariaLabel ?? label} aria-pressed={ariaPressed}
       className="nav-item"
-      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '7px 10px', borderRadius: 18, background: active ? 'var(--color-nav-item-active)' : hover ? 'var(--color-nav-item-hover)' : 'transparent', color: active ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', boxShadow: active ? '0 1px 2px 0 rgba(0,0,0,0.04)' : 'none', transition: 'none', justifyContent: 'flex-start', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, flexShrink: 0 }}>{icon}</span>
-      {label && <span className="nav-label" style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>{label}</span>}
+      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '7px 10px', borderRadius: 18, background: 'transparent', color: active ? 'var(--color-text-primary)' : hover ? 'var(--color-text-secondary)' : 'var(--color-text-tertiary)', transition: 'color var(--duration-base)', justifyContent: 'flex-start', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', position: 'relative' }}>
+      {active && (
+        <motion.div
+          layoutId="nav-active-bg"
+          style={{
+            position: 'absolute', inset: 0,
+            borderRadius: 18,
+            background: 'var(--color-nav-item-active)',
+            boxShadow: '0 1px 2px 0 rgba(0,0,0,0.04)',
+          }}
+          transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+        />
+      )}
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, flexShrink: 0, position: 'relative' }}>{icon}</span>
+      {label && <span className="nav-label" style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', position: 'relative' }}>{label}</span>}
+      {hover && !active && (
+        <motion.div
+          style={{
+            position: 'absolute', inset: 0,
+            borderRadius: 18,
+            background: 'var(--color-nav-item-hover)',
+          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.1 }}
+        />
+      )}
     </button>
   );
 }
@@ -42,23 +68,34 @@ function UserMenu() {
   return (
     <div ref={ref} className="relative">
       <NavItem icon={<AccountIcon />} label="Account" active={open} ariaLabel="Account menu" ariaPressed={open} onClick={() => setOpen(!open)} />
-      {open && (
-        <div className="absolute z-50 dropdown-fade" style={{ bottom: '100%', marginBottom: 8, left: 10, right: 10, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-2)', minWidth: 180 }}>
-          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: 'var(--space-1) var(--space-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
-          <button onClick={() => { setDark(!dark); }} style={itemStyle}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-            <span style={{ display: 'flex' }}>{dark ? <SunIcon /> : <MoonIcon />}</span>
-            {dark ? 'Light mode' : 'Dark mode'}
-          </button>
-          <button onClick={() => { signOut(); setOpen(false); }} style={itemStyle}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>Sign out</button>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="absolute z-50"
+            style={{ bottom: '100%', marginBottom: 8, left: 10, right: 10, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-2)', minWidth: 180 }}
+            initial={{ opacity: 0, scale: 0.96, y: 4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 4 }}
+            transition={{ duration: 0.12, ease: [0.32, 0.72, 0, 1] }}
+          >
+            <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: 'var(--space-1) var(--space-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+            <button onClick={() => { setDark(!dark); }} style={itemStyle}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+              <span style={{ display: 'flex' }}>{dark ? <SunIcon /> : <MoonIcon />}</span>
+              {dark ? 'Light mode' : 'Dark mode'}
+            </button>
+            <button onClick={() => { signOut(); setOpen(false); }} style={itemStyle}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>Sign out</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+import { AnimatePresence } from 'motion/react';
 
 export default function IconNav({ activeView, onViewChange }: Props) {
   return (

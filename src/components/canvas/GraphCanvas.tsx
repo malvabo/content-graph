@@ -2,6 +2,7 @@ import {
   ReactFlow, Controls, MiniMap,
   type OnConnect, type OnNodesChange, type OnEdgesChange, type Node,
   applyNodeChanges, applyEdgeChanges, addEdge, type Connection, useReactFlow,
+  type Viewport,
 } from '@xyflow/react';
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
@@ -25,7 +26,70 @@ const defaultEdgeOptions = { type: 'deletable', style: { stroke: 'var(--color-ed
 
 export default function GraphCanvas() {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId, setConnectingNodeId, addNode } = useGraphStore();
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, setViewport } = useReactFlow();
+
+  // Pan inertia — track velocity during panning, coast on release
+  const velocityRef = useRef({ x: 0, y: 0 });
+  const lastMoveRef = useRef({ x: 0, y: 0, t: 0 });
+  const inertiaRafRef = useRef<number | null>(null);
+  const isUserPanningRef = useRef(false);
+
+  const stopInertia = useCallback(() => {
+    if (inertiaRafRef.current !== null) {
+      cancelAnimationFrame(inertiaRafRef.current);
+      inertiaRafRef.current = null;
+    }
+  }, []);
+
+  const handleMoveStart = useCallback(() => {
+    stopInertia();
+    isUserPanningRef.current = true;
+    velocityRef.current = { x: 0, y: 0 };
+  }, [stopInertia]);
+
+  const handleMove = useCallback((_: unknown, vp: Viewport) => {
+    const now = performance.now();
+    const dt = now - lastMoveRef.current.t;
+    if (dt > 0 && dt < 80) {
+      velocityRef.current = {
+        x: (vp.x - lastMoveRef.current.x) / dt,
+        y: (vp.y - lastMoveRef.current.y) / dt,
+      };
+    }
+    lastMoveRef.current = { x: vp.x, y: vp.y, t: now };
+  }, []);
+
+  const handleMoveEnd = useCallback((_: unknown, vp: Viewport) => {
+    isUserPanningRef.current = false;
+    let vx = velocityRef.current.x;
+    let vy = velocityRef.current.y;
+    const speed = Math.sqrt(vx * vx + vy * vy);
+    if (speed < 0.25) return;
+
+    let x = vp.x;
+    let y = vp.y;
+    let lastTime = performance.now();
+
+    const tick = (now: number) => {
+      if (isUserPanningRef.current) return;
+      const dt = Math.min(now - lastTime, 32);
+      lastTime = now;
+      const decay = Math.pow(0.88, dt / 16);
+      vx *= decay;
+      vy *= decay;
+      x += vx * dt;
+      y += vy * dt;
+      setViewport({ x, y, zoom: vp.zoom }, { duration: 0 });
+      if (Math.abs(vx) > 0.05 || Math.abs(vy) > 0.05) {
+        inertiaRafRef.current = requestAnimationFrame(tick);
+      } else {
+        inertiaRafRef.current = null;
+      }
+    };
+    inertiaRafRef.current = requestAnimationFrame(tick);
+  }, [setViewport]);
+
+  useEffect(() => () => stopInertia(), [stopInertia]);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const { isValidConnection, tooltip } = useConnectionValidation(nodes, edges);
   const { menu, onNodeContextMenu, close: closeMenu } = useContextMenu();
@@ -132,6 +196,9 @@ export default function GraphCanvas() {
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
         onNodeContextMenu={(e, node) => onNodeContextMenu(e, node.id)}
         onPaneClick={() => { setSelectedNodeId(null); dismissFirstRun(); closeMenu(); }}
+        onMoveStart={handleMoveStart}
+        onMove={handleMove}
+        onMoveEnd={handleMoveEnd}
         deleteKeyCode={['Backspace', 'Delete']}
         fitView={false} panOnScroll selectionOnDrag selectionKeyCode="Shift"
         proOptions={{ hideAttribution: true }}

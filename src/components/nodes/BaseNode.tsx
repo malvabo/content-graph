@@ -167,6 +167,28 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
   const [hovered, setHovered] = useState(false);
   const [expandOpen, setExpandOpen] = useState(false);
 
+  // Entry animation — fires once on mount
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  // Status transition animations
+  const prevStatusRef = useRef(status);
+  const [lifecycleClass, setLifecycleClass] = useState('');
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    prevStatusRef.current = status;
+    if (prev === 'running' && status === 'complete') {
+      setLifecycleClass('node-complete');
+      const t = setTimeout(() => setLifecycleClass(''), 400);
+      return () => clearTimeout(t);
+    }
+    if (status === 'error' && prev !== 'error') {
+      setLifecycleClass('node-error');
+      const t = setTimeout(() => setLifecycleClass(''), 350);
+      return () => clearTimeout(t);
+    }
+  }, [status]);
+
   const def = NODE_DEFS_BY_SUBTYPE[data.subtype];
   const colors = BADGE_COLORS[data.category];
   const isError = status === 'error';
@@ -244,6 +266,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className={`${!mounted ? 'node-enter' : ''} ${lifecycleClass}`}
       style={{
         width: 'var(--size-node)',
         maxWidth: 'var(--size-node)',

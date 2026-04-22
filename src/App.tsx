@@ -7,6 +7,7 @@ import ScriptSensePanel from './components/canvas/ScriptSensePanel';
 import ScriptLibrary from './components/canvas/ScriptLibrary';
 import { useScriptStore } from './store/scriptStore';
 import { useCallback, useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
 import MobileWorkflow from './components/canvas/MobileWorkflow';
@@ -139,77 +140,88 @@ function AppInner() {
           <IconNav activeView={activeView} onViewChange={setActiveView} />
         )}
 
-        {activeView === 'intro' && (
-          <div className="flex-1 overflow-auto">
-            <Intro onComplete={() => { setActiveView('library'); }} />
-          </div>
-        )}
+        {/* Content area — position:relative so animated views can overlay */}
+        <div style={{ flex: 1, position: 'relative', display: 'flex', minHeight: 0, overflow: 'hidden' }}>
 
-        {activeView === 'workflow' && (
-          <>
-            <div className="hidden md:flex flex-1 relative">
-              <CanvasToolbar onBackToLibrary={() => setActiveView('library')} />
-              <EmptyCanvasOverlay />
-              <GraphCanvas />
+          {/* ScriptSense stays mounted once opened so iframe state survives navigation.
+              Lives outside AnimatePresence to avoid unmounting on route change. */}
+          {scriptSenseEverOpened && (
+            <div style={{ position: 'absolute', inset: 0, display: activeView === 'scriptsense' ? 'flex' : 'none', zIndex: 1 }}>
+              <ViewErrorBoundary label="ScriptSense">
+                <ScriptSensePanel
+                  scriptId={activeScriptId}
+                  initialText={voiceTranscript}
+                  onBack={() => setActiveView('scriptlist')}
+                  onOpenInCards={() => setActiveView('cardslibrary')}
+                  onSendToWorkflow={() => setActiveView('workflow')}
+                  onDelete={() => { if (activeScriptId) useScriptStore.getState().removeScript(activeScriptId); setActiveScriptId(undefined); setActiveView('scriptlist'); }}
+                />
+              </ViewErrorBoundary>
             </div>
-            <div className="flex md:hidden flex-1 min-h-0">
-              <MobileWorkflow onBackToLibrary={() => setActiveView('library')} />
-            </div>
-          </>
-        )}
+          )}
 
-        {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
+          {/* All other views — animated crossfade */}
+          <AnimatePresence mode="wait">
+            {activeView !== 'scriptsense' && (
+              <motion.div
+                key={activeView + (hashParam ?? '')}
+                style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+              >
+                {activeView === 'intro' && (
+                  <div className="flex-1 overflow-auto">
+                    <Intro onComplete={() => { setActiveView('library'); }} />
+                  </div>
+                )}
 
-        {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => {
-          // ScriptSensePanel buffers non-empty initialText into a ref and blanks
-          // it after flushing to the iframe, so clearing here is safe and
-          // prevents this transcript from re-firing on later unrelated renders.
-          setVoiceTranscript(t);
-          setActiveView('scriptsense');
-          setVoiceTranscript('');
-        }} />}
+                {activeView === 'workflow' && (
+                  <>
+                    <div className="hidden md:flex flex-1 relative">
+                      <CanvasToolbar onBackToLibrary={() => setActiveView('library')} />
+                      <EmptyCanvasOverlay />
+                      <GraphCanvas />
+                    </div>
+                    <div className="flex md:hidden flex-1 min-h-0">
+                      <MobileWorkflow onBackToLibrary={() => setActiveView('library')} />
+                    </div>
+                  </>
+                )}
 
-        {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(id, content) => {
-          setActiveScriptId(id);
-          setVoiceTranscript(content);
-          setActiveView('scriptsense');
-          setVoiceTranscript('');
-        }} />}
+                {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
-        {/* ScriptSense stays mounted once opened so iframe state (draft, insights,
-            accepted changes) survives navigation. Hidden via display:none when
-            the user is on a different view. */}
-        {scriptSenseEverOpened && (
-          <div style={{ flex: activeView === 'scriptsense' ? 1 : '0 0 0', minHeight: 0, display: activeView === 'scriptsense' ? 'flex' : 'none' }}>
-            <ViewErrorBoundary label="ScriptSense">
-              <ScriptSensePanel
-                scriptId={activeScriptId}
-                initialText={voiceTranscript}
-                onBack={() => setActiveView('scriptlist')}
-                onOpenInCards={() => setActiveView('cardslibrary')}
-                onSendToWorkflow={() => setActiveView('workflow')}
-                onDelete={() => { if (activeScriptId) useScriptStore.getState().removeScript(activeScriptId); setActiveScriptId(undefined); setActiveView('scriptlist'); }}
-              />
-            </ViewErrorBoundary>
-          </div>
-        )}
+                {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => {
+                  setVoiceTranscript(t);
+                  setActiveView('scriptsense');
+                  setVoiceTranscript('');
+                }} />}
 
+                {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(id, content) => {
+                  setActiveScriptId(id);
+                  setVoiceTranscript(content);
+                  setActiveView('scriptsense');
+                  setVoiceTranscript('');
+                }} />}
 
-        {activeView === 'settings' && <SettingsPanel />}
+                {activeView === 'settings' && <SettingsPanel />}
 
-        {activeView === 'cardslibrary' && <CardsLibrary onOpen={(id: string) => { setActiveView('cards:' + id); }} />}
+                {activeView === 'cardslibrary' && <CardsLibrary onOpen={(id: string) => { setActiveView('cards:' + id); }} />}
 
-        {activeView === 'cards' && <CardsPanel key={hashParam} setId={hashParam} />}
+                {activeView === 'cards' && <CardsPanel key={hashParam} setId={hashParam} />}
 
-        {activeView === 'infographics' && (
-          <InfographicsPanel
-            key={hashParam}
-            initialEditId={hashParam}
-            // On exit from the editor, clear the :id hash fragment so the library
-            // view re-renders and the left nav reappears.
-            onExitEditor={() => setActiveView('infographics')}
-          />
-        )}
+                {activeView === 'infographics' && (
+                  <InfographicsPanel
+                    key={hashParam}
+                    initialEditId={hashParam}
+                    onExitEditor={() => setActiveView('infographics')}
+                  />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );

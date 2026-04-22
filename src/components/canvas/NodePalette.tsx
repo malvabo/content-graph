@@ -3,9 +3,15 @@ import { NODE_DEFS, CATEGORY_LABELS, BADGE_COLORS, type NodeDef } from '../../ut
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import type { NodeCategory } from '../../store/graphStore';
 
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 const PALETTE_ORDER: NodeCategory[] = ['source', 'generate', 'output', 'transform'];
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 4 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.1, ease: [0.32, 0.72, 0, 1] } },
+  exit:   { opacity: 0, y: -2, transition: { duration: 0.07 } },
+};
 
 function PaletteItem({ def, onClick }: { def: NodeDef; onClick: () => void }) {
   const colors = BADGE_COLORS[def.category];
@@ -14,8 +20,12 @@ function PaletteItem({ def, onClick }: { def: NodeDef; onClick: () => void }) {
     e.dataTransfer.effectAllowed = 'move';
   };
   return (
-    <div draggable onDragStart={onDragStart} onClick={onClick}
-      className="palette-item flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer active:opacity-80">
+    <motion.div
+      layout
+      variants={itemVariants}
+      draggable onDragStart={onDragStart} onClick={onClick}
+      className="palette-item flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer active:opacity-80"
+    >
       <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
         style={{ backgroundColor: colors.bg, color: colors.text }}>
         {NODE_ICONS[def.subtype]?.() ?? def.badge}
@@ -24,7 +34,7 @@ function PaletteItem({ def, onClick }: { def: NodeDef; onClick: () => void }) {
         <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }} className="truncate">{def.label}</div>
         <div style={{ fontSize: 'var(--text-xs)', lineHeight: '16px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginTop: 2 }} className="truncate">{def.description}</div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -58,8 +68,7 @@ export default function NodePalette({ onAddNode }: Props) {
 
   return (
     <div ref={ref} className="absolute bottom-4 left-4 z-20">
-      <style>{`@keyframes paletteIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-      {/* Fluid + button */}
+      {/* FAB button */}
       <motion.button
         onClick={() => setOpen(!open)}
         aria-label="Add node" aria-expanded={open}
@@ -86,57 +95,72 @@ export default function NodePalette({ onAddNode }: Props) {
       </motion.button>
 
       {/* Popover */}
-      {open && (
-        <div className="palette-popover absolute left-0 w-[280px] max-h-[420px] flex flex-col"
-          style={{ bottom: 52, background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)', animation: 'paletteIn 150ms ease' }}
-          onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}>
-          {/* Search */}
-          <div style={{ padding: 'var(--space-3) var(--space-3) var(--space-2)' }}>
-            <input
-              ref={searchRef}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search nodes…"
-              aria-label="Search nodes"
-              className="form-input"
-            />
-          </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="absolute left-0 w-[280px] max-h-[420px] flex flex-col"
+            style={{ bottom: 52, background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)' }}
+            initial={{ opacity: 0, y: 8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.97 }}
+            transition={{ duration: 0.15, ease: [0.32, 0.72, 0, 1] }}
+            onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}
+          >
+            {/* Search */}
+            <div style={{ padding: 'var(--space-3) var(--space-3) var(--space-2)' }}>
+              <input
+                ref={searchRef}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search nodes…"
+                aria-label="Search nodes"
+                className="form-input"
+              />
+            </div>
 
-          {/* List */}
-          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', padding: '0 var(--space-2) var(--space-3)' }}>
-            {!hasResults && (
-              <div style={{ padding: 'var(--space-6) var(--space-3)', textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
-                No nodes found
-              </div>
-            )}
-            {PALETTE_ORDER.map((cat, catIdx) => {
-              const nodes = NODE_DEFS.filter(n => n.category === cat && (!q || n.label.toLowerCase().includes(q) || n.description.toLowerCase().includes(q)));
-              if (!nodes.length) return null;
-              const isAdvanced = cat === 'transform';
-              return (
-                <div key={cat}>
-                  {catIdx > 0 && hasResults && <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: 'var(--space-2) var(--space-3)' }} />}
-                  {isAdvanced ? (
-                    <button className="palette-cat-btn flex items-center gap-1.5 px-3 py-1.5 mb-1 rounded-md text-left"
-                      style={{ fontWeight: 500, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}
-                      onClick={() => setAdvancedOpen(!advancedOpen)}>
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ transform: advancedOpen ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }}><path d="m9 18 6-6-6-6"/></svg>
-                      {CATEGORY_LABELS[cat]}
-                    </button>
-                  ) : (
-                    <div className="px-3 mb-1 mt-1" style={{ fontWeight: 500, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{CATEGORY_LABELS[cat]}</div>
-                  )}
-                  {(!isAdvanced || advancedOpen) && (
-                    <div className="flex flex-col gap-0.5">{nodes.map(def => (
-                      <PaletteItem key={def.subtype} def={def} onClick={() => { onAddNode(def); setOpen(false); }} />
-                    ))}</div>
-                  )}
+            {/* List */}
+            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', padding: '0 var(--space-2) var(--space-3)' }}>
+              {!hasResults && (
+                <div style={{ padding: 'var(--space-6) var(--space-3)', textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
+                  No nodes found
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+              )}
+              {PALETTE_ORDER.map((cat, catIdx) => {
+                const nodes = NODE_DEFS.filter(n => n.category === cat && (!q || n.label.toLowerCase().includes(q) || n.description.toLowerCase().includes(q)));
+                if (!nodes.length) return null;
+                const isAdvanced = cat === 'transform';
+                return (
+                  <div key={cat}>
+                    {catIdx > 0 && hasResults && <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: 'var(--space-2) var(--space-3)' }} />}
+                    {isAdvanced ? (
+                      <button className="palette-cat-btn flex items-center gap-1.5 px-3 py-1.5 mb-1 rounded-md text-left"
+                        style={{ fontWeight: 500, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}
+                        onClick={() => setAdvancedOpen(!advancedOpen)}>
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ transform: advancedOpen ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }}><path d="m9 18 6-6-6-6"/></svg>
+                        {CATEGORY_LABELS[cat]}
+                      </button>
+                    ) : (
+                      <div className="px-3 mb-1 mt-1" style={{ fontWeight: 500, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{CATEGORY_LABELS[cat]}</div>
+                    )}
+                    <motion.div
+                      className="flex flex-col gap-0.5"
+                      initial="hidden"
+                      animate="visible"
+                      variants={{ visible: { transition: { staggerChildren: 0.025 } } }}
+                    >
+                      <AnimatePresence mode="popLayout">
+                        {(!isAdvanced || advancedOpen) && nodes.map(def => (
+                          <PaletteItem key={def.subtype} def={def} onClick={() => { onAddNode(def); setOpen(false); }} />
+                        ))}
+                      </AnimatePresence>
+                    </motion.div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
