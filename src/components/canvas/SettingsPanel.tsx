@@ -302,27 +302,32 @@ export default function SettingsPanel() {
   const [active, setActive] = useState<SectionId>('brand-kits');
 
   return (
-    <div style={{ flex: 1, display: 'flex', background: 'var(--color-bg)', overflow: 'hidden' }}>
-      {/* Sidebar nav — flat, no group headings, all items left-aligned */}
-      <nav className="hidden md:flex" style={{ width: 160, flexShrink: 0, borderRight: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', padding: 'var(--space-5) var(--space-4)', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
-        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-4)' }}>Settings</div>
-        {SECTIONS.map(s => {
-          const on = active === s.id;
-          return (
-            <button key={s.id} onClick={() => setActive(s.id)}
-              style={{ width: '100%', display: 'block', margin: 0, padding: 'var(--space-2) var(--space-3)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 120ms, color 120ms', textAlign: 'left' }}>
-              {s.label}
-            </button>
-          );
-        })}
-      </nav>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--color-bg)', overflow: 'hidden' }}>
+      {/* Page title */}
+      <div style={{ padding: 'var(--space-5) var(--space-6) var(--space-3)', flexShrink: 0 }}>
+        <h1 style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Settings</h1>
+      </div>
 
-      {/* Mobile tab bar */}
-      <div className="flex md:hidden" style={{ position: 'sticky', top: 0, left: 0, right: 0, zIndex: 10, background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border-subtle)', padding: 'var(--space-2) var(--space-3)', gap: 'var(--space-1)', overflowX: 'auto', scrollbarWidth: 'none' }}>
+      {/* Horizontal tab bar */}
+      <div role="tablist" aria-label="Settings sections"
+        style={{ display: 'flex', gap: 'var(--space-4)', padding: '0 var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
         {SECTIONS.map(s => {
           const on = active === s.id;
           return (
-            <button key={s.id} onClick={() => setActive(s.id)} style={{ padding: 'var(--space-2) var(--space-3)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', borderRadius: 'var(--radius-md)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 120ms, color 120ms' }}>
+            <button key={s.id} role="tab" aria-selected={on} onClick={() => setActive(s.id)}
+              style={{
+                padding: '10px 2px',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: `2px solid ${on ? 'var(--color-accent)' : 'transparent'}`,
+                fontFamily: 'var(--font-sans)',
+                fontSize: 'var(--text-sm)',
+                fontWeight: 'var(--weight-medium)',
+                color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                marginBottom: -1,
+              }}>
               {s.label}
             </button>
           );
@@ -330,8 +335,8 @@ export default function SettingsPanel() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-4 md:p-6" style={{ overflowY: 'auto' }}>
-        <div style={{ width: '100%' }}>
+      <div className="flex-1" style={{ overflowY: 'auto', padding: 'var(--space-6)' }}>
+        <div style={{ width: '100%', maxWidth: 960, marginInline: 'auto' }}>
           {active === 'brand-kits' && <BrandKitsSection />}
           {active === 'appearance' && <AppearanceSection />}
           {active === 'api-keys' && <APIKeysSection />}
