@@ -140,24 +140,33 @@ function NoteCard({ note, onDelete, onRerecord }: { note: VoiceNote; onDelete: (
   return (
     <div style={{ borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', overflow: 'hidden' }}>
       <button onClick={() => setExpanded(v => !v)} disabled={isTranscribing}
-        style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4, cursor: isTranscribing ? 'default' : 'pointer', opacity: isTranscribing ? 0.75 : 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+        style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4, cursor: isTranscribing ? 'default' : 'pointer', opacity: isTranscribing ? 0.75 : 1, minWidth: 0 }}>
+        {/* Row 1: title alone — gets full row width, wraps to 2 lines max */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)', width: '100%' }}>
+          <span style={{
+            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500,
+            color: 'var(--color-text-primary)', flex: 1, minWidth: 0,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+            overflow: 'hidden', wordBreak: 'break-word', lineHeight: 1.35,
+          }}>
             {note.title}
           </span>
-          {isTranscribing ? (
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 500, padding: '1px 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)', lineHeight: '16px', flexShrink: 0 }}>
+          {isTranscribing && (
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 500, padding: '1px 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)', lineHeight: '16px', flexShrink: 0, marginTop: 2 }}>
               Transcribing…
-            </span>
-          ) : (
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>
-              {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
             </span>
           )}
         </div>
+        {/* Row 2: metadata on its own line — never competes for horizontal space */}
+        {!isTranscribing && (
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', lineHeight: 1.3 }}>
+            {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
+          </div>
+        )}
+        {/* Row 3: transcript preview (collapsed) */}
         {note.transcript && !expanded && (
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {note.transcript.slice(0, 140)}
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word', lineHeight: 1.4, marginTop: 2 }}>
+            {note.transcript}
           </div>
         )}
       </button>
