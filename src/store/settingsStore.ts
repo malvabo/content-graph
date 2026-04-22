@@ -2,10 +2,17 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 
+export interface CustomFont {
+  name: string;
+  /** data: URL of the uploaded font file (kept client-side only). */
+  dataUrl: string;
+}
+
 export interface BrandKit {
   name: string;
   colors: { primary: string; secondary: string; accent: string };
   fonts: { title: string; body: string };
+  customFonts: CustomFont[];
   voice: {
     personality: string;
     audience: string;
@@ -20,10 +27,26 @@ export const EMPTY_BRAND: BrandKit = {
   name: '',
   colors: { primary: '#0DBF5A', secondary: '#1A2420', accent: '#F2EFE9' },
   fonts: { title: '', body: '' },
+  customFonts: [],
   voice: { personality: '', audience: '', avoidWords: [], examplePost: '' },
   referenceImages: [],
   imageStyleNote: '',
 };
+
+/** Popular font presets offered in the Settings picker. Any Google Font
+ *  string also works — these are just the quick choices. */
+export const FONT_PRESETS = [
+  'Inter',
+  'Roboto',
+  'Space Grotesk',
+  'Playfair Display',
+  'Lora',
+  'Merriweather',
+  'Work Sans',
+  'DM Sans',
+  'IBM Plex Sans',
+  'Manrope',
+] as const;
 
 interface SettingsState {
   anthropicKey: string;
@@ -71,6 +94,7 @@ export const useSettingsStore = create<SettingsState>()(
             ...partial,
             colors: { ...b.colors, ...(partial.colors || {}) },
             fonts: { ...(b.fonts || EMPTY_BRAND.fonts), ...(partial.fonts || {}) },
+            customFonts: partial.customFonts ?? (b.customFonts || EMPTY_BRAND.customFonts),
             voice: { ...b.voice, ...(partial.voice || {}) },
           },
         };

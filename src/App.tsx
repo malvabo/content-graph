@@ -12,6 +12,7 @@ import MobileWorkflow from './components/canvas/MobileWorkflow';
 import { useAuthStore } from './store/authStore';
 import { useSettingsStore } from './store/settingsStore';
 import { supabase } from './lib/supabase';
+import { injectCustomFonts } from './utils/customFonts';
 import AuthGate from './components/auth/AuthGate';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; btnHover: boolean }> {
@@ -70,6 +71,10 @@ function AppInner() {
 
   useEffect(() => { init(); }, [init]);
   useEffect(() => { if (user) useSettingsStore.getState().load(); }, [user]);
+  // Register user-uploaded @font-face rules globally so they work
+  // everywhere the brand fonts are referenced (infographics, SVG previews, etc).
+  const customFonts = useSettingsStore(s => s.brand?.customFonts);
+  useEffect(() => { injectCustomFonts(customFonts || []); }, [customFonts]);
   useEffect(() => {
     if (!supabase) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {

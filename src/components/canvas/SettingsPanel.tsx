@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useSettingsStore, EMPTY_BRAND } from '../../store/settingsStore';
+import { useSettingsStore, EMPTY_BRAND, FONT_PRESETS, type CustomFont } from '../../store/settingsStore';
 
 const PaletteIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/><circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/><circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/><circle cx="6.5" cy="12" r="0.5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>;
 const MicIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>;
@@ -30,6 +30,39 @@ function SectionHeader({ title, desc }: { title: string; desc: string }) {
     <div style={{ marginBottom: 'var(--space-5)' }}>
       <h2 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>{title}</h2>
       <p style={HDESC}>{desc}</p>
+    </div>
+  );
+}
+
+const UPLOAD_SENTINEL = '__upload__';
+
+function FontPicker({ label, value, customFonts, onChange, onUpload }: {
+  label: string;
+  value: string;
+  customFonts: CustomFont[];
+  onChange: (v: string) => void;
+  onUpload: () => void;
+}) {
+  const handleChange = (v: string) => {
+    if (v === UPLOAD_SENTINEL) { onUpload(); return; }
+    onChange(v);
+  };
+  return (
+    <div>
+      <label style={{ ...LBL, fontSize: 'var(--text-xs)' }}>{label}</label>
+      <select className="form-input" value={value || ''} onChange={e => handleChange(e.target.value)}
+        style={{ width: '100%', fontFamily: value ? `"${value}", system-ui, sans-serif` : undefined }}>
+        <option value="">System default</option>
+        <optgroup label="Popular">
+          {FONT_PRESETS.map(f => <option key={f} value={f}>{f}</option>)}
+        </optgroup>
+        {customFonts.length > 0 && (
+          <optgroup label="Uploaded">
+            {customFonts.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+          </optgroup>
+        )}
+        <option value={UPLOAD_SENTINEL}>Upload custom font…</option>
+      </select>
     </div>
   );
 }
@@ -86,24 +119,8 @@ function BrandVisualSection() {
             ))}
           </div>
         </div>
-        <div>
-          <label style={LBL}>Brand fonts</label>
-          <p style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', margin: '0 0 var(--space-3)', lineHeight: 'var(--leading-snug)' }}>
-            Any Google Font name (e.g. Inter, Playfair Display). Leave blank to use the system default.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-            <div>
-              <label style={{ ...LBL, fontSize: 'var(--text-xs)' }}>Title font</label>
-              <input className="form-input" value={b.fonts?.title ?? ''} placeholder="Inter" style={{ width: '100%' }}
-                onChange={e => setBrand({ fonts: { ...(b.fonts || EMPTY_BRAND.fonts), title: e.target.value } })} />
-            </div>
-            <div>
-              <label style={{ ...LBL, fontSize: 'var(--text-xs)' }}>Body font</label>
-              <input className="form-input" value={b.fonts?.body ?? ''} placeholder="Inter" style={{ width: '100%' }}
-                onChange={e => setBrand({ fonts: { ...(b.fonts || EMPTY_BRAND.fonts), body: e.target.value } })} />
-            </div>
-          </div>
-        </div>
+        <BrandFontsBlock />
+
         {/* Reference images for image style */}
         <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)' }}>
           <label style={LBL}>Reference images</label>
@@ -142,6 +159,81 @@ function BrandVisualSection() {
             style={{ minHeight: 60 }} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function BrandFontsBlock() {
+  const { brand, setBrand } = useSettingsStore();
+  const b = brand || EMPTY_BRAND;
+  const customFonts: CustomFont[] = b.customFonts || [];
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const triggerUpload = () => { setError(null); fileRef.current?.click(); };
+
+  const handleFile = (file: File | undefined) => {
+    if (!file) return;
+    // Cap at ~4MB so the data URL fits comfortably in localStorage (Safari ~5MB).
+    if (file.size > 4 * 1024 * 1024) { setError('Font file is too large (4MB max).'); return; }
+    const baseName = file.name.replace(/\.[^.]+$/, '').trim() || 'Custom Font';
+    const name = customFonts.some(f => f.name === baseName)
+      ? `${baseName} (${customFonts.filter(f => f.name.startsWith(baseName)).length + 1})`
+      : baseName;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setBrand({ customFonts: [...customFonts, { name, dataUrl }] });
+    };
+    reader.onerror = () => setError('Could not read that file.');
+    reader.readAsDataURL(file);
+  };
+
+  const removeCustom = (name: string) => {
+    const next = customFonts.filter(f => f.name !== name);
+    const fonts = {
+      title: b.fonts?.title === name ? '' : (b.fonts?.title || ''),
+      body: b.fonts?.body === name ? '' : (b.fonts?.body || ''),
+    };
+    setBrand({ customFonts: next, fonts });
+  };
+
+  return (
+    <div>
+      <label style={LBL}>Brand fonts</label>
+      <p style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', margin: '0 0 var(--space-3)', lineHeight: 'var(--leading-snug)' }}>
+        Pick a popular Google Font or upload your own (.woff2, .woff, .otf, .ttf). Uploaded fonts stay on this device.
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+        <FontPicker label="Title font" value={b.fonts?.title ?? ''} customFonts={customFonts}
+          onChange={v => setBrand({ fonts: { ...(b.fonts || EMPTY_BRAND.fonts), title: v } })}
+          onUpload={triggerUpload} />
+        <FontPicker label="Body font" value={b.fonts?.body ?? ''} customFonts={customFonts}
+          onChange={v => setBrand({ fonts: { ...(b.fonts || EMPTY_BRAND.fonts), body: v } })}
+          onUpload={triggerUpload} />
+      </div>
+
+      <input ref={fileRef} type="file" accept=".woff2,.woff,.otf,.ttf,font/woff2,font/woff,font/otf,font/ttf,application/font-woff,application/font-woff2" hidden
+        onChange={e => { handleFile(e.target.files?.[0]); e.target.value = ''; }} />
+
+      {customFonts.length > 0 && (
+        <div style={{ marginTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {customFonts.map(f => (
+            <div key={f.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <span style={{ fontSize: 'var(--text-sm)', fontFamily: `"${f.name}", system-ui, sans-serif`, color: 'var(--color-text-primary)' }}>{f.name}</span>
+                <span style={{ fontSize: 'var(--text-micro)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)' }}>Aa Bb Cc 123</span>
+              </div>
+              <button onClick={() => removeCustom(f.name)} aria-label={`Remove ${f.name}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-disabled)', fontSize: 'var(--text-sm)', padding: 'var(--space-1) var(--space-2)' }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <div style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)' }}>{error}</div>
+      )}
     </div>
   );
 }
