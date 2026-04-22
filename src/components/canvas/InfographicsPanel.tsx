@@ -203,7 +203,7 @@ ${currentJson}`;
 
 const DEFAULT_JSON = JSON.stringify({ title: 'New Infographic', subtitle: 'Edit fields directly or chat for AI changes', points: [{ stat: '0', label: 'Your first data point' }] });
 
-export default function InfographicsPanel({ initialEditId }: { initialEditId?: string }) {
+export default function InfographicsPanel({ initialEditId, onExitEditor }: { initialEditId?: string; onExitEditor?: () => void }) {
   const { items, add, update, remove, pushHistory, popHistory } = useInfographicStore();
   const [editingId, setEditingId] = useState<string | null>(initialEditId || null);
   useEffect(() => { if (initialEditId) setEditingId(initialEditId); }, [initialEditId]);
@@ -448,7 +448,7 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
       {/* Left — preview + structured editor */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ padding: 'var(--space-3) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
-          <button onClick={() => setEditingId(null)} className="btn btn-ghost" style={{ padding: 'var(--space-1) var(--space-2)' }} aria-label="Back">
+          <button onClick={() => { setEditingId(null); onExitEditor?.(); }} className="btn btn-ghost" style={{ padding: 'var(--space-1) var(--space-2)' }} aria-label="Back to infographics">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
           </button>
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>Infographics</span>

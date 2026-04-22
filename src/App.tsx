@@ -133,7 +133,11 @@ function AppInner() {
         </div>
       )}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
-        {activeView !== 'intro' && <IconNav activeView={activeView} onViewChange={setActiveView} />}
+        {/* Hide the left nav in full-screen editor modes (node canvas, infographic edit)
+            so the user can focus on the thing they're editing. */}
+        {activeView !== 'intro' && !(activeView === 'infographics' && hashParam) && (
+          <IconNav activeView={activeView} onViewChange={setActiveView} />
+        )}
 
         {activeView === 'intro' && (
           <div className="flex-1 overflow-auto">
@@ -197,7 +201,15 @@ function AppInner() {
 
         {activeView === 'cards' && <CardsPanel key={hashParam} setId={hashParam} />}
 
-        {activeView === 'infographics' && <InfographicsPanel key={hashParam} initialEditId={hashParam} />}
+        {activeView === 'infographics' && (
+          <InfographicsPanel
+            key={hashParam}
+            initialEditId={hashParam}
+            // On exit from the editor, clear the :id hash fragment so the library
+            // view re-renders and the left nav reappears.
+            onExitEditor={() => setActiveView('infographics')}
+          />
+        )}
       </div>
     </div>
   );
