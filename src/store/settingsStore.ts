@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 export interface BrandKit {
   name: string;
   colors: { primary: string; secondary: string; accent: string };
+  fonts: { title: string; body: string };
   voice: {
     personality: string;
     audience: string;
@@ -18,6 +19,7 @@ export interface BrandKit {
 export const EMPTY_BRAND: BrandKit = {
   name: '',
   colors: { primary: '#0DBF5A', secondary: '#1A2420', accent: '#F2EFE9' },
+  fonts: { title: '', body: '' },
   voice: { personality: '', audience: '', avoidWords: [], examplePost: '' },
   referenceImages: [],
   imageStyleNote: '',
@@ -63,7 +65,15 @@ export const useSettingsStore = create<SettingsState>()(
       setHfKey: (key) => set({ hfKey: key }),
       setBrand: (partial) => set((s: any) => {
         const b = s.brand || EMPTY_BRAND;
-        return { brand: { ...b, ...partial, colors: { ...b.colors, ...(partial.colors || {}) }, voice: { ...b.voice, ...(partial.voice || {}) } } };
+        return {
+          brand: {
+            ...b,
+            ...partial,
+            colors: { ...b.colors, ...(partial.colors || {}) },
+            fonts: { ...(b.fonts || EMPTY_BRAND.fonts), ...(partial.fonts || {}) },
+            voice: { ...b.voice, ...(partial.voice || {}) },
+          },
+        };
       }),
 
       load: async () => {

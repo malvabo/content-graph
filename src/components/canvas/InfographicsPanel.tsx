@@ -16,48 +16,15 @@ const SUGGESTION_CHIPS = [
 
 async function chatEdit(messages: ChatMsg[], currentJson: string, signal?: AbortSignal): Promise<string> {
   const { anthropicKey, groqKey } = useSettingsStore.getState();
-  const system = `You are an infographic editor. The user has an infographic defined as JSON. Apply their requested changes and return ONLY the updated JSON — no explanation, no markdown fences. Always preserve all existing fields unless the user explicitly asks to remove them.
+  const system = `You edit infographic content. Return ONLY valid JSON — no explanation, no markdown fences. Do not invent styling. Do not add or remove fields not mentioned.
+
+Schema: { title, subtitle?, footer?, type?: "cards" | "bar" | "pie", points: [{ stat, label, detail?, icon?, max? }] }
+- type: "cards" default, "bar" for horizontal bars, "pie" for pie chart with legend.
+- points[].icon: emoji shown above the stat (optional).
+- points[].max: when present, renders a progress bar for stat / max.
 
 Current infographic JSON:
-${currentJson}
-
-JSON schema:
-{
-  "title": string,
-  "subtitle"?: string,
-  "footer"?: string,
-  "type"?: "cards" | "bar" | "pie",
-  "image"?: string (URL for logo/image in top-right),
-  "theme"?: {
-    "bg"?: string, "accent"?: string, "text"?: string,
-    "cardBg"?: string, "cardBorder"?: string,
-    "font"?: string, "titleFont"?: string, "bodyFont"?: string,
-    "fontSize"?: number, "statSize"?: number,
-    "borderRadius"?: number, "cols"?: number,
-    "gap"?: number, "align"?: "center" | "left",
-    "gradient"?: { "from": string, "to": string, "direction"?: string (degrees, e.g. "135") },
-    "dividers"?: boolean, "animate"?: boolean
-  },
-  "points": [{
-    "stat": string, "label": string, "detail"?: string,
-    "color"?: string, "icon"?: string (emoji),
-    "max"?: number (shows progress bar, stat value / max),
-    "size"?: "sm" | "md" | "lg",
-    "fontWeight"?: string, "fontStyle"?: string
-  }]
-}
-
-Notes:
-- type: "cards" (default grid), "bar" (horizontal bar chart), "pie" (pie chart with legend)
-- theme.font: any Google Font (Inter, Roboto, Playfair Display, Space Grotesk, etc.) or system font. Auto-loaded.
-- theme.titleFont / theme.bodyFont: separate fonts for title vs data. Falls back to theme.font.
-- theme.gradient: replaces bg with a linear gradient
-- theme.animate: adds fade-in animation to elements
-- theme.dividers: adds dashed lines between card rows
-- points[].icon: emoji displayed above the stat
-- points[].max: renders a progress bar (stat value as proportion of max)
-- points[].size: "lg" for tall cards, "sm" for compact
-- All colors are hex strings.`;
+${currentJson}`;
 
   const msgs = messages.map(m => ({ role: m.role, content: m.text }));
 

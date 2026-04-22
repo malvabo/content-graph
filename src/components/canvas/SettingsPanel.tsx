@@ -82,6 +82,24 @@ function BrandVisualSection() {
             ))}
           </div>
         </div>
+        <div>
+          <label style={LBL}>Brand fonts</label>
+          <p style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', margin: '0 0 var(--space-3)', lineHeight: 'var(--leading-snug)' }}>
+            Any Google Font name (e.g. Inter, Playfair Display). Leave blank to use the system default.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+            <div>
+              <label style={{ ...LBL, fontSize: 'var(--text-xs)' }}>Title font</label>
+              <input className="form-input" value={b.fonts?.title ?? ''} placeholder="Inter" style={{ width: '100%' }}
+                onChange={e => setBrand({ fonts: { ...(b.fonts || EMPTY_BRAND.fonts), title: e.target.value } })} />
+            </div>
+            <div>
+              <label style={{ ...LBL, fontSize: 'var(--text-xs)' }}>Body font</label>
+              <input className="form-input" value={b.fonts?.body ?? ''} placeholder="Inter" style={{ width: '100%' }}
+                onChange={e => setBrand({ fonts: { ...(b.fonts || EMPTY_BRAND.fonts), body: e.target.value } })} />
+            </div>
+          </div>
+        </div>
         {b.name && (
           <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)' }}>
             <label style={LBL}>Preview</label>
