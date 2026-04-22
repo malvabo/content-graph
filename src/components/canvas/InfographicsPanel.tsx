@@ -2,16 +2,19 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useInfographicStore } from '../../store/infographicStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { renderSVG, parseInfographicData } from '../nodes/InfographicNode';
+import { diffInfographic } from '../../utils/infographicDiff';
 
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
+interface PendingApply { json: string; short: string; labels: string[] }
+
 const SUGGESTION_CHIPS = [
-  'Change the title',
-  'Add a new data point',
-  'Make stats percentages',
-  'Change color to warm tones',
+  'Rewrite the title to be punchier',
+  'Add 2 more data points',
+  'Convert stats to percentages',
+  'Shorten all labels',
   'Add a subtitle',
-  'Remove last point',
+  'Remove the last point',
 ];
 
 async function chatEdit(messages: ChatMsg[], currentJson: string, signal?: AbortSignal): Promise<string> {
@@ -55,6 +58,10 @@ const DEFAULT_JSON = JSON.stringify({ title: 'New Infographic', subtitle: 'Edit 
 
 export default function InfographicsPanel({ initialEditId }: { initialEditId?: string }) {
   const { items, add, update, remove } = useInfographicStore();
+  const pushHistory = useInfographicStore(s => s.pushHistory);
+  const undoStore = useInfographicStore(s => s.undo);
+  const redoStore = useInfographicStore(s => s.redo);
+  const restoreHistory = useInfographicStore(s => s.restoreHistory);
   const [editingId, setEditingId] = useState<string | null>(initialEditId || null);
   useEffect(() => { if (initialEditId) setEditingId(initialEditId); }, [initialEditId]);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -62,12 +69,15 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
   const [loading, setLoading] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [pending, setPending] = useState<PendingApply | null>(null);
+  const [pendingJsonOpen, setPendingJsonOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const messagesRef = useRef<ChatMsg[]>(messages);
   messagesRef.current = messages;
-  const [undoStack, setUndoStack] = useState<string[]>([]);
   const [, setFontTick] = useState(0);
   const [editVersion, setEditVersion] = useState(0);
 
@@ -76,7 +86,7 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
   const hasApiKey = !!(settings.anthropicKey || settings.groqKey);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-  useEffect(() => { setMessages([]); }, [editingId]);
+  useEffect(() => { setMessages([]); setPending(null); setPendingJsonOpen(false); }, [editingId]);
   useEffect(() => { return () => { abortRef.current?.abort(); }; }, []);
   useEffect(() => {
     if (!menuId) return;
@@ -84,6 +94,12 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [menuId]);
+  useEffect(() => {
+    if (!historyOpen) return;
+    const h = (e: Event) => { if (historyRef.current && !historyRef.current.contains(e.target as Node)) setHistoryOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [historyOpen]);
 
   const createNew = () => {
     const id = `ig-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -91,10 +107,18 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
     setEditingId(id);
   };
 
+  const applyParsed = useCallback((parsedJson: string, label: string, previousJson: string, id: string) => {
+    pushHistory(id, label, previousJson);
+    update(id, parsedJson);
+    setEditVersion(v => v + 1);
+  }, [pushHistory, update]);
+
   const send = useCallback(async (text?: string) => {
     const msg = (text || input).trim();
     if (!msg || loading || !editing) return;
     if (!text) setInput('');
+    setPending(null);
+    setPendingJsonOpen(false);
     const next: ChatMsg[] = [...messagesRef.current, { role: 'user', text: msg }];
     setMessages(next);
     setLoading(true);
@@ -104,10 +128,8 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
       if (!freshItem) { setMessages(m => [...m, { role: 'assistant', text: 'Infographic was removed.' }]); return; }
       const reply = await chatEdit(next, freshItem.json, abortRef.current.signal);
       const cleaned = reply.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      // Try JSON.parse directly first, then extract
       let parsed = parseInfographicData(cleaned);
       if (!parsed) {
-        // Extract JSON from surrounding text — handle strings with braces via JSON.parse attempts
         const start = cleaned.indexOf('{');
         if (start !== -1) {
           for (let end = cleaned.length - 1; end > start; end--) {
@@ -118,27 +140,56 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
           }
         }
       }
-      if (parsed && parsed.points) {
-        setUndoStack(s => [...s, freshItem.json]);
+      if (parsed && parsed.points?.length) {
+        const previous = parseInfographicData(freshItem.json);
+        const diff = previous ? diffInfographic(previous, parsed) : { labels: ['updated'], short: 'updated', large: false };
         const jsonStr = JSON.stringify(parsed);
-        update(editing.id, jsonStr);
-        setEditVersion(v => v + 1);
-        setMessages(m => [...m, { role: 'assistant', text: 'Done! I\'ve updated the infographic. Anything else?' }]);
+        if (diff.large) {
+          setPending({ json: jsonStr, labels: diff.labels, short: diff.short });
+          setMessages(m => [...m, { role: 'assistant', text: `Proposed change: ${diff.short}. Review and apply below.` }]);
+        } else {
+          applyParsed(jsonStr, diff.short, freshItem.json, editing.id);
+          setMessages(m => [...m, { role: 'assistant', text: `Applied (${diff.short}). Undo available if needed.` }]);
+        }
       } else {
-        setMessages(m => [...m, { role: 'assistant', text: reply }]);
+        setMessages(m => [...m, { role: 'assistant', text: 'I couldn\'t produce a valid update for that. Try rephrasing — e.g. "rewrite the title to be punchier" or "add 2 more points about X".' }]);
       }
     } catch (e: any) {
       if (e.name !== 'AbortError') setMessages(m => [...m, { role: 'assistant', text: `Error: ${e.message}` }]);
     } finally { setLoading(false); }
-  }, [input, loading, editing, update]);
+  }, [input, loading, editing, applyParsed]);
+
+  const applyPending = useCallback(() => {
+    if (!pending || !editing) return;
+    const fresh = useInfographicStore.getState().items.find(i => i.id === editing.id);
+    if (!fresh) return;
+    applyParsed(pending.json, pending.short, fresh.json, editing.id);
+    setMessages(m => [...m, { role: 'assistant', text: 'Applied. Undo available if needed.' }]);
+    setPending(null);
+    setPendingJsonOpen(false);
+  }, [pending, editing, applyParsed]);
+
+  const discardPending = useCallback(() => {
+    setPending(null);
+    setPendingJsonOpen(false);
+    setMessages(m => [...m, { role: 'assistant', text: 'Discarded.' }]);
+  }, []);
 
   const undo = useCallback(() => {
-    if (!undoStack.length || !editing) return;
-    const prev = undoStack[undoStack.length - 1];
-    setUndoStack(s => s.slice(0, -1));
-    update(editing.id, prev);
-    setMessages(m => [...m, { role: 'assistant', text: 'Reverted to previous version.' }]);
-  }, [undoStack, editing, update]);
+    if (!editing) return;
+    const entry = undoStore(editing.id);
+    if (!entry) return;
+    setEditVersion(v => v + 1);
+    setMessages(m => [...m, { role: 'assistant', text: `Undid: ${entry.label}` }]);
+  }, [editing, undoStore]);
+
+  const redo = useCallback(() => {
+    if (!editing) return;
+    const entry = redoStore(editing.id);
+    if (!entry) return;
+    setEditVersion(v => v + 1);
+    setMessages(m => [...m, { role: 'assistant', text: `Redid: ${entry.label}` }]);
+  }, [editing, redoStore]);
 
   const fontRerender = useCallback(() => setFontTick(t => t + 1), []);
   const svg = editing ? (() => { const d = parseInfographicData(editing.json); return d ? renderSVG(d, fontRerender) : null; })() : null;
@@ -234,7 +285,27 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
           </button>
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', flex: 1 }}>Infographics</span>
-          {undoStack.length > 0 && <button onClick={undo} className="btn btn-sm btn-ghost">↩ Undo</button>}
+          <button onClick={undo} disabled={!editing?.history?.length} className="btn btn-sm btn-ghost" aria-label="Undo" title={editing?.history?.length ? `Undo: ${editing.history[editing.history.length - 1].label}` : 'Nothing to undo'} style={{ opacity: editing?.history?.length ? 1 : 0.4 }}>↩ Undo</button>
+          <button onClick={redo} disabled={!editing?.redoStack?.length} className="btn btn-sm btn-ghost" aria-label="Redo" title={editing?.redoStack?.length ? `Redo: ${editing.redoStack[editing.redoStack.length - 1].label}` : 'Nothing to redo'} style={{ opacity: editing?.redoStack?.length ? 1 : 0.4 }}>↪ Redo</button>
+          <div ref={historyRef} style={{ position: 'relative' }}>
+            <button onClick={() => setHistoryOpen(v => !v)} disabled={!editing?.history?.length} className="btn btn-sm btn-ghost" aria-label="History" style={{ opacity: editing?.history?.length ? 1 : 0.4 }}>History</button>
+            {historyOpen && editing?.history?.length ? (
+              <div style={{ position: 'absolute', top: 32, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 220, maxHeight: 320, overflow: 'auto' }}>
+                {[...editing.history].slice(-5).reverse().map((h, revIdx) => {
+                  const absoluteIndex = (editing.history!.length - 1) - revIdx;
+                  return (
+                    <button key={absoluteIndex + '-' + h.ts} onClick={() => { restoreHistory(editing.id, absoluteIndex); setEditVersion(v => v + 1); setHistoryOpen(false); setMessages(m => [...m, { role: 'assistant', text: `Restored to: ${h.label}` }]); }}
+                      style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', textAlign: 'left', transition: 'background 100ms' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                      <span>{h.label}</span>
+                      <span style={{ fontSize: 'var(--text-micro)', color: 'var(--color-text-disabled)', fontFamily: 'var(--font-mono)' }}>{new Date(h.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
           <button onClick={async () => {
             const el = document.getElementById('ig-editor-preview');
             if (!el) return;
@@ -312,9 +383,9 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
           )}
 
           {/* Quick actions after conversation starts */}
-          {!loading && messages.length > 0 && (
+          {!loading && messages.length > 0 && !pending && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {['Add point', 'Change colors', 'Edit title'].map(chip => (
+              {['Add point', 'Shorten labels', 'Edit title'].map(chip => (
                 <button key={chip} onClick={() => send(chip)}
                   style={{ padding: '4px 12px', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)', background: 'transparent', fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'border-color 120ms' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
@@ -326,6 +397,22 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
 
           <div ref={chatEndRef} />
         </div>
+
+        {/* Large-diff confirm bar */}
+        {pending && (
+          <div style={{ padding: 'var(--space-3) var(--space-4)', borderTop: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-surface)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Large change — confirm</div>
+            <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-normal)' }}>{pending.labels.join(', ')}</div>
+            {pendingJsonOpen && (
+              <pre style={{ fontSize: 'var(--text-micro)', fontFamily: 'var(--font-mono)', background: 'var(--color-bg)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2)', maxHeight: 160, overflow: 'auto', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{(() => { try { return JSON.stringify(JSON.parse(pending.json), null, 2); } catch { return pending.json; } })()}</pre>
+            )}
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <button onClick={applyPending} className="btn btn-primary btn-sm">Apply</button>
+              <button onClick={discardPending} className="btn btn-sm btn-ghost">Discard</button>
+              <button onClick={() => setPendingJsonOpen(v => !v)} className="btn btn-sm btn-ghost" style={{ marginLeft: 'auto' }}>{pendingJsonOpen ? 'Hide JSON' : 'Show JSON'}</button>
+            </div>
+          </div>
+        )}
 
         {/* Input */}
         <div style={{ padding: 'var(--space-3) var(--space-4)', borderTop: '1px solid var(--color-border-subtle)' }}>
