@@ -18,12 +18,13 @@ interface InlineInfographicProps {
   data: InfographicData;
   editVersion: number;
   onPointsChange: (mutator: (points: Point[]) => Point[]) => void;
+  onTextChange: (field: 'title' | 'subtitle' | 'footer', value: string) => void;
 }
 
 // Renders the SVG and overlays transparent HTML inputs at the exact positions
 // of each point's stat/label, so the user can click on any number or label
 // and type directly on the infographic.
-function InlineInfographic({ svg, data, editVersion, onPointsChange }: InlineInfographicProps) {
+function InlineInfographic({ svg, data, editVersion, onPointsChange, onTextChange }: InlineInfographicProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const layout = computeLayout(data);
@@ -39,6 +40,9 @@ function InlineInfographic({ svg, data, editVersion, onPointsChange }: InlineInf
     return () => ro.disconnect();
   }, []);
 
+  // Transparent input overlaid on top of the SVG. On focus/hover the input
+  // reveals itself with a card-colored fill and a green stroke so the user
+  // gets a clear "this is the text I'm editing" signal.
   const inputStyle = (f: TextField): React.CSSProperties => ({
     position: 'absolute',
     left: f.anchor === 'middle' ? (f.x - f.w / 2) * scale : f.x * scale,
@@ -49,7 +53,7 @@ function InlineInfographic({ svg, data, editVersion, onPointsChange }: InlineInf
     fontWeight: f.fontWeight,
     textAlign: f.anchor === 'middle' ? 'center' : 'left',
     background: 'transparent',
-    border: 'none',
+    border: '1px solid transparent',
     outline: 'none',
     padding: 0,
     margin: 0,
@@ -58,7 +62,8 @@ function InlineInfographic({ svg, data, editVersion, onPointsChange }: InlineInf
     fontFamily: 'inherit',
     cursor: 'text',
     borderRadius: 'var(--radius-sm)',
-    transition: 'background 160ms var(--ease-default, ease), color 160ms var(--ease-default, ease)',
+    transition: 'background 160ms var(--ease-default, ease), color 160ms var(--ease-default, ease), border-color 160ms var(--ease-default, ease)',
+    boxSizing: 'border-box',
   });
 
   const onEnter = (e: React.MouseEvent<HTMLInputElement>) => {
@@ -72,32 +77,78 @@ function InlineInfographic({ svg, data, editVersion, onPointsChange }: InlineInf
   const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.currentTarget.style.color = 'var(--color-text-primary)';
     e.currentTarget.style.background = 'var(--color-bg-card)';
+    e.currentTarget.style.borderColor = 'var(--color-accent)';
   };
   const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     e.currentTarget.style.color = 'transparent';
     e.currentTarget.style.background = 'transparent';
+    e.currentTarget.style.borderColor = 'transparent';
   };
+
+  const mutatePoint = (i: number, patch: Partial<InfographicData['points'][number]>) =>
+    onPointsChange(points => points.map((p, idx) => idx === i ? { ...p, ...patch } : p));
 
   return (
     <div ref={wrapRef} style={{ width: '100%', maxWidth: 800, position: 'relative', lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
       <div key={editVersion} dangerouslySetInnerHTML={{ __html: svg }} />
-      {/* Per-point stat/label (cards layout only) */}
+
+      {/* Title — always present, always editable */}
+      <input
+        aria-label="Infographic title"
+        value={data.title}
+        onChange={e => onTextChange('title', e.target.value)}
+        onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
+        style={inputStyle(layout.title)}
+      />
+
+      {/* Subtitle — editable when present */}
+      {layout.subtitle && (
+        <input
+          aria-label="Infographic subtitle"
+          value={data.subtitle ?? ''}
+          onChange={e => onTextChange('subtitle', e.target.value)}
+          onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
+          style={inputStyle(layout.subtitle)}
+        />
+      )}
+
+      {/* Footer — editable when present */}
+      {layout.footer && (
+        <input
+          aria-label="Infographic footer"
+          value={data.footer ?? ''}
+          onChange={e => onTextChange('footer', e.target.value)}
+          onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
+          style={inputStyle(layout.footer)}
+        />
+      )}
+
+      {/* Per-point stat / label / detail — covers all three chart types */}
       {layout.points.map((pf, i) => (
         <span key={i}>
           <input
             aria-label={`Point ${i + 1} stat`}
             value={data.points[i]?.stat ?? ''}
-            onChange={e => onPointsChange(points => points.map((p, idx) => idx === i ? { ...p, stat: e.target.value } : p))}
+            onChange={e => mutatePoint(i, { stat: e.target.value })}
             onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
             style={inputStyle(pf.stat)}
           />
           <input
             aria-label={`Point ${i + 1} label`}
             value={data.points[i]?.label ?? ''}
-            onChange={e => onPointsChange(points => points.map((p, idx) => idx === i ? { ...p, label: e.target.value } : p))}
+            onChange={e => mutatePoint(i, { label: e.target.value })}
             onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
             style={inputStyle(pf.label)}
           />
+          {pf.detail && (
+            <input
+              aria-label={`Point ${i + 1} detail`}
+              value={data.points[i]?.detail ?? ''}
+              onChange={e => mutatePoint(i, { detail: e.target.value })}
+              onFocus={onFocus} onBlur={onBlur} onMouseEnter={onEnter} onMouseLeave={onLeave}
+              style={inputStyle(pf.detail)}
+            />
+          )}
         </span>
       ))}
     </div>
@@ -498,6 +549,7 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
               data={currentData}
               editVersion={editVersion}
               onPointsChange={(mutator) => applyDirectEdit(d => { d.points = mutator(d.points); })}
+              onTextChange={scheduleTextEdit}
             />
           )}
 

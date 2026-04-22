@@ -260,7 +260,10 @@ export interface InfographicLayout {
   title: TextField;
   subtitle?: TextField;
   footer?: TextField;
-  points: { stat: TextField; label: TextField }[];
+  /** Every chart type exposes stat + label bounds so every visible piece of
+   *  text can be overlaid with an editable input. `detail` appears for the
+   *  cards layout when the point has a detail string. */
+  points: { stat: TextField; label: TextField; detail?: TextField }[];
 }
 
 export function computeLayout(data: InfographicData): InfographicLayout {
@@ -276,17 +279,41 @@ export function computeLayout(data: InfographicData): InfographicLayout {
   const contentStartY = subtitle ? subtitleY + 32 : titleY + 40;
   let H = 540;
 
-  const pointFields: { stat: TextField; label: TextField }[] = [];
+  const pointFields: { stat: TextField; label: TextField; detail?: TextField }[] = [];
 
   if (type === 'bar') {
     const barH = 32, barGap = gap + 4;
+    const chartX = 140, chartW = W - chartX - 60;
     H = Math.max(540, contentStartY + points.length * (barH + barGap) + 60 + (footer ? 40 : 0));
+    const maxVal = Math.max(...points.map(p => parseFloat(p.stat.replace(/[^0-9.]/g, '')) || 0), 1);
+    points.forEach(p => {
+      const y = contentStartY + pointFields.length * (barH + barGap);
+      const val = parseFloat(p.stat.replace(/[^0-9.]/g, '')) || 0;
+      const w = Math.max(4, (val / maxVal) * chartW);
+      pointFields.push({
+        // Left-side label (right-aligned text ending at chartX - 12).
+        label: { x: chartX - 12 - 120, y: y + barH / 2 - 8, w: 120, h: 18, fontSize: 12, fontWeight: 500, anchor: 'start' },
+        // Stat to the right of the filled bar.
+        stat:  { x: chartX + w + 8, y: y + barH / 2 - 8, w: 60, h: 18, fontSize: 12, fontWeight: 700, anchor: 'start' },
+      });
+    });
   } else if (type === 'pie') {
     const cy = contentStartY + 180, r = 140;
     H = Math.max(540, cy + r + 80 + (footer ? 40 : 0));
     H = Math.max(H, cy + r + 30 + points.length * 20 + 30);
+    points.forEach(i => {
+      void i;
+      const idx = pointFields.length;
+      const ly = cy + r + 30 + idx * 20;
+      // Legend row — label and stat rendered as "label — stat". Split the
+      // line into two editable spans so the user can change each independently.
+      pointFields.push({
+        label: { x: W / 2 - 104, y: ly - 8, w: 160, h: 16, fontSize: 11, fontWeight: 500, anchor: 'start' },
+        stat:  { x: W / 2 + 60,  y: ly - 8, w: 80,  h: 16, fontSize: 11, fontWeight: 700, anchor: 'start' },
+      });
+    });
   } else {
-    // Cards (default) — only this mode supports per-point inline editing.
+    // ─── Cards ───
     const cols = points.length <= 4 ? 2 : 3;
     const gapX = gap + 8, gapY = gap;
     const cardW = Math.floor((W - 80 - (cols - 1) * gapX) / cols);
@@ -302,6 +329,9 @@ export function computeLayout(data: InfographicData): InfographicLayout {
       pointFields.push({
         stat: { x: x + 20, y: statY - statSize, w: cardW - 40, h: statSize + 4, fontSize: statSize, fontWeight: 700, anchor: 'start' },
         label: { x: x + 20, y: statY + 24 - 13, w: cardW - 40, h: 18, fontSize: 13, fontWeight: 500, anchor: 'start' },
+        detail: p.detail !== undefined
+          ? { x: x + 20, y: statY + 44 - 11, w: cardW - 40, h: 16, fontSize: 11, fontWeight: 400, anchor: 'start' }
+          : undefined,
       });
     });
     void radius;

@@ -209,7 +209,8 @@ select {
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):focus,
 textarea:focus,
 select:focus {
-  border-color: var(--color-border-strong);
+  /* Design system: focus border is the accent green. */
+  border-color: var(--color-accent);
   box-shadow: none;
 }
 input::placeholder, textarea::placeholder { color: var(--color-text-placeholder); }
@@ -223,7 +224,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   transition: border-color 150ms;
 }
 .form-input:hover { border-color: var(--color-border-default); }
-.form-input:focus { border-color: var(--color-border-strong); }
+.form-input:focus { border-color: var(--color-accent); }
 
 .form-textarea {
   width: 100%; padding: var(--space-3);
@@ -233,7 +234,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   transition: border-color 150ms;
 }
 .form-textarea:hover { border-color: var(--color-border-default); }
-.form-textarea:focus { border-color: var(--color-border-strong); }
+.form-textarea:focus { border-color: var(--color-accent); }
 .form-input.form-error, .form-textarea.form-error { border-color: var(--color-danger-border); }
 .form-input.form-error:focus, .form-textarea.form-error:focus { border-color: var(--color-danger); }
 
