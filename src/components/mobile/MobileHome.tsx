@@ -93,92 +93,141 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
   );
 }
 
-/** Compact single-line retrieval row. No expand. Tap → detail sheet. */
+/**
+ * Compact single-row retrieval card.
+ * Tokens: radius-xl, space-4, ui (14/500) title, small (12/500) metadata.
+ * Pill follows the design system's status-pill recipe: 20px tall, 100px
+ * radius, 6px dot + 14px text, role-specific BG + border per Status Colors.
+ *
+ * A11y: tap target ≥ 44px, aria-label is a full natural-language summary so
+ * screen-reader users don't have to compose the row themselves, focus-visible
+ * ring uses the accent token per design system.
+ */
 function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
   const isTranscribing = note.status === 'transcribing';
   const isAudioOnly = note.status === 'ready' && !note.transcript;
+  const isError = note.status === 'error';
 
-  const dotColor =
-    isTranscribing ? 'var(--color-warning-text, #856404)'
-    : isAudioOnly ? 'var(--color-text-disabled)'
-    : note.lastGeneration ? 'var(--color-accent, #0DBF5A)'
-    : 'var(--color-text-tertiary)';
+  type PillRole = 'complete' | 'running' | 'idle' | 'error';
+  const pillRoleMap: Record<PillRole, { dot: string; bg: string; border: string; fg: string }> = {
+    complete: { dot: 'var(--color-accent, #0DBF5A)', bg: 'var(--color-success-bg, #e6f9e6)', border: '#E0DCD6', fg: 'var(--color-success-text, #1a7f1a)' },
+    running:  { dot: '#F0D8A0', bg: 'var(--color-warning-bg, #FEF8E8)', border: 'var(--color-warning-border, #F0D8A0)', fg: 'var(--color-warning-text, #6A4A10)' },
+    idle:     { dot: '#C8D4CC', bg: 'var(--color-bg-surface)', border: 'transparent', fg: 'var(--color-text-tertiary)' },
+    error:    { dot: '#C93030', bg: 'var(--color-danger-bg, #FEF4F4)', border: '#ECC0C0', fg: 'var(--color-danger-text, #A83030)' },
+  };
 
-  const rightChip: { label: string; bg: string; fg: string } | null =
-    isTranscribing ? { label: 'Transcribing', bg: 'var(--color-warning-bg)', fg: 'var(--color-warning-text)' }
-    : isAudioOnly ? { label: 'Audio only', bg: 'var(--color-bg-surface)', fg: 'var(--color-text-tertiary)' }
-    : note.lastGeneration ? { label: KIND_LABEL[note.lastGeneration.kind].split(' ')[0], bg: 'var(--color-bg-surface)', fg: 'var(--color-accent, #0DBF5A)' }
+  const pill = isTranscribing ? { role: 'running' as PillRole, label: 'Transcribing' }
+    : isError ? { role: 'error' as PillRole, label: 'Failed' }
+    : isAudioOnly ? { role: 'idle' as PillRole, label: 'Audio only' }
+    : note.lastGeneration ? { role: 'complete' as PillRole, label: KIND_LABEL[note.lastGeneration.kind].split(' ')[0] }
     : null;
 
-  // Title fallback: avoid stacking a dozen "Untitled note" rows. If the title
-  // is the literal "Untitled note" and there's no transcript, show a friendlier
-  // retrieval string ("Audio recording · <time>").
-  const displayTitle = isAudioOnly && note.title === 'Untitled note'
-    ? `Audio recording`
-    : note.title;
+  const displayTitle = isAudioOnly && note.title === 'Untitled note' ? 'Audio recording' : note.title;
+  const meta = `${fmtDuration(note.durationMs)} · ${fmtDate(note.createdAt)}`;
+  const ariaLabel = `${displayTitle}. ${meta}${pill ? '. Status: ' + pill.label : ''}. Open.`;
 
   return (
-    <button onClick={onOpen} disabled={isTranscribing}
+    <button
+      onClick={onOpen}
+      disabled={isTranscribing}
+      aria-label={ariaLabel}
+      className="voice-note-card"
       style={{
         width: '100%', textAlign: 'left', background: 'var(--color-bg-card)',
-        border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)',
-        padding: '14px 16px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center',
-        columnGap: 12, rowGap: 2, cursor: isTranscribing ? 'default' : 'pointer',
+        border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)',
+        padding: 'var(--space-3) var(--space-4)', display: 'grid',
+        gridTemplateColumns: 'auto 1fr auto', alignItems: 'center',
+        columnGap: 'var(--space-3)', rowGap: 2, minHeight: 64,
+        cursor: isTranscribing ? 'default' : 'pointer',
         opacity: isTranscribing ? 0.7 : 1, minWidth: 0, boxSizing: 'border-box',
-      }}>
-      {/* Leading dot — the anchor every row pins to */}
-      <span style={{ gridRow: '1 / span 2', width: 10, height: 10, borderRadius: '50%', background: dotColor, flexShrink: 0, marginTop: 2 }} />
+        transition: 'border-color 100ms, background 100ms',
+      }}
+    >
+      {/* Design system status dot: 6×6 pinned left (row-span) */}
+      <span aria-hidden style={{
+        gridRow: '1 / span 2', width: 6, height: 6, borderRadius: 'var(--radius-full)',
+        background: pillRoleMap[pill?.role ?? 'idle'].dot, flexShrink: 0, marginTop: 7,
+      }} />
 
-      {/* Title row */}
+      {/* Title — ui: 14/500/20px */}
       <span style={{
-        fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--color-text-primary)',
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, lineHeight: 1.3,
+        fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500,
+        lineHeight: '20px', color: 'var(--color-text-primary)',
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
       }}>
         {displayTitle}
       </span>
 
-      {/* Right chip */}
-      {rightChip ? (
-        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: rightChip.bg, color: rightChip.fg, lineHeight: '16px', flexShrink: 0 }}>
-          {rightChip.label}
+      {/* Status pill — design system recipe (20px tall, 6px dot + label) */}
+      {pill ? (
+        <span style={{
+          height: 20, display: 'inline-flex', alignItems: 'center', gap: 5,
+          padding: '0 8px', borderRadius: 'var(--radius-full)',
+          background: pillRoleMap[pill.role].bg,
+          border: `1px solid ${pillRoleMap[pill.role].border}`,
+          fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500,
+          color: pillRoleMap[pill.role].fg, flexShrink: 0,
+        }}>
+          <span aria-hidden style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: pillRoleMap[pill.role].dot }} />
+          {pill.label}
         </span>
-      ) : <span aria-hidden style={{ width: 0 }} />}
+      ) : <span aria-hidden />}
 
-      {/* Metadata row (spans under title + chip) */}
+      {/* Metadata — small: 12/500/16px */}
       <span style={{
         gridColumn: '2 / span 2',
-        fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--color-text-tertiary)', lineHeight: 1.3,
+        fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px',
+        color: 'var(--color-text-tertiary)',
       }}>
-        {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
+        {meta}
       </span>
     </button>
   );
 }
 
-/** Aggregated collapsed view for orphan/failed notes — keeps them out of the
- *  main list until the user chooses to review. */
+/** Aggregated collapsed view for orphan/failed notes.
+ *  Uses design-system danger tokens, radius-xl, minHeight 44 (tap target). */
 function ErrorSummary({ failed, onReview }: { failed: VoiceNote[]; onReview: () => void }) {
+  const n = failed.length;
   return (
-    <button onClick={onReview}
+    <button
+      onClick={onReview}
+      aria-label={`${n} recording${n === 1 ? '' : 's'} couldn't be transcribed. Review.`}
       style={{
         width: '100%', textAlign: 'left', background: 'var(--color-danger-bg)',
-        border: '1px solid var(--color-danger-border, var(--color-danger-text))',
-        borderRadius: 'var(--radius-lg)', padding: '12px 16px',
+        border: '1px solid #ECC0C0', borderRadius: 'var(--radius-xl)',
+        padding: 'var(--space-3) var(--space-4)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: 12, cursor: 'pointer', minWidth: 0, boxSizing: 'border-box',
+        gap: 'var(--space-3)', minHeight: 44, minWidth: 0, boxSizing: 'border-box',
+      }}
+    >
+      <span style={{
+        fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, lineHeight: '20px',
+        color: 'var(--color-danger-text, #A83030)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis',
       }}>
-      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, color: 'var(--color-danger-text)', minWidth: 0, overflow: 'hidden' }}>
-        {failed.length} recording{failed.length === 1 ? '' : 's'} couldn't be transcribed
+        {n} recording{n === 1 ? '' : 's'} couldn't be transcribed
       </span>
-      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--color-danger-text)', flexShrink: 0 }}>
+      <span aria-hidden style={{
+        fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px',
+        color: 'var(--color-danger-text, #A83030)', flexShrink: 0,
+      }}>
         Review →
       </span>
     </button>
   );
 }
 
-/** Full-screen detail sheet — replaces the old accordion.
- *  Owns generation state, persists the last successful generation to the store. */
+/**
+ * Full-screen detail sheet.
+ * A11y: role="dialog" + aria-modal, aria-labelledby wired to the title,
+ * Escape key closes, body scroll lock while open, focus moves into the sheet
+ * on open and returns to the opener on close, aria-live="polite" on the
+ * generated-output region so the screen reader announces completion.
+ *
+ * Design system: uses .btn classes (no hand-rolled buttons), design tokens
+ * for typography (heading 16/500, ui 14/500, body 15/1.8, tag 11/500 mono
+ * uppercase 0.3em), space-4 rhythm, radius-xl containers.
+ */
 function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   note: VoiceNote;
   onClose: () => void;
@@ -192,12 +241,38 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
     : null);
   const [copied, setCopied] = useState(false);
   const isError = note.status === 'error';
+  const titleId = `voice-sheet-title-${note.id}`;
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
 
   const saveTitle = () => {
     const t = editTitle.trim();
     if (!t || t === note.title) return;
     updateNote(note.id, { title: t });
   };
+
+  const close = useCallback(() => { saveTitle(); onClose(); }, [onClose]);
+
+  // a11y: capture the previously-focused element to restore on close, move
+  // focus into the sheet, lock body scroll, and listen for Escape.
+  useEffect(() => {
+    openerRef.current = document.activeElement as HTMLElement | null;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    // Defer so the portal has mounted and the button is focusable.
+    const t = setTimeout(() => closeBtnRef.current?.focus(), 0);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      openerRef.current?.focus?.();
+    };
+  }, [close]);
 
   const generate = useCallback(async (kind: AssetKind) => {
     if (!note.transcript) return;
@@ -216,110 +291,187 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
     try { await navigator.clipboard.writeText(gen.text); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* blocked */ }
   };
 
+  // tag style: 500 11px mono uppercase 0.3em letter-spacing #6d6d6d
+  const tagStyle: React.CSSProperties = {
+    fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, lineHeight: 1,
+    textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--color-text-tertiary)',
+  };
+
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-      {/* Sheet header */}
-      <div style={{ flexShrink: 0, padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 0 }}>
-        <button onClick={() => { saveTitle(); onClose(); }} aria-label="Close"
-          style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', border: 'none', background: 'transparent', color: 'var(--color-text-tertiary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
+    <div
+      ref={sheetRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9998,
+        background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', minWidth: 0,
+      }}
+    >
+      {/* Sheet header — borrows the app's elevated-surface token */}
+      <div style={{
+        flexShrink: 0, padding: 'var(--space-3) var(--space-4)',
+        borderBottom: '1px solid var(--color-border-subtle)',
+        background: 'var(--color-bg-card)',
+        display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 0,
+      }}>
+        <button
+          ref={closeBtnRef}
+          onClick={close}
+          aria-label="Close note"
+          className="btn-icon"
+          style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', flexShrink: 0 }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <input value={editTitle} onChange={e => setEditTitle(e.target.value)} onBlur={saveTitle}
+          <label htmlFor={titleId} className="sr-only">Note title</label>
+          <input
+            id={titleId}
+            value={editTitle}
+            onChange={e => setEditTitle(e.target.value)}
+            onBlur={saveTitle}
             onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
-            style={{ width: '100%', fontFamily: 'var(--font-sans)', fontSize: 17, fontWeight: 600, color: 'var(--color-text-primary)', background: 'none', border: 'none', outline: 'none', padding: 0 }} />
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 2 }}>
+            aria-label="Note title"
+            style={{
+              width: '100%', fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 500, lineHeight: '22px',
+              color: 'var(--color-text-primary)', background: 'none',
+              border: 'none', borderBottom: '1px solid transparent', outline: 'none', padding: '2px 0',
+            }}
+            onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-strong)'; }}
+          />
+          <div style={{
+            fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px',
+            color: 'var(--color-text-tertiary)', marginTop: 2,
+          }}>
             {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
           </div>
         </div>
       </div>
 
       {/* Sheet body */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', minWidth: 0 }}>
+      <div style={{
+        flex: 1, overflowY: 'auto', overflowX: 'hidden',
+        padding: 'var(--space-5) var(--space-4)',
+        display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', minWidth: 0,
+      }}>
         {isError ? (
-          <div style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border, var(--color-danger-text))', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--color-danger-text)', lineHeight: 1.5, wordBreak: 'break-word' }}>
+          <div role="alert" style={{
+            background: 'var(--color-danger-bg, #FEF4F4)',
+            border: '1px solid #ECC0C0', borderRadius: 'var(--radius-lg)',
+            padding: 'var(--space-4)',
+            fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: 1.5,
+            color: 'var(--color-danger-text, #A83030)', wordBreak: 'break-word',
+          }}>
             {note.errorReason || 'Transcription failed.'}
           </div>
         ) : note.transcript ? (
-          <div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Transcript</div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 15, color: 'var(--color-text-primary)', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+          <section aria-labelledby={`${titleId}-transcript`}>
+            <div id={`${titleId}-transcript`} style={{ ...tagStyle, marginBottom: 'var(--space-2)' }}>Transcript</div>
+            <div style={{
+              fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 400, lineHeight: 1.8,
+              color: 'var(--color-text-primary)',
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
+            }}>
               {note.transcript}
             </div>
-          </div>
+          </section>
         ) : (
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: 1.5, color: 'var(--color-text-tertiary)' }}>
             This recording has audio but no transcript yet. Add a Groq API key in desktop Settings to transcribe existing audio.
           </div>
         )}
 
         {/* Generator — primary action */}
         {note.transcript && !isError && (
-          <div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>
-              Create asset
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+          <section aria-labelledby={`${titleId}-create`}>
+            <div id={`${titleId}-create`} style={{ ...tagStyle, marginBottom: 'var(--space-2)' }}>Create asset</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-2)' }}>
               {(['linkedin-post', 'twitter-thread', 'twitter-single'] as const).map(k => {
                 const isActive = gen?.kind === k;
-                const isLoadingThis = isActive && gen?.loading;
+                const isLoadingThis = !!(isActive && gen?.loading);
+                const isSaved = note.lastGeneration?.kind === k;
                 return (
-                  <button key={k} onClick={() => generate(k)} disabled={isLoadingThis}
+                  <button
+                    key={k}
+                    onClick={() => generate(k)}
+                    disabled={isLoadingThis}
+                    aria-label={`Generate ${KIND_LABEL[k]}${isSaved ? ' (previously saved)' : ''}`}
                     style={{
-                      padding: '12px 14px', borderRadius: 'var(--radius-md)',
-                      border: `1px solid ${isActive ? 'var(--color-accent)' : 'var(--color-border-default)'}`,
+                      width: '100%', minHeight: 44, padding: 'var(--space-3) var(--space-4)',
+                      borderRadius: 'var(--radius-lg)',
+                      border: `1px solid ${isActive ? 'var(--color-accent, #0DBF5A)' : 'var(--color-border-default)'}`,
                       background: isActive ? 'var(--color-bg-surface)' : 'var(--color-bg-card)',
-                      fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500,
-                      color: 'var(--color-text-primary)', textAlign: 'left', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-                    }}>
+                      fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, lineHeight: '20px',
+                      color: 'var(--color-text-primary)', textAlign: 'left',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)',
+                    }}
+                  >
                     <span>{KIND_LABEL[k]}</span>
-                    {isLoadingThis ? <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>Generating…</span>
-                      : note.lastGeneration?.kind === k ? <span style={{ fontSize: 12, color: 'var(--color-accent)' }}>Saved</span>
-                      : <span style={{ color: 'var(--color-text-tertiary)' }}>→</span>}
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--color-text-tertiary)' }}>
+                      {isLoadingThis ? 'Generating…' : isSaved ? 'Saved' : '→'}
+                    </span>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Generated output (persisted) */}
+        {/* Generated output — aria-live so screen readers announce completion */}
         {gen && (gen.loading || gen.text || gen.error) && (
-          <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', minWidth: 0, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {KIND_LABEL[gen.kind]}
-              </span>
+          <section aria-live="polite" aria-busy={!!gen.loading}
+            style={{
+              background: 'var(--color-bg-surface)',
+              border: '1px solid var(--color-border-subtle)',
+              borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+              minWidth: 0, overflow: 'hidden',
+            }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+              <span style={tagStyle}>{KIND_LABEL[gen.kind]}</span>
               {gen.text && !gen.loading && (
-                <button onClick={copy} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 500, color: copied ? 'var(--color-accent)' : 'var(--color-accent)', padding: 0 }}>
-                  {copied ? 'Copied!' : 'Copy'}
+                <button
+                  onClick={copy}
+                  aria-label={copied ? 'Copied to clipboard' : 'Copy generated text'}
+                  className="btn-xs btn-ghost"
+                  style={{ color: 'var(--color-accent, #0DBF5A)' }}
+                >
+                  {copied ? 'Copied' : 'Copy'}
                 </button>
               )}
             </div>
             {gen.loading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }} aria-label="Generating">
                 {[100, 92, 96, 80].map((w, i) => <div key={i} className="skeleton-bar" style={{ height: 12, width: `${w}%`, borderRadius: 'var(--radius-sm)', animationDelay: `${i * 0.1}s` }} />)}
               </div>
             ) : gen.error ? (
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--color-danger-text)', wordBreak: 'break-word' }}>{gen.error}</div>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: 1.5, color: 'var(--color-danger-text, #A83030)', wordBreak: 'break-word' }}>
+                {gen.error}
+              </div>
             ) : (
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.55, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+              <div style={{
+                fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: 1.75,
+                color: 'var(--color-text-primary)',
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
+              }}>
                 {gen.text}
               </div>
             )}
-          </div>
+          </section>
         )}
 
         {/* Footer actions */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'auto', paddingTop: 'var(--space-4)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           {isError && (
             <button onClick={() => { onRerecord(); onClose(); }} className="btn btn-primary" style={{ flex: 1 }}>
               Re-record
             </button>
           )}
-          <button onClick={() => { onDelete(); onClose(); }}
-            style={{ flex: isError ? 0 : 1, padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--color-danger-text)', cursor: 'pointer' }}>
+          <button
+            onClick={() => { onDelete(); onClose(); }}
+            className="btn btn-ghost-dest"
+            style={{ flex: isError ? 'none' : 1, minWidth: isError ? 88 : 'auto' }}
+          >
             Delete
           </button>
         </div>
@@ -509,28 +661,49 @@ export default function MobileHome() {
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ padding: 'var(--space-4) var(--space-4) var(--space-3)', flexShrink: 0, minWidth: 0 }}>
-        <h1 style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.02em', wordBreak: 'break-word' }}>Voice Notes</h1>
-        <p style={{ margin: '4px 0 0', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', lineHeight: 1.4, wordBreak: 'break-word' }}>
+      {/* Header — heading token (16/500/22), supportive subtitle in tertiary */}
+      <header style={{ padding: 'var(--space-4) var(--space-4) var(--space-3)', flexShrink: 0, minWidth: 0 }}>
+        <h1 style={{
+          margin: 0, fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 500, lineHeight: '28px',
+          color: 'var(--color-text-primary)', letterSpacing: '-0.02em', wordBreak: 'break-word',
+        }}>Voice Notes</h1>
+        <p style={{
+          margin: '4px 0 0', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: '20px',
+          color: 'var(--color-text-tertiary)', wordBreak: 'break-word',
+        }}>
           Record an idea and turn it into a LinkedIn post or tweet.
         </p>
-      </div>
+      </header>
 
       {/* Scrollable notes list */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 var(--space-4) 140px', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', minWidth: 0 }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 var(--space-4) 140px', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minWidth: 0 }}>
         {!hasKey && (
-          <div style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', lineHeight: 1.4 }}>
+          <div role="status" style={{
+            padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-xl)',
+            background: 'var(--color-warning-bg, #FEF8E8)',
+            border: '1px solid var(--color-warning-border, #F0D8A0)',
+            fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: 1.5,
+            color: 'var(--color-warning-text, #6A4A10)',
+          }}>
             Add an Anthropic or Groq API key on a desktop session to enable transcription and generation.
           </div>
         )}
 
         {errorMsg && (
-          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-danger-text)' }}>{errorMsg}</div>
+          <div role="alert" style={{
+            padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)',
+            background: 'var(--color-danger-bg, #FEF4F4)',
+            fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: 1.5,
+            color: 'var(--color-danger-text, #A83030)',
+          }}>{errorMsg}</div>
         )}
 
         {isEmpty ? (
-          <div style={{ padding: 'var(--space-8) var(--space-4)', textAlign: 'center', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>
+          <div style={{
+            padding: 'var(--space-8) var(--space-4)', textAlign: 'center',
+            color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)',
+            fontSize: 14, fontWeight: 400, lineHeight: 1.5,
+          }}>
             No notes yet. Tap the record button to capture your first idea.
           </div>
         ) : (
@@ -540,30 +713,40 @@ export default function MobileHome() {
               <ErrorSummary failed={failedNotes} onReview={() => setShowingErrors(true)} />
             )}
             {failedNotes.length > 0 && showingErrors && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 var(--space-1)' }}>
-                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <section aria-label="Failed recordings" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-2) var(--space-1) 0' }}>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, lineHeight: 1,
+                    textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--color-text-tertiary)',
+                  }}>
                     Failed recordings
                   </span>
-                  <button onClick={() => setShowingErrors(false)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--color-text-tertiary)', padding: 0 }}>
+                  <button
+                    onClick={() => setShowingErrors(false)}
+                    aria-label="Hide failed recordings"
+                    className="btn-xs btn-ghost"
+                    style={{ color: 'var(--color-text-tertiary)' }}
+                  >
                     Hide
                   </button>
-                </div>
+                </header>
                 {failedNotes.map(n => (
                   <NoteCard key={n.id} note={n} onOpen={() => setOpenNoteId(n.id)} />
                 ))}
-              </div>
+              </section>
             )}
 
             {/* Active notes */}
             {activeNotes.map(n => (
-              <div key={n.id} style={{
-                position: 'relative',
-                boxShadow: justRecordedId === n.id ? '0 0 0 2px var(--color-accent)' : 'none',
-                borderRadius: 'var(--radius-lg)',
-                transition: 'box-shadow 300ms',
-              }}>
+              <div
+                key={n.id}
+                style={{
+                  position: 'relative',
+                  boxShadow: justRecordedId === n.id ? '0 0 0 2px var(--color-accent, #0DBF5A)' : 'none',
+                  borderRadius: 'var(--radius-xl)',
+                  transition: 'box-shadow 300ms ease',
+                }}
+              >
                 <NoteCard note={n} onOpen={() => setOpenNoteId(n.id)} />
               </div>
             ))}

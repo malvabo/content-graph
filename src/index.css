@@ -395,3 +395,24 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 }
 /* contentEditable placeholder */
 [contenteditable]:empty::before { content: attr(data-placeholder); color: var(--color-text-disabled); pointer-events: none; }
+
+/* Accessibility: visually hidden label that remains in the accessibility tree. */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Mobile voice-note card: focus-visible ring per design system + gentle hover. */
+.voice-note-card:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-card);
+}
+.voice-note-card:focus-visible {
+  outline: 2px solid var(--color-accent, #0DBF5A);
+  outline-offset: 2px;
+}
