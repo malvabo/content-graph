@@ -1,14 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useBrandsStore } from '../../store/brandsStore';
+import { useDarkMode } from '../../hooks/useDarkMode';
 import BrandSetupModal from '../modals/BrandSetupModal';
 
 const PaletteIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/><circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/><circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/><circle cx="6.5" cy="12" r="0.5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>;
 const KeyIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>;
+const ThemeIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>;
 
-type SectionId = 'brand-kits' | 'api-keys';
+type SectionId = 'brand-kits' | 'appearance' | 'api-keys';
 const SECTIONS: { id: SectionId; label: string; icon: () => React.ReactNode }[] = [
   { id: 'brand-kits', label: 'Brand Kits', icon: PaletteIcon },
+  { id: 'appearance', label: 'Appearance', icon: ThemeIcon },
   { id: 'api-keys', label: 'API Keys', icon: KeyIcon },
 ];
 
@@ -141,6 +144,42 @@ function BrandKitsSection() {
       )}
 
       {editingId && <BrandSetupModal brandId={editingId} onClose={() => setEditingId(null)} />}
+    </div>
+  );
+}
+
+function AppearanceSection() {
+  const [dark, setDark] = useDarkMode();
+
+  const Option = ({ value, label, description }: { value: boolean; label: string; description: string }) => {
+    const on = dark === value;
+    return (
+      <button onClick={() => setDark(value)}
+        style={{ flex: 1, textAlign: 'left', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', border: `1px solid ${on ? 'var(--color-accent)' : 'var(--color-border-default)'}`, background: 'var(--color-bg-card)', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', fontFamily: 'var(--font-sans)' }}>
+        <div style={{ height: 72, borderRadius: 'var(--radius-md)', background: value ? '#1a1a18' : '#f4f5f7', border: '1px solid var(--color-border-subtle)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 10, left: 10, right: 10, height: 10, borderRadius: 4, background: value ? '#2a2a26' : '#ffffff' }} />
+          <div style={{ position: 'absolute', top: 28, left: 10, width: '40%', height: 6, borderRadius: 3, background: value ? '#3a3a36' : '#e0e2e6' }} />
+          <div style={{ position: 'absolute', top: 40, left: 10, width: '60%', height: 6, borderRadius: 3, background: value ? '#3a3a36' : '#e0e2e6' }} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>{label}</span>
+          {on && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-accent)', fontWeight: 'var(--weight-medium)' }}>Active</span>}
+        </div>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', lineHeight: 1.4 }}>{description}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 'var(--space-5)' }}>
+        <h2 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>Appearance</h2>
+        <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>Switch between light and dark themes.</p>
+      </div>
+      <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+        <Option value={false} label="Light" description="Default theme for bright environments." />
+        <Option value={true} label="Dark" description="Easier on the eyes in low light." />
+      </div>
     </div>
   );
 }
@@ -294,6 +333,7 @@ export default function SettingsPanel() {
       <div className="flex-1 p-4 md:p-6" style={{ overflowY: 'auto' }}>
         <div style={{ width: '100%' }}>
           {active === 'brand-kits' && <BrandKitsSection />}
+          {active === 'appearance' && <AppearanceSection />}
           {active === 'api-keys' && <APIKeysSection />}
         </div>
       </div>
