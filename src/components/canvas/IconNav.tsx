@@ -13,7 +13,7 @@ function NavItem({ icon, label, active, onClick, ariaLabel, ariaPressed }: { ico
   return (
     <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} aria-label={ariaLabel ?? label} aria-pressed={ariaPressed}
       className="nav-item"
-      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '7px 10px', borderRadius: 8, background: active ? 'var(--color-bg-surface)' : hover ? 'var(--color-bg-surface)' : 'transparent', color: active ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 100ms', justifyContent: 'flex-start', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '7px 10px', borderRadius: 8, background: active ? '#ffffff' : hover ? 'rgba(255,255,255,0.5)' : 'transparent', color: active ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', boxShadow: active ? '0 1px 2px 0 rgba(0,0,0,0.04)' : 'none', transition: 'background 100ms', justifyContent: 'flex-start', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, flexShrink: 0 }}>{icon}</span>
       {label && <span className="nav-label" style={{ fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' }}>{label}</span>}
     </button>
