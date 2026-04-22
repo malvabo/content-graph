@@ -310,7 +310,7 @@ export default function SettingsPanel() {
               {items.map(s => {
                 const on = active === s.id;
                 return (
-                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'block', margin: 0, padding: 'var(--space-2) 0', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: on ? 'var(--color-accent)' : 'var(--color-text-primary)', transition: `color var(--duration-base)`, textAlign: 'left' }}>
+                  <button key={s.id} onClick={() => setActive(s.id)} style={{ width: '100%', display: 'block', margin: 0, padding: 'var(--space-2) var(--space-3)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', transition: 'background 120ms, color 120ms', textAlign: 'left' }}>
                     {s.label}
                   </button>
                 );
@@ -320,11 +320,11 @@ export default function SettingsPanel() {
       </nav>
 
       {/* Mobile tab bar */}
-      <div className="flex md:hidden" style={{ position: 'sticky', top: 0, left: 0, right: 0, zIndex: 10, background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border-subtle)', padding: '0 var(--space-3)', gap: 'var(--space-0)', overflowX: 'auto', scrollbarWidth: 'none' }}>
+      <div className="flex md:hidden" style={{ position: 'sticky', top: 0, left: 0, right: 0, zIndex: 10, background: 'var(--color-bg-card)', borderBottom: '1px solid var(--color-border-subtle)', padding: 'var(--space-2) var(--space-3)', gap: 'var(--space-1)', overflowX: 'auto', scrollbarWidth: 'none' }}>
         {SECTIONS.map(s => {
           const on = active === s.id;
           return (
-            <button key={s.id} onClick={() => setActive(s.id)} style={{ padding: 'var(--space-3) var(--space-4)', background: 'none', border: 'none', borderBottom: on ? '2px solid var(--color-accent)' : '2px solid transparent', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <button key={s.id} onClick={() => setActive(s.id)} style={{ padding: 'var(--space-2) var(--space-3)', background: on ? 'var(--color-bg-surface)' : 'transparent', border: 'none', borderRadius: 'var(--radius-md)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: on ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 120ms, color 120ms' }}>
               {s.label}
             </button>
           );

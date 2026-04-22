@@ -231,7 +231,7 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, trans
                 <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
                   <button
                     onClick={() => { if (!hasContent || confirmDiscard) onDiscard(); else setConfirmDiscard(true); }}
-                    style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', padding: '4px 8px', fontWeight: confirmDiscard ? 600 : 400 }}>
+                    style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', padding: '4px 8px', fontWeight: 500 }}>
                     {confirmDiscard && hasContent ? 'Tap again to discard' : 'Discard'}
                   </button>
                   {hasCapturedAudio && (
