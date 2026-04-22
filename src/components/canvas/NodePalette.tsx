@@ -46,14 +46,14 @@ export default function NodePalette({ onAddNode }: Props) {
   useEffect(() => {
     if (!open) return;
     setSearch('');
-    setTimeout(() => searchRef.current?.focus(), 50);
-    const handler = (e: Event) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    const t = setTimeout(() => {
-      document.addEventListener('pointerdown', handler, true);
-      document.addEventListener('touchstart', handler, true);
-    }, 100);
+    const focusT = setTimeout(() => searchRef.current?.focus(), 50);
+    const handler = (e: Event) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', handler, true);
+    document.addEventListener('touchstart', handler, true);
     return () => {
-      clearTimeout(t);
+      clearTimeout(focusT);
       document.removeEventListener('pointerdown', handler, true);
       document.removeEventListener('touchstart', handler, true);
     };
