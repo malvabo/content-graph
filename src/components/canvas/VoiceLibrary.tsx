@@ -6,12 +6,29 @@ import { useOutputStore } from '../../store/outputStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { computeSafePosition } from '../../utils/nodePlacement';
 import ContentModal from '../modals/ContentModal';
+import RecordButton from './RecordButton';
+
+/** Sync every voice-source node's output to match the note's latest transcript.
+ *  Called after transcription succeeds (initial stop or retry) so workflow nodes
+ *  that already reference this note don't show stale text. */
+function syncVoiceSourceOutputs(noteId: string, transcript: string) {
+  const nodes = useGraphStore.getState().nodes.filter(
+    n => n.data?.subtype === 'voice-source' && (n.data as { config?: { voiceNoteId?: string } })?.config?.voiceNoteId === noteId,
+  );
+  for (const n of nodes) useOutputStore.getState().setOutput(n.id, { text: transcript });
+}
 
 // Push a saved voice note into the active workflow as a voice-source node.
 // The node references the note by id (not a baked-in string), so later edits
 // to the transcript flow through on re-run. Selects the new node so the user
 // sees exactly what was added when we navigate to the workflow.
-function pushVoiceNoteToWorkflow(noteId: string, noteTitle: string) {
+// Returns true on success; false if there is no active workflow OR the note
+// has no transcript yet (in which case the caller should warn the user).
+function pushVoiceNoteToWorkflow(noteId: string, noteTitle: string): 'ok' | 'no-workflow' | 'empty-transcript' {
+  const graphState = useGraphStore.getState();
+  if (!graphState.workflowId) return 'no-workflow';
+  const transcript = useVoiceStore.getState().notes.find((n) => n.id === noteId)?.transcript ?? '';
+  if (!transcript) return 'empty-transcript';
   const id = `voice-source-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const node: ContentNode = {
     id,
@@ -27,23 +44,43 @@ function pushVoiceNoteToWorkflow(noteId: string, noteTitle: string) {
       config: { voiceNoteId: noteId },
     },
   };
-  useGraphStore.getState().addNode(node);
-  const transcript = useVoiceStore.getState().notes.find((n) => n.id === noteId)?.transcript ?? '';
+  graphState.addNode(node);
   useOutputStore.getState().setOutput(id, { text: transcript });
-  useGraphStore.getState().setSelectedNodeId(id);
+  graphState.setSelectedNodeId(id);
+  return 'ok';
 }
 
 async function transcribeWithGroq(blob: Blob, apiKey: string): Promise<string> {
+  // Defensive trim: keys pasted into Settings before the save-time sanitizer
+  // shipped may still carry surrounding whitespace or quotes — Groq rejects
+  // those with a confusing "Invalid API Key" 401.
+  const key = apiKey.trim().replace(/^['"`]+|['"`]+$/g, '');
+  // Fingerprint only — never log the full key. Tells us on failure whether the
+  // key was missing, truncated, or looks shaped right.
+  console.info('[Groq]', { keyLen: key.length, prefix: key.slice(0, 4), suffix: key.slice(-4), blobBytes: blob.size, blobType: blob.type });
+  if (!key) throw new Error('Groq API key missing. Add it in Settings → API Keys → Groq.');
+  if (!key.startsWith('gsk_')) {
+    throw new Error('That doesn\'t look like a Groq key — it should start with "gsk_". Get one from https://console.groq.com/keys.');
+  }
   const form = new FormData();
   form.append('file', blob, 'recording.webm');
   form.append('model', 'whisper-large-v3');
   form.append('response_format', 'json');
   const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}` },
+    headers: { Authorization: `Bearer ${key}` },
     body: form,
   });
-  if (!res.ok) throw new Error(`Groq ${res.status}: ${await res.text().catch(() => '')}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    if (res.status === 401) {
+      throw new Error('Invalid Groq API key. Re-copy it from https://console.groq.com/keys (no quotes, no trailing spaces) and paste into Settings → API Keys → Groq.');
+    }
+    if (res.status === 429) {
+      throw new Error('Groq rate limit hit. Wait a moment and retry.');
+    }
+    throw new Error(`Groq ${res.status}: ${body || 'transcription failed'}`);
+  }
   const data = await res.json();
   return (data.text || '').trim();
 }
@@ -56,11 +93,6 @@ function pickMimeType(): string | undefined {
 }
 
 /* Icons */
-const MicIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><path d="M12 17v4" /><path d="M8 21h8" />
-  </svg>
-);
 const DotsIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" /></svg>
 );
@@ -294,6 +326,21 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
     return () => { document.removeEventListener('mousedown', h); document.removeEventListener('touchstart', h); };
   }, [menuId]);
 
+  // Reconcile orphans on mount: crashes / reloads can leave notes stuck in
+  // transient states. 'recording' is unrecoverable (no blob persisted), so mark
+  // it failed. 'transcribing' also can't be resumed — same treatment. Runs once.
+  useEffect(() => {
+    const state = useVoiceStore.getState();
+    for (const n of state.notes) {
+      if (n.status === 'recording') {
+        state.updateNote(n.id, { status: 'error', errorReason: 'Recording was interrupted. Please record again.' });
+      } else if (n.status === 'transcribing') {
+        state.updateNote(n.id, { status: 'error', errorReason: 'Transcription was interrupted. Please record again.' });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const startRecording = useCallback(async () => {
     setErrorMsg(null);
     setFatal(false);
@@ -398,11 +445,16 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
     recognitionRef.current = null;
 
     // Flush MediaRecorder so all chunks land in chunksRef before we assemble the blob.
+    // Watchdog: some browsers (iOS 16 Safari webm path) occasionally hang the
+    // stop event — cap the wait at 2s so the UI never freezes on the overlay.
     const mr = recorderRef.current;
     if (mr && mr.state !== 'inactive') {
       await new Promise<void>(resolve => {
-        mr.addEventListener('stop', () => resolve(), { once: true });
-        try { mr.stop(); } catch { resolve(); }
+        let done = false;
+        const finish = () => { if (!done) { done = true; resolve(); } };
+        const timer = setTimeout(finish, 2000);
+        mr.addEventListener('stop', () => { clearTimeout(timer); finish(); }, { once: true });
+        try { mr.stop(); } catch { clearTimeout(timer); finish(); }
       });
     }
     recorderRef.current = null;
@@ -443,6 +495,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
 
     const title = transcript ? transcript.split(/\s+/).slice(0, 5).join(' ') : 'Untitled note';
     updateNote(noteId, { title, durationMs: duration, transcript, status: 'ready', errorReason: undefined });
+    syncVoiceSourceOutputs(noteId, transcript);
   }, [updateNote]);
 
   // Discard the in-progress recording entirely. Only used when the user explicitly
@@ -464,10 +517,15 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
     setLiveTranscript('');
   }, [removeNote]);
 
-  // Re-record: wipe the failed note and start a fresh session in one click.
-  const reRecord = useCallback((noteId: string) => {
-    removeNote(noteId);
-    startRecording();
+  // Re-record: start a fresh session first, and only remove the failed note if
+  // the new session actually begins (mic permission granted, MediaRecorder up).
+  // Without this, a mid-reset permission revocation left the user with nothing.
+  const reRecord = useCallback(async (noteId: string) => {
+    const before = useVoiceStore.getState().notes.length;
+    await startRecording();
+    const after = useVoiceStore.getState().notes.length;
+    // startRecording adds a note on success; if the count didn't grow, it failed.
+    if (after > before) removeNote(noteId);
   }, [removeNote, startRecording]);
 
   const handleRename = () => {
@@ -484,28 +542,27 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
 
   return (
     <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)', minWidth: 0, maxWidth: '100%' }}>
-      {/* Hero banner — title, subtitle, then button below */}
-      <div className="p-4 md:p-8" style={{ minHeight: '30vh', background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'flex-end', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
-          <div>
-            <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Voice Notes</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
-              {notes.length > 0 && <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 0 }}>{notes.length} note{notes.length !== 1 ? 's' : ''}</p>}
-              {notes.some(n => n.status === 'transcribing') && (
-                <span title="A previous recording is still being transcribed in the background"
-                  style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '1px 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)', lineHeight: '16px' }}>
-                  Transcribing previous note…
-                </span>
-              )}
-            </div>
+      {/* Hero banner — title on the left, animated record button on the right */}
+      <div className="p-4 md:p-8" style={{ background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-6)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', zIndex: 1, minWidth: 0, flex: 1 }}>
+          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Voice Notes</h1>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+            {notes.length > 0 && (
+              <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 0 }}>
+                {notes.length} note{notes.length !== 1 ? 's' : ''}
+              </p>
+            )}
+            {notes.some(n => n.status === 'transcribing') && (
+              <span title="A previous recording is still being transcribed in the background"
+                style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', padding: '1px 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)', lineHeight: '16px' }}>
+                Transcribing previous note…
+              </span>
+            )}
           </div>
-          {!recording && notes.length > 0 && (
-            <button className="btn btn-primary" onClick={startRecording}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg>
-              New recording
-            </button>
-          )}
         </div>
+        {!recording && notes.length > 0 && (
+          <RecordButton size={96} onClick={startRecording} state="idle" />
+        )}
       </div>
 
       <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
@@ -530,24 +587,13 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             textAlign: 'center', padding: 'var(--space-8)',
           }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: 'var(--radius-xl, 16px)',
-              background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)',
-            }}>
-              <MicIcon />
-            </div>
             <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md, 16px)', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>
               No voice notes yet
             </div>
             <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 300, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>
               Capture ideas, feedback, or narration with a quick voice recording.
             </div>
-            <button className="btn btn-primary" onClick={startRecording} style={{ padding: '10px 24px', fontSize: 'var(--text-sm)' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg>
-              Record your first note
-            </button>
+            <RecordButton size={128} onClick={startRecording} state="idle" label="Tap to record your first note" />
             {micError && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)' }}>Microphone access denied. Check browser permissions.</div>}
             {errorMsg && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)' }}>{errorMsg}</div>}
           </div>
@@ -592,9 +638,17 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                         {[
                           { label: 'Rename', action: () => { setRenameName(note.title); setRenameId(note.id); setMenuId(null); } },
                           { label: 'Use in workflow', action: () => {
-                            pushVoiceNoteToWorkflow(note.id, note.title);
+                            const result = pushVoiceNoteToWorkflow(note.id, note.title);
                             setMenuId(null);
-                            onUseInWorkflow?.();
+                            if (result === 'ok') {
+                              onUseInWorkflow?.();
+                            } else if (result === 'no-workflow') {
+                              setErrorMsg('Open a workflow first — voice notes are pushed into the active graph.');
+                              setTimeout(() => setErrorMsg(null), 4000);
+                            } else if (result === 'empty-transcript') {
+                              setErrorMsg('This note has no transcript yet. Wait for transcription to finish or retry it.');
+                              setTimeout(() => setErrorMsg(null), 4000);
+                            }
                           } },
                           { label: 'Analyze in ScriptSense', action: () => { if (note.transcript) onSendToScript?.(note.transcript); setMenuId(null); } },
                           { label: 'Delete', danger: true, action: () => { setDeleteId(note.id); setMenuId(null); } },
@@ -673,14 +727,19 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             text={note.transcript}
             onClose={() => setViewId(null)}
             onSave={persistTranscript}
+            onTitleChange={(t: string) => updateNote(note.id, { title: t })}
             extraActions={[
               { label: 'Send to Script Writing', onClick: (t: string) => { persistTranscript(t); setViewId(null); onSendToScript?.(t); } },
               { label: 'Push to Workflow', onClick: (t: string) => {
                 // ContentModal may have edits the user hasn't saved yet; persist them
                 // first so the voice-source node references the same text the user sees.
                 persistTranscript(t);
-                pushVoiceNoteToWorkflow(note.id, note.title);
-                onUseInWorkflow?.();
+                const result = pushVoiceNoteToWorkflow(note.id, note.title);
+                if (result === 'ok') onUseInWorkflow?.();
+                else if (result === 'no-workflow') {
+                  setErrorMsg('Open a workflow first — voice notes are pushed into the active graph.');
+                  setTimeout(() => setErrorMsg(null), 4000);
+                }
               }},
             ]}
           />

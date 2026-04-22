@@ -22,6 +22,7 @@ interface ContentModalProps {
   onClose: () => void;
   onRegenerate?: () => void;
   onSave?: (text: string) => void;
+  onTitleChange?: (title: string) => void;
   extraActions?: { label: string; onClick: (text: string) => void }[];
 }
 
@@ -372,22 +373,30 @@ function NewsletterModal({ title, text, onClose, onSave, onRegenerate }: Content
 /* ════════════════════════════════════════════
    VOICE — same as Newsletter without subject line
    ════════════════════════════════════════════ */
-function VoiceModal({ title, subtitle, text, onClose, onSave, extraActions }: ContentModalProps) {
+function VoiceModal({ title, subtitle, text, onClose, onSave, onTitleChange, extraActions }: ContentModalProps) {
   const [editTitle, setEditTitle] = useState(title);
   const [content, setContent] = useState(text);
   const ref = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { const el = ref.current; if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }, [content]);
 
+  const commitTitle = () => {
+    const t = editTitle.trim();
+    if (!t || t === title) return;
+    onTitleChange?.(t);
+  };
+
   return (
-    <ModalShell onClose={onClose} maxWidth={1200}>
+    <ModalShell onClose={() => { commitTitle(); onClose(); }} maxWidth={720}>
       <div className="shrink-0" style={{ padding: 'var(--space-4) var(--space-6)' }}>
         <div className="flex items-center justify-between">
-          <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
+          <input value={editTitle}
+            onChange={e => setEditTitle(e.target.value)}
+            onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; commitTitle(); }}
+            onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
             style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', outline: 'none', flex: 1 }}
-            onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-strong)'; }}
-            onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }} />
-          <button aria-label="Close" onClick={onClose} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms', flexShrink: 0, marginLeft: 'var(--space-2)' }}
+            onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-strong)'; }} />
+          <button aria-label="Close" onClick={() => { commitTitle(); onClose(); }} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms', flexShrink: 0, marginLeft: 'var(--space-2)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>

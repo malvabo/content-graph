@@ -161,7 +161,10 @@ function APIKeysSection() {
   }, [menuOpen]);
 
   const handleSave = async (key: string) => {
-    (store as any)[PROVIDERS.find(p => p.key === key)!.setter](editValue);
+    // Strip whitespace and surrounding quotes — a very common paste artifact that
+    // otherwise produces a confusing "Invalid API Key" 401 from providers.
+    const cleaned = editValue.trim().replace(/^['"`]+|['"`]+$/g, '');
+    (store as any)[PROVIDERS.find(p => p.key === key)!.setter](cleaned);
     setEditKey(null);
     await useSettingsStore.getState().save();
     setSaved(true); setTimeout(() => setSaved(false), 1500);

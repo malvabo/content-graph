@@ -112,12 +112,23 @@ export const useSettingsStore = create<SettingsState>()(
           const { data } = await supabase!.from('user_settings').select('anthropic_key, openai_key, google_key, groq_key, together_key').eq('user_id', user.id).single();
           if (data) {
             const current = get();
+            // Prefer non-empty remote values; never let an empty string from the
+            // user_settings row clobber a key the user just pasted locally. The
+            // trim/strip keeps any legacy keys stored with whitespace usable.
+            const clean = (v: unknown) => {
+              if (typeof v !== 'string') return '';
+              return v.trim().replace(/^['"`]+|['"`]+$/g, '');
+            };
+            const pick = (remote: unknown, local: string) => {
+              const r = clean(remote);
+              return r || local;
+            };
             set({
-              anthropicKey: data.anthropic_key ?? current.anthropicKey,
-              openaiKey: data.openai_key ?? current.openaiKey,
-              googleKey: data.google_key ?? current.googleKey,
-              groqKey: data.groq_key ?? current.groqKey,
-              togetherKey: data.together_key ?? current.togetherKey,
+              anthropicKey: pick(data.anthropic_key, current.anthropicKey),
+              openaiKey: pick(data.openai_key, current.openaiKey),
+              googleKey: pick(data.google_key, current.googleKey),
+              groqKey: pick(data.groq_key, current.groqKey),
+              togetherKey: pick(data.together_key, current.togetherKey),
               loaded: true,
             });
           } else set({ loaded: true });
