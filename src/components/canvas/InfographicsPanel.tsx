@@ -1,9 +1,101 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useInfographicStore } from '../../store/infographicStore';
 import { useSettingsStore } from '../../store/settingsStore';
-import { renderSVG, parseInfographicData } from '../nodes/InfographicNode';
+import { renderSVG, parseInfographicData, type InfographicData } from '../nodes/InfographicNode';
 
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
+
+type Point = InfographicData['points'][number];
+
+interface StructuredEditorProps {
+  data: InfographicData;
+  onTextChange: (field: 'title' | 'subtitle' | 'footer', value: string) => void;
+  onPointsChange: (mutator: (points: Point[]) => Point[]) => void;
+}
+
+function StructuredEditor({ data, onTextChange, onPointsChange }: StructuredEditorProps) {
+  // Local mirror so the inputs stay responsive while the debounced save runs.
+  const [title, setTitle] = useState(data.title);
+  const [subtitle, setSubtitle] = useState(data.subtitle || '');
+  const [footer, setFooter] = useState(data.footer || '');
+  useEffect(() => { setTitle(data.title); setSubtitle(data.subtitle || ''); setFooter(data.footer || ''); }, [data]);
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '6px 10px', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)',
+    color: 'var(--color-text-primary)', background: 'var(--color-bg-card)',
+    border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', outline: 'none',
+  };
+  const labelStyle: React.CSSProperties = {
+    fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500,
+    color: 'var(--color-text-tertiary)', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em',
+  };
+
+  const addPoint = () => onPointsChange(p => [...p, { stat: '0', label: 'New point' }]);
+  const removePoint = (i: number) => onPointsChange(p => p.filter((_, idx) => idx !== i));
+  const movePoint = (i: number, dir: -1 | 1) => onPointsChange(p => {
+    const j = i + dir;
+    if (j < 0 || j >= p.length) return p;
+    const next = [...p];
+    const [a, b] = [next[i], next[j]];
+    next[i] = b; next[j] = a;
+    return next;
+  });
+  const patchPoint = (i: number, patch: Partial<Point>) => onPointsChange(p =>
+    p.map((pt, idx) => idx === i ? { ...pt, ...patch } : pt)
+  );
+
+  return (
+    <div style={{ width: '100%', maxWidth: 800, display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+      {/* Text fields */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)' }}>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={labelStyle}>Title</label>
+          <input style={inputStyle} value={title}
+            onChange={e => { setTitle(e.target.value); onTextChange('title', e.target.value); }} />
+        </div>
+        <div>
+          <label style={labelStyle}>Subtitle</label>
+          <input style={inputStyle} value={subtitle} placeholder="Optional"
+            onChange={e => { setSubtitle(e.target.value); onTextChange('subtitle', e.target.value); }} />
+        </div>
+        <div>
+          <label style={labelStyle}>Footer</label>
+          <input style={inputStyle} value={footer} placeholder="Optional"
+            onChange={e => { setFooter(e.target.value); onTextChange('footer', e.target.value); }} />
+        </div>
+      </div>
+
+      {/* Points editor */}
+      <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <label style={labelStyle}>Data points</label>
+          <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{data.points.length}</span>
+        </div>
+
+        {data.points.map((p, i) => (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '110px 1fr auto', gap: 'var(--space-2)', alignItems: 'center' }}>
+            <input style={{ ...inputStyle, fontWeight: 600 }} value={p.stat} placeholder="Stat" aria-label={`Point ${i + 1} stat`}
+              onChange={e => patchPoint(i, { stat: e.target.value })} />
+            <input style={inputStyle} value={p.label} placeholder="Label" aria-label={`Point ${i + 1} label`}
+              onChange={e => patchPoint(i, { label: e.target.value })} />
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button aria-label="Move up" disabled={i === 0} onClick={() => movePoint(i, -1)}
+                style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: i === 0 ? 'default' : 'pointer', color: i === 0 ? 'var(--color-text-disabled)' : 'var(--color-text-secondary)', fontSize: 12 }}>↑</button>
+              <button aria-label="Move down" disabled={i === data.points.length - 1} onClick={() => movePoint(i, 1)}
+                style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: i === data.points.length - 1 ? 'default' : 'pointer', color: i === data.points.length - 1 ? 'var(--color-text-disabled)' : 'var(--color-text-secondary)', fontSize: 12 }}>↓</button>
+              <button aria-label="Delete point" onClick={() => removePoint(i)}
+                style={{ width: 28, height: 28, border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-sm)', background: 'var(--color-bg-card)', cursor: 'pointer', color: 'var(--color-danger-text)', fontSize: 14 }}>×</button>
+            </div>
+          </div>
+        ))}
+
+        <button onClick={addPoint} className="btn btn-ghost" style={{ alignSelf: 'flex-start', fontSize: 'var(--text-sm)', marginTop: 4 }}>
+          + Add point
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const SUGGESTION_CHIPS = [
   'Change the title',
@@ -54,7 +146,7 @@ ${currentJson}`;
 const DEFAULT_JSON = JSON.stringify({ title: 'New Infographic', subtitle: 'Edit me with the chat panel', points: [{ stat: '0', label: 'Your first data point' }] });
 
 export default function InfographicsPanel({ initialEditId }: { initialEditId?: string }) {
-  const { items, add, update, remove } = useInfographicStore();
+  const { items, add, update, remove, pushHistory, popHistory } = useInfographicStore();
   const [editingId, setEditingId] = useState<string | null>(initialEditId || null);
   useEffect(() => { if (initialEditId) setEditingId(initialEditId); }, [initialEditId]);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -67,7 +159,6 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
   const abortRef = useRef<AbortController | null>(null);
   const messagesRef = useRef<ChatMsg[]>(messages);
   messagesRef.current = messages;
-  const [undoStack, setUndoStack] = useState<string[]>([]);
   const [, setFontTick] = useState(0);
   const [editVersion, setEditVersion] = useState(0);
 
@@ -119,7 +210,7 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
         }
       }
       if (parsed && parsed.points) {
-        setUndoStack(s => [...s, freshItem.json]);
+        pushHistory(editing.id, freshItem.json);
         const jsonStr = JSON.stringify(parsed);
         update(editing.id, jsonStr);
         setEditVersion(v => v + 1);
@@ -130,15 +221,42 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
     } catch (e: any) {
       if (e.name !== 'AbortError') setMessages(m => [...m, { role: 'assistant', text: `Error: ${e.message}` }]);
     } finally { setLoading(false); }
-  }, [input, loading, editing, update]);
+  }, [input, loading, editing, update, pushHistory]);
 
   const undo = useCallback(() => {
-    if (!undoStack.length || !editing) return;
-    const prev = undoStack[undoStack.length - 1];
-    setUndoStack(s => s.slice(0, -1));
+    if (!editing) return;
+    const prev = popHistory(editing.id);
+    if (!prev) return;
     update(editing.id, prev);
+    setEditVersion(v => v + 1);
     setMessages(m => [...m, { role: 'assistant', text: 'Reverted to previous version.' }]);
-  }, [undoStack, editing, update]);
+  }, [editing, update, popHistory]);
+
+  // Direct (non-LLM) mutations used by the structured editor. Every edit
+  // snapshots the prior JSON onto history so Undo covers direct edits too.
+  const applyDirectEdit = useCallback((mutator: (d: InfographicData) => void) => {
+    if (!editing) return;
+    const current = parseInfographicData(editing.json);
+    if (!current) return;
+    const next: InfographicData = JSON.parse(JSON.stringify(current));
+    mutator(next);
+    pushHistory(editing.id, editing.json);
+    update(editing.id, JSON.stringify(next));
+    setEditVersion(v => v + 1);
+  }, [editing, update, pushHistory]);
+
+  // Debounced text-field saves avoid flooding history during typing.
+  const debounceRef = useRef<number | null>(null);
+  const scheduleTextEdit = useCallback((field: 'title' | 'subtitle' | 'footer', value: string) => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      applyDirectEdit(d => {
+        if (field === 'title') d.title = value;
+        else if (value) d[field] = value; else delete d[field];
+      });
+    }, 350);
+  }, [applyDirectEdit]);
+  useEffect(() => () => { if (debounceRef.current) window.clearTimeout(debounceRef.current); }, []);
 
   const fontRerender = useCallback(() => setFontTick(t => t + 1), []);
   const svg = editing ? (() => { const d = parseInfographicData(editing.json); return d ? renderSVG(d, fontRerender) : null; })() : null;
@@ -224,17 +342,46 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
   }
 
   // ─── EDITOR VIEW ───
+  const currentData = editing ? parseInfographicData(editing.json) : null;
+  const currentType = currentData?.type || 'cards';
+  const hasHistory = !!(editing?.history && editing.history.length > 0);
+
+  const setType = (t: 'cards' | 'bar' | 'pie') => {
+    if (!currentData || currentType === t) return;
+    applyDirectEdit(d => { d.type = t; });
+  };
 
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)' }}>
-      {/* Left — Full-width infographic */}
+      {/* Left — preview + structured editor */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ padding: 'var(--space-3) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
-          <button onClick={() => setEditingId(null)} className="btn btn-ghost" style={{ padding: 'var(--space-1) var(--space-2)' }}>
+          <button onClick={() => setEditingId(null)} className="btn btn-ghost" style={{ padding: 'var(--space-1) var(--space-2)' }} aria-label="Back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
           </button>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', flex: 1 }}>Infographics</span>
-          {undoStack.length > 0 && <button onClick={undo} className="btn btn-sm btn-ghost">↩ Undo</button>}
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>Infographics</span>
+
+          {/* Chart-type segmented control */}
+          <div role="tablist" aria-label="Chart type"
+            style={{ display: 'inline-flex', padding: 2, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)' }}>
+            {(['cards', 'bar', 'pie'] as const).map(t => (
+              <button key={t} role="tab" aria-selected={currentType === t}
+                onClick={() => setType(t)}
+                style={{
+                  padding: '4px 12px', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500,
+                  border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                  background: currentType === t ? 'var(--color-bg-card)' : 'transparent',
+                  color: currentType === t ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
+                  boxShadow: currentType === t ? 'var(--shadow-sm)' : 'none',
+                  textTransform: 'capitalize',
+                }}>
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <span style={{ flex: 1 }} />
+          {hasHistory && <button onClick={undo} className="btn btn-sm btn-ghost">↩ Undo</button>}
           <button onClick={async () => {
             const el = document.getElementById('ig-editor-preview');
             if (!el) return;
@@ -252,8 +399,17 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
           }} className="btn btn-sm btn-ghost">Export SVG</button>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)' }}>
           {svg && <div id="ig-editor-preview" key={editVersion} dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', maxWidth: 800, lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }} />}
+
+          {currentData && editing && (
+            <StructuredEditor
+              key={editing.id}
+              data={currentData}
+              onTextChange={scheduleTextEdit}
+              onPointsChange={(mutator) => applyDirectEdit(d => { d.points = mutator(d.points); })}
+            />
+          )}
         </div>
       </div>
 

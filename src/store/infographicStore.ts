@@ -12,13 +12,22 @@ export interface InfographicItem {
    * user-authored palettes if needed. Drop in the release after 2026-05.
    */
   legacyTheme?: unknown;
+  /**
+   * Per-item undo stack (older → newer). Capped at HISTORY_CAP entries.
+   * Persisted so Undo survives navigation away and back.
+   */
+  history?: string[];
 }
+
+const HISTORY_CAP = 20;
 
 interface InfographicState {
   items: InfographicItem[];
   add: (item: InfographicItem) => void;
   update: (id: string, json: string) => void;
   remove: (id: string) => void;
+  pushHistory: (id: string, json: string) => void;
+  popHistory: (id: string) => string | null;
 }
 
 // Rewrites persisted JSON that still carries a `theme` block or per-point
@@ -50,11 +59,28 @@ function migrateItem(item: InfographicItem): InfographicItem {
 
 export const useInfographicStore = create<InfographicState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       items: [],
       add: (item) => set((s) => ({ items: s.items.some(i => i.id === item.id) ? s.items : [...s.items, migrateItem(item)] })),
       update: (id, json) => set((s) => ({ items: s.items.map(i => i.id === id ? migrateItem({ ...i, json }) : i) })),
       remove: (id) => set((s) => ({ items: s.items.filter(i => i.id !== id) })),
+      pushHistory: (id, json) => set((s) => ({
+        items: s.items.map(i => {
+          if (i.id !== id) return i;
+          const prev = Array.isArray(i.history) ? i.history : [];
+          const next = [...prev, json];
+          return { ...i, history: next.length > HISTORY_CAP ? next.slice(next.length - HISTORY_CAP) : next };
+        }),
+      })),
+      popHistory: (id) => {
+        const item = get().items.find(i => i.id === id);
+        if (!item || !item.history?.length) return null;
+        const prev = item.history[item.history.length - 1];
+        set((s) => ({
+          items: s.items.map(i => i.id === id ? { ...i, history: (i.history || []).slice(0, -1) } : i),
+        }));
+        return prev;
+      },
     }),
     {
       name: 'content-graph-infographics',
