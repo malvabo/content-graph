@@ -82,6 +82,11 @@ function setInitialText(t) {
   initialTextListeners.forEach(fn => { try { fn(t); } catch {} });
 }
 
+// Text accessor registered by the Editor so parent can pull the current script
+// content on demand (e.g., "Send to Workflow"). Null when no editor is mounted.
+let _getCurrentText = null;
+function registerGetText(fn) { _getCurrentText = fn; }
+
 // Brand voice context — received from parent over postMessage. Exposed via
 // useBrand() so any component can surface it in headers or prompt prefixes.
 let _brand = null;
@@ -291,6 +296,12 @@ window.addEventListener('message', e => {
   // set-content is the canonical name; set-initial-text kept for back-compat.
   if ((d.type === 'set-content' || d.type === 'set-initial-text') && typeof d.text === 'string') setInitialText(d.text);
   if (d.type === 'set-brand')    setBrandKit(d.brand);
+  if (d.type === 'request-content') {
+    // Parent asked for the current script. Reply with whatever the editor has.
+    let text = '';
+    try { text = _getCurrentText ? _getCurrentText() : ''; } catch {}
+    try { parent.postMessage({ type: 'script-content', text: typeof text === 'string' ? text : '' }, '*'); } catch {}
+  }
 });
 // Announce to the parent that the iframe is ready so it can flush pending keys/text/theme.
 try { parent.postMessage({ type: 'scriptsense-ready' }, '*'); } catch {}
@@ -581,6 +592,11 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
     initialTextListeners.add(fn);
     return () => initialTextListeners.delete(fn);
   }, []);
+  // Expose the live text to the parent so it can pull on demand.
+  useEffect(() => {
+    registerGetText(() => text);
+    return () => registerGetText(null);
+  }, [text]);
   const [title, setTitle]             = useState(draft?.title || '');
   const [activeTab, setActiveTab]     = useState("insights");
   const [dismissed, setDismissed]     = useState(new Set());
@@ -829,7 +845,7 @@ ${text}`
           </div>
 
           {/* Right — insights panel */}
-          <div ref={insightRef} className="scroll-area" style={{ width:"50%", overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:12, background:C.surface }}>
+          <div ref={insightRef} className="scroll-area" style={{ width:"50%", overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:12, background:C.white }}>
 
             <div style={{ display: activeTab==="insights" ? "contents" : "none" }}>
               {/* ── Empty / loading / results states ── */}
