@@ -177,9 +177,9 @@ function NoteCard({ note, onDelete, onRerecord }: { note: VoiceNote; onDelete: (
       </button>
 
       {expanded && (
-        <div style={{ padding: '0 var(--space-4) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        <div style={{ padding: '0 var(--space-4) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', minWidth: 0 }}>
           {note.transcript && (
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', lineHeight: 1.5, maxHeight: 180, overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', lineHeight: 1.5, maxHeight: 180, overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
               {note.transcript}
             </div>
           )}
@@ -190,14 +190,14 @@ function NoteCard({ note, onDelete, onRerecord }: { note: VoiceNote; onDelete: (
               <button key={k}
                 disabled={!note.transcript || (gen?.loading && gen.kind === k)}
                 onClick={() => generate(k)}
-                style={{ padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid ${gen?.kind === k ? 'var(--color-accent)' : 'var(--color-border-default)'}`, background: gen?.kind === k ? 'var(--color-bg-surface)' : 'var(--color-bg-card)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: 'var(--color-text-primary)', cursor: note.transcript ? 'pointer' : 'default', opacity: note.transcript ? 1 : 0.5 }}>
+                style={{ padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid ${gen?.kind === k ? 'var(--color-accent)' : 'var(--color-border-default)'}`, background: gen?.kind === k ? 'var(--color-bg-surface)' : 'var(--color-bg-card)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 500, color: 'var(--color-text-primary)', cursor: note.transcript ? 'pointer' : 'default', opacity: note.transcript ? 1 : 0.5, whiteSpace: 'nowrap', flexShrink: 0 }}>
                 {KIND_LABEL[k]}
               </button>
             ))}
           </div>
 
           {gen && (
-            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minWidth: 0, overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500, color: 'var(--color-text-tertiary)' }}>{KIND_LABEL[gen.kind]}</span>
                 {gen.text && !gen.loading && (
@@ -211,9 +211,9 @@ function NoteCard({ note, onDelete, onRerecord }: { note: VoiceNote; onDelete: (
                   {[100, 90, 95, 82].map((w, i) => <div key={i} className="skeleton-bar" style={{ height: 10, width: `${w}%`, borderRadius: 'var(--radius-sm)', animationDelay: `${i * 0.1}s` }} />)}
                 </div>
               ) : gen.error ? (
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-danger-text)' }}>{gen.error}</div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-danger-text)', wordBreak: 'break-word' }}>{gen.error}</div>
               ) : (
-                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                   {gen.text}
                 </div>
               )}
