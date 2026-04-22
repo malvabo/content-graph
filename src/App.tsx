@@ -67,6 +67,11 @@ function AppInner() {
   const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v.split(':')[0]); setHashParam(v.split(':')[1]); }, []);
   useEffect(() => { const h = () => { setActiveViewRaw(getViewFromHash()); setHashParam(getHashParam()); }; window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  // Track first entry into ScriptSense so we can keep its iframe mounted for
+  // the rest of the session (otherwise unmounting on nav blows away draft state,
+  // accepted insights, undo stack, etc.).
+  const [scriptSenseEverOpened, setScriptSenseEverOpened] = useState(false);
+  useEffect(() => { if (activeView === 'scriptsense') setScriptSenseEverOpened(true); }, [activeView]);
   useKeyboardShortcuts();
 
   useEffect(() => { init(); }, [init]);
@@ -124,22 +129,34 @@ function AppInner() {
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
         {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => {
+          // ScriptSensePanel buffers non-empty initialText into a ref and blanks
+          // it after flushing to the iframe, so clearing here is safe and
+          // prevents this transcript from re-firing on later unrelated renders.
           setVoiceTranscript(t);
           setActiveView('scriptsense');
-          // Clear immediately so a stale transcript can't re-fire into ScriptSense on a later re-render.
-          setTimeout(() => setVoiceTranscript(''), 0);
+          setVoiceTranscript('');
         }} />}
 
         {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(content) => {
           setVoiceTranscript(content);
           setActiveView('scriptsense');
-          setTimeout(() => setVoiceTranscript(''), 0);
+          setVoiceTranscript('');
         }} />}
 
-        {activeView === 'scriptsense' && (
-          <ViewErrorBoundary label="ScriptSense">
-            <ScriptSensePanel initialText={voiceTranscript} onOpenInCards={() => setActiveView('cardslibrary')} />
-          </ViewErrorBoundary>
+        {/* ScriptSense stays mounted once opened so iframe state (draft, insights,
+            accepted changes) survives navigation. Hidden via display:none when
+            the user is on a different view. */}
+        {scriptSenseEverOpened && (
+          <div style={{ flex: activeView === 'scriptsense' ? 1 : '0 0 0', minHeight: 0, display: activeView === 'scriptsense' ? 'flex' : 'none' }}>
+            <ViewErrorBoundary label="ScriptSense">
+              <ScriptSensePanel
+                initialText={voiceTranscript}
+                onOpenInCards={() => setActiveView('cardslibrary')}
+                onSendToWorkflow={() => setActiveView('workflow')}
+                onDelete={() => setActiveView('scriptlist')}
+              />
+            </ViewErrorBoundary>
+          </div>
         )}
 
 
