@@ -6,7 +6,8 @@ export interface VoiceNote {
   title: string;
   durationMs: number;
   transcript: string;
-  status: 'recording' | 'transcribing' | 'ready';
+  status: 'recording' | 'transcribing' | 'ready' | 'error';
+  errorReason?: string;
   createdAt: string;
 }
 

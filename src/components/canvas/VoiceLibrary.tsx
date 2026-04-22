@@ -68,8 +68,20 @@ const statusBadge = (status: string) => {
   );
 };
 
-function RecordingOverlay({ onStop, onCancel, startTime, errorMsg }: { onStop: () => void; onCancel: () => void; startTime: number; errorMsg?: string | null }) {
+interface OverlayProps {
+  onStop: () => void;
+  onDiscard: () => void;
+  startTime: number;
+  errorMsg?: string | null;
+  fatal?: boolean;
+  transcriptSoFar: string;
+  liveOffline?: boolean;
+  hasCapturedAudio: boolean;
+}
+
+function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, transcriptSoFar, liveOffline, hasCapturedAudio }: OverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const transcriptRef = useRef<HTMLDivElement>(null);
   const [elapsed, setElapsed] = useState(0);
   const [visible, setVisible] = useState(false);
 
@@ -78,6 +90,19 @@ function RecordingOverlay({ onStop, onCancel, startTime, errorMsg }: { onStop: (
     const iv = setInterval(() => setElapsed(Date.now() - startTime), 200);
     return () => clearInterval(iv);
   }, [startTime]);
+  useEffect(() => {
+    // Keep the transcript scrolled to the newest words as speech arrives.
+    const el = transcriptRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [transcriptSoFar]);
+
+  // Fatal errors (permission denied, language-not-supported) auto-close after 3s so
+  // the user doesn't get stuck staring at a recording UI that can't actually record.
+  useEffect(() => {
+    if (!fatal) return;
+    const t = setTimeout(onDiscard, 3000);
+    return () => clearTimeout(t);
+  }, [fatal, onDiscard]);
 
   const mm = String(Math.floor(elapsed / 60000)).padStart(2, '0');
   const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
@@ -112,6 +137,8 @@ function RecordingOverlay({ onStop, onCancel, startTime, errorMsg }: { onStop: (
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
   }, []);
 
+  const showLive = !!transcriptSoFar.trim();
+
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center" style={{ background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms' }}>
       <div className="flex flex-col w-full overflow-hidden rounded-t-[16px] md:rounded-[16px]"
@@ -119,15 +146,60 @@ function RecordingOverlay({ onStop, onCancel, startTime, errorMsg }: { onStop: (
         {/* Cloud canvas background */}
         <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', borderRadius: 'inherit' }} />
         {/* Content */}
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 24px 40px', gap: 16 }}>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 24px 32px', gap: 14 }}>
           <div style={{ fontSize: 48, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
-          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>Recording</div>
-          <button onClick={onStop} style={{ width: 64, height: 64, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)', marginTop: 16 }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-          </button>
-          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Tap to stop</div>
-          {errorMsg && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)', textAlign: 'center', maxWidth: 320 }}>{errorMsg}</div>}
-          <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', marginTop: 'var(--space-2)' }}>Cancel</button>
+          <div aria-live="polite" style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: fatal ? 'var(--color-danger-text)' : 'var(--color-text-tertiary)' }}>
+            {fatal ? 'Recording stopped' : 'Recording'}
+          </div>
+
+          {liveOffline && !fatal && (
+            <div role="status" style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', padding: '6px 10px', borderRadius: 'var(--radius-md)', textAlign: 'center', maxWidth: 360 }}>
+              Live transcription offline — audio still captured, we'll transcribe on stop.
+            </div>
+          )}
+
+          {/* Live transcript — the single highest-trust signal recording is working. */}
+          <div ref={transcriptRef}
+            aria-live="polite"
+            style={{
+              width: '100%', maxWidth: 400, minHeight: 72, maxHeight: 160, overflowY: 'auto',
+              padding: '10px 14px', borderRadius: 'var(--radius-md)',
+              background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)',
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
+              color: showLive ? 'var(--color-text-primary)' : 'var(--color-text-disabled)',
+              lineHeight: 1.5, textAlign: 'left', whiteSpace: 'pre-wrap',
+            }}>
+            {showLive ? transcriptSoFar : (liveOffline ? 'Audio capturing…' : 'Listening…')}
+          </div>
+
+          {!fatal && (
+            <button onClick={onStop} aria-label="Stop recording and save"
+              style={{ width: 64, height: 64, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)', marginTop: 8 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+            </button>
+          )}
+          {!fatal && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Tap to stop</div>}
+
+          {errorMsg && (
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', textAlign: 'center', maxWidth: 360 }}>
+              {errorMsg}
+            </div>
+          )}
+
+          {!fatal && (
+            <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-1)' }}>
+              <button onClick={onDiscard}
+                style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', padding: '4px 8px' }}>
+                Discard
+              </button>
+              {hasCapturedAudio && (
+                <button onClick={onStop}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', padding: '4px 8px' }}>
+                  Save anyway
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>,
@@ -145,6 +217,10 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameName, setRenameName] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const [liveOffline, setLiveOffline] = useState(false);
+  const [fatal, setFatal] = useState(false);
+  const [hasCapturedAudio, setHasCapturedAudio] = useState(false);
 
   const mediaRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -171,6 +247,10 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
 
   const startRecording = useCallback(async () => {
     setErrorMsg(null);
+    setFatal(false);
+    setLiveOffline(false);
+    setLiveTranscript('');
+    setHasCapturedAudio(false);
     finalRef.current = '';
     interimRef.current = '';
     chunksRef.current = [];
@@ -192,18 +272,23 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             else interim += t;
           }
           interimRef.current = interim;
+          setLiveTranscript((finalRef.current + ' ' + interim).trim());
         };
         recog.onerror = (e: any) => {
           console.error('SpeechRecognition error', e?.error, e);
           if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
             setErrorMsg('Microphone blocked. Check browser permissions.');
+            setFatal(true);
             shouldRestartRef.current = false;
           } else if (e?.error === 'no-speech' || e?.error === 'audio-capture') {
             // swallow — onend will restart
           } else if (e?.error === 'network') {
             // don't alarm the user; Whisper fallback may still produce a transcript
             console.warn('Live transcription offline — will try Whisper on stop.');
+            setLiveOffline(true);
           } else if (e?.error === 'language-not-supported') {
+            setErrorMsg('Your browser language isn\'t supported for live transcription.');
+            setFatal(true);
             shouldRestartRef.current = false;
           }
         };
@@ -227,7 +312,12 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       mediaRef.current = stream;
       const mime = pickMimeType();
       const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          chunksRef.current.push(e.data);
+          setHasCapturedAudio(true);
+        }
+      };
       mr.start(1000);
       recorderRef.current = mr;
     } catch (err) {
@@ -274,6 +364,8 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
 
     setRecording(false);
 
+    let errorReason: string | null = null;
+
     // If Web Speech produced nothing, fall back to Groq Whisper when the user has a key.
     if (!transcript && blob && blob.size > 0 && groqKeyRef.current) {
       updateNote(noteId, { durationMs: duration, status: 'transcribing' });
@@ -281,17 +373,27 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
         transcript = await transcribeWithGroq(blob, groqKeyRef.current);
       } catch (err: any) {
         console.error('Whisper fallback failed', err);
-        setErrorMsg(`Transcription failed: ${err?.message || 'unknown error'}`);
+        errorReason = `Transcription failed: ${err?.message || 'unknown error'}`;
       }
     } else if (!transcript && blob && blob.size > 0 && !groqKeyRef.current) {
-      setErrorMsg('No transcript captured. Add a Groq API key in Settings for Whisper transcription.');
+      errorReason = 'No transcript captured. Add a Groq API key in Settings for Whisper transcription.';
+    } else if (!transcript && (!blob || blob.size === 0)) {
+      errorReason = 'No audio captured.';
+    }
+
+    if (errorReason && !transcript) {
+      updateNote(noteId, { title: 'Untitled note', durationMs: duration, transcript: '', status: 'error', errorReason });
+      return;
     }
 
     const title = transcript ? transcript.split(/\s+/).slice(0, 5).join(' ') : 'Untitled note';
-    updateNote(noteId, { title, durationMs: duration, transcript, status: 'ready' });
+    updateNote(noteId, { title, durationMs: duration, transcript, status: 'ready', errorReason: undefined });
   }, [updateNote]);
 
-  const cancelRecording = useCallback(() => {
+  // Discard the in-progress recording entirely. Only used when the user explicitly
+  // chooses to throw away what they just said (button label: "Discard") or when a
+  // fatal permission error fires and nothing was captured.
+  const discardRecording = useCallback(() => {
     shouldRestartRef.current = false;
     try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
     recognitionRef.current = null;
@@ -303,7 +405,15 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
     chunksRef.current = [];
     removeNote(noteIdRef.current);
     setRecording(false);
+    setFatal(false);
+    setLiveTranscript('');
   }, [removeNote]);
+
+  // Re-record: wipe the failed note and start a fresh session in one click.
+  const reRecord = useCallback((noteId: string) => {
+    removeNote(noteId);
+    startRecording();
+  }, [removeNote, startRecording]);
 
   const handleRename = () => {
     if (!renameId || !renameName.trim()) return;
@@ -338,7 +448,18 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
         {/* Recording overlay — floating blobs */}
-        {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} errorMsg={errorMsg} />}
+        {recording && (
+          <RecordingOverlay
+            onStop={stopRecording}
+            onDiscard={discardRecording}
+            startTime={startTimeRef.current}
+            errorMsg={errorMsg}
+            fatal={fatal}
+            transcriptSoFar={liveTranscript}
+            liveOffline={liveOffline}
+            hasCapturedAudio={hasCapturedAudio}
+          />
+        )}
 
         {/* Empty state */}
         {notes.length === 0 && !recording ? (
@@ -374,14 +495,15 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
               <div key={note.id}
                 style={{
                   textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
-                  background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
-                  fontFamily: 'var(--font-sans)', cursor: 'pointer', outline: 'none',
+                  background: note.status === 'error' ? 'var(--color-danger-bg)' : 'var(--color-bg-card)',
+                  border: `1px solid ${note.status === 'error' ? 'var(--color-danger-border, var(--color-danger-text))' : 'var(--color-border-default)'}`,
+                  fontFamily: 'var(--font-sans)', cursor: note.status === 'error' ? 'default' : 'pointer', outline: 'none',
                   transition: 'border-color .15s, box-shadow .15s',
                   display: 'flex', flexDirection: 'column', gap: 'var(--space-1)',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
-                onClick={() => setViewId(note.id)}>
+                onMouseEnter={e => { e.currentTarget.style.borderColor = note.status === 'error' ? 'var(--color-danger-border, var(--color-danger-text))' : 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = note.status === 'error' ? 'var(--color-danger-border, var(--color-danger-text))' : 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
+                onClick={() => { if (note.status !== 'error') setViewId(note.id); }}>
 
                 {/* Row 1: title + menu */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
@@ -443,8 +565,25 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                   {note.status === 'transcribing' && statusBadge(note.status)}
                 </div>
 
-                {/* Transcript preview */}
-                {note.transcript && (
+                {note.status === 'error' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', lineHeight: 1.5 }}>
+                      {note.errorReason || 'Transcription failed.'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      <button onClick={e => { e.stopPropagation(); reRecord(note.id); }}
+                        className="btn btn-primary"
+                        style={{ padding: '4px 12px', fontSize: 'var(--text-xs)' }}>
+                        Re-record
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); setDeleteId(note.id); }}
+                        className="btn btn-ghost"
+                        style={{ padding: '4px 12px', fontSize: 'var(--text-xs)' }}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ) : note.transcript && (
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {note.transcript.slice(0, 120)}
                   </div>
