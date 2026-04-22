@@ -18,14 +18,14 @@ export const NODE_DEFS: NodeDef[] = [
   { subtype: 'image-source', label: 'Image', badge: 'Im', category: 'source', description: 'Product photo, diagram', hasInput: false, hasOutput: true },
   { subtype: 'voice-source', label: 'Voice Note', badge: 'Vc', category: 'source', description: 'Select a saved voice note', hasInput: false, hasOutput: true },
   // Generate
-  { subtype: 'linkedin-post', label: 'LinkedIn Post', badge: 'Li', category: 'generate', description: '150–300 word hook post', hasInput: true, hasOutput: true },
-  { subtype: 'twitter-thread', label: 'Twitter Thread', badge: 'Tw', category: 'generate', description: '5–10 tweet thread', hasInput: true, hasOutput: true },
-  { subtype: 'twitter-single', label: 'Twitter Single', badge: 'Ts', category: 'generate', description: 'Most quotable insight', hasInput: true, hasOutput: true },
-  { subtype: 'newsletter', label: 'Newsletter', badge: 'Nl', category: 'generate', description: '300–500 word digest', hasInput: true, hasOutput: true },
-  { subtype: 'infographic', label: 'Infographic', badge: 'If', category: 'generate', description: 'Structured visual spec', hasInput: true, hasOutput: true },
-  { subtype: 'quote-card', label: 'Quote Card', badge: 'Qc', category: 'generate', description: 'Strongest quote', hasInput: true, hasOutput: true },
-  { subtype: 'image-prompt', label: 'Image Prompt', badge: 'Ip', category: 'generate', description: 'AI image generation prompt', hasInput: true, hasOutput: false },
-  { subtype: 'video', label: 'Video', badge: 'Vd', category: 'generate', description: 'AI video generation', hasInput: true, hasOutput: false },
+  { subtype: 'linkedin-post', label: 'LinkedIn Post', badge: 'Li', category: 'generate', description: '150–300 word hook post', hasInput: true, hasOutput: true, maxInputs: 8 },
+  { subtype: 'twitter-thread', label: 'Twitter Thread', badge: 'Tw', category: 'generate', description: '5–10 tweet thread', hasInput: true, hasOutput: true, maxInputs: 8 },
+  { subtype: 'twitter-single', label: 'Twitter Single', badge: 'Ts', category: 'generate', description: 'Most quotable insight', hasInput: true, hasOutput: true, maxInputs: 8 },
+  { subtype: 'newsletter', label: 'Newsletter', badge: 'Nl', category: 'generate', description: '300–500 word digest', hasInput: true, hasOutput: true, maxInputs: 8 },
+  { subtype: 'infographic', label: 'Infographic', badge: 'If', category: 'generate', description: 'Structured visual spec', hasInput: true, hasOutput: true, maxInputs: 8 },
+  { subtype: 'quote-card', label: 'Quote Card', badge: 'Qc', category: 'generate', description: 'Strongest quote', hasInput: true, hasOutput: true, maxInputs: 8 },
+  { subtype: 'image-prompt', label: 'Image Prompt', badge: 'Ip', category: 'generate', description: 'AI image generation prompt', hasInput: true, hasOutput: false, maxInputs: 8 },
+  { subtype: 'video', label: 'Video', badge: 'Vd', category: 'generate', description: 'AI video generation', hasInput: true, hasOutput: false, maxInputs: 8 },
   // Output
   { subtype: 'export', label: 'Export', badge: 'Ex', category: 'output', description: 'Platform-ready package', hasInput: true, hasOutput: false, maxInputs: 8 },
   // Advanced (collapsed in palette)

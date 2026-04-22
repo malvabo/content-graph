@@ -2,6 +2,7 @@ import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useGraphStore } from '../../store/graphStore';
 import { aiExecute } from '../../utils/aiExecutor';
+import { getUpstreamText } from '../../hooks/useNodeExecution';
 import ContentModal from '../modals/ContentModal';
 
 const SKELETON_LINES: Record<string, number[]> = {
@@ -31,12 +32,9 @@ function OutputPreview({ id, subtype, expandOpen, onExpand, onExpandClose }: { i
   const rerun = () => {
     const node = useGraphStore.getState().nodes.find(n => n.id === id);
     if (!node) return;
-    const { edges } = useGraphStore.getState();
-    const outputs = useOutputStore.getState().outputs;
-    const upstream = edges.filter(e => e.target === id).map(e => e.source);
-    const input = upstream.map(uid => outputs[uid]?.text || '').filter(Boolean).join('\n\n---\n\n');
+    const { text: input, inputCount } = getUpstreamText(id);
     useExecutionStore.getState().setStatus(id, 'running');
-    aiExecute(input, node.data.config as Record<string, unknown>, subtype)
+    aiExecute(input, node.data.config as Record<string, unknown>, subtype, { inputCount })
       .then(result => { useOutputStore.getState().setOutput(id, { text: result }); useExecutionStore.getState().setStatus(id, 'complete'); })
       .catch(err => { useExecutionStore.getState().setError(id, err instanceof Error ? err.message : 'Regeneration failed'); });
   };

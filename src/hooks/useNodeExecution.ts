@@ -4,23 +4,41 @@ import { useExecutionStore } from '../store/executionStore';
 import { useOutputStore } from '../store/outputStore';
 import { topologicalSort } from '../utils/topologicalSort';
 
-function getUpstreamText(nodeId: string) {
+export interface ExecutorMeta {
+  inputCount: number;
+}
+
+export function getUpstreamText(nodeId: string): { text: string; inputCount: number } {
   const { nodes, edges } = useGraphStore.getState();
   const outputs = useOutputStore.getState().outputs;
-  const upstream = edges.filter((e) => e.target === nodeId).map((e) => e.source);
-  return upstream.map((id) => {
-    if (outputs[id]?.text) return outputs[id].text;
+  const upstreamIds = edges.filter((e) => e.target === nodeId).map((e) => e.source);
+
+  const chunks = upstreamIds.map((id) => {
     const node = nodes.find((n) => n.id === id);
-    if (node?.data.category === 'source') return (node.data.config.text as string) || '';
-    return '';
-  }).filter(Boolean).join('\n\n---\n\n');
+    const text = outputs[id]?.text
+      || (node?.data.category === 'source' ? (node.data.config.text as string) : '')
+      || '';
+    return node && text ? { node, text } : null;
+  }).filter((c): c is { node: NonNullable<typeof c>['node']; text: string } => c !== null);
+
+  // Canvas-order fan-in: top-to-bottom, ties broken by left-to-right.
+  chunks.sort((a, b) => (a.node.position.y - b.node.position.y) || (a.node.position.x - b.node.position.x));
+
+  if (chunks.length <= 1) {
+    return { text: chunks[0]?.text ?? '', inputCount: chunks.length };
+  }
+
+  const labeled = chunks
+    .map((c, i) => `## Input ${i + 1} — ${c.node.data.label} (${c.node.data.subtype})\n${c.text}`)
+    .join('\n\n');
+  return { text: labeled, inputCount: chunks.length };
 }
 
 export function useNodeExecution() {
   const abortRef = useRef<AbortController | null>(null);
 
   const runNode = useCallback(
-    async (nodeId: string, executor: (input: string, config: Record<string, unknown>) => Promise<string>, signal?: AbortSignal) => {
+    async (nodeId: string, executor: (input: string, config: Record<string, unknown>, meta: ExecutorMeta) => Promise<string>, signal?: AbortSignal) => {
       const { nodes } = useGraphStore.getState();
       const { setStatus, setError } = useExecutionStore.getState();
       const { setOutput } = useOutputStore.getState();
@@ -30,9 +48,16 @@ export function useNodeExecution() {
       if (signal?.aborted) return;
 
       const isSource = node.data.category === 'source';
-      const input = isSource
-        ? (useOutputStore.getState().outputs[nodeId]?.text || (node.data.config.text as string) || '')
-        : getUpstreamText(nodeId);
+      let input: string;
+      let inputCount: number;
+      if (isSource) {
+        input = useOutputStore.getState().outputs[nodeId]?.text || (node.data.config.text as string) || '';
+        inputCount = input ? 1 : 0;
+      } else {
+        const upstream = getUpstreamText(nodeId);
+        input = upstream.text;
+        inputCount = upstream.inputCount;
+      }
 
       if (!isSource && !input) {
         setStatus(nodeId, 'warning');
@@ -45,7 +70,7 @@ export function useNodeExecution() {
       setStatus(nodeId, 'running');
       try {
         if (signal?.aborted) { setStatus(nodeId, 'idle'); return; }
-        const result = await executor(input, node.data.config as Record<string, unknown>);
+        const result = await executor(input, node.data.config as Record<string, unknown>, { inputCount });
         if (signal?.aborted) { setStatus(nodeId, 'idle'); return; }
         setOutput(nodeId, { text: result });
         setStatus(nodeId, 'complete');
@@ -58,7 +83,7 @@ export function useNodeExecution() {
   );
 
   const runAll = useCallback(
-    async (executor: (input: string, config: Record<string, unknown>, subtype: string) => Promise<string>, filterIds?: Set<string>) => {
+    async (executor: (input: string, config: Record<string, unknown>, subtype: string, meta: ExecutorMeta) => Promise<string>, filterIds?: Set<string>) => {
       // Race guard — abort any existing run
       if (abortRef.current) abortRef.current.abort();
       const ctrl = new AbortController();
@@ -105,7 +130,7 @@ export function useNodeExecution() {
             continue;
           }
 
-          await runNode(id, (input, config) => executor(input, config, node.data.subtype), ctrl.signal);
+          await runNode(id, (input, config, meta) => executor(input, config, node.data.subtype, meta), ctrl.signal);
         }
       } finally {
         useExecutionStore.getState().setRunAllActive(false);

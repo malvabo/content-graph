@@ -112,7 +112,7 @@ export default function GraphCanvas() {
 
   const handleRunSelected = useCallback(() => {
     const ids = new Set(selectedNodes.map(n => n.id));
-    runAll(async (input, config, subtype) => aiExecute(input, config, subtype), ids);
+    runAll(async (input, config, subtype, meta) => aiExecute(input, config, subtype, meta), ids);
   }, [selectedNodes, runAll]);
 
   return (

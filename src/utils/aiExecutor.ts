@@ -82,7 +82,11 @@ async function callGroq(apiKey: string, model: string, system: string, input: st
   return data.choices?.[0]?.message?.content ?? '';
 }
 
-export async function aiExecute(input: string, config: Record<string, unknown>, subtype: string, signal?: AbortSignal): Promise<string> {
+export interface AiExecuteMeta {
+  inputCount?: number;
+}
+
+export async function aiExecute(input: string, config: Record<string, unknown>, subtype: string, meta?: AiExecuteMeta, signal?: AbortSignal): Promise<string> {
   const model = (config.model as string) || 'llama-3.3-70b';
   const provider = getProvider(model);
   const { anthropicKey, openaiKey, googleKey, groqKey } = useSettingsStore.getState();
@@ -118,6 +122,16 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
   }
 
   let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
+
+  // Multi-input synthesis hint — only when 2+ upstream sources were fanned in.
+  const inputCount = meta?.inputCount ?? 0;
+  if (inputCount > 1) {
+    system = [
+      `You are receiving ${inputCount} distinct inputs, each prefixed with "## Input N — <label> (<subtype>)".`,
+      'Synthesize them into a single cohesive piece. Do not reproduce the section headers in your output.',
+      'Treat all inputs as equally authoritative; if they contradict, prefer the most specific source.',
+    ].join(' ') + '\n\n' + system;
+  }
 
   // Resolve which brand to inject for this node.
   //   config.brandId === 'none'   → opt out (no voice injection)
