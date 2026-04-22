@@ -36,11 +36,15 @@ function SectionHeader({ title, desc }: { title: string; desc: string }) {
 
 function ColorSwatch({ color, label, onChange }: { color: string; label: string; onChange: (c: string) => void }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)' }}>
-      <label style={{ position: 'relative', width: 36, height: 36, borderRadius: 'var(--radius-full)', border: '2px solid var(--color-border-default)', background: color, cursor: 'pointer' }}>
-        <input type="color" value={color} onChange={e => onChange(e.target.value)} style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+      <label style={{ position: 'relative', width: 72, height: 72, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-default)', background: color, cursor: 'pointer', display: 'block', overflow: 'hidden' }}>
+        <input type="color" value={color} onChange={e => onChange(e.target.value)}
+          style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
       </label>
-      <span style={{ fontSize: 'var(--text-micro)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>{label}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)', textTransform: 'capitalize' }}>{label}</span>
+        <span style={{ fontSize: 'var(--text-micro)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)' }}>{color.toUpperCase()}</span>
+      </div>
     </div>
   );
 }
@@ -76,7 +80,7 @@ function BrandVisualSection() {
         </div>
         <div>
           <label style={LBL}>Brand colors</label>
-          <div style={{ display: 'flex', gap: 'var(--space-5)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
             {(['primary', 'secondary', 'accent'] as const).map(k => (
               <ColorSwatch key={k} label={k} color={b.colors[k]} onChange={c => setBrand({ colors: { ...b.colors, [k]: c } })} />
             ))}
@@ -100,19 +104,6 @@ function BrandVisualSection() {
             </div>
           </div>
         </div>
-        {b.name && (
-          <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)' }}>
-            <label style={LBL}>Preview</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)' }}>
-              <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: b.colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-inverse)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)' }}>{b.name.charAt(0).toUpperCase()}</div>
-              <div>
-                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: b.colors.secondary }}>{b.name}</div>
-                <div style={{ fontSize: 'var(--text-micro)', fontFamily: 'var(--font-mono)', color: 'var(--color-text-disabled)', marginTop: 'var(--space-0)' }}>{b.colors.primary} · {b.colors.secondary} · {b.colors.accent}</div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Reference images for image style */}
         <div style={{ borderTop: '1px solid var(--color-border-subtle)', paddingTop: 'var(--space-4)' }}>
           <label style={LBL}>Reference images</label>
@@ -342,7 +333,7 @@ export default function SettingsPanel() {
 
       {/* Content */}
       <div className="flex-1 p-4 md:p-6" style={{ overflowY: 'auto' }}>
-        <div style={{ maxWidth: active === 'api-keys' ? '100%' : 520 }}>
+        <div style={{ width: '100%' }}>
           {active === 'brand-visual' && <BrandVisualSection />}
           {active === 'brand-voice' && <BrandVoiceSection />}
           {active === 'api-keys' && <APIKeysSection />}
