@@ -20,48 +20,6 @@ function makeSourceNode(content: string): ContentNode {
   };
 }
 
-function EmptyHero({ onNew }: { onNew: () => void }) {
-  return (
-    <div style={{
-      position: 'relative', width: '100%', borderRadius: 'var(--radius-xl)',
-      background: 'linear-gradient(135deg, var(--color-bg-dark) 0%, #2a3028 100%)',
-      overflow: 'hidden', marginBottom: 'var(--space-6)',
-    }}>
-      <svg viewBox="0 0 800 200" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} aria-hidden="true">
-        <rect x="400" y="35" width="110" height="55" rx="10" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
-        <text x="455" y="67" fontSize="11" fontFamily="var(--font-sans)" fill="rgba(255,255,255,0.25)" textAnchor="middle">Source</text>
-        <rect x="560" y="15" width="95" height="45" rx="10" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-        <text x="607" y="42" fontSize="10" fontFamily="var(--font-sans)" fill="rgba(255,255,255,0.2)" textAnchor="middle">LinkedIn</text>
-        <rect x="560" y="85" width="95" height="45" rx="10" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-        <text x="607" y="112" fontSize="10" fontFamily="var(--font-sans)" fill="rgba(255,255,255,0.2)" textAnchor="middle">Thread</text>
-        <rect x="700" y="45" width="85" height="55" rx="10" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5" />
-        <text x="742" y="77" fontSize="10" fontFamily="var(--font-sans)" fill="rgba(255,255,255,0.18)" textAnchor="middle">Export</text>
-        <path d="M510 55 Q535 37 560 37" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1.2" />
-        <path d="M510 70 Q535 107 560 107" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1.2" />
-        <path d="M655 37 Q677 65 700 65" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.2" />
-        <path d="M655 107 Q677 80 700 80" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.2" />
-        <polygon points="558,33 558,41 565,37" fill="rgba(255,255,255,0.2)" />
-        <polygon points="558,103 558,111 565,107" fill="rgba(255,255,255,0.2)" />
-        <polygon points="698,61 698,69 705,65" fill="rgba(255,255,255,0.15)" />
-        <circle cx="510" cy="55" r="3" fill="rgba(255,255,255,0.25)" />
-        <circle cx="510" cy="70" r="3" fill="rgba(255,255,255,0.25)" />
-        <circle cx="655" cy="37" r="2.5" fill="rgba(255,255,255,0.18)" />
-        <circle cx="655" cy="107" r="2.5" fill="rgba(255,255,255,0.18)" />
-      </svg>
-      <div style={{ position: 'relative', padding: 'var(--space-8) var(--space-6)' }}>
-        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--p-white)', margin: 0, letterSpacing: '-.02em' }}>
-          Content Graph
-        </h1>
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-on-dark)', margin: 'var(--space-2) 0 var(--space-5)', maxWidth: 360, lineHeight: 1.5 }}>
-          Connect nodes to repurpose any content into LinkedIn posts, threads, newsletters, and more.
-        </p>
-        <button onClick={onNew} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
-          New Workflow →
-        </button>
-      </div>
-    </div>
-  );
-}
 
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 
@@ -126,14 +84,22 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
 
   return (
     <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-      {/* Hero banner — 30% of viewport (shown only when workflows exist) */}
-      {!loading && items.length > 0 && (
+      {/* Hero banner — matches Voice Notes layout */}
+      {!loading && (
         <div className="p-4 md:p-8" style={{ height: '30vh', minHeight: 180, background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'flex-end', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Workflows</h1>
-            <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>{items.length} workflow{items.length !== 1 ? 's' : ''}</p>
+            <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>
+              {items.length === 0 ? 'Content Graph' : 'Workflows'}
+            </h1>
+            <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0', maxWidth: 420, lineHeight: 1.5 }}>
+              {items.length === 0
+                ? 'Connect nodes to repurpose any content into LinkedIn posts, threads, newsletters, and more.'
+                : `${items.length} workflow${items.length !== 1 ? 's' : ''}`}
+            </p>
           </div>
-          <div style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-4)', zIndex: 1 }}><button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New workflow</button></div>
+          <div style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-4)', zIndex: 1 }}>
+            <button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New workflow</button>
+          </div>
         </div>
       )}
 
@@ -145,10 +111,9 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             {[0,1,2].map(i => <div key={i} className="skeleton-bar" style={{ height: 156, borderRadius: 'var(--radius-lg)' }} />)}
           </div>
 
-        /* Empty — show hero + template picker */
+        /* Empty — show template picker */
         ) : items.length === 0 ? (
           <div>
-            <EmptyHero onNew={handleNew} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
               <span className="text-label">Start from a template</span>
               <button onClick={() => setPasting(!pasting)}
