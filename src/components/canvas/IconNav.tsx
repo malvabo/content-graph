@@ -70,7 +70,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
     <>
       <style>{`
         @media (max-width: 767px) {
-          .icon-nav { width: 100% !important; height: 52px !important; flex-direction: row !important; padding: 0 8px !important; gap: 0 !important; order: 99 !important; border-right: none !important; border-top: 1px solid var(--color-border-subtle) !important; }
+          .icon-nav { width: 100% !important; height: 52px !important; flex-direction: row !important; padding: 0 8px !important; margin: 0 !important; gap: 0 !important; order: 99 !important; border-radius: 0 !important; box-shadow: none !important; border-top: 1px solid var(--color-border-subtle) !important; }
           .icon-nav .nav-item { width: auto !important; padding: 6px 10px !important; flex-direction: column !important; gap: 2px !important; flex: 1; justify-content: center !important; }
           .icon-nav .nav-label { font-size: 9px !important; }
           .icon-nav .nav-spacer, .icon-nav .nav-logo, .icon-nav .nav-bottom-utils { display: none !important; }
@@ -80,8 +80,8 @@ export default function IconNav({ activeView, onViewChange }: Props) {
         }
       `}</style>
       <nav aria-label="Main navigation" className="icon-nav"
-        style={{ width: 160, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', padding: '12px 6px', gap: 2, flexShrink: 0, background: 'var(--color-bg-card)', borderRight: '1px solid var(--color-border-subtle)' }}>
-        <div className="nav-logo" style={{ color: 'var(--color-text-primary)', fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', userSelect: 'none', padding: '4px 10px', marginBottom: 10 }}>up</div>
+        style={{ width: 160, height: 'calc(100% - 16px)', margin: '8px 0 8px 8px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', padding: '12px 4px', gap: 2, flexShrink: 0, background: 'var(--color-bg-card)', borderRadius: 16, boxShadow: '0px 2px 10px 0px rgba(0, 0, 0, 0.1)' }}>
+        <div className="nav-logo" style={{ color: 'var(--color-text-primary)', fontWeight: 500, fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', userSelect: 'none', padding: '4px 12px', marginBottom: 10 }}>up</div>
 
         <NavItem icon={<WorkflowIcon />} label="Workflows" active={activeView === 'library' || activeView === 'workflow'} onClick={() => onViewChange('library')} />
         <NavItem icon={<VoiceIcon />} label="Voice" active={activeView === 'voice'} onClick={() => onViewChange('voice')} />
