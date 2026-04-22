@@ -53,6 +53,8 @@ import SettingsPanel from './components/canvas/SettingsPanel';
 import CardsPanel from './components/canvas/CardsPanel';
 import CardsLibrary from './components/canvas/CardsLibrary';
 import InfographicsPanel from './components/canvas/InfographicsPanel';
+import MobileHome from './components/mobile/MobileHome';
+import { useIsMobile } from './hooks/useIsMobile';
 
 export default function App() {
   return <ErrorBoundary><ReactFlowProvider><AppInner /></ReactFlowProvider></ErrorBoundary>;
@@ -60,6 +62,7 @@ export default function App() {
 
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
+  const isMobile = useIsMobile();
   
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'library'; };
@@ -111,6 +114,16 @@ function AppInner() {
   );
 
   if (!user && !guest) return <AuthGate />;
+
+  // Mobile: a single simplified Home screen — voice recording + quick social asset generation.
+  // Every other view (workflows, scripts, cards, infographics, settings) is desktop-only.
+  if (isMobile) {
+    return (
+      <div className="flex flex-col" style={{ height: '100dvh' }}>
+        <MobileHome />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col" style={{ height: '100dvh' }}>
