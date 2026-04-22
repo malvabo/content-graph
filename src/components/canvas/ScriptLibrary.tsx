@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useScriptStore, type Script } from '../../store/scriptStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import LibraryPage, { LibraryGrid } from '../ui/LibraryPage';
 
 const fmt = (iso: string) => {
   const d = new Date(iso);
@@ -146,39 +147,26 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (content
   }, [addScript, onOpenScript]);
 
   return (
-    <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)', minWidth: 0, maxWidth: '100%' }}>
-      {/* Hero banner — matches Voice */}
-      <div className="p-4 md:p-8" style={{ height: '30vh', minHeight: 180, backgroundImage: 'url(/scripts-hero.png)', backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', alignItems: 'flex-end', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Scripts</h1>
-          {scripts.length > 0 && <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>{scripts.length} script{scripts.length !== 1 ? 's' : ''}</p>}
-        </div>
-        {scripts.length > 0 && (
-          <div style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-4)', zIndex: 1 }}>
-            <button className="btn btn-primary" onClick={handleNew}>+ New script</button>
-          </div>
-        )}
-      </div>
-
-      <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-        {scripts.length === 0 ? (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-8)' }}>
-            <div style={{ width: 64, height: 64, borderRadius: 'var(--radius-xl)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)' }}>
-              <ScriptIcon />
-            </div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>No scripts yet</div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 300, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>Paste a talk script and get AI-powered insights on claims, metaphors, and logic.</div>
-            <button className="btn btn-primary" onClick={handleNew} style={{ padding: '10px 24px', fontSize: 'var(--text-sm)' }}>Create your first script</button>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-3)' }}>
-            {scripts.map(s => (
-              <ScriptCard key={s.id} script={s} onOpen={() => onOpenScript(s.content)} onDelete={() => removeScript(s.id)} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+    <LibraryPage
+      title="Scripts"
+      itemCount={scripts.length}
+      itemNoun={{ singular: 'script', plural: 'scripts' }}
+      onNew={handleNew}
+      newLabel="New script"
+      isEmpty={scripts.length === 0}
+      emptyState={{
+        icon: <ScriptIcon />,
+        title: 'No scripts yet',
+        description: 'Paste a talk script and get AI-powered insights on claims, metaphors, and logic.',
+        actionLabel: 'Create your first script',
+        onAction: handleNew,
+      }}
+    >
+      <LibraryGrid>
+        {scripts.map(s => (
+          <ScriptCard key={s.id} script={s} onOpen={() => onOpenScript(s.content)} onDelete={() => removeScript(s.id)} />
+        ))}
+      </LibraryGrid>
+    </LibraryPage>
   );
 }

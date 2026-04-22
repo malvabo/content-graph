@@ -2,6 +2,13 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useInfographicStore } from '../../store/infographicStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { renderSVG, parseInfographicData } from '../nodes/InfographicNode';
+import LibraryPage, { LibraryGrid } from '../ui/LibraryPage';
+
+const InfographicsEmptyIcon = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/>
+  </svg>
+);
 
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
@@ -179,33 +186,23 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
   // ─── HOME VIEW ───
   if (!editingId) {
     return (
-      <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-        {/* Hero banner */}
-        <div className="p-4 md:p-8" style={{ height: '30vh', minHeight: 180, backgroundImage: 'url(/infographics-hero.png)', backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', alignItems: 'flex-end', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)', pointerEvents: 'none' }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Infographics</h1>
-            {items.length > 0 && <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>{items.length} infographic{items.length !== 1 ? 's' : ''}</p>}
-          </div>
-          <div style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-4)', zIndex: 1 }}>
-            <button className="btn btn-primary" onClick={createNew}>+ New infographic</button>
-          </div>
-        </div>
-
-        <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-
-          {items.length === 0 ? (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-8)' }}>
-              <div style={{ width: 64, height: 64, borderRadius: 'var(--radius-xl)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)' }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
-              </div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>No infographics yet</div>
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 300, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>Create one from scratch or generate from a workflow.</div>
-              <button className="btn btn-primary" onClick={createNew}>+ Create infographic</button>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
-              {items.map(item => {
+      <LibraryPage
+        title="Infographics"
+        itemCount={items.length}
+        itemNoun={{ singular: 'infographic', plural: 'infographics' }}
+        onNew={createNew}
+        newLabel="New infographic"
+        isEmpty={items.length === 0}
+        emptyState={{
+          icon: <InfographicsEmptyIcon />,
+          title: 'No infographics yet',
+          description: 'Create one from scratch or generate from a workflow.',
+          actionLabel: 'Create infographic',
+          onAction: createNew,
+        }}
+      >
+        <LibraryGrid>
+          {items.map(item => {
                 const data = parseInfographicData(item.json);
                 const title = data?.title || item.label || 'Untitled';
                 const canRender = data && Array.isArray(data.points) && data.points.length > 0;
@@ -248,11 +245,9 @@ export default function InfographicsPanel({ initialEditId }: { initialEditId?: s
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+          })}
+        </LibraryGrid>
+      </LibraryPage>
     );
   }
 

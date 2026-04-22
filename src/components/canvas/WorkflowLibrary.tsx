@@ -5,8 +5,14 @@ import { useOutputStore } from '../../store/outputStore';
 import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from '../../utils/workflowApi';
 
 import TemplateCard from '../ui/TemplateCard';
+import LibraryPage, { LibraryGrid } from '../ui/LibraryPage';
 
-const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
+const WorkflowEmptyIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+    <rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7m-3.5-3.5h7"/>
+  </svg>
+);
 
 
 export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) {
@@ -41,81 +47,66 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   };
 
   return (
-    <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-      {/* Hero banner — 30% of viewport */}
-      <div className="p-4 md:p-8" style={{ height: '30vh', minHeight: 180, background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'flex-end', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Workflows</h1>
-          {items.length > 0 && <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>{items.length} workflow{items.length !== 1 ? 's' : ''}</p>}
-        </div>
-        {items.length > 0 && <div style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-4)', zIndex: 1 }}><button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New workflow</button></div>}
-      </div>
-
-      <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-
-        {/* Loading */}
-        {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
-            {[0,1,2].map(i => <div key={i} className="skeleton-bar" style={{ height: 156, borderRadius: 'var(--radius-lg)' }} />)}
-          </div>
-
-        /* Empty */
-        ) : items.length === 0 ? (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-10)' }}>
-            <div style={{ width: 'var(--space-12)', height: 'var(--space-12)', borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7m-3.5-3.5h7"/></svg>
-            </div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>No workflows yet</div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 280, lineHeight: 'var(--leading-snug)', marginBottom: 'var(--space-6)' }}>Create your first workflow to start repurposing content</div>
-            <button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New workflow</button>
-          </div>
-
-        /* Grid */
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
-            {items.map(item => {
-              const { visible, remaining } = chipList(item);
-              return (
-                <div key={item.id} style={{ position: 'relative' }}
-                  onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}>
-                  <TemplateCard
-                    title={item.name}
-                    meta={`${item.nodes.length} nodes · ${fmt(item.savedAt)}`}
-                    pills={visible}
-                    extraCount={remaining > 0 ? remaining : undefined}
-                    onClick={() => handleLoad(item)}
-                  />
-                  {/* 3-dot menu */}
-                  <div style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', opacity: hoverId === item.id || menuId === item.id ? 1 : 0, transition: 'opacity 150ms', zIndex: 2 }}>
-                    <div role="button" tabIndex={0} aria-label="More options"
-                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', background: 'transparent', cursor: 'pointer', transition: 'color 150ms, background 150ms' }}
-                      onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                    </div>
-                    {menuId === item.id && (
-                      <div ref={menuRef} onClick={e => e.stopPropagation()}
-                        style={{ position: 'absolute', top: 28, left: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
-                        {[
-                          { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
-                          { label: 'Duplicate', action: () => handleDuplicate(item) },
-                          { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
-                        ].map(opt => (
-                          <button key={opt.label} onClick={opt.action}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+    <>
+      <LibraryPage
+        title="Workflows"
+        itemCount={items.length}
+        itemNoun={{ singular: 'workflow', plural: 'workflows' }}
+        onNew={handleNew}
+        newLabel="New workflow"
+        isEmpty={items.length === 0}
+        isLoading={loading}
+        emptyState={{
+          icon: <WorkflowEmptyIcon />,
+          title: 'No workflows yet',
+          description: 'Create your first workflow to start repurposing content',
+          actionLabel: 'New workflow',
+          onAction: handleNew,
+        }}
+      >
+        <LibraryGrid>
+          {items.map(item => {
+            const { visible, remaining } = chipList(item);
+            return (
+              <div key={item.id} style={{ position: 'relative' }}
+                onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}>
+                <TemplateCard
+                  title={item.name}
+                  meta={`${item.nodes.length} nodes · ${fmt(item.savedAt)}`}
+                  pills={visible}
+                  extraCount={remaining > 0 ? remaining : undefined}
+                  onClick={() => handleLoad(item)}
+                />
+                {/* 3-dot menu */}
+                <div style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', opacity: hoverId === item.id || menuId === item.id ? 1 : 0, transition: 'opacity 150ms', zIndex: 2 }}>
+                  <div role="button" tabIndex={0} aria-label="More options"
+                    style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', background: 'transparent', cursor: 'pointer', transition: 'color 150ms, background 150ms' }}
+                    onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                   </div>
+                  {menuId === item.id && (
+                    <div ref={menuRef} onClick={e => e.stopPropagation()}
+                      style={{ position: 'absolute', top: 28, left: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
+                      {[
+                        { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
+                        { label: 'Duplicate', action: () => handleDuplicate(item) },
+                        { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
+                      ].map(opt => (
+                        <button key={opt.label} onClick={opt.action}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              </div>
+            );
+          })}
+        </LibraryGrid>
+      </LibraryPage>
 
       {/* Delete dialog */}
       {deleteId && (
@@ -130,6 +121,6 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -55,25 +55,36 @@ button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 .btn-icon-lg { height: var(--size-control-lg); width: var(--size-control-lg); padding: 0; border-radius: var(--radius-md); }
 
 /* ── Button variants ── */
+/* btn-primary: filled accent — the single dominant action on a surface */
 .btn-primary {
-  background: var(--color-interactive-default);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-strong);
+  background: var(--color-accent);
+  color: var(--p-white);
+  border: 1px solid var(--color-accent);
 }
-.btn-primary:hover { background: var(--color-interactive-hover); border-color: var(--color-border-strong); }
-.btn-primary:active:not(:disabled) { background: var(--color-interactive-active); }
+.btn-primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+.btn-primary:active:not(:disabled) { background: var(--color-accent-active); border-color: var(--color-accent-active); }
 .btn-primary.loading { color: transparent; pointer-events: none; position: relative; }
 .btn-primary.loading::after {
   content: '';
   position: absolute;
   width: var(--text-sm);
   height: var(--text-sm);
-  border: 1.5px solid var(--color-border-default);
-  border-top-color: var(--color-text-primary);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-top-color: var(--p-white);
   border-radius: var(--radius-full);
   animation: btn-spin .65s linear infinite;
 }
 
+/* btn-secondary: neutral filled — secondary action where primary is present */
+.btn-secondary {
+  background: var(--color-interactive-default);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-strong);
+}
+.btn-secondary:hover { background: var(--color-interactive-hover); border-color: var(--color-border-strong); }
+.btn-secondary:active:not(:disabled) { background: var(--color-interactive-active); }
+
+/* btn-outline: same visual as btn-secondary — transparent-to-hover variant kept for modal patterns */
 .btn-outline {
   background: var(--color-interactive-default);
   color: var(--color-text-primary);

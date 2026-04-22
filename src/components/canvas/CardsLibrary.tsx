@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useCardsStore } from '../../store/cardsStore';
+import LibraryPage, { LibraryGrid } from '../ui/LibraryPage';
 
-const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 const CardsIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="8" height="8" rx="1.5"/><rect x="14" y="3" width="8" height="8" rx="1.5"/><rect x="2" y="13" width="8" height="8" rx="1.5"/><rect x="14" y="13" width="8" height="8" rx="1.5"/></svg>;
 
 const fmt = (iso: string) => { if (!iso) return ''; const d = new Date(iso), diff = Date.now() - d.getTime(); if (isNaN(diff)) return ''; if (diff < 60000) return 'Just now'; if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`; if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`; return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); };
@@ -19,34 +19,24 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
   const confirmDelete = () => { if (deleteId) { remove(deleteId); setDeleteId(null); } };
 
   return (
-    <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-      {/* Hero banner — matches Voice */}
-      <div className="p-4 md:p-8" style={{ height: '30vh', minHeight: 180, background: 'var(--color-bg-surface)', display: 'flex', alignItems: 'flex-end', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 28, color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Cards</h1>
-          {sets.length > 0 && <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>{sets.length} set{sets.length !== 1 ? 's' : ''}</p>}
-        </div>
-        {sets.length > 0 && (
-          <div style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-4)', zIndex: 1 }}>
-            <button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New card set</button>
-          </div>
-        )}
-      </div>
-
-      <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-
-        {sets.length === 0 ? (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-8)' }}>
-            <div style={{ width: 64, height: 64, borderRadius: 'var(--radius-xl)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)' }}>
-              <CardsIcon />
-            </div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>No card sets yet</div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 300, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>Create a card set to organize and discuss your content.</div>
-            <button className="btn btn-primary" onClick={handleNew} style={{ padding: '10px 24px', fontSize: 'var(--text-sm)' }}><PlusIcon /> Create your first set</button>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-3)' }}>
-            {sets.map(set => (
+    <>
+      <LibraryPage
+        title="Cards"
+        itemCount={sets.length}
+        itemNoun={{ singular: 'set', plural: 'sets' }}
+        onNew={handleNew}
+        newLabel="New card set"
+        isEmpty={sets.length === 0}
+        emptyState={{
+          icon: <CardsIcon />,
+          title: 'No card sets yet',
+          description: 'Create a card set to organize and discuss your content.',
+          actionLabel: 'Create your first set',
+          onAction: handleNew,
+        }}
+      >
+        <LibraryGrid>
+          {sets.map(set => (
               <div key={set.id}
                 style={{
                   textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
@@ -75,10 +65,9 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
                   </div>
                 )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+          ))}
+        </LibraryGrid>
+      </LibraryPage>
 
       {deleteId && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)' }} onClick={() => setDeleteId(null)}>
@@ -92,6 +81,6 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

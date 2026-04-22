@@ -84,10 +84,10 @@
   --color-accent-active: var(--p-green-700);
   --color-accent-subtle: #0A5C2A;
 
-  /* Status: Success */
-  --color-success-bg: var(--p-neutral-50);
-  --color-success-border: #DCDCDC;
-  --color-success-text: var(--p-neutral-800);
+  /* Status: Success — actually green so the token name means what it says */
+  --color-success-bg: #ECFDF3;
+  --color-success-border: #A6E4BC;
+  --color-success-text: #0A7A36;
 
   /* Status: Warning */
   --color-warning-bg: #FEF8E8;
@@ -112,6 +112,7 @@
   --text-md: 16px;
   --text-lg: 20px;
   --text-xl: 24px;
+  --text-2xl: 28px;
 
   /* Line heights */
   --leading-none: 1;
@@ -125,6 +126,7 @@
   /* Font weights */
   --weight-normal: 400;
   --weight-medium: 500;
+  --weight-semibold: 600;
 
   /* Letter spacing */
   --tracking-tight: -0.01em;
@@ -151,10 +153,10 @@
   --radius-xl: 10px;
   --radius-full: 9999px;
 
-  /* ── Shadows (elevation levels) ── */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-md: 0 2px 6px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.12);
-  --shadow-lg: 0 4px 12px rgba(0,0,0,0.08), 0 12px 36px rgba(0,0,0,0.14);
+  /* ── Shadows (elevation levels) — gentler for light canvas ── */
+  --shadow-sm: 0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.06);
+  --shadow-md: 0 2px 4px rgba(16,24,40,0.05), 0 4px 12px rgba(16,24,40,0.08);
+  --shadow-lg: 0 4px 8px rgba(16,24,40,0.06), 0 12px 24px rgba(16,24,40,0.10);
   --shadow-glow: 0 0 16px rgba(13,191,90,0.2);
 
   /* ── Transitions ── */
@@ -284,9 +286,9 @@
   --color-warning-bg: #2a2616;
   --color-warning-border: #4a3a16;
   --color-warning-text: #f0c860;
-  --color-success-bg: #142418;
-  --color-success-border: #1e3a24;
-  --color-success-text: #80d0a0;
+  --color-success-bg: #0F2218;
+  --color-success-border: #1F4A2E;
+  --color-success-text: #6BD692;
   --color-overlay-light: rgba(18,18,22,0.90);
   --color-overlay-dark: rgba(255,255,255,0.03);
   --color-overlay-backdrop: rgba(0,0,0,0.70);
