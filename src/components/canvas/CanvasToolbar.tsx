@@ -45,8 +45,8 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
   }, [menuOpen]);
 
   const handleRunAll = () => {
-    runAll(async (input, config, subtype) => {
-      return aiExecute(input, config, subtype);
+    runAll(async (input, config, subtype, meta) => {
+      return aiExecute(input, config, subtype, meta);
     });
   };
 

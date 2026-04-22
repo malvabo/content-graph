@@ -184,8 +184,8 @@ export default function ConfigPanel() {
       <div className="px-5 pb-5">
         <button className="btn btn-primary w-full" onClick={() => {
           if (!node) return;
-          runNode(node.id, async (input, config) => {
-            return aiExecute(input, config, node.data.subtype);
+          runNode(node.id, async (input, config, meta) => {
+            return aiExecute(input, config, node.data.subtype, meta);
           });
         }}>▶ Run</button>
       </div>
