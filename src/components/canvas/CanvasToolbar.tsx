@@ -148,21 +148,8 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
           <button
             onClick={handleRunAll}
             disabled={isRunning}
-            className={isRunning ? 'loading' : ''}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '0 14px', height: 30,
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--color-accent)',
-              color: 'var(--color-text-inverse)',
-              border: '1px solid var(--color-accent)',
-              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-              cursor: isRunning ? 'default' : 'pointer',
-              opacity: isRunning ? 0.7 : 1,
-              transition: 'box-shadow 150ms',
-            }}
-            onMouseEnter={e => { if (!isRunning) (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 0 3px rgba(13,191,90,0.25), 0 0 16px rgba(13,191,90,0.35)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'; }}
+            className={`btn btn-sm btn-run${isRunning ? ' loading' : ''}`}
+            style={{ opacity: isRunning ? 0.6 : 1 }}
           >
             ▶ Run
           </button>
