@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent as RMouseEvent } from 'react';
 import { useGraphStore } from '../../store/graphStore';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
@@ -46,9 +46,21 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
   const [menuOpen, setMenuOpen] = useState(false);
   const [brandSubOpen, setBrandSubOpen] = useState(false);
   const gearRef = useRef<HTMLDivElement>(null);
+  const brandRowRef = useRef<HTMLDivElement>(null);
+  const brandSubRef = useRef<HTMLDivElement>(null);
   const brandCloseTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const openBrandSub = () => { clearTimeout(brandCloseTimer.current); setBrandSubOpen(true); };
-  const closeBrandSub = () => { brandCloseTimer.current = setTimeout(() => setBrandSubOpen(false), 150); };
+  const closeBrandSub = () => { brandCloseTimer.current = setTimeout(() => setBrandSubOpen(false), 200); };
+  const onBrandRowLeave = (e: RMouseEvent) => {
+    const to = e.relatedTarget as Node | null;
+    if (to && brandSubRef.current?.contains(to)) return;
+    closeBrandSub();
+  };
+  const onBrandSubLeave = (e: RMouseEvent) => {
+    const to = e.relatedTarget as Node | null;
+    if (to && brandRowRef.current?.contains(to)) return;
+    closeBrandSub();
+  };
 
   useAutoSaveWorkflow();
 
@@ -187,18 +199,17 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
                 </MenuItem>
 
                 {/* Brand submenu */}
-                <div style={{ position: 'relative' }}
+                <div ref={brandRowRef} style={{ position: 'relative', width: '100%' }}
                   onMouseEnter={openBrandSub}
-                  onMouseLeave={closeBrandSub}>
+                  onMouseLeave={onBrandRowLeave}>
                   <MenuItem
-                    onClick={() => setBrandSubOpen(o => !o)}
                     right={<>{activeBrandLabel}<Chevron /></>}>
                     Brand
                   </MenuItem>
                   {brandSubOpen && (
-                    <Menu style={{ position: 'absolute', top: 0, right: 'calc(100% + 6px)', zIndex: 51, minWidth: 200 }}
+                    <Menu ref={brandSubRef} style={{ position: 'absolute', top: 0, right: 'calc(100% + 6px)', zIndex: 51, minWidth: 200 }}
                       onMouseEnter={openBrandSub}
-                      onMouseLeave={closeBrandSub}>
+                      onMouseLeave={onBrandSubLeave}>
                       <MenuItem icon={<Dot on={!brandId} />}
                         onClick={() => { setBrandId(null); setBrandSubOpen(false); setMenuOpen(false); }}>
                         Default
