@@ -230,7 +230,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         {data.subtype === 'text-source' && <TextSourceInline id={id} />}
         {data.subtype === 'file-source' && <FileSourceInline id={id} />}
         {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
-        {data.subtype === 'voice-source' && <VoiceSourceInline id={id} />}
+        {data.subtype === 'voice-source' && <VoiceSourceInline id={id} onExpand={() => setExpandOpen(true)} />}
         {data.subtype === 'refine' && <RefineInline id={id} />}
         {(data.subtype === 'image-prompt' || data.subtype === 'video') && <ImagePromptInline id={id} expandOpen={expandOpen} onExpandClose={() => setExpandOpen(false)} />}
         {data.subtype === 'export' && <ExportInline id={id} />}
