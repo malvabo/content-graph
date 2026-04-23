@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
 <style>
-  #boot-fallback { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #57534e; max-width: 360px; margin: 80px auto; padding: 16px 20px; border: 1px solid #e0e4e0; border-radius: 12px; background: #fff; font-size: 14px; line-height: 1.5; text-align: center; }
+  #boot-fallback { font-family: 'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; color: #57534e; max-width: 360px; margin: 80px auto; padding: 16px 20px; border: 1px solid #e0e4e0; border-radius: 12px; background: #fff; font-size: 14px; line-height: 1.5; text-align: center; }
   #boot-fallback b { color: #1a2420; display: block; margin-bottom: 6px; }
   #boot-fallback button { margin-top: 12px; padding: 6px 14px; border-radius: 6px; border: 1px solid #d4d1cb; background: #f7f5f1; cursor: pointer; font: inherit; color: #1a2420; }
 </style>
@@ -196,7 +196,7 @@ themeListeners.add(() => {
 const fontStyle = () => `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body, input, button, select, textarea { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body, input, button, select, textarea { font-family: 'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   textarea { resize: none; letter-spacing: -0.01em; scrollbar-width: none; }
   textarea::-webkit-scrollbar { display: none; }
   textarea::placeholder { color: ${C.mute}; }
@@ -792,7 +792,7 @@ ${text}`
           <div style={{ width:"50%", borderRight:`1px solid ${C.border}`, position:"relative", display:"flex", flexDirection:"column", background:C.white }}>
 
             {/* highlight overlay */}
-            <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"-apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
+            <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
               {paras.map((p,pi) => (
                 <p key={pi} style={{ marginBottom:28 }}>
                   {tokenize(p, aiInsights || []).map((s,i) =>
@@ -805,7 +805,7 @@ ${text}`
             </div>
 
             {/* click layer */}
-            <div style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"-apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
+            <div style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
               {paras.map((p,pi) => (
                 <p key={pi} style={{ marginBottom:28 }}>
                   {tokenize(p, aiInsights || []).map((s,i) =>
