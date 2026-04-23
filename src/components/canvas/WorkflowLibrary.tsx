@@ -171,28 +171,19 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             </div>
           </div>
 
-          {/* Right: example template preview — mirrors the TemplateCard visual */}
+          {/* Right: decorative schematic — non-interactive illustration */}
           {(() => {
             const t = TEMPLATES[0];
             if (!t) return <div />;
             const { nodes: n, edges: e } = t.build();
             return (
-              <button onClick={() => handleLoadTemplate(0)}
-                style={{
-                  background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)',
-                  borderRadius: 'var(--radius-lg)', overflow: 'hidden', cursor: 'pointer',
-                  textAlign: 'left', display: 'flex', flexDirection: 'column',
-                  transition: 'border-color 150ms, box-shadow 150ms, transform 150ms',
-                }}
-                onMouseEnter={ev => { ev.currentTarget.style.borderColor = 'var(--color-border-strong)'; ev.currentTarget.style.boxShadow = 'var(--shadow-sm)'; ev.currentTarget.style.transform = 'translateY(-1px)'; }}
-                onMouseLeave={ev => { ev.currentTarget.style.borderColor = 'var(--color-border-subtle)'; ev.currentTarget.style.boxShadow = 'none'; ev.currentTarget.style.transform = 'translateY(0)'; }}>
-                <GraphSchematic nodes={n} edges={e} background="var(--color-bg-card)" />
-                <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', lineHeight: 1.4 }}>{t.name}</div>
-                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', lineHeight: 1.4 }}>{t.category} · {n.length} steps</div>
-                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginTop: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t.description}</div>
-                </div>
-              </button>
+              <div aria-hidden style={{
+                background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)',
+                borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+                display: 'flex', alignItems: 'center', minHeight: 160,
+              }}>
+                <GraphSchematic nodes={n} edges={e} background="var(--color-bg-card)" showBorder={false} height={160} />
+              </div>
             );
           })()}
         </div>
