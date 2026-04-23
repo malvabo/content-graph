@@ -562,8 +562,8 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       <header className="p-4 md:px-8 md:py-6" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-6)', flexShrink: 0 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
           <h1 style={{
-            margin: 0, fontFamily: 'var(--font-sans)', fontSize: 28, fontWeight: 500,
-            lineHeight: '32px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)',
+            margin: 0, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-lg)', fontWeight: 500,
+            lineHeight: '24px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)',
           }}>
             Voice Notes
           </h1>
