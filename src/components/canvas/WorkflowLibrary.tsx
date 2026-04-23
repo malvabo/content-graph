@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { Menu, MenuItem } from '../ui/Menu';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
@@ -277,18 +278,16 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
       )}
 
       {/* Delete dialog */}
-      {deleteId && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)' }} onClick={() => setDeleteId(null)}>
-          <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-default)', maxWidth: 340, width: '100%', fontFamily: 'var(--font-sans)' }}>
-            <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>Delete workflow?</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-snug)', marginBottom: 'var(--space-4)' }}>This will permanently remove "{items.find(i => i.id === deleteId)?.name}".</div>
-            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-              <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>
-              <button className="btn btn-destructive" onClick={confirmDelete}>Delete</button>
-            </div>
+      <Dialog open={!!deleteId} onOpenChange={open => { if (!open) setDeleteId(null); }}>
+        <DialogContent maxWidth={340} hideClose className="p-5" style={{ fontFamily: 'var(--font-sans)' }}>
+          <DialogTitle style={{ marginBottom: 'var(--space-2)' }}>Delete workflow?</DialogTitle>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-snug)', marginBottom: 'var(--space-4)' }}>This will permanently remove "{items.find(i => i.id === deleteId)?.name}".</div>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+            <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>
+            <button className="btn btn-destructive" onClick={confirmDelete}>Delete</button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

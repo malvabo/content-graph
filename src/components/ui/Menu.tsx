@@ -24,10 +24,13 @@ export const Menu = forwardRef<HTMLDivElement, {
   style?: CSSProperties;
   className?: string;
   onClick?: (e: MouseEvent<HTMLDivElement>) => void;
+  onMouseEnter?: (e: MouseEvent<HTMLDivElement>) => void;
+  onMouseLeave?: (e: MouseEvent<HTMLDivElement>) => void;
   role?: string;
-}>(function Menu({ children, style, className, onClick, role = 'menu' }, ref) {
+}>(function Menu({ children, style, className, onClick, onMouseEnter, onMouseLeave, role = 'menu' }, ref) {
   return (
     <div ref={ref} role={role} className={className} onClick={onClick}
+      onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}
       style={{ ...menuStyle, ...style }}>
       {children}
     </div>

@@ -140,7 +140,7 @@ export default function GraphCanvas() {
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
         onNodeContextMenu={(e, node) => onNodeContextMenu(e, node.id)}
         onPaneClick={() => { setSelectedNodeId(null); dismissFirstRun(); closeMenu(); setSpotlight(null); }}
-        onPaneDoubleClick={(e) => { const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY }); setSpotlight({ x: e.clientX, y: e.clientY, flowX: pos.x, flowY: pos.y }); }}
+        onDoubleClick={(e) => { const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY }); setSpotlight({ x: e.clientX, y: e.clientY, flowX: pos.x, flowY: pos.y }); }}
         deleteKeyCode={['Backspace', 'Delete']}
         fitView={false} panOnScroll selectionOnDrag selectionKeyCode="Shift"
         proOptions={{ hideAttribution: true }}

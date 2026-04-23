@@ -1,5 +1,5 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { useRef, useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import ContentModal from '../modals/ContentModal';

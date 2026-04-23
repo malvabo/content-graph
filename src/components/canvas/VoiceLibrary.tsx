@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { Menu, MenuItem } from '../ui/Menu';
 import { useVoiceStore } from '../../store/voiceStore';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
@@ -824,30 +825,18 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       })()}
 
       {/* Delete confirmation */}
-      {deleteId && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 100,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)',
-          animation: 'fadeIn 150ms ease',
-        }} onClick={() => setDeleteId(null)}>
-          <div onClick={e => e.stopPropagation()} style={{
-            background: 'var(--color-bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
-            boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-border-default)',
-            maxWidth: 340, width: '100%', fontFamily: 'var(--font-sans)',
-            animation: 'scaleIn 150ms ease',
-          }}>
-            <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>Delete voice note?</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 'var(--space-4)' }}>
-              This will permanently remove "{notes.find(n => n.id === deleteId)?.title}" from your library.
-            </div>
-            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-              <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>
-              <button className="btn btn-destructive" onClick={confirmDelete}>Delete</button>
-            </div>
+      <Dialog open={!!deleteId} onOpenChange={open => { if (!open) setDeleteId(null); }}>
+        <DialogContent maxWidth={340} hideClose className="p-5" style={{ fontFamily: 'var(--font-sans)' }}>
+          <DialogTitle style={{ marginBottom: 'var(--space-2)' }}>Delete voice note?</DialogTitle>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 'var(--space-4)' }}>
+            This will permanently remove "{notes.find(n => n.id === deleteId)?.title}" from your library.
           </div>
-        </div>
-      )}
+          <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+            <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>
+            <button className="btn btn-destructive" onClick={confirmDelete}>Delete</button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

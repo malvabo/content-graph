@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useInfographicStore } from '../../store/infographicStore';
@@ -404,35 +404,28 @@ export function InfographicInline({ id }: { id: string }) {
         <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', lineHeight: 0 }} />
       </div>
 
-      {modalOpen && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)' }}
-          onClick={() => setModalOpen(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-default)', boxShadow: 'var(--shadow-lg)', maxWidth: 800, width: '90%', maxHeight: '90vh', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: 'var(--space-4) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>Infographic</span>
-              <button onClick={() => setModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', display: 'flex', padding: 'var(--space-1)', borderRadius: 'var(--radius-sm)' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-            </div>
-            <div id={`ig-modal-${id}`} style={{ padding: '0 var(--space-6) var(--space-4)' }}>
-              <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }} />
-            </div>
-            <div style={{ padding: 'var(--space-4) var(--space-6)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button className="btn btn-sm btn-ghost" onClick={async () => {
-                const el = document.getElementById(`ig-modal-${id}`);
-                if (!el) return;
-                const { toPng } = await import('html-to-image');
-                const url = await toPng(el, { pixelRatio: 3 });
-                const a = document.createElement('a'); a.href = url; a.download = 'infographic.png'; a.click();
-              }}>↓ Download PNG</button>
-              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                <button className="btn btn-primary btn-sm" onClick={() => { sendToPanel(); setModalOpen(false); window.location.hash = `infographics:${id}`; }}>Edit infographic</button>
-              </div>
+      <Dialog open={modalOpen} onOpenChange={open => { if (!open) setModalOpen(false); }}>
+        <DialogContent maxWidth={800} className="flex flex-col p-0 overflow-hidden" style={{ maxHeight: '90vh' }}>
+          <div style={{ padding: 'var(--space-4) var(--space-6)', display: 'flex', alignItems: 'center' }}>
+            <DialogTitle style={{ fontFamily: 'var(--font-sans)' }}>Infographic</DialogTitle>
+          </div>
+          <div id={`ig-modal-${id}`} style={{ padding: '0 var(--space-6) var(--space-4)', overflowY: 'auto' }}>
+            <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', lineHeight: 0, borderRadius: 'var(--radius-lg)', overflow: 'hidden' }} />
+          </div>
+          <div style={{ padding: 'var(--space-4) var(--space-6)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button className="btn btn-sm btn-ghost" onClick={async () => {
+              const el = document.getElementById(`ig-modal-${id}`);
+              if (!el) return;
+              const { toPng } = await import('html-to-image');
+              const url = await toPng(el, { pixelRatio: 3 });
+              const a = document.createElement('a'); a.href = url; a.download = 'infographic.png'; a.click();
+            }}>↓ Download PNG</button>
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <button className="btn btn-primary btn-sm" onClick={() => { sendToPanel(); setModalOpen(false); window.location.hash = `infographics:${id}`; }}>Edit infographic</button>
             </div>
           </div>
-        </div>,
-        document.body
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

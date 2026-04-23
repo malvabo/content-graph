@@ -501,13 +501,7 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
 
   // ─── EDITOR VIEW ───
   const currentData = editing ? parseInfographicData(editing.json) : null;
-  const currentType = currentData?.type || 'cards';
   const hasHistory = !!(editing?.history && editing.history.length > 0);
-
-  const setType = (t: 'cards' | 'bar' | 'pie') => {
-    if (!currentData || currentType === t) return;
-    applyDirectEdit(d => { d.type = t; });
-  };
 
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)' }}>
