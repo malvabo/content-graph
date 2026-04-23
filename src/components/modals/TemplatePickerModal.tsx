@@ -25,21 +25,18 @@ export default function TemplatePickerModal({ onClose, onStartScratch, onPickTem
   return (
     <div role="dialog" aria-modal="true" aria-label="Choose a template"
       onClick={onClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}>
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)', animation: 'fadeIn 150ms ease-out' }}>
       <div onClick={e => e.stopPropagation()}
-        style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: 1100, maxHeight: '90vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-sans)' }}>
+        style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: 1100, maxHeight: '90vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-sans)', animation: 'modalEnter 150ms ease-out' }}>
         {/* Header */}
         <div style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)' }}>
-          <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Choose a template</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <button onClick={onStartScratch} className="btn btn-primary">Start from scratch</button>
-            <button onClick={onClose} aria-label="Close"
-              style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', cursor: 'pointer' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-            </button>
-          </div>
+          <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Start with a template</h2>
+          <button onClick={onClose} aria-label="Close"
+            style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', cursor: 'pointer' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
         </div>
 
         {/* Body: left filters + grid */}
@@ -61,16 +58,15 @@ export default function TemplatePickerModal({ onClose, onStartScratch, onPickTem
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-4)' }}>
               {visible.map(t => {
                 const i = TEMPLATES.indexOf(t);
-                const { nodes } = t.build();
-                const labels = nodes.slice(0, 2).map(n => n.data.label);
-                const extra = nodes.length - 2;
+                const { nodes, edges } = t.build();
                 return (
                   <TemplateCard
                     key={t.name}
                     title={t.name}
-                    meta={`${t.category} · ${nodes.length} nodes`}
-                    pills={labels}
-                    extraCount={extra > 0 ? extra : undefined}
+                    meta={`${t.category} · ${nodes.length} steps`}
+                    description={t.description}
+                    pills={[]}
+                    graphData={{ nodes, edges }}
                     onClick={() => onPickTemplate(i)}
                   />
                 );
@@ -82,6 +78,16 @@ export default function TemplatePickerModal({ onClose, onStartScratch, onPickTem
               </div>
             )}
           </div>
+        </div>
+
+        {/* Footer: demoted "Start from scratch" escape hatch */}
+        <div style={{ padding: 'var(--space-3) var(--space-6)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <button onClick={onStartScratch}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-normal)', color: 'var(--color-text-tertiary)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; e.currentTarget.style.background = 'transparent'; }}>
+            Or start from a blank canvas →
+          </button>
         </div>
       </div>
     </div>
