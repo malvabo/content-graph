@@ -69,7 +69,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
     onBackToLibrary();
   };
 
-  const menuItemStyle: React.CSSProperties = { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', textAlign: 'left' };
+  const menuItemStyle: React.CSSProperties = { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', textAlign: 'left' };
   const activeBrandLabel = brands.find(b => b.id === brandId)?.kitName || 'Default';
 
   return (
@@ -148,7 +148,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
                   <span>Brand</span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--color-text-tertiary)', fontSize: 'var(--text-xs)' }}>
                     {activeBrandLabel}
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 6-6 6 6 6"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
                   </span>
                 </button>
                 {brandSubOpen && (
