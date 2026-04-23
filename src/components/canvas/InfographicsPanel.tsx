@@ -519,25 +519,6 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
           </button>
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>Infographics</span>
 
-          {/* Chart-type segmented control */}
-          <div role="tablist" aria-label="Chart type"
-            style={{ display: 'inline-flex', padding: 2, borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)' }}>
-            {(['cards', 'bar', 'pie'] as const).map(t => (
-              <button key={t} role="tab" aria-selected={currentType === t}
-                onClick={() => setType(t)}
-                style={{
-                  padding: '4px 12px', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500,
-                  border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                  background: currentType === t ? 'var(--color-bg-card)' : 'transparent',
-                  color: currentType === t ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
-                  boxShadow: currentType === t ? 'var(--shadow-sm)' : 'none',
-                  textTransform: 'capitalize',
-                }}>
-                {t}
-              </button>
-            ))}
-          </div>
-
           <span style={{ flex: 1 }} />
           {hasHistory && <button onClick={undo} className="btn btn-sm btn-ghost">↩ Undo</button>}
           <button onClick={async () => {
