@@ -70,23 +70,23 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
   const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)', gap: 'var(--space-4)' }}>
-        <div style={{ fontSize: 56, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
-        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>Recording</div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)', gap: 'var(--space-5)', paddingBottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 0px))' }}>
+        <div style={{ fontSize: 64, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
+        <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>Recording</div>
         <div ref={transcriptRef} aria-live="polite"
-          style={{ width: '100%', maxWidth: 400, minHeight: 88, maxHeight: 240, overflowY: 'auto', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: liveText ? 'var(--color-text-primary)' : 'var(--color-text-disabled)', lineHeight: 1.5, textAlign: 'left', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere', boxSizing: 'border-box' }}>
+          style={{ width: '100%', maxWidth: 400, minHeight: 120, maxHeight: 260, overflowY: 'auto', padding: '14px 18px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-default)', fontFamily: 'var(--font-sans)', fontSize: 16, color: liveText ? 'var(--color-text-primary)' : 'var(--color-text-disabled)', lineHeight: 1.6, textAlign: 'left', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere', boxSizing: 'border-box' }}>
           {liveText || 'Listening…'}
         </div>
-      </div>
-      <div style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
-        <button onClick={onStop} aria-label="Stop and save"
-          style={{ width: 72, height: 72, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)' }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-        </button>
-        <button onClick={onCancel}
-          style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', padding: 'var(--space-2) var(--space-4)' }}>
-          Discard
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
+          <button onClick={onStop} aria-label="Stop and save"
+            style={{ width: 80, height: 80, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)', cursor: 'pointer' }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+          </button>
+          <button onClick={onCancel}
+            style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 16, padding: 'var(--space-2) var(--space-4)', minHeight: 44 }}>
+            Discard
+          </button>
+        </div>
       </div>
     </div>,
     document.body,
@@ -135,34 +135,34 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       style={{
         width: '100%', textAlign: 'left', background: 'var(--color-bg-card)',
         border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)',
-        padding: 'var(--space-3) var(--space-4)', display: 'grid',
+        padding: 'var(--space-4) var(--space-5)', display: 'grid',
         gridTemplateColumns: 'auto 1fr auto', alignItems: 'center',
-        columnGap: 'var(--space-3)', rowGap: 2, minHeight: 64,
+        columnGap: 'var(--space-4)', rowGap: 4, minHeight: 80,
         cursor: isTranscribing ? 'default' : 'pointer',
         opacity: isTranscribing ? 0.7 : 1, minWidth: 0, boxSizing: 'border-box',
         transition: 'border-color 100ms, background 100ms',
       }}
     >
-      {/* Design system status dot: 6×6 pinned left (row-span) */}
+      {/* Status dot — 8×8, pinned left spanning both rows */}
       <span aria-hidden style={{
-        gridRow: '1 / span 2', width: 6, height: 6, borderRadius: 'var(--radius-full)',
-        background: pillRoleMap[pill?.role ?? 'idle'].dot, flexShrink: 0, marginTop: 7,
+        gridRow: '1 / span 2', width: 8, height: 8, borderRadius: 'var(--radius-full)',
+        background: pillRoleMap[pill?.role ?? 'idle'].dot, flexShrink: 0, marginTop: 8,
       }} />
 
-      {/* Title — ui: 14/500/20px */}
+      {/* Title — 16/500/22px */}
       <span style={{
-        fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500,
-        lineHeight: '20px', color: 'var(--color-text-primary)',
+        fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 500,
+        lineHeight: '22px', color: 'var(--color-text-primary)',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
       }}>
         {displayTitle}
       </span>
 
-      {/* Status pill — design system recipe (20px tall, 6px dot + label) */}
+      {/* Status pill */}
       {pill ? (
         <span style={{
-          height: 20, display: 'inline-flex', alignItems: 'center', gap: 5,
-          padding: '0 8px', borderRadius: 'var(--radius-full)',
+          height: 24, display: 'inline-flex', alignItems: 'center', gap: 5,
+          padding: '0 10px', borderRadius: 'var(--radius-full)',
           background: pillRoleMap[pill.role].bg,
           border: `1px solid ${pillRoleMap[pill.role].border}`,
           fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500,
@@ -173,10 +173,10 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
         </span>
       ) : <span aria-hidden />}
 
-      {/* Metadata — small: 12/500/16px */}
+      {/* Metadata — 13/500/18px */}
       <span style={{
         gridColumn: '2 / span 2',
-        fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px',
+        fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: '18px',
         color: 'var(--color-text-tertiary)',
       }}>
         {meta}
@@ -662,13 +662,13 @@ export default function MobileHome() {
       )}
 
       {/* Header — heading token (16/500/22), supportive subtitle in tertiary */}
-      <header style={{ padding: 'var(--space-4) var(--space-4) var(--space-3)', flexShrink: 0, minWidth: 0 }}>
+      <header style={{ padding: 'var(--space-5) var(--space-5) var(--space-4)', flexShrink: 0, minWidth: 0 }}>
         <h1 style={{
-          margin: 0, fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 500, lineHeight: '28px',
+          margin: 0, fontFamily: 'var(--font-sans)', fontSize: 26, fontWeight: 600, lineHeight: '32px',
           color: 'var(--color-text-primary)', letterSpacing: '-0.02em', wordBreak: 'break-word',
         }}>Voice Notes</h1>
         <p style={{
-          margin: '4px 0 0', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: '20px',
+          margin: '6px 0 0', fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 400, lineHeight: '22px',
           color: 'var(--color-text-tertiary)', wordBreak: 'break-word',
         }}>
           Record an idea and turn it into a LinkedIn post or tweet.
@@ -676,7 +676,7 @@ export default function MobileHome() {
       </header>
 
       {/* Scrollable notes list */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 var(--space-4) 140px', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minWidth: 0 }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 var(--space-5) 160px', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', minWidth: 0 }}>
         {!hasKey && (
           <div role="status" style={{
             padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-xl)',
@@ -757,7 +757,7 @@ export default function MobileHome() {
       {/* Sticky record button */}
       <div style={{ position: 'absolute', bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
         <div style={{ pointerEvents: 'auto' }}>
-          <RecordButton size={88} onClick={startRecording} state="idle" />
+          <RecordButton size={96} onClick={startRecording} state="idle" />
         </div>
       </div>
 
