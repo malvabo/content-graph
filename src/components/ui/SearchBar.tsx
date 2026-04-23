@@ -1,0 +1,68 @@
+import { useRef, type InputHTMLAttributes } from 'react';
+
+const SearchIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="11" cy="11" r="8"/>
+    <path d="m21 21-4.3-4.3"/>
+  </svg>
+);
+
+interface SearchBarProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+  onValueChange?: (value: string) => void;
+}
+
+export default function SearchBar({ onValueChange, onChange, placeholder = 'Search...', ...rest }: SearchBarProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div
+      onClick={() => inputRef.current?.focus()}
+      style={{
+        display: 'flex',
+        alignItems: 'stretch',
+        height: 34,
+        background: 'var(--color-bg-card)',
+        border: '1px solid var(--color-border-default)',
+        borderRadius: 'var(--radius-full)',
+        minWidth: 280,
+        overflow: 'hidden',
+        transition: 'border-color var(--duration-medium)',
+        cursor: 'text',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border-strong)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border-default)'; }}
+      onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-accent)'; }}
+      onBlurCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border-default)'; }}
+    >
+      <span style={{
+        flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 38,
+        color: 'var(--color-text-disabled)',
+        background: 'var(--color-bg-surface)',
+      }}>
+        <SearchIcon />
+      </span>
+      <input
+        ref={inputRef}
+        type="search"
+        placeholder={placeholder}
+        onChange={e => { onChange?.(e); onValueChange?.(e.target.value); }}
+        style={{
+          flex: 1,
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          fontSize: 'var(--text-sm)',
+          fontFamily: 'var(--font-sans)',
+          color: 'var(--color-text-primary)',
+          padding: '0 14px 0 8px',
+        }}
+        {...rest}
+      />
+    </div>
+  );
+}
