@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { NODE_DEFS, BADGE_COLORS, CATEGORY_LABELS, type NodeDef } from '../../utils/nodeDefs';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import type { NodeCategory } from '../../store/graphStore';
+import SearchBar from '../ui/SearchBar';
 
 const ORDER: NodeCategory[] = ['source', 'generate', 'output', 'transform'];
 
@@ -32,7 +33,7 @@ export default function MobileNodePicker({ onAdd, onClose }: { onAdd: (def: Node
 
         {/* Search */}
         <div style={{ padding: '0 var(--space-4) var(--space-2)' }}>
-          <input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder="Search nodes…" className="form-input" style={{ fontSize: 16 }} />
+          <SearchBar autoFocus value={search} onValueChange={setSearch} placeholder="Search nodes…" style={{ fontSize: 16 }} />
         </div>
 
         {/* List */}

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { NODE_DEFS, BADGE_COLORS, type NodeDef } from '../../utils/nodeDefs';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
+import SearchBar from '../ui/SearchBar';
 
 interface Props { x: number; y: number; flowX: number; flowY: number; onClose: () => void; onSelect: (def: NodeDef) => void }
 
@@ -17,7 +18,6 @@ export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }:
     d.category.includes(query.toLowerCase())
   );
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
   useEffect(() => { setIdx(0); }, [query]);
 
   const place = (def: NodeDef) => {
@@ -42,14 +42,16 @@ export default function NodeSpotlight({ x, y, flowX, flowY, onClose, onSelect }:
   return (
     <div className="absolute z-50" style={{ left: x - 130, top: y - 20 }} onClick={(e) => e.stopPropagation()}>
       <div className="w-[260px] bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-xl shadow-lg overflow-hidden">
-        <input
-          ref={inputRef}
-          className="form-input" style={{ borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none' }}
-          placeholder="Search nodes..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={onKeyDown}
-        />
+        <div style={{ padding: 'var(--space-2)' }}>
+          <SearchBar
+            ref={inputRef}
+            value={query}
+            onValueChange={setQuery}
+            onKeyDown={onKeyDown}
+            placeholder="Search nodes..."
+            autoFocus
+          />
+        </div>
         <div className="max-h-[280px] overflow-y-auto py-1">
           {filtered.length === 0 && (
             <div className="px-3 py-2 text-xs text-[var(--color-text-placeholder)]">No nodes found</div>
