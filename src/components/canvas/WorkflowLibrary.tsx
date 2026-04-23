@@ -57,7 +57,13 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
     onOpen();
   };
   const confirmDelete = async () => { if (!deleteId) return; setItems(p => p.filter(i => i.id !== deleteId)); setDeleteId(null); await deleteWorkflow(deleteId); };
-  const handleRename = async (id: string, newName: string) => { setItems(p => p.map(i => i.id === id ? { ...i, name: newName } : i)); const item = items.find(i => i.id === id); if (item) await saveWorkflow({ ...item, name: newName }); };
+  const handleRename = async (id: string, newName: string) => {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    const renamed: SavedWorkflow = { ...item, name: newName };
+    setItems(p => p.map(i => i.id === id ? renamed : i));
+    await saveWorkflow(renamed);
+  };
   const handleDuplicate = async (item: SavedWorkflow) => { const dup: SavedWorkflow = { ...item, id: `wf-${Date.now()}`, name: `${item.name} (copy)`, savedAt: new Date().toISOString() }; setItems(p => [...p, dup]); await saveWorkflow(dup); setMenuId(null); };
   const handleNew = () => { clearGraph(); setGraphName('Untitled'); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); onOpen(); };
   const handleLoadTemplate = (idx: number) => {
@@ -130,42 +136,50 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         )}
 
-        {/* Feature block: intro + 2x2 starter grid */}
-        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
-          <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Get started with Workflows</h2>
-          <p style={{ margin: 'var(--space-2) 0 var(--space-5)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: 560 }}>
-            Connect nodes to turn one piece of content into LinkedIn posts, newsletters, threads, infographics, and more — all in one graph.
-          </p>
+        {/* Feature block */}
+        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'start', marginBottom: 'var(--space-6)' }}>
+          {/* Left: title + description + 3 starters */}
+          <div>
+            <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Get started with Workflows</h2>
+            <p style={{ margin: 'var(--space-2) 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
+              Connect nodes to turn one piece of content into LinkedIn posts, newsletters, threads, infographics, and more.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              {([
+                { title: 'From template', description: 'Start from a curated workflow', onClick: () => setPickerOpen(true) },
+                { title: 'Blank workflow', description: 'Open an empty canvas', onClick: handleNew },
+                { title: 'Paste content', description: 'Paste an article or transcript as source', onClick: () => setPasting(true) },
+              ] as const).map(s => (
+                <button key={s.title} onClick={s.onClick}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+                    textAlign: 'left', padding: 'var(--space-3) var(--space-4)',
+                    borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)',
+                    background: 'var(--color-bg-card)', fontFamily: 'var(--font-sans)',
+                    cursor: 'pointer', transition: 'border-color 150ms',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>{s.title}</div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>{s.description}</div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: 'var(--color-text-tertiary)', flexShrink: 0 }}><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              ))}
+            </div>
+          </div>
 
-          {(() => {
-            type Starter = { title: string; description: string; onClick: () => void };
-            const starters: Starter[] = [
-              { title: 'From template', description: 'Start from a curated workflow for repurposing, research, or transcripts', onClick: () => setPickerOpen(true) },
-              { title: 'Blank workflow', description: 'Open an empty canvas and wire your own nodes together', onClick: handleNew },
-              { title: 'Paste content', description: 'Paste an article, transcript, or notes as the source for a new graph', onClick: () => setPasting(true) },
-              { title: 'Learn the basics', description: 'Watch a short tour of nodes, edges, and running workflows', onClick: () => {} },
-            ];
-            return (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
-                {starters.map(s => (
-                  <button key={s.title} onClick={s.onClick}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start',
-                      whiteSpace: 'normal', textAlign: 'left',
-                      padding: 'var(--space-4) var(--space-5)',
-                      borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)',
-                      background: 'var(--color-bg-card)', fontFamily: 'var(--font-sans)',
-                      cursor: 'pointer', transition: 'border-color 150ms, background 150ms',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
-                    <div style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 6 }}>{s.title}</div>
-                    <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>{s.description}</div>
-                  </button>
-                ))}
+          {/* Right: nodes diagram */}
+          <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minHeight: 180 }}>
+            {['Article', 'LinkedIn post', 'Newsletter', 'Thread'].map((label, i) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginLeft: i === 0 ? 0 : 16 }}>
+                {i > 0 && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>}
+                <span style={{ display: 'inline-flex', padding: '6px 12px', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)' }}>{label}</span>
               </div>
-            );
-          })()}
+            ))}
+          </div>
+        </div>
 
           {pasting && (
             <div style={{ marginTop: 'var(--space-5)' }}>
@@ -182,7 +196,6 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
               </div>
             </div>
           )}
-        </div>
 
         {/* Table */}
         {loading ? (
@@ -225,7 +238,8 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     <td style={{ padding: '14px 12px', width: 40, position: 'relative' }} onClick={e => e.stopPropagation()}>
                       <div role="button" tabIndex={0} aria-label="More options"
                         style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', cursor: 'pointer' }}
-                        onClick={() => setMenuId(menuId === item.id ? null : item.id)}>
+                        onClick={() => setMenuId(menuId === item.id ? null : item.id)}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMenuId(menuId === item.id ? null : item.id); } }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                       </div>
                       {menuId === item.id && (
