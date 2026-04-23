@@ -157,6 +157,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 }
 .btn-link:hover { color: var(--color-accent-active); }
 
+.search-bar-input:focus {
+  outline: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}  
+
 /* ── Typography classes ── */
 .text-eyebrow {
   font: var(--weight-medium) var(--text-xs)/var(--leading-none) var(--font-sans);
