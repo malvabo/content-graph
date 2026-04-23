@@ -466,8 +466,14 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   background: transparent;
   border: none;
   outline: none;
+  box-shadow: none;
   font-size: 14px;
   color: #18181b;
   padding: 0 14px 0 8px;
+}
+.search-bar__input:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 .search-bar__input::placeholder { color: #a1a1aa; }
