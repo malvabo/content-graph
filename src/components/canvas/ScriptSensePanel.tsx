@@ -136,6 +136,8 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg-card)', position: 'relative' }}>
+      {/* Hairline separator between the floating title bar and the iframe */}
+      <div aria-hidden style={{ position: 'absolute', top: 48, left: 0, right: 0, height: 1, background: 'var(--color-border-subtle)', zIndex: 5, pointerEvents: 'none' }} />
       {/* Top-left: back + inline name (matches CanvasToolbar) */}
       <div className="absolute top-2 left-2 md:top-3 md:left-3 z-10 flex items-center gap-2">
         {onBack && (
