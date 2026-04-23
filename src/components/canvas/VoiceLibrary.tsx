@@ -113,26 +113,6 @@ const fmtDate = (iso: string) => {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
-/** Bucket notes into date groups for the header-separated list.
- *  Order preserved so groups show up top-to-bottom: Today → Yesterday → Earlier this week → This month → Older. */
-function groupNotesByDate<T extends { createdAt: string }>(notes: T[]): { label: string; items: T[] }[] {
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const startOfYesterday = startOfToday - 86400000;
-  const startOfWeek = startOfToday - 6 * 86400000;
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-  const buckets: Record<string, T[]> = { Today: [], Yesterday: [], 'Earlier this week': [], 'This month': [], Older: [] };
-  for (const n of notes) {
-    const t = new Date(n.createdAt).getTime();
-    if (t >= startOfToday) buckets.Today.push(n);
-    else if (t >= startOfYesterday) buckets.Yesterday.push(n);
-    else if (t >= startOfWeek) buckets['Earlier this week'].push(n);
-    else if (t >= startOfMonth) buckets['This month'].push(n);
-    else buckets.Older.push(n);
-  }
-  return Object.entries(buckets).filter(([, items]) => items.length > 0).map(([label, items]) => ({ label, items }));
-}
-
 /** Deterministic ~32-bar waveform derived from the note id.
  *  Decorative: no real FFT — just gives each row a unique-looking sparkline. */
 function Waveform({ seed, durationMs, width = 104, height = 20 }: { seed: string; durationMs: number; width?: number; height?: number }) {
@@ -656,19 +636,12 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             {errorMsg && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)' }}>{errorMsg}</div>}
           </div>
         ) : (
-          // Date-grouped rows: TODAY / YESTERDAY / … sections separated by tag-style labels.
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-            {groupNotesByDate([...notes].filter(n => n.status !== 'recording').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())).map(group => (
-              <section key={group.label} aria-labelledby={`grp-${group.label}`}>
-                <div id={`grp-${group.label}`} style={{
-                  // Matches the "N notes" count in the hero: 14/400/20 sans tertiary.
-                  fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: '20px',
-                  color: 'var(--color-text-tertiary)', padding: '0 0 var(--space-2) var(--space-4)',
-                }}>
-                  {group.label}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                  {group.items.map(note => {
+          // Flat reverse-chrono list — no date group headers.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            {[...notes]
+              .filter(n => n.status !== 'recording')
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .map(note => {
                     const isError = note.status === 'error';
                     const isTranscribing = note.status === 'transcribing';
                     const isAudioOnly = note.status === 'ready' && !note.transcript;
@@ -806,9 +779,6 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                       </div>
                     );
                   })}
-                </div>
-              </section>
-            ))}
           </div>
         )}
       </div>
