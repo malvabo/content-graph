@@ -227,7 +227,7 @@
   --color-dot: var(--p-neutral-300);
   --color-edge: var(--p-neutral-400);
   --dot-gap: 12px;
-  --dot-size: 1.5px;
+  --dot-size: 0.8px;
   --color-edge-source: #8BA8C0;
   --color-edge-generate: #5CB87A;
   --color-edge-transform: #9E84B0;
