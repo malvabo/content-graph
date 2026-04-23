@@ -43,7 +43,7 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
             <button className="btn btn-primary" onClick={handleNew} style={{ padding: '10px 24px', fontSize: 'var(--text-sm)' }}><PlusIcon /> Create your first set</button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
             {sets.map(set => (
               <div key={set.id}
                 style={{

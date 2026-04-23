@@ -115,7 +115,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
 
         {/* Loading */}
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-4)' }}>
             {[0,1,2].map(i => <div key={i} className="skeleton-bar" style={{ height: 156, borderRadius: 'var(--radius-lg)' }} />)}
           </div>
 
@@ -166,7 +166,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             <div style={{ textAlign: 'center', marginBottom: 'var(--space-5)' }}>
               <h3 style={{ margin: 0, fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>Start with a popular template</h3>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)', paddingBottom: 'var(--space-6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-4)', paddingBottom: 'var(--space-6)' }}>
               {TEMPLATES.map((t, i) => {
                 const { nodes: n } = t.build();
                 const nodeLabels = n.slice(0, 2).map(nd => nd.data.label);
@@ -184,7 +184,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
 
         /* Grid */
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-4)' }}>
             {items.map(item => {
               const { visible, remaining } = chipList(item);
               return (

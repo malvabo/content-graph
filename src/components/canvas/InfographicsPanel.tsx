@@ -430,7 +430,7 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
               <button className="btn btn-primary" onClick={createNew}>+ Create infographic</button>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-4)' }}>
               {items.map(item => {
                 const data = parseInfographicData(item.json);
                 const title = data?.title || item.label || 'Untitled';
