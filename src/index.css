@@ -453,7 +453,6 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   width: 38px;
   color: var(--color-text-tertiary);
   background: transparent;
-  border-right: 1px solid var(--color-border-default);
 }
 .search-bar__input {
   flex: 1;
@@ -463,6 +462,6 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   font-family: var(--font-sans);
   font-size: var(--text-sm);
   color: var(--color-text-primary);
-  padding: 0 14px;
+  padding: 0 14px 0 0;
 }
 .search-bar__input::placeholder { color: var(--color-text-tertiary); }
