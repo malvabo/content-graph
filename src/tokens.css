@@ -104,6 +104,7 @@
 
   /* ── Left nav (floating panel) ── */
   --color-nav-bg: #eef0eb;            /* warm near-white panel */
+  --color-nav-text: #000000;
   --color-nav-item-active: #ffffff;   /* pure white raised pill for contrast against #fafafa */
   --color-nav-item-hover: rgba(0, 0, 0, 0.04);
 
@@ -257,6 +258,7 @@
 /* ── Dark Mode (manual toggle) ── */
 :root.dark {
   --color-nav-bg: #1c1c1d;            /* neutral near-black panel */
+  --color-nav-text: #a4a4ad;
   --color-nav-item-active: #26262a;   /* raised pill on the nav */
   --color-nav-item-hover: rgba(230, 230, 230, 0.06);
   --color-bg: #0f0f0f;

@@ -78,6 +78,7 @@ Raw values; avoid referencing directly — use the semantic tokens below.
 | Token | Light | Dark |
 |-------|-------|------|
 | `--color-nav-bg` | `#eef0eb` | `#1c1c1d` |
+| `--color-nav-text` | `#000000` | `#a4a4ad` |
 | `--color-nav-item-active` | `#f8fafc` | `#26262a` |
 | `--color-nav-item-hover` | `rgba(220,228,240,.55)` | `rgba(230,230,230,.06)` |
 
