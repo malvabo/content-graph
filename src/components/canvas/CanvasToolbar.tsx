@@ -46,6 +46,9 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
   const [menuOpen, setMenuOpen] = useState(false);
   const [brandSubOpen, setBrandSubOpen] = useState(false);
   const gearRef = useRef<HTMLDivElement>(null);
+  const brandCloseTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const openBrandSub = () => { clearTimeout(brandCloseTimer.current); setBrandSubOpen(true); };
+  const closeBrandSub = () => { brandCloseTimer.current = setTimeout(() => setBrandSubOpen(false), 150); };
 
   useAutoSaveWorkflow();
 
@@ -185,15 +188,17 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
 
                 {/* Brand submenu */}
                 <div style={{ position: 'relative' }}
-                  onMouseEnter={() => setBrandSubOpen(true)}
-                  onMouseLeave={() => setBrandSubOpen(false)}>
+                  onMouseEnter={openBrandSub}
+                  onMouseLeave={closeBrandSub}>
                   <MenuItem
                     onClick={() => setBrandSubOpen(o => !o)}
                     right={<>{activeBrandLabel}<Chevron /></>}>
                     Brand
                   </MenuItem>
                   {brandSubOpen && (
-                    <Menu style={{ position: 'absolute', top: 0, right: 'calc(100% + 6px)', zIndex: 51, minWidth: 200 }}>
+                    <Menu style={{ position: 'absolute', top: 0, right: 'calc(100% + 6px)', zIndex: 51, minWidth: 200 }}
+                      onMouseEnter={openBrandSub}
+                      onMouseLeave={closeBrandSub}>
                       <MenuItem icon={<Dot on={!brandId} />}
                         onClick={() => { setBrandId(null); setBrandSubOpen(false); setMenuOpen(false); }}>
                         Default
