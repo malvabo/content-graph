@@ -434,14 +434,13 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
    focus-within to signal active state per design system. */
 .search-bar {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: stretch;
   height: 34px;
-  padding: 0 14px;
   background: var(--color-bg-card);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-full);
   min-width: 280px;
+  overflow: hidden;
   transition: border-color 150ms;
 }
 .search-bar:hover { border-color: var(--color-border-strong); }
@@ -451,8 +450,10 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 38px;
   color: var(--color-text-tertiary);
   background: transparent;
+  border-right: 1px solid var(--color-border-default);
 }
 .search-bar__input {
   flex: 1;
@@ -462,6 +463,6 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   font-family: var(--font-sans);
   font-size: var(--text-sm);
   color: var(--color-text-primary);
-  padding: 0;
+  padding: 0 14px;
 }
 .search-bar__input::placeholder { color: var(--color-text-tertiary); }
