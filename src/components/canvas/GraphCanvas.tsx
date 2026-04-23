@@ -16,7 +16,6 @@ import { useConnectionValidation } from '../../hooks/useConnectionValidation';
 import ContextMenu, { useContextMenu } from './ContextMenu';
 import NodePalette from './NodePalette';
 import NodeSpotlight from './NodeSpotlight';
-import ExecutionHUD from './ExecutionHUD';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { aiExecute } from '../../utils/aiExecutor';
 import type { NodeDef } from '../../utils/nodeDefs';
@@ -148,7 +147,6 @@ export default function GraphCanvas() {
         style={{ background: 'var(--color-bg)' }}>
         <DotSpotlight />
         <RunWaveOverlay />
-        <ExecutionHUD />
         <Controls showInteractive={false} position="bottom-right" />
         {showMinimap && <MiniMap position="bottom-right" pannable zoomable nodeColor="var(--color-border-strong)" maskColor="var(--color-overlay-backdrop)" style={{ width: 120, height: 80, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', right: 60, background: 'var(--color-bg-surface)' }} />}
       </ReactFlow>
