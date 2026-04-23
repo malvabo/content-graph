@@ -317,7 +317,7 @@ export default function SettingsPanel() {
 
       {/* Content */}
       <div className="flex-1" style={{ overflowY: 'auto', padding: 'var(--space-6)' }}>
-        <div style={{ width: '100%', maxWidth: 960, marginInline: 'auto' }}>
+        <div style={{ width: '100%' }}>
           {active === 'brand-kits' && <BrandKitsSection />}
           {active === 'appearance' && <AppearanceSection />}
           {active === 'api-keys' && <APIKeysSection />}
