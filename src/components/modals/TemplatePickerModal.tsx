@@ -27,7 +27,7 @@ export default function TemplatePickerModal({ onClose, onStartScratch, onPickTem
       onClick={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)', animation: 'fadeIn 150ms ease-out' }}>
       <div onClick={e => e.stopPropagation()}
-        style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: 1100, maxHeight: '90vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-sans)', animation: 'modalEnter 150ms ease-out' }}>
+        style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: 1100, height: 640, maxHeight: 'calc(100vh - 48px)', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-sans)', animation: 'modalEnter 150ms ease-out' }}>
         {/* Header */}
         <div style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)' }}>
           <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Start with a template</h2>
