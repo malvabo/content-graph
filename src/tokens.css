@@ -225,7 +225,7 @@
 
   /* ── Edge/dot ── */
   --color-dot: var(--p-neutral-300);
-  --color-edge: var(--p-neutral-500);
+  --color-edge: var(--p-neutral-400);
   --dot-gap: 12px;
   --dot-size: 0.12px;
   --color-edge-source: #8BA8C0;
@@ -308,7 +308,7 @@
   --color-overlay-dark: rgba(255,255,255,0.03);
   --color-overlay-backdrop: rgba(0,0,0,0.70);
   --color-dot: #3a3a42;
-  --color-edge: #5a5a64;
+  --color-edge: #4a4a54;
   --color-edge-source: #4A6878;
   --color-edge-generate: #2D7048;
   --color-edge-transform: #624878;

@@ -23,7 +23,7 @@ import type { NodeDef } from '../../utils/nodeDefs';
 
 const nodeTypes = { contentNode: BaseNode };
 const edgeTypes = { deletable: DeletableEdge };
-const defaultEdgeOptions = { type: 'deletable', style: { stroke: 'var(--color-edge)', strokeWidth: 1.5 } };
+const defaultEdgeOptions = { type: 'deletable', style: { stroke: 'var(--color-edge)', strokeWidth: 1.25, strokeDasharray: '4 4' } };
 
 export default function GraphCanvas() {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId, setConnectingNodeId, addNode } = useGraphStore();
