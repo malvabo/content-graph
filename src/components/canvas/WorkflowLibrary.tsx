@@ -6,7 +6,6 @@ import { loadWorkflows, deleteWorkflow, saveWorkflow, type SavedWorkflow } from 
 import { TEMPLATES } from '../../utils/templates';
 import { NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
-import GraphThumb from '../ui/GraphThumb';
 
 import TemplatePickerModal from '../modals/TemplatePickerModal';
 
@@ -29,6 +28,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   const [items, setItems] = useState<SavedWorkflow[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { setNodes, setEdges, setGraphName, addNode } = useGraphStore();
   const { autoLayout } = useGraphLayout();
@@ -171,113 +171,73 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         </div>
 
-        {/* Card grid */}
+        {/* Table */}
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-4)' }}>
-            {[0, 1, 2].map(i => (
-              <div key={i} className="skeleton-bar" style={{ height: 200, borderRadius: 'var(--radius-lg)' }} />
-            ))}
-          </div>
+          <div className="skeleton-bar" style={{ height: 200, borderRadius: 'var(--radius-lg)' }} />
         ) : filtered.length === 0 ? (
           <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
             {query ? 'No workflows match your search.' : 'No workflows yet. Create one to get started.'}
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-4)' }}>
-            {filtered.map(item => {
-              const { visible, remaining } = chipList(item);
-              const hasNodes = item.nodes.length > 0;
-              const state: 'saved' | 'draft' = hasNodes ? 'saved' : 'draft';
-              const dotColor = state === 'saved' ? 'var(--color-accent)' : 'var(--p-neutral-450)';
-              const stateLabel = state === 'saved' ? 'Saved' : 'Draft';
-              return (
-                <div key={item.id}
-                  role="button" tabIndex={0}
-                  onClick={() => handleLoad(item)}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLoad(item); } }}
-                  style={{
-                    position: 'relative',
-                    display: 'flex', flexDirection: 'column',
-                    borderRadius: 'var(--radius-lg)',
-                    border: '1px solid var(--color-border-default)',
-                    background: 'var(--color-bg-card)',
-                    cursor: 'pointer', textAlign: 'left', overflow: 'hidden',
-                    transition: 'border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = 'var(--color-border-strong)';
-                    e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'var(--color-border-default)';
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}>
-                  {/* Thumbnail band */}
-                  <div style={{ background: 'var(--color-bg-surface)', borderBottom: '1px solid var(--color-border-subtle)', padding: '8px 0', minHeight: 88 }}>
-                    {hasNodes ? (
-                      <GraphThumb nodes={item.nodes as any} edges={item.edges as any} height={72} />
-                    ) : (
-                      <div style={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-xs)' }}>
-                        Empty workflow
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-sans)' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Name</th>
+                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>State</th>
+                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Updated</th>
+                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Steps</th>
+                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Flow</th>
+                <th style={{ width: 40 }} />
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(item => {
+                const { visible, remaining } = chipList(item);
+                const hasNodes = item.nodes.length > 0;
+                const stateLabel = hasNodes ? 'Saved' : 'Draft';
+                return (
+                  <tr key={item.id}
+                    onClick={() => handleLoad(item)}
+                    onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}
+                    style={{ borderTop: '1px solid var(--color-border-subtle)', cursor: 'pointer', background: hoverId === item.id ? 'var(--color-bg-surface)' : 'transparent', transition: 'background 100ms' }}>
+                    <td style={{ padding: '14px 12px', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>{item.name}</td>
+                    <td style={{ padding: '14px 12px' }}>
+                      <span style={{ display: 'inline-flex', padding: '2px 10px', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>{stateLabel}</span>
+                    </td>
+                    <td style={{ padding: '14px 12px', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>{fmt(item.savedAt)}</td>
+                    <td style={{ padding: '14px 12px', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>{item.nodes.length}</td>
+                    <td style={{ padding: '14px 12px', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+                      {visible.join(' → ')}{remaining > 0 && ` +${remaining}`}
+                    </td>
+                    <td style={{ padding: '14px 12px', width: 40, position: 'relative' }} onClick={e => e.stopPropagation()}>
+                      <div role="button" tabIndex={0} aria-label="More options"
+                        style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', cursor: 'pointer' }}
+                        onClick={() => setMenuId(menuId === item.id ? null : item.id)}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Menu button overlay */}
-                  <div style={{ position: 'absolute', top: 8, right: 8 }} onClick={e => e.stopPropagation()}>
-                    <button aria-label="More options"
-                      onClick={() => setMenuId(menuId === item.id ? null : item.id)}
-                      style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', background: 'var(--color-overlay-light)', backdropFilter: 'blur(4px)', border: '1px solid var(--color-border-subtle)', cursor: 'pointer' }}
-                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                    </button>
-                    {menuId === item.id && (
-                      <div ref={menuRef} className="dropdown-fade"
-                        style={{ position: 'absolute', top: 32, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
-                        {[
-                          { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
-                          { label: 'Duplicate', action: () => handleDuplicate(item) },
-                          { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
-                        ].map(opt => (
-                          <button key={opt.label} onClick={opt.action}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Body */}
-                  <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.name}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', lineHeight: 1.4 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: dotColor, flexShrink: 0 }} />
-                        {stateLabel}
-                      </span>
-                      <span>·</span>
-                      <span>{item.nodes.length} step{item.nodes.length === 1 ? '' : 's'}</span>
-                      <span>·</span>
-                      <span>{fmt(item.savedAt)}</span>
-                    </div>
-                    {visible.length > 0 && (
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.4 }}>
-                        {visible.join(' → ')}{remaining > 0 && ` +${remaining}`}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      {menuId === item.id && (
+                        <div ref={menuRef}
+                          style={{ position: 'absolute', top: 32, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
+                          {[
+                            { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
+                            { label: 'Duplicate', action: () => handleDuplicate(item) },
+                            { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
+                          ].map(opt => (
+                            <button key={opt.label} onClick={opt.action}
+                              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
 
