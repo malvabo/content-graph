@@ -31,7 +31,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   const [menuId, setMenuId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { setNodes, setEdges, setGraphName, addNode } = useGraphStore();
+  const { setNodes, setEdges, setGraphName, addNode, clearGraph } = useGraphStore();
   const { autoLayout } = useGraphLayout();
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -59,7 +59,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   const confirmDelete = async () => { if (!deleteId) return; setItems(p => p.filter(i => i.id !== deleteId)); setDeleteId(null); await deleteWorkflow(deleteId); };
   const handleRename = async (id: string, newName: string) => { setItems(p => p.map(i => i.id === id ? { ...i, name: newName } : i)); const item = items.find(i => i.id === id); if (item) await saveWorkflow({ ...item, name: newName }); };
   const handleDuplicate = async (item: SavedWorkflow) => { const dup: SavedWorkflow = { ...item, id: `wf-${Date.now()}`, name: `${item.name} (copy)`, savedAt: new Date().toISOString() }; setItems(p => [...p, dup]); await saveWorkflow(dup); setMenuId(null); };
-  const handleNew = () => { setNodes([]); setEdges([]); setGraphName('Untitled'); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); onOpen(); };
+  const handleNew = () => { clearGraph(); setGraphName('Untitled'); useExecutionStore.getState().resetAll(); useOutputStore.getState().clearAll(); onOpen(); };
   const handleLoadTemplate = (idx: number) => {
     const { nodes: n, edges: e } = TEMPLATES[idx].build();
     const trimmed = pasteText.trim();
