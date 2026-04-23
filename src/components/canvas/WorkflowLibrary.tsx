@@ -9,6 +9,7 @@ import { NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
 
 import TemplatePickerModal from '../modals/TemplatePickerModal';
+import GraphSchematic from '../ui/GraphSchematic';
 
 function makeSourceNode(content: string): ContentNode {
   const def = NODE_DEFS_BY_SUBTYPE['text-source'];
@@ -170,15 +171,30 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             </div>
           </div>
 
-          {/* Right: nodes diagram */}
-          <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minHeight: 180 }}>
-            {['Article', 'LinkedIn post', 'Newsletter', 'Thread'].map((label, i) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginLeft: i === 0 ? 0 : 16 }}>
-                {i > 0 && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>}
-                <span style={{ display: 'inline-flex', padding: '6px 12px', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)' }}>{label}</span>
-              </div>
-            ))}
-          </div>
+          {/* Right: example template preview — mirrors the TemplateCard visual */}
+          {(() => {
+            const t = TEMPLATES[0];
+            if (!t) return <div />;
+            const { nodes: n, edges: e } = t.build();
+            return (
+              <button onClick={() => handleLoadTemplate(0)}
+                style={{
+                  background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)',
+                  borderRadius: 'var(--radius-lg)', overflow: 'hidden', cursor: 'pointer',
+                  textAlign: 'left', display: 'flex', flexDirection: 'column',
+                  transition: 'border-color 150ms, box-shadow 150ms, transform 150ms',
+                }}
+                onMouseEnter={ev => { ev.currentTarget.style.borderColor = 'var(--color-border-strong)'; ev.currentTarget.style.boxShadow = 'var(--shadow-sm)'; ev.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={ev => { ev.currentTarget.style.borderColor = 'var(--color-border-subtle)'; ev.currentTarget.style.boxShadow = 'none'; ev.currentTarget.style.transform = 'translateY(0)'; }}>
+                <GraphSchematic nodes={n} edges={e} background="var(--color-bg-card)" />
+                <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', lineHeight: 1.4 }}>{t.name}</div>
+                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', lineHeight: 1.4 }}>{t.category} · {n.length} steps</div>
+                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginTop: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t.description}</div>
+                </div>
+              </button>
+            );
+          })()}
         </div>
 
           {pasting && (

@@ -74,9 +74,11 @@ interface Props {
   edges?: GraphEdge[]; // reserved; current layout uses linear order
   maxVisible?: number;
   height?: number;
+  background?: string;
+  showBorder?: boolean;
 }
 
-export default function GraphSchematic({ nodes, maxVisible = 3, height = 124 }: Props) {
+export default function GraphSchematic({ nodes, maxVisible = 3, height = 124, background = 'var(--color-bg-surface)', showBorder = true }: Props) {
   if (!nodes || nodes.length === 0) return null;
   // Order by x position so the chain reads left→right like the canvas.
   const ordered = [...nodes].sort((a, b) => a.position.x - b.position.x);
@@ -85,8 +87,8 @@ export default function GraphSchematic({ nodes, maxVisible = 3, height = 124 }: 
 
   return (
     <div style={{
-      height, padding: '12px 16px', background: 'var(--color-bg-surface)',
-      borderBottom: '1px solid var(--color-border-subtle)',
+      height, padding: '12px 16px', background,
+      borderBottom: showBorder ? '1px solid var(--color-border-subtle)' : 'none',
       display: 'flex', alignItems: 'center', gap: 8,
       overflow: 'hidden', position: 'relative',
     }}>
