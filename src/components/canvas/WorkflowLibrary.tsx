@@ -149,7 +149,14 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
                 {starters.map(s => (
                   <button key={s.title} onClick={s.onClick}
-                    style={{ textAlign: 'left', padding: 'var(--space-4) var(--space-5)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', fontFamily: 'var(--font-sans)', cursor: 'pointer', transition: 'border-color 150ms, background 150ms' }}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start',
+                      whiteSpace: 'normal', textAlign: 'left',
+                      padding: 'var(--space-4) var(--space-5)',
+                      borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)',
+                      background: 'var(--color-bg-card)', fontFamily: 'var(--font-sans)',
+                      cursor: 'pointer', transition: 'border-color 150ms, background 150ms',
+                    }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
                     <div style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 6 }}>{s.title}</div>
