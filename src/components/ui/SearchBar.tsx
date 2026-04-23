@@ -62,10 +62,13 @@ const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
             background: 'transparent',
             border: 'none',
             outline: 'none',
+            boxShadow: 'none',
+            borderColor: 'transparent',
             fontSize: 'var(--text-sm)',
             fontFamily: 'var(--font-sans)',
             color: 'var(--color-text-primary)',
             padding: '0 14px 0 8px',
+
           }}
           {...rest}
         />
