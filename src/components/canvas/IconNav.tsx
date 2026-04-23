@@ -169,7 +169,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
               transition: 'opacity 120ms ease',
             }}
           >
-            up
+            UP150
           </span>
         </div>
 
