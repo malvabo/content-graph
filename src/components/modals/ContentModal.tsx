@@ -146,7 +146,7 @@ function TwitterThreadModal({ title, text, onClose, onSave, onRegenerate }: Cont
             return (
               <div key={tweetIds[i]} draggable onDragStart={() => onDragStart(i)} onDragOver={e => onDragOver(e, i)} onDragEnd={onDragEnd}
                 style={{
-                  background: 'var(--color-bg-surface)',
+                  background: 'var(--color-bg-card)',
                   border: `1px solid ${over ? 'var(--color-danger-border)' : 'var(--color-border-default)'}`,
                   borderRadius: 'var(--radius-lg)', overflow: 'hidden',
                   transition: 'border-color 150ms, box-shadow 150ms',
@@ -237,7 +237,7 @@ function LinkedInModal({ title, text, onClose, onSave, onRegenerate }: ContentMo
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
 
         {/* Above fold */}
-        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: splitAt > 0 ? 'var(--radius-lg) var(--radius-lg) 0 0' : 'var(--radius-lg)', transition: 'border-color 150ms' }}>
+        <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: splitAt > 0 ? 'var(--radius-lg) var(--radius-lg) 0 0' : 'var(--radius-lg)', transition: 'border-color 150ms' }}>
           <textarea ref={aboveRef} value={aboveFold} onChange={e => updateAbove(e.target.value)} onMouseUp={onMouseUp}
             style={{ width: '100%', minHeight: 80, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-2) var(--space-3)' }} />
         </div>
@@ -254,7 +254,7 @@ function LinkedInModal({ title, text, onClose, onSave, onRegenerate }: ContentMo
             </div>
 
             {/* Below fold */}
-            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderTop: 'none', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)', padding: 'var(--space-3)', opacity: 0.75 }}>
+            <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderTop: 'none', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)', padding: 'var(--space-3)', opacity: 0.75 }}>
               <textarea ref={belowRef} value={belowFold} onChange={e => updateBelow(e.target.value)} onMouseUp={onMouseUp}
                 style={{ width: '100%', minHeight: 40, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-2) var(--space-3)' }} />
             </div>
@@ -294,7 +294,7 @@ function QuoteCardModal({ title, text, onClose, onSave, onRegenerate }: ContentM
     <ModalShell onClose={onClose} maxWidth={520}>
       <Header title={title} onClose={onClose} />
       <div className="flex-1 flex items-center justify-center" style={{ padding: 'var(--space-4) var(--space-6)' }}>
-        <div ref={cardRef} style={{ width: '100%', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-8)', textAlign: 'center', cursor: 'text' }}>
+        <div ref={cardRef} style={{ width: '100%', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-8)', textAlign: 'center', cursor: 'text' }}>
           <svg width="32" height="24" viewBox="0 0 32 24" fill="none" style={{ margin: '0 auto var(--space-4)', display: 'block', opacity: 0.2 }}>
             <path d="M0 24V14.4C0 6.4 4.8 1.6 14.4 0l1.6 4.8C10.4 6.4 8 9.6 8 14.4h6.4V24H0zm17.6 0V14.4C17.6 6.4 22.4 1.6 32 0l-1.6 4.8C24 6.4 25.6 9.6 25.6 14.4H32V24H17.6z" fill="var(--color-text-disabled)"/>
           </svg>
@@ -356,7 +356,7 @@ function NewsletterModal({ title, text, onClose, onSave, onRegenerate }: Content
         {sections.map((sec, i) => (
           <div key={i} style={{ marginBottom: 'var(--space-4)' }}>
             <div className="text-field-label" style={{ marginBottom: 'var(--space-2)' }}>{sec.label}</div>
-            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', transition: 'border-color 150ms' }}
+            <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', transition: 'border-color 150ms' }}
               onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
               onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
               <textarea ref={el => { sectionRefs.current[i] = el; }} value={sec.text} onChange={e => updateSection(i, e.target.value)} aria-label={sec.label}
@@ -407,7 +407,7 @@ function VoiceModal({ title, subtitle, text, onClose, onSave, onTitleChange, ext
         )}
       </div>
       <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-6) var(--space-4)', scrollbarWidth: 'thin' }}>
-        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', transition: 'border-color 150ms' }}
+        <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', transition: 'border-color 150ms' }}
           onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
           onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
           <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); }}
@@ -439,8 +439,8 @@ function TwitterSingleModal({ title, text, onClose, onSave, onRegenerate }: Cont
       <Header title={title} subtitle={`${len}/280 characters`} onClose={onClose} />
       <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         <div style={{
-          width: '100%', background: 'var(--color-bg-surface)',
-          border: `1px solid ${over ? 'var(--color-danger-border)' : 'var(--color-border-subtle)'}`,
+          width: '100%', background: 'var(--color-bg-card)',
+          border: `1px solid ${over ? 'var(--color-danger-border)' : 'var(--color-border-default)'}`,
           borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', transition: 'border-color 150ms',
         }}>
           <textarea ref={ref} value={tweet} onChange={e => { setTweet(e.target.value); resize(); }}
@@ -486,7 +486,7 @@ function GenericTextModal({ title, text, onClose, onSave, onRegenerate }: Conten
       <Header title={title} onClose={onClose} />
       <div className="flex-1 overflow-y-auto relative" style={{ padding: CP, scrollbarWidth: 'thin' }}>
         {aiPopover && <AiPopover x={aiPopover.x} y={aiPopover.y} selectedText={aiPopover.text} onApply={handleAiApply} onClose={() => setAiPopover(null)} />}
-        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', transition: 'border-color 150ms' }}
+        <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', transition: 'border-color 150ms' }}
           onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
           onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
           <textarea ref={textareaRef} value={content} onChange={e => { setContent(e.target.value); resize(); }} onMouseUp={onMouseUp}

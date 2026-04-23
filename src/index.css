@@ -230,7 +230,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 .form-textarea {
   width: 100%; padding: var(--space-3);
   font-size: var(--text-sm); line-height: var(--leading-loose); font-family: var(--font-sans); color: var(--color-text-primary);
-  background: var(--color-bg-surface); border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-card); border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md); outline: none; resize: vertical;
   transition: border-color 150ms;
 }

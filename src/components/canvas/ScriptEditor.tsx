@@ -50,7 +50,7 @@ export default function ScriptEditor({ scriptId, onBack }: { scriptId: string; o
           placeholder="Start writing…"
           style={{
             width: '100%', flex: 1, minHeight: 400,
-            background: 'transparent', border: 'none', outline: 'none', resize: 'none',
+            background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)', outline: 'none', resize: 'none',
             fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)',
             color: 'var(--color-text-primary)', overflow: 'hidden',
           }} />
