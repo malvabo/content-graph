@@ -17,12 +17,14 @@ function makeEdge(source: string, target: string): Edge {
   return { id: `e-${source}-${target}`, source, target };
 }
 
-export interface Template { name: string; description: string; build: () => { nodes: ContentNode[]; edges: Edge[] } }
+export type TemplateCategory = 'Repurposing' | 'Research' | 'Transcript';
+export interface Template { name: string; description: string; category: TemplateCategory; build: () => { nodes: ContentNode[]; edges: Edge[] } }
 
 export const TEMPLATES: Template[] = [
   {
     name: 'Article → Everywhere',
     description: 'One article repurposed to LinkedIn, newsletter, and Twitter',
+    category: 'Repurposing',
     build: () => {
       const src = makeNode('text-source', 0, 0, { prepare: 'Extract the 5 strongest arguments' });
       const li = makeNode('linkedin-post', 300, -120, { quantity: 2 });
@@ -41,6 +43,7 @@ export const TEMPLATES: Template[] = [
   {
     name: 'Transcript → Social Pack',
     description: 'Transcript simplified then split into thread, post, and quote',
+    category: 'Transcript',
     build: () => {
       const src = makeNode('text-source', 0, 0, { prepare: 'Simplify to plain English, remove all jargon' });
       const qc = makeNode('quote-card', 300, -80);
@@ -59,6 +62,7 @@ export const TEMPLATES: Template[] = [
   {
     name: 'Research → Visual',
     description: 'Extract data points, generate infographic and AI image',
+    category: 'Research',
     build: () => {
       const src = makeNode('text-source', 0, 0, { prepare: 'Extract all statistics and data points' });
       const inf = makeNode('infographic', 300, -40);

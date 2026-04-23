@@ -8,6 +8,7 @@ import { NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
 
 import TemplateCard from '../ui/TemplateCard';
+import TemplatePickerModal from '../modals/TemplatePickerModal';
 
 function makeSourceNode(content: string): ContentNode {
   const def = NODE_DEFS_BY_SUBTYPE['text-source'];
@@ -33,6 +34,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   const { setNodes, setEdges, setGraphName, addNode } = useGraphStore();
   const { autoLayout } = useGraphLayout();
   const [loading, setLoading] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [pasting, setPasting] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const pasteRef = useRef<HTMLTextAreaElement>(null);
@@ -104,7 +106,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                   : `${items.length} workflow${items.length !== 1 ? 's' : ''}`}
               </p>
             </div>
-            <button className="btn btn-primary" onClick={handleNew}><PlusIcon /> New workflow</button>
+            <button className="btn btn-primary" onClick={() => setPickerOpen(true)}><PlusIcon /> New workflow</button>
           </div>
         </div>
       )}
@@ -117,38 +119,66 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             {[0,1,2].map(i => <div key={i} className="skeleton-bar" style={{ height: 156, borderRadius: 'var(--radius-lg)' }} />)}
           </div>
 
-        /* Empty — show template picker */
+        /* Empty — onboarding hero + popular templates */
         ) : items.length === 0 ? (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
-              <span className="text-label">Start from a template</span>
-              <button onClick={() => setPasting(!pasting)}
-                style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-accent-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                {pasting ? '← Back' : 'Paste content instead'}
-              </button>
-            </div>
-            {pasting && (
-              <div style={{ marginBottom: 'var(--space-5)' }}>
-                <textarea ref={pasteRef} value={pasteText} onChange={e => setPasteText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePasteGo(); }}
-                  placeholder="Paste an article, transcript, or notes…"
-                  className="form-textarea"
-                  style={{ minHeight: 120, borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', background: 'var(--color-bg-card)', marginBottom: 'var(--space-2)' }} />
-                <div style={{ textAlign: 'right' }}>
-                  <button onClick={handlePasteGo} disabled={!pasteText.trim()} className="btn btn-primary" style={{ opacity: pasteText.trim() ? 1 : 0.4 }}>
-                    Create graph →
+            {/* Onboarding feature block */}
+            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'center', marginBottom: 'var(--space-8)' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Build content workflows with graphs</h2>
+                <p style={{ margin: 'var(--space-2) 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: 460 }}>
+                  Connect nodes to turn one piece of content into LinkedIn posts, newsletters, threads, infographics, and more — all in one graph.
+                </p>
+                <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
+                  <button onClick={() => setPickerOpen(true)} className="btn btn-primary"><PlusIcon /> New workflow</button>
+                  <button onClick={() => setPasting(!pasting)}
+                    style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-accent-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                    {pasting ? '← Back' : 'Paste content instead'}
                   </button>
                 </div>
+                {pasting && (
+                  <div style={{ marginTop: 'var(--space-4)' }}>
+                    <textarea ref={pasteRef} value={pasteText} onChange={e => setPasteText(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePasteGo(); }}
+                      placeholder="Paste an article, transcript, or notes…"
+                      className="form-textarea"
+                      style={{ minHeight: 100, borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', background: 'var(--color-bg-card)', marginBottom: 'var(--space-2)' }} />
+                    <div style={{ textAlign: 'right' }}>
+                      <button onClick={handlePasteGo} disabled={!pasteText.trim()} className="btn btn-primary" style={{ opacity: pasteText.trim() ? 1 : 0.4 }}>
+                        Create graph →
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)', paddingBottom: 'var(--space-8)' }}>
-              <TemplateCard title="+ Empty Workflow" meta="Start from scratch" pills={[]} onClick={handleNew} />
+              {/* Decorative preview on the right */}
+              <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {['Article', 'LinkedIn post', 'Newsletter', 'Thread'].map((label, i) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginLeft: i === 0 ? 0 : 16 }}>
+                    {i > 0 && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>}
+                    <span style={{ display: 'inline-flex', padding: '6px 12px', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)' }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Popular templates heading + strip */}
+            <div style={{ textAlign: 'center', marginBottom: 'var(--space-5)' }}>
+              <h3 style={{ margin: 0, fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>Start with a popular template</h3>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)', paddingBottom: 'var(--space-6)' }}>
               {TEMPLATES.map((t, i) => {
                 const { nodes: n } = t.build();
                 const nodeLabels = n.slice(0, 2).map(nd => nd.data.label);
                 const extra = n.length - 2;
-                return <TemplateCard key={t.name} title={t.name} meta={`${n.length} nodes`} pills={nodeLabels} extraCount={extra > 0 ? extra : undefined} onClick={() => handleLoadTemplate(i)} />;
+                return <TemplateCard key={t.name} title={t.name} meta={`${t.category} · ${n.length} nodes`} pills={nodeLabels} extraCount={extra > 0 ? extra : undefined} onClick={() => handleLoadTemplate(i)} />;
               })}
+            </div>
+            <div style={{ textAlign: 'center', paddingBottom: 'var(--space-8)' }}>
+              <button onClick={() => setPickerOpen(true)}
+                style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-2)' }}>
+                See all
+              </button>
             </div>
           </div>
 
@@ -198,6 +228,15 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         )}
       </div>
+
+      {/* Template picker modal */}
+      {pickerOpen && (
+        <TemplatePickerModal
+          onClose={() => setPickerOpen(false)}
+          onStartScratch={() => { setPickerOpen(false); handleNew(); }}
+          onPickTemplate={(idx) => { setPickerOpen(false); handleLoadTemplate(idx); }}
+        />
+      )}
 
       {/* Delete dialog */}
       {deleteId && (
