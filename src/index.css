@@ -444,7 +444,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   align-items: stretch;
   height: 34px;
   background: var(--color-bg-card);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid transparent;
   border-radius: 9999px;
   min-width: 280px;
   overflow: hidden;
