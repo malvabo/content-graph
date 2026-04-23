@@ -51,7 +51,7 @@
   /* ── Semantic Colors ── */
 
   /* Backgrounds */
-  --color-bg: #fbfbf9;
+  --color-bg: #eef0eb;
   --color-bg-surface: var(--p-neutral-100);
   --color-bg-card: var(--p-white);
   --color-bg-popover: var(--p-neutral-100);
@@ -261,7 +261,7 @@
   --color-nav-text: #a4a4ad;
   --color-nav-item-active: #26262a;   /* raised pill on the nav */
   --color-nav-item-hover: rgba(230, 230, 230, 0.06);
-  --color-bg: #0f0f0f;
+  --color-bg: #1c1c1d;
   --color-bg-surface: #161619;
   --color-bg-card: #1a1a1e;
   --color-bg-popover: #1a1a1e;
