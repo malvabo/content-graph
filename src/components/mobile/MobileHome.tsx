@@ -137,7 +137,12 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
   );
 }
 
-function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
+function NoteCard({ note, onOpen, isLast = false, isHighlighted = false }: {
+  note: VoiceNote;
+  onOpen: () => void;
+  isLast?: boolean;
+  isHighlighted?: boolean;
+}) {
   const isTranscribing = note.status === 'transcribing';
   const isAudioOnly = note.status === 'ready' && !note.transcript;
   const isError = note.status === 'error';
@@ -149,11 +154,10 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
     idle:     { bg: 'var(--color-bg-surface)', border: 'transparent', fg: 'var(--color-text-tertiary)' },
     error:    { bg: 'var(--color-danger-bg, #FEF4F4)', border: '#ECC0C0', fg: 'var(--color-danger-text, #A83030)' },
   };
-  // Left-border colour encodes state — single indicator replaces dot + pill-dot pair
   const borderAccentMap: Record<PillRole, string> = {
     complete: 'var(--color-accent, #0DBF5A)',
     running:  '#F0D8A0',
-    idle:     'var(--color-border-default)',
+    idle:     'transparent',
     error:    'var(--color-danger, #C93030)',
   };
 
@@ -175,19 +179,28 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       aria-label={ariaLabel}
       className="voice-note-card"
       style={{
-        width: '100%', textAlign: 'left', background: 'var(--color-bg-card)',
-        border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)',
-        // Inset left shadow acts as a 3px status stripe without affecting layout
-        boxShadow: `inset 3px 0 0 ${statusBorder}`,
-        padding: 'var(--space-3) var(--space-4)', display: 'grid',
-        gridTemplateColumns: '1fr auto', alignItems: 'center',
-        columnGap: 'var(--space-3)', rowGap: 2, minHeight: 64,
+        // Table row: no card chrome; container provides the outer border + radius
+        width: '100%', textAlign: 'left',
+        background: isHighlighted ? 'var(--color-bg-surface)' : 'transparent',
+        border: 'none',
+        borderBottom: isLast ? 'none' : '1px solid var(--color-border-subtle)',
+        borderRadius: 0,
+        // 3px inset left stripe = single status indicator
+        boxShadow: statusBorder !== 'transparent' ? `inset 3px 0 0 ${statusBorder}` : 'none',
+        padding: '11px var(--space-4)',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto',
+        alignItems: 'center',
+        columnGap: 'var(--space-3)',
+        rowGap: 2,
+        minHeight: 56,
         cursor: isTranscribing ? 'default' : 'pointer',
-        opacity: isTranscribing ? 0.7 : 1, minWidth: 0, boxSizing: 'border-box',
-        transition: 'border-color 100ms, background 100ms, box-shadow 150ms',
+        opacity: isTranscribing ? 0.7 : 1,
+        minWidth: 0, boxSizing: 'border-box',
+        transition: 'background 120ms',
       }}
     >
-      {/* Title — 15/600 for clear hierarchy */}
+      {/* Title — 15/600 */}
       <span style={{
         fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 600,
         lineHeight: '20px', color: 'var(--color-text-primary)',
@@ -196,25 +209,25 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
         {displayTitle}
       </span>
 
-      {/* Status pill — text-only label, no inner dot (border carries the colour) */}
+      {/* Status pill — text label only, no inner dot */}
       {pill ? (
         <span style={{
           height: 20, display: 'inline-flex', alignItems: 'center',
-          padding: '0 8px', borderRadius: 'var(--radius-full)',
+          padding: '0 7px', borderRadius: 'var(--radius-full)',
           background: pillRoleMap[pill.role].bg,
           border: `1px solid ${pillRoleMap[pill.role].border}`,
-          fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500,
-          color: pillRoleMap[pill.role].fg, flexShrink: 0,
+          fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 500,
+          color: pillRoleMap[pill.role].fg, flexShrink: 0, letterSpacing: '0.01em',
         }}>
           {pill.label}
         </span>
       ) : <span aria-hidden />}
 
-      {/* Metadata — 13/400 creates visible weight contrast with 15/600 title */}
+      {/* Metadata — 13/400, clearly subordinate to the title */}
       <span style={{
         gridColumn: '1 / span 2',
-        fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: '18px',
-        color: 'var(--color-text-tertiary)', marginTop: 1,
+        fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: '17px',
+        color: 'var(--color-text-tertiary)',
       }}>
         {meta}
       </span>
@@ -745,7 +758,7 @@ export default function MobileHome() {
       </header>
 
       {/* Scrollable notes list */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 var(--space-4) 140px', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minWidth: 0 }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 var(--space-4) 140px', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', minWidth: 0 }}>
         {!hasKey && (
           <div role="status" style={{
             padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-xl)',
@@ -787,48 +800,42 @@ export default function MobileHome() {
           </div>
         ) : (
           <>
-            {/* Aggregated failures at the top — collapsed by default */}
+            {/* Failed recordings — collapsed banner or expanded table */}
             {failedNotes.length > 0 && !showingErrors && (
               <ErrorSummary failed={failedNotes} onReview={() => setShowingErrors(true)} />
             )}
             {failedNotes.length > 0 && showingErrors && (
-              <section aria-label="Failed recordings" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-2) var(--space-1) 0' }}>
-                  <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, lineHeight: 1,
-                    textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--color-text-tertiary)',
-                  }}>
-                    Failed recordings
+              <section aria-label="Failed recordings">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 'var(--space-2)' }}>
+                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--color-text-tertiary)', letterSpacing: '0.04em' }}>
+                    Failed
                   </span>
-                  <button
-                    onClick={() => setShowingErrors(false)}
-                    aria-label="Hide failed recordings"
-                    className="btn-xs btn-ghost"
-                    style={{ color: 'var(--color-text-tertiary)' }}
-                  >
+                  <button onClick={() => setShowingErrors(false)} aria-label="Hide failed recordings" className="btn-xs btn-ghost" style={{ color: 'var(--color-text-tertiary)' }}>
                     Hide
                   </button>
-                </header>
-                {failedNotes.map(n => (
-                  <NoteCard key={n.id} note={n} onOpen={() => setOpenNoteId(n.id)} />
-                ))}
+                </div>
+                <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
+                  {failedNotes.map((n, i) => (
+                    <NoteCard key={n.id} note={n} onOpen={() => setOpenNoteId(n.id)} isLast={i === failedNotes.length - 1} />
+                  ))}
+                </div>
               </section>
             )}
 
-            {/* Active notes */}
-            {activeNotes.map(n => (
-              <div
-                key={n.id}
-                style={{
-                  position: 'relative',
-                  boxShadow: justRecordedId === n.id ? '0 0 0 2px var(--color-accent, #0DBF5A)' : 'none',
-                  borderRadius: 'var(--radius-xl)',
-                  transition: 'box-shadow 300ms ease',
-                }}
-              >
-                <NoteCard note={n} onOpen={() => setOpenNoteId(n.id)} />
+            {/* Active notes — single table container */}
+            {activeNotes.length > 0 && (
+              <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
+                {activeNotes.map((n, i) => (
+                  <NoteCard
+                    key={n.id}
+                    note={n}
+                    onOpen={() => setOpenNoteId(n.id)}
+                    isLast={i === activeNotes.length - 1}
+                    isHighlighted={justRecordedId === n.id}
+                  />
+                ))}
               </div>
-            ))}
+            )}
           </>
         )}
       </div>
