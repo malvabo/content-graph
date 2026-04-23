@@ -303,8 +303,8 @@
   --color-overlay-light: rgba(18,18,22,0.90);
   --color-overlay-dark: rgba(255,255,255,0.03);
   --color-overlay-backdrop: rgba(0,0,0,0.70);
-  --color-dot: #2a2a32;
-  --color-edge: #3a3a42;
+  --color-dot: #3a3a42;
+  --color-edge: #5a5a64;
   --shadow-sm: 0 2px 12px rgba(0,0,0,0.4);
   --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
