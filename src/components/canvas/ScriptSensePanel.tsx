@@ -138,8 +138,8 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
     <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg-card)', position: 'relative' }}>
       {/* Hairline separator between the floating title bar and the iframe */}
       <div aria-hidden style={{ position: 'absolute', top: 48, left: 0, right: 0, height: 1, background: 'var(--color-border-subtle)', zIndex: 5, pointerEvents: 'none' }} />
-      {/* Top-left: back + inline name (matches CanvasToolbar) */}
-      <div className="absolute top-2 left-2 md:top-3 md:left-3 z-10 flex items-center gap-2">
+      {/* Top-left: back + inline name — vertically centered in the 48px title bar */}
+      <div className="absolute left-2 md:left-3 z-10 flex items-center gap-2" style={{ top: 8, height: 32 }}>
         {onBack && (
           <button onClick={onBack} className="w-8 h-8 rounded-lg flex items-center justify-center"
             style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 150ms, color 150ms' }}
@@ -162,7 +162,7 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
           />
         )}
       </div>
-      <div ref={menuWrapRef} style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-4)', zIndex: 10, display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+      <div ref={menuWrapRef} style={{ position: 'absolute', top: 8, right: 'var(--space-4)', height: 32, zIndex: 10, display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
         <button
           type="button"
           disabled={iframeLoading}
