@@ -60,31 +60,75 @@ const fmtDate = (iso: string) => {
 
 function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: () => void; onCancel: () => void; startTime: number; liveText: string }) {
   const [elapsed, setElapsed] = useState(0);
-  const transcriptRef = useRef<HTMLDivElement>(null);
+  // Track liveText at last render so newly-mounted word spans animate in
+  const prevLiveTextRef = useRef('');
+  const prevWords = prevLiveTextRef.current.trim().split(/\s+/).filter(Boolean);
+  const prevCount = prevWords.length;
+
   useEffect(() => {
     const iv = setInterval(() => setElapsed(Date.now() - startTime), 200);
     return () => clearInterval(iv);
   }, [startTime]);
-  useEffect(() => { const el = transcriptRef.current; if (el) el.scrollTop = el.scrollHeight; }, [liveText]);
+
+  // Update after each render so prevCount reflects the last committed liveText
+  useEffect(() => { prevLiveTextRef.current = liveText; }, [liveText]);
+
   const mm = String(Math.floor(elapsed / 60000)).padStart(2, '0');
   const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
+  const words = liveText.trim().split(/\s+/).filter(Boolean);
+  const hasText = words.length > 0;
+
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)', gap: 'var(--space-4)' }}>
-        <div style={{ fontSize: 56, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
-        <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>Recording</div>
-        <div ref={transcriptRef} aria-live="polite"
-          style={{ width: '100%', maxWidth: 400, minHeight: 88, maxHeight: 240, overflowY: 'auto', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: liveText ? 'var(--color-text-primary)' : 'var(--color-text-disabled)', lineHeight: 1.5, textAlign: 'left', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere', boxSizing: 'border-box' }}>
-          {liveText || 'Listening…'}
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: '#0f0a1e' }}>
+      <style>{`
+        @keyframes word-in {
+          from { opacity: 0; transform: translateY(5px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes ro-spin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) {
+          .ro-ring { animation: none !important; }
+        }
+      `}</style>
+
+      {/* Main */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-8) var(--space-6)', gap: 'var(--space-6)' }}>
+        {/* Timer */}
+        <div style={{ fontSize: 64, fontWeight: 200, fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.92)', letterSpacing: '0.04em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+          {mm}:{ss}
+        </div>
+
+        {/* Word-by-word transcript */}
+        <div aria-live="polite" style={{ width: '100%', maxWidth: 380, minHeight: 96, display: 'flex', flexWrap: 'wrap', gap: '0.35em', alignContent: 'flex-start', justifyContent: 'center' }}>
+          {hasText ? words.map((word, i) => (
+            <span key={i} style={{
+              fontFamily: 'var(--font-sans)', fontSize: 18, fontWeight: 400, lineHeight: 1.6,
+              color: i < prevCount ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.92)',
+              animation: i >= prevCount ? 'word-in 240ms ease forwards' : 'none',
+            }}>
+              {word}
+            </span>
+          )) : (
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 400, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>
+              Listening…
+            </span>
+          )}
         </div>
       </div>
-      <div style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
+
+      {/* Controls */}
+      <div style={{ padding: 'var(--space-6)', paddingBottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 0px))', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        {/* Stop — mirrors RecordButton ring style */}
         <button onClick={onStop} aria-label="Stop and save"
-          style={{ width: 72, height: 72, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)' }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+          style={{ width: 72, height: 72, borderRadius: '50%', border: 'none', background: 'transparent', padding: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span className="ro-ring" style={{ position: 'absolute', inset: 0, borderRadius: '50%', padding: 3, background: 'conic-gradient(from 0deg, #f472b6, #7a5af8, #60a5fa, #f472b6)', WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMaskComposite: 'xor', mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', maskComposite: 'exclude', animation: 'ro-spin 2.4s linear infinite' }} />
+          <span style={{ position: 'absolute', inset: 5, borderRadius: '50%', background: 'linear-gradient(145deg, #2a1f4a 0%, #1a1130 100%)' }} />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)" style={{ position: 'relative', zIndex: 1 }}>
+            <rect x="6" y="6" width="12" height="12" rx="2" />
+          </svg>
         </button>
         <button onClick={onCancel}
-          style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', padding: 'var(--space-2) var(--space-4)' }}>
+          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', padding: 'var(--space-2) var(--space-4)' }}>
           Discard
         </button>
       </div>
@@ -655,20 +699,38 @@ export default function MobileHome() {
 
   return (
     <div className="mobile-safe-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--color-bg)', position: 'relative', minWidth: 0 }}>
+      <style>{`
+        @keyframes mh-spin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) { .mh-ring-mark { animation: none !important; } }
+      `}</style>
+
       {guest && !user && (
         <div style={{ background: 'var(--color-warning-bg)', borderBottom: '1px solid var(--color-warning-border)', padding: '6px 14px', fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', textAlign: 'center' }}>
           Guest mode — your work won't be saved.
         </div>
       )}
 
-      {/* Header — heading token (16/500/22), supportive subtitle in tertiary */}
+      {/* Header */}
       <header style={{ padding: 'var(--space-4) var(--space-4) var(--space-3)', flexShrink: 0, minWidth: 0 }}>
-        <h1 style={{
-          margin: 0, fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 500, lineHeight: '28px',
-          color: 'var(--color-text-primary)', letterSpacing: '-0.02em', wordBreak: 'break-word',
-        }}>Voice Notes</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          {/* Brand mark — same conic ring identity as RecordButton */}
+          <div className="mh-ring-mark" aria-hidden style={{
+            width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+            padding: 3,
+            background: 'conic-gradient(from 0deg, #c4a7ff, #7a5af8, #a78bfa, #c4a7ff)',
+            WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+            WebkitMaskComposite: 'xor',
+            mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+            maskComposite: 'exclude',
+            animation: 'mh-spin 8s linear infinite',
+          }} />
+          <h1 style={{
+            margin: 0, fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 500, lineHeight: '28px',
+            color: 'var(--color-text-primary)', letterSpacing: '-0.02em',
+          }}>Voice Notes</h1>
+        </div>
         <p style={{
-          margin: '4px 0 0', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: '20px',
+          margin: 0, fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: '20px',
           color: 'var(--color-text-tertiary)', wordBreak: 'break-word',
         }}>
           Record an idea and turn it into a LinkedIn post or tweet.
