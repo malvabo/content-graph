@@ -51,7 +51,7 @@
   /* ── Semantic Colors ── */
 
   /* Backgrounds */
-  --color-bg: var(--p-neutral-200);
+  --color-bg: #fbfbf9;
   --color-bg-surface: var(--p-neutral-100);
   --color-bg-card: var(--p-white);
   --color-bg-popover: var(--p-neutral-100);
@@ -103,7 +103,7 @@
   --color-danger-active: var(--p-red-700);
 
   /* ── Left nav (floating panel) ── */
-  --color-nav-bg: #fafafa;            /* neutral near-white panel */
+  --color-nav-bg: #eef0eb;            /* warm near-white panel */
   --color-nav-item-active: #ffffff;   /* pure white raised pill for contrast against #fafafa */
   --color-nav-item-hover: rgba(0, 0, 0, 0.04);
 
