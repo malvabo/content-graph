@@ -162,9 +162,9 @@
   --shadow-md: 0 2px 6px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.12);
   --shadow-lg: 0 4px 12px rgba(0,0,0,0.08), 0 12px 36px rgba(0,0,0,0.14);
   --shadow-glow: 0 0 16px rgba(13,191,90,0.2);
-  /* Tight shadow for the floating sidebar — short falloff, same darkness
-     as before, no border needed. */
-  --shadow-nav: 1px 0 2px rgba(0,0,0,0.08);
+  /* Shadow for the floating main-content panel. Slightly darker than the
+     earlier sidebar shadow so the card reads as lifted from a flat nav. */
+  --shadow-panel: 0 2px 12px rgba(0,0,0,0.14);
 
   /* ── Transitions ── */
   --duration-fast: 80ms;
@@ -309,7 +309,7 @@
   --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
   --shadow-glow: 0 0 16px rgba(13,191,90,0.3);
-  --shadow-nav: 1px 0 0 rgba(0,0,0,0.4), 2px 0 6px rgba(0,0,0,0.3);
+  --shadow-panel: 0 4px 20px rgba(0,0,0,0.55);
   --color-badge-source-bg: #201e1a;
   --color-badge-source-text: #b0a898;
   --color-badge-generate-bg: #1a201a;
