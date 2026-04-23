@@ -7,13 +7,11 @@ interface GraphNode {
 }
 interface GraphEdge { source: string; target: string }
 
-// Category → coloured icon block. Picks a soft pastel that reads well on the
-// card-surface backdrop and matches the workflow node badge tokens.
 const CATEGORY_COLORS: Record<string, { bg: string; stroke: string }> = {
-  source:    { bg: '#FEF3C7', stroke: '#F59E0B' },    // amber — entry / source
-  generate:  { bg: '#D1FAE5', stroke: '#10B981' },    // emerald — generate
-  transform: { bg: '#EDE9FE', stroke: '#8B5CF6' },    // violet — transform
-  output:    { bg: '#DBEAFE', stroke: '#3B82F6' },    // blue — output
+  source:    { bg: 'var(--color-schematic-source-bg)',    stroke: 'var(--color-schematic-source-stroke)' },
+  generate:  { bg: 'var(--color-schematic-generate-bg)', stroke: 'var(--color-schematic-generate-stroke)' },
+  transform: { bg: 'var(--color-schematic-transform-bg)', stroke: 'var(--color-schematic-transform-stroke)' },
+  output:    { bg: 'var(--color-schematic-output-bg)',   stroke: 'var(--color-schematic-output-stroke)' },
 };
 
 // Tiny glyph per category so each cell reads at a glance.
