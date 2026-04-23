@@ -559,18 +559,14 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       </div>
 
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        {/* Search + Filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+        {/* Search */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
           <div className="search-bar">
             <span className="search-bar__icon" aria-hidden>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             </span>
             <input className="search-bar__input" placeholder="Search..." aria-label="Search voice notes" />
           </div>
-          <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-            Filter
-          </button>
         </div>
 
         {/* Count + transcribing */}
