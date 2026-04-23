@@ -3,6 +3,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useBrandsStore } from '../../store/brandsStore';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import BrandSetupModal from '../modals/BrandSetupModal';
+import { Menu, MenuItem } from '../ui/Menu';
 
 const PaletteIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/><circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/><circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/><circle cx="6.5" cy="12" r="0.5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>;
 const KeyIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>;
@@ -114,24 +115,14 @@ function BrandKitsSection() {
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                         </button>
                         {menuId === b.id && (
-                          <div ref={menuRef}
-                            style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 160 }}>
-                            {[
-                              { label: 'Set as default', action: () => { setActiveBrand(b.id); setMenuId(null); } },
-                              { label: 'Duplicate', action: () => { duplicateBrand(b.id); setMenuId(null); } },
-                              { label: 'Delete', danger: true, action: () => {
-                                if (confirm(`Delete brand kit "${b.kitName || 'Untitled kit'}"?`)) removeBrand(b.id);
-                                setMenuId(null);
-                              } },
-                            ].map(opt => (
-                              <button key={opt.label} onClick={opt.action}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)' }}
-                                onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                                {opt.label}
-                              </button>
-                            ))}
-                          </div>
+                          <Menu ref={menuRef} style={{ position: 'absolute', top: 28, right: 0, zIndex: 50 }}>
+                            <MenuItem onClick={() => { setActiveBrand(b.id); setMenuId(null); }}>Set as default</MenuItem>
+                            <MenuItem onClick={() => { duplicateBrand(b.id); setMenuId(null); }}>Duplicate</MenuItem>
+                            <MenuItem danger onClick={() => {
+                              if (confirm(`Delete brand kit "${b.kitName || 'Untitled kit'}"?`)) removeBrand(b.id);
+                              setMenuId(null);
+                            }}>Delete</MenuItem>
+                          </Menu>
                         )}
                       </div>
                     </td>
@@ -271,20 +262,10 @@ function APIKeysSection() {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                       </button>
                       {menuOpen === p.key && (
-                        <div ref={menuRef} style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
-                          <button onClick={() => { setEditValue(value); setEditKey(p.key); setMenuOpen(null); }}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                            Edit
-                          </button>
-                          <button onClick={() => handleDelete(p.key)} disabled={!value}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: value ? 'pointer' : 'default', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: value ? 'var(--color-danger-text)' : 'var(--color-text-disabled)', opacity: value ? 1 : 0.5 }}
-                            onMouseEnter={e => { if (value) e.currentTarget.style.background = 'var(--color-danger-bg)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                            Delete
-                          </button>
-                        </div>
+                        <Menu ref={menuRef} style={{ position: 'absolute', top: 28, right: 0, zIndex: 50 }}>
+                          <MenuItem onClick={() => { setEditValue(value); setEditKey(p.key); setMenuOpen(null); }}>Edit</MenuItem>
+                          <MenuItem danger disabled={!value} onClick={() => handleDelete(p.key)}>Delete</MenuItem>
+                        </Menu>
                       )}
                     </div>
                   </td>

@@ -8,6 +8,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useAutoSaveWorkflow } from '../../hooks/useAutoSaveWorkflow';
 import { aiExecute } from '../../utils/aiExecutor';
 import BrandSetupModal from '../modals/BrandSetupModal';
+import { Menu, MenuItem, MenuSeparator } from '../ui/Menu';
 import { saveWorkflow, deleteWorkflow } from '../../utils/workflowApi';
 
 const BackIcon = () => (
@@ -77,14 +78,9 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
     clearGraph(); setMenuOpen(false); onBackToLibrary();
   };
 
-  const menuItemStyle: React.CSSProperties = {
-    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-3)',
-    background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-    fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
-    color: 'var(--color-text-primary)', textAlign: 'left',
-  };
   const activeBrandLabel = brands.find(b => b.id === brandId)?.kitName || 'Default';
+  const Chevron = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 6-6 6 6 6"/></svg>;
+  const Dot = ({ on }: { on: boolean }) => <span style={{ width: 8, height: 8, borderRadius: '50%', background: on ? 'var(--color-accent)' : 'var(--color-border-default)' }} />;
 
   return (
     <>
@@ -186,79 +182,55 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
             </button>
 
             {menuOpen && (
-              <div style={{
-                position: 'absolute', top: 36, right: 0, zIndex: 50,
-                background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)',
-                borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)',
-                padding: 'var(--space-2)', minWidth: 220,
-              }}>
-                {/* Minimap toggle */}
-                <button style={menuItemStyle}
+              <Menu style={{ position: 'absolute', top: 36, right: 0, zIndex: 50, minWidth: 220 }}>
+                <MenuItem
                   onClick={() => setShowMinimap(!showMinimap)}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                  <span>Show minimap</span>
-                  <span style={{ width: 28, height: 16, borderRadius: 9999, background: showMinimap ? 'var(--color-accent)' : 'var(--color-border-default)', position: 'relative', transition: 'background 120ms' }}>
-                    <span style={{ position: 'absolute', top: 2, left: showMinimap ? 14 : 2, width: 12, height: 12, borderRadius: '50%', background: 'var(--color-bg-card)', transition: 'left 120ms' }} />
-                  </span>
-                </button>
+                  right={
+                    <span style={{ width: 28, height: 16, borderRadius: 9999, background: showMinimap ? 'var(--color-accent)' : 'var(--color-border-default)', position: 'relative', transition: 'background 120ms' }}>
+                      <span style={{ position: 'absolute', top: 2, left: showMinimap ? 14 : 2, width: 12, height: 12, borderRadius: '50%', background: 'var(--color-bg-card)', transition: 'left 120ms' }} />
+                    </span>
+                  }>
+                  Show minimap
+                </MenuItem>
 
                 {/* Brand submenu */}
                 <div style={{ position: 'relative' }}
                   onMouseEnter={() => setBrandSubOpen(true)}
                   onMouseLeave={() => setBrandSubOpen(false)}>
-                  <button style={menuItemStyle} onClick={() => setBrandSubOpen(o => !o)}>
-                    <span>Brand</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--color-text-tertiary)', fontSize: 'var(--text-xs)' }}>
-                      {activeBrandLabel}
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 6-6 6 6 6"/></svg>
-                    </span>
-                  </button>
+                  <MenuItem
+                    onClick={() => setBrandSubOpen(o => !o)}
+                    right={<>{activeBrandLabel}<Chevron /></>}>
+                    Brand
+                  </MenuItem>
                   {brandSubOpen && (
-                    <div style={{ position: 'absolute', top: 0, right: 'calc(100% + 6px)', zIndex: 51, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 200 }}>
-                      <button style={{ ...menuItemStyle, justifyContent: 'flex-start', gap: 'var(--space-2)' }}
-                        onClick={() => { setBrandId(null); setBrandSubOpen(false); setMenuOpen(false); }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: !brandId ? 'var(--color-accent)' : 'var(--color-border-default)' }} />
+                    <Menu style={{ position: 'absolute', top: 0, right: 'calc(100% + 6px)', zIndex: 51, minWidth: 200 }}>
+                      <MenuItem icon={<Dot on={!brandId} />}
+                        onClick={() => { setBrandId(null); setBrandSubOpen(false); setMenuOpen(false); }}>
                         Default
-                      </button>
+                      </MenuItem>
                       {brands.map(b => (
-                        <button key={b.id} style={{ ...menuItemStyle, justifyContent: 'flex-start', gap: 'var(--space-2)' }}
-                          onClick={() => { setBrandId(b.id); setBrandSubOpen(false); setMenuOpen(false); }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: brandId === b.id ? 'var(--color-accent)' : 'var(--color-border-default)' }} />
-                          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.kitName || 'Untitled kit'}</span>
-                        </button>
+                        <MenuItem key={b.id} icon={<Dot on={brandId === b.id} />}
+                          onClick={() => { setBrandId(b.id); setBrandSubOpen(false); setMenuOpen(false); }}>
+                          {b.kitName || 'Untitled kit'}
+                        </MenuItem>
                       ))}
-                      <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: 'var(--space-1) 0' }} />
-                      <button style={{ ...menuItemStyle, justifyContent: 'flex-start', gap: 'var(--space-2)', color: 'var(--color-text-secondary)' }}
+                      <MenuSeparator />
+                      <MenuItem
                         onClick={() => {
                           const id = addBrand({ kitName: `Brand ${brands.length + 1}` });
                           setBrandId(id); setNewBrandId(id);
                           setBrandSubOpen(false); setMenuOpen(false);
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                        }}>
                         + New brand…
-                      </button>
-                    </div>
+                      </MenuItem>
+                    </Menu>
                   )}
                 </div>
 
-                <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: 'var(--space-1) 0' }} />
-                <button style={menuItemStyle} onClick={duplicateFlow}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                  Duplicate flow
-                </button>
-                <button style={{ ...menuItemStyle, color: 'var(--color-danger-text)' }} onClick={deleteFlow}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-danger-bg)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                  Delete
-                </button>
-              </div>
+                <MenuSeparator />
+                <MenuItem onClick={duplicateFlow}>Duplicate flow</MenuItem>
+                <MenuItem danger onClick={deleteFlow}>Delete</MenuItem>
+              </Menu>
             )}
           </div>
         </div>

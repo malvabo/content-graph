@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { Menu, MenuItem } from '../ui/Menu';
 import { useVoiceStore } from '../../store/voiceStore';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
@@ -731,29 +732,21 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                               <DotsIcon />
                             </button>
                             {menuId === note.id && (
-                              <div ref={menuRef} onClick={e => e.stopPropagation()} role="menu"
-                                style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 180 }}>
-                                {([
-                                  ...(isError ? [{ label: 'Re-record', action: () => { reRecord(note.id); setMenuId(null); } }] : []),
-                                  ...(!isError ? [{ label: 'Rename', action: () => { setRenameName(note.title); setRenameId(note.id); setMenuId(null); } }] : []),
-                                  ...(!isError ? [{ label: 'Use in workflow', action: () => {
+                              <Menu ref={menuRef} onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, minWidth: 180 }}>
+                                {isError && <MenuItem onClick={() => { reRecord(note.id); setMenuId(null); }}>Re-record</MenuItem>}
+                                {!isError && <MenuItem onClick={() => { setRenameName(note.title); setRenameId(note.id); setMenuId(null); }}>Rename</MenuItem>}
+                                {!isError && (
+                                  <MenuItem onClick={() => {
                                     const result = pushVoiceNoteToWorkflow(note.id, note.title);
                                     setMenuId(null);
                                     if (result === 'ok') onUseInWorkflow?.();
                                     else if (result === 'no-workflow') { setErrorMsg('Open a workflow first — voice notes are pushed into the active graph.'); setTimeout(() => setErrorMsg(null), 4000); }
                                     else if (result === 'empty-transcript') { setErrorMsg('This note has no transcript yet. Wait for transcription to finish or retry it.'); setTimeout(() => setErrorMsg(null), 4000); }
-                                  } }] : []),
-                                  ...(!isError ? [{ label: 'Analyze in ScriptSense', action: () => { if (note.transcript) onSendToScript?.(note.transcript); setMenuId(null); } }] : []),
-                                  { label: 'Delete', danger: true, action: () => { setDeleteId(note.id); setMenuId(null); } },
-                                ] as Array<{ label: string; action: () => void; danger?: boolean }>).map(opt => (
-                                  <button key={opt.label} role="menuitem" onClick={opt.action}
-                                    style={{ width: '100%', textAlign: 'left', padding: 'var(--space-2) var(--space-3)', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, color: opt.danger ? 'var(--color-danger-text, #A83030)' : 'var(--color-text-primary)' }}
-                                    onMouseEnter={e => { e.currentTarget.style.background = opt.danger ? 'var(--color-danger-bg, #FEF4F4)' : 'var(--color-bg-surface)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                                    {opt.label}
-                                  </button>
-                                ))}
-                              </div>
+                                  }}>Use in workflow</MenuItem>
+                                )}
+                                {!isError && <MenuItem onClick={() => { if (note.transcript) onSendToScript?.(note.transcript); setMenuId(null); }}>Analyze in ScriptSense</MenuItem>}
+                                <MenuItem danger onClick={() => { setDeleteId(note.id); setMenuId(null); }}>Delete</MenuItem>
+                              </Menu>
                             )}
                           </div>
                         )}

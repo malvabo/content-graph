@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { Menu, MenuItem } from '../ui/Menu';
 import { useInfographicStore } from '../../store/infographicStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useBrandsStore } from '../../store/brandsStore';
@@ -453,20 +454,12 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                       </div>
                       {menuId === item.id && (
-                        <div ref={menuRef} onClick={e => e.stopPropagation()}
-                          style={{ position: 'absolute', top: 28, left: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
-                          {[
-                            { label: 'Rename', action: () => { const name = prompt('Rename', title); if (name?.trim()) { const d = parseInfographicData(item.json); if (d) { d.title = name.trim(); update(item.id, JSON.stringify(d)); } } setMenuId(null); } },
-                            { label: 'Delete', danger: true, action: () => { remove(item.id); setMenuId(null); } },
-                          ].map(opt => (
-                            <button key={opt.label} onClick={opt.action}
-                              style={{ width: '100%', display: 'flex', alignItems: 'center', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', textAlign: 'left', transition: 'background 100ms' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
+                        <Menu ref={menuRef} onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: 28, left: 0, zIndex: 50 }}>
+                          <MenuItem onClick={() => { const name = prompt('Rename', title); if (name?.trim()) { const d = parseInfographicData(item.json); if (d) { d.title = name.trim(); update(item.id, JSON.stringify(d)); } } setMenuId(null); }}>
+                            Rename
+                          </MenuItem>
+                          <MenuItem danger onClick={() => { remove(item.id); setMenuId(null); }}>Delete</MenuItem>
+                        </Menu>
                       )}
                     </div>
                   </div>

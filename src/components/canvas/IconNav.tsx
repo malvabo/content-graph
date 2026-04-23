@@ -1,6 +1,7 @@
 import { type ReactNode, useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import { Menu, MenuItem } from '../ui/Menu';
 
 interface Props {
   activeView: string;
@@ -92,40 +93,19 @@ function UserMenu({ expanded }: { expanded: boolean }) {
     return () => document.removeEventListener('mousedown', h);
   }, [open]);
   if (!user) return null;
-  const itemStyle: React.CSSProperties = {
-    width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-    justifyContent: 'flex-start', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)',
-    color: 'var(--color-text-primary)', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)',
-    background: 'none', border: 'none', cursor: 'pointer',
-  };
   return (
     <div ref={ref} className="relative">
       <NavItem icon={<AccountIcon />} label="Account" active={open} expanded={expanded} ariaLabel="Account menu" ariaPressed={open} onClick={() => setOpen(!open)} />
       {open && (
-        <div
-          className="absolute z-50 dropdown-fade"
-          style={{
-            bottom: '100%', marginBottom: 8, left: 10, right: 10,
-            background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)',
-            borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)',
-            padding: 'var(--space-2)', minWidth: 180,
-          }}
-        >
-          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: 'var(--space-1) var(--space-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <Menu className="absolute z-50 dropdown-fade" style={{ bottom: '100%', marginBottom: 8, left: 10, right: 10, minWidth: 180 }}>
+          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: '4px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {user.email}
           </div>
-          <button onClick={() => setDark(!dark)} style={itemStyle}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-            <span style={{ display: 'flex' }}>{dark ? <SunIcon /> : <MoonIcon />}</span>
+          <MenuItem icon={dark ? <SunIcon /> : <MoonIcon />} onClick={() => setDark(!dark)}>
             {dark ? 'Light mode' : 'Dark mode'}
-          </button>
-          <button onClick={() => { signOut(); setOpen(false); }} style={itemStyle}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-            Sign out
-          </button>
-        </div>
+          </MenuItem>
+          <MenuItem onClick={() => { signOut(); setOpen(false); }}>Sign out</MenuItem>
+        </Menu>
       )}
     </div>
   );

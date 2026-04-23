@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Menu, MenuItem } from '../ui/Menu';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
@@ -216,21 +217,13 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                       </div>
                       {menuId === item.id && (
-                        <div ref={menuRef}
-                          style={{ position: 'absolute', top: 32, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
-                          {[
-                            { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
-                            { label: 'Duplicate', action: () => handleDuplicate(item) },
-                            { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
-                          ].map(opt => (
-                            <button key={opt.label} onClick={opt.action}
-                              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
+                        <Menu ref={menuRef} style={{ position: 'absolute', top: 32, right: 0, zIndex: 50 }}>
+                          <MenuItem onClick={() => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); }}>
+                            Rename
+                          </MenuItem>
+                          <MenuItem onClick={() => handleDuplicate(item)}>Duplicate</MenuItem>
+                          <MenuItem danger onClick={() => { setDeleteId(item.id); setMenuId(null); }}>Delete</MenuItem>
+                        </Menu>
                       )}
                     </td>
                   </tr>
