@@ -48,6 +48,7 @@ function ScriptCard({ script, onOpen, onDelete }: { script: Script; onOpen: () =
   const [titleLoading, setTitleLoading] = useState(!script.title);
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(false);
+  const [hover, setHover] = useState(false);
 
   useEffect(() => {
     if (script.title) { setTitleLoading(false); return; }
@@ -61,28 +62,38 @@ function ScriptCard({ script, onOpen, onDelete }: { script: Script; onOpen: () =
 
   return (
     <>
-      <div onClick={onOpen} style={{
-        textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
-        background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
-        fontFamily: 'var(--font-sans)', cursor: 'pointer', outline: 'none',
-        transition: 'border-color .15s, box-shadow .15s',
-        display: 'flex', flexDirection: 'column', gap: 'var(--space-1)',
-      }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; }}
+      <div onClick={onOpen}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        style={{
+          textAlign: 'left', borderRadius: 'var(--radius-lg)',
+          background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)',
+          fontFamily: 'var(--font-sans)', cursor: 'pointer', outline: 'none',
+          transition: 'border-color .15s, box-shadow .15s, transform .15s',
+          boxShadow: hover ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+          borderColor: hover ? 'var(--color-border-default)' : 'var(--color-border-subtle)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          height: 280, position: 'relative', zIndex: menuOpen ? 60 : 'auto',
+        }}
       >
-        {/* Title + menu */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-          {titleLoading ? (
-            <div className="skeleton-bar" style={{ height: 'var(--text-sm)', width: '70%', borderRadius: 'var(--radius-sm)' }} />
-          ) : (
-            <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-              {script.title || 'Untitled'}
+        {/* Header: title + meta + menu */}
+        <div style={{ padding: 'var(--space-4) var(--space-4) var(--space-3)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            {titleLoading ? (
+              <div className="skeleton-bar" style={{ height: 'var(--text-md)', width: '70%', borderRadius: 'var(--radius-sm)' }} />
+            ) : (
+              <div style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
+                {script.title || 'Untitled'}
+              </div>
+            )}
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>
+              Updated {fmt(script.createdAt)}
+              {script.analysed && <span style={{ marginLeft: 8, color: 'var(--color-accent-subtle)' }}>· Analysed</span>}
             </div>
-          )}
+          </div>
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <div role="button" tabIndex={0} aria-label="More options"
-              style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', background: 'transparent', cursor: 'pointer', transition: 'color 150ms, background 150ms' }}
+              style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', background: 'transparent', cursor: 'pointer', opacity: hover || menuOpen ? 1 : 0, transition: 'opacity 150ms' }}
               onClick={e => { e.stopPropagation(); setMenuOpen(!menuOpen); }}>
               <DotsIcon />
             </div>
@@ -105,18 +116,23 @@ function ScriptCard({ script, onOpen, onDelete }: { script: Script; onOpen: () =
           </div>
         </div>
 
-        {/* Meta */}
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
-          {fmt(script.createdAt)}
-          {script.analysed && <span style={{ marginLeft: 8, color: 'var(--color-accent-subtle)' }}>· Analysed</span>}
-        </div>
+        {/* Divider */}
+        <div style={{ height: 1, background: 'var(--color-border-subtle)' }} />
 
-        {/* Preview */}
-        {script.content && (
-          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {script.content.slice(0, 120)}
-          </div>
-        )}
+        {/* Content preview with fade-out */}
+        <div style={{ position: 'relative', flex: 1, overflow: 'hidden', padding: 'var(--space-4)' }}>
+          {script.content ? (
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              {script.content.slice(0, 700)}
+            </div>
+          ) : (
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', fontStyle: 'italic' }}>
+              Empty script
+            </div>
+          )}
+          {/* Fade mask so long scripts end gracefully */}
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 48, pointerEvents: 'none', background: 'linear-gradient(to bottom, rgba(0,0,0,0), var(--color-bg-card))' }} />
+        </div>
       </div>
 
       {/* Delete confirmation modal */}
@@ -168,7 +184,7 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (id: str
             <button className="btn btn-primary" onClick={handleNew} style={{ padding: '10px 24px', fontSize: 'var(--text-sm)' }}>Create your first script</button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
             {scripts.map(s => (
               <ScriptCard key={s.id} script={s} onOpen={() => onOpenScript(s.id, s.content)} onDelete={() => removeScript(s.id)} />
             ))}
