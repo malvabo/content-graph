@@ -7,13 +7,24 @@ interface Props {
   onViewChange: (view: string) => void;
 }
 
-/* ── Logo: two nodes connected by an edge ── */
+/* ── Logo: source → branch → two outputs (one green) ── */
 function Logo() {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <circle cx="5" cy="11" r="3.5" stroke="var(--color-text-tertiary)" strokeWidth="1.5"/>
-      <line x1="8.5" y1="11" x2="13.5" y2="11" stroke="var(--color-text-tertiary)" strokeWidth="1.5" strokeLinecap="round"/>
-      <circle cx="17" cy="11" r="3.5" fill="var(--color-accent)" stroke="var(--color-accent)" strokeWidth="0"/>
+      {/* Source node */}
+      <circle cx="3.5" cy="11" r="2.5" stroke="var(--color-text-tertiary)" strokeWidth="1.25"/>
+      {/* Edge from source to junction */}
+      <line x1="6" y1="11" x2="10.5" y2="11" stroke="var(--color-text-tertiary)" strokeWidth="1.25" strokeLinecap="round"/>
+      {/* Junction dot */}
+      <circle cx="11" cy="11" r="1" fill="var(--color-text-tertiary)" opacity="0.5"/>
+      {/* Edge to top output */}
+      <line x1="12" y1="10.3" x2="16" y2="6.5" stroke="var(--color-text-tertiary)" strokeWidth="1.25" strokeLinecap="round"/>
+      {/* Edge to bottom output */}
+      <line x1="12" y1="11.7" x2="16" y2="15.5" stroke="var(--color-accent)" strokeWidth="1.25" strokeLinecap="round"/>
+      {/* Top output node */}
+      <circle cx="18" cy="5.5" r="2" stroke="var(--color-text-tertiary)" strokeWidth="1.25"/>
+      {/* Bottom output node — green filled */}
+      <circle cx="18" cy="16.5" r="2.5" fill="var(--color-accent)"/>
     </svg>
   );
 }
