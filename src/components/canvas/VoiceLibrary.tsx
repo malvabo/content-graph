@@ -558,36 +558,72 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
 
   return (
     <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)', minWidth: 0, maxWidth: '100%' }}>
-      {/* Hero — large title + count on the left, record button on the right */}
-      <header className="p-4 md:px-8 md:py-6" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-6)', flexShrink: 0 }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <h1 style={{
-            margin: 0, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-lg)', fontWeight: 500,
-            lineHeight: '24px', letterSpacing: '-0.02em', color: 'var(--color-text-primary)',
-          }}>
-            Voice Notes
-          </h1>
-          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-2)', marginTop: 6 }}>
-            {notes.length > 0 && (
-              <p style={{ fontSize: 14, fontWeight: 400, lineHeight: '20px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 0 }}>
-                {notes.length} note{notes.length !== 1 ? 's' : ''}
-              </p>
-            )}
-            {notes.some(n => n.status === 'transcribing') && (
-              <span title="A previous recording is still being transcribed in the background"
-                style={{ height: 20, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-warning-bg, #FEF8E8)', border: '1px solid var(--color-warning-border, #F0D8A0)', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--color-warning-text, #6A4A10)' }}>
-                <span aria-hidden style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: '#F0D8A0' }} />
-                Transcribing previous note
-              </span>
-            )}
+      {/* Top toolbar — matches Workflows */}
+      <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+          <h1 style={{ margin: 0, fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Voice Notes</h1>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <button className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 'var(--radius-full)', padding: '6px 12px', border: '1px solid var(--color-border-default)' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Learn
+          </button>
+          {!recording && (
+            <button onClick={startRecording} className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>
+              New recording
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        {/* Search + Filter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-full)', minWidth: 260 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input placeholder="Search..."
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }} />
+          </div>
+          <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            Filter
+          </button>
+        </div>
+
+        {/* Count + transcribing */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>
+            {notes.length} note{notes.length !== 1 ? 's' : ''}
+          </div>
+          {notes.some(n => n.status === 'transcribing') && (
+            <span title="A previous recording is still being transcribed in the background"
+              style={{ height: 20, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-warning-bg, #FEF8E8)', border: '1px solid var(--color-warning-border, #F0D8A0)', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--color-warning-text, #6A4A10)' }}>
+              <span aria-hidden style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: '#F0D8A0' }} />
+              Transcribing previous note
+            </span>
+          )}
+        </div>
+
+        {/* Feature / video block */}
+        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Capture ideas with voice</h2>
+            <p style={{ margin: 'var(--space-2) 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: 460 }}>
+              Record a thought, feedback, or narration. Voice Notes transcribe automatically and feed directly into your workflows.
+            </p>
+            <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', padding: 0 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Learn about Voice Notes
+            </button>
+          </div>
+          <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 160 }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><path d="M12 17v4" /><path d="M8 21h8" />
+            </svg>
           </div>
         </div>
-        {!recording && notes.length > 0 && (
-          <RecordButton size={56} onClick={startRecording} state="idle" />
-        )}
-      </header>
-
-      <div className="px-4 md:px-8 pb-8" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
 
         {/* Recording overlay — floating blobs */}
         {recording && (

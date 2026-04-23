@@ -7,7 +7,6 @@ import { TEMPLATES } from '../../utils/templates';
 import { NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
 
-import TemplateCard from '../ui/TemplateCard';
 import TemplatePickerModal from '../modals/TemplatePickerModal';
 
 function makeSourceNode(content: string): ContentNode {
@@ -37,6 +36,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pasting, setPasting] = useState(false);
   const [pasteText, setPasteText] = useState('');
+  const [query, setQuery] = useState('');
   const pasteRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { if (pasting) setTimeout(() => pasteRef.current?.focus(), 100); }, [pasting]);
 
@@ -90,140 +90,153 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
     return { visible, remaining };
   };
 
+  const filtered = items.filter(i => !query.trim() || i.name.toLowerCase().includes(query.toLowerCase()));
+
   return (
     <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-      {/* Hero banner — matches Voice Notes layout, button stacked below subtitle */}
-      {!loading && (
-        <div className="p-4 md:p-8" style={{ display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
-            <div>
-              <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>
-                {items.length === 0 ? 'Content Graph' : 'Workflows'}
-              </h1>
-              <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0', maxWidth: 420, lineHeight: 1.5 }}>
-                {items.length === 0
-                  ? 'Connect nodes to repurpose any content into LinkedIn posts, threads, newsletters, and more.'
-                  : `${items.length} workflow${items.length !== 1 ? 's' : ''}`}
-              </p>
-            </div>
-            <button className="btn btn-primary" onClick={() => setPickerOpen(true)}><PlusIcon /> New workflow</button>
-          </div>
+      {/* Top toolbar */}
+      <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7"/><path d="M17.5 14v7"/></svg>
+          <h1 style={{ margin: 0, fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Workflows</h1>
         </div>
-      )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <button className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 'var(--radius-full)', padding: '6px 12px', border: '1px solid var(--color-border-default)' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Learn
+          </button>
+          <button onClick={() => setPickerOpen(true)} className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }}>
+            <PlusIcon /> New workflow
+          </button>
+        </div>
+      </div>
 
-      <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-
-        {/* Loading */}
-        {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-4)' }}>
-            {[0,1,2].map(i => <div key={i} className="skeleton-bar" style={{ height: 156, borderRadius: 'var(--radius-lg)' }} />)}
+      <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+        {/* Search + Filter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-full)', minWidth: 260 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..."
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }} />
           </div>
+          <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)' }}>
+            <PlusIcon /> Filter
+          </button>
+        </div>
 
-        /* Empty — onboarding hero + popular templates */
-        ) : items.length === 0 ? (
+        {/* Count */}
+        {!loading && (
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-4)' }}>
+            {filtered.length} workflow{filtered.length !== 1 ? 's' : ''}
+          </div>
+        )}
+
+        {/* Feature / video block (always shown) */}
+        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
           <div>
-            {/* Onboarding feature block */}
-            <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'center', marginBottom: 'var(--space-8)' }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Build content workflows with graphs</h2>
-                <p style={{ margin: 'var(--space-2) 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: 460 }}>
-                  Connect nodes to turn one piece of content into LinkedIn posts, newsletters, threads, infographics, and more — all in one graph.
-                </p>
-                <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
-                  <button onClick={() => setPickerOpen(true)} className="btn btn-primary"><PlusIcon /> New workflow</button>
-                  <button onClick={() => setPasting(!pasting)}
-                    style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-accent-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textUnderlineOffset: 3 }}>
-                    {pasting ? '← Back' : 'Paste content instead'}
-                  </button>
-                </div>
-                {pasting && (
-                  <div style={{ marginTop: 'var(--space-4)' }}>
-                    <textarea ref={pasteRef} value={pasteText} onChange={e => setPasteText(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePasteGo(); }}
-                      placeholder="Paste an article, transcript, or notes…"
-                      className="form-textarea"
-                      style={{ minHeight: 100, borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', background: 'var(--color-bg-card)', marginBottom: 'var(--space-2)' }} />
-                    <div style={{ textAlign: 'right' }}>
-                      <button onClick={handlePasteGo} disabled={!pasteText.trim()} className="btn btn-primary" style={{ opacity: pasteText.trim() ? 1 : 0.4 }}>
-                        Create graph →
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {/* Decorative preview on the right */}
-              <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                {['Article', 'LinkedIn post', 'Newsletter', 'Thread'].map((label, i) => (
-                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginLeft: i === 0 ? 0 : 16 }}>
-                    {i > 0 && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>}
-                    <span style={{ display: 'inline-flex', padding: '6px 12px', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)' }}>{label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Popular templates heading + strip */}
-            <div style={{ textAlign: 'center', marginBottom: 'var(--space-5)' }}>
-              <h3 style={{ margin: 0, fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>Start with a popular template</h3>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-4)', paddingBottom: 'var(--space-6)' }}>
-              {TEMPLATES.map((t, i) => {
-                const { nodes: n, edges: e } = t.build();
-                return <TemplateCard key={t.name} title={t.name} meta={`${t.category} · ${n.length} nodes`} pills={[]} graphData={{ nodes: n, edges: e }} onClick={() => handleLoadTemplate(i)} />;
-              })}
-            </div>
-            <div style={{ textAlign: 'center', paddingBottom: 'var(--space-8)' }}>
-              <button onClick={() => setPickerOpen(true)}
-                style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-2)' }}>
-                See all
+            <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Build content workflows with graphs</h2>
+            <p style={{ margin: 'var(--space-2) 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: 460 }}>
+              Connect nodes to turn one piece of content into LinkedIn posts, newsletters, threads, infographics, and more — all in one graph.
+            </p>
+            <div style={{ display: 'flex', gap: 'var(--space-5)', alignItems: 'center' }}>
+              <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', padding: 0 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                Learn about Workflows
+              </button>
+              <button onClick={() => setPasting(!pasting)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', padding: 0 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                {pasting ? 'Close' : 'Paste content'}
               </button>
             </div>
-          </div>
-
-        /* Grid */
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-4)' }}>
-            {items.map(item => {
-              const { visible, remaining } = chipList(item);
-              return (
-                <div key={item.id} style={{ position: 'relative', zIndex: menuId === item.id ? 60 : 'auto' }}
-                  onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}>
-                  <TemplateCard
-                    title={item.name}
-                    meta={`${item.nodes.length} nodes · ${fmt(item.savedAt)}`}
-                    pills={[]}
-                    graphData={{ nodes: item.nodes, edges: item.edges }}
-                    onClick={() => handleLoad(item)}
-                  />
-                  {/* 3-dot menu */}
-                  <div style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', opacity: hoverId === item.id || menuId === item.id ? 1 : 0, transition: 'opacity 150ms', zIndex: 2 }}>
-                    <div role="button" tabIndex={0} aria-label="More options"
-                      style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', background: 'transparent', cursor: 'pointer', transition: 'color 150ms, background 150ms' }}
-                      onClick={e => { e.stopPropagation(); setMenuId(menuId === item.id ? null : item.id); }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                    </div>
-                    {menuId === item.id && (
-                      <div ref={menuRef} onClick={e => e.stopPropagation()}
-                        style={{ position: 'absolute', top: 28, left: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
-                        {[
-                          { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
-                          { label: 'Duplicate', action: () => handleDuplicate(item) },
-                          { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
-                        ].map(opt => (
-                          <button key={opt.label} onClick={opt.action}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+            {pasting && (
+              <div style={{ marginTop: 'var(--space-4)' }}>
+                <textarea ref={pasteRef} value={pasteText} onChange={e => setPasteText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePasteGo(); }}
+                  placeholder="Paste an article, transcript, or notes…"
+                  className="form-textarea"
+                  style={{ minHeight: 100, borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', background: 'var(--color-bg-card)', marginBottom: 'var(--space-2)' }} />
+                <div style={{ textAlign: 'right' }}>
+                  <button onClick={handlePasteGo} disabled={!pasteText.trim()} className="btn btn-primary" style={{ opacity: pasteText.trim() ? 1 : 0.4 }}>
+                    Create graph →
+                  </button>
                 </div>
-              );
-            })}
+              </div>
+            )}
           </div>
+          <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minHeight: 180 }}>
+            {['Article', 'LinkedIn post', 'Newsletter', 'Thread'].map((label, i) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginLeft: i === 0 ? 0 : 16 }}>
+                {i > 0 && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>}
+                <span style={{ display: 'inline-flex', padding: '6px 12px', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)' }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Table */}
+        {loading ? (
+          <div className="skeleton-bar" style={{ height: 200, borderRadius: 'var(--radius-lg)' }} />
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
+            {query ? 'No workflows match your search.' : 'No workflows yet. Create one to get started.'}
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-sans)' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Name</th>
+                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>State</th>
+                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Updated</th>
+                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Nodes</th>
+                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Flow</th>
+                <th style={{ width: 40 }} />
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(item => {
+                const { visible, remaining } = chipList(item);
+                return (
+                  <tr key={item.id} onClick={() => handleLoad(item)}
+                    onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}
+                    style={{ borderTop: '1px solid var(--color-border-subtle)', cursor: 'pointer', background: hoverId === item.id ? 'var(--color-bg-surface)' : 'transparent', transition: 'background 100ms' }}>
+                    <td style={{ padding: '14px 12px', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>{item.name}</td>
+                    <td style={{ padding: '14px 12px' }}>
+                      <span style={{ display: 'inline-flex', padding: '2px 10px', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>{item.nodes.length > 0 ? 'Saved' : 'Draft'}</span>
+                    </td>
+                    <td style={{ padding: '14px 12px', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>{fmt(item.savedAt)}</td>
+                    <td style={{ padding: '14px 12px', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>{item.nodes.length}</td>
+                    <td style={{ padding: '14px 12px', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+                      {visible.join(' → ')}{remaining > 0 && ` +${remaining}`}
+                    </td>
+                    <td style={{ padding: '14px 12px', width: 40, position: 'relative' }} onClick={e => e.stopPropagation()}>
+                      <div role="button" tabIndex={0} aria-label="More options"
+                        style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', cursor: 'pointer' }}
+                        onClick={() => setMenuId(menuId === item.id ? null : item.id)}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                      </div>
+                      {menuId === item.id && (
+                        <div ref={menuRef}
+                          style={{ position: 'absolute', top: 32, right: 0, zIndex: 50, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 150 }}>
+                          {[
+                            { label: 'Rename', action: () => { const name = prompt('Rename workflow', item.name); if (name?.trim()) handleRename(item.id, name.trim()); setMenuId(null); } },
+                            { label: 'Duplicate', action: () => handleDuplicate(item) },
+                            { label: 'Delete', danger: true, action: () => { setDeleteId(item.id); setMenuId(null); } },
+                          ].map(opt => (
+                            <button key={opt.label} onClick={opt.action}
+                              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as any).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = (opt as any).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
 
