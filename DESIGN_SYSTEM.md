@@ -24,7 +24,7 @@ Raw values; avoid referencing directly — use the semantic tokens below.
 #### Surfaces
 | Token | Light | Dark | Usage |
 |-------|-------|------|-------|
-| `--color-bg` | `#eef0eb` | `#1c1c1d` | Page/canvas background — same as nav so the sidebar reads flush |
+| `--color-bg` | `#fbfbf9` | `#0f0f0f` | Page/canvas background (right elevated section) |
 | `--color-bg-surface` | `#F4F5F7` | `#161619` | Elevated surface, hover states |
 | `--color-bg-card` | `#FFFFFF` | `#1a1a1e` | Cards, nodes, inputs |
 | `--color-bg-popover` | `#F4F5F7` | `#1a1a1e` | Floating panels, menus |
