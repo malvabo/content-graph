@@ -130,46 +130,51 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
           </div>
         )}
 
-        {/* Feature / video block (always shown) */}
-        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Build content workflows with graphs</h2>
-            <p style={{ margin: 'var(--space-2) 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: 460 }}>
-              Connect nodes to turn one piece of content into LinkedIn posts, newsletters, threads, infographics, and more — all in one graph.
-            </p>
-            <div style={{ display: 'flex', gap: 'var(--space-5)', alignItems: 'center' }}>
-              <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', padding: 0 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                Learn about Workflows
-              </button>
-              <button onClick={() => setPasting(!pasting)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', padding: 0 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                {pasting ? 'Close' : 'Paste content'}
-              </button>
-            </div>
-            {pasting && (
-              <div style={{ marginTop: 'var(--space-4)' }}>
-                <textarea ref={pasteRef} value={pasteText} onChange={e => setPasteText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePasteGo(); }}
-                  placeholder="Paste an article, transcript, or notes…"
-                  className="form-textarea"
-                  style={{ minHeight: 100, borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', background: 'var(--color-bg-card)', marginBottom: 'var(--space-2)' }} />
-                <div style={{ textAlign: 'right' }}>
-                  <button onClick={handlePasteGo} disabled={!pasteText.trim()} className="btn btn-primary" style={{ opacity: pasteText.trim() ? 1 : 0.4 }}>
-                    Create graph →
+        {/* Feature block: intro + 2x2 starter grid */}
+        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+          <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Get started with Workflows</h2>
+          <p style={{ margin: 'var(--space-2) 0 var(--space-5)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: 560 }}>
+            Connect nodes to turn one piece of content into LinkedIn posts, newsletters, threads, infographics, and more — all in one graph.
+          </p>
+
+          {(() => {
+            type Starter = { title: string; description: string; onClick: () => void };
+            const starters: Starter[] = [
+              { title: 'From template', description: 'Start from a curated workflow for repurposing, research, or transcripts', onClick: () => setPickerOpen(true) },
+              { title: 'Blank workflow', description: 'Open an empty canvas and wire your own nodes together', onClick: handleNew },
+              { title: 'Paste content', description: 'Paste an article, transcript, or notes as the source for a new graph', onClick: () => setPasting(true) },
+              { title: 'Learn the basics', description: 'Watch a short tour of nodes, edges, and running workflows', onClick: () => {} },
+            ];
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
+                {starters.map(s => (
+                  <button key={s.title} onClick={s.onClick}
+                    style={{ textAlign: 'left', padding: 'var(--space-4) var(--space-5)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', fontFamily: 'var(--font-sans)', cursor: 'pointer', transition: 'border-color 150ms, background 150ms' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
+                    <div style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 6 }}>{s.title}</div>
+                    <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>{s.description}</div>
                   </button>
-                </div>
+                ))}
               </div>
-            )}
-          </div>
-          <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minHeight: 180 }}>
-            {['Article', 'LinkedIn post', 'Newsletter', 'Thread'].map((label, i) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginLeft: i === 0 ? 0 : 16 }}>
-                {i > 0 && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>}
-                <span style={{ display: 'inline-flex', padding: '6px 12px', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-secondary)' }}>{label}</span>
+            );
+          })()}
+
+          {pasting && (
+            <div style={{ marginTop: 'var(--space-5)' }}>
+              <textarea ref={pasteRef} value={pasteText} onChange={e => setPasteText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePasteGo(); }}
+                placeholder="Paste an article, transcript, or notes…"
+                className="form-textarea"
+                style={{ minHeight: 120, borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', background: 'var(--color-bg-card)', marginBottom: 'var(--space-2)' }} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>
+                <button onClick={() => { setPasting(false); setPasteText(''); }} className="btn btn-ghost">Cancel</button>
+                <button onClick={handlePasteGo} disabled={!pasteText.trim()} className="btn btn-primary" style={{ opacity: pasteText.trim() ? 1 : 0.4 }}>
+                  Create graph →
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Table */}
