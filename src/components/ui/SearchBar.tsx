@@ -38,7 +38,7 @@ const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
         }}
         onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border-strong)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border-default)'; }}
-        onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-accent)'; }}
+        onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border-strong)'; }}
         onBlurCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border-default)'; }}
       >
         <span style={{

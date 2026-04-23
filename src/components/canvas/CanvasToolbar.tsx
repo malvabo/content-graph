@@ -159,7 +159,10 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
               cursor: isRunning ? 'default' : 'pointer',
               opacity: isRunning ? 0.7 : 1,
+              transition: 'box-shadow 150ms',
             }}
+            onMouseEnter={e => { if (!isRunning) (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 0 3px rgba(13,191,90,0.25), 0 0 16px rgba(13,191,90,0.35)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'; }}
           >
             ▶ Run
           </button>
