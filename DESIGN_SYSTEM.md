@@ -24,7 +24,7 @@ Raw values; avoid referencing directly — use the semantic tokens below.
 #### Surfaces
 | Token | Light | Dark | Usage |
 |-------|-------|------|-------|
-| `--color-bg` | `#fbfbf9` | `#111114` | Page/canvas background |
+| `--color-bg` | `#fbfbf9` | `#0f0f0f` | Page/canvas background |
 | `--color-bg-surface` | `#F4F5F7` | `#161619` | Elevated surface, hover states |
 | `--color-bg-card` | `#FFFFFF` | `#1a1a1e` | Cards, nodes, inputs |
 | `--color-bg-popover` | `#F4F5F7` | `#1a1a1e` | Floating panels, menus |
@@ -77,9 +77,9 @@ Raw values; avoid referencing directly — use the semantic tokens below.
 #### Navigation
 | Token | Light | Dark |
 |-------|-------|------|
-| `--color-nav-bg` | `#eef0eb` | `#1c1f26` |
-| `--color-nav-item-active` | `#f8fafc` | `#272a33` |
-| `--color-nav-item-hover` | `rgba(220,228,240,.55)` | `rgba(200,210,230,.07)` |
+| `--color-nav-bg` | `#eef0eb` | `#1c1c1d` |
+| `--color-nav-item-active` | `#f8fafc` | `#26262a` |
+| `--color-nav-item-hover` | `rgba(220,228,240,.55)` | `rgba(230,230,230,.06)` |
 
 #### Node Badge Colors
 Light mode values; dark mode mirrors with `--color-badge-*-bg/-text` overrides.

@@ -253,10 +253,10 @@
 
 /* ── Dark Mode (manual toggle) ── */
 :root.dark {
-  --color-nav-bg: #1c1f26;            /* dark slate, lifted a notch lighter */
-  --color-nav-item-active: #272a33;   /* slightly blue-tinted raised pill */
-  --color-nav-item-hover: rgba(200, 210, 230, 0.07);
-  --color-bg: #111114;
+  --color-nav-bg: #1c1c1d;            /* neutral near-black panel */
+  --color-nav-item-active: #26262a;   /* raised pill on the nav */
+  --color-nav-item-hover: rgba(230, 230, 230, 0.06);
+  --color-bg: #0f0f0f;
   --color-bg-surface: #161619;
   --color-bg-card: #1a1a1e;
   --color-bg-popover: #1a1a1e;
