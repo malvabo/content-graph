@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
@@ -95,8 +95,21 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
   const output = useOutputStore(s => s.outputs[node.id]?.text);
   const imageOutput = useOutputStore(s => s.outputs[node.id]?.imageBase64);
   const colors = BADGE_COLORS[node.data.category];
+  const [menuOpen, setMenuOpen] = useState(false);
+  // Swipe gesture kept for power users; ⋯ menu makes delete discoverable
   const [swipeX, setSwipeX] = useState(0);
   const [startX, setStartX] = useState(0);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent | TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
+  }, [menuOpen]);
 
   const onTouchStart = (e: React.TouchEvent) => setStartX(e.touches[0].clientX);
   const onTouchMove = (e: React.TouchEvent) => {
@@ -110,7 +123,7 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-lg)' }}>
-      {/* Delete reveal */}
+      {/* Swipe-reveal delete (power-user path, same as before) */}
       <div onClick={onDelete} style={{
         position: 'absolute', right: 0, top: 0, bottom: 0, width: 80,
         background: 'var(--color-danger)', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -120,7 +133,7 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
 
       {/* Card */}
       <div
-        onClick={() => swipeX === 0 && onExpand()}
+        onClick={() => { if (swipeX !== 0) { setSwipeX(0); return; } onExpand(); }}
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
         style={{
           position: 'relative', zIndex: 1,
@@ -141,7 +154,29 @@ function MobileNodeCard({ node, onExpand, onDelete }: { node: ContentNode; onExp
           {status === 'complete' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6 9 17l-5-5"/></svg>}
           {status === 'error' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-danger)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>}
           {status === 'warning' && <span style={{ fontSize: 14 }}>⚠</span>}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-disabled)" strokeWidth="1.5" strokeLinecap="round"><path d="m9 18 6-6-6-6"/></svg>
+
+          {/* ⋯ overflow — visible affordance for delete */}
+          <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }}>
+            <button
+              onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
+              aria-label="Node options"
+              aria-expanded={menuOpen}
+              style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', border: 'none', background: 'none', color: 'var(--color-text-disabled)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+            </button>
+            {menuOpen && (
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, zIndex: 10, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', minWidth: 120, overflow: 'hidden' }}>
+                <button
+                  onClick={e => { e.stopPropagation(); setMenuOpen(false); onDelete(); }}
+                  style={{ width: '100%', padding: '10px var(--space-3)', background: 'none', border: 'none', textAlign: 'left', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-danger-text)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Config chips */}

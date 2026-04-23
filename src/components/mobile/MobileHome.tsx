@@ -137,27 +137,24 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
   );
 }
 
-/**
- * Compact single-row retrieval card.
- * Tokens: radius-xl, space-4, ui (14/500) title, small (12/500) metadata.
- * Pill follows the design system's status-pill recipe: 20px tall, 100px
- * radius, 6px dot + 14px text, role-specific BG + border per Status Colors.
- *
- * A11y: tap target ≥ 44px, aria-label is a full natural-language summary so
- * screen-reader users don't have to compose the row themselves, focus-visible
- * ring uses the accent token per design system.
- */
 function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
   const isTranscribing = note.status === 'transcribing';
   const isAudioOnly = note.status === 'ready' && !note.transcript;
   const isError = note.status === 'error';
 
   type PillRole = 'complete' | 'running' | 'idle' | 'error';
-  const pillRoleMap: Record<PillRole, { dot: string; bg: string; border: string; fg: string }> = {
-    complete: { dot: 'var(--color-accent, #0DBF5A)', bg: 'var(--color-success-bg, #e6f9e6)', border: '#E0DCD6', fg: 'var(--color-success-text, #1a7f1a)' },
-    running:  { dot: '#F0D8A0', bg: 'var(--color-warning-bg, #FEF8E8)', border: 'var(--color-warning-border, #F0D8A0)', fg: 'var(--color-warning-text, #6A4A10)' },
-    idle:     { dot: '#C8D4CC', bg: 'var(--color-bg-surface)', border: 'transparent', fg: 'var(--color-text-tertiary)' },
-    error:    { dot: '#C93030', bg: 'var(--color-danger-bg, #FEF4F4)', border: '#ECC0C0', fg: 'var(--color-danger-text, #A83030)' },
+  const pillRoleMap: Record<PillRole, { bg: string; border: string; fg: string }> = {
+    complete: { bg: 'var(--color-success-bg, #e6f9e6)', border: '#E0DCD6', fg: 'var(--color-success-text, #1a7f1a)' },
+    running:  { bg: 'var(--color-warning-bg, #FEF8E8)', border: 'var(--color-warning-border, #F0D8A0)', fg: 'var(--color-warning-text, #6A4A10)' },
+    idle:     { bg: 'var(--color-bg-surface)', border: 'transparent', fg: 'var(--color-text-tertiary)' },
+    error:    { bg: 'var(--color-danger-bg, #FEF4F4)', border: '#ECC0C0', fg: 'var(--color-danger-text, #A83030)' },
+  };
+  // Left-border colour encodes state — single indicator replaces dot + pill-dot pair
+  const borderAccentMap: Record<PillRole, string> = {
+    complete: 'var(--color-accent, #0DBF5A)',
+    running:  '#F0D8A0',
+    idle:     'var(--color-border-default)',
+    error:    'var(--color-danger, #C93030)',
   };
 
   const pill = isTranscribing ? { role: 'running' as PillRole, label: 'Transcribing' }
@@ -166,6 +163,7 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
     : note.lastGeneration ? { role: 'complete' as PillRole, label: KIND_LABEL[note.lastGeneration.kind].split(' ')[0] }
     : null;
 
+  const statusBorder = borderAccentMap[pill?.role ?? 'idle'];
   const displayTitle = isAudioOnly && note.title === 'Untitled note' ? 'Audio recording' : note.title;
   const meta = `${fmtDuration(note.durationMs)} · ${fmtDate(note.createdAt)}`;
   const ariaLabel = `${displayTitle}. ${meta}${pill ? '. Status: ' + pill.label : ''}. Open.`;
@@ -179,49 +177,44 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       style={{
         width: '100%', textAlign: 'left', background: 'var(--color-bg-card)',
         border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)',
+        // Inset left shadow acts as a 3px status stripe without affecting layout
+        boxShadow: `inset 3px 0 0 ${statusBorder}`,
         padding: 'var(--space-3) var(--space-4)', display: 'grid',
-        gridTemplateColumns: 'auto 1fr auto', alignItems: 'center',
+        gridTemplateColumns: '1fr auto', alignItems: 'center',
         columnGap: 'var(--space-3)', rowGap: 2, minHeight: 64,
         cursor: isTranscribing ? 'default' : 'pointer',
         opacity: isTranscribing ? 0.7 : 1, minWidth: 0, boxSizing: 'border-box',
-        transition: 'border-color 100ms, background 100ms',
+        transition: 'border-color 100ms, background 100ms, box-shadow 150ms',
       }}
     >
-      {/* Design system status dot: 6×6 pinned left (row-span) */}
-      <span aria-hidden style={{
-        gridRow: '1 / span 2', width: 6, height: 6, borderRadius: 'var(--radius-full)',
-        background: pillRoleMap[pill?.role ?? 'idle'].dot, flexShrink: 0, marginTop: 7,
-      }} />
-
-      {/* Title — ui: 14/500/20px */}
+      {/* Title — 15/600 for clear hierarchy */}
       <span style={{
-        fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500,
+        fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 600,
         lineHeight: '20px', color: 'var(--color-text-primary)',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
       }}>
         {displayTitle}
       </span>
 
-      {/* Status pill — design system recipe (20px tall, 6px dot + label) */}
+      {/* Status pill — text-only label, no inner dot (border carries the colour) */}
       {pill ? (
         <span style={{
-          height: 20, display: 'inline-flex', alignItems: 'center', gap: 5,
+          height: 20, display: 'inline-flex', alignItems: 'center',
           padding: '0 8px', borderRadius: 'var(--radius-full)',
           background: pillRoleMap[pill.role].bg,
           border: `1px solid ${pillRoleMap[pill.role].border}`,
           fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500,
           color: pillRoleMap[pill.role].fg, flexShrink: 0,
         }}>
-          <span aria-hidden style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: pillRoleMap[pill.role].dot }} />
           {pill.label}
         </span>
       ) : <span aria-hidden />}
 
-      {/* Metadata — small: 12/500/16px */}
+      {/* Metadata — 13/400 creates visible weight contrast with 15/600 title */}
       <span style={{
-        gridColumn: '2 / span 2',
-        fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px',
-        color: 'var(--color-text-tertiary)',
+        gridColumn: '1 / span 2',
+        fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: '18px',
+        color: 'var(--color-text-tertiary)', marginTop: 1,
       }}>
         {meta}
       </span>
@@ -342,19 +335,32 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   };
 
   return createPortal(
-    <div
-      ref={sheetRef}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={titleId}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9998,
-        background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', minWidth: 0,
-      }}
-    >
-      {/* Sheet header — borrows the app's elevated-surface token */}
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+      {/* Tap-backdrop to dismiss */}
+      <div onClick={close} style={{ position: 'absolute', inset: 0, background: 'var(--color-overlay-backdrop)' }} />
+
+      {/* Sheet — 80dvh, slides up from bottom */}
+      <div
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        style={{
+          position: 'relative', zIndex: 1,
+          height: '80dvh', display: 'flex', flexDirection: 'column', minWidth: 0,
+          background: 'var(--color-bg)',
+          borderRadius: '16px 16px 0 0',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--color-border-default)' }} />
+        </div>
+
+      {/* Sheet header */}
       <div style={{
-        flexShrink: 0, padding: 'var(--space-3) var(--space-4)',
+        flexShrink: 0, padding: 'var(--space-2) var(--space-4) var(--space-3)',
         borderBottom: '1px solid var(--color-border-subtle)',
         background: 'var(--color-bg-card)',
         display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 0,
@@ -505,7 +511,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
         )}
 
         {/* Footer actions */}
-        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'auto', paddingTop: 'var(--space-4)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'auto', paddingTop: 'var(--space-4)', paddingBottom: 'calc(var(--space-4) + env(safe-area-inset-bottom, 0px))' }}>
           {isError && (
             <button onClick={() => { onRerecord(); onClose(); }} className="btn btn-primary" style={{ flex: 1 }}>
               Re-record
@@ -519,6 +525,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             Delete
           </button>
         </div>
+      </div>
       </div>
     </div>,
     document.body,
@@ -761,12 +768,22 @@ export default function MobileHome() {
         )}
 
         {isEmpty ? (
-          <div style={{
-            padding: 'var(--space-8) var(--space-4)', textAlign: 'center',
-            color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)',
-            fontSize: 14, fontWeight: 400, lineHeight: 1.5,
-          }}>
-            No notes yet. Tap the record button to capture your first idea.
+          /* Empty state: ambient brand ring fills the space; CTA sits near the record button */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)', paddingBottom: 160 }}>
+            <div className="mh-ring-mark" aria-hidden style={{
+              width: 96, height: 96, borderRadius: '50%',
+              padding: 10,
+              background: 'conic-gradient(from 0deg, #c4a7ff, #7a5af8, #a78bfa, #c4a7ff)',
+              WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+              WebkitMaskComposite: 'xor',
+              mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+              maskComposite: 'exclude',
+              animation: 'mh-spin 12s linear infinite',
+              opacity: 0.55,
+            }} />
+            <p style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: 1.5, color: 'var(--color-text-tertiary)', textAlign: 'center' }}>
+              Tap to record your first idea
+            </p>
           </div>
         ) : (
           <>
