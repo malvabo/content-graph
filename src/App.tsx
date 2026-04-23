@@ -139,9 +139,8 @@ function AppInner() {
         </div>
       )}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
-        {/* Hide the left nav in full-screen editor modes (node canvas, infographic edit)
-            so the user can focus on the thing they're editing. */}
-        {activeView !== 'intro' && activeView !== 'workflow' && !(activeView === 'infographics' && hashParam) && (
+        {/* Hide the left nav only in full-screen modes (intro, infographic edit). */}
+        {activeView !== 'intro' && !(activeView === 'infographics' && hashParam) && (
           <IconNav activeView={activeView} onViewChange={setActiveView} />
         )}
 
