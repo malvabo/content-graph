@@ -428,3 +428,36 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   outline: 2px solid var(--color-accent, #0DBF5A);
   outline-offset: 2px;
 }
+
+/* Borderless pill search bar — soft surface fill, 16px icon, generous
+   padding. Matches the reference design: no ring at rest, green ring on
+   focus-within to signal active state per design system. */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 16px;
+  background: var(--color-bg-surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  min-width: 260px;
+  transition: background 150ms, border-color 150ms;
+}
+.search-bar:hover { background: #EDEDEC; }
+.search-bar:focus-within {
+  background: var(--color-bg-card);
+  border-color: var(--color-accent, #0DBF5A);
+}
+.search-bar__icon { flex-shrink: 0; color: var(--color-text-tertiary); display: flex; }
+.search-bar__input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  padding: 0;
+}
+.search-bar__input::placeholder { color: var(--color-text-tertiary); }
