@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 160" width="520" height="160">
+  <defs>
+    <linearGradient id="leftFade" x1="0" y1="0" x2="160" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1a1a1e" stop-opacity="1"/>
+      <stop offset="1" stop-color="#1a1a1e" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="520" height="160" fill="#1a1a1e"/>
+
+  <!-- ── Node 1: SOURCE / Text ── -->
+  <rect x="16" y="44" width="124" height="72" rx="10" fill="#1a1a1e" stroke="#2a2a30" stroke-width="1"/>
+  <!-- amber badge -->
+  <rect x="28" y="56" width="20" height="20" rx="4" fill="#FEF3C7"/>
+  <!-- lightning bolt (24×24 → 20×20) -->
+  <svg x="28" y="56" width="20" height="20" viewBox="0 0 24 24">
+    <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" fill="#D97706"/>
+  </svg>
+  <text x="54" y="70" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="8" font-weight="600" fill="#908e85" letter-spacing="0.7">SOURCE</text>
+  <text x="28" y="97" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="13" font-weight="500" fill="#e8e6e3">Text</text>
+
+  <!-- Arrow 1 -->
+  <line x1="147" y1="80" x2="169" y2="80" stroke="#555560" stroke-width="1.5" stroke-linecap="round"/>
+  <polyline points="165,76 169,80 165,84" fill="none" stroke="#555560" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- ── Node 2: GENERATE / LinkedIn Post ── -->
+  <rect x="176" y="44" width="124" height="72" rx="10" fill="#1a1a1e" stroke="#2a2a30" stroke-width="1"/>
+  <!-- mint badge -->
+  <rect x="188" y="56" width="20" height="20" rx="4" fill="#D1FAE5"/>
+  <!-- sparkle (24×24 → 20×20) -->
+  <svg x="188" y="56" width="20" height="20" viewBox="0 0 24 24">
+    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="#059669" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </svg>
+  <text x="214" y="70" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="8" font-weight="600" fill="#908e85" letter-spacing="0.7">GENERATE</text>
+  <text x="188" y="97" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="13" font-weight="500" fill="#e8e6e3">LinkedIn Post</text>
+
+  <!-- Arrow 2 -->
+  <line x1="307" y1="80" x2="329" y2="80" stroke="#555560" stroke-width="1.5" stroke-linecap="round"/>
+  <polyline points="325,76 329,80 325,84" fill="none" stroke="#555560" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- ── Node 3: GENERATE / Newsletter ── -->
+  <rect x="336" y="44" width="124" height="72" rx="10" fill="#1a1a1e" stroke="#2a2a30" stroke-width="1"/>
+  <!-- mint badge -->
+  <rect x="348" y="56" width="20" height="20" rx="4" fill="#D1FAE5"/>
+  <!-- sparkle -->
+  <svg x="348" y="56" width="20" height="20" viewBox="0 0 24 24">
+    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="#059669" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </svg>
+  <text x="374" y="70" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="8" font-weight="600" fill="#908e85" letter-spacing="0.7">GENERATE</text>
+  <text x="348" y="97" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="13" font-weight="500" fill="#e8e6e3">Newsletter</text>
+
+  <!-- Trailing arrow -->
+  <line x1="467" y1="80" x2="506" y2="80" stroke="#555560" stroke-width="1.5" stroke-linecap="round"/>
+  <polyline points="502,76 506,80 502,84" fill="none" stroke="#555560" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Left gradient overlay (fades first node in from the left) -->
+  <rect width="160" height="160" fill="url(#leftFade)"/>
+</svg>
