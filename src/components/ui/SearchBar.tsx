@@ -30,10 +30,9 @@ const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
           alignItems: 'stretch',
           height: 34,
           background: 'var(--color-bg-card)',
-          border: '1px solid var(--color-border-default)',
+          border: '0px solid var(--color-border-default)',
           borderRadius: 'var(--radius-full)',
           overflow: 'hidden',
-          transition: 'border-color var(--duration-medium)',
           cursor: 'text',
         }}
         onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border-strong)'; }}
@@ -55,6 +54,7 @@ const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
         <input
           ref={mergeRef}
           type="search"
+          className="search-bar-input"
           placeholder={placeholder}
           onChange={e => { onChange?.(e); onValueChange?.(e.target.value); }}
           style={{
