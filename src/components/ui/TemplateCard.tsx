@@ -1,7 +1,7 @@
 /* ── TemplateCard — DS component matching Figma node 8-298 ── */
-import GraphThumb from './GraphThumb';
+import GraphSchematic from './GraphSchematic';
 
-interface GraphNode { id: string; position: { x: number; y: number }; data: { category: string } }
+interface GraphNode { id: string; position: { x: number; y: number }; data: { category: string; label: string; description?: string } }
 interface GraphEdge { source: string; target: string }
 
 interface TemplateCardProps {
@@ -38,9 +38,7 @@ export default function TemplateCard({ title, meta, description, pills, extraCou
       }}
     >
       {graphData && graphData.nodes.length > 0 && (
-        <div style={{ background: 'var(--color-bg-surface)', borderBottom: '1px solid var(--color-border-subtle)', padding: '8px 0' }}>
-          <GraphThumb nodes={graphData.nodes} edges={graphData.edges} />
-        </div>
+        <GraphSchematic nodes={graphData.nodes} edges={graphData.edges} />
       )}
 
       {/* Title + meta + optional description */}
