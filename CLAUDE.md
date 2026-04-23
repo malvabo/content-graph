@@ -4,6 +4,8 @@
 
 **Always push after every commit.** Use `git push -u origin <branch>` immediately after committing so changes are visible on the remote.
 
+**Always open a PR to `main` when work is complete.** After pushing, open a PR so changes can be reviewed and deployed to production.
+
 ## Deployment
 
 **Always ship finished work to `main`.** This project deploys to
