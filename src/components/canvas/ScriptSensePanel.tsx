@@ -20,7 +20,7 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
 
   useEffect(() => {
     if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
+    const handler = (e: PointerEvent) => {
       if (menuWrapRef.current && !menuWrapRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
     document.addEventListener('pointerdown', handler, true);
@@ -41,7 +41,11 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
   // lifetimes too: if the panel stays mounted and a fresh transcript arrives
   // from a later send, we'll push that too and blank the buffer once consumed.
   const pendingContentRef = useRef<string>('');
+  const initialTextRef = useRef<string>('');
   useEffect(() => {
+    // Mirror the latest initialText prop into a ref so flush() can read it
+    // directly if the iframe's 'ready' message fires before this effect runs.
+    initialTextRef.current = initialText || '';
     if (!initialText) return;
     pendingContentRef.current = initialText;
     if (readyRef.current) {
@@ -61,8 +65,11 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
     post({ type: 'set-groq-key', key: groqKey || '' });
     post({ type: 'set-theme', dark: document.documentElement.classList.contains('dark') });
     if (brand?.voice?.personality || brand?.name) post({ type: 'set-brand', brand });
-    if (pendingContentRef.current) {
-      post({ type: 'set-content', text: pendingContentRef.current });
+    // Prefer the buffered value, but fall back to the live prop ref so a
+    // 'ready' that races ahead of the initialText useEffect still delivers.
+    const pending = pendingContentRef.current || initialTextRef.current;
+    if (pending) {
+      post({ type: 'set-content', text: pending });
       pendingContentRef.current = '';
     }
   }, [post, anthropicKey, groqKey, brand]);

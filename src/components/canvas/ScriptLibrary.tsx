@@ -45,7 +45,7 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (id: str
   const filtered = scripts.filter(s => {
     if (!query.trim()) return true;
     const q = query.toLowerCase();
-    return (s.title || '').toLowerCase().includes(q) || s.content.toLowerCase().includes(q);
+    return (s.title || '').toLowerCase().includes(q) || (s.content || '').toLowerCase().includes(q);
   });
 
   return (
@@ -116,7 +116,8 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (id: str
                   <td style={{ padding: '14px 12px', width: 40, position: 'relative' }} onClick={e => e.stopPropagation()}>
                     <div role="button" tabIndex={0} aria-label="More options"
                       style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', cursor: 'pointer' }}
-                      onClick={() => setMenuId(menuId === s.id ? null : s.id)}>
+                      onClick={() => setMenuId(menuId === s.id ? null : s.id)}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMenuId(menuId === s.id ? null : s.id); } }}>
                       <DotsIcon />
                     </div>
                     {menuId === s.id && (

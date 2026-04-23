@@ -947,15 +947,6 @@ function ContentGraph() {
     });
   }, []);
 
-  if (false && view === "home") return (
-    <HomePage
-      drafts={drafts}
-      onNew={() => { setCurrentDraft(null); setView("editor"); }}
-      onOpen={(d) => { setCurrentDraft(d); setView("editor"); }}
-      onDelete={deleteDraft}
-    />
-  );
-
   return (
     <ContentGraphEditor
       draft={currentDraft}

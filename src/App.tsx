@@ -66,10 +66,15 @@ function AppInner() {
   
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'library'; };
-  const getHashParam = () => window.location.hash.slice(1).split(':')[1] || undefined;
+  const getHashParam = () => { const h = window.location.hash.slice(1); const i = h.indexOf(':'); return i === -1 ? undefined : h.slice(i + 1) || undefined; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
   const [hashParam, setHashParam] = useState(getHashParam);
-  const setActiveView = useCallback((v: string) => { window.location.hash = v; setActiveViewRaw(v.split(':')[0]); setHashParam(v.split(':')[1]); }, []);
+  const setActiveView = useCallback((v: string) => {
+    window.location.hash = v;
+    const i = v.indexOf(':');
+    setActiveViewRaw(i === -1 ? v : v.slice(0, i));
+    setHashParam(i === -1 ? undefined : v.slice(i + 1) || undefined);
+  }, []);
   useEffect(() => { const h = () => { setActiveViewRaw(getViewFromHash()); setHashParam(getHashParam()); }; window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h); }, []);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [activeScriptId, setActiveScriptId] = useState<string | undefined>(undefined);

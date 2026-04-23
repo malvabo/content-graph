@@ -287,6 +287,7 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, trans
 
 export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUseInWorkflow?: () => void; onSendToScript?: (text: string) => void }) {
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
+  const [query, setQuery] = useState('');
   const groqKey = useSettingsStore(s => s.groqKey);
   const [recording, setRecording] = useState(false);
   const [micError, setMicError] = useState(false);
@@ -566,7 +567,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             <span className="search-bar__icon" aria-hidden>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             </span>
-            <input className="search-bar__input" placeholder="Search..." aria-label="Search voice notes" />
+            <input className="search-bar__input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." aria-label="Search voice notes" />
           </div>
         </div>
 
@@ -638,6 +639,11 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
             {[...notes]
               .filter(n => n.status !== 'recording')
+              .filter(n => {
+                const q = query.trim().toLowerCase();
+                if (!q) return true;
+                return (n.title || '').toLowerCase().includes(q) || (n.transcript || '').toLowerCase().includes(q);
+              })
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
               .map(note => {
                     const isError = note.status === 'error';
