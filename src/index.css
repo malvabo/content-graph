@@ -38,7 +38,8 @@ button:focus-visible, [role="button"]:focus-visible {
   outline: 2px solid var(--color-interactive-focus);
   outline-offset: -2px;
 }
-button:active:not(:disabled) { transform: scale(0.975); }
+/* No scale on press — active state shifts color/background only, never
+   produces a visual "jump" on nav items, row cards, table cells, etc. */
 button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 
 /* ── Button sizes ── */

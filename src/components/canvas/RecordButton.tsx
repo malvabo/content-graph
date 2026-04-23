@@ -151,7 +151,7 @@ export default function RecordButton({ onClick, size = 128, state = 'idle', labe
 
         .record-button:focus-visible { outline: 2px solid var(--color-accent, #7a5af8); outline-offset: 6px; border-radius: 50%; }
         .record-button:not(:disabled):hover { filter: brightness(1.1); }
-        .record-button:not(:disabled):active { transform: scale(0.98); }
+        /* Press state shifts color only — no scale jump on click. */
 
         @media (prefers-reduced-motion: reduce) {
           .record-button .rb-ring,
