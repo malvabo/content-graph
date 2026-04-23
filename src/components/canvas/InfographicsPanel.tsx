@@ -407,18 +407,16 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
   if (!editingId) {
     return (
       <div style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)' }}>
-        {/* Hero banner — title, subtitle, then button below */}
-        <div className="p-4 md:p-8" style={{ display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
-            <div>
-              <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0, letterSpacing: '-0.02em' }}>Infographics</h1>
-              {items.length > 0 && <p style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', margin: 'var(--space-1) 0 0' }}>{items.length} infographic{items.length !== 1 ? 's' : ''}</p>}
-            </div>
-            <button className="btn btn-primary" onClick={createNew}>+ New infographic</button>
+        {/* Top toolbar */}
+        <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>
+            <h1 style={{ margin: 0, fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Infographics</h1>
           </div>
+          <button className="btn btn-primary" onClick={createNew} style={{ borderRadius: 'var(--radius-full)' }}>+ New infographic</button>
         </div>
 
-        <div className="p-4 md:px-8 md:py-6" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
           {items.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-8)' }}>
