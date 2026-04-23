@@ -1,4 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#1A2420"/>
-  <text x="16" y="21" text-anchor="middle" font-family="monospace" font-weight="500" font-size="10" fill="#0DBF5A">up200</text>
+  <rect width="32" height="32" rx="8" fill="#0F0F0F"/>
+  <!-- Source node -->
+  <circle cx="6" cy="16" r="3.5" stroke="#4A4A4A" stroke-width="1.5" fill="none"/>
+  <!-- Edge source → junction -->
+  <line x1="9.5" y1="16" x2="14.5" y2="16" stroke="#3A3A3A" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Edge to top output -->
+  <line x1="14.5" y1="16" x2="19.5" y2="10" stroke="#3A3A3A" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Edge to bottom output (green) -->
+  <line x1="14.5" y1="16" x2="19.5" y2="22" stroke="#0DBF5A" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Top output -->
+  <circle cx="22.5" cy="9" r="3" stroke="#484848" stroke-width="1.5" fill="none"/>
+  <!-- Bottom output — green filled -->
+  <circle cx="22.5" cy="23" r="3.5" fill="#0DBF5A"/>
 </svg>
