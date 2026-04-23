@@ -52,9 +52,9 @@
 
   /* Backgrounds */
   --color-bg: #fbfbf9;
-  --color-bg-surface: var(--p-neutral-100);
+  --color-bg-surface: #edefea;       /* elevated blocks (Get started cards, hero bands) */
   --color-bg-card: var(--p-white);
-  --color-bg-popover: var(--p-neutral-100);
+  --color-bg-popover: #edefea;
   --color-bg-subtle: var(--p-neutral-50);
   --color-bg-dark: var(--p-neutral-950);
 
