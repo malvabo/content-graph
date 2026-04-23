@@ -9,6 +9,9 @@ const fmt = (iso: string) => { if (!iso) return ''; const d = new Date(iso), dif
 export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void }) {
   const { sets, add, remove } = useCardsStore();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+
+  const filtered = sets.filter(s => !query.trim() || (s.name || '').toLowerCase().includes(query.toLowerCase()));
 
   const handleNew = () => {
     const id = `cards-${Date.now()}`;
@@ -31,6 +34,25 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
 
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
+        {/* Search */}
+        {sets.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+            <div className="search-bar">
+              <span className="search-bar__icon" aria-hidden>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </span>
+              <input className="search-bar__input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." aria-label="Search card sets" />
+            </div>
+          </div>
+        )}
+
+        {/* Count */}
+        {sets.length > 0 && (
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-4)' }}>
+            {filtered.length} set{filtered.length !== 1 ? 's' : ''}
+          </div>
+        )}
+
         {sets.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-8)' }}>
             <div style={{ width: 64, height: 64, borderRadius: 'var(--radius-xl)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)' }}>
@@ -40,9 +62,13 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
             <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 300, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>Create a card set to organize and discuss your content.</div>
             <button className="btn btn-primary" onClick={handleNew} style={{ padding: '10px 24px', fontSize: 'var(--text-sm)' }}><PlusIcon /> Create your first set</button>
           </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
+            No card sets match your search.
+          </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
-            {sets.map(set => (
+            {filtered.map(set => (
               <div key={set.id}
                 style={{
                   textAlign: 'left', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',

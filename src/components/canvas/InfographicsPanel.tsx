@@ -261,6 +261,7 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
   const [loading, setLoading] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -419,6 +420,18 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
 
         <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
+          {/* Search */}
+          {items.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+              <div className="search-bar">
+                <span className="search-bar__icon" aria-hidden>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input className="search-bar__input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." aria-label="Search infographics" />
+              </div>
+            </div>
+          )}
+
           {items.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-8)' }}>
               <div style={{ width: 64, height: 64, borderRadius: 'var(--radius-xl)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-5)' }}>
@@ -428,9 +441,20 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
               <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 300, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>Create one from scratch or generate from a workflow.</div>
               <button className="btn btn-primary" onClick={createNew}>+ Create infographic</button>
             </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-4)' }}>
-              {items.map(item => {
+          ) : (() => {
+            const filtered = items.filter(i => !query.trim() || (i.label || '').toLowerCase().includes(query.toLowerCase()) || (parseInfographicData(i.json)?.title || '').toLowerCase().includes(query.toLowerCase()));
+            return (
+              <>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', marginBottom: 'var(--space-4)' }}>
+                  {filtered.length} infographic{filtered.length !== 1 ? 's' : ''}
+                </div>
+                {filtered.length === 0 ? (
+                  <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
+                    No infographics match your search.
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'var(--space-4)' }}>
+                    {filtered.map(item => {
                 const data = parseInfographicData(item.json);
                 const title = data?.title || item.label || 'Untitled';
                 const canRender = data && Array.isArray(data.points) && data.points.length > 0;
@@ -463,10 +487,13 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
                       )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                    );
+                  })}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
     );
