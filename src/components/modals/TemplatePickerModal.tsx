@@ -45,7 +45,7 @@ export default function TemplatePickerModal({ onClose, onStartScratch, onPickTem
           <aside style={{ width: 180, flexShrink: 0, padding: 'var(--space-4)', borderRight: '1px solid var(--color-border-subtle)', display: 'flex', flexDirection: 'column', gap: 2 }}>
             {FILTERS.map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                style={{ textAlign: 'left', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: filter === f ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: filter === f ? 'var(--weight-medium)' : 'var(--weight-normal)', color: filter === f ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)' }}
+                style={{ width: '100%', display: 'block', textAlign: 'left', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: filter === f ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: filter === f ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)' }}
                 onMouseEnter={e => { if (filter !== f) e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
                 onMouseLeave={e => { if (filter !== f) e.currentTarget.style.background = 'transparent'; }}>
                 {f}
