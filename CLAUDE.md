@@ -1,5 +1,9 @@
 # Claude Code — project guidance
 
+## Git workflow
+
+**Always push after every commit.** Use `git push -u origin <branch>` immediately after committing so changes are visible on the remote.
+
 ## Deployment
 
 **Always ship finished work to `main`.** This project deploys to
