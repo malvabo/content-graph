@@ -103,9 +103,10 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
         <button
           onClick={handleRunAll}
           disabled={isRunning}
-          className={`btn btn-sm btn-run${isRunning ? ' loading' : ''}`}
+          className="btn btn-sm btn-run"
+          style={{ opacity: isRunning ? 0.6 : 1 }}
         >
-          {!isRunning && '▶ '}Run {isRunning ? 'running…' : 'nodes'}
+          {isRunning ? 'Running…' : '▶ Run nodes'}
         </button>
 
         {/* Settings gear popover */}

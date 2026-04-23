@@ -256,36 +256,34 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 @keyframes border-rotate { to { --border-angle: 360deg; } }
 .btn-run {
   position: relative;
-  background: var(--color-interactive-default);
-  color: var(--color-text-primary);
+  /* transparent so ::before shows through — ::after provides the grey fill */
+  background: transparent;
+  color: var(--color-text-secondary);
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   isolation: isolate;
 }
 .btn-run::before {
   content: '';
   position: absolute;
-  inset: -2px;
-  border-radius: calc(var(--radius-lg) + 2px);
-  background: conic-gradient(from var(--border-angle), transparent 40%, var(--color-accent) 50%, transparent 60%);
+  inset: 0;
+  border-radius: var(--radius-md);
+  background: conic-gradient(from var(--border-angle), transparent 30%, var(--color-accent) 50%, transparent 70%);
   animation: border-rotate 4s linear infinite;
   z-index: -1;
-  opacity: 0.35;
+  opacity: 0.7;
   transition: opacity var(--duration-enter);
 }
 .btn-run::after {
   content: '';
   position: absolute;
-  inset: 0;
-  border-radius: var(--radius-lg);
-  background: var(--color-interactive-default);
+  inset: 1.5px;
+  border-radius: calc(var(--radius-md) - 1.5px);
+  background: var(--color-bg-surface);
   z-index: -1;
 }
 .btn-run:hover::before { opacity: 1; animation-duration: 2.5s; }
-.btn-run:hover { box-shadow: var(--shadow-glow); }
-.btn-run.loading::after { border-radius: var(--radius-lg); }
-.btn-run.loading { color: transparent; pointer-events: none; position: relative; }
-.btn-run.loading::before { opacity: 0.6; }
+.btn-run:hover { box-shadow: 0 0 14px rgba(13,191,90,0.3); }
 
 /* WebKit scrollbar fallback */
 [style*='scrollbar-width: thin']::-webkit-scrollbar { width: 4px; }
