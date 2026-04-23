@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { NODE_DEFS, CATEGORY_LABELS, BADGE_COLORS, type NodeDef } from '../../utils/nodeDefs';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import type { NodeCategory } from '../../store/graphStore';
+import SearchBar from '../ui/SearchBar';
 
 import { motion } from 'motion/react';
 
@@ -92,13 +93,12 @@ export default function NodePalette({ onAddNode }: Props) {
           onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}>
           {/* Search */}
           <div style={{ padding: 'var(--space-3) var(--space-3) var(--space-2)' }}>
-            <input
+            <SearchBar
               ref={searchRef}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onValueChange={setSearch}
               placeholder="Search nodes…"
               aria-label="Search nodes"
-              className="form-input"
             />
           </div>
 
