@@ -197,10 +197,10 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
 
   type PillRole = 'complete' | 'running' | 'idle' | 'error';
   const pillRoleMap: Record<PillRole, { dot: string; bg: string; border: string; fg: string }> = {
-    complete: { dot: 'var(--color-accent, #0DBF5A)', bg: 'var(--color-success-bg, #e6f9e6)', border: '#E0DCD6', fg: 'var(--color-success-text, #1a7f1a)' },
-    running:  { dot: '#F0D8A0', bg: 'var(--color-warning-bg, #FEF8E8)', border: 'var(--color-warning-border, #F0D8A0)', fg: 'var(--color-warning-text, #6A4A10)' },
-    idle:     { dot: '#C8D4CC', bg: 'var(--color-bg-surface)', border: 'transparent', fg: 'var(--color-text-tertiary)' },
-    error:    { dot: '#C93030', bg: 'var(--color-danger-bg, #FEF4F4)', border: '#ECC0C0', fg: 'var(--color-danger-text, #A83030)' },
+    complete: { dot: '#0DBF5A', bg: 'rgba(13,191,90,0.14)', border: 'rgba(13,191,90,0.28)', fg: 'rgba(13,191,90,0.95)' },
+    running:  { dot: '#F0D8A0', bg: 'rgba(240,216,160,0.14)', border: 'rgba(240,216,160,0.28)', fg: 'rgba(240,216,160,0.95)' },
+    idle:     { dot: 'rgba(255,255,255,0.30)', bg: 'rgba(255,255,255,0.07)', border: 'transparent', fg: 'rgba(255,255,255,0.45)' },
+    error:    { dot: '#ff6b6b', bg: 'rgba(201,48,48,0.14)', border: 'rgba(201,48,48,0.28)', fg: 'rgba(255,107,107,0.95)' },
   };
 
   const pill = isTranscribing ? { role: 'running' as PillRole, label: 'Transcribing' }
@@ -220,14 +220,17 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       aria-label={ariaLabel}
       className="voice-note-card"
       style={{
-        width: '100%', textAlign: 'left', background: 'var(--color-bg-card)',
-        border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)',
+        width: '100%', textAlign: 'left',
+        background: 'rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+        borderRadius: 'var(--radius-xl)',
         padding: 'var(--space-4) var(--space-5)', display: 'grid',
         gridTemplateColumns: 'auto 1fr auto', alignItems: 'center',
         columnGap: 'var(--space-4)', rowGap: 4, minHeight: 80,
         cursor: isTranscribing ? 'default' : 'pointer',
-        opacity: isTranscribing ? 0.7 : 1, minWidth: 0, boxSizing: 'border-box',
-        transition: 'border-color 100ms, background 100ms',
+        opacity: isTranscribing ? 0.6 : 1, minWidth: 0, boxSizing: 'border-box',
+        transition: 'border-color 120ms, background 120ms',
       }}
     >
       {/* Status dot — 8×8, pinned left spanning both rows */}
@@ -239,7 +242,7 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       {/* Title — 16/500/22px */}
       <span style={{
         fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 500,
-        lineHeight: '22px', color: 'var(--color-text-primary)',
+        lineHeight: '22px', color: 'rgba(255,255,255,0.92)',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
       }}>
         {displayTitle}
@@ -264,7 +267,7 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       <span style={{
         gridColumn: '2 / span 2',
         fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: '18px',
-        color: 'var(--color-text-tertiary)',
+        color: 'rgba(255,255,255,0.40)',
       }}>
         {meta}
       </span>
@@ -281,8 +284,11 @@ function ErrorSummary({ failed, onReview }: { failed: VoiceNote[]; onReview: () 
       onClick={onReview}
       aria-label={`${n} recording${n === 1 ? '' : 's'} couldn't be transcribed. Review.`}
       style={{
-        width: '100%', textAlign: 'left', background: 'var(--color-danger-bg)',
-        border: '1px solid #ECC0C0', borderRadius: 'var(--radius-xl)',
+        width: '100%', textAlign: 'left',
+        background: 'rgba(201,48,48,0.14)',
+        border: '1px solid rgba(201,48,48,0.28)',
+        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+        borderRadius: 'var(--radius-xl)',
         padding: 'var(--space-3) var(--space-4)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         gap: 'var(--space-3)', minHeight: 44, minWidth: 0, boxSizing: 'border-box',
@@ -290,13 +296,13 @@ function ErrorSummary({ failed, onReview }: { failed: VoiceNote[]; onReview: () 
     >
       <span style={{
         fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, lineHeight: '20px',
-        color: 'var(--color-danger-text, #A83030)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis',
+        color: 'rgba(255,107,107,0.95)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis',
       }}>
         {n} recording{n === 1 ? '' : 's'} couldn't be transcribed
       </span>
       <span aria-hidden style={{
         fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px',
-        color: 'var(--color-danger-text, #A83030)', flexShrink: 0,
+        color: 'rgba(255,107,107,0.7)', flexShrink: 0,
       }}>
         Review →
       </span>
@@ -741,36 +747,45 @@ export default function MobileHome() {
   const isEmpty = activeNotes.length === 0 && failedNotes.length === 0;
 
   return (
-    <div className="mobile-safe-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--color-bg)', position: 'relative', minWidth: 0 }}>
+    <div className="mobile-safe-scroll" style={{
+      flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      background: 'linear-gradient(160deg, #0d0f1e 0%, #080910 55%, #0c0d18 100%)',
+      position: 'relative', minWidth: 0,
+    }}>
       {guest && !user && (
-        <div style={{ background: 'var(--color-warning-bg)', borderBottom: '1px solid var(--color-warning-border)', padding: '6px 14px', fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', textAlign: 'center' }}>
+        <div style={{
+          background: 'rgba(240,216,160,0.10)', borderBottom: '1px solid rgba(240,216,160,0.15)',
+          padding: '6px 14px', fontSize: 12, fontFamily: 'var(--font-sans)',
+          color: 'rgba(240,216,160,0.85)', textAlign: 'center',
+        }}>
           Guest mode — your work won't be saved.
         </div>
       )}
 
-      {/* Header — heading token (16/500/22), supportive subtitle in tertiary */}
-      <header style={{ padding: 'var(--space-5) var(--space-5) var(--space-4)', flexShrink: 0, minWidth: 0 }}>
+      {/* Header */}
+      <header style={{ padding: 'var(--space-6) var(--space-5) var(--space-4)', flexShrink: 0, minWidth: 0 }}>
         <h1 style={{
-          margin: 0, fontFamily: 'var(--font-sans)', fontSize: 26, fontWeight: 600, lineHeight: '32px',
-          color: 'var(--color-text-primary)', letterSpacing: '-0.02em', wordBreak: 'break-word',
+          margin: 0, fontFamily: 'var(--font-sans)', fontSize: 28, fontWeight: 700, lineHeight: '34px',
+          color: '#ffffff', letterSpacing: '-0.03em', wordBreak: 'break-word',
         }}>Voice Notes</h1>
         <p style={{
-          margin: '6px 0 0', fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 400, lineHeight: '22px',
-          color: 'var(--color-text-tertiary)', wordBreak: 'break-word',
+          margin: '6px 0 0', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: '20px',
+          color: 'rgba(255,255,255,0.40)', wordBreak: 'break-word',
         }}>
-          Record an idea and turn it into a LinkedIn post or tweet.
+          Record an idea and turn it into a post.
         </p>
       </header>
 
       {/* Scrollable notes list */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 var(--space-5) 160px', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', minWidth: 0 }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 var(--space-4) 160px', display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
         {!hasKey && (
           <div role="status" style={{
             padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-xl)',
-            background: 'var(--color-warning-bg, #FEF8E8)',
-            border: '1px solid var(--color-warning-border, #F0D8A0)',
+            background: 'rgba(240,216,160,0.10)',
+            border: '1px solid rgba(240,216,160,0.20)',
+            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
             fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: 1.5,
-            color: 'var(--color-warning-text, #6A4A10)',
+            color: 'rgba(240,216,160,0.85)',
           }}>
             Add an Anthropic or Groq API key on a desktop session to enable transcription and generation.
           </div>
@@ -779,40 +794,44 @@ export default function MobileHome() {
         {errorMsg && (
           <div role="alert" style={{
             padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)',
-            background: 'var(--color-danger-bg, #FEF4F4)',
+            background: 'rgba(201,48,48,0.14)',
+            border: '1px solid rgba(201,48,48,0.25)',
+            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
             fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: 1.5,
-            color: 'var(--color-danger-text, #A83030)',
+            color: 'rgba(255,107,107,0.95)',
           }}>{errorMsg}</div>
         )}
 
         {isEmpty ? (
           <div style={{
             padding: 'var(--space-8) var(--space-4)', textAlign: 'center',
-            color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)',
-            fontSize: 14, fontWeight: 400, lineHeight: 1.5,
+            color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-sans)',
+            fontSize: 14, fontWeight: 400, lineHeight: 1.6,
           }}>
-            No notes yet. Tap the record button to capture your first idea.
+            No notes yet.<br />Tap the record button to capture your first idea.
           </div>
         ) : (
           <>
-            {/* Aggregated failures at the top — collapsed by default */}
             {failedNotes.length > 0 && !showingErrors && (
               <ErrorSummary failed={failedNotes} onReview={() => setShowingErrors(true)} />
             )}
             {failedNotes.length > 0 && showingErrors && (
-              <section aria-label="Failed recordings" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <section aria-label="Failed recordings" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-2) var(--space-1) 0' }}>
                   <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, lineHeight: 1,
-                    textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--color-text-tertiary)',
+                    fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, lineHeight: 1,
+                    textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.30)',
                   }}>
                     Failed recordings
                   </span>
                   <button
                     onClick={() => setShowingErrors(false)}
                     aria-label="Hide failed recordings"
-                    className="btn-xs btn-ghost"
-                    style={{ color: 'var(--color-text-tertiary)' }}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500,
+                      color: 'rgba(255,255,255,0.35)', padding: '4px 8px',
+                    }}
                   >
                     Hide
                   </button>
@@ -829,9 +848,11 @@ export default function MobileHome() {
                 key={n.id}
                 style={{
                   position: 'relative',
-                  boxShadow: justRecordedId === n.id ? '0 0 0 2px var(--color-accent, #0DBF5A)' : 'none',
+                  boxShadow: justRecordedId === n.id
+                    ? '0 0 0 2px rgba(13,191,90,0.65), 0 0 24px rgba(13,191,90,0.20)'
+                    : 'none',
                   borderRadius: 'var(--radius-xl)',
-                  transition: 'box-shadow 300ms ease',
+                  transition: 'box-shadow 400ms ease',
                 }}
               >
                 <NoteCard note={n} onOpen={() => setOpenNoteId(n.id)} />
@@ -841,8 +862,13 @@ export default function MobileHome() {
         )}
       </div>
 
-      {/* Sticky record button */}
-      <div style={{ position: 'absolute', bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
+      {/* Sticky record button — frosted glass platform */}
+      <div style={{
+        position: 'absolute',
+        bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))',
+        left: 0, right: 0, display: 'flex', justifyContent: 'center',
+        pointerEvents: 'none',
+      }}>
         <div style={{ pointerEvents: 'auto' }}>
           <RecordButton size={96} onClick={startRecording} state="idle" />
         </div>
