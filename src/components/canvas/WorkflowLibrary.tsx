@@ -11,9 +11,6 @@ import { useGraphLayout } from '../../hooks/useGraphLayout';
 
 import TemplatePickerModal from '../modals/TemplatePickerModal';
 import GraphSchematic from '../ui/GraphSchematic';
-import SearchPalette, { type PaletteEntry } from '../ui/SearchPalette';
-
-const WorkflowIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7"/><path d="M17.5 14v7"/></svg>;
 
 function makeSourceNode(content: string): ContentNode {
   const def = NODE_DEFS_BY_SUBTYPE['text-source'];
@@ -41,6 +38,8 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pasting, setPasting] = useState(false);
+  const [showBanner, setShowBanner] = useState(() => localStorage.getItem('dismiss-get-started') !== '1');
+  const dismissBanner = () => { localStorage.setItem('dismiss-get-started', '1'); setShowBanner(false); };
   const [pasteText, setPasteText] = useState('');
   const [query, setQuery] = useState('');
   const pasteRef = useRef<HTMLTextAreaElement>(null);
@@ -125,19 +124,13 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
 
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
         {/* Search */}
-        <div style={{ marginBottom: 'var(--space-5)' }}>
-          <SearchPalette
-            placeholder="Search workflows…"
-            emptyMessage="No workflows match your search"
-            onQueryChange={setQuery}
-            entries={items.map((item): PaletteEntry => ({
-              id: item.id,
-              icon: <WorkflowIcon />,
-              label: item.name || 'Untitled',
-              description: `${item.nodes.length} node${item.nodes.length !== 1 ? 's' : ''} · ${fmt(item.savedAt)}`,
-              onSelect: () => handleLoad(item),
-            }))}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+          <div className="search-bar">
+            <span className="search-bar__icon" aria-hidden>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </span>
+            <input className="search-bar__input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." aria-label="Search workflows" />
+          </div>
         </div>
 
         {/* Count */}
@@ -148,7 +141,10 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
         )}
 
         {/* Feature block */}
-        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'start', marginBottom: 'var(--space-6)' }}>
+        {showBanner && <div style={{ position: 'relative', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'start', marginBottom: 'var(--space-6)' }}>
+          <button onClick={dismissBanner} aria-label="Dismiss" style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', width: 24, height: 24, borderRadius: 'var(--radius-md)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-overlay-dark)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
           {/* Left: title + description + 3 starters */}
           <div>
             <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Get started with Workflows</h2>
@@ -196,7 +192,7 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
               </div>
             );
           })()}
-        </div>
+        </div>}
 
           {pasting && (
             <div style={{ marginTop: 'var(--space-5)' }}>
