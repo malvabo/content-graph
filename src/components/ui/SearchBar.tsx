@@ -29,6 +29,8 @@ const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
           display: 'flex',
           alignItems: 'stretch',
           height: 34,
+          width: 400,
+          maxWidth: '100%',
           background: 'var(--color-bg-card)',
           border: '1px solid var(--color-border-default)',
           borderRadius: 'var(--radius-full)',
