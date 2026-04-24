@@ -128,12 +128,13 @@ export const Default: Story = {
   },
 };
 
-export const PrefilledQuery: Story = {
-  name: 'With results (type "li" to see)',
+export const OpenWithResults: Story = {
+  name: 'Open — results visible',
   args: {
     entries: SAMPLE_ENTRIES,
     placeholder: 'Search nodes…',
     emptyMessage: 'No nodes found',
+    defaultQuery: 'e',
   },
 };
 

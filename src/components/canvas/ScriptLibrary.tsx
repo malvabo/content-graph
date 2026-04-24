@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Menu, MenuItem } from '../ui/Menu';
 import { useScriptStore } from '../../store/scriptStore';
+import SearchBar from '../ui/SearchBar';
 
 const fmt = (iso: string) => {
   const d = new Date(iso);
@@ -70,13 +71,8 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (id: str
 
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
         {/* Search */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-          <div className="search-bar">
-            <span className="search-bar__icon" aria-hidden>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            </span>
-            <input className="search-bar__input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." aria-label="Search scripts" />
-          </div>
+        <div style={{ marginBottom: 'var(--space-5)', width: 200 }}>
+          <SearchBar value={query} onValueChange={setQuery} placeholder="Search…" aria-label="Search scripts" />
         </div>
 
         {/* Count */}

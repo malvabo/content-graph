@@ -17,6 +17,8 @@ interface SearchPaletteProps {
   entries: PaletteEntry[];
   placeholder?: string;
   emptyMessage?: string;
+  /** Pre-fill query and open the popover — useful for Storybook demos. */
+  defaultQuery?: string;
   /** Notify parent of query changes so an inline list can also be filtered. */
   onQueryChange?: (q: string) => void;
 }
@@ -78,10 +80,11 @@ export default function SearchPalette({
   entries,
   placeholder = 'Search...',
   emptyMessage = 'Nothing found',
+  defaultQuery = '',
   onQueryChange,
 }: SearchPaletteProps) {
-  const [query, setQuery] = useState('');
-  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(defaultQuery);
+  const [open, setOpen] = useState(defaultQuery.length > 0);
   const [activeIdx, setActiveIdx] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
