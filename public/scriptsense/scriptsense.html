@@ -791,7 +791,7 @@ ${text}`
         <div style={{ display:"flex", flex:1, minHeight:0 }}>
 
           {/* Left — editor */}
-          <div style={{ width:"50%", borderRight:`1px solid ${C.border}`, position:"relative", display:"flex", flexDirection:"column", background:C.white }}>
+          <div style={{ width:"60%", borderRight:`1px solid ${C.border}`, position:"relative", display:"flex", flexDirection:"column", background:C.white }}>
 
             {/* highlight overlay */}
             <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
@@ -829,7 +829,7 @@ ${text}`
           </div>
 
           {/* Right — insights panel */}
-          <div ref={insightRef} className="scroll-area" style={{ width:"50%", overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:12, background:C.canvasGrey }}>
+          <div ref={insightRef} className="scroll-area" style={{ width:"40%", overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:12, background:C.canvasGrey }}>
 
             <div style={{ display: activeTab==="insights" ? "contents" : "none" }}>
               {/* ── Empty / loading / results states ── */}
