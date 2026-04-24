@@ -1,5 +1,36 @@
 import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
+
+function charIdxForWord(text: string, wordCount: number): number {
+  let count = 0, i = 0;
+  while (i < text.length) {
+    while (i < text.length && /\s/.test(text[i])) i++;
+    if (i >= text.length) break;
+    while (i < text.length && !/\s/.test(text[i])) i++;
+    count++;
+    if (count >= wordCount) return i;
+  }
+  return text.length;
+}
+
+function totalWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function renderDraftContent(text: string, charIdx: number): React.ReactNode {
+  const displayed = text.slice(0, charIdx);
+  const paras = displayed.split('\n\n');
+  return paras.map((para, pi) => {
+    const parts = para.split(/(→)/g);
+    return (
+      <p key={pi} style={{ margin: 0, marginTop: pi > 0 ? 20 : 0, whiteSpace: 'pre-wrap' }}>
+        {parts.map((part, i) =>
+          part === '→' ? <span key={i} style={{ opacity: 0.6 }}>→</span> : part
+        )}
+      </p>
+    );
+  });
+}
 import { useVoiceStore } from '../../store/voiceStore';
 
 interface Props {
@@ -109,12 +140,12 @@ const BREATH = [
 // ─── Orb phase targets ────────────────────────────────────────────────────────
 
 const ORB: Record<Phase, object> = {
-  idle:      { width: 200, height: 200, borderRadius: 100, top: '60%', left: '50%', x: '-50%', y: '-50%', opacity: 1 },
-  prompt:    { width: 300, height: 76,  borderRadius: 38,  top: '76%', left: '50%', x: '-50%', y: '-50%', opacity: 1 },
-  recording: { width: 160, height: 160, borderRadius: 80,  top: '52%', left: '50%', x: '-50%', y: '-50%', opacity: 0 },
-  platform:  { width: 160, height: 44,  borderRadius: 22,  top: '11%', left: '50%', x: '-50%', y: '-50%', opacity: 1 },
-  draft:     { width: 18,  height: 18,  borderRadius: 9,   top: '8.2%', left: '50%', x: -108,  y: '-50%', opacity: 1 },
-  posting:   { width: 240, height: 240, borderRadius: 120, top: '50%', left: '50%', x: '-50%', y: '-50%', opacity: 0 },
+  idle:      { width: 200, height: 200, borderRadius: 100, top: '60%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
+  prompt:    { width: 300, height: 76,  borderRadius: 38,  top: '76%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
+  recording: { width: 160, height: 160, borderRadius: 80,  top: '52%',  left: '50%', x: '-50%', y: '-50%', opacity: 0 },
+  platform:  { width: 160, height: 44,  borderRadius: 22,  top: '11%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
+  draft:     { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
+  posting:   { width: 360, height: 360, borderRadius: 180, top: '50%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
 };
 
 const SPRING    = { type: 'spring' as const, stiffness: 80,  damping: 18, mass: 1 };
@@ -170,13 +201,40 @@ export default function MobileOnboarding({ onComplete }: Props) {
   const [orbAbsorb, setOrbAbsorb]       = useState(false);
   const [mergeColor, setMergeColor]     = useState<string | null>(null);
   const [draftText, setDraftText]       = useState('');
+  const [displayedCharIdx, setDisplayedCharIdx] = useState(0);
+  const [typingDone, setTypingDone]             = useState(false);
+  const [isEditing, setIsEditing]               = useState(false);
+  const [postStep, setPostStep]                 = useState<'none'|'bloom'|'reform'>('none');
+  const [isPosted, setIsPosted]                 = useState(false);
+  const [savedPlatformId, setSavedPlatformId]   = useState<string|null>(null);
+
+  useEffect(() => {
+    if (phase !== 'draft') {
+      setDisplayedCharIdx(0);
+      setTypingDone(false);
+      setIsEditing(false);
+      return;
+    }
+    const text = draftText;
+    const total = totalWords(text);
+    let wordNum = 0;
+    let tick: ReturnType<typeof setInterval>;
+    // Delay start until orb lands (~900ms) and headline appears (~350ms)
+    const startTimer = setTimeout(() => {
+      tick = setInterval(() => {
+        wordNum++;
+        setDisplayedCharIdx(charIdxForWord(text, wordNum));
+        if (wordNum >= total) { clearInterval(tick); setTypingDone(true); }
+      }, 40);
+    }, 1250);
+    return () => { clearTimeout(startTimer); clearInterval(tick); };
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function advance()       { if (phase==='idle')  { setPhase('prompt'); setTimeout(()=>setHintVisible(true),1200); } }
   function startRecording(){ setHintVisible(false); setPhase('recording'); }
   function goToPlatform()  { setPhase('platform'); }
-  function triggerPost()   { if (phase!=='draft') return; setPhase('posting'); }
-
-  function saveAndFinish() {
+  function triggerPost() {
+    if (phase !== 'draft') return;
     const title = draftText.split('\n').find(l => l.trim()) ?? 'Voice note';
     const kindMap: Record<string, 'linkedin-post'|'twitter-single'> = {
       linkedin: 'linkedin-post', x: 'twitter-single',
@@ -189,14 +247,28 @@ export default function MobileOnboarding({ onComplete }: Props) {
       durationMs: 0,
       status: 'ready',
       createdAt: new Date().toISOString(),
-      ...(selId ? { lastGeneration: { kind: kindMap[selId] ?? 'twitter-single', text: draftText, createdAt: new Date().toISOString() } } : {}),
+      ...(savedPlatformId ? { lastGeneration: { kind: kindMap[savedPlatformId] ?? 'twitter-single', text: draftText, createdAt: new Date().toISOString() } } : {}),
     });
-    onComplete();
+    setPhase('posting');
+    setPostStep('bloom');
+    // Bloom peaks, then orb starts reforming toward idle
+    setTimeout(() => setPostStep('reform'), 500);
+    // Orb arrives at idle center — switch phase so it breathes again, show "Posted"
+    setTimeout(() => {
+      setPhase('idle');
+      setPostStep('none');
+      setIsPosted(true);
+      setDraftText('');
+      setSavedPlatformId(null);
+    }, 900);
+    // Hold 1.2 s, then fade "Posted" out
+    setTimeout(() => setIsPosted(false), 900 + 1200);
   }
 
   function pickPlatform(id: string) {
     if (selId) return;
     const plat = PLATFORMS.find(p=>p.id===id)!;
+    setSavedPlatformId(id);
     setSelId(id);
     setSelPhase('pulse');
 
@@ -208,18 +280,28 @@ export default function MobileOnboarding({ onComplete }: Props) {
       setMergeColor(plat.mergeRgb);
     }, 150 + 820);
 
+    // Merge flash ends — clear it but keep selId so platforms stay hidden during pill hold
     setTimeout(() => {
       setOrbAbsorb(false);
       setMergeColor(null);
       setDraftText(PLATFORM_DRAFTS[id] ?? '');
+    }, 150 + 820 + 420);
+
+    // 300 ms pill hold, then orb travels to bottom — aurora dims simultaneously
+    setTimeout(() => {
       setPhase('draft');
       setSelPhase('none');
       setSelId(null);
-    }, 150 + 820 + 420);
+    }, 150 + 820 + 420 + 300);
   }
 
-  const isIdle    = phase === 'idle';
+  const isIdle     = phase === 'idle';
+  const isDraft    = phase === 'draft';
   const isPlatform = phase === 'platform';
+  const isBloom    = phase === 'posting' && postStep === 'bloom';
+  const isReform   = phase === 'posting' && postStep === 'reform';
+  // During reform, animate toward idle so the orb springs back naturally
+  const orbTarget  = isReform ? ORB.idle : ORB[phase];
 
   return (
     <LayoutGroup>
@@ -233,55 +315,72 @@ export default function MobileOnboarding({ onComplete }: Props) {
             background: linear-gradient(var(--bg-a), #0b0608 0%, #0f0810 55%, #09090f 100%);
             animation: bg-drift 22s linear infinite alternate;
           }
-          .onb-draft-ta { caret-color: rgba(255,255,255,0.92); color: rgba(255,255,255,0.88); background:transparent; border:none; outline:none; resize:none; padding:0; margin:0; }
-          .onb-draft-ta::selection { background: rgba(255,255,255,0.16); }
+          .onb-draft-ta { caret-color: rgba(255,235,210,0.9); color: rgba(255,255,255,0.92); background:transparent; border:none; outline:none; resize:none; padding:0; margin:0; font-size:18px; line-height:1.7; letter-spacing:0.01em; }
+          .onb-draft-ta::selection { background: rgba(255,220,200,0.25); }
+          @keyframes draft-caret-blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+          .draft-caret { display:inline-block; width:1.5px; height:1.1em; background:rgba(255,235,210,0.9); vertical-align:text-bottom; margin-left:2px; border-radius:1px; animation:draft-caret-blink 1.2s step-end infinite; }
         `}</style>
 
         {/* ── Aurora ── */}
-        {BLOBS.map((b,i) => (
-          <motion.div key={i} aria-hidden
-            animate={{x:b.xPath,y:b.yPath}}
-            transition={{x:{duration:b.xDur,repeat:Infinity,ease:'easeInOut',repeatType:'loop'},y:{duration:b.yDur,repeat:Infinity,ease:'easeInOut',repeatType:'loop'}}}
-            style={{position:'absolute',top:0,left:0,width:b.w,height:b.h,background:b.color,filter:'blur(90px)',willChange:'transform',pointerEvents:'none'}}
-          />
-        ))}
+        <motion.div
+          aria-hidden
+          animate={{ opacity: (phase === 'draft' || phase === 'posting') ? 0.30 : 1 }}
+          transition={{ duration: 0.6, ease: [0.4, 0.0, 0.6, 1.0] }}
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+        >
+          {BLOBS.map((b,i) => (
+            <motion.div key={i}
+              animate={{x:b.xPath,y:b.yPath}}
+              transition={{x:{duration:b.xDur,repeat:Infinity,ease:'easeInOut',repeatType:'loop'},y:{duration:b.yDur,repeat:Infinity,ease:'easeInOut',repeatType:'loop'}}}
+              style={{position:'absolute',top:0,left:0,width:b.w,height:b.h,background:b.color,filter:'blur(90px)',willChange:'transform',pointerEvents:'none'}}
+            />
+          ))}
+        </motion.div>
 
         {/* Grain */}
         <div aria-hidden style={{position:'absolute',inset:0,opacity:0.045,zIndex:1,pointerEvents:'none',backgroundImage:`url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,backgroundRepeat:'repeat',backgroundSize:'200px 200px'}} />
 
-        {/* ── Orb — 3 gradient layers, mix-blend-mode:screen, no hard edge ── */}
+        {/* ── Orb — single gradient, mix-blend-mode:screen, no hard edge ── */}
         <motion.div
           layoutId="main-orb"
-          onClick={(e)=>{ if(phase==='prompt'){e.stopPropagation();startRecording();} if(phase==='draft'){e.stopPropagation();triggerPost();} }}
-          animate={{...ORB[phase],...(orbAbsorb?{scale:[1,1.18,1]}:{})}}
-          transition={SPRING}
-          style={{position:'absolute',mixBlendMode:'screen',zIndex:12,cursor:(phase==='prompt'||phase==='draft')?'pointer':'default',pointerEvents:phase==='recording'?'none':'auto'}}
+          onClick={(e)=>{ if(phase==='prompt'){e.stopPropagation();startRecording();} if(isDraft){e.stopPropagation();triggerPost();} }}
+          animate={{...orbTarget,...(orbAbsorb?{scale:[1,1.18,1]}:{})}}
+          transition={isBloom ? {type:'spring',stiffness:200,damping:14} : SPRING}
+          style={{position:'absolute',mixBlendMode:'screen',zIndex:12,cursor:(phase==='prompt'||isDraft)?'pointer':'default',pointerEvents:phase==='recording'?'none':'auto'}}
         >
-          {/* Overall scale breath */}
+          {/* Overall scale breath — idle and draft */}
           <motion.div
-            animate={isIdle?{scale:[1.04,0.96,1.04]}:{scale:1}}
-            transition={isIdle?{duration:4.5,repeat:Infinity,ease:EASE}:{duration:0.6}}
+            animate={(isIdle||isDraft)?{scale:[1.04,0.96,1.04]}:{scale:1}}
+            transition={(isIdle||isDraft)?{duration:4.5,repeat:Infinity,ease:EASE}:{duration:0.6}}
             style={{position:'absolute',inset:0}}
           >
-            {/* Core brightness */}
+            {/* Single gradient — warm white core fading monotonically to transparent warm */}
             <motion.div aria-hidden
-              animate={isIdle?{opacity:[1.0,0.85,1.0]}:{opacity:1}}
-              transition={isIdle?{duration:3.2,repeat:Infinity,ease:EASE}:{duration:0.5}}
-              style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at center, rgba(255,255,255,1) 0%, rgba(255,255,255,0.90) 15%, transparent 40%)'}}
+              animate={(isIdle||isDraft)?{opacity:[1.0,0.85,1.0]}:{opacity:1}}
+              transition={(isIdle||isDraft)?{duration:3.2,repeat:Infinity,ease:EASE}:{duration:0.5}}
+              style={{position:'absolute',inset:0,background:'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,250,240,0.95) 8%, rgba(255,235,210,0.7) 18%, rgba(255,210,180,0.4) 32%, rgba(255,190,160,0.2) 50%, rgba(255,180,150,0.08) 70%, rgba(255,180,150,0.02) 85%, rgba(255,180,150,0) 100%)'}}
             />
-            {/* Mid warm glow */}
-            <div aria-hidden style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at center, transparent 8%, rgba(255,240,230,0) 12%, rgba(255,240,230,0.62) 24%, transparent 70%)'}} />
-            {/* Outer bleed — 6 s, 50% extension */}
+            {/* Outer bleed — expands during posting bloom to flood screen */}
             <motion.div aria-hidden
-              animate={isIdle?{scale:[1.05,0.90,1.15,0.90,1.05]}:{scale:1}}
-              transition={isIdle?{duration:6,repeat:Infinity,ease:EASE}:{duration:0.6}}
-              style={{position:'absolute',inset:'-50%',background:'radial-gradient(ellipse at center, transparent 0%, transparent 28%, rgba(255,220,200,0.28) 52%, rgba(255,210,185,0.14) 72%, transparent 94%)',pointerEvents:'none'}}
+              animate={
+                isBloom  ? {scale:6,opacity:1} :
+                isReform ? {scale:0,opacity:0} :
+                (isIdle||isDraft) ? {scale:[1.05,0.90,1.15,0.90,1.05],opacity:1} :
+                {scale:1,opacity:1}
+              }
+              transition={
+                isBloom  ? {duration:0.45,ease:[0.16,1,0.3,1]} :
+                isReform ? {duration:0.4,ease:[0.4,0,0.6,1]} :
+                (isIdle||isDraft) ? {scale:{duration:6,repeat:Infinity,ease:EASE},opacity:{duration:0.3}} :
+                {duration:0.6}
+              }
+              style={{position:'absolute',inset:'-50%',background:'radial-gradient(ellipse at center, rgba(255,235,210,0) 0%, rgba(255,220,200,0.28) 52%, rgba(255,210,185,0.14) 72%, rgba(255,200,180,0) 94%)',pointerEvents:'none'}}
             />
             {/* Platform color merge flash */}
             {mergeColor && (
               <motion.div aria-hidden
                 initial={{opacity:0.65}} animate={{opacity:0}} transition={{duration:0.42}}
-                style={{position:'absolute',inset:0,background:`radial-gradient(ellipse at center, rgba(${mergeColor},0.7) 0%, transparent 65%)`,pointerEvents:'none'}}
+                style={{position:'absolute',inset:0,background:`radial-gradient(ellipse at center, rgba(${mergeColor},0.7) 0%, rgba(${mergeColor},0) 65%)`,pointerEvents:'none'}}
               />
             )}
           </motion.div>
@@ -378,41 +477,88 @@ export default function MobileOnboarding({ onComplete }: Props) {
           })}
         </AnimatePresence>
 
-        {/* ── Draft card ── */}
+        {/* ── Draft: full-bleed scrim for contrast (no edges, no card) ── */}
         <AnimatePresence>
-          {(phase==='draft'||phase==='posting') && (
-            <motion.div key="draft-card"
-              initial={{opacity:0,y:28}} animate={{opacity:phase==='posting'?0:1,y:0}} exit={{opacity:0,y:12}} transition={SPRING}
-              style={{position:'absolute',top:'14%',bottom:'13%',left:20,right:20,display:'flex',flexDirection:'column',zIndex:10}}
+          {isDraft && (
+            <motion.div key="draft-scrim"
+              initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+              transition={{duration:0.5,ease:[0.4,0,0.6,1]}}
+              style={{position:'absolute',inset:0,zIndex:9,pointerEvents:'none',background:'linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.15) 100%)'}}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* ── Draft text — no card, no border, text directly on scene ── */}
+        <AnimatePresence>
+          {isDraft && (
+            <motion.div key="draft-content"
+              initial={{opacity:0,y:28}} animate={{opacity:1,y:0}} exit={{opacity:0,y:12}} transition={SPRING}
+              style={{position:'absolute',top:'14%',bottom:'13%',left:'6%',right:'6%',display:'flex',flexDirection:'column',zIndex:10,overflow:'hidden'}}
             >
-              <div style={{flex:1,background:'rgba(255,255,255,0.05)',backdropFilter:'blur(28px)',WebkitBackdropFilter:'blur(28px)',borderRadius:20,padding:'20px 20px 16px',display:'flex',flexDirection:'column',overflow:'hidden'}}>
-                <textarea className="onb-draft-ta" value={draftText} onChange={e=>setDraftText(e.target.value)} style={{flex:1,fontFamily:'var(--font-sans)',fontSize:15.5,lineHeight:1.72}} />
-              </div>
-              <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.6,duration:0.8}}
-                style={{textAlign:'center',marginTop:16,fontFamily:'var(--font-sans)',fontSize:13,color:'rgba(255,255,255,0.28)',letterSpacing:'0.03em',pointerEvents:'none'}}
-              >Tap the orb to post</motion.div>
+              {isEditing ? (
+                <textarea
+                  autoFocus
+                  className="onb-draft-ta"
+                  value={draftText}
+                  onChange={e => setDraftText(e.target.value)}
+                  onBlur={() => setIsEditing(false)}
+                  style={{flex:1,fontFamily:'var(--font-sans)',width:'100%'}}
+                />
+              ) : (
+                <div
+                  onClick={() => { if (typingDone) setIsEditing(true); }}
+                  style={{flex:1,fontFamily:'var(--font-sans)',fontSize:18,lineHeight:1.7,letterSpacing:'0.01em',color:'rgba(255,255,255,0.92)',cursor:typingDone?'text':'default',overflowY:'auto'}}
+                >
+                  {renderDraftContent(draftText, typingDone ? draftText.length : displayedCharIdx)}
+                  {typingDone && <span className="draft-caret" aria-hidden />}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ── Posting bloom ── */}
+        {/* ── "Tap the orb to post" label — anchored under the draft orb ── */}
         <AnimatePresence>
-          {phase==='posting' && (
+          {isDraft && (
+            <motion.div key="orb-label"
+              initial={{opacity:0}} animate={{opacity:isEditing?0.2:0.4}} exit={{opacity:0}}
+              transition={{duration:0.6,delay:isEditing?0:0.5}}
+              style={{
+                position:'absolute',
+                top:'calc(88% + 40px)', // orb center 88% + half-height 28px + gap 12px
+                left:0,right:0,
+                textAlign:'center',
+                fontFamily:'var(--font-sans)',fontSize:13,
+                color:'rgba(255,255,255,1)',
+                letterSpacing:'0.05em',
+                pointerEvents:'none',
+                zIndex:13,
+              }}
+            >tap the orb to post</motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── "Posted" headline + save button ── */}
+        <AnimatePresence>
+          {isPosted && (
             <>
-              <motion.div key="bloom" initial={{scale:0.1,opacity:0.85}} animate={{scale:9,opacity:0}} transition={{duration:1.4,ease:[0.16,1,0.3,1]}}
-                style={{position:'absolute',width:190,height:190,borderRadius:'50%',top:'50%',left:'50%',x:'-50%',y:'-50%',background:'radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(220,200,255,0.18) 50%, transparent 70%)',filter:'blur(8px)',pointerEvents:'none',zIndex:50}} />
-              <motion.div key="posted" initial={{opacity:0,scale:0.85}} animate={{opacity:1,scale:1}} transition={{...SPRING,delay:0.35}}
-                style={{position:'absolute',top:'44%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:32,fontWeight:700,color:'rgba(255,255,255,0.94)',letterSpacing:'-0.03em',y:'-50%',pointerEvents:'none',zIndex:55}}
-              >Posted ✦</motion.div>
-              <motion.button key="save-btn"
-                initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{...SPRING,delay:0.85}}
-                onClick={saveAndFinish}
-                style={{position:'absolute',top:'58%',left:0,right:0,display:'flex',justifyContent:'center',zIndex:55}}
+              <motion.div key="h-posted"
+                initial={{opacity:0,scale:0.92}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.96}}
+                transition={{duration:0.5,ease:[0.4,0,0.2,1]}}
+                style={{position:'absolute',top:'42%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:32,fontWeight:700,color:'rgba(255,255,255,0.94)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:20}}
+              >Posted</motion.div>
+              <motion.div key="save-btn"
+                initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:8}}
+                transition={{duration:0.4,delay:0.3,ease:[0.4,0,0.2,1]}}
+                style={{position:'absolute',top:'54%',left:0,right:0,display:'flex',justifyContent:'center',zIndex:20}}
               >
-                <span style={{fontFamily:'var(--font-sans)',fontSize:16,fontWeight:600,color:'rgba(255,255,255,0.88)',letterSpacing:'-0.01em',cursor:'pointer',textShadow:'0 0 24px rgba(255,255,255,0.50)',background:'none',border:'none',padding:'10px 28px'}}>
-                  Save to my notes
-                </span>
-              </motion.button>
+                <button
+                  onClick={onComplete}
+                  style={{background:'none',border:'none',cursor:'pointer',fontFamily:'var(--font-sans)',fontSize:16,fontWeight:500,color:'rgba(255,255,255,0.72)',letterSpacing:'0.01em',padding:'12px 32px'}}
+                >
+                  Save to notes
+                </button>
+              </motion.div>
             </>
           )}
         </AnimatePresence>
@@ -443,9 +589,10 @@ export default function MobileOnboarding({ onComplete }: Props) {
               style={{position:'absolute',top:'22%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:30,fontWeight:700,color:'rgba(255,255,255,1)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:5}}
             >Where should this go?</motion.div>
           )}
-          {(phase==='draft'||phase==='posting') && (
-            <motion.div key="h-draft" layoutId="headline"
-              initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:phase==='posting'?0:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.12,ease:[0.4,0,0.2,1]}}
+          {isDraft && (
+            <motion.div key="h-draft"
+              initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-16}}
+              transition={{duration:0.4,delay:0.9,ease:[0.4,0,0.2,1]}}
               style={{position:'absolute',top:'6%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:22,fontWeight:700,color:'rgba(255,255,255,0.84)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:5}}
             >Here's your draft</motion.div>
           )}
