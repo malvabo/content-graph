@@ -354,12 +354,11 @@ export default function MobileOnboarding({ onComplete }: Props) {
             transition={(isIdle||isDraft)?{duration:4.5,repeat:Infinity,ease:EASE}:{duration:0.6}}
             style={{position:'absolute',inset:0}}
           >
-            {/* Single RGB (255,235,210) across all stops — only alpha varies, zero color
-                interpolation, no 'transparent' keyword so no black bleed between stops */}
+            {/* Single RGB (255,235,210), alpha-only stops, oklch interpolation = no sRGB banding */}
             <motion.div aria-hidden
               animate={(isIdle||isDraft)?{opacity:[1.0,0.85,1.0]}:{opacity:1}}
               transition={(isIdle||isDraft)?{duration:3.2,repeat:Infinity,ease:EASE}:{duration:0.5}}
-              style={{position:'absolute',inset:0,background:'radial-gradient(circle, rgba(255,235,210,1) 0%, rgba(255,235,210,0.95) 8%, rgba(255,235,210,0.7) 18%, rgba(255,235,210,0.4) 32%, rgba(255,235,210,0.2) 50%, rgba(255,235,210,0.08) 70%, rgba(255,235,210,0.02) 85%, rgba(255,235,210,0) 100%)'}}
+              style={{position:'absolute',inset:0,background:'radial-gradient(circle in oklch, rgba(255,235,210,1) 0%, rgba(255,235,210,0.95) 8%, rgba(255,235,210,0.7) 18%, rgba(255,235,210,0.4) 32%, rgba(255,235,210,0.2) 50%, rgba(255,235,210,0.08) 70%, rgba(255,235,210,0.02) 85%, rgba(255,235,210,0) 100%)'}}
             />
             {/* Bloom flood — invisible in all normal states, only during posting ritual */}
             <motion.div aria-hidden
@@ -566,25 +565,25 @@ export default function MobileOnboarding({ onComplete }: Props) {
           {phase==='idle' && (
             <motion.div key="h-idle" layoutId="headline"
               initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.12,ease:[0.4,0,0.2,1]}}
-              style={{position:'absolute',top:'25%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:44,fontWeight:700,color:'rgba(255,255,255,0.95)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:5}}
+              style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:40,fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             >Let's write a post</motion.div>
           )}
           {phase==='prompt' && (
             <motion.div key="h-prompt"
               initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.15,ease:[0.4,0,0.2,1]}}
-              style={{position:'absolute',top:'30%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:36,fontWeight:700,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:5}}
+              style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:40,fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             >What's on your mind?</motion.div>
           )}
           {phase==='recording' && (
             <motion.div key="h-rec"
               initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.15,ease:[0.4,0,0.2,1]}}
-              style={{position:'absolute',top:'18%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:26,fontWeight:600,color:'rgba(255,255,255,0.78)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:5}}
+              style={{position:'absolute',top:'18%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:26,fontWeight:600,color:'rgba(255,255,255,0.78)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             >Go ahead, I'm listening</motion.div>
           )}
           {phase==='platform' && (
             <motion.div key="h-platform"
               initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:selId?0:0.85,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:selId?0:0.15,ease:[0.4,0,0.2,1]}}
-              style={{position:'absolute',top:'22%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:30,fontWeight:700,color:'rgba(255,255,255,1)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:5}}
+              style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:40,fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             >Where should this go?</motion.div>
           )}
           {isDraft && (
@@ -613,9 +612,9 @@ export default function MobileOnboarding({ onComplete }: Props) {
         {/* ── Skip — ghosted, bottom-right, 30% opacity ── */}
         <AnimatePresence>
           {isIdle && (
-            <motion.button key="skip" initial={{opacity:0}} animate={{opacity:0.30}} exit={{opacity:0}} transition={{delay:1.0,duration:0.6}}
+            <motion.button key="skip" initial={{opacity:0}} animate={{opacity:0.35}} exit={{opacity:0}} transition={{delay:1.0,duration:0.6}}
               onClick={(e)=>{e.stopPropagation();onComplete();}}
-              style={{position:'absolute',bottom:28,right:24,background:'none',border:'none',fontFamily:'var(--font-sans)',fontSize:14,color:'rgba(255,255,255,1)',letterSpacing:'0.02em',cursor:'pointer',padding:'8px 0',zIndex:30}}
+              style={{position:'absolute',bottom:28,right:24,background:'none',border:'none',fontFamily:'var(--font-sans)',fontSize:13,color:'rgba(255,255,255,1)',letterSpacing:'0.08em',cursor:'pointer',padding:'8px 0',zIndex:30}}
             >skip</motion.button>
           )}
         </AnimatePresence>
