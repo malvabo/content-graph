@@ -21,4 +21,30 @@ function Field({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   )
 }
 
-export { Field, FieldGroup }
+function FieldLabel({ className, ...props }: React.ComponentProps<"label">) {
+  return (
+    <label
+      data-slot="field-label"
+      className={cn(
+        "text-sm font-medium leading-none text-[var(--color-text-primary)] select-none",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function FieldDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
+  return (
+    <p
+      data-slot="field-description"
+      className={cn(
+        "text-[length:var(--text-xs)] text-[var(--color-text-tertiary)] leading-snug",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Field, FieldGroup, FieldLabel, FieldDescription }

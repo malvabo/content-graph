@@ -404,7 +404,7 @@ function VoiceModal({ title, text, onClose, onSave, onTitleChange, extraActions 
             onChange={e => setEditTitle(e.target.value)}
             onBlur={commitTitle}
             onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-            className="border-transparent shadow-none focus-visible:ring-0 focus-visible:border-[var(--color-border-strong)] text-[length:var(--text-md)] font-[var(--weight-medium)] text-[var(--color-text-primary)] h-auto py-0.5 px-0"
+            className="border-transparent shadow-none text-[length:var(--text-md)] font-[var(--weight-medium)] text-[var(--color-text-primary)] h-auto py-0.5 px-0"
           />
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6 pb-4 pt-2" style={{ scrollbarWidth: 'thin' }}>
@@ -424,7 +424,7 @@ function VoiceModal({ title, text, onClose, onSave, onTitleChange, extraActions 
           {extraActions?.map((a, i) => (
             <Button
               key={a.label}
-              variant={i === 0 ? 'outline' : 'default'}
+              variant={i === 0 ? 'secondary' : 'green'}
               onClick={() => { onSave?.(content); a.onClick(content); onClose(); }}
             >
               {a.label}
