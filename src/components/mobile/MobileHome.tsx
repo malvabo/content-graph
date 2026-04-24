@@ -570,6 +570,168 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   );
 }
 
+/* ─── Widget dashboard ─────────────────────────────────────────────────── */
+
+type WidgetKind = 'twitter' | 'linkedin' | 'voice' | 'scripts';
+const ALL_WIDGET_KINDS: WidgetKind[] = ['twitter', 'linkedin', 'voice', 'scripts'];
+
+const WIDGET_META: Record<WidgetKind, {
+  label: string; sublabel: string; glow: string; dark: string; mid: string; accent: string;
+  filterFn: (notes: VoiceNote[]) => VoiceNote[];
+  countLabel: (n: number) => string;
+}> = {
+  twitter: {
+    label: 'Twitter / X', sublabel: 'Threads & posts',
+    glow: 'rgba(29,155,240,', dark: '#040a14', mid: '#09192e', accent: '#1d9bf0',
+    filterFn: ns => ns.filter(n => n.lastGeneration?.kind === 'twitter-thread' || n.lastGeneration?.kind === 'twitter-single'),
+    countLabel: n => n === 1 ? '1 post' : `${n} posts`,
+  },
+  linkedin: {
+    label: 'LinkedIn', sublabel: 'Posts generated',
+    glow: 'rgba(10,102,194,', dark: '#030810', mid: '#071426', accent: '#0a66c2',
+    filterFn: ns => ns.filter(n => n.lastGeneration?.kind === 'linkedin-post'),
+    countLabel: n => n === 1 ? '1 post' : `${n} posts`,
+  },
+  voice: {
+    label: 'Voice Notes', sublabel: 'All recordings',
+    glow: 'rgba(13,191,90,', dark: '#030d05', mid: '#071408', accent: '#0DBF5A',
+    filterFn: ns => ns.filter(n => n.status !== 'recording'),
+    countLabel: n => n === 1 ? '1 note' : `${n} notes`,
+  },
+  scripts: {
+    label: 'Scripts', sublabel: 'Ready to use',
+    glow: 'rgba(144,97,249,', dark: '#06040e', mid: '#120b22', accent: '#9061f9',
+    filterFn: ns => ns.filter(n => n.status === 'ready' && !!n.transcript),
+    countLabel: n => n === 1 ? '1 script' : `${n} scripts`,
+  },
+};
+
+function widgetBg(meta: typeof WIDGET_META[WidgetKind], count: number): string {
+  const sat = count === 0 ? 0.10 : Math.min(1, 0.30 + count * 0.12);
+  const op1 = (sat * 0.58).toFixed(2);
+  const op2 = (sat * 0.17).toFixed(2);
+  return `radial-gradient(ellipse at 38% 42%, ${meta.glow}${op1}) 0%, ${meta.glow}${op2}) 44%, ${meta.mid} 68%, ${meta.dark} 100%)`;
+}
+
+function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
+  kind: WidgetKind; notes: VoiceNote[]; editMode: boolean;
+  onRemove: () => void; onClick: () => void;
+}) {
+  const meta = WIDGET_META[kind];
+  const count = meta.filterFn(notes).length;
+  return (
+    <button
+      onClick={editMode ? undefined : onClick}
+      aria-label={`${meta.label}: ${meta.countLabel(count)}`}
+      style={{
+        aspectRatio: '1 / 1', borderRadius: 20, background: widgetBg(meta, count),
+        border: 'none', cursor: editMode ? 'default' : 'pointer',
+        position: 'relative', overflow: 'hidden', textAlign: 'left', padding: 0,
+        boxShadow: '0 4px 24px rgba(0,0,0,0.40)',
+        transition: 'filter 180ms',
+      }}
+    >
+      {editMode && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={e => { e.stopPropagation(); onRemove(); }}
+          style={{
+            position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.20)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', zIndex: 2, fontSize: 17, color: '#fff', lineHeight: 1,
+          }}
+        >×</div>
+      )}
+      <div style={{ position: 'absolute', top: 14, left: 14, right: editMode ? 40 : 14 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {meta.label}
+        </div>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.40)', fontFamily: 'var(--font-sans)', marginTop: 3, letterSpacing: '0.03em' }}>
+          {meta.sublabel}
+        </div>
+      </div>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: 56, fontWeight: 200, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.03em', opacity: count > 0 ? 0.95 : 0.18 }}>
+          {count}
+        </span>
+      </div>
+      <div style={{ position: 'absolute', bottom: 13, left: 14 }}>
+        <span style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', color: count > 0 ? meta.accent : 'rgba(255,255,255,0.20)' }}>
+          {meta.countLabel(count)}
+        </span>
+      </div>
+    </button>
+  );
+}
+
+function AddWidgetSheet({ activeWidgets, onAdd, onClose }: {
+  activeWidgets: WidgetKind[]; onAdd: (k: WidgetKind) => void; onClose: () => void;
+}) {
+  const available = ALL_WIDGET_KINDS.filter(k => !activeWidgets.includes(k));
+  return createPortal(
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.58)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#0d0f18', borderRadius: '20px 20px 0 0', padding: '20px 16px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', boxShadow: '0 -8px 40px rgba(0,0,0,0.5)' }}>
+        <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)', marginBottom: 4 }}>Add widget</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.32)', fontFamily: 'var(--font-sans)', marginBottom: 16 }}>Choose a platform to add to your dashboard</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {available.length === 0 ? (
+            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-sans)', fontSize: 14, padding: '24px 0' }}>All widgets are already active</div>
+          ) : available.map(kind => {
+            const meta = WIDGET_META[kind];
+            return (
+              <button key={kind} onClick={() => { onAdd(kind); onClose(); }} style={{ display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 14, padding: '13px 16px', cursor: 'pointer' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: `radial-gradient(circle at 40% 40%, ${meta.glow}0.30) 0%, ${meta.dark} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ color: meta.accent, fontSize: 18 }}>+</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#fff', fontFamily: 'var(--font-sans)' }}>{meta.label}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.36)', fontFamily: 'var(--font-sans)', marginTop: 2 }}>{meta.sublabel}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
+  kind: WidgetKind; notes: VoiceNote[];
+  onBack: () => void; onOpenNote: (id: string) => void;
+  justRecordedId: string | null;
+}) {
+  const meta = WIDGET_META[kind];
+  const filtered = [...meta.filterFn(notes)].reverse();
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <button onClick={onBack} aria-label="Back" style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.08)', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.02em' }}>{meta.label}</div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.32)', fontFamily: 'var(--font-sans)' }}>{meta.sublabel}</div>
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 160px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {filtered.length === 0 ? (
+          <div style={{ padding: '60px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.24)', fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: 1.6 }}>
+            Nothing here yet.<br />Record a voice note and generate content to see it here.
+          </div>
+        ) : filtered.map(n => (
+          <div key={n.id} style={{ position: 'relative', boxShadow: justRecordedId === n.id ? '0 0 0 2px rgba(13,191,90,0.65), 0 0 24px rgba(13,191,90,0.20)' : 'none', borderRadius: 'var(--radius-xl)', transition: 'box-shadow 400ms ease' }}>
+            <NoteCard note={n} onOpen={() => onOpenNote(n.id)} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function MobileHome() {
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
   const groqKey = useSettingsStore(s => s.groqKey);
@@ -581,8 +743,34 @@ export default function MobileHome() {
   const [liveText, setLiveText] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);
-  const [showingErrors, setShowingErrors] = useState(false);
   const [justRecordedId, setJustRecordedId] = useState<string | null>(null);
+
+  // Widget dashboard state
+  const [activeWidgets, setActiveWidgets] = useState<WidgetKind[]>(() => {
+    try {
+      const saved = localStorage.getItem('mobile-widgets');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.every((k: unknown) => ALL_WIDGET_KINDS.includes(k as WidgetKind))) return parsed;
+      }
+    } catch { /* fallback */ }
+    return ['twitter', 'linkedin', 'voice', 'scripts'] as WidgetKind[];
+  });
+  const [editMode, setEditMode] = useState(false);
+  const [detailKind, setDetailKind] = useState<WidgetKind | null>(null);
+  const [showAddSheet, setShowAddSheet] = useState(false);
+
+  const removeWidget = (kind: WidgetKind) => {
+    const next = activeWidgets.filter(k => k !== kind);
+    setActiveWidgets(next);
+    try { localStorage.setItem('mobile-widgets', JSON.stringify(next)); } catch { /* noop */ }
+  };
+  const addWidget = (kind: WidgetKind) => {
+    if (activeWidgets.includes(kind)) return;
+    const next = [...activeWidgets, kind];
+    setActiveWidgets(next);
+    try { localStorage.setItem('mobile-widgets', JSON.stringify(next)); } catch { /* noop */ }
+  };
 
   const mediaRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -735,12 +923,7 @@ export default function MobileHome() {
     setRecording(false);
   }, [removeNote]);
 
-  // Split the list: errors get corralled into a single collapsible summary,
-  // everything else renders as compact cards in reverse-chronological order.
-  const activeNotes = [...notes].filter(n => n.status !== 'recording' && n.status !== 'error').reverse();
-  const failedNotes = [...notes].filter(n => n.status === 'error').reverse();
   const openNote = openNoteId ? notes.find(n => n.id === openNoteId) : null;
-  const isEmpty = activeNotes.length === 0 && failedNotes.length === 0;
 
   return (
     <div className="mobile-safe-scroll" style={{
@@ -749,130 +932,93 @@ export default function MobileHome() {
       position: 'relative', minWidth: 0,
     }}>
       {guest && !user && (
-        <div style={{
-          background: 'rgba(240,216,160,0.10)', borderBottom: '1px solid rgba(240,216,160,0.15)',
-          padding: '6px 14px', fontSize: 12, fontFamily: 'var(--font-sans)',
-          color: 'rgba(240,216,160,0.85)', textAlign: 'center',
-        }}>
+        <div style={{ background: 'rgba(240,216,160,0.10)', borderBottom: '1px solid rgba(240,216,160,0.15)', padding: '6px 14px', fontSize: 12, fontFamily: 'var(--font-sans)', color: 'rgba(240,216,160,0.85)', textAlign: 'center' }}>
           Guest mode — your work won't be saved.
         </div>
       )}
 
-      {/* Header */}
-      <header style={{ padding: 'var(--space-6) var(--space-5) var(--space-4)', flexShrink: 0, minWidth: 0 }}>
-        <h1 style={{
-          margin: 0, fontFamily: 'var(--font-sans)', fontSize: 28, fontWeight: 700, lineHeight: '34px',
-          color: '#ffffff', letterSpacing: '-0.03em', wordBreak: 'break-word',
-        }}>Voice Notes</h1>
-        <p style={{
-          margin: '6px 0 0', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: '20px',
-          color: 'rgba(255,255,255,0.40)', wordBreak: 'break-word',
-        }}>
-          Record an idea and turn it into a post.
-        </p>
-      </header>
+      {detailKind ? (
+        <DetailView
+          kind={detailKind} notes={notes}
+          onBack={() => setDetailKind(null)}
+          onOpenNote={setOpenNoteId}
+          justRecordedId={justRecordedId}
+        />
+      ) : (
+        <>
+          {/* Header */}
+          <header style={{ padding: '28px 20px 8px', flexShrink: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div>
+              <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.03em' }}>UP150</h1>
+              <p style={{ margin: '4px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.32)', fontFamily: 'var(--font-sans)' }}>Content dashboard</p>
+            </div>
+            <button
+              onClick={() => setEditMode(m => !m)}
+              aria-label={editMode ? 'Done editing' : 'Edit widgets'}
+              style={{ marginTop: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: '5px 14px', fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
+            >
+              {editMode ? 'Done' : 'Edit'}
+            </button>
+          </header>
 
-      {/* Scrollable notes list */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 var(--space-4) 160px', display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
-        {!hasKey && (
-          <div role="status" style={{
-            padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-xl)',
-            background: 'rgba(240,216,160,0.10)',
-            border: '1px solid rgba(240,216,160,0.20)',
-            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-            fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: 1.5,
-            color: 'rgba(240,216,160,0.85)',
-          }}>
-            Add an Anthropic or Groq API key on a desktop session to enable transcription and generation.
+          {errorMsg && (
+            <div role="alert" style={{ margin: '8px 16px 0', padding: '10px 14px', borderRadius: 14, background: 'rgba(201,48,48,0.14)', border: '1px solid rgba(201,48,48,0.25)', fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(255,107,107,0.95)' }}>
+              {errorMsg}
+            </div>
+          )}
+
+          {/* Widget grid */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px 160px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {activeWidgets.map(kind => (
+                <WidgetCard
+                  key={kind} kind={kind} notes={notes}
+                  editMode={editMode}
+                  onRemove={() => removeWidget(kind)}
+                  onClick={() => { if (!editMode) setDetailKind(kind); }}
+                />
+              ))}
+              {editMode && activeWidgets.length < ALL_WIDGET_KINDS.length && (
+                <button
+                  onClick={() => setShowAddSheet(true)}
+                  style={{ aspectRatio: '1 / 1', borderRadius: 20, border: '1.5px dashed rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.03)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                >
+                  <span style={{ fontSize: 28, color: 'rgba(255,255,255,0.20)', lineHeight: 1 }}>+</span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.20)', fontFamily: 'var(--font-sans)' }}>Add widget</span>
+                </button>
+              )}
+            </div>
           </div>
-        )}
 
-        {errorMsg && (
-          <div role="alert" style={{
-            padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)',
-            background: 'rgba(201,48,48,0.14)',
-            border: '1px solid rgba(201,48,48,0.25)',
-            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-            fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: 1.5,
-            color: 'rgba(255,107,107,0.95)',
-          }}>{errorMsg}</div>
-        )}
-
-        {isEmpty ? (
-          <div style={{
-            padding: 'var(--space-8) var(--space-4)', textAlign: 'center',
-            color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-sans)',
-            fontSize: 14, fontWeight: 400, lineHeight: 1.6,
-          }}>
-            No notes yet.<br />Tap the record button to capture your first idea.
-          </div>
-        ) : (
-          <>
-            {failedNotes.length > 0 && !showingErrors && (
-              <ErrorSummary failed={failedNotes} onReview={() => setShowingErrors(true)} />
-            )}
-            {failedNotes.length > 0 && showingErrors && (
-              <section aria-label="Failed recordings" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-2) var(--space-1) 0' }}>
-                  <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 500, lineHeight: 1,
-                    textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.30)',
-                  }}>
-                    Failed recordings
-                  </span>
-                  <button
-                    onClick={() => setShowingErrors(false)}
-                    aria-label="Hide failed recordings"
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500,
-                      color: 'rgba(255,255,255,0.35)', padding: '4px 8px',
-                    }}
-                  >
-                    Hide
-                  </button>
-                </header>
-                {failedNotes.map(n => (
-                  <NoteCard key={n.id} note={n} onOpen={() => setOpenNoteId(n.id)} />
-                ))}
-              </section>
-            )}
-
-            {/* Active notes */}
-            {activeNotes.map(n => (
-              <div
-                key={n.id}
-                style={{
-                  position: 'relative',
-                  boxShadow: justRecordedId === n.id
-                    ? '0 0 0 2px rgba(13,191,90,0.65), 0 0 24px rgba(13,191,90,0.20)'
-                    : 'none',
-                  borderRadius: 'var(--radius-xl)',
-                  transition: 'box-shadow 400ms ease',
-                }}
-              >
-                <NoteCard note={n} onOpen={() => setOpenNoteId(n.id)} />
-              </div>
-            ))}
-          </>
-        )}
-      </div>
-
-      {/* Sticky record button — frosted glass platform */}
-      <div style={{
-        position: 'absolute',
-        bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))',
-        left: 0, right: 0, display: 'flex', justifyContent: 'center',
-        pointerEvents: 'none',
-      }}>
-        <div style={{ pointerEvents: 'auto' }}>
-          <RecordButton size={96} onClick={startRecording} state="idle" />
-        </div>
-      </div>
-
-      {recording && (
-        <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} />
+          {/* Edit-mode bottom bar */}
+          {editMode && (
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '14px 24px', paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
+              background: 'rgba(8,9,16,0.94)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+              borderTop: '1px solid rgba(255,255,255,0.07)',
+            }}>
+              <button onClick={() => setEditMode(false)} style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,255,255,0.10)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>×</button>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.40)', fontFamily: 'var(--font-sans)' }}>Edit widgets</span>
+              <button onClick={() => setEditMode(false)} style={{ width: 50, height: 50, borderRadius: '50%', background: '#0DBF5A', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </button>
+            </div>
+          )}
+        </>
       )}
+
+      {/* Record button — hidden during edit mode */}
+      {!editMode && (
+        <div style={{ position: 'absolute', bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
+          <div style={{ pointerEvents: 'auto' }}>
+            <RecordButton size={96} onClick={startRecording} state="idle" />
+          </div>
+        </div>
+      )}
+
+      {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} />}
 
       {openNote && (
         <NoteSheet
@@ -887,6 +1033,8 @@ export default function MobileHome() {
           }}
         />
       )}
+
+      {showAddSheet && <AddWidgetSheet activeWidgets={activeWidgets} onAdd={addWidget} onClose={() => setShowAddSheet(false)} />}
     </div>
   );
 }
