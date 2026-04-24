@@ -172,7 +172,7 @@ function AppInner() {
 
         {/* Floating main-content card: rounded, elevated, separated from the
             flush sidebar on the left. */}
-        <div className="flex-1 flex flex-col min-h-0" style={{ margin: 8, borderRadius: 12, background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-panel)', border: '1px solid var(--color-border-subtle)', overflow: 'hidden' }}>
+        <div className="flex-1 flex flex-col min-h-0" style={{ margin: 8, borderRadius: 8, background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-panel)', border: '1px solid var(--color-border-subtle)', overflow: 'hidden' }}>
 
         {activeView === 'intro' && (
           <div className="flex-1 overflow-auto">
