@@ -1,6 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
-import { useDarkMode } from '../../hooks/useDarkMode';
 import { Menu, MenuItem, MenuSeparator } from '../ui/Menu';
 
 interface Props {
@@ -85,7 +84,6 @@ const DesignIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="n
 function UserMenu({ expanded }: { expanded: boolean }) {
   const { user, signOut } = useAuthStore();
   const [open, setOpen] = useState(false);
-  const [dark, setDark] = useDarkMode();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -103,9 +101,6 @@ function UserMenu({ expanded }: { expanded: boolean }) {
             {user.email}
           </div>
           <MenuSeparator />
-          <MenuItem icon={dark ? <SunIcon /> : <MoonIcon />} onClick={() => setDark(!dark)}>
-            {dark ? 'Light mode' : 'Dark mode'}
-          </MenuItem>
           <MenuItem onClick={() => { signOut(); setOpen(false); }}>Sign out</MenuItem>
         </Menu>
       )}
