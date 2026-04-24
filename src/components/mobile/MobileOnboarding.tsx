@@ -79,11 +79,18 @@ anyway that's the whole thought`,
 
 // ─── Aurora blobs ─────────────────────────────────────────────────────────────
 
+// Blob positions are computed so they are deliberately asymmetric around the orb
+// (center 50% x, 60% y) and no blob drifts behind the headline (28% y).
+// Distances from orb center: amber 205px, purple 128px, pink 359px, green 235px — no ring.
 const BLOBS = [
-  { color: 'radial-gradient(ellipse, rgba(255,150,18,0.88) 0%, rgba(255,90,5,0.42) 44%, transparent 70%)', w: 540, h: 460, xPath: ['-6%','14%','-10%','20%','-6%'], yPath: ['36%','52%','64%','44%','36%'], xDur: 31, yDur: 43 },
-  { color: 'radial-gradient(ellipse, rgba(98,12,255,0.82) 0%, rgba(68,0,218,0.38) 44%, transparent 70%)', w: 500, h: 460, xPath: ['-34%','-16%','-40%','-22%','-34%'], yPath: ['-24%','-8%','-32%','-4%','-24%'], xDur: 38, yDur: 27 },
-  { color: 'radial-gradient(ellipse, rgba(255,48,148,0.78) 0%, rgba(218,18,110,0.34) 44%, transparent 70%)', w: 440, h: 400, xPath: ['24%','46%','30%','52%','24%'], yPath: ['46%','62%','38%','72%','46%'], xDur: 29, yDur: 47 },
-  { color: 'radial-gradient(ellipse, rgba(16,212,72,0.68) 0%, rgba(6,168,42,0.28) 44%, transparent 70%)', w: 420, h: 380, xPath: ['-26%','-6%','-20%','-38%','-26%'], yPath: ['56%','72%','48%','80%','56%'], xDur: 35, yDur: 25 },
+  // Amber — bottom-right, far below orb
+  { color: 'radial-gradient(ellipse, rgba(255,150,18,0.88) 0%, rgba(255,90,5,0.42) 44%, transparent 70%)', w: 540, h: 460, xPath: ['11%','22%','6%','18%','11%'], yPath: ['53%','61%','46%','57%','53%'], xDur: 31, yDur: 43 },
+  // Purple — mid-left, well below headline zone
+  { color: 'radial-gradient(ellipse, rgba(98,12,255,0.82) 0%, rgba(68,0,218,0.38) 44%, transparent 70%)', w: 500, h: 460, xPath: ['-42%','-28%','-46%','-34%','-42%'], yPath: ['25%','34%','20%','30%','25%'], xDur: 38, yDur: 27 },
+  // Pink — upper-right corner, far from orb
+  { color: 'radial-gradient(ellipse, rgba(255,48,148,0.78) 0%, rgba(218,18,110,0.34) 44%, transparent 70%)', w: 440, h: 400, xPath: ['26%','38%','20%','34%','26%'], yPath: ['-4%','6%','-8%','2%','-4%'], xDur: 29, yDur: 47 },
+  // Green — far lower-left
+  { color: 'radial-gradient(ellipse, rgba(16,212,72,0.68) 0%, rgba(6,168,42,0.28) 44%, transparent 70%)', w: 420, h: 380, xPath: ['-46%','-32%','-50%','-38%','-46%'], yPath: ['57%','66%','51%','62%','57%'], xDur: 35, yDur: 25 },
 ];
 
 // ─── Platform definitions ─────────────────────────────────────────────────────
@@ -140,7 +147,7 @@ const BREATH = [
 // ─── Orb phase targets ────────────────────────────────────────────────────────
 
 const ORB: Record<Phase, object> = {
-  idle:      { width: 200, height: 200, borderRadius: 100, top: '60%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
+  idle:      { width: 160, height: 160, borderRadius: 80,  top: '60%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
   prompt:    { width: 300, height: 76,  borderRadius: 38,  top: '76%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
   recording: { width: 160, height: 160, borderRadius: 80,  top: '52%',  left: '50%', x: '-50%', y: '-50%', opacity: 0 },
   platform:  { width: 160, height: 44,  borderRadius: 22,  top: '11%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
