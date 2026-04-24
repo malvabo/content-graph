@@ -164,7 +164,7 @@
   --shadow-glow: 0 0 16px rgba(13,191,90,0.2);
   /* Shadow for the floating main-content panel. Slightly darker than the
      earlier sidebar shadow so the card reads as lifted from a flat nav. */
-  --shadow-panel: 0 1px 6px rgba(0,0,0,0.14);
+  --shadow-panel: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
   /* ── Transitions ── */
   --duration-fast: 80ms;
