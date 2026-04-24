@@ -54,6 +54,7 @@ import CardsPanel from './components/canvas/CardsPanel';
 import CardsLibrary from './components/canvas/CardsLibrary';
 import InfographicsPanel from './components/canvas/InfographicsPanel';
 import MobileHome from './components/mobile/MobileHome';
+import MobileOnboarding from './components/mobile/MobileOnboarding';
 import { useIsMobile } from './hooks/useIsMobile';
 
 function TypewriterLogo() {
@@ -90,6 +91,7 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   const isMobile = useIsMobile();
+  const [mobileOnboardingDone, setMobileOnboardingDone] = useState(() => !!localStorage.getItem('mobile-onboarding-done'));
   
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'library'; };
@@ -147,9 +149,14 @@ function AppInner() {
 
   if (!user && !guest) return <AuthGate />;
 
-  // Mobile: a single simplified Home screen — voice recording + quick social asset generation.
-  // Every other view (workflows, scripts, cards, infographics, settings) is desktop-only.
   if (isMobile) {
+    if (!mobileOnboardingDone) {
+      return (
+        <div className="flex flex-col" style={{ height: '100dvh' }}>
+          <MobileOnboarding onComplete={() => { localStorage.setItem('mobile-onboarding-done', '1'); setMobileOnboardingDone(true); }} />
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col" style={{ height: '100dvh' }}>
         <MobileHome />
