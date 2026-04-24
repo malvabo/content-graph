@@ -57,6 +57,33 @@ import MobileHome from './components/mobile/MobileHome';
 import { useIsMobile } from './hooks/useIsMobile';
 import DesignSystemPanel from './components/canvas/DesignSystemPanel';
 
+function TypewriterLogo() {
+  const label = 'up150';
+  const [len, setLen] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    if (!deleting && len < label.length) {
+      t = setTimeout(() => setLen(l => l + 1), 110);
+    } else if (!deleting && len === label.length) {
+      t = setTimeout(() => setDeleting(true), 900);
+    } else if (deleting && len > 0) {
+      t = setTimeout(() => setLen(l => l - 1), 70);
+    } else if (deleting && len === 0) {
+      t = setTimeout(() => setDeleting(false), 300);
+    }
+    return () => clearTimeout(t);
+  }, [len, deleting]);
+  return (
+    <div aria-label="Loading" style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--color-text-primary)' }}>
+        {label.slice(0, len)}
+      </span>
+      <span style={{ display: 'inline-block', width: 2, height: '1.1em', marginLeft: 1, background: 'var(--color-accent)', borderRadius: 1, verticalAlign: 'text-bottom', animation: 'caret-blink 0.9s step-end infinite' }} />
+    </div>
+  );
+}
+
 export default function App() {
   return <ErrorBoundary><ReactFlowProvider><AppInner /></ReactFlowProvider></ErrorBoundary>;
 }
@@ -114,8 +141,8 @@ function AppInner() {
 
 
   if (authLoading) return (
-    <div role="status" aria-label="Loading" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
-      <div className="skeleton-bar" style={{ width: 48, height: 48, borderRadius: 'var(--radius-lg)' }} />
+    <div role="status" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
+      <TypewriterLogo />
     </div>
   );
 
