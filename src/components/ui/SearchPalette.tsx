@@ -2,7 +2,12 @@ import { useState, useRef, useEffect, type ReactNode } from 'react';
 
 export interface PaletteEntry {
   id: string;
+  /** Icon element rendered inside the 24×24 badge square. */
   icon: ReactNode;
+  /** Badge background colour — e.g. var(--color-badge-source-bg). */
+  iconBg?: string;
+  /** Badge icon colour — e.g. var(--color-badge-source-text). */
+  iconColor?: string;
   label: string;
   description?: string;
   onSelect: () => void;
@@ -12,7 +17,7 @@ interface SearchPaletteProps {
   entries: PaletteEntry[];
   placeholder?: string;
   emptyMessage?: string;
-  /** Sync query to parent so the inline list can also be filtered. */
+  /** Notify parent of query changes so an inline list can also be filtered. */
   onQueryChange?: (q: string) => void;
 }
 
@@ -22,6 +27,52 @@ const SearchIcon = () => (
     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
   </svg>
 );
+
+function PaletteRow({ entry, active, onHover, onSelect }: {
+  entry: PaletteEntry; active: boolean;
+  onHover: () => void; onSelect: () => void;
+}) {
+  return (
+    <div
+      role="option"
+      aria-selected={active}
+      onClick={onSelect}
+      onMouseEnter={onHover}
+      className="palette-item flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer"
+      style={{ background: active ? 'var(--color-bg-hover)' : 'transparent', transition: 'background 80ms' }}
+    >
+      {/* 24×24 badge — exact match to NodePalette PaletteItem */}
+      <div
+        className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+        style={{
+          backgroundColor: entry.iconBg ?? 'var(--color-bg-surface)',
+          color: entry.iconColor ?? 'var(--color-text-tertiary)',
+        }}
+      >
+        {entry.icon}
+      </div>
+
+      <div className="min-w-0">
+        <div style={{
+          fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)',
+          fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {entry.label || 'Untitled'}
+        </div>
+        {entry.description && (
+          <div style={{
+            fontSize: 'var(--text-xs)', lineHeight: '16px',
+            fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)',
+            marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {entry.description}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function SearchPalette({
   entries,
@@ -77,7 +128,7 @@ export default function SearchPalette({
 
   return (
     <div ref={containerRef} style={{ position: 'relative', minWidth: 280 }}>
-      {/* Input row */}
+      {/* Input — height 34 and border-radius full matches SearchBar used in NodePalette */}
       <div
         onClick={() => inputRef.current?.focus()}
         onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border-strong)'; }}
@@ -85,7 +136,7 @@ export default function SearchPalette({
         onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border-strong)'; }}
         onBlurCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border-default)'; }}
         style={{
-          display: 'flex', alignItems: 'center', height: 36,
+          display: 'flex', alignItems: 'stretch', height: 34,
           background: 'var(--color-bg-card)',
           border: '1px solid var(--color-border-default)',
           borderRadius: 'var(--radius-full)',
@@ -116,66 +167,43 @@ export default function SearchPalette({
         />
       </div>
 
-      {/* Popover — only when query is non-empty */}
+      {/* Popover — same dimensions as NodePalette (280px wide, max-h 420px) */}
       {open && q.length > 0 && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
-          background: 'var(--color-bg-popover)',
-          border: '1px solid var(--color-border-subtle)',
-          borderRadius: 'var(--radius-xl)',
-          boxShadow: 'var(--shadow-lg)',
-          zIndex: 50,
-          animation: 'paletteIn 120ms ease',
-          maxHeight: 320, overflowY: 'auto', scrollbarWidth: 'thin',
-          padding: 'var(--space-1) 0',
-        }}>
+        <div
+          role="listbox"
+          style={{
+            position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
+            background: 'var(--color-bg-popover)',
+            border: '1px solid var(--color-border-subtle)',
+            borderRadius: 'var(--radius-xl)',
+            boxShadow: 'var(--shadow-lg)',
+            zIndex: 50,
+            animation: 'paletteIn 150ms ease',
+            maxHeight: 420, overflowY: 'auto', scrollbarWidth: 'thin',
+            padding: '0 var(--space-2) var(--space-3)',
+          }}
+        >
           {filtered.length === 0 ? (
             <div style={{
-              padding: 'var(--space-4) var(--space-3)', textAlign: 'center',
+              padding: 'var(--space-6) var(--space-3)', textAlign: 'center',
               fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)',
               fontFamily: 'var(--font-sans)',
             }}>
               {emptyMessage}
             </div>
-          ) : filtered.map((entry, i) => (
-            <button
-              key={entry.id}
-              onClick={() => handleSelect(entry)}
-              onMouseEnter={() => setActiveIdx(i)}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                padding: '8px 12px', border: 'none', textAlign: 'left',
-                background: i === activeIdx ? 'var(--color-bg-hover)' : 'transparent',
-                cursor: 'pointer', fontFamily: 'var(--font-sans)',
-                transition: 'background 80ms',
-              }}
-            >
-              <span style={{
-                width: 28, height: 28, borderRadius: 6, flexShrink: 0,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--color-bg-surface)', color: 'var(--color-text-tertiary)',
-              }}>
-                {entry.icon}
-              </span>
-              <span style={{ minWidth: 0, flex: 1 }}>
-                <span style={{
-                  display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500,
-                  color: 'var(--color-text-primary)',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {entry.label || 'Untitled'}
-                </span>
-                {entry.description && (
-                  <span style={{
-                    display: 'block', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2,
-                  }}>
-                    {entry.description}
-                  </span>
-                )}
-              </span>
-            </button>
-          ))}
+          ) : (
+            <div className="flex flex-col gap-0.5" style={{ paddingTop: 'var(--space-2)' }}>
+              {filtered.map((entry, i) => (
+                <PaletteRow
+                  key={entry.id}
+                  entry={entry}
+                  active={i === activeIdx}
+                  onHover={() => setActiveIdx(i)}
+                  onSelect={() => handleSelect(entry)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
