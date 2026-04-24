@@ -454,7 +454,7 @@ function RephraseBlock({ rephrase, onApply }) {
   if (!rephrase) return null;
   return (
     <div style={{ marginTop:14, background:C.accentLt, borderRadius:12, padding:"12px 14px" }}>
-      <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.accentDark, marginBottom:6 }}>Rephrase to</p>
+      <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.sub, marginBottom:6 }}>Rephrase to</p>
       <p style={{ fontSize:13, color:C.text, lineHeight:1.6, marginBottom:10 }}>"{rephrase}"</p>
       <button onClick={onApply} style={{
         background:"#0DBF5A", color:C.white, border:"none", borderRadius:8,
