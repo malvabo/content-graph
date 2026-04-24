@@ -11,6 +11,9 @@ import { useGraphLayout } from '../../hooks/useGraphLayout';
 
 import TemplatePickerModal from '../modals/TemplatePickerModal';
 import GraphSchematic from '../ui/GraphSchematic';
+import SearchPalette, { type PaletteEntry } from '../ui/SearchPalette';
+
+const WorkflowIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7"/><path d="M17.5 14v7"/></svg>;
 
 function makeSourceNode(content: string): ContentNode {
   const def = NODE_DEFS_BY_SUBTYPE['text-source'];
@@ -122,13 +125,19 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
 
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
         {/* Search */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-          <div className="search-bar">
-            <span className="search-bar__icon" aria-hidden>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            </span>
-            <input className="search-bar__input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." aria-label="Search workflows" />
-          </div>
+        <div style={{ marginBottom: 'var(--space-5)' }}>
+          <SearchPalette
+            placeholder="Search workflows…"
+            emptyMessage="No workflows match your search"
+            onQueryChange={setQuery}
+            entries={items.map((item): PaletteEntry => ({
+              id: item.id,
+              icon: <WorkflowIcon />,
+              label: item.name || 'Untitled',
+              description: `${item.nodes.length} node${item.nodes.length !== 1 ? 's' : ''} · ${fmt(item.savedAt)}`,
+              onSelect: () => handleLoad(item),
+            }))}
+          />
         </div>
 
         {/* Count */}

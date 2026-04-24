@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCardsStore } from '../../store/cardsStore';
 import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
+import SearchPalette, { type PaletteEntry } from '../ui/SearchPalette';
 
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>;
 const CardsIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="8" height="8" rx="1.5"/><rect x="14" y="3" width="8" height="8" rx="1.5"/><rect x="2" y="13" width="8" height="8" rx="1.5"/><rect x="14" y="13" width="8" height="8" rx="1.5"/></svg>;
@@ -37,13 +38,19 @@ export default function CardsLibrary({ onOpen }: { onOpen: (id: string) => void 
 
         {/* Search */}
         {sets.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-            <div className="search-bar">
-              <span className="search-bar__icon" aria-hidden>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              </span>
-              <input className="search-bar__input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." aria-label="Search card sets" />
-            </div>
+          <div style={{ marginBottom: 'var(--space-5)' }}>
+            <SearchPalette
+              placeholder="Search card sets…"
+              emptyMessage="No card sets match your search"
+              onQueryChange={setQuery}
+              entries={sets.map((set): PaletteEntry => ({
+                id: set.id,
+                icon: <CardsIcon />,
+                label: set.name || 'Untitled',
+                description: `${set.cards.length} card${set.cards.length !== 1 ? 's' : ''} · ${fmt(set.createdAt)}`,
+                onSelect: () => onOpen(set.id),
+              }))}
+            />
           </div>
         )}
 

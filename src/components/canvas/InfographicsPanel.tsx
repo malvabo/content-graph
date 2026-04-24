@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Menu, MenuItem } from '../ui/Menu';
 import { useInfographicStore } from '../../store/infographicStore';
+import SearchPalette, { type PaletteEntry } from '../ui/SearchPalette';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useBrandsStore } from '../../store/brandsStore';
 import { renderSVG, parseInfographicData, computeLayout, getInfographicPalette, INFOGRAPHIC_WIDTH, type InfographicData, type TextField } from '../nodes/InfographicNode';
@@ -422,13 +423,22 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
 
           {/* Search */}
           {items.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-              <div className="search-bar">
-                <span className="search-bar__icon" aria-hidden>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                </span>
-                <input className="search-bar__input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." aria-label="Search infographics" />
-              </div>
+            <div style={{ marginBottom: 'var(--space-5)' }}>
+              <SearchPalette
+                placeholder="Search infographics…"
+                emptyMessage="No infographics match your search"
+                onQueryChange={setQuery}
+                entries={items.map((item): PaletteEntry => {
+                  const parsed = parseInfographicData(item.json);
+                  const title = parsed?.title || item.label || 'Untitled';
+                  return {
+                    id: item.id,
+                    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 5 4-9"/></svg>,
+                    label: title,
+                    onSelect: () => setEditingId(item.id),
+                  };
+                })}
+              />
             </div>
           )}
 

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { Menu, MenuItem } from '../ui/Menu';
 import { useVoiceStore } from '../../store/voiceStore';
+import SearchPalette, { type PaletteEntry } from '../ui/SearchPalette';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -521,13 +522,19 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
 
       <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {/* Search */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-          <div className="search-bar">
-            <span className="search-bar__icon" aria-hidden>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            </span>
-            <input className="search-bar__input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." aria-label="Search voice notes" />
-          </div>
+        <div style={{ marginBottom: 'var(--space-5)' }}>
+          <SearchPalette
+            placeholder="Search voice notes…"
+            emptyMessage="No voice notes match your search"
+            onQueryChange={setQuery}
+            entries={notes.filter(n => n.status === 'ready').map((n): PaletteEntry => ({
+              id: n.id,
+              icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>,
+              label: n.title || 'Untitled note',
+              description: `${fmtDuration(n.durationMs)} · ${fmtDate(n.createdAt)}`,
+              onSelect: () => setViewId(n.id),
+            }))}
+          />
         </div>
 
         {/* Count + transcribing */}
