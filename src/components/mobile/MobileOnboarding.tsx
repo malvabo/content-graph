@@ -1,5 +1,36 @@
 import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
+
+function charIdxForWord(text: string, wordCount: number): number {
+  let count = 0, i = 0;
+  while (i < text.length) {
+    while (i < text.length && /\s/.test(text[i])) i++;
+    if (i >= text.length) break;
+    while (i < text.length && !/\s/.test(text[i])) i++;
+    count++;
+    if (count >= wordCount) return i;
+  }
+  return text.length;
+}
+
+function totalWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function renderDraftContent(text: string, charIdx: number): React.ReactNode {
+  const displayed = text.slice(0, charIdx);
+  const paras = displayed.split('\n\n');
+  return paras.map((para, pi) => {
+    const parts = para.split(/(→)/g);
+    return (
+      <p key={pi} style={{ margin: 0, marginTop: pi > 0 ? 20 : 0, whiteSpace: 'pre-wrap' }}>
+        {parts.map((part, i) =>
+          part === '→' ? <span key={i} style={{ opacity: 0.6 }}>→</span> : part
+        )}
+      </p>
+    );
+  });
+}
 import { useVoiceStore } from '../../store/voiceStore';
 
 interface Props {
@@ -170,6 +201,27 @@ export default function MobileOnboarding({ onComplete }: Props) {
   const [orbAbsorb, setOrbAbsorb]       = useState(false);
   const [mergeColor, setMergeColor]     = useState<string | null>(null);
   const [draftText, setDraftText]       = useState('');
+  const [displayedCharIdx, setDisplayedCharIdx] = useState(0);
+  const [typingDone, setTypingDone]             = useState(false);
+  const [isEditing, setIsEditing]               = useState(false);
+
+  useEffect(() => {
+    if (phase !== 'draft') {
+      setDisplayedCharIdx(0);
+      setTypingDone(false);
+      setIsEditing(false);
+      return;
+    }
+    const text = draftText;
+    const total = totalWords(text);
+    let wordNum = 0;
+    const tick = setInterval(() => {
+      wordNum++;
+      setDisplayedCharIdx(charIdxForWord(text, wordNum));
+      if (wordNum >= total) { clearInterval(tick); setTypingDone(true); }
+    }, 40);
+    return () => clearInterval(tick);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function advance()       { if (phase==='idle')  { setPhase('prompt'); setTimeout(()=>setHintVisible(true),1200); } }
   function startRecording(){ setHintVisible(false); setPhase('recording'); }
@@ -233,8 +285,10 @@ export default function MobileOnboarding({ onComplete }: Props) {
             background: linear-gradient(var(--bg-a), #0b0608 0%, #0f0810 55%, #09090f 100%);
             animation: bg-drift 22s linear infinite alternate;
           }
-          .onb-draft-ta { caret-color: rgba(255,255,255,0.92); color: rgba(255,255,255,0.88); background:transparent; border:none; outline:none; resize:none; padding:0; margin:0; }
-          .onb-draft-ta::selection { background: rgba(255,255,255,0.16); }
+          .onb-draft-ta { caret-color: rgba(255,235,210,0.9); color: rgba(255,255,255,0.92); background:transparent; border:none; outline:none; resize:none; padding:0; margin:0; font-size:18px; line-height:1.7; letter-spacing:0.01em; }
+          .onb-draft-ta::selection { background: rgba(255,220,200,0.25); }
+          @keyframes draft-caret-blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+          .draft-caret { display:inline-block; width:1.5px; height:1.1em; background:rgba(255,235,210,0.9); vertical-align:text-bottom; margin-left:2px; border-radius:1px; animation:draft-caret-blink 1.2s step-end infinite; }
         `}</style>
 
         {/* ── Aurora ── */}
@@ -385,16 +439,42 @@ export default function MobileOnboarding({ onComplete }: Props) {
           })}
         </AnimatePresence>
 
-        {/* ── Draft card ── */}
+        {/* ── Draft: full-bleed scrim for contrast (no edges, no card) ── */}
         <AnimatePresence>
           {(phase==='draft'||phase==='posting') && (
-            <motion.div key="draft-card"
+            <motion.div key="draft-scrim"
+              initial={{opacity:0}} animate={{opacity:phase==='posting'?0:1}} exit={{opacity:0}}
+              transition={{duration:0.5,ease:[0.4,0,0.6,1]}}
+              style={{position:'absolute',inset:0,zIndex:9,pointerEvents:'none',background:'linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.15) 100%)'}}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* ── Draft text — no card, no border, text directly on scene ── */}
+        <AnimatePresence>
+          {(phase==='draft'||phase==='posting') && (
+            <motion.div key="draft-content"
               initial={{opacity:0,y:28}} animate={{opacity:phase==='posting'?0:1,y:0}} exit={{opacity:0,y:12}} transition={SPRING}
-              style={{position:'absolute',top:'14%',bottom:'13%',left:20,right:20,display:'flex',flexDirection:'column',zIndex:10}}
+              style={{position:'absolute',top:'14%',bottom:'13%',left:'6%',right:'6%',display:'flex',flexDirection:'column',zIndex:10,overflow:'hidden'}}
             >
-              <div style={{flex:1,background:'rgba(255,255,255,0.05)',backdropFilter:'blur(28px)',WebkitBackdropFilter:'blur(28px)',borderRadius:20,padding:'20px 20px 16px',display:'flex',flexDirection:'column',overflow:'hidden'}}>
-                <textarea className="onb-draft-ta" value={draftText} onChange={e=>setDraftText(e.target.value)} style={{flex:1,fontFamily:'var(--font-sans)',fontSize:15.5,lineHeight:1.72}} />
-              </div>
+              {isEditing ? (
+                <textarea
+                  autoFocus
+                  className="onb-draft-ta"
+                  value={draftText}
+                  onChange={e => setDraftText(e.target.value)}
+                  onBlur={() => setIsEditing(false)}
+                  style={{flex:1,fontFamily:'var(--font-sans)',width:'100%'}}
+                />
+              ) : (
+                <div
+                  onClick={() => { if (typingDone) setIsEditing(true); }}
+                  style={{flex:1,fontFamily:'var(--font-sans)',fontSize:18,lineHeight:1.7,letterSpacing:'0.01em',color:'rgba(255,255,255,0.92)',cursor:typingDone?'text':'default',overflowY:'auto'}}
+                >
+                  {renderDraftContent(draftText, typingDone ? draftText.length : displayedCharIdx)}
+                  {typingDone && <span className="draft-caret" aria-hidden />}
+                </div>
+              )}
               <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.6,duration:0.8}}
                 style={{textAlign:'center',marginTop:16,fontFamily:'var(--font-sans)',fontSize:13,color:'rgba(255,255,255,0.28)',letterSpacing:'0.03em',pointerEvents:'none'}}
               >Tap the orb to post</motion.div>
