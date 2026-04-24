@@ -420,7 +420,7 @@ function SourceList({ sources }) {
   return (
     <>
       <Divider />
-      <p style={{ fontSize:11, fontWeight:500, color:C.mute, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>Research</p>
+      <p style={{ fontSize:12, fontWeight:500, color:C.mute, letterSpacing:0, marginBottom:8 }}>Research</p>
       {sources.map((s,i) => (
         <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="src-link"
           style={{ display:"flex", gap:9, marginBottom:8, alignItems:"flex-start" }}>
