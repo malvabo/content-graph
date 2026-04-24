@@ -58,6 +58,7 @@ export const useBrandsStore = create<BrandsState>()(
           colors: { ...b.colors, ...(patch.colors || {}) },
           fonts: { ...b.fonts, ...(patch.fonts || {}) },
           voice: { ...b.voice, ...(patch.voice || {}) },
+          infographics: { ...(b.infographics || {}), ...(patch.infographics || {}) },
           customFonts: patch.customFonts ?? b.customFonts,
           kitName: patch.kitName ?? b.kitName,
           typeLabel: patch.typeLabel ?? b.typeLabel,

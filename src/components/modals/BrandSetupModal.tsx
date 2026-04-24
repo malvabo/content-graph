@@ -11,7 +11,7 @@ export default function BrandSetupModal({ brandId, onClose }: { brandId: string;
   const brand = useBrandsStore(s => s.brands.find(b => b.id === brandId));
   const updateBrand = useBrandsStore(s => s.updateBrand);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [tab, setTab] = useState<'visual' | 'voice'>('visual');
+  const [tab, setTab] = useState<'visual' | 'voice' | 'infographics'>('visual');
   const [fontError, setFontError] = useState<string | null>(null);
 
   // When the user closes the modal, kick off a type-label summary if we have
@@ -90,17 +90,44 @@ export default function BrandSetupModal({ brandId, onClose }: { brandId: string;
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 'var(--space-1)', padding: 'var(--space-2) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
-          {(['visual', 'voice'] as const).map(t => (
+          {(['visual', 'voice', 'infographics'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               style={{ padding: 'var(--space-2) var(--space-3)', background: tab === t ? 'var(--color-bg-surface)' : 'transparent', border: 'none', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', fontWeight: 'var(--weight-medium)', color: tab === t ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', cursor: 'pointer', textTransform: 'capitalize' }}>
-              Brand {t}
+              {t === 'infographics' ? 'Infographics' : `Brand ${t}`}
             </button>
           ))}
         </div>
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-5) var(--space-6)' }}>
-          {tab === 'visual' ? (
+          {tab === 'infographics' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', margin: 0 }}>
+                Default text that prefills new infographics for this brand kit.
+              </p>
+              <div>
+                <label style={LBL}>Default title</label>
+                <input className="form-input" value={brand.infographics?.title || ''}
+                  placeholder="e.g. Key Insights"
+                  style={{ width: '100%' }}
+                  onChange={e => updateBrand(brand.id, { infographics: { ...(brand.infographics || {}), title: e.target.value } })} />
+              </div>
+              <div>
+                <label style={LBL}>Default subtitle</label>
+                <input className="form-input" value={brand.infographics?.subtitle || ''}
+                  placeholder="Optional"
+                  style={{ width: '100%' }}
+                  onChange={e => updateBrand(brand.id, { infographics: { ...(brand.infographics || {}), subtitle: e.target.value } })} />
+              </div>
+              <div>
+                <label style={LBL}>Default footer</label>
+                <input className="form-input" value={brand.infographics?.footer || ''}
+                  placeholder="Optional"
+                  style={{ width: '100%' }}
+                  onChange={e => updateBrand(brand.id, { infographics: { ...(brand.infographics || {}), footer: e.target.value } })} />
+              </div>
+            </div>
+          ) : tab === 'visual' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
               <div>
                 <label style={LBL}>Brand name</label>

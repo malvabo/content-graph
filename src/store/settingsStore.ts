@@ -21,6 +21,7 @@ export interface BrandKit {
   };
   referenceImages: string[];
   imageStyleNote: string;
+  infographics?: { title?: string; subtitle?: string; footer?: string };
 }
 
 export const EMPTY_BRAND: BrandKit = {
@@ -31,6 +32,7 @@ export const EMPTY_BRAND: BrandKit = {
   voice: { personality: '', audience: '', avoidWords: [], examplePost: '' },
   referenceImages: [],
   imageStyleNote: '',
+  infographics: { title: '', subtitle: '', footer: '' },
 };
 
 /** Popular font presets offered in the Settings picker. Any Google Font
@@ -100,6 +102,7 @@ export const useSettingsStore = create<SettingsState>()(
             fonts: { ...(b.fonts || EMPTY_BRAND.fonts), ...(partial.fonts || {}) },
             customFonts: partial.customFonts ?? (b.customFonts || EMPTY_BRAND.customFonts),
             voice: { ...b.voice, ...(partial.voice || {}) },
+            infographics: { ...(b.infographics || {}), ...(partial.infographics || {}) },
           },
         };
       }),

@@ -3,17 +3,12 @@ import { Menu, MenuItem } from '../ui/Menu';
 import { useInfographicStore } from '../../store/infographicStore';
 import SearchBar from '../ui/SearchBar';
 import { useSettingsStore } from '../../store/settingsStore';
-import { useBrandsStore } from '../../store/brandsStore';
+import { useBrandsStore, getActiveBrand } from '../../store/brandsStore';
 import { renderSVG, parseInfographicData, computeLayout, getInfographicPalette, INFOGRAPHIC_WIDTH, type InfographicData, type TextField } from '../nodes/InfographicNode';
 
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
 type Point = InfographicData['points'][number];
-
-interface SettingsSectionProps {
-  data: InfographicData;
-  onTextChange: (field: 'title' | 'subtitle' | 'footer', value: string) => void;
-}
 
 interface InlineInfographicProps {
   data: InfographicData;
@@ -147,56 +142,6 @@ function InlineInfographic({ data, editVersion, onPointsChange, onTextChange, on
   );
 }
 
-// Collapsible per-infographic settings: title, subtitle, footer. Points are
-// edited inline on the infographic itself.
-function SettingsSection({ data, onTextChange }: SettingsSectionProps) {
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState(data.title);
-  const [subtitle, setSubtitle] = useState(data.subtitle || '');
-  const [footer, setFooter] = useState(data.footer || '');
-  useEffect(() => { setTitle(data.title); }, [data.title]);
-  useEffect(() => { setSubtitle(data.subtitle || ''); }, [data.subtitle]);
-  useEffect(() => { setFooter(data.footer || ''); }, [data.footer]);
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '6px 10px', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)',
-    color: 'var(--color-text-primary)', background: 'var(--color-bg-card)',
-    border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', outline: 'none',
-  };
-  const labelStyle: React.CSSProperties = {
-    fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', fontWeight: 500,
-    color: 'var(--color-text-tertiary)', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.04em',
-  };
-
-  return (
-    <div style={{ width: '100%', maxWidth: 800, borderRadius: 'var(--radius-lg)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', overflow: 'hidden' }}>
-      <button onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-3) var(--space-4)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>
-        <span>Settings</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 150ms', color: 'var(--color-text-tertiary)' }}><path d="m6 9 6 6 6-6"/></svg>
-      </button>
-      {open && (
-        <div style={{ padding: '0 var(--space-4) var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          <div>
-            <label style={labelStyle}>Title</label>
-            <input style={inputStyle} value={title}
-              onChange={e => { setTitle(e.target.value); onTextChange('title', e.target.value); }} />
-          </div>
-          <div>
-            <label style={labelStyle}>Subtitle</label>
-            <input style={inputStyle} value={subtitle} placeholder="Optional"
-              onChange={e => { setSubtitle(e.target.value); onTextChange('subtitle', e.target.value); }} />
-          </div>
-          <div>
-            <label style={labelStyle}>Footer</label>
-            <input style={inputStyle} value={footer} placeholder="Optional"
-              onChange={e => { setFooter(e.target.value); onTextChange('footer', e.target.value); }} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 const SUGGESTION_CHIPS = [
   'Change the title',
@@ -298,7 +243,12 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
 
   const createNew = () => {
     const id = `ig-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    add({ id, nodeId: id, label: 'New Infographic', json: DEFAULT_JSON });
+    const brandDefaults = getActiveBrand().infographics || {};
+    const defaultData = JSON.parse(DEFAULT_JSON);
+    if (brandDefaults.title) defaultData.title = brandDefaults.title;
+    if (brandDefaults.subtitle) defaultData.subtitle = brandDefaults.subtitle;
+    if (brandDefaults.footer) defaultData.footer = brandDefaults.footer;
+    add({ id, nodeId: id, label: 'New Infographic', json: JSON.stringify(defaultData) });
     setEditingId(id);
   };
 
@@ -531,13 +481,6 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
             />
           )}
 
-          {currentData && editing && (
-            <SettingsSection
-              key={editing.id}
-              data={currentData}
-              onTextChange={scheduleTextEdit}
-            />
-          )}
         </div>
       </div>
 
