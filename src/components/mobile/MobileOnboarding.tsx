@@ -354,27 +354,25 @@ export default function MobileOnboarding({ onComplete }: Props) {
             transition={(isIdle||isDraft)?{duration:4.5,repeat:Infinity,ease:EASE}:{duration:0.6}}
             style={{position:'absolute',inset:0}}
           >
-            {/* Single gradient — warm white core fading monotonically to transparent warm */}
+            {/* Single RGB (255,235,210) across all stops — only alpha varies, zero color
+                interpolation, no 'transparent' keyword so no black bleed between stops */}
             <motion.div aria-hidden
               animate={(isIdle||isDraft)?{opacity:[1.0,0.85,1.0]}:{opacity:1}}
               transition={(isIdle||isDraft)?{duration:3.2,repeat:Infinity,ease:EASE}:{duration:0.5}}
-              style={{position:'absolute',inset:0,background:'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,250,240,0.95) 8%, rgba(255,235,210,0.7) 18%, rgba(255,210,180,0.4) 32%, rgba(255,190,160,0.2) 50%, rgba(255,180,150,0.08) 70%, rgba(255,180,150,0.02) 85%, rgba(255,180,150,0) 100%)'}}
+              style={{position:'absolute',inset:0,background:'radial-gradient(circle, rgba(255,235,210,1) 0%, rgba(255,235,210,0.95) 8%, rgba(255,235,210,0.7) 18%, rgba(255,235,210,0.4) 32%, rgba(255,235,210,0.2) 50%, rgba(255,235,210,0.08) 70%, rgba(255,235,210,0.02) 85%, rgba(255,235,210,0) 100%)'}}
             />
-            {/* Outer bleed — expands during posting bloom to flood screen */}
+            {/* Bloom flood — invisible in all normal states, only during posting ritual */}
             <motion.div aria-hidden
               animate={
                 isBloom  ? {scale:6,opacity:1} :
-                isReform ? {scale:0,opacity:0} :
-                (isIdle||isDraft) ? {scale:[1.05,0.90,1.15,0.90,1.05],opacity:1} :
-                {scale:1,opacity:1}
+                isReform ? {scale:1,opacity:0} :
+                {scale:1,opacity:0}
               }
               transition={
                 isBloom  ? {duration:0.45,ease:[0.16,1,0.3,1]} :
-                isReform ? {duration:0.4,ease:[0.4,0,0.6,1]} :
-                (isIdle||isDraft) ? {scale:{duration:6,repeat:Infinity,ease:EASE},opacity:{duration:0.3}} :
-                {duration:0.6}
+                {duration:0.35,ease:[0.4,0,0.6,1]}
               }
-              style={{position:'absolute',inset:'-50%',background:'radial-gradient(ellipse at center, rgba(255,235,210,0) 0%, rgba(255,220,200,0.28) 52%, rgba(255,210,185,0.14) 72%, rgba(255,200,180,0) 94%)',pointerEvents:'none'}}
+              style={{position:'absolute',inset:'-50%',background:'radial-gradient(circle, rgba(255,235,210,0.7) 0%, rgba(255,235,210,0.3) 40%, rgba(255,235,210,0) 70%)',pointerEvents:'none'}}
             />
             {/* Platform color merge flash */}
             {mergeColor && (
