@@ -741,8 +741,6 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       {viewId && (() => {
         const note = notes.find(n => n.id === viewId);
         if (!note || !note.transcript) return null;
-        const wordCount = note.transcript.trim().split(/\s+/).filter(Boolean).length;
-        const subtitle = `Recorded ${fmtDate(note.createdAt)} · ${fmtDuration(note.durationMs)} · ${wordCount} word${wordCount === 1 ? '' : 's'}`;
         // Transcript edits in the library should flow through to workflow nodes that
         // reference this note. Voice-source nodes read text from outputStore on render,
         // so we sync every matching node's output alongside the note update.
@@ -758,7 +756,6 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
           <ContentModal
             subtype="voice-source"
             title={note.title}
-            subtitle={subtitle}
             text={note.transcript}
             onClose={() => setViewId(null)}
             onSave={persistTranscript}

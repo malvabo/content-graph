@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ModalShell, AiPopover } from './Modals';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 /* ── Measure viewport Y of selection start within a textarea ── */
 function getSelectionY(ta: HTMLTextAreaElement, selStart: number): number {
@@ -373,12 +377,15 @@ function NewsletterModal({ title, text, onClose, onSave, onRegenerate }: Content
 /* ════════════════════════════════════════════
    VOICE — same as Newsletter without subject line
    ════════════════════════════════════════════ */
-function VoiceModal({ title, subtitle, text, onClose, onSave, onTitleChange, extraActions }: ContentModalProps) {
+function VoiceModal({ title, text, onClose, onSave, onTitleChange, extraActions }: ContentModalProps) {
   const [editTitle, setEditTitle] = useState(title);
   const [content, setContent] = useState(text);
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => { const el = ref.current; if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }, [content]);
+  useEffect(() => {
+    const el = ref.current;
+    if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+  }, [content]);
 
   const commitTitle = () => {
     const t = editTitle.trim();
@@ -387,39 +394,45 @@ function VoiceModal({ title, subtitle, text, onClose, onSave, onTitleChange, ext
   };
 
   return (
-    <ModalShell onClose={() => { commitTitle(); onClose(); }} maxWidth={720}>
-      <div className="shrink-0" style={{ padding: 'var(--space-4) var(--space-6)' }}>
-        <div className="flex items-center justify-between">
-          <input value={editTitle}
+    <Dialog open onOpenChange={(open) => { if (!open) { commitTitle(); onClose(); } }}>
+      <DialogContent maxWidth={720}>
+        <DialogHeader>
+          <Label htmlFor="voice-note-title" className="sr-only">Title</Label>
+          <Input
+            id="voice-note-title"
+            value={editTitle}
             onChange={e => setEditTitle(e.target.value)}
-            onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; commitTitle(); }}
-            onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
-            style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', outline: 'none', flex: 1 }}
-            onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-strong)'; }} />
-          <button aria-label="Close" onClick={() => { commitTitle(); onClose(); }} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', transition: 'background 100ms', flexShrink: 0, marginLeft: 'var(--space-2)' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-          </button>
+            onBlur={commitTitle}
+            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+            className="border-transparent shadow-none focus-visible:ring-0 focus-visible:border-[var(--color-border-strong)] text-[length:var(--text-md)] font-[var(--weight-medium)] text-[var(--color-text-primary)] h-auto py-0.5 px-0"
+          />
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto px-6 pb-4 pt-2" style={{ scrollbarWidth: 'thin' }}>
+          <div
+            className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-card)] transition-colors focus-within:border-[var(--color-border-strong)]"
+          >
+            <textarea
+              ref={ref}
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              className="w-full resize-none border-none bg-transparent outline-none text-[length:var(--text-sm)] leading-[var(--leading-normal)] text-[var(--color-text-primary)] p-3"
+              style={{ minHeight: 400, overflow: 'hidden', fontFamily: 'var(--font-sans)' }}
+            />
+          </div>
         </div>
-        {subtitle && (
-          <div style={{ marginTop: 'var(--space-1)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{subtitle}</div>
-        )}
-      </div>
-      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--space-2) var(--space-6) var(--space-4)', scrollbarWidth: 'thin' }}>
-        <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', transition: 'border-color 150ms' }}
-          onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-          onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}>
-          <textarea ref={ref} value={content} onChange={e => { setContent(e.target.value); }}
-            style={{ width: '100%', minHeight: 400, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', padding: 'var(--space-3) var(--space-4)' }} />
-        </div>
-      </div>
-      <div className="flex items-center justify-end gap-2 shrink-0" style={{ padding: 'var(--space-4) var(--space-6) var(--space-5)', borderTop: '1px solid var(--color-border-subtle)' }}>
-        {extraActions && extraActions.map((a, i) => (
-          <button key={a.label} className={`btn btn-sm ${i === 0 ? 'btn-outline' : 'btn-primary'}`} onClick={() => { onSave?.(content); a.onClick(content); onClose(); }}>{a.label}</button>
-        ))}
-      </div>
-    </ModalShell>
+        <DialogFooter>
+          {extraActions?.map((a, i) => (
+            <Button
+              key={a.label}
+              variant={i === 0 ? 'outline' : 'default'}
+              onClick={() => { onSave?.(content); a.onClick(content); onClose(); }}
+            >
+              {a.label}
+            </Button>
+          ))}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
