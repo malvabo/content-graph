@@ -403,7 +403,7 @@ function Card({ children, elRef, highlighted }) {
 
 function CardHeader({ type, label, extra, onClose }) {
   return (
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:0 }}>
       <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
         <Tag type={type} label={label} />
         {extra && <span style={{ fontSize:12, color:C.mute, fontWeight:500 }}>{extra}</span>}
@@ -472,7 +472,7 @@ function ScienceCard({ data, elRef, onClose, onApply, highlighted }) {
   return (
     <Card elRef={elRef} highlighted={highlighted}>
       <CardHeader type="science" label={data.warning ? "Debunked claim" : "Science claim"} onClose={onClose} />
-      <p style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:8 }}>{data.headline}</p>
+      <p style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:4 }}>{data.headline}</p>
       <p style={{ fontSize:13, color:C.sub, lineHeight:1.7 }}>{data.body}</p>
       <RephraseBlock rephrase={data.rephrase} onApply={onApply} />
       <SourceList sources={sources} />
@@ -485,7 +485,7 @@ function MetaphorCard({ data, elRef, onClose, onApply, highlighted }) {
   return (
     <Card elRef={elRef} highlighted={highlighted}>
       <CardHeader type="metaphor" label="Metaphor" onClose={onClose} />
-      <p style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:8 }}>{data.headline}</p>
+      <p style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:4 }}>{data.headline}</p>
       <p style={{ fontSize:13, color:C.sub, lineHeight:1.7 }}>"{data.original}"</p>
       <RephraseBlock rephrase={data.rephrase} onApply={onApply} />
     </Card>
@@ -498,7 +498,7 @@ function LogicCard({ data, elRef, onClose, onApply, highlighted }) {
   return (
     <Card elRef={elRef} highlighted={highlighted}>
       <CardHeader type="logic" label="Logic gap" onClose={onClose} />
-      <p style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:8 }}>{data.headline}</p>
+      <p style={{ fontSize:15, fontWeight:600, color:C.text, lineHeight:1.4, marginBottom:4 }}>{data.headline}</p>
       <p style={{ fontSize:13, color:C.sub, lineHeight:1.7 }}>{data.body}</p>
       {data.fix && <p style={{ fontSize:13, color:C.sub, lineHeight:1.7, marginTop:8 }}>{data.fix}</p>}
       <RephraseBlock rephrase={data.rephrase} onApply={onApply} />
