@@ -755,10 +755,9 @@ ${text}`
       if (!card || !panel) return;
       const panelRect = panel.getBoundingClientRect();
       const cardRect  = card.getBoundingClientRect();
-      // Scroll so card top lands at the same Y as the clicked span
-      const desiredOffset  = spanTop - panelRect.top;
+      // Scroll so card sits near the top of the panel with breathing room
       const currentOffset  = cardRect.top - panelRect.top;
-      panel.scrollTo({ top: panel.scrollTop + currentOffset - desiredOffset, behavior:"smooth" });
+      panel.scrollTo({ top: panel.scrollTop + currentOffset - 16, behavior:"smooth" });
       setTimeout(() => setHighlighted(null), 3000);
     }, 40);
   }, []);
