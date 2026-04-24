@@ -80,7 +80,6 @@ const SunIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none
 const MoonIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>;
 const SettingsIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
 const AccountIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
-const DesignIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="15.5" r="2.5"/><circle cx="6.5" cy="15.5" r="2.5"/><path d="M13.5 9v3.5l-4 2.5"/><path d="M13.5 9v3.5l4 2.5"/></svg>;
 
 function UserMenu({ expanded }: { expanded: boolean }) {
   const { user, signOut } = useAuthStore();
@@ -188,7 +187,6 @@ export default function IconNav({ activeView, onViewChange }: Props) {
         <NavItem icon={<InfographicsIcon />} label="Charts" expanded={true} active={activeView === 'infographics'} onClick={() => onViewChange('infographics')} />
 
         <div className="nav-spacer" style={{ flex: 1 }} />
-        <NavItem icon={<DesignIcon />} label="Design System" expanded={true} active={activeView === 'design'} onClick={() => onViewChange('design')} />
         <NavItem icon={<SettingsIcon />} label="Settings" expanded={true} active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
         <div className="nav-bottom-utils" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <UserMenu expanded={true} />
