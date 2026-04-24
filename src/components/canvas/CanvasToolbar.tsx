@@ -71,8 +71,8 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
         setMenuOpen(false); setBrandSubOpen(false);
       }
     };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    document.addEventListener('pointerdown', h, true);
+    return () => document.removeEventListener('pointerdown', h, true);
   }, [menuOpen]);
 
   const handleRunAll = () => {
