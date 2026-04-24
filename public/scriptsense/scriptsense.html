@@ -625,6 +625,7 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
   const insightRef = useRef(null);
   const cardRefs    = useRef({});
   const autoSaveRef = useRef(null);
+  const hlTimerRef  = useRef(null);
   const [saveStatus, setSaveStatus] = useState(null);
 
   /* ── Auto-save (debounced 1.2s, min 10 words) ── */
@@ -740,8 +741,9 @@ ${text}`
     const charsBefore = ta.value.slice(0, idx);
     const linesBefore = charsBefore.split('\n').length - 1;
     ta.scrollTop = Math.max(0, linesBefore * lineH - 80);
+    clearTimeout(hlTimerRef.current);
     setHighlighted(kw);
-    setTimeout(() => setHighlighted(null), 3000);
+    hlTimerRef.current = setTimeout(() => setHighlighted(null), 3000);
   }, []);
 
   const handleSpanClick = useCallback((kw, e) => {
@@ -758,7 +760,8 @@ ${text}`
       // Scroll so card sits near the top of the panel with breathing room
       const currentOffset  = cardRect.top - panelRect.top;
       panel.scrollTo({ top: panel.scrollTop + currentOffset - 16, behavior:"smooth" });
-      setTimeout(() => setHighlighted(null), 3000);
+      clearTimeout(hlTimerRef.current);
+      hlTimerRef.current = setTimeout(() => setHighlighted(null), 3000);
     }, 40);
   }, []);
 
