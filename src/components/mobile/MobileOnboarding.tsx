@@ -238,13 +238,20 @@ export default function MobileOnboarding({ onComplete }: Props) {
         `}</style>
 
         {/* ── Aurora ── */}
-        {BLOBS.map((b,i) => (
-          <motion.div key={i} aria-hidden
-            animate={{x:b.xPath,y:b.yPath}}
-            transition={{x:{duration:b.xDur,repeat:Infinity,ease:'easeInOut',repeatType:'loop'},y:{duration:b.yDur,repeat:Infinity,ease:'easeInOut',repeatType:'loop'}}}
-            style={{position:'absolute',top:0,left:0,width:b.w,height:b.h,background:b.color,filter:'blur(90px)',willChange:'transform',pointerEvents:'none'}}
-          />
-        ))}
+        <motion.div
+          aria-hidden
+          animate={{ opacity: (phase === 'draft' || phase === 'posting') ? 0.30 : 1 }}
+          transition={{ duration: 0.6, ease: [0.4, 0.0, 0.6, 1.0] }}
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+        >
+          {BLOBS.map((b,i) => (
+            <motion.div key={i}
+              animate={{x:b.xPath,y:b.yPath}}
+              transition={{x:{duration:b.xDur,repeat:Infinity,ease:'easeInOut',repeatType:'loop'},y:{duration:b.yDur,repeat:Infinity,ease:'easeInOut',repeatType:'loop'}}}
+              style={{position:'absolute',top:0,left:0,width:b.w,height:b.h,background:b.color,filter:'blur(90px)',willChange:'transform',pointerEvents:'none'}}
+            />
+          ))}
+        </motion.div>
 
         {/* Grain */}
         <div aria-hidden style={{position:'absolute',inset:0,opacity:0.045,zIndex:1,pointerEvents:'none',backgroundImage:`url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,backgroundRepeat:'repeat',backgroundSize:'200px 200px'}} />
