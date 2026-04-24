@@ -1,5 +1,7 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
+import { useDarkMode } from '../../hooks/useDarkMode';
+import { Menu, MenuItem, MenuSeparator } from '../ui/Menu';
 
 interface Props {
   activeView: string;
@@ -83,12 +85,8 @@ const DesignIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="n
 function UserMenu({ expanded }: { expanded: boolean }) {
   const { user, signOut } = useAuthStore();
   const [open, setOpen] = useState(false);
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [dark, setDark] = useDarkMode();
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-    localStorage.setItem('dark-mode', String(dark));
-  }, [dark]);
   useEffect(() => {
     if (!open) return;
     const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
@@ -100,18 +98,16 @@ function UserMenu({ expanded }: { expanded: boolean }) {
     <div ref={ref} className="relative">
       <NavItem icon={<AccountIcon />} label="Account" active={open} expanded={expanded} ariaLabel="Account menu" ariaPressed={open} onClick={() => setOpen(!open)} />
       {open && (
-        <div className="absolute z-50 dropdown-fade" style={{ bottom: '100%', marginBottom: 8, left: 4, right: 4, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', padding: 'var(--space-1)', minWidth: 160 }}>
+        <Menu className="absolute z-50 dropdown-fade" style={{ bottom: '100%', marginBottom: 8, left: 4, right: 4 }}>
           <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: '4px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {user.email}
           </div>
-          <button onClick={() => setDark(!dark)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', fontSize: 14, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', padding: '6px 8px', borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer' }}>
-            {dark ? <SunIcon /> : <MoonIcon />}
+          <MenuSeparator />
+          <MenuItem icon={dark ? <SunIcon /> : <MoonIcon />} onClick={() => setDark(!dark)}>
             {dark ? 'Light mode' : 'Dark mode'}
-          </button>
-          <button onClick={() => { signOut(); setOpen(false); }} style={{ display: 'flex', alignItems: 'center', width: '100%', textAlign: 'left', fontSize: 14, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', padding: '6px 8px', borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer' }}>
-            Sign out
-          </button>
-        </div>
+          </MenuItem>
+          <MenuItem onClick={() => { signOut(); setOpen(false); }}>Sign out</MenuItem>
+        </Menu>
       )}
     </div>
   );
