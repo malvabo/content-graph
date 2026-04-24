@@ -60,122 +60,118 @@ const fmtDate = (iso: string) => {
 
 function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: () => void; onCancel: () => void; startTime: number; liveText: string }) {
   const [elapsed, setElapsed] = useState(0);
-  const [dark] = useState(() => document.documentElement.classList.contains('dark'));
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const liveTextRef = useRef(liveText);
+  useEffect(() => { liveTextRef.current = liveText; }, [liveText]);
+
   useEffect(() => {
     const iv = setInterval(() => setElapsed(Date.now() - startTime), 200);
     return () => clearInterval(iv);
   }, [startTime]);
+
+  // Canvas cloud animation — 4 soft green radial blobs orbiting the center.
+  // When speech arrives the orbital spread lerps to ~0 so they merge into one glow.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    let t = 0, spread = 88, raf: number;
+
+    const resize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const draw = () => {
+      const w = window.innerWidth, h = window.innerHeight;
+      const cx = w / 2, cy = h * 0.54;
+
+      const hasSpeech = liveTextRef.current.length > 3;
+      const targetSpread = hasSpeech ? 14 : 88;
+      spread += (targetSpread - spread) * 0.035;
+
+      ctx.fillStyle = '#080910';
+      ctx.fillRect(0, 0, w, h);
+
+      for (let i = 0; i < 4; i++) {
+        const angle = t * 0.65 + i * (Math.PI * 0.5);
+        const r = spread + Math.sin(t * 0.45 + i * 1.1) * 20;
+        const px = cx + Math.cos(angle) * r * 0.88;
+        const py = cy + Math.sin(angle) * r * 0.72;
+        const sz = 155 + Math.sin(t * 0.9 + i * 0.8) * 38;
+        const grad = ctx.createRadialGradient(px, py, 0, px, py, sz);
+        const hue = 145 + i * 5;
+        grad.addColorStop(0, `hsla(${hue},58%,52%,0.22)`);
+        grad.addColorStop(0.5, `hsla(${hue},50%,48%,0.06)`);
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      t += 0.010;
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, []);
+
   const mm = String(Math.floor(elapsed / 60000)).padStart(2, '0');
   const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
-  const tail = liveText ? liveText.slice(-80) : '';
-
-  // Theme-aware tokens
-  const bg           = dark ? '#06090a' : 'var(--color-bg)';
-  const timerColor   = dark ? '#ffffff' : 'var(--color-text-primary)';
-  const mutedColor   = dark ? 'rgba(255,255,255,0.28)' : 'var(--color-text-tertiary)';
-  const sphereBg     = dark
-    ? 'radial-gradient(circle at 38% 34%, #142014, #030706)'
-    : 'radial-gradient(circle at 38% 34%, #e8f5ee, #f2faf5)';
-  const sphereShadow = dark
-    ? 'inset 0 0 70px rgba(0,0,0,0.95)'
-    : 'inset 0 0 40px rgba(13,191,90,0.06), 0 0 0 1px rgba(13,191,90,0.18)';
-  const ringOpA      = dark ? 0.95 : 0.75;
-  const ringOpB      = dark ? 0.70 : 0.55;
-  const ringOpC      = dark ? 0.50 : 0.40;
-  const ringOpD      = dark ? 0.60 : 0.45;
-  const glowOp       = dark ? 0.45 : 0.25;
-  const haloOp       = dark ? 0.07 : 0.12;
+  const tail = liveText ? liveText.slice(-120) : '';
 
   return createPortal(
-    <>
-      <style>{`
-        @keyframes rec-cursor { 0%,49% { opacity:1; } 50%,100% { opacity:0; } }
-        @keyframes rec-outer  { 0%,100% { opacity:.4; } 50% { opacity:.75; } }
-        @keyframes rec-glow   { 0%,100% { opacity:.45; transform:scale(1); } 50% { opacity:1; transform:scale(1.08); } }
-        @keyframes cloud-a {
-          0%   { transform: translate(28px,-18px) scale(1.10,0.82); border-radius: 58% 42% 65% 35% / 45% 62% 38% 55%; }
-          22%  { transform: translate(-22px,32px) scale(0.86,1.18); border-radius: 40% 60% 42% 58% / 60% 38% 62% 42%; }
-          47%  { transform: translate(-30px,-22px) scale(1.16,0.88); border-radius: 62% 38% 48% 52% / 40% 55% 45% 60%; }
-          68%  { transform: translate(18px,36px) scale(0.88,1.12); border-radius: 44% 56% 60% 40% / 62% 40% 55% 45%; }
-          85%  { transform: translate(36px,6px) scale(1.05,0.90); border-radius: 52% 48% 38% 62% / 50% 58% 42% 50%; }
-          100% { transform: translate(28px,-18px) scale(1.10,0.82); border-radius: 58% 42% 65% 35% / 45% 62% 38% 55%; }
-        }
-        @keyframes cloud-b {
-          0%   { transform: translate(-24px,22px) scale(0.90,1.12); border-radius: 45% 55% 60% 40% / 58% 42% 48% 52%; }
-          30%  { transform: translate(32px,-26px) scale(1.14,0.86); border-radius: 60% 40% 44% 56% / 40% 60% 56% 44%; }
-          55%  { transform: translate(22px,32px) scale(0.84,1.16); border-radius: 38% 62% 55% 45% / 55% 45% 40% 60%; }
-          78%  { transform: translate(-34px,-12px) scale(1.10,0.90); border-radius: 55% 45% 40% 60% / 42% 58% 62% 38%; }
-          100% { transform: translate(-24px,22px) scale(0.90,1.12); border-radius: 45% 55% 60% 40% / 58% 42% 48% 52%; }
-        }
-        @keyframes cloud-c {
-          0%   { transform: translate(2px,-36px) scale(1.22,0.78); border-radius: 50% 50% 40% 60% / 60% 40% 52% 48%; }
-          35%  { transform: translate(38px,14px) scale(0.78,1.22); border-radius: 42% 58% 58% 42% / 48% 52% 42% 58%; }
-          65%  { transform: translate(-16px,36px) scale(1.12,0.84); border-radius: 60% 40% 48% 52% / 38% 62% 55% 45%; }
-          100% { transform: translate(2px,-36px) scale(1.22,0.78); border-radius: 50% 50% 40% 60% / 60% 40% 52% 48%; }
-        }
-        @keyframes cloud-d {
-          0%   { transform: translate(-10px,12px) scale(1.0,1.0); border-radius: 50%; }
-          28%  { transform: translate(16px,-22px) scale(1.08,0.94); border-radius: 55% 45% 48% 52% / 42% 58% 52% 48%; }
-          55%  { transform: translate(-22px,-8px) scale(0.94,1.06); border-radius: 44% 56% 55% 45% / 56% 44% 46% 54%; }
-          80%  { transform: translate(10px,24px) scale(1.04,0.96); border-radius: 58% 42% 44% 56% / 50% 50% 56% 44%; }
-          100% { transform: translate(-10px,12px) scale(1.0,1.0); border-radius: 50%; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          [data-rec-ring] { animation: none !important; }
-        }
-      `}</style>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
+      <style>{`@keyframes rec-cursor { 0%,49%{opacity:1} 50%,100%{opacity:0} }`}</style>
+      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
 
-        {/* ── Top: live transcript + timer ── */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: '56px 32px 28px', width: '100%', boxSizing: 'border-box' }}>
-          <div aria-live="polite" style={{ fontSize: 14, fontFamily: 'var(--font-sans)', color: 'var(--color-accent)', opacity: 0.85, textAlign: 'center', lineHeight: 1.5, minHeight: 22 }}>
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
+
+        {/* ── Top: transcript + timer ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: '60px 32px 24px', width: '100%', boxSizing: 'border-box' }}>
+          <div aria-live="polite" style={{ fontSize: 14, fontFamily: 'var(--font-sans)', color: 'rgba(13,191,90,0.82)', textAlign: 'center', lineHeight: 1.55, minHeight: 22, maxWidth: 300 }}>
             {tail
               ? <>{tail}<span aria-hidden style={{ animation: 'rec-cursor 1.2s step-end infinite', marginLeft: 1 }}>|</span></>
-              : <span style={{ opacity: 0.45, fontStyle: 'italic' }}>Listening…</span>
+              : <span style={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.30)' }}>Listening…</span>
             }
           </div>
-          <div style={{ marginTop: 20, fontSize: 80, fontWeight: 200, fontFamily: 'var(--font-sans)', color: timerColor, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+          <div style={{ marginTop: 18, fontSize: 76, fontWeight: 200, fontFamily: 'var(--font-sans)', color: '#ffffff', letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
             {mm}:{ss}
           </div>
         </div>
 
-        {/* ── Centre: morphing orb — tap to stop ── */}
-        <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '32px 0' }}>
-          <div
+        {/* ── Centre: stop button ── */}
+        <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '28px 0' }}>
+          <button
             onClick={onStop}
-            role="button"
-            tabIndex={0}
             aria-label="Stop and save recording"
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onStop(); }}
-            style={{ position: 'relative', width: 210, height: 210, cursor: 'pointer' }}
+            style={{
+              width: 64, height: 64, borderRadius: '50%', border: 'none',
+              background: 'rgba(13,191,90,0.88)', color: '#fff', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 36px rgba(13,191,90,0.30), 0 4px 16px rgba(0,0,0,0.35)',
+            }}
           >
-            {/* Ambient halo */}
-            <div data-rec-ring style={{ position: 'absolute', inset: -24, borderRadius: '50%', background: `radial-gradient(circle, rgba(13,191,90,${haloOp}) 0%, transparent 70%)`, animation: 'rec-outer 3s ease-in-out infinite' }} />
-            {/* Sphere */}
-            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: sphereBg, boxShadow: sphereShadow, overflow: 'hidden' }}>
-              {/* Cloud A — drifts wide, slow wander (8.3s) */}
-              <div data-rec-ring style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 68% 58% at 50% 50%, rgba(13,191,90,${ringOpA * 0.55}), rgba(13,191,90,0.07) 58%, transparent 80%)`, filter: 'blur(22px)', animation: 'cloud-a 8.3s ease-in-out infinite' }} />
-              {/* Cloud B — opposite drift (11.7s) */}
-              <div data-rec-ring style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 54% 64% at 50% 50%, rgba(13,191,90,${ringOpB * 0.50}), rgba(13,191,90,0.05) 54%, transparent 76%)`, filter: 'blur(30px)', animation: 'cloud-b 11.7s ease-in-out infinite' }} />
-              {/* Cloud C — cross-axis, faster (6.9s) */}
-              <div data-rec-ring style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 44% 48% at 50% 50%, rgba(13,191,90,${ringOpC * 0.65}), rgba(13,191,90,0.04) 50%, transparent 72%)`, filter: 'blur(18px)', animation: 'cloud-c 6.9s ease-in-out infinite' }} />
-              {/* Cloud D — deep background haze (14.1s) */}
-              <div data-rec-ring style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 78% 72% at 50% 50%, rgba(13,191,90,${ringOpD * 0.32}), transparent 68%)`, filter: 'blur(40px)', animation: 'cloud-d 14.1s ease-in-out infinite' }} />
-            </div>
-            {/* Core glow */}
-            <div data-rec-ring style={{ position: 'absolute', inset: '28%', borderRadius: '50%', background: `radial-gradient(circle, rgba(13,191,90,${glowOp}) 0%, rgba(13,191,90,0.08) 55%, transparent 100%)`, filter: 'blur(12px)', animation: 'rec-glow 2.2s ease-in-out infinite' }} />
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          </button>
+          <div style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.32)', letterSpacing: '0.10em', textTransform: 'uppercase' }}>
+            Tap to stop
           </div>
-          <div style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: mutedColor, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Tap to stop</div>
         </div>
 
         {/* ── Bottom: discard ── */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', paddingBottom: 'calc(44px + env(safe-area-inset-bottom, 0px))' }}>
-          <button onClick={onCancel} style={{ background: 'none', border: 'none', color: mutedColor, fontFamily: 'var(--font-sans)', fontSize: 15, cursor: 'pointer', padding: '10px 32px', minHeight: 44 }}>
+          <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-sans)', fontSize: 15, cursor: 'pointer', padding: '10px 32px', minHeight: 44 }}>
             Discard
           </button>
         </div>
       </div>
-    </>,
+    </div>,
     document.body,
   );
 }
