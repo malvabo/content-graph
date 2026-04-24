@@ -1,5 +1,6 @@
 import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
+import { useVoiceStore } from '../../store/voiceStore';
 
 interface Props {
   onComplete: () => void;
@@ -173,7 +174,25 @@ export default function MobileOnboarding({ onComplete }: Props) {
   function advance()       { if (phase==='idle')  { setPhase('prompt'); setTimeout(()=>setHintVisible(true),1200); } }
   function startRecording(){ setHintVisible(false); setPhase('recording'); }
   function goToPlatform()  { setPhase('platform'); }
-  function triggerPost()   { if (phase!=='draft') return; setPhase('posting'); setTimeout(onComplete,1800); }
+  function triggerPost()   { if (phase!=='draft') return; setPhase('posting'); }
+
+  function saveAndFinish() {
+    const title = draftText.split('\n').find(l => l.trim()) ?? 'Voice note';
+    const kindMap: Record<string, 'linkedin-post'|'twitter-single'> = {
+      linkedin: 'linkedin-post', x: 'twitter-single',
+      instagram: 'twitter-single', threads: 'twitter-single',
+    };
+    useVoiceStore.getState().addNote({
+      id: crypto.randomUUID(),
+      title: title.slice(0, 80),
+      transcript: draftText,
+      durationMs: 0,
+      status: 'ready',
+      createdAt: new Date().toISOString(),
+      ...(selId ? { lastGeneration: { kind: kindMap[selId] ?? 'twitter-single', text: draftText, createdAt: new Date().toISOString() } } : {}),
+    });
+    onComplete();
+  }
 
   function pickPlatform(id: string) {
     if (selId) return;
@@ -383,8 +402,17 @@ export default function MobileOnboarding({ onComplete }: Props) {
               <motion.div key="bloom" initial={{scale:0.1,opacity:0.85}} animate={{scale:9,opacity:0}} transition={{duration:1.4,ease:[0.16,1,0.3,1]}}
                 style={{position:'absolute',width:190,height:190,borderRadius:'50%',top:'50%',left:'50%',x:'-50%',y:'-50%',background:'radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(220,200,255,0.18) 50%, transparent 70%)',filter:'blur(8px)',pointerEvents:'none',zIndex:50}} />
               <motion.div key="posted" initial={{opacity:0,scale:0.85}} animate={{opacity:1,scale:1}} transition={{...SPRING,delay:0.35}}
-                style={{position:'absolute',top:'50%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:32,fontWeight:700,color:'rgba(255,255,255,0.94)',letterSpacing:'-0.03em',y:'-50%',pointerEvents:'none',zIndex:55}}
+                style={{position:'absolute',top:'44%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:32,fontWeight:700,color:'rgba(255,255,255,0.94)',letterSpacing:'-0.03em',y:'-50%',pointerEvents:'none',zIndex:55}}
               >Posted ✦</motion.div>
+              <motion.button key="save-btn"
+                initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{...SPRING,delay:0.85}}
+                onClick={saveAndFinish}
+                style={{position:'absolute',top:'58%',left:0,right:0,display:'flex',justifyContent:'center',zIndex:55}}
+              >
+                <span style={{fontFamily:'var(--font-sans)',fontSize:16,fontWeight:600,color:'rgba(255,255,255,0.88)',letterSpacing:'-0.01em',cursor:'pointer',textShadow:'0 0 24px rgba(255,255,255,0.50)',background:'none',border:'none',padding:'10px 28px'}}>
+                  Save to my notes
+                </span>
+              </motion.button>
             </>
           )}
         </AnimatePresence>
