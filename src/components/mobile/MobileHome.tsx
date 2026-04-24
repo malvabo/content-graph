@@ -89,34 +89,36 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
   return createPortal(
     <>
       <style>{`
-        @keyframes rec-ring-a { to { transform: rotate(360deg); } }
-        @keyframes rec-ring-b { to { transform: rotate(-360deg); } }
-        @keyframes rec-ring-c { from { transform: rotate(30deg); } to { transform: rotate(390deg); } }
-        @keyframes rec-ring-d { from { transform: rotate(-20deg); } to { transform: rotate(-380deg); } }
-        @keyframes rec-glow   { 0%,100% { opacity:.45; transform:scale(1); } 50% { opacity:1; transform:scale(1.08); } }
-        @keyframes rec-outer  { 0%,100% { opacity:.4; } 50% { opacity:.75; } }
         @keyframes rec-cursor { 0%,49% { opacity:1; } 50%,100% { opacity:0; } }
-        @keyframes rec-morph-a {
-          0%,100% { border-radius: 50%; }
-          28%     { border-radius: 63% 37% 55% 45% / 42% 58% 44% 56%; }
-          55%     { border-radius: 38% 62% 44% 56% / 58% 42% 57% 43%; }
-          80%     { border-radius: 52% 48% 62% 38% / 46% 54% 40% 60%; }
+        @keyframes rec-outer  { 0%,100% { opacity:.4; } 50% { opacity:.75; } }
+        @keyframes rec-glow   { 0%,100% { opacity:.45; transform:scale(1); } 50% { opacity:1; transform:scale(1.08); } }
+        @keyframes cloud-a {
+          0%   { transform: translate(28px,-18px) scale(1.10,0.82); border-radius: 58% 42% 65% 35% / 45% 62% 38% 55%; }
+          22%  { transform: translate(-22px,32px) scale(0.86,1.18); border-radius: 40% 60% 42% 58% / 60% 38% 62% 42%; }
+          47%  { transform: translate(-30px,-22px) scale(1.16,0.88); border-radius: 62% 38% 48% 52% / 40% 55% 45% 60%; }
+          68%  { transform: translate(18px,36px) scale(0.88,1.12); border-radius: 44% 56% 60% 40% / 62% 40% 55% 45%; }
+          85%  { transform: translate(36px,6px) scale(1.05,0.90); border-radius: 52% 48% 38% 62% / 50% 58% 42% 50%; }
+          100% { transform: translate(28px,-18px) scale(1.10,0.82); border-radius: 58% 42% 65% 35% / 45% 62% 38% 55%; }
         }
-        @keyframes rec-morph-b {
-          0%,100% { border-radius: 50%; }
-          35%     { border-radius: 44% 56% 60% 40% / 56% 44% 40% 60%; }
-          65%     { border-radius: 60% 40% 42% 58% / 40% 60% 58% 42%; }
+        @keyframes cloud-b {
+          0%   { transform: translate(-24px,22px) scale(0.90,1.12); border-radius: 45% 55% 60% 40% / 58% 42% 48% 52%; }
+          30%  { transform: translate(32px,-26px) scale(1.14,0.86); border-radius: 60% 40% 44% 56% / 40% 60% 56% 44%; }
+          55%  { transform: translate(22px,32px) scale(0.84,1.16); border-radius: 38% 62% 55% 45% / 55% 45% 40% 60%; }
+          78%  { transform: translate(-34px,-12px) scale(1.10,0.90); border-radius: 55% 45% 40% 60% / 42% 58% 62% 38%; }
+          100% { transform: translate(-24px,22px) scale(0.90,1.12); border-radius: 45% 55% 60% 40% / 58% 42% 48% 52%; }
         }
-        @keyframes rec-morph-c {
-          0%,100% { border-radius: 50%; }
-          22%     { border-radius: 58% 42% 48% 52% / 44% 56% 52% 48%; }
-          50%     { border-radius: 42% 58% 56% 44% / 60% 40% 46% 54%; }
-          78%     { border-radius: 54% 46% 40% 60% / 48% 52% 60% 40%; }
+        @keyframes cloud-c {
+          0%   { transform: translate(2px,-36px) scale(1.22,0.78); border-radius: 50% 50% 40% 60% / 60% 40% 52% 48%; }
+          35%  { transform: translate(38px,14px) scale(0.78,1.22); border-radius: 42% 58% 58% 42% / 48% 52% 42% 58%; }
+          65%  { transform: translate(-16px,36px) scale(1.12,0.84); border-radius: 60% 40% 48% 52% / 38% 62% 55% 45%; }
+          100% { transform: translate(2px,-36px) scale(1.22,0.78); border-radius: 50% 50% 40% 60% / 60% 40% 52% 48%; }
         }
-        @keyframes rec-morph-d {
-          0%,100% { border-radius: 50%; }
-          40%     { border-radius: 60% 40% 52% 48% / 48% 52% 38% 62%; }
-          72%     { border-radius: 40% 60% 46% 54% / 62% 38% 54% 46%; }
+        @keyframes cloud-d {
+          0%   { transform: translate(-10px,12px) scale(1.0,1.0); border-radius: 50%; }
+          28%  { transform: translate(16px,-22px) scale(1.08,0.94); border-radius: 55% 45% 48% 52% / 42% 58% 52% 48%; }
+          55%  { transform: translate(-22px,-8px) scale(0.94,1.06); border-radius: 44% 56% 55% 45% / 56% 44% 46% 54%; }
+          80%  { transform: translate(10px,24px) scale(1.04,0.96); border-radius: 58% 42% 44% 56% / 50% 50% 56% 44%; }
+          100% { transform: translate(-10px,12px) scale(1.0,1.0); border-radius: 50%; }
         }
         @media (prefers-reduced-motion: reduce) {
           [data-rec-ring] { animation: none !important; }
@@ -150,22 +152,15 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
             {/* Ambient halo */}
             <div data-rec-ring style={{ position: 'absolute', inset: -24, borderRadius: '50%', background: `radial-gradient(circle, rgba(13,191,90,${haloOp}) 0%, transparent 70%)`, animation: 'rec-outer 3s ease-in-out infinite' }} />
             {/* Sphere */}
-            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: sphereBg, boxShadow: sphereShadow }} />
-            {/* Ring A — fastest rotation (2s) + slow morph (3.1s) */}
-            <div data-rec-ring style={{ position: 'absolute', inset: 0, animation: 'rec-ring-a 2s linear infinite' }}>
-              <div data-rec-ring style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid rgba(13,191,90,${ringOpA})`, transform: 'scaleY(0.2)', filter: 'blur(2px)', boxShadow: `0 0 14px 5px rgba(13,191,90,0.5), inset 0 0 8px rgba(13,191,90,0.25)`, animation: 'rec-morph-a 3.1s ease-in-out infinite' }} />
-            </div>
-            {/* Ring B — reverse (3.2s) + morph (4.7s) */}
-            <div data-rec-ring style={{ position: 'absolute', inset: 0, animation: 'rec-ring-b 3.2s linear infinite' }}>
-              <div data-rec-ring style={{ position: 'absolute', inset: 14, borderRadius: '50%', border: `1.5px solid rgba(13,191,90,${ringOpB})`, transform: 'scaleY(0.28) rotate(20deg)', filter: 'blur(3px)', boxShadow: `0 0 18px 7px rgba(13,191,90,0.25)`, animation: 'rec-morph-b 4.7s ease-in-out infinite' }} />
-            </div>
-            {/* Ring C — slow wide (4.5s) + morph (5.9s) */}
-            <div data-rec-ring style={{ position: 'absolute', inset: 0, animation: 'rec-ring-c 4.5s linear infinite' }}>
-              <div data-rec-ring style={{ position: 'absolute', inset: 2, borderRadius: '50%', border: `1px solid rgba(13,191,90,${ringOpC})`, transform: 'scaleY(0.13) rotate(-10deg)', filter: 'blur(4px)', boxShadow: `0 0 22px 9px rgba(13,191,90,0.18)`, animation: 'rec-morph-c 5.9s ease-in-out infinite' }} />
-            </div>
-            {/* Ring D — perpendicular axis (3.8s) + morph (2.9s) */}
-            <div data-rec-ring style={{ position: 'absolute', inset: 0, animation: 'rec-ring-d 3.8s linear infinite' }}>
-              <div data-rec-ring style={{ position: 'absolute', inset: 10, borderRadius: '50%', border: `1px solid rgba(13,191,90,${ringOpD})`, transform: 'scaleX(0.18) rotate(55deg)', filter: 'blur(2.5px)', boxShadow: `0 0 12px 5px rgba(13,191,90,0.32)`, animation: 'rec-morph-d 2.9s ease-in-out infinite' }} />
+            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: sphereBg, boxShadow: sphereShadow, overflow: 'hidden' }}>
+              {/* Cloud A — drifts wide, slow wander (8.3s) */}
+              <div data-rec-ring style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 68% 58% at 50% 50%, rgba(13,191,90,${ringOpA * 0.55}), rgba(13,191,90,0.07) 58%, transparent 80%)`, filter: 'blur(22px)', animation: 'cloud-a 8.3s ease-in-out infinite' }} />
+              {/* Cloud B — opposite drift (11.7s) */}
+              <div data-rec-ring style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 54% 64% at 50% 50%, rgba(13,191,90,${ringOpB * 0.50}), rgba(13,191,90,0.05) 54%, transparent 76%)`, filter: 'blur(30px)', animation: 'cloud-b 11.7s ease-in-out infinite' }} />
+              {/* Cloud C — cross-axis, faster (6.9s) */}
+              <div data-rec-ring style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 44% 48% at 50% 50%, rgba(13,191,90,${ringOpC * 0.65}), rgba(13,191,90,0.04) 50%, transparent 72%)`, filter: 'blur(18px)', animation: 'cloud-c 6.9s ease-in-out infinite' }} />
+              {/* Cloud D — deep background haze (14.1s) */}
+              <div data-rec-ring style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 78% 72% at 50% 50%, rgba(13,191,90,${ringOpD * 0.32}), transparent 68%)`, filter: 'blur(40px)', animation: 'cloud-d 14.1s ease-in-out infinite' }} />
             </div>
             {/* Core glow */}
             <div data-rec-ring style={{ position: 'absolute', inset: '28%', borderRadius: '50%', background: `radial-gradient(circle, rgba(13,191,90,${glowOp}) 0%, rgba(13,191,90,0.08) 55%, transparent 100%)`, filter: 'blur(12px)', animation: 'rec-glow 2.2s ease-in-out infinite' }} />
