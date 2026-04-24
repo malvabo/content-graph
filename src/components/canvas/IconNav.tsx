@@ -130,7 +130,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
         aria-label="Main navigation"
         className="icon-nav"
         style={{
-          width: 200,
+          width: 170,
           height: 'calc(100% - 16px)',
           margin: '8px 0 8px 8px',
           display: 'flex', flexDirection: 'column', alignItems: 'stretch',
