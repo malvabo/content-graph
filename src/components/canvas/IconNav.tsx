@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useDarkMode } from '../../hooks/useDarkMode';
 import { Menu, MenuItem } from '../ui/Menu';
@@ -96,7 +96,7 @@ function UserMenu({ expanded }: { expanded: boolean }) {
   if (!user) return null;
   return (
     <div ref={ref} className="relative">
-      <NavItem icon={<AccountIcon />} label="Account" active={open} expanded={expanded} ariaLabel="Account menu" ariaPressed={open} onClick={() => setOpen(!open)} />
+      <NavItem icon={<AccountIcon />} label="Account" active={open} expanded={true} ariaLabel="Account menu" ariaPressed={open} onClick={() => setOpen(!open)} />
       {open && (
         <Menu className="absolute z-50 dropdown-fade" style={{ bottom: '100%', marginBottom: 8, left: 10, right: 10, minWidth: 180 }}>
           <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: '4px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -113,8 +113,6 @@ function UserMenu({ expanded }: { expanded: boolean }) {
 }
 
 export default function IconNav({ activeView, onViewChange }: Props) {
-  const [expanded, setExpanded] = useState(false);
-
   return (
     <>
       <style>{`
@@ -131,10 +129,8 @@ export default function IconNav({ activeView, onViewChange }: Props) {
       <nav
         aria-label="Main navigation"
         className="icon-nav"
-        onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
         style={{
-          width: expanded ? 200 : 48,
+          width: 200,
           height: 'calc(100% - 16px)',
           margin: '8px 0 8px 8px',
           display: 'flex', flexDirection: 'column', alignItems: 'stretch',
@@ -145,7 +141,6 @@ export default function IconNav({ activeView, onViewChange }: Props) {
           boxShadow: '0px 2px 10px 0px rgba(0, 0, 0, 0.1)',
           position: 'relative', zIndex: 2,
           overflow: 'hidden',
-          transition: 'width 200ms ease',
         }}
       >
         {/* Logo */}
@@ -165,25 +160,24 @@ export default function IconNav({ activeView, onViewChange }: Props) {
               fontWeight: 500, fontSize: 11, fontFamily: 'var(--font-mono)',
               color: 'var(--color-text-primary)', userSelect: 'none', whiteSpace: 'nowrap',
               letterSpacing: '0.18em', textTransform: 'uppercase',
-              opacity: expanded ? 1 : 0,
-              transition: 'opacity 120ms ease',
+              opacity: 1,
             }}
           >
             UP150
           </span>
         </div>
 
-        <NavItem icon={<WorkflowIcon />} label="Workflows" expanded={expanded} active={activeView === 'library' || activeView === 'workflow'} onClick={() => onViewChange('library')} />
-        <NavItem icon={<VoiceIcon />} label="Voice" expanded={expanded} active={activeView === 'voice'} onClick={() => onViewChange('voice')} />
-        <NavItem icon={<ScriptIcon />} label="Script" expanded={expanded} active={activeView === 'scriptlist' || activeView === 'scriptsense'} onClick={() => onViewChange('scriptlist')} />
-        <NavItem icon={<CardsIcon />} label="Cards" expanded={expanded} active={activeView === 'cardslibrary' || activeView === 'cards'} onClick={() => onViewChange('cardslibrary')} />
-        <NavItem icon={<InfographicsIcon />} label="Charts" expanded={expanded} active={activeView === 'infographics'} onClick={() => onViewChange('infographics')} />
+        <NavItem icon={<WorkflowIcon />} label="Workflows" expanded={true} active={activeView === 'library' || activeView === 'workflow'} onClick={() => onViewChange('library')} />
+        <NavItem icon={<VoiceIcon />} label="Voice" expanded={true} active={activeView === 'voice'} onClick={() => onViewChange('voice')} />
+        <NavItem icon={<ScriptIcon />} label="Script" expanded={true} active={activeView === 'scriptlist' || activeView === 'scriptsense'} onClick={() => onViewChange('scriptlist')} />
+        <NavItem icon={<CardsIcon />} label="Cards" expanded={true} active={activeView === 'cardslibrary' || activeView === 'cards'} onClick={() => onViewChange('cardslibrary')} />
+        <NavItem icon={<InfographicsIcon />} label="Charts" expanded={true} active={activeView === 'infographics'} onClick={() => onViewChange('infographics')} />
 
         <div className="nav-spacer" style={{ flex: 1 }} />
-        <NavItem icon={<DesignIcon />} label="Design System" expanded={expanded} active={activeView === 'design'} onClick={() => onViewChange('design')} />
-        <NavItem icon={<SettingsIcon />} label="Settings" expanded={expanded} active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
+        <NavItem icon={<DesignIcon />} label="Design System" expanded={true} active={activeView === 'design'} onClick={() => onViewChange('design')} />
+        <NavItem icon={<SettingsIcon />} label="Settings" expanded={true} active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
         <div className="nav-bottom-utils" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <UserMenu expanded={expanded} />
+          <UserMenu expanded={true} />
         </div>
       </nav>
     </>
