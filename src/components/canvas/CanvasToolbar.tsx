@@ -150,7 +150,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
           />
           <button
             className="btn-ghost btn-sm hidden md:inline-flex"
-            style={{ gap: 6 }}
+            style={{ gap: 6, border: 'none' }}
             onClick={autoLayout}
           >
             <LayoutIcon />
