@@ -82,10 +82,6 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
             style={{ width: 80, height: 80, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)', cursor: 'pointer' }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
           </button>
-          <button onClick={onCancel}
-            style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 16, padding: 'var(--space-2) var(--space-4)', minHeight: 44 }}>
-            Discard
-          </button>
         </div>
       </div>
     </div>,

@@ -154,23 +154,13 @@ interface OverlayProps {
   fatal?: boolean;
   transcriptSoFar: string;
   liveOffline?: boolean;
-  hasCapturedAudio: boolean;
 }
 
-function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, transcriptSoFar, hasCapturedAudio }: OverlayProps) {
+function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, transcriptSoFar }: OverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const [elapsed, setElapsed] = useState(0);
   const [visible, setVisible] = useState(false);
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
-  useEffect(() => {
-    // Auto-clear the discard confirm state after a few seconds so stale prompts
-    // don't stick around if the user decides not to confirm.
-    if (!confirmDiscard) return;
-    const t = setTimeout(() => setConfirmDiscard(false), 4000);
-    return () => clearTimeout(t);
-  }, [confirmDiscard]);
-
   useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
   useEffect(() => {
     const iv = setInterval(() => setElapsed(Date.now() - startTime), 200);
@@ -251,34 +241,6 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, trans
             </div>
           )}
 
-          {!fatal && (() => {
-            // Any captured content (live words or audio chunks) makes discard a
-            // destructive action — require a second click so a long dictation isn't
-            // thrown away on a mis-tap.
-            const hasContent = !!transcriptSoFar.trim() || hasCapturedAudio;
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)', marginTop: 'var(--space-1)' }}>
-                <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                  <button
-                    onClick={() => { if (!hasContent || confirmDiscard) onDiscard(); else setConfirmDiscard(true); }}
-                    style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', padding: '4px 8px', fontWeight: 500 }}>
-                    {confirmDiscard && hasContent ? 'Tap again to discard' : 'Discard'}
-                  </button>
-                  {hasCapturedAudio && (
-                    <button onClick={onStop}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', padding: '4px 8px' }}>
-                      Save anyway
-                    </button>
-                  )}
-                </div>
-                {confirmDiscard && hasContent && (
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
-                    This throws away the current recording.
-                  </div>
-                )}
-              </div>
-            );
-          })()}
         </div>
       </div>
     </div>,
@@ -300,7 +262,6 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
   const [liveTranscript, setLiveTranscript] = useState('');
   const [liveOffline, setLiveOffline] = useState(false);
   const [fatal, setFatal] = useState(false);
-  const [hasCapturedAudio, setHasCapturedAudio] = useState(false);
 
   const mediaRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -345,7 +306,6 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
     setFatal(false);
     setLiveOffline(false);
     setLiveTranscript('');
-    setHasCapturedAudio(false);
     finalRef.current = '';
     interimRef.current = '';
     chunksRef.current = [];
@@ -416,7 +376,6 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       mr.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
           chunksRef.current.push(e.data);
-          setHasCapturedAudio(true);
         }
       };
       mr.start(1000);
@@ -497,9 +456,8 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
     syncVoiceSourceOutputs(noteId, transcript);
   }, [updateNote]);
 
-  // Discard the in-progress recording entirely. Only used when the user explicitly
-  // chooses to throw away what they just said (button label: "Discard") or when a
-  // fatal permission error fires and nothing was captured.
+  // Discard the in-progress recording entirely. Only used when a fatal permission
+  // error fires and nothing was captured.
   const discardRecording = useCallback(() => {
     shouldRestartRef.current = false;
     try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
@@ -615,7 +573,6 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             fatal={fatal}
             transcriptSoFar={liveTranscript}
             liveOffline={liveOffline}
-            hasCapturedAudio={hasCapturedAudio}
           />
         )}
 
