@@ -538,14 +538,28 @@ export default function MobileOnboarding({ onComplete }: Props) {
           )}
         </AnimatePresence>
 
-        {/* ── "Posted" headline — appears after orb reforms, fades on its own ── */}
+        {/* ── "Posted" headline + save button ── */}
         <AnimatePresence>
           {isPosted && (
-            <motion.div key="h-posted"
-              initial={{opacity:0,scale:0.92}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.96}}
-              transition={{duration:0.5,ease:[0.4,0,0.2,1]}}
-              style={{position:'absolute',top:'44%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:32,fontWeight:700,color:'rgba(255,255,255,0.94)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:20}}
-            >Posted</motion.div>
+            <>
+              <motion.div key="h-posted"
+                initial={{opacity:0,scale:0.92}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.96}}
+                transition={{duration:0.5,ease:[0.4,0,0.2,1]}}
+                style={{position:'absolute',top:'42%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:32,fontWeight:700,color:'rgba(255,255,255,0.94)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:20}}
+              >Posted</motion.div>
+              <motion.div key="save-btn"
+                initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:8}}
+                transition={{duration:0.4,delay:0.3,ease:[0.4,0,0.2,1]}}
+                style={{position:'absolute',top:'54%',left:0,right:0,display:'flex',justifyContent:'center',zIndex:20}}
+              >
+                <button
+                  onClick={onComplete}
+                  style={{background:'none',border:'none',cursor:'pointer',fontFamily:'var(--font-sans)',fontSize:16,fontWeight:500,color:'rgba(255,255,255,0.72)',letterSpacing:'0.01em',padding:'12px 32px'}}
+                >
+                  Save to notes
+                </button>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
 
