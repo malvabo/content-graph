@@ -459,7 +459,6 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   justify-content: center;
   width: 38px;
   color: var(--color-text-tertiary);
-  background-color: var(--color-bg-subtle);
 }
 .search-bar__input {
   flex: 1;
