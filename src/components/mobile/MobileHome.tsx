@@ -60,35 +60,101 @@ const fmtDate = (iso: string) => {
 
 function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: () => void; onCancel: () => void; startTime: number; liveText: string }) {
   const [elapsed, setElapsed] = useState(0);
-  const transcriptRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const iv = setInterval(() => setElapsed(Date.now() - startTime), 200);
     return () => clearInterval(iv);
   }, [startTime]);
-  useEffect(() => { const el = transcriptRef.current; if (el) el.scrollTop = el.scrollHeight; }, [liveText]);
   const mm = String(Math.floor(elapsed / 60000)).padStart(2, '0');
   const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
+  const tail = liveText ? liveText.slice(-80) : '';
+
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)', gap: 'var(--space-5)', paddingBottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 0px))' }}>
-        <div style={{ fontSize: 64, fontWeight: 300, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
-        <div style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>Recording</div>
-        <div ref={transcriptRef} aria-live="polite"
-          style={{ width: '100%', maxWidth: 400, minHeight: 120, maxHeight: 260, overflowY: 'auto', padding: '14px 18px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-default)', fontFamily: 'var(--font-sans)', fontSize: 16, color: liveText ? 'var(--color-text-primary)' : 'var(--color-text-disabled)', lineHeight: 1.6, textAlign: 'left', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere', boxSizing: 'border-box' }}>
-          {liveText || 'Listening…'}
+    <>
+      <style>{`
+        @keyframes rec-ring-a { to { transform: rotate(360deg); } }
+        @keyframes rec-ring-b { to { transform: rotate(-360deg); } }
+        @keyframes rec-ring-c { from { transform: rotate(30deg); } to { transform: rotate(390deg); } }
+        @keyframes rec-ring-d { from { transform: rotate(-20deg); } to { transform: rotate(-380deg); } }
+        @keyframes rec-glow   { 0%,100% { opacity:.45; transform:scale(1); } 50% { opacity:1; transform:scale(1.08); } }
+        @keyframes rec-outer  { 0%,100% { opacity:.4; } 50% { opacity:.75; } }
+        @keyframes rec-cursor { 0%,49% { opacity:1; } 50%,100% { opacity:0; } }
+        @media (prefers-reduced-motion: reduce) {
+          [class^="rec-ring"], [style*="rec-ring"] { animation: none !important; }
+        }
+      `}</style>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#06090a', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+        {/* ── Top: live transcript ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: '56px 32px 28px', width: '100%', boxSizing: 'border-box', minHeight: 0 }}>
+          <div aria-live="polite" style={{ fontSize: 14, fontFamily: 'var(--font-sans)', color: '#0DBF5A', opacity: 0.8, textAlign: 'center', lineHeight: 1.5, minHeight: 22 }}>
+            {tail
+              ? <>{tail}<span aria-hidden style={{ animation: 'rec-cursor 1.2s step-end infinite', marginLeft: 1 }}>|</span></>
+              : <span style={{ color: 'rgba(13,191,90,0.35)', fontStyle: 'italic' }}>Listening…</span>
+            }
+          </div>
+
+          {/* Timer */}
+          <div style={{ marginTop: 20, fontSize: 80, fontWeight: 200, fontFamily: 'var(--font-sans)', color: '#fff', letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+            {mm}:{ss}
+          </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <button onClick={onStop} aria-label="Stop and save"
-            style={{ width: 80, height: 80, borderRadius: '50%', border: 'none', background: 'var(--color-accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-glow)', cursor: 'pointer' }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-          </button>
-          <button onClick={onCancel}
-            style={{ background: 'none', border: 'none', color: 'var(--color-danger-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 16, padding: 'var(--space-2) var(--space-4)', minHeight: 44 }}>
+
+        {/* ── Centre: morphing orb (tap = stop) ── */}
+        <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '32px 0' }}>
+          <div
+            onClick={onStop}
+            role="button"
+            tabIndex={0}
+            aria-label="Stop and save recording"
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onStop(); }}
+            style={{ position: 'relative', width: 210, height: 210, cursor: 'pointer' }}
+          >
+            {/* Ambient outer halo */}
+            <div style={{ position: 'absolute', inset: -24, borderRadius: '50%', background: 'radial-gradient(circle, rgba(13,191,90,0.07) 0%, transparent 70%)', animation: 'rec-outer 3s ease-in-out infinite' }} />
+
+            {/* Dark sphere base */}
+            <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 38% 34%, #142014, #030706)', boxShadow: 'inset 0 0 70px rgba(0,0,0,0.95)' }} />
+
+            {/* Ring A — fastest, primary */}
+            <div style={{ position: 'absolute', inset: 0, animation: 'rec-ring-a 2s linear infinite' }}>
+              <div style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: '1.5px solid rgba(13,191,90,0.95)', transform: 'scaleY(0.2)', filter: 'blur(2px)', boxShadow: '0 0 14px 5px rgba(13,191,90,0.55), inset 0 0 8px rgba(13,191,90,0.3)' }} />
+            </div>
+
+            {/* Ring B — medium speed, reverse */}
+            <div style={{ position: 'absolute', inset: 0, animation: 'rec-ring-b 3.2s linear infinite' }}>
+              <div style={{ position: 'absolute', inset: 14, borderRadius: '50%', border: '1.5px solid rgba(13,191,90,0.7)', transform: 'scaleY(0.28) rotate(20deg)', filter: 'blur(3px)', boxShadow: '0 0 18px 7px rgba(13,191,90,0.3)' }} />
+            </div>
+
+            {/* Ring C — slow, wide, very flat */}
+            <div style={{ position: 'absolute', inset: 0, animation: 'rec-ring-c 4.5s linear infinite' }}>
+              <div style={{ position: 'absolute', inset: 2, borderRadius: '50%', border: '1px solid rgba(13,191,90,0.5)', transform: 'scaleY(0.13) rotate(-10deg)', filter: 'blur(4px)', boxShadow: '0 0 22px 9px rgba(13,191,90,0.2)' }} />
+            </div>
+
+            {/* Ring D — medium, perpendicular axis */}
+            <div style={{ position: 'absolute', inset: 0, animation: 'rec-ring-d 3.8s linear infinite' }}>
+              <div style={{ position: 'absolute', inset: 10, borderRadius: '50%', border: '1px solid rgba(13,191,90,0.6)', transform: 'scaleX(0.18) rotate(55deg)', filter: 'blur(2.5px)', boxShadow: '0 0 12px 5px rgba(13,191,90,0.4)' }} />
+            </div>
+
+            {/* Core glow */}
+            <div style={{ position: 'absolute', inset: '28%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(13,191,90,0.45) 0%, rgba(13,191,90,0.1) 55%, transparent 100%)', filter: 'blur(12px)', animation: 'rec-glow 2.2s ease-in-out infinite' }} />
+          </div>
+
+          <div style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Tap to stop
+          </div>
+        </div>
+
+        {/* ── Bottom: discard ── */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', paddingBottom: 'calc(44px + env(safe-area-inset-bottom, 0px))' }}>
+          <button
+            onClick={onCancel}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-sans)', fontSize: 15, cursor: 'pointer', padding: '10px 32px', minHeight: 44 }}
+          >
             Discard
           </button>
         </div>
       </div>
-    </div>,
+    </>,
     document.body,
   );
 }
