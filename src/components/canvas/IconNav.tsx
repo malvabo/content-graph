@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuthStore } from '../../store/authStore';
 import { Menu, MenuItem, MenuSeparator } from '../ui/Menu';
 
@@ -84,25 +85,42 @@ const DesignIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="n
 function UserMenu({ expanded }: { expanded: boolean }) {
   const { user, signOut } = useAuthStore();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ left: number; bottom: number } | null>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleOpen = () => {
+    if (!triggerRef.current) return;
+    const r = triggerRef.current.getBoundingClientRect();
+    setMenuPos({ left: r.left, bottom: window.innerHeight - r.top + 8 });
+    setOpen(true);
+  };
+
   useEffect(() => {
     if (!open) return;
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const h = (e: MouseEvent) => {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target as Node) &&
+        menuRef.current && !menuRef.current.contains(e.target as Node)
+      ) setOpen(false);
+    };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [open]);
+
   if (!user) return null;
   return (
-    <div ref={ref} className="relative">
-      <NavItem icon={<AccountIcon />} label="Account" active={open} expanded={expanded} ariaLabel="Account menu" ariaPressed={open} onClick={() => setOpen(!open)} />
-      {open && (
-        <Menu className="absolute z-50 dropdown-fade" style={{ bottom: '100%', marginBottom: 8, left: 4, right: 4 }}>
+    <div ref={triggerRef}>
+      <NavItem icon={<AccountIcon />} label="Account" active={open} expanded={expanded} ariaLabel="Account menu" ariaPressed={open} onClick={handleOpen} />
+      {open && menuPos && createPortal(
+        <Menu ref={menuRef} className="dropdown-fade" style={{ position: 'fixed', left: menuPos.left, bottom: menuPos.bottom, zIndex: 9999, minWidth: 180 }}>
           <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', padding: '4px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {user.email}
           </div>
           <MenuSeparator />
           <MenuItem onClick={() => { signOut(); setOpen(false); }}>Sign out</MenuItem>
-        </Menu>
+        </Menu>,
+        document.body
       )}
     </div>
   );
