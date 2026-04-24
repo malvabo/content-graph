@@ -584,8 +584,8 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
                 {SUGGESTION_CHIPS.map(chip => (
                   <button key={chip} onClick={() => send(chip)}
                     style={{ textAlign: 'left', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', cursor: 'pointer', transition: 'border-color 120ms, background 120ms', width: '100%' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.background = 'var(--color-bg-card)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-bg-card)'; }}
                   >→ {chip}</button>
                 ))}
               </div>
@@ -613,8 +613,8 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
               {['Add point', 'Change colors', 'Edit title'].map(chip => (
                 <button key={chip} onClick={() => send(chip)}
                   style={{ padding: '4px 12px', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)', background: 'transparent', fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'border-color 120ms' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                 >{chip}</button>
               ))}
             </div>
@@ -626,8 +626,7 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
         {/* Input */}
         <div style={{ padding: 'var(--space-3) var(--space-4)', borderTop: '1px solid var(--color-border-subtle)' }}>
           <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', background: 'var(--color-bg-card)', border: `1px solid ${input.trim() ? 'var(--color-accent)' : 'var(--color-border-default)'}`, borderRadius: 'var(--radius-lg)', padding: '2px 2px 2px var(--space-3)', transition: 'border-color 150ms' }}
-            onMouseEnter={e => { if (!input.trim()) e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-            onMouseLeave={e => { if (!input.trim()) e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
+>
             <input value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); send(); } }}
               placeholder={messages.length === 0 ? 'Try "Change the title to…"' : 'What else to change?'}
