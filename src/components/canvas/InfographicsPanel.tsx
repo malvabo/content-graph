@@ -518,14 +518,6 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
             const url = await toPng(el, { pixelRatio: 3 });
             const a = document.createElement('a'); a.href = url; a.download = 'infographic.png'; a.click();
           }} className="btn btn-sm btn-ghost">Export PNG</button>
-          <button onClick={() => {
-            if (!editing) return;
-            const d = parseInfographicData(editing.json);
-            if (!d) return;
-            const s = renderSVG(d);
-            const blob = new Blob([s], { type: 'image/svg+xml' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'infographic.svg'; a.click();
-          }} className="btn btn-sm btn-ghost">Export SVG</button>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)' }}>
