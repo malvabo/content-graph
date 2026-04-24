@@ -24,9 +24,8 @@ const preview: Preview = {
     (Story, context) => {
       const theme = context.globals.theme || 'light';
       document.documentElement.classList.toggle('dark', theme === 'dark');
-      const bg = theme === 'dark' ? '#111114' : '#F2EFE9';
       return (
-        <div style={{ background: bg, padding: 24 }}>
+        <div style={{ background: 'var(--color-bg)', padding: 24 }}>
           <Story />
         </div>
       );
