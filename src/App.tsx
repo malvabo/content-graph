@@ -91,7 +91,7 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   const isMobile = useIsMobile();
-  const [mobileOnboardingDone, setMobileOnboardingDone] = useState(() => !!localStorage.getItem('mobile-onboarding-done'));
+  const [mobileOnboardingDone, setMobileOnboardingDone] = useState(false);
   
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'library'; };
@@ -153,7 +153,7 @@ function AppInner() {
     if (!mobileOnboardingDone) {
       return (
         <div className="flex flex-col" style={{ height: '100dvh' }}>
-          <MobileOnboarding onComplete={() => { localStorage.setItem('mobile-onboarding-done', '1'); setMobileOnboardingDone(true); }} />
+          <MobileOnboarding onComplete={() => setMobileOnboardingDone(true)} />
         </div>
       );
     }
