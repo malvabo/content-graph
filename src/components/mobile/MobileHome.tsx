@@ -96,6 +96,28 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
         @keyframes rec-glow   { 0%,100% { opacity:.45; transform:scale(1); } 50% { opacity:1; transform:scale(1.08); } }
         @keyframes rec-outer  { 0%,100% { opacity:.4; } 50% { opacity:.75; } }
         @keyframes rec-cursor { 0%,49% { opacity:1; } 50%,100% { opacity:0; } }
+        @keyframes rec-morph-a {
+          0%,100% { border-radius: 50%; }
+          28%     { border-radius: 63% 37% 55% 45% / 42% 58% 44% 56%; }
+          55%     { border-radius: 38% 62% 44% 56% / 58% 42% 57% 43%; }
+          80%     { border-radius: 52% 48% 62% 38% / 46% 54% 40% 60%; }
+        }
+        @keyframes rec-morph-b {
+          0%,100% { border-radius: 50%; }
+          35%     { border-radius: 44% 56% 60% 40% / 56% 44% 40% 60%; }
+          65%     { border-radius: 60% 40% 42% 58% / 40% 60% 58% 42%; }
+        }
+        @keyframes rec-morph-c {
+          0%,100% { border-radius: 50%; }
+          22%     { border-radius: 58% 42% 48% 52% / 44% 56% 52% 48%; }
+          50%     { border-radius: 42% 58% 56% 44% / 60% 40% 46% 54%; }
+          78%     { border-radius: 54% 46% 40% 60% / 48% 52% 60% 40%; }
+        }
+        @keyframes rec-morph-d {
+          0%,100% { border-radius: 50%; }
+          40%     { border-radius: 60% 40% 52% 48% / 48% 52% 38% 62%; }
+          72%     { border-radius: 40% 60% 46% 54% / 62% 38% 54% 46%; }
+        }
         @media (prefers-reduced-motion: reduce) {
           [data-rec-ring] { animation: none !important; }
         }
@@ -129,21 +151,21 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
             <div data-rec-ring style={{ position: 'absolute', inset: -24, borderRadius: '50%', background: `radial-gradient(circle, rgba(13,191,90,${haloOp}) 0%, transparent 70%)`, animation: 'rec-outer 3s ease-in-out infinite' }} />
             {/* Sphere */}
             <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: sphereBg, boxShadow: sphereShadow }} />
-            {/* Ring A — fastest */}
+            {/* Ring A — fastest rotation (2s) + slow morph (3.1s) */}
             <div data-rec-ring style={{ position: 'absolute', inset: 0, animation: 'rec-ring-a 2s linear infinite' }}>
-              <div style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid rgba(13,191,90,${ringOpA})`, transform: 'scaleY(0.2)', filter: 'blur(2px)', boxShadow: `0 0 14px 5px rgba(13,191,90,0.5), inset 0 0 8px rgba(13,191,90,0.25)` }} />
+              <div data-rec-ring style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid rgba(13,191,90,${ringOpA})`, transform: 'scaleY(0.2)', filter: 'blur(2px)', boxShadow: `0 0 14px 5px rgba(13,191,90,0.5), inset 0 0 8px rgba(13,191,90,0.25)`, animation: 'rec-morph-a 3.1s ease-in-out infinite' }} />
             </div>
-            {/* Ring B — reverse */}
+            {/* Ring B — reverse (3.2s) + morph (4.7s) */}
             <div data-rec-ring style={{ position: 'absolute', inset: 0, animation: 'rec-ring-b 3.2s linear infinite' }}>
-              <div style={{ position: 'absolute', inset: 14, borderRadius: '50%', border: `1.5px solid rgba(13,191,90,${ringOpB})`, transform: 'scaleY(0.28) rotate(20deg)', filter: 'blur(3px)', boxShadow: `0 0 18px 7px rgba(13,191,90,0.25)` }} />
+              <div data-rec-ring style={{ position: 'absolute', inset: 14, borderRadius: '50%', border: `1.5px solid rgba(13,191,90,${ringOpB})`, transform: 'scaleY(0.28) rotate(20deg)', filter: 'blur(3px)', boxShadow: `0 0 18px 7px rgba(13,191,90,0.25)`, animation: 'rec-morph-b 4.7s ease-in-out infinite' }} />
             </div>
-            {/* Ring C — slow, wide */}
+            {/* Ring C — slow wide (4.5s) + morph (5.9s) */}
             <div data-rec-ring style={{ position: 'absolute', inset: 0, animation: 'rec-ring-c 4.5s linear infinite' }}>
-              <div style={{ position: 'absolute', inset: 2, borderRadius: '50%', border: `1px solid rgba(13,191,90,${ringOpC})`, transform: 'scaleY(0.13) rotate(-10deg)', filter: 'blur(4px)', boxShadow: `0 0 22px 9px rgba(13,191,90,0.18)` }} />
+              <div data-rec-ring style={{ position: 'absolute', inset: 2, borderRadius: '50%', border: `1px solid rgba(13,191,90,${ringOpC})`, transform: 'scaleY(0.13) rotate(-10deg)', filter: 'blur(4px)', boxShadow: `0 0 22px 9px rgba(13,191,90,0.18)`, animation: 'rec-morph-c 5.9s ease-in-out infinite' }} />
             </div>
-            {/* Ring D — perpendicular */}
+            {/* Ring D — perpendicular axis (3.8s) + morph (2.9s) */}
             <div data-rec-ring style={{ position: 'absolute', inset: 0, animation: 'rec-ring-d 3.8s linear infinite' }}>
-              <div style={{ position: 'absolute', inset: 10, borderRadius: '50%', border: `1px solid rgba(13,191,90,${ringOpD})`, transform: 'scaleX(0.18) rotate(55deg)', filter: 'blur(2.5px)', boxShadow: `0 0 12px 5px rgba(13,191,90,0.32)` }} />
+              <div data-rec-ring style={{ position: 'absolute', inset: 10, borderRadius: '50%', border: `1px solid rgba(13,191,90,${ringOpD})`, transform: 'scaleX(0.18) rotate(55deg)', filter: 'blur(2.5px)', boxShadow: `0 0 12px 5px rgba(13,191,90,0.32)`, animation: 'rec-morph-d 2.9s ease-in-out infinite' }} />
             </div>
             {/* Core glow */}
             <div data-rec-ring style={{ position: 'absolute', inset: '28%', borderRadius: '50%', background: `radial-gradient(circle, rgba(13,191,90,${glowOp}) 0%, rgba(13,191,90,0.08) 55%, transparent 100%)`, filter: 'blur(12px)', animation: 'rec-glow 2.2s ease-in-out infinite' }} />
