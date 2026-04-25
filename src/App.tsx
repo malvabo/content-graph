@@ -117,6 +117,19 @@ function AppInner() {
 
   useEffect(() => { init(); }, [init]);
   useEffect(() => { if (user) useSettingsStore.getState().load(); }, [user]);
+
+  // Mobile is a dark-mode-only experience — force the class on mount/change,
+  // and restore the user's stored preference when switching back to desktop.
+  useEffect(() => {
+    if (isMobile) {
+      document.documentElement.classList.add('dark');
+    } else {
+      const stored = localStorage.getItem('theme-mode');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const shouldDark = stored === 'dark' || ((!stored || stored === 'default') && prefersDark);
+      document.documentElement.classList.toggle('dark', shouldDark);
+    }
+  }, [isMobile]);
   // Register user-uploaded @font-face rules globally — gather every custom
   // font from the legacy settings brand plus every saved library brand so
   // switching brand kits on a flow doesn't unload its fonts.
