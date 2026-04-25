@@ -1276,11 +1276,11 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         }}>
           <button
             onClick={onAddPost}
-            aria-label="Add a post"
+            aria-label="Capture your thought"
             style={{
               pointerEvents: 'auto',
               position: 'relative', overflow: 'hidden', isolation: 'isolate',
-              width: '100%', maxWidth: 480, minHeight: 64,
+              width: '100%', maxWidth: 480, minHeight: 58,
               padding: '0 28px',
               borderRadius: 999,
               background: 'linear-gradient(135deg, #1a1c26 0%, #0d0e16 100%)',
@@ -1292,30 +1292,30 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
               boxShadow: '0 18px 48px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.06)',
             }}
           >
-            {/* Floating colored orbs — drifting across the bar, out of phase */}
+            {/* Floating colored blobs — drifting and morphing organically */}
             {[
-              { left: '0%',  top: '10%', size: 110, color: '144,97,249',  dur: 11.5, delay: -1.4 },
-              { left: '25%', top: '55%', size: 92,  color: '29,155,240',  dur: 9.2,  delay: -4.1 },
-              { left: '50%', top: '5%',  size: 84,  color: '13,191,90',   dur: 13.0, delay: -2.6 },
-              { left: '70%', top: '60%', size: 100, color: '255,150,18',  dur: 10.4, delay: -6.0 },
-              { left: '90%', top: '20%', size: 76,  color: '225,48,108',  dur: 12.2, delay: -8.5 },
+              { left: '0%',  top: '10%', size: 110, color: '144,97,249',  dur: 11.5, delay: -1.4,  morph: 'a', morphDur: 7.3,  morphDelay: -2.1 },
+              { left: '25%', top: '55%', size: 92,  color: '29,155,240',  dur: 9.2,  delay: -4.1,  morph: 'b', morphDur: 9.1,  morphDelay: -5.3 },
+              { left: '50%', top: '5%',  size: 84,  color: '13,191,90',   dur: 13.0, delay: -2.6,  morph: 'c', morphDur: 6.2,  morphDelay: -1.8 },
+              { left: '70%', top: '60%', size: 100, color: '255,150,18',  dur: 10.4, delay: -6.0,  morph: 'a', morphDur: 8.8,  morphDelay: -4.7 },
+              { left: '90%', top: '20%', size: 76,  color: '225,48,108',  dur: 12.2, delay: -8.5,  morph: 'b', morphDur: 5.7,  morphDelay: -3.2 },
             ].map((o, i) => (
               <span key={i} aria-hidden className="widget-glow" style={{
-                position: 'absolute', left: o.left, top: o.top, width: o.size, height: o.size, borderRadius: '50%',
+                position: 'absolute', left: o.left, top: o.top, width: o.size, height: o.size,
                 marginLeft: -o.size / 2, marginTop: -o.size / 2,
                 background: `radial-gradient(circle, rgba(${o.color},0.55) 0%, rgba(${o.color},0.18) 38%, rgba(${o.color},0) 70%)`,
                 filter: 'blur(4px)',
-                animationName: 'add-post-orb-drift',
-                animationDuration: `${o.dur}s`,
-                animationDelay: `${o.delay}s`,
-                animationTimingFunction: 'ease-in-out',
-                animationIterationCount: 'infinite',
-                willChange: 'transform, opacity',
+                animationName: `add-post-orb-drift, add-post-blob-morph-${o.morph}`,
+                animationDuration: `${o.dur}s, ${o.morphDur}s`,
+                animationDelay: `${o.delay}s, ${o.morphDelay}s`,
+                animationTimingFunction: 'ease-in-out, ease-in-out',
+                animationIterationCount: 'infinite, infinite',
+                willChange: 'transform, border-radius, opacity',
                 pointerEvents: 'none',
               }} />
             ))}
 
-            <span style={{ position: 'relative', zIndex: 1 }}>Add a post</span>
+            <span style={{ position: 'relative', zIndex: 1 }}>Capture your thought</span>
           </button>
         </div>
       )}
