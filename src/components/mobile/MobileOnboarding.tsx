@@ -96,46 +96,50 @@ const BLOBS = [
 
 // ─── Platform definitions ─────────────────────────────────────────────────────
 
-// Each platform has 3 gradient layers (core / mid / bleed) for the light-not-object look.
-// Positioned in a horizontal row; xOffset = Framer transform needed to travel to pill center (50%).
+// Each platform is a circular "light bulb" — SVG circle + radial gradient + logo glyph,
+// surrounded by a circular CSS halo. No square <div> + mix-blend-mode anywhere; the
+// painted region is geometrically a circle so iOS Safari has no rectangular artifact
+// to expose.
 
 const PLATFORMS = [
-  {
-    id: 'linkedin', label: 'LinkedIn', left: '16.5%', xOffset: '33.5vw',
-    core:  'radial-gradient(circle at center, rgba(10,102,194,0.60) 0%, rgba(10,102,194,0) 20%)',
-    mid:   'radial-gradient(circle at center, rgba(10,102,194,0) 0%, rgba(10,102,194,0.40) 22%, rgba(10,102,194,0) 60%)',
-    bleed: 'radial-gradient(circle at center, rgba(10,102,194,0) 0%, rgba(10,102,194,0) 54%, rgba(10,102,194,0.15) 62%, rgba(10,102,194,0) 100%)',
-    mergeRgb: '10,102,194',
-  },
-  {
-    // Moonlight — off-white warm, not grey
-    id: 'x', label: 'X', left: '39%', xOffset: '11vw',
-    core:  'radial-gradient(circle at center, rgba(240,235,230,0.60) 0%, rgba(240,235,230,0) 20%)',
-    mid:   'radial-gradient(circle at center, rgba(240,235,230,0) 0%, rgba(240,235,230,0.40) 22%, rgba(240,235,230,0) 60%)',
-    bleed: 'radial-gradient(circle at center, rgba(240,235,230,0) 0%, rgba(240,235,230,0) 54%, rgba(240,235,230,0.15) 62%, rgba(240,235,230,0) 100%)',
-    mergeRgb: '240,235,230',
-  },
-  {
-    // Pink-to-amber inside the glow stack
-    id: 'instagram', label: 'Instagram', left: '61%', xOffset: '-11vw',
-    core:  'radial-gradient(circle at center, rgba(225,48,108,0.60) 0%, rgba(247,119,55,0.30) 12%, rgba(247,119,55,0) 20%)',
-    mid:   'radial-gradient(circle at center, rgba(225,48,108,0) 0%, rgba(225,48,108,0.38) 20%, rgba(247,119,55,0.28) 46%, rgba(247,119,55,0) 60%)',
-    bleed: 'radial-gradient(circle at center, rgba(247,119,55,0) 0%, rgba(247,119,55,0) 54%, rgba(247,119,55,0.14) 62%, rgba(247,119,55,0) 100%)',
-    mergeRgb: '225,48,108',
-  },
-  {
-    // Quietest — soft charcoal with faint purple lift
-    id: 'threads', label: 'Threads', left: '83.5%', xOffset: '-33.5vw',
-    core:  'radial-gradient(circle at center, rgba(60,50,70,0.60) 0%, rgba(60,50,70,0) 20%)',
-    mid:   'radial-gradient(circle at center, rgba(60,50,70,0) 0%, rgba(60,50,70,0.40) 22%, rgba(60,50,70,0) 60%)',
-    bleed: 'radial-gradient(circle at center, rgba(60,50,70,0) 0%, rgba(60,50,70,0) 54%, rgba(60,50,70,0.15) 62%, rgba(60,50,70,0) 100%)',
-    mergeRgb: '60,50,70',
-  },
+  { id: 'linkedin',  label: 'LinkedIn',  left: '16.5%', xOffset: '33.5vw', mergeRgb: '10,102,194',  glowRgb: '78,162,232',  bulbInner: '#dde9f7', bulbOuter: '#0a66c2' },
+  // Moonlight — warm off-white
+  { id: 'x',         label: 'X',         left: '39%',   xOffset: '11vw',   mergeRgb: '240,235,230', glowRgb: '240,235,230', bulbInner: '#fafaf6', bulbOuter: '#2a2a2a' },
+  // Pink to warm orange
+  { id: 'instagram', label: 'Instagram', left: '61%',   xOffset: '-11vw',  mergeRgb: '225,48,108',  glowRgb: '247,119,55',  bulbInner: '#ffd9c4', bulbOuter: '#c93066' },
+  // Soft purple-grey
+  { id: 'threads',   label: 'Threads',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '200,190,215', bulbInner: '#e2dde6', bulbOuter: '#2a2530' },
 ] as const;
 
-// Disc size: ~68px (≈18% of 375px). Label sits 46px below disc center.
-const DISC = 68;
-const LABEL_BELOW = DISC / 2 + 16; // 50px
+// Bulb SVG inner glyph per platform — drawn inside the 64×64 bulb viewBox.
+const PLATFORM_LOGO: Record<string, React.ReactNode> = {
+  linkedin: (
+    <text x="32" y="42" textAnchor="middle" fontSize="22" fontWeight="800" fill="#fff"
+      fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" letterSpacing="-0.5">in</text>
+  ),
+  x: (
+    <g stroke="#fff" strokeWidth="3.2" strokeLinecap="round" fill="none">
+      <line x1="22" y1="22" x2="42" y2="42" />
+      <line x1="42" y1="22" x2="22" y2="42" />
+    </g>
+  ),
+  instagram: (
+    <g fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="20" y="20" width="24" height="24" rx="6.5" />
+      <circle cx="32" cy="32" r="5.5" />
+      <circle cx="40" cy="24" r="1.5" fill="#fff" stroke="none" />
+    </g>
+  ),
+  threads: (
+    <text x="32" y="42" textAnchor="middle" fontSize="26" fontWeight="800" fill="#fff"
+      fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">@</text>
+  ),
+};
+
+// Bulb size 64px, halo extends to 120px around it. Label sits 50px below bulb center.
+const BULB = 64;
+const HALO = 120;
+const LABEL_BELOW = BULB / 2 + 22;
 
 // Independent breathing params — all out of phase
 const BREATH = [
@@ -401,11 +405,10 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           )}
         </AnimatePresence>
 
-        {/* ── Platform discs — mix-blend-mode:screen on each container, no wrapper stacking context ── */}
+        {/* ── Platform light bulbs — circle SVG + circular halo, no mix-blend-mode ── */}
         {isPlatform && PLATFORMS.map((p, i) => {
           const isSelected  = selId === p.id;
           const isDimmed    = selId !== null && !isSelected;
-          // covers both travel and the brief merge window so disc never pops back
           const isTraveling = isSelected && (selPhase === 'travel' || selPhase === 'merge');
           const isBreathing = !selId;
           const br = BREATH[i];
@@ -413,7 +416,6 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
 
           return (
             <div key={p.id}>
-              {/* Disc — mix-blend-mode on the container so it screens directly against the aurora */}
               <motion.div
                 onClick={() => pickPlatform(p.id)}
                 initial={{ opacity: 0, scale: 0.3, y: 40 }}
@@ -433,14 +435,13 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 }}
                 style={{
                   position:'absolute', left:p.left, top:'60%',
-                  marginLeft: -(DISC/2), marginTop: -(DISC/2),
-                  width:DISC, height:DISC,
+                  marginLeft: -(BULB/2), marginTop: -(BULB/2),
+                  width: BULB, height: BULB,
                   cursor: selId ? 'default' : 'pointer',
-                  mixBlendMode:'screen',
-                  zIndex:15,
+                  zIndex: 15,
                 }}
               >
-                {/* Breathing wrapper — scale oscillation */}
+                {/* Breathing wrapper — scale + drift */}
                 <motion.div
                   animate={isBreathing ? { scale: br.scaleKeys, y: [0,-4,0,4,0] } : { scale:1, y:0 }}
                   transition={{
@@ -449,16 +450,38 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                   }}
                   style={{ position:'absolute', inset:0 }}
                 >
-                  {/* No individual blend modes — container handles all blending */}
-                  <div aria-hidden style={{ position:'absolute', inset:0, background:p.core }} />
-                  <div aria-hidden style={{ position:'absolute', inset:0, background:p.mid }} />
+                  {/* Halo — circular CSS gradient, oversized and centered, soft blur */}
                   <motion.div
                     aria-hidden
-                    initial={{ opacity:0, scale:0.3 }}
+                    initial={{ opacity:0, scale:0.5 }}
                     animate={{ opacity:1, scale:1 }}
-                    transition={{ delay:entranceDelay+0.10, ...ENT_SPRING }}
-                    style={{ position:'absolute', inset:'-50%', background:p.bleed, pointerEvents:'none' }}
+                    transition={{ delay:entranceDelay+0.08, ...ENT_SPRING }}
+                    style={{
+                      position:'absolute',
+                      left:'50%', top:'50%',
+                      width: HALO, height: HALO,
+                      marginLeft: -HALO/2, marginTop: -HALO/2,
+                      borderRadius:'50%',
+                      background: `radial-gradient(circle, rgba(${p.glowRgb},0.45) 0%, rgba(${p.glowRgb},0.14) 48%, rgba(${p.glowRgb},0) 72%)`,
+                      filter:'blur(2px)',
+                      pointerEvents:'none',
+                    }}
                   />
+                  {/* Bulb — SVG circle with radial-gradient fill + logo glyph */}
+                  <svg
+                    viewBox="0 0 64 64" width={BULB} height={BULB}
+                    style={{ position:'absolute', inset:0, filter:`drop-shadow(0 0 14px rgba(${p.glowRgb},0.55))`, pointerEvents:'none' }}
+                  >
+                    <defs>
+                      <radialGradient id={`bulb-${p.id}`} cx="38%" cy="32%" r="62%">
+                        <stop offset="0%" stopColor={p.bulbInner} />
+                        <stop offset="55%" stopColor={p.bulbOuter} />
+                        <stop offset="100%" stopColor={p.bulbOuter} stopOpacity="0.92" />
+                      </radialGradient>
+                    </defs>
+                    <circle cx="32" cy="32" r="26" fill={`url(#bulb-${p.id})`} />
+                    {PLATFORM_LOGO[p.id]}
+                  </svg>
                 </motion.div>
               </motion.div>
 
