@@ -316,6 +316,9 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
     ? { kind: note.lastGeneration.kind, text: note.lastGeneration.text, loading: false }
     : null);
   const [copied, setCopied] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const isError = note.status === 'error';
   const titleId = `voice-sheet-title-${note.id}`;
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -351,6 +354,21 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
       return () => clearTimeout(id);
     }
   }, [isEditingTitle, sizeTitle]);
+
+  // Close the overflow menu on outside click / Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
 
   // a11y: capture the previously-focused element to restore on close, move
   // focus into the sheet, lock body scroll, and listen for Escape.
@@ -410,6 +428,27 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
     'twitter-single':  { rgb: '29,155,240', accent: '#5cbcf7', dur: 5.9, delay: -0.5 },
   };
 
+  const hasGen = !!(gen?.text && !gen.loading && !gen.error);
+  const platformLabel = gen ? KIND_LABEL[gen.kind].split(' ')[0] : null;
+  const platformMeta = gen ? platformGlow[gen.kind] : null;
+  const platformRgb = platformMeta?.rgb ?? '144,97,249';
+  const platformAccent = platformMeta?.accent ?? '#a78bfa';
+
+  const iconBtnStyle: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
+    color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
+    width: 40, height: 40, borderRadius: '50%',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    backdropFilter: 'blur(12px)',
+  };
+  const menuItemStyle: React.CSSProperties = {
+    display: 'block', width: '100%', textAlign: 'left',
+    padding: '10px 12px', borderRadius: 10,
+    background: 'transparent', border: 'none', cursor: 'pointer',
+    fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 500,
+    color: 'rgba(255,255,255,0.92)',
+  };
+
   return createPortal(
     <div
       ref={sheetRef}
@@ -424,7 +463,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
         color: 'rgba(255,255,255,0.92)',
       }}
     >
-      {/* Ambient page-level breathing orbs — match the home dashboard's living vocabulary */}
+      {/* Ambient page-level breathing orbs */}
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
         {[
           { color: '144,97,249', top: '8%',  left: '-12%', size: 320, dur: 12.5, delay: -2.1 },
@@ -446,49 +485,70 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
         ))}
       </div>
 
-      {/* Top nav row */}
+      {/* Top nav row — back chevron + overflow menu */}
       <div style={{
-        position: 'relative', zIndex: 1,
+        position: 'relative', zIndex: 2,
         flexShrink: 0,
         padding: 'calc(var(--space-3) + env(safe-area-inset-top, 0px)) var(--space-3) 0',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         minHeight: 44,
       }}>
-        <button
-          ref={closeBtnRef}
-          onClick={close}
-          aria-label="Close note"
-          style={{
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
-            color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
-            width: 40, height: 40, borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(12px)',
-          }}
-        >
+        <button ref={closeBtnRef} onClick={close} aria-label="Close note" style={iconBtnStyle}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <button
-          onClick={() => { onDelete(); onClose(); }}
-          aria-label="Delete note"
-          style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,107,107,0.18)',
-            color: 'rgba(255,127,127,0.85)', cursor: 'pointer',
-            width: 40, height: 40, borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(12px)',
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            <line x1="10" y1="11" x2="10" y2="17"/>
-            <line x1="14" y1="11" x2="14" y2="17"/>
-          </svg>
-        </button>
+        <div ref={menuRef} style={{ position: 'relative' }}>
+          <button
+            onClick={() => setMenuOpen(o => !o)}
+            aria-label="More actions"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            style={iconBtnStyle}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <circle cx="5" cy="12" r="1.8"/>
+              <circle cx="12" cy="12" r="1.8"/>
+              <circle cx="19" cy="12" r="1.8"/>
+            </svg>
+          </button>
+          {menuOpen && (
+            <div role="menu" style={{
+              position: 'absolute', top: 48, right: 0, minWidth: 200,
+              background: 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              borderRadius: 14,
+              padding: 6,
+              boxShadow: '0 18px 48px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.06)',
+              zIndex: 5,
+            }}>
+              <button
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); setIsEditingTitle(true); }}
+                style={menuItemStyle}
+              >
+                Edit title
+              </button>
+              {isError && (
+                <button
+                  role="menuitem"
+                  onClick={() => { setMenuOpen(false); onRerecord(); onClose(); }}
+                  style={menuItemStyle}
+                >
+                  Re-record
+                </button>
+              )}
+              <button
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); onDelete(); onClose(); }}
+                style={{ ...menuItemStyle, color: 'rgba(255,127,127,0.95)' }}
+              >
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Title block */}
+      {/* Heading + platform tag */}
       <div style={{
         position: 'relative', zIndex: 1,
         flexShrink: 0,
@@ -523,13 +583,8 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           <h1
             id={titleId}
             className="note-sheet-title"
-            onClick={() => setIsEditingTitle(true)}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsEditingTitle(true); } }}
-            tabIndex={0}
-            role="button"
-            aria-label={`${editTitle}. Tap to edit title.`}
             style={{
-              margin: 0, padding: 0, cursor: 'text',
+              margin: 0, padding: 0,
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title)', fontWeight: 700, lineHeight: 1.2,
               letterSpacing: '-0.02em', color: '#fff',
               wordBreak: 'break-word',
@@ -538,70 +593,135 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             {editTitle}
           </h1>
         )}
-        <div aria-hidden style={{
-          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 500, lineHeight: 1.4,
-          color: 'rgba(255,255,255,0.55)', marginTop: 8,
-        }}>
-          {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
-        </div>
+        {platformLabel && (
+          <span style={{
+            display: 'inline-block', marginTop: 10,
+            padding: '4px 12px', borderRadius: 999,
+            background: `rgba(${platformRgb},0.15)`,
+            border: `1px solid rgba(${platformRgb},0.40)`,
+            color: platformAccent,
+            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 600,
+            letterSpacing: '0.01em',
+          }}>
+            {platformLabel}
+          </span>
+        )}
       </div>
 
-      {/* Sheet body */}
+      {/* Body */}
       <div style={{
         position: 'relative', zIndex: 1,
         flex: 1, overflowY: 'auto', overflowX: 'hidden',
-        padding: 'var(--space-3) var(--space-4) var(--space-5)',
-        display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', minWidth: 0,
+        display: 'flex', flexDirection: 'column',
       }}>
         {isError ? (
           <div role="alert" style={{
-            ...glassCard,
+            margin: '0 var(--space-4)',
             background: 'linear-gradient(155deg, rgba(201,48,48,0.18) 0%, #1a1c26 55%, #0d0e16 100%)',
             border: '1px solid rgba(255,107,107,0.25)',
+            borderRadius: 22,
             padding: 'var(--space-4)',
             fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55,
             color: 'rgba(255,168,168,0.95)', wordBreak: 'break-word',
             display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
           }}>
             <div>{note.errorReason || 'Transcription failed.'}</div>
-            <button
-              onClick={() => { onRerecord(); onClose(); }}
-              style={{
-                alignSelf: 'flex-start',
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '8px 14px', borderRadius: 999,
-                background: 'rgba(13,191,90,0.18)', border: '1px solid rgba(13,191,90,0.45)',
-                color: 'rgba(80,220,140,0.95)', cursor: 'pointer',
-                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 600,
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <circle cx="12" cy="12" r="3.5" />
-                <line x1="12" y1="2" x2="12" y2="5" />
-              </svg>
-              Re-record
-            </button>
           </div>
-        ) : note.transcript ? (
-          <section aria-labelledby={`${titleId}-transcript`} style={{ ...glassCard, padding: 'var(--space-5)' }}>
-            <div id={`${titleId}-transcript`} style={{ ...tagStyle, marginBottom: 'var(--space-3)' }}>Transcript</div>
+        ) : gen?.loading ? (
+          /* Generating skeleton — no card, sits on the page like the final post will */
+          <div style={{ padding: '0 var(--space-4)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[100, 92, 96, 80, 88].map((w, i) => <div key={i} className="skeleton-bar-dark" style={{ height: 16, width: `${w}%`, borderRadius: 8, animationDelay: `${i * 0.1}s` }} />)}
+          </div>
+        ) : hasGen && gen ? (
+          <>
+            {/* Generated post text — no card, no border, just text */}
             <div style={{
-              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 400, lineHeight: 1.65,
+              padding: '0 var(--space-4)',
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 400, lineHeight: 1.6,
               color: 'rgba(255,255,255,0.92)',
               whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
             }}>
-              {note.transcript}
+              {gen.text}
             </div>
-          </section>
-        ) : (
-          <div style={{ ...glassCard, padding: 'var(--space-4)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55, color: 'rgba(255,255,255,0.55)' }}>
-            This recording has audio but no transcript yet. Add a Groq API key in Settings to transcribe existing audio.
-          </div>
-        )}
 
-        {/* Generator — primary action */}
-        {note.transcript && !isError && (
-          <section aria-labelledby={`${titleId}-create`} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {/* Twitter character counter, when relevant */}
+            {gen.kind === 'twitter-single' && (() => {
+              const len = gen.text.length;
+              const over = len > 280;
+              return (
+                <div style={{
+                  padding: 'var(--space-3) var(--space-4) 0',
+                  fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 500,
+                  color: over ? 'rgba(255,127,127,0.95)' : len > 250 ? 'rgba(240,216,160,0.95)' : 'rgba(255,255,255,0.45)',
+                  letterSpacing: '0.04em',
+                }}>
+                  {len}/280
+                </div>
+              );
+            })()}
+
+            {/* Dominant Copy button — full-width */}
+            <div style={{ padding: 'var(--space-5) var(--space-4) 0' }}>
+              <button
+                onClick={copy}
+                aria-label={copied ? 'Copied to clipboard' : 'Copy generated text'}
+                className="reduced-motion-safe"
+                style={{
+                  width: '100%', minHeight: 56,
+                  padding: '14px 24px', borderRadius: 999,
+                  background: copied
+                    ? `linear-gradient(135deg, rgba(${platformRgb},0.55) 0%, rgba(${platformRgb},0.85) 100%)`
+                    : `linear-gradient(135deg, rgba(${platformRgb},0.95) 0%, rgba(${platformRgb},0.80) 100%)`,
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  color: '#fff',
+                  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-lg)', fontWeight: 600, letterSpacing: '-0.01em',
+                  cursor: 'pointer',
+                  boxShadow: `0 14px 36px rgba(${platformRgb},0.45), inset 0 1px 0 rgba(255,255,255,0.14)`,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  transition: 'background 220ms',
+                }}
+              >
+                {copied ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <rect x="9" y="9" width="13" height="13" rx="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    Copy
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Quieter Regenerate */}
+            <div style={{ padding: 'var(--space-3) var(--space-4) 0', display: 'flex', justifyContent: 'center' }}>
+              <button
+                onClick={() => generate(gen.kind)}
+                aria-label="Regenerate"
+                style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
+                  color: 'rgba(255,255,255,0.55)',
+                  padding: '8px 12px',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/>
+                  <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>
+                </svg>
+                Regenerate
+              </button>
+            </div>
+          </>
+        ) : note.transcript ? (
+          /* No generation yet — show platform picker so the user can choose */
+          <section aria-labelledby={`${titleId}-create`} style={{ padding: '0 var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             <div id={`${titleId}-create`} style={{ ...tagStyle, paddingLeft: 4 }}>Create asset</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-3)' }}>
               {(['linkedin-post', 'twitter-thread', 'twitter-single'] as const).map(k => {
@@ -652,141 +772,50 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
               })}
             </div>
           </section>
-        )}
+        ) : null}
 
-        {/* Generated output — dark glass with breathing platform-tinted morph */}
-        {gen && (gen.loading || gen.text || gen.error) && (() => {
-          const meta = platformGlow[gen.kind];
-          return (
-            <section aria-live="polite" aria-busy={!!gen.loading}
-              style={{
-                ...glassCard,
-                padding: 'var(--space-5)',
-                background: `linear-gradient(155deg, rgba(${meta.rgb},0.16) 0%, #1a1c26 55%, #0d0e16 100%)`,
-                border: `1px solid rgba(${meta.rgb},0.30)`,
-                boxShadow: `0 22px 56px rgba(${meta.rgb},0.32), 0 4px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)`,
+        {/* Spacer pushes the View transcript affordance to the bottom of the visible area */}
+        <div style={{ flex: 1, minHeight: 24 }} />
+
+        {/* View transcript — small affordance at the very bottom */}
+        {note.transcript && (
+          <div style={{
+            padding: 'var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px))',
+            display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
+          }}>
+            {showTranscript && (
+              <div style={{
+                background: 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 18,
+                padding: 'var(--space-4)',
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', lineHeight: 1.55,
+                color: 'rgba(255,255,255,0.85)',
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
+                boxShadow: '0 10px 28px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.05)',
               }}>
-              <div aria-hidden className="widget-glow" style={{
-                position: 'absolute', inset: '-35%',
-                background: `radial-gradient(ellipse at 30% 30%, rgba(${meta.rgb},0.45) 0%, rgba(${meta.rgb},0.12) 42%, rgba(${meta.rgb},0) 75%)`,
-                filter: 'blur(8px)',
-                animationName: 'widget-breathe',
-                animationDuration: `${meta.dur * 1.5}s`,
-                animationDelay: `${meta.delay}s`,
-                animationTimingFunction: 'cubic-bezier(0.45, 0.05, 0.55, 0.95)',
-                animationIterationCount: 'infinite',
-                willChange: 'transform, opacity',
-                pointerEvents: 'none',
-                zIndex: 0,
-              }} />
-              <div aria-hidden className="widget-glow" style={{
-                position: 'absolute', inset: '-25%',
-                background: `radial-gradient(ellipse 75% 95% at 70% 80%, rgba(${meta.rgb},0.35) 0%, rgba(${meta.rgb},0.10) 50%, rgba(${meta.rgb},0) 80%)`,
-                filter: 'blur(14px)', mixBlendMode: 'lighten',
-                animationName: 'widget-morph-b',
-                animationDuration: `${meta.dur * 2.0}s`,
-                animationDelay: `${meta.delay - 1.7}s`,
-                animationTimingFunction: 'cubic-bezier(0.5, 0, 0.5, 1)',
-                animationIterationCount: 'infinite',
-                willChange: 'transform, opacity',
-                pointerEvents: 'none',
-                zIndex: 0,
-              }} />
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                    {gen.kind === 'twitter-single' && gen.text && !gen.loading && (() => {
-                      const len = gen.text.length;
-                      const over = len > 280;
-                      return (
-                        <span style={{
-                          fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 500,
-                          color: over ? 'rgba(255,127,127,0.95)' : len > 250 ? 'rgba(240,216,160,0.95)' : 'rgba(255,255,255,0.55)',
-                          letterSpacing: '0.04em',
-                        }}>
-                          {len}/280
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  {gen.text && !gen.loading && (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                      <button
-                        onClick={() => generate(gen.kind)}
-                        aria-label="Regenerate"
-                        className="reduced-motion-safe"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                          padding: '6px 12px', borderRadius: 999,
-                          background: 'rgba(255,255,255,0.06)',
-                          border: '1px solid rgba(255,255,255,0.10)',
-                          color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
-                          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
-                          transition: 'background 180ms, border-color 180ms',
-                        }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/>
-                          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>
-                        </svg>
-                        Regenerate
-                      </button>
-                      <button
-                        onClick={copy}
-                        aria-label={copied ? 'Copied to clipboard' : 'Copy generated text'}
-                        className="reduced-motion-safe"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                          padding: '6px 12px', borderRadius: 999,
-                          background: copied ? `rgba(${meta.rgb},0.30)` : `rgba(${meta.rgb},0.18)`,
-                          border: `1px solid rgba(${meta.rgb},0.45)`,
-                          color: meta.accent, cursor: 'pointer',
-                          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 600,
-                          transition: 'background 180ms, border-color 180ms',
-                        }}
-                      >
-                        {copied ? (
-                          <>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
-                            Copied
-                          </>
-                        ) : (
-                          <>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                              <rect x="9" y="9" width="13" height="13" rx="2"/>
-                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                            </svg>
-                            Copy
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {gen.loading ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} aria-label="Generating">
-                    {[100, 92, 96, 80].map((w, i) => <div key={i} className="skeleton-bar-dark" style={{ height: 14, width: `${w}%`, borderRadius: 8, animationDelay: `${i * 0.1}s` }} />)}
-                  </div>
-                ) : gen.error ? (
-                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55, color: 'rgba(255,168,168,0.95)', wordBreak: 'break-word' }}>
-                    {gen.error}
-                  </div>
-                ) : (
-                  <div style={{
-                    fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 400, lineHeight: 1.6,
-                    color: 'rgba(255,255,255,0.92)',
-                    whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
-                  }}>
-                    {gen.text}
-                  </div>
-                )}
+                {note.transcript}
               </div>
-            </section>
-          );
-        })()}
-
-        {/* Spacer to keep last card off the iOS Safari URL bar */}
-        <div style={{ flexShrink: 0, height: 'env(safe-area-inset-bottom, 0px)' }} />
+            )}
+            <button
+              onClick={() => setShowTranscript(s => !s)}
+              aria-expanded={showTranscript}
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
+                color: 'rgba(255,255,255,0.55)',
+                padding: '8px 0',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                alignSelf: 'flex-start',
+              }}
+            >
+              {showTranscript ? 'Hide transcript' : 'View transcript'}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ transform: showTranscript ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 220ms' }}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </div>,
     document.body,
