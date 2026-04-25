@@ -427,15 +427,13 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                   opacity: isDimmed ? 0 : (isTraveling ? 0 : 1),
                   scale:   isDimmed ? 0.7 : (isSelected && selPhase==='pulse' ? 1.15 : (isTraveling ? 0.35 : 1)),
                   y:       isDimmed ? 20  : (isTraveling ? '28vh' : 0),
-                  x:       isSelected && selPhase==='travel' ? p.xOffset : '0vw',
-                  filter:  isSelected && selPhase==='travel' ? 'saturate(0%)' : 'saturate(100%)',
+                  x:       '0vw',
+                  filter:  'saturate(100%)',
                 }}
                 transition={{
                   opacity: isDimmed ? {duration:0.25} : (isTraveling ? {duration:0.5} : {delay:entranceDelay,...ENT_SPRING}),
                   scale:   isSelected&&(selPhase==='travel'||selPhase==='pulse') ? {duration:selPhase==='pulse'?0.15:0.7,...SEL_SPRING} : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
                   y:       isSelected&&selPhase==='travel' ? {type:'spring',stiffness:55,damping:18,mass:1} : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
-                  x:       SEL_SPRING,
-                  filter:  {duration:0.6},
                 }}
                 style={{
                   position:'absolute', left:p.left, top:'60%',
