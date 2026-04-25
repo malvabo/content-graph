@@ -33,11 +33,12 @@ function renderDraftContent(text: string, charIdx: number): React.ReactNode {
 }
 import { useVoiceStore } from '../../store/voiceStore';
 
+type Phase = 'idle' | 'prompt' | 'recording' | 'platform' | 'draft' | 'posting';
+
 interface Props {
   onComplete: () => void;
+  initialPhase?: Phase;
 }
-
-type Phase = 'idle' | 'prompt' | 'recording' | 'platform' | 'draft' | 'posting';
 type SelPhase = 'none' | 'pulse' | 'travel' | 'merge';
 
 // ─── Platform draft copy ──────────────────────────────────────────────────────
@@ -200,8 +201,8 @@ function RecordingCanvas({ onStop }: { onStop: () => void }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function MobileOnboarding({ onComplete }: Props) {
-  const [phase, setPhase]       = useState<Phase>('idle');
+export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
+  const [phase, setPhase]       = useState<Phase>(initialPhase ?? 'idle');
   const [selPhase, setSelPhase] = useState<SelPhase>('none');
   const [selId, setSelId]       = useState<string | null>(null);
   const [hintVisible, setHintVisible]   = useState(false);

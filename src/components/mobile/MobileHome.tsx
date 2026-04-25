@@ -4,7 +4,6 @@ import { useVoiceStore, type VoiceNote } from '../../store/voiceStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useAuthStore } from '../../store/authStore';
 import { aiExecute } from '../../utils/aiExecutor';
-import RecordButton from '../canvas/RecordButton';
 
 type AssetKind = 'linkedin-post' | 'twitter-thread' | 'twitter-single';
 
@@ -722,7 +721,11 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
   );
 }
 
-export default function MobileHome() {
+interface MobileHomeProps {
+  onAddPost?: () => void;
+}
+
+export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
   const groqKey = useSettingsStore(s => s.groqKey);
   const { user, guest } = useAuthStore();
@@ -997,12 +1000,27 @@ export default function MobileHome() {
         </>
       )}
 
-      {/* Record button — hidden during edit mode */}
-      {!editMode && (
-        <div style={{ position: 'absolute', bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
-          <div style={{ pointerEvents: 'auto' }}>
-            <RecordButton size={96} onClick={startRecording} state="idle" />
-          </div>
+      {/* Add a post — hidden during edit mode */}
+      {!editMode && onAddPost && (
+        <div style={{ position: 'absolute', bottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
+          <button
+            onClick={onAddPost}
+            style={{
+              pointerEvents: 'auto',
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              minHeight: 48, padding: '12px 24px',
+              borderRadius: 999,
+              background: 'linear-gradient(135deg, rgba(144,97,249,0.95) 0%, rgba(110,80,220,0.95) 100%)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              color: '#fff',
+              fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em',
+              cursor: 'pointer',
+              boxShadow: '0 8px 28px rgba(144,97,249,0.45), 0 2px 6px rgba(0,0,0,0.35)',
+            }}
+          >
+            <span aria-hidden style={{ fontSize: 20, lineHeight: 1, marginTop: -2 }}>+</span>
+            Add a post
+          </button>
         </div>
       )}
 
