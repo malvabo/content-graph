@@ -323,7 +323,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
             background: linear-gradient(var(--bg-a), #0b0608 0%, #0f0810 55%, #09090f 100%);
             animation: bg-drift 22s linear infinite alternate;
           }
-          .onb-draft-ta { caret-color: rgba(255,235,210,0.9); color: rgba(255,255,255,0.92); background:transparent; border:none; outline:none; resize:none; padding:0; margin:0; font-size:20px; line-height:1.7; letter-spacing:0.01em; }
+          .onb-draft-ta { caret-color: rgba(255,235,210,0.9); color: rgba(255,255,255,0.92); background:transparent; border:none; outline:none; resize:none; padding:0; margin:0; font-size:var(--text-body-lg); line-height:1.7; letter-spacing:0.01em; }
           .onb-draft-ta::selection { background: rgba(255,220,200,0.25); }
           @keyframes draft-caret-blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
           .draft-caret { display:inline-block; width:1.5px; height:1.1em; background:rgba(255,235,210,0.9); vertical-align:text-bottom; margin-left:2px; border-radius:1px; animation:draft-caret-blink 1.2s step-end infinite; }
@@ -470,7 +470,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 style={{
                   position:'absolute', left:p.left, top:`calc(60% + ${LABEL_BELOW}px)`,
                   transform:'translateX(-50%)',
-                  fontFamily:'var(--font-sans)', fontSize:15, fontWeight:400,
+                  fontFamily:'var(--font-sans)', fontSize:'var(--text-caption)', fontWeight:400,
                   color:'rgba(255,255,255,1)', letterSpacing:'0.04em',
                   whiteSpace:'nowrap', pointerEvents:'none', zIndex:14,
                 }}
@@ -511,7 +511,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               ) : (
                 <div
                   onClick={() => { if (typingDone) setIsEditing(true); }}
-                  style={{flex:1,fontFamily:'var(--font-sans)',fontSize:20,lineHeight:1.7,letterSpacing:'0.01em',color:'rgba(255,255,255,0.92)',cursor:typingDone?'text':'default',overflowY:'auto'}}
+                  style={{flex:1,fontFamily:'var(--font-sans)',fontSize:'var(--text-body-lg)',lineHeight:1.7,letterSpacing:'0.01em',color:'rgba(255,255,255,0.92)',cursor:typingDone?'text':'default',overflowY:'auto'}}
                 >
                   {renderDraftContent(draftText, typingDone ? draftText.length : displayedCharIdx)}
                   {typingDone && <span className="draft-caret" aria-hidden />}
@@ -532,7 +532,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 top:'calc(88% + 40px)', // orb center 88% + half-height 28px + gap 12px
                 left:0,right:0,
                 textAlign:'center',
-                fontFamily:'var(--font-sans)',fontSize:15,
+                fontFamily:'var(--font-sans)',fontSize:'var(--text-caption)',
                 color:'rgba(255,255,255,1)',
                 letterSpacing:'0.05em',
                 pointerEvents:'none',
@@ -549,7 +549,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               <motion.div key="h-posted"
                 initial={{opacity:0,scale:0.92}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.96}}
                 transition={{duration:0.5,ease:[0.4,0,0.2,1]}}
-                style={{position:'absolute',top:'42%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:36,fontWeight:700,color:'rgba(255,255,255,0.94)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:20}}
+                style={{position:'absolute',top:'42%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display)',fontWeight:700,color:'rgba(255,255,255,0.94)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:20}}
               >Posted</motion.div>
               <motion.div key="save-btn"
                 initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:8}}
@@ -558,7 +558,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               >
                 <button
                   onClick={onComplete}
-                  style={{background:'none',border:'none',cursor:'pointer',fontFamily:'var(--font-sans)',fontSize:18,fontWeight:500,color:'rgba(255,255,255,0.72)',letterSpacing:'0.01em',padding:'12px 32px'}}
+                  style={{background:'none',border:'none',cursor:'pointer',fontFamily:'var(--font-sans)',fontSize:'var(--text-body)',fontWeight:500,color:'rgba(255,255,255,0.78)',letterSpacing:'0.01em',padding:'12px 32px'}}
                 >
                   Save to notes
                 </button>
@@ -572,32 +572,32 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           {phase==='idle' && (
             <motion.div key="h-idle" layoutId="headline"
               initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.12,ease:[0.4,0,0.2,1]}}
-              style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:44,fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
+              style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             >Let's write a post</motion.div>
           )}
           {phase==='prompt' && (
             <motion.div key="h-prompt"
               initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.15,ease:[0.4,0,0.2,1]}}
-              style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:44,fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
+              style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             >What's on your mind?</motion.div>
           )}
           {phase==='recording' && (
             <motion.div key="h-rec"
               initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.15,ease:[0.4,0,0.2,1]}}
-              style={{position:'absolute',top:'18%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:30,fontWeight:600,color:'rgba(255,255,255,0.78)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
+              style={{position:'absolute',top:'18%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-sm)',fontWeight:600,color:'rgba(255,255,255,0.85)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             >Go ahead, I'm listening</motion.div>
           )}
           {phase==='platform' && (
             <motion.div key="h-platform"
               initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:selId?0:0.85,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:selId?0:0.15,ease:[0.4,0,0.2,1]}}
-              style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:44,fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
+              style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             >Where should this go?</motion.div>
           )}
           {isDraft && (
             <motion.div key="h-draft"
               initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-16}}
               transition={{duration:0.4,delay:0.9,ease:[0.4,0,0.2,1]}}
-              style={{position:'absolute',top:'6%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:26,fontWeight:700,color:'rgba(255,255,255,0.84)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:5}}
+              style={{position:'absolute',top:'6%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-title-sm)',fontWeight:700,color:'rgba(255,255,255,0.88)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:5}}
             >Here's your draft</motion.div>
           )}
         </AnimatePresence>
@@ -606,12 +606,12 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
         <AnimatePresence>
           {phase==='prompt'&&hintVisible && (
             <motion.div key="hint-rec" initial={{opacity:0}} animate={{opacity:0.40}} exit={{opacity:0}} transition={{duration:0.8}}
-              style={{position:'absolute',bottom:'10%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:15,color:'rgba(255,255,255,1)',letterSpacing:'0.05em',pointerEvents:'none',zIndex:5}}
+              style={{position:'absolute',bottom:'10%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-caption)',color:'rgba(255,255,255,1)',letterSpacing:'0.05em',pointerEvents:'none',zIndex:5}}
             >tap to record</motion.div>
           )}
           {phase==='recording' && (
             <motion.div key="hint-stop" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{delay:1.2,duration:0.8}}
-              style={{position:'absolute',bottom:'10%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:15,color:'rgba(255,255,255,0.32)',letterSpacing:'0.05em',pointerEvents:'none',zIndex:5}}
+              style={{position:'absolute',bottom:'10%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-caption)',color:'rgba(255,255,255,0.55)',letterSpacing:'0.05em',pointerEvents:'none',zIndex:5}}
             >tap anywhere to continue</motion.div>
           )}
         </AnimatePresence>
@@ -621,7 +621,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           {isIdle && (
             <motion.button key="skip" initial={{opacity:0}} animate={{opacity:0.35}} exit={{opacity:0}} transition={{delay:1.0,duration:0.6}}
               onClick={(e)=>{e.stopPropagation();onComplete();}}
-              style={{position:'absolute',bottom:28,right:24,background:'none',border:'none',fontFamily:'var(--font-sans)',fontSize:15,color:'rgba(255,255,255,1)',letterSpacing:'0.08em',cursor:'pointer',padding:'8px 0',zIndex:30}}
+              style={{position:'absolute',bottom:28,right:24,background:'none',border:'none',fontFamily:'var(--font-sans)',fontSize:'var(--text-caption)',color:'rgba(255,255,255,1)',letterSpacing:'0.08em',cursor:'pointer',padding:'8px 0',zIndex:30}}
             >skip</motion.button>
           )}
         </AnimatePresence>

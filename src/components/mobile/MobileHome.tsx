@@ -131,7 +131,7 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
 
         {/* ── Top: transcript + timer ── */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: '60px 32px 24px', width: '100%', boxSizing: 'border-box' }}>
-          <div aria-live="polite" style={{ fontSize: 14, fontFamily: 'var(--font-sans)', color: 'rgba(13,191,90,0.82)', textAlign: 'center', lineHeight: 1.55, minHeight: 22, maxWidth: 300 }}>
+          <div aria-live="polite" style={{ fontSize: 'var(--text-body)', fontFamily: 'var(--font-sans)', color: 'rgba(13,191,90,0.82)', textAlign: 'center', lineHeight: 1.55, minHeight: 22, maxWidth: 300 }}>
             {tail
               ? <>{tail}<span aria-hidden style={{ animation: 'rec-cursor 1.2s step-end infinite', marginLeft: 1 }}>|</span></>
               : <span style={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.30)' }}>Listening…</span>
@@ -158,14 +158,14 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
               <rect x="6" y="6" width="12" height="12" rx="2" />
             </svg>
           </button>
-          <div style={{ fontSize: 11, fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.32)', letterSpacing: '0.10em', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: 'var(--text-tag)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.10em', textTransform: 'uppercase' }}>
             Tap to stop
           </div>
         </div>
 
         {/* ── Bottom: discard ── */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', paddingBottom: 'calc(44px + env(safe-area-inset-bottom, 0px))' }}>
-          <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-sans)', fontSize: 15, cursor: 'pointer', padding: '10px 32px', minHeight: 44 }}>
+          <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', cursor: 'pointer', padding: '10px 32px', minHeight: 44 }}>
             Discard
           </button>
         </div>
@@ -236,7 +236,7 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
 
       {/* Title — 16/500/22px */}
       <span style={{
-        fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 500,
+        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-heading)', fontWeight: 500,
         lineHeight: '22px', color: 'rgba(255,255,255,0.92)',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
       }}>
@@ -250,7 +250,7 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
           padding: '0 10px', borderRadius: 'var(--radius-full)',
           background: pillRoleMap[pill.role].bg,
           border: `1px solid ${pillRoleMap[pill.role].border}`,
-          fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500,
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500,
           color: pillRoleMap[pill.role].fg, flexShrink: 0,
         }}>
           <span aria-hidden style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: pillRoleMap[pill.role].dot }} />
@@ -261,7 +261,7 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       {/* Metadata — 13/500/18px */}
       <span style={{
         gridColumn: '2 / span 2',
-        fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 400, lineHeight: '18px',
+        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400, lineHeight: '20px',
         color: 'rgba(255,255,255,0.40)',
       }}>
         {meta}
@@ -347,7 +347,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
   // tag style: 500 11px mono uppercase 0.3em letter-spacing #6d6d6d
   const tagStyle: React.CSSProperties = {
-    fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, lineHeight: 1,
+    fontFamily: 'var(--font-mono)', fontSize: 'var(--text-tag)', fontWeight: 500, lineHeight: 1,
     textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--color-text-tertiary)',
   };
 
@@ -388,14 +388,14 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
             aria-label="Note title"
             style={{
-              width: '100%', fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 500, lineHeight: '22px',
+              width: '100%', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 600, lineHeight: '24px',
               color: 'var(--color-text-primary)', background: 'none',
               border: 'none', borderBottom: '1px solid transparent', outline: 'none', padding: '2px 0',
             }}
             onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-strong)'; }}
           />
           <div style={{
-            fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px',
+            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500, lineHeight: '20px',
             color: 'var(--color-text-tertiary)', marginTop: 2,
           }}>
             {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
@@ -414,7 +414,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             background: 'var(--color-danger-bg, #FEF4F4)',
             border: '1px solid #ECC0C0', borderRadius: 'var(--radius-lg)',
             padding: 'var(--space-4)',
-            fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: 1.5,
+            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400, lineHeight: 1.55,
             color: 'var(--color-danger-text, #A83030)', wordBreak: 'break-word',
           }}>
             {note.errorReason || 'Transcription failed.'}
@@ -423,7 +423,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           <section aria-labelledby={`${titleId}-transcript`}>
             <div id={`${titleId}-transcript`} style={{ ...tagStyle, marginBottom: 'var(--space-2)' }}>Transcript</div>
             <div style={{
-              fontFamily: 'var(--font-sans)', fontSize: 15, fontWeight: 400, lineHeight: 1.8,
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-lg)', fontWeight: 400, lineHeight: 1.75,
               color: 'var(--color-text-primary)',
               whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
             }}>
@@ -431,7 +431,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             </div>
           </section>
         ) : (
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: 1.5, color: 'var(--color-text-tertiary)' }}>
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400, lineHeight: 1.55, color: 'var(--color-text-tertiary)' }}>
             This recording has audio but no transcript yet. Add a Groq API key in desktop Settings to transcribe existing audio.
           </div>
         )}
@@ -456,13 +456,13 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                       borderRadius: 'var(--radius-lg)',
                       border: `1px solid ${isActive ? 'var(--color-accent, #0DBF5A)' : 'var(--color-border-default)'}`,
                       background: isActive ? 'var(--color-bg-surface)' : 'var(--color-bg-card)',
-                      fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, lineHeight: '20px',
+                      fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 500, lineHeight: '22px',
                       color: 'var(--color-text-primary)', textAlign: 'left',
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)',
                     }}
                   >
                     <span>{KIND_LABEL[k]}</span>
-                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--color-text-tertiary)' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500, color: 'var(--color-text-tertiary)' }}>
                       {isLoadingThis ? 'Generating…' : isSaved ? 'Saved' : '→'}
                     </span>
                   </button>
@@ -499,12 +499,12 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                 {[100, 92, 96, 80].map((w, i) => <div key={i} className="skeleton-bar" style={{ height: 12, width: `${w}%`, borderRadius: 'var(--radius-sm)', animationDelay: `${i * 0.1}s` }} />)}
               </div>
             ) : gen.error ? (
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: 1.5, color: 'var(--color-danger-text, #A83030)', wordBreak: 'break-word' }}>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400, lineHeight: 1.55, color: 'var(--color-danger-text, #A83030)', wordBreak: 'break-word' }}>
                 {gen.error}
               </div>
             ) : (
               <div style={{
-                fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 400, lineHeight: 1.75,
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.7,
                 color: 'var(--color-text-primary)',
                 whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
               }}>
@@ -634,10 +634,10 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
         >×</div>
       )}
       <div style={{ position: 'absolute', top: 14, left: 14, right: editMode ? 40 : 14 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontSize: 'var(--text-heading)', fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {meta.label}
         </div>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', marginTop: 3, letterSpacing: '0.02em' }}>
+        <div style={{ fontSize: 'var(--text-caption)', color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--font-sans)', marginTop: 3, letterSpacing: '0.02em' }}>
           {meta.sublabel}
         </div>
       </div>
@@ -647,7 +647,7 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
         </span>
       </div>
       <div style={{ position: 'absolute', bottom: 13, left: 14 }}>
-        <span style={{ fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-sans)', color: count > 0 ? meta.accent : 'rgba(255,255,255,0.35)' }}>
+        <span style={{ fontSize: 'var(--text-body-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: count > 0 ? meta.accent : 'rgba(255,255,255,0.45)' }}>
           {meta.countLabel(count)}
         </span>
       </div>
@@ -662,11 +662,11 @@ function AddWidgetSheet({ activeWidgets, onAdd, onClose }: {
   return createPortal(
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.58)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}>
       <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#0d0f18', borderRadius: '20px 20px 0 0', padding: '20px 16px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', boxShadow: '0 -8px 40px rgba(0,0,0,0.5)' }}>
-        <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)', marginBottom: 4 }}>Add widget</div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.32)', fontFamily: 'var(--font-sans)', marginBottom: 16 }}>Choose a platform to add to your dashboard</div>
+        <div style={{ fontSize: 'var(--text-title-sm)', fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)', marginBottom: 4 }}>Add widget</div>
+        <div style={{ fontSize: 'var(--text-body-sm)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', marginBottom: 16 }}>Choose a platform to add to your dashboard</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {available.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.28)', fontFamily: 'var(--font-sans)', fontSize: 14, padding: '24px 0' }}>All widgets are already active</div>
+            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', padding: '24px 0' }}>All widgets are already active</div>
           ) : available.map(kind => {
             const meta = WIDGET_META[kind];
             return (
@@ -675,8 +675,8 @@ function AddWidgetSheet({ activeWidgets, onAdd, onClose }: {
                   <span style={{ color: meta.accent, fontSize: 18 }}>+</span>
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: '#fff', fontFamily: 'var(--font-sans)' }}>{meta.label}</div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.36)', fontFamily: 'var(--font-sans)', marginTop: 2 }}>{meta.sublabel}</div>
+                  <div style={{ fontSize: 'var(--text-body)', fontWeight: 500, color: '#fff', fontFamily: 'var(--font-sans)' }}>{meta.label}</div>
+                  <div style={{ fontSize: 'var(--text-caption)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', marginTop: 2 }}>{meta.sublabel}</div>
                 </div>
               </button>
             );
@@ -702,13 +702,13 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.02em' }}>{meta.label}</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.32)', fontFamily: 'var(--font-sans)' }}>{meta.sublabel}</div>
+          <div style={{ fontSize: 'var(--text-title)', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.02em' }}>{meta.label}</div>
+          <div style={{ fontSize: 'var(--text-body-sm)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)' }}>{meta.sublabel}</div>
         </div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 160px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {filtered.length === 0 ? (
-          <div style={{ padding: '60px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.24)', fontFamily: 'var(--font-sans)', fontSize: 14, lineHeight: 1.6 }}>
+          <div style={{ padding: '60px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', lineHeight: 1.6 }}>
             Nothing here yet.<br />Record a voice note and generate content to see it here.
           </div>
         ) : filtered.map(n => (
@@ -923,7 +923,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
       position: 'relative', minWidth: 0,
     }}>
       {guest && !user && (
-        <div style={{ background: 'rgba(240,216,160,0.10)', borderBottom: '1px solid rgba(240,216,160,0.15)', padding: '6px 14px', fontSize: 12, fontFamily: 'var(--font-sans)', color: 'rgba(240,216,160,0.85)', textAlign: 'center' }}>
+        <div style={{ background: 'rgba(240,216,160,0.10)', borderBottom: '1px solid rgba(240,216,160,0.15)', padding: '8px 14px', fontSize: 'var(--text-caption)', fontFamily: 'var(--font-sans)', color: 'rgba(240,216,160,0.85)', textAlign: 'center' }}>
           Guest mode — your work won't be saved.
         </div>
       )}
@@ -940,20 +940,20 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
           {/* Header */}
           <header style={{ padding: '28px 20px 8px', flexShrink: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div>
-              <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.03em' }}>UP150</h1>
-              <p style={{ margin: '4px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)' }}>Content dashboard</p>
+              <h1 style={{ margin: 0, fontSize: 'var(--text-title-lg)', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.03em' }}>UP150</h1>
+              <p style={{ margin: '4px 0 0', fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--font-sans)' }}>Content dashboard</p>
             </div>
             <button
               onClick={() => setEditMode(m => !m)}
               aria-label={editMode ? 'Done editing' : 'Edit widgets'}
-              style={{ marginTop: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: '6px 16px', fontSize: 14, color: 'rgba(255,255,255,0.78)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
+              style={{ marginTop: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: '7px 16px', fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
             >
               {editMode ? 'Done' : 'Edit'}
             </button>
           </header>
 
           {errorMsg && (
-            <div role="alert" style={{ margin: '8px 16px 0', padding: '10px 14px', borderRadius: 14, background: 'rgba(201,48,48,0.14)', border: '1px solid rgba(201,48,48,0.25)', fontFamily: 'var(--font-sans)', fontSize: 13, color: 'rgba(255,107,107,0.95)' }}>
+            <div role="alert" style={{ margin: '8px 16px 0', padding: '10px 14px', borderRadius: 14, background: 'rgba(201,48,48,0.14)', border: '1px solid rgba(201,48,48,0.25)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', color: 'rgba(255,107,107,0.95)' }}>
               {errorMsg}
             </div>
           )}
@@ -974,8 +974,8 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
                   onClick={() => setShowAddSheet(true)}
                   style={{ aspectRatio: '1 / 1', borderRadius: 20, border: '1.5px dashed rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.03)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
-                  <span style={{ fontSize: 32, color: 'rgba(255,255,255,0.32)', lineHeight: 1 }}>+</span>
-                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-sans)' }}>Add widget</span>
+                  <span style={{ fontSize: 32, color: 'rgba(255,255,255,0.4)', lineHeight: 1 }}>+</span>
+                  <span style={{ fontSize: 'var(--text-caption)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)' }}>Add widget</span>
                 </button>
               )}
             </div>
@@ -991,7 +991,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
               borderTop: '1px solid rgba(255,255,255,0.07)',
             }}>
               <button onClick={() => setEditMode(false)} style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,255,255,0.10)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>×</button>
-              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--font-sans)' }}>Edit widgets</span>
+              <span style={{ fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-sans)' }}>Edit widgets</span>
               <button onClick={() => setEditMode(false)} style={{ width: 50, height: 50, borderRadius: '50%', background: '#0DBF5A', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
               </button>

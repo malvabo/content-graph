@@ -119,6 +119,26 @@
   --text-lg: 20px;
   --text-xl: 24px;
 
+  /* Semantic typography scale — mobile-first, use these in components for consistency.
+     Tier 1 display: hero / onboarding headlines.
+     Tier 2 title:   page H1, section titles.
+     Tier 3 heading: card titles, list-item primary.
+     Tier 4 body:    paragraphs, primary reading.
+     Tier 5 caption: hints, metadata, secondary labels.
+     Tier 6 tag:     uppercase eyebrow labels (with --tracking-wider). */
+  --text-display-lg: 30px;
+  --text-display:    26px;
+  --text-display-sm: 22px;
+  --text-title-lg:   32px;
+  --text-title:      22px;
+  --text-title-sm:   18px;
+  --text-heading:    17px;
+  --text-body-lg:    16px;
+  --text-body:       15px;
+  --text-body-sm:    14px;
+  --text-caption:    13px;
+  --text-tag:        12px;
+
   /* Line heights */
   --leading-none: 1;
   --leading-tight: 1.3;
