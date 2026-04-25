@@ -1087,24 +1087,81 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
 
       {/* Add a post — hidden during edit mode */}
       {!editMode && onAddPost && (
-        <div style={{ position: 'absolute', bottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 0px))', left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
+        <div style={{
+          position: 'absolute',
+          bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))',
+          left: 16, right: 16,
+          display: 'flex', justifyContent: 'center',
+          pointerEvents: 'none',
+        }}>
           <button
             onClick={onAddPost}
+            aria-label="Add a post"
             style={{
               pointerEvents: 'auto',
-              display: 'inline-flex', alignItems: 'center', gap: 10,
-              minHeight: 48, padding: '12px 24px',
+              position: 'relative', overflow: 'hidden', isolation: 'isolate',
+              width: '100%', maxWidth: 480, minHeight: 64,
+              padding: '10px 10px 10px 28px',
               borderRadius: 999,
-              background: 'linear-gradient(135deg, rgba(144,97,249,0.95) 0%, rgba(110,80,220,0.95) 100%)',
-              border: '1px solid rgba(255,255,255,0.18)',
-              color: '#fff',
-              fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em',
-              cursor: 'pointer',
-              boxShadow: '0 8px 28px rgba(144,97,249,0.45), 0 2px 6px rgba(0,0,0,0.35)',
+              background: 'linear-gradient(135deg, #1a1c26 0%, #0d0e16 100%)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: 'rgba(255,255,255,0.55)',
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-lg)', fontWeight: 500, letterSpacing: '-0.01em',
+              cursor: 'pointer', textAlign: 'left',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              boxShadow: '0 18px 48px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.06)',
             }}
           >
-            <span aria-hidden style={{ fontSize: 20, lineHeight: 1, marginTop: -2 }}>+</span>
-            Add a post
+            {/* Floating colored orbs — out of phase, breathing */}
+            <span aria-hidden className="widget-glow" style={{
+              position: 'absolute', left: '8%', top: '18%', width: 110, height: 110, borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(144,97,249,0.55) 0%, rgba(144,97,249,0.18) 38%, rgba(144,97,249,0) 70%)',
+              filter: 'blur(4px)',
+              animationName: 'widget-breathe',
+              animationDuration: '7.4s',
+              animationDelay: '-1.1s',
+              animationTimingFunction: 'ease-in-out',
+              animationIterationCount: 'infinite',
+              willChange: 'transform, opacity',
+              pointerEvents: 'none',
+            }} />
+            <span aria-hidden className="widget-glow" style={{
+              position: 'absolute', left: '38%', top: '50%', width: 90, height: 90, borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(29,155,240,0.50) 0%, rgba(29,155,240,0.15) 40%, rgba(29,155,240,0) 70%)',
+              filter: 'blur(4px)',
+              animationName: 'widget-breathe',
+              animationDuration: '6.2s',
+              animationDelay: '-3.4s',
+              animationTimingFunction: 'ease-in-out',
+              animationIterationCount: 'infinite',
+              willChange: 'transform, opacity',
+              pointerEvents: 'none',
+            }} />
+            <span aria-hidden className="widget-glow" style={{
+              position: 'absolute', left: '60%', top: '12%', width: 80, height: 80, borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(13,191,90,0.50) 0%, rgba(13,191,90,0.15) 40%, rgba(13,191,90,0) 70%)',
+              filter: 'blur(4px)',
+              animationName: 'widget-breathe',
+              animationDuration: '8.6s',
+              animationDelay: '-5.0s',
+              animationTimingFunction: 'ease-in-out',
+              animationIterationCount: 'infinite',
+              willChange: 'transform, opacity',
+              pointerEvents: 'none',
+            }} />
+
+            <span style={{ position: 'relative', zIndex: 1 }}>Add a post</span>
+            <span aria-hidden style={{
+              position: 'relative', zIndex: 1, flexShrink: 0,
+              width: 44, height: 44, borderRadius: '50%',
+              background: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0a12" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </span>
           </button>
         </div>
       )}
