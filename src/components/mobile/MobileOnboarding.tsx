@@ -316,7 +316,8 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
   const isDraft         = phase === 'draft';
   const isPlatform      = phase === 'platform';
   const isTravelingDown = selPhase === 'travel' || selPhase === 'merge';
-  const orbTarget       = isTravelingDown ? ORB.draft : ORB[phase];
+  const orbTarget       = isTravelingDown ? ORB.draft
+                        : (isPosted ? {...ORB.idle, top: '48%'} : ORB[phase]);
 
   return (
     <LayoutGroup>
@@ -357,7 +358,6 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
 
         {/* ── Orb — single gradient, mix-blend-mode:screen, no hard edge ── */}
         <motion.div
-          layoutId="main-orb"
           onClick={(e)=>{ if(phase==='prompt'){e.stopPropagation();startRecording();} if(isDraft){e.stopPropagation();triggerPost();} }}
           animate={{...orbTarget,...(orbAbsorb?{scale:[1,1.18,1]}:{})}}
           transition={
