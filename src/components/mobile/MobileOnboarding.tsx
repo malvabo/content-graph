@@ -269,8 +269,8 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
       setDraftText('');
       setSavedPlatformId(null);
     }, 900);
-    // Hold 1.2 s, then fade "Posted" out
-    setTimeout(() => setIsPosted(false), 900 + 1200);
+    // Hold 1.2 s, fade "Posted" out, then open home
+    setTimeout(() => { setIsPosted(false); onComplete(); }, 900 + 1200);
   }
 
   function pickPlatform(id: string) {
