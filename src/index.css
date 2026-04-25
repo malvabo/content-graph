@@ -348,6 +348,25 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   80%  { transform: translate3d(-50%, -10%, 0) scale(1.05); opacity: 0.95; }
   100% { transform: translate3d(0%, 0%, 0) scale(1);      opacity: 0.85; }
 }
+@keyframes add-post-blob-morph-a {
+  0%   { border-radius: 40% 60% 60% 40% / 60% 40% 60% 40%; }
+  25%  { border-radius: 64% 36% 52% 48% / 38% 52% 48% 62%; }
+  50%  { border-radius: 28% 72% 38% 62% / 55% 35% 65% 45%; }
+  75%  { border-radius: 56% 44% 70% 30% / 70% 44% 56% 30%; }
+  100% { border-radius: 40% 60% 60% 40% / 60% 40% 60% 40%; }
+}
+@keyframes add-post-blob-morph-b {
+  0%   { border-radius: 72% 28% 44% 56% / 56% 72% 28% 44%; }
+  33%  { border-radius: 44% 56% 68% 32% / 32% 68% 56% 44%; }
+  66%  { border-radius: 56% 44% 30% 70% / 68% 30% 70% 32%; }
+  100% { border-radius: 72% 28% 44% 56% / 56% 72% 28% 44%; }
+}
+@keyframes add-post-blob-morph-c {
+  0%   { border-radius: 48% 52% 36% 64% / 58% 42% 58% 42%; }
+  30%  { border-radius: 62% 38% 58% 42% / 34% 66% 38% 62%; }
+  60%  { border-radius: 34% 66% 44% 56% / 62% 38% 66% 34%; }
+  100% { border-radius: 48% 52% 36% 64% / 58% 42% 58% 42%; }
+}
 @media (prefers-reduced-motion: reduce) {
   .widget-glow { animation: none !important; }
   .reduced-motion-safe { transition: none !important; }
