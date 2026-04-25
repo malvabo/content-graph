@@ -362,22 +362,23 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
   const tagStyle: React.CSSProperties = {
     fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 500, lineHeight: 1,
-    textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--color-text-tertiary)',
+    textTransform: 'uppercase', letterSpacing: '0.16em', color: 'rgba(255,255,255,0.55)',
   };
 
   const glassCard: React.CSSProperties = {
     position: 'relative',
     borderRadius: 22,
-    border: '1px solid var(--color-border-subtle)',
-    background: 'var(--color-bg-card)',
-    boxShadow: '0 14px 40px rgba(0,0,0,0.07), 0 2px 6px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
+    boxShadow: '0 18px 48px rgba(0,0,0,0.40), 0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)',
     overflow: 'hidden',
+    color: 'rgba(255,255,255,0.92)',
   };
 
   const platformGlow: Record<AssetKind, { rgb: string; accent: string; dur: number; delay: number }> = {
-    'linkedin-post':   { rgb: '10,102,194', accent: '#0a66c2', dur: 7.4, delay: -1.1 },
-    'twitter-thread':  { rgb: '29,155,240', accent: '#1d9bf0', dur: 6.6, delay: -3.2 },
-    'twitter-single':  { rgb: '29,155,240', accent: '#1d9bf0', dur: 5.9, delay: -0.5 },
+    'linkedin-post':   { rgb: '10,102,194', accent: '#4ea2e8', dur: 7.4, delay: -1.1 },
+    'twitter-thread':  { rgb: '29,155,240', accent: '#5cbcf7', dur: 6.6, delay: -3.2 },
+    'twitter-single':  { rgb: '29,155,240', accent: '#5cbcf7', dur: 5.9, delay: -0.5 },
   };
 
   return createPortal(
@@ -388,11 +389,37 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
       aria-labelledby={titleId}
       style={{
         position: 'fixed', inset: 0, zIndex: 9998,
-        background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', minWidth: 0,
+        background: 'linear-gradient(180deg, #0a0b14 0%, #060710 60%, #04050c 100%)',
+        display: 'flex', flexDirection: 'column', minWidth: 0,
+        overflow: 'hidden',
+        color: 'rgba(255,255,255,0.92)',
       }}
     >
-      {/* Top nav row — back chevron alone, leaves room for future right-side actions */}
+      {/* Ambient page-level breathing orbs — match the home dashboard's living vocabulary */}
+      <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+        {[
+          { color: '144,97,249', top: '8%',  left: '-12%', size: 320, dur: 12.5, delay: -2.1 },
+          { color: '29,155,240', top: '36%', left: '70%',  size: 280, dur: 10.2, delay: -5.6 },
+          { color: '13,191,90',  top: '70%', left: '-8%',  size: 300, dur: 14.8, delay: -8.3 },
+          { color: '255,150,18', top: '60%', left: '60%',  size: 240, dur: 11.4, delay: -1.4 },
+        ].map((o, i) => (
+          <div key={i} className="widget-glow" style={{
+            position: 'absolute', top: o.top, left: o.left, width: o.size, height: o.size, borderRadius: '50%',
+            background: `radial-gradient(circle, rgba(${o.color},0.32) 0%, rgba(${o.color},0.10) 38%, rgba(${o.color},0) 70%)`,
+            filter: 'blur(20px)',
+            animationName: 'widget-breathe',
+            animationDuration: `${o.dur}s`,
+            animationDelay: `${o.delay}s`,
+            animationTimingFunction: 'cubic-bezier(0.45, 0.05, 0.55, 0.95)',
+            animationIterationCount: 'infinite',
+            willChange: 'transform, opacity',
+          }} />
+        ))}
+      </div>
+
+      {/* Top nav row */}
       <div style={{
+        position: 'relative', zIndex: 1,
         flexShrink: 0,
         padding: 'calc(var(--space-3) + env(safe-area-inset-top, 0px)) var(--space-3) 0',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -402,15 +429,21 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           ref={closeBtnRef}
           onClick={close}
           aria-label="Close note"
-          className="btn-icon"
-          style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)' }}
+          style={{
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
+            color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
+            width: 40, height: 40, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(12px)',
+          }}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
       </div>
 
-      {/* Title block — heading by default, swaps to input on tap */}
+      {/* Title block */}
       <div style={{
+        position: 'relative', zIndex: 1,
         flexShrink: 0,
         padding: 'var(--space-2) var(--space-4) var(--space-4)',
       }}>
@@ -428,7 +461,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
               display: 'block', width: '100%', margin: 0, padding: 0,
               background: 'transparent', border: 'none', outline: 'none',
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title)', fontWeight: 700, lineHeight: 1.2,
-              letterSpacing: '-0.02em', color: 'var(--color-text-primary)',
+              letterSpacing: '-0.02em', color: '#fff',
               caretColor: 'var(--color-accent, #0DBF5A)',
             }}
           />
@@ -443,7 +476,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             style={{
               margin: 0, padding: 0, cursor: 'text', outline: 'none',
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title)', fontWeight: 700, lineHeight: 1.2,
-              letterSpacing: '-0.02em', color: 'var(--color-text-primary)',
+              letterSpacing: '-0.02em', color: '#fff',
               wordBreak: 'break-word',
             }}
           >
@@ -452,7 +485,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
         )}
         <div aria-hidden style={{
           fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 500, lineHeight: 1.4,
-          color: 'var(--color-text-tertiary)', marginTop: 8,
+          color: 'rgba(255,255,255,0.55)', marginTop: 8,
         }}>
           {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
         </div>
@@ -460,6 +493,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
       {/* Sheet body */}
       <div style={{
+        position: 'relative', zIndex: 1,
         flex: 1, overflowY: 'auto', overflowX: 'hidden',
         padding: 'var(--space-3) var(--space-4) var(--space-5)',
         display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', minWidth: 0,
@@ -467,11 +501,11 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
         {isError ? (
           <div role="alert" style={{
             ...glassCard,
-            background: 'var(--color-danger-bg, #FEF4F4)',
-            border: '1px solid #ECC0C0',
+            background: 'linear-gradient(155deg, rgba(168,48,48,0.18) 0%, #14080a 100%)',
+            border: '1px solid rgba(255,107,107,0.25)',
             padding: 'var(--space-4)',
             fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55,
-            color: 'var(--color-danger-text, #A83030)', wordBreak: 'break-word',
+            color: 'rgba(255,168,168,0.95)', wordBreak: 'break-word',
           }}>
             {note.errorReason || 'Transcription failed.'}
           </div>
@@ -480,14 +514,14 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             <div id={`${titleId}-transcript`} style={{ ...tagStyle, marginBottom: 'var(--space-3)' }}>Transcript</div>
             <div style={{
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 400, lineHeight: 1.65,
-              color: 'var(--color-text-primary)',
+              color: 'rgba(255,255,255,0.92)',
               whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
             }}>
               {note.transcript}
             </div>
           </section>
         ) : (
-          <div style={{ ...glassCard, padding: 'var(--space-4)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55, color: 'var(--color-text-tertiary)' }}>
+          <div style={{ ...glassCard, padding: 'var(--space-4)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55, color: 'rgba(255,255,255,0.55)' }}>
             This recording has audio but no transcript yet. Add a Groq API key in desktop Settings to transcribe existing audio.
           </div>
         )}
@@ -510,24 +544,24 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                     aria-label={`Generate ${KIND_LABEL[k]}${isSaved ? ' (previously saved)' : ''}`}
                     style={{
                       ...glassCard,
-                      width: '100%', minHeight: 56, padding: 'var(--space-4) var(--space-4)',
+                      width: '100%', minHeight: 60, padding: 'var(--space-4)',
                       borderRadius: 18,
-                      border: `1px solid ${isActive ? meta.accent : 'var(--color-border-subtle)'}`,
+                      border: `1px solid ${isActive ? `rgba(${meta.rgb},0.55)` : 'rgba(255,255,255,0.08)'}`,
                       background: isActive
-                        ? `linear-gradient(135deg, rgba(${meta.rgb},0.10) 0%, var(--color-bg-card) 70%)`
-                        : 'var(--color-bg-card)',
+                        ? `linear-gradient(135deg, rgba(${meta.rgb},0.28) 0%, #1a1c26 75%)`
+                        : `linear-gradient(155deg, rgba(${meta.rgb},0.07) 0%, #1a1c26 50%, #0d0e16 100%)`,
                       boxShadow: isActive
-                        ? `0 14px 40px rgba(${meta.rgb},0.16), 0 2px 6px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)`
-                        : '0 8px 24px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.55)',
+                        ? `0 18px 40px rgba(${meta.rgb},0.30), 0 2px 6px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.10)`
+                        : '0 10px 28px rgba(0,0,0,0.35), 0 2px 4px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.05)',
                       cursor: isLoadingThis ? 'progress' : 'pointer',
                       fontFamily: 'var(--font-sans)', fontSize: 'var(--text-heading)', fontWeight: 600, lineHeight: 1.2,
-                      color: 'var(--color-text-primary)', textAlign: 'left',
+                      color: '#fff', textAlign: 'left',
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)',
                       transition: 'box-shadow 220ms, border-color 220ms, background 220ms',
                     }}
                   >
-                    <span>{KIND_LABEL[k]}</span>
-                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500, color: isActive ? meta.accent : 'var(--color-text-tertiary)' }}>
+                    <span style={{ position: 'relative', zIndex: 1 }}>{KIND_LABEL[k]}</span>
+                    <span style={{ position: 'relative', zIndex: 1, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500, color: isActive ? meta.accent : 'rgba(255,255,255,0.45)' }}>
                       {isLoadingThis ? 'Generating…' : isSaved ? 'Saved' : '→'}
                     </span>
                   </button>
@@ -537,7 +571,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           </section>
         )}
 
-        {/* Generated output — glass card with breathing platform-tinted glow */}
+        {/* Generated output — dark glass with breathing platform-tinted morph */}
         {gen && (gen.loading || gen.text || gen.error) && (() => {
           const meta = platformGlow[gen.kind];
           return (
@@ -545,16 +579,31 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
               style={{
                 ...glassCard,
                 padding: 'var(--space-5)',
-                background: `linear-gradient(155deg, var(--color-bg-card) 0%, var(--color-bg-card) 55%, rgba(${meta.rgb},0.06) 100%)`,
-                boxShadow: `0 18px 48px rgba(${meta.rgb},0.14), 0 4px 10px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.6)`,
+                background: `linear-gradient(155deg, rgba(${meta.rgb},0.16) 0%, #1a1c26 55%, #0d0e16 100%)`,
+                border: `1px solid rgba(${meta.rgb},0.30)`,
+                boxShadow: `0 22px 56px rgba(${meta.rgb},0.32), 0 4px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)`,
               }}>
               <div aria-hidden className="widget-glow" style={{
-                position: 'absolute', inset: '-30%',
-                background: `radial-gradient(ellipse at 30% 30%, rgba(${meta.rgb},0.16) 0%, rgba(${meta.rgb},0.05) 42%, rgba(${meta.rgb},0) 75%)`,
+                position: 'absolute', inset: '-35%',
+                background: `radial-gradient(ellipse at 30% 30%, rgba(${meta.rgb},0.45) 0%, rgba(${meta.rgb},0.12) 42%, rgba(${meta.rgb},0) 75%)`,
+                filter: 'blur(8px)',
                 animationName: 'widget-breathe',
-                animationDuration: `${meta.dur}s`,
+                animationDuration: `${meta.dur * 1.5}s`,
                 animationDelay: `${meta.delay}s`,
-                animationTimingFunction: 'ease-in-out',
+                animationTimingFunction: 'cubic-bezier(0.45, 0.05, 0.55, 0.95)',
+                animationIterationCount: 'infinite',
+                willChange: 'transform, opacity',
+                pointerEvents: 'none',
+                zIndex: 0,
+              }} />
+              <div aria-hidden className="widget-glow" style={{
+                position: 'absolute', inset: '-25%',
+                background: `radial-gradient(ellipse 75% 95% at 70% 80%, rgba(${meta.rgb},0.35) 0%, rgba(${meta.rgb},0.10) 50%, rgba(${meta.rgb},0) 80%)`,
+                filter: 'blur(14px)', mixBlendMode: 'lighten',
+                animationName: 'widget-morph-b',
+                animationDuration: `${meta.dur * 2.0}s`,
+                animationDelay: `${meta.delay - 1.7}s`,
+                animationTimingFunction: 'cubic-bezier(0.5, 0, 0.5, 1)',
                 animationIterationCount: 'infinite',
                 willChange: 'transform, opacity',
                 pointerEvents: 'none',
@@ -579,16 +628,16 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                 </div>
                 {gen.loading ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} aria-label="Generating">
-                    {[100, 92, 96, 80].map((w, i) => <div key={i} className="skeleton-bar" style={{ height: 14, width: `${w}%`, borderRadius: 8, animationDelay: `${i * 0.1}s` }} />)}
+                    {[100, 92, 96, 80].map((w, i) => <div key={i} style={{ height: 14, width: `${w}%`, borderRadius: 8, background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 75%)', backgroundSize: '200% 100%', animation: `shimmer 1.5s ease-in-out infinite`, animationDelay: `${i * 0.1}s` }} />)}
                   </div>
                 ) : gen.error ? (
-                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55, color: 'var(--color-danger-text, #A83030)', wordBreak: 'break-word' }}>
+                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55, color: 'rgba(255,168,168,0.95)', wordBreak: 'break-word' }}>
                     {gen.error}
                   </div>
                 ) : (
                   <div style={{
                     fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 400, lineHeight: 1.6,
-                    color: 'var(--color-text-primary)',
+                    color: 'rgba(255,255,255,0.92)',
                     whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
                   }}>
                     {gen.text}
@@ -602,14 +651,26 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
         {/* Footer actions */}
         <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'auto', paddingTop: 'var(--space-5)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', justifyContent: 'center' }}>
           {isError && (
-            <button onClick={() => { onRerecord(); onClose(); }} className="btn btn-primary" style={{ flex: 1 }}>
+            <button onClick={() => { onRerecord(); onClose(); }}
+              style={{
+                flex: 1, minHeight: 48, padding: '12px 24px', borderRadius: 999,
+                background: 'linear-gradient(135deg, rgba(13,191,90,0.95) 0%, rgba(10,150,70,0.95) 100%)',
+                border: '1px solid rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer',
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 600,
+                boxShadow: '0 10px 28px rgba(13,191,90,0.40)',
+              }}>
               Re-record
             </button>
           )}
           <button
             onClick={() => { onDelete(); onClose(); }}
-            className="btn btn-ghost-dest"
-            style={{ flex: isError ? 'none' : 1, minWidth: isError ? 88 : 'auto', fontSize: 'var(--text-body)' }}
+            style={{
+              flex: isError ? 'none' : 1, minWidth: isError ? 88 : 'auto',
+              minHeight: 48, padding: '12px 24px', borderRadius: 999,
+              background: 'transparent', border: '1px solid rgba(255,107,107,0.25)',
+              color: 'rgba(255,127,127,0.95)', cursor: 'pointer',
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 600,
+            }}
           >
             Delete
           </button>
