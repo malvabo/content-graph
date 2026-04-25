@@ -103,7 +103,7 @@ const PLATFORMS = [
     id: 'linkedin', label: 'LinkedIn', left: '16.5%', xOffset: '33.5vw',
     core:  'radial-gradient(circle at center, rgba(10,102,194,0.60) 0%, rgba(10,102,194,0) 20%)',
     mid:   'radial-gradient(circle at center, rgba(10,102,194,0) 0%, rgba(10,102,194,0.40) 22%, rgba(10,102,194,0) 60%)',
-    bleed: 'radial-gradient(circle at center, transparent 0%, transparent 54%, rgba(10,102,194,0.15) 62%, transparent 100%)',
+    bleed: 'radial-gradient(circle at center, rgba(10,102,194,0) 0%, rgba(10,102,194,0) 54%, rgba(10,102,194,0.15) 62%, rgba(10,102,194,0) 100%)',
     mergeRgb: '10,102,194',
   },
   {
@@ -111,7 +111,7 @@ const PLATFORMS = [
     id: 'x', label: 'X', left: '39%', xOffset: '11vw',
     core:  'radial-gradient(circle at center, rgba(240,235,230,0.60) 0%, rgba(240,235,230,0) 20%)',
     mid:   'radial-gradient(circle at center, rgba(240,235,230,0) 0%, rgba(240,235,230,0.40) 22%, rgba(240,235,230,0) 60%)',
-    bleed: 'radial-gradient(circle at center, transparent 0%, transparent 54%, rgba(240,235,230,0.15) 62%, transparent 100%)',
+    bleed: 'radial-gradient(circle at center, rgba(240,235,230,0) 0%, rgba(240,235,230,0) 54%, rgba(240,235,230,0.15) 62%, rgba(240,235,230,0) 100%)',
     mergeRgb: '240,235,230',
   },
   {
@@ -119,7 +119,7 @@ const PLATFORMS = [
     id: 'instagram', label: 'Instagram', left: '61%', xOffset: '-11vw',
     core:  'radial-gradient(circle at center, rgba(225,48,108,0.60) 0%, rgba(247,119,55,0.30) 12%, rgba(247,119,55,0) 20%)',
     mid:   'radial-gradient(circle at center, rgba(225,48,108,0) 0%, rgba(225,48,108,0.38) 20%, rgba(247,119,55,0.28) 46%, rgba(247,119,55,0) 60%)',
-    bleed: 'radial-gradient(circle at center, transparent 0%, transparent 54%, rgba(247,119,55,0.14) 62%, transparent 100%)',
+    bleed: 'radial-gradient(circle at center, rgba(247,119,55,0) 0%, rgba(247,119,55,0) 54%, rgba(247,119,55,0.14) 62%, rgba(247,119,55,0) 100%)',
     mergeRgb: '225,48,108',
   },
   {
@@ -127,7 +127,7 @@ const PLATFORMS = [
     id: 'threads', label: 'Threads', left: '83.5%', xOffset: '-33.5vw',
     core:  'radial-gradient(circle at center, rgba(60,50,70,0.60) 0%, rgba(60,50,70,0) 20%)',
     mid:   'radial-gradient(circle at center, rgba(60,50,70,0) 0%, rgba(60,50,70,0.40) 22%, rgba(60,50,70,0) 60%)',
-    bleed: 'radial-gradient(circle at center, transparent 0%, transparent 54%, rgba(60,50,70,0.15) 62%, transparent 100%)',
+    bleed: 'radial-gradient(circle at center, rgba(60,50,70,0) 0%, rgba(60,50,70,0) 54%, rgba(60,50,70,0.15) 62%, rgba(60,50,70,0) 100%)',
     mergeRgb: '60,50,70',
   },
 ] as const;
@@ -434,7 +434,6 @@ export default function MobileOnboarding({ onComplete }: Props) {
                     transform:'translate(-50%,-50%)',
                     width:DISC, height:DISC,
                     cursor: selId ? 'default' : 'pointer',
-                    mixBlendMode:'screen',
                     zIndex:15,
                   }}
                 >
@@ -448,16 +447,16 @@ export default function MobileOnboarding({ onComplete }: Props) {
                     style={{ position:'absolute', inset:0 }}
                   >
                     {/* Layer 1: inner core */}
-                    <div aria-hidden style={{ position:'absolute', inset:0, background:p.core }} />
+                    <div aria-hidden style={{ position:'absolute', inset:0, background:p.core, mixBlendMode:'screen' }} />
                     {/* Layer 2: mid glow */}
-                    <div aria-hidden style={{ position:'absolute', inset:0, background:p.mid }} />
+                    <div aria-hidden style={{ position:'absolute', inset:0, background:p.mid, mixBlendMode:'screen' }} />
                     {/* Layer 3: outer bleed — lags entrance by 100ms */}
                     <motion.div
                       aria-hidden
                       initial={{ opacity:0, scale:0.3 }}
                       animate={{ opacity:1, scale:1 }}
                       transition={{ delay:entranceDelay+0.10, ...ENT_SPRING }}
-                      style={{ position:'absolute', inset:'-50%', background:p.bleed, pointerEvents:'none' }}
+                      style={{ position:'absolute', inset:'-50%', background:p.bleed, pointerEvents:'none', mixBlendMode:'screen' }}
                     />
                   </motion.div>
                 </motion.div>
