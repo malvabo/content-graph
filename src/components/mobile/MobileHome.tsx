@@ -632,10 +632,10 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
         >×</div>
       )}
       <div style={{ position: 'absolute', top: 14, left: 14, right: editMode ? 40 : 14 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {meta.label}
         </div>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.40)', fontFamily: 'var(--font-sans)', marginTop: 3, letterSpacing: '0.03em' }}>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', marginTop: 3, letterSpacing: '0.02em' }}>
           {meta.sublabel}
         </div>
       </div>
@@ -645,7 +645,7 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
         </span>
       </div>
       <div style={{ position: 'absolute', bottom: 13, left: 14 }}>
-        <span style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', color: count > 0 ? meta.accent : 'rgba(255,255,255,0.20)' }}>
+        <span style={{ fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-sans)', color: count > 0 ? meta.accent : 'rgba(255,255,255,0.35)' }}>
           {meta.countLabel(count)}
         </span>
       </div>
@@ -935,12 +935,12 @@ export default function MobileHome() {
           <header style={{ padding: '28px 20px 8px', flexShrink: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div>
               <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.03em' }}>UP150</h1>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.32)', fontFamily: 'var(--font-sans)' }}>Content dashboard</p>
+              <p style={{ margin: '4px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)' }}>Content dashboard</p>
             </div>
             <button
               onClick={() => setEditMode(m => !m)}
               aria-label={editMode ? 'Done editing' : 'Edit widgets'}
-              style={{ marginTop: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: '5px 14px', fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
+              style={{ marginTop: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: '6px 16px', fontSize: 14, color: 'rgba(255,255,255,0.78)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
             >
               {editMode ? 'Done' : 'Edit'}
             </button>
@@ -968,8 +968,8 @@ export default function MobileHome() {
                   onClick={() => setShowAddSheet(true)}
                   style={{ aspectRatio: '1 / 1', borderRadius: 20, border: '1.5px dashed rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.03)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
-                  <span style={{ fontSize: 28, color: 'rgba(255,255,255,0.20)', lineHeight: 1 }}>+</span>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.20)', fontFamily: 'var(--font-sans)' }}>Add widget</span>
+                  <span style={{ fontSize: 32, color: 'rgba(255,255,255,0.32)', lineHeight: 1 }}>+</span>
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-sans)' }}>Add widget</span>
                 </button>
               )}
             </div>
@@ -985,7 +985,7 @@ export default function MobileHome() {
               borderTop: '1px solid rgba(255,255,255,0.07)',
             }}>
               <button onClick={() => setEditMode(false)} style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,255,255,0.10)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>×</button>
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.40)', fontFamily: 'var(--font-sans)' }}>Edit widgets</span>
+              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--font-sans)' }}>Edit widgets</span>
               <button onClick={() => setEditMode(false)} style={{ width: 50, height: 50, borderRadius: '50%', background: '#0DBF5A', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
               </button>
