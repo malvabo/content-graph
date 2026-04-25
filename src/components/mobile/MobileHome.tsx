@@ -452,14 +452,18 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           <input
             ref={titleInputRef}
             id={titleId}
+            className="note-sheet-title"
             value={editTitle}
             onChange={e => setEditTitle(e.target.value)}
             onBlur={finishTitleEdit}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') { e.currentTarget.blur(); } }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.currentTarget.blur(); }
+              else if (e.key === 'Escape') { setEditTitle(note.title); setIsEditingTitle(false); }
+            }}
             aria-label="Note title"
             style={{
               display: 'block', width: '100%', margin: 0, padding: 0,
-              background: 'transparent', border: 'none', outline: 'none',
+              background: 'transparent', border: 'none',
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title)', fontWeight: 700, lineHeight: 1.2,
               letterSpacing: '-0.02em', color: '#fff',
               caretColor: 'var(--color-accent, #0DBF5A)',
@@ -468,13 +472,14 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
         ) : (
           <h1
             id={titleId}
+            className="note-sheet-title"
             onClick={() => setIsEditingTitle(true)}
             onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsEditingTitle(true); } }}
             tabIndex={0}
             role="button"
             aria-label={`${editTitle}. Tap to edit title.`}
             style={{
-              margin: 0, padding: 0, cursor: 'text', outline: 'none',
+              margin: 0, padding: 0, cursor: 'text',
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title)', fontWeight: 700, lineHeight: 1.2,
               letterSpacing: '-0.02em', color: '#fff',
               wordBreak: 'break-word',
@@ -501,7 +506,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
         {isError ? (
           <div role="alert" style={{
             ...glassCard,
-            background: 'linear-gradient(155deg, rgba(168,48,48,0.18) 0%, #14080a 100%)',
+            background: 'linear-gradient(155deg, rgba(201,48,48,0.18) 0%, #1a1c26 55%, #0d0e16 100%)',
             border: '1px solid rgba(255,107,107,0.25)',
             padding: 'var(--space-4)',
             fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55,
@@ -522,7 +527,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           </section>
         ) : (
           <div style={{ ...glassCard, padding: 'var(--space-4)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55, color: 'rgba(255,255,255,0.55)' }}>
-            This recording has audio but no transcript yet. Add a Groq API key in desktop Settings to transcribe existing audio.
+            This recording has audio but no transcript yet. Add a Groq API key in Settings to transcribe existing audio.
           </div>
         )}
 
@@ -542,6 +547,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                     onClick={() => generate(k)}
                     disabled={isLoadingThis}
                     aria-label={`Generate ${KIND_LABEL[k]}${isSaved ? ' (previously saved)' : ''}`}
+                    className="reduced-motion-safe"
                     style={{
                       ...glassCard,
                       width: '100%', minHeight: 60, padding: 'var(--space-4)',
@@ -628,7 +634,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                 </div>
                 {gen.loading ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} aria-label="Generating">
-                    {[100, 92, 96, 80].map((w, i) => <div key={i} style={{ height: 14, width: `${w}%`, borderRadius: 8, background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 75%)', backgroundSize: '200% 100%', animation: `shimmer 1.5s ease-in-out infinite`, animationDelay: `${i * 0.1}s` }} />)}
+                    {[100, 92, 96, 80].map((w, i) => <div key={i} className="skeleton-bar-dark" style={{ height: 14, width: `${w}%`, borderRadius: 8, animationDelay: `${i * 0.1}s` }} />)}
                   </div>
                 ) : gen.error ? (
                   <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55, color: 'rgba(255,168,168,0.95)', wordBreak: 'break-word' }}>
@@ -654,10 +660,9 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             <button onClick={() => { onRerecord(); onClose(); }}
               style={{
                 flex: 1, minHeight: 48, padding: '12px 24px', borderRadius: 999,
-                background: 'linear-gradient(135deg, rgba(13,191,90,0.95) 0%, rgba(10,150,70,0.95) 100%)',
-                border: '1px solid rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer',
+                background: 'transparent', border: '1px solid rgba(13,191,90,0.35)',
+                color: 'rgba(80,220,140,0.95)', cursor: 'pointer',
                 fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 600,
-                boxShadow: '0 10px 28px rgba(13,191,90,0.40)',
               }}>
               Re-record
             </button>
