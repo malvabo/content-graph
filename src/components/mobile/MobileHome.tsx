@@ -1101,67 +1101,41 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
               pointerEvents: 'auto',
               position: 'relative', overflow: 'hidden', isolation: 'isolate',
               width: '100%', maxWidth: 480, minHeight: 64,
-              padding: '10px 10px 10px 28px',
+              padding: '0 28px',
               borderRadius: 999,
               background: 'linear-gradient(135deg, #1a1c26 0%, #0d0e16 100%)',
               border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.55)',
+              color: 'rgba(255,255,255,0.78)',
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-lg)', fontWeight: 500, letterSpacing: '-0.01em',
-              cursor: 'pointer', textAlign: 'left',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              cursor: 'pointer', textAlign: 'center',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 18px 48px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.06)',
             }}
           >
-            {/* Floating colored orbs — out of phase, breathing */}
-            <span aria-hidden className="widget-glow" style={{
-              position: 'absolute', left: '8%', top: '18%', width: 110, height: 110, borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(144,97,249,0.55) 0%, rgba(144,97,249,0.18) 38%, rgba(144,97,249,0) 70%)',
-              filter: 'blur(4px)',
-              animationName: 'widget-breathe',
-              animationDuration: '7.4s',
-              animationDelay: '-1.1s',
-              animationTimingFunction: 'ease-in-out',
-              animationIterationCount: 'infinite',
-              willChange: 'transform, opacity',
-              pointerEvents: 'none',
-            }} />
-            <span aria-hidden className="widget-glow" style={{
-              position: 'absolute', left: '38%', top: '50%', width: 90, height: 90, borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(29,155,240,0.50) 0%, rgba(29,155,240,0.15) 40%, rgba(29,155,240,0) 70%)',
-              filter: 'blur(4px)',
-              animationName: 'widget-breathe',
-              animationDuration: '6.2s',
-              animationDelay: '-3.4s',
-              animationTimingFunction: 'ease-in-out',
-              animationIterationCount: 'infinite',
-              willChange: 'transform, opacity',
-              pointerEvents: 'none',
-            }} />
-            <span aria-hidden className="widget-glow" style={{
-              position: 'absolute', left: '60%', top: '12%', width: 80, height: 80, borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(13,191,90,0.50) 0%, rgba(13,191,90,0.15) 40%, rgba(13,191,90,0) 70%)',
-              filter: 'blur(4px)',
-              animationName: 'widget-breathe',
-              animationDuration: '8.6s',
-              animationDelay: '-5.0s',
-              animationTimingFunction: 'ease-in-out',
-              animationIterationCount: 'infinite',
-              willChange: 'transform, opacity',
-              pointerEvents: 'none',
-            }} />
+            {/* Floating colored orbs — drifting across the bar, out of phase */}
+            {[
+              { left: '0%',  top: '10%', size: 110, color: '144,97,249',  dur: 11.5, delay: -1.4 },
+              { left: '25%', top: '55%', size: 92,  color: '29,155,240',  dur: 9.2,  delay: -4.1 },
+              { left: '50%', top: '5%',  size: 84,  color: '13,191,90',   dur: 13.0, delay: -2.6 },
+              { left: '70%', top: '60%', size: 100, color: '255,150,18',  dur: 10.4, delay: -6.0 },
+              { left: '90%', top: '20%', size: 76,  color: '225,48,108',  dur: 12.2, delay: -8.5 },
+            ].map((o, i) => (
+              <span key={i} aria-hidden className="widget-glow" style={{
+                position: 'absolute', left: o.left, top: o.top, width: o.size, height: o.size, borderRadius: '50%',
+                marginLeft: -o.size / 2, marginTop: -o.size / 2,
+                background: `radial-gradient(circle, rgba(${o.color},0.55) 0%, rgba(${o.color},0.18) 38%, rgba(${o.color},0) 70%)`,
+                filter: 'blur(4px)',
+                animationName: 'add-post-orb-drift',
+                animationDuration: `${o.dur}s`,
+                animationDelay: `${o.delay}s`,
+                animationTimingFunction: 'ease-in-out',
+                animationIterationCount: 'infinite',
+                willChange: 'transform, opacity',
+                pointerEvents: 'none',
+              }} />
+            ))}
 
             <span style={{ position: 'relative', zIndex: 1 }}>Add a post</span>
-            <span aria-hidden style={{
-              position: 'relative', zIndex: 1, flexShrink: 0,
-              width: 44, height: 44, borderRadius: '50%',
-              background: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0a12" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </span>
           </button>
         </div>
       )}
