@@ -106,15 +106,6 @@ const fmtDuration = (ms: number) => {
   return m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
 };
 
-const fmtDate = (iso: string) => {
-  const d = new Date(iso);
-  const diff = Date.now() - d.getTime();
-  if (diff < 60000) return 'Just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  if (diff < 172800000) return 'Yesterday';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-};
 
 /** Deterministic ~32-bar waveform derived from the note id.
  *  Decorative: no real FFT — just gives each row a unique-looking sparkline. */
