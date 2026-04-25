@@ -365,7 +365,8 @@ export default function MobileOnboarding({ onComplete }: Props) {
             <motion.div aria-hidden
               animate={(isIdle||isDraft)?{opacity:[1.0,0.85,1.0]}:{opacity:1}}
               transition={(isIdle||isDraft)?{duration:3.2,repeat:Infinity,ease:EASE}:{duration:0.5}}
-              style={{position:'absolute',inset:0,background:'radial-gradient(circle in oklch, rgba(255,235,210,1) 0%, rgba(255,235,210,0.95) 8%, rgba(255,235,210,0.7) 18%, rgba(255,235,210,0.4) 32%, rgba(255,235,210,0.2) 50%, rgba(255,235,210,0.08) 70%, rgba(255,235,210,0.02) 85%, rgba(255,235,210,0) 100%)'}}
+              style={{position:'absolute',inset:'-100px',background:'radial-gradient(80px circle at center, rgba(255,235,210,1) 0%, rgba(255,235,210,0.95) 8%, rgba(255,235,210,0.7) 18%, rgba(255,235,210,0.4) 32%, rgba(255,235,210,0.2) 50%, rgba(255,235,210,0.08) 70%, rgba(255,235,210,0.02) 85%, rgba(255,235,210,0) 100%)'}}
+
             />
             {/* Bloom flood — invisible in all normal states, only during posting ritual */}
             <motion.div aria-hidden
