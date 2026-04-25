@@ -127,9 +127,10 @@ const PLATFORMS = [
   },
 ] as const;
 
-// Disc size: ~68px (≈18% of 375px). Label sits 46px below disc center.
-const DISC = 68;
-const LABEL_BELOW = DISC / 2 + 16; // 50px
+// Glow container radius — gradient fades to 0 at 96px, 14px buffer before the GPU layer edge.
+// Container is 220×220. Click target is a separate 80×80 invisible div.
+const GLOW_R = 110;
+const GLOW_D = GLOW_R * 2;
 
 // Independent breathing params — all out of phase
 const BREATH = [
@@ -367,7 +368,7 @@ export default function MobileOnboarding({ onComplete }: Props) {
             <motion.div aria-hidden
               animate={(isIdle||isDraft)?{opacity:[1.0,0.85,1.0]}:{opacity:1}}
               transition={(isIdle||isDraft)?{duration:3.2,repeat:Infinity,ease:EASE}:{duration:0.5}}
-              style={{position:'absolute',inset:0,background:'radial-gradient(circle, rgba(255,235,210,1) 0%, rgba(255,235,210,0.95) 8%, rgba(255,235,210,0.7) 18%, rgba(255,235,210,0.4) 32%, rgba(255,235,210,0.2) 50%, rgba(255,235,210,0.08) 70%, rgba(255,235,210,0.02) 85%, rgba(255,235,210,0) 100%)'}}
+              style={{position:'absolute',inset:'-20px',background:'radial-gradient(circle, rgba(255,235,210,1) 0%, rgba(255,235,210,0.95) 8%, rgba(255,235,210,0.7) 18%, rgba(255,235,210,0.4) 32%, rgba(255,235,210,0.2) 50%, rgba(255,235,210,0.08) 70%, rgba(255,235,210,0.02) 85%, rgba(255,235,210,0) 88%)'}}
             />
             {/* Platform color merge flash */}
             {mergeColor && (
@@ -399,9 +400,12 @@ export default function MobileOnboarding({ onComplete }: Props) {
 
             return (
               <div key={p.id}>
-                {/* Disc — outer handles position & selection, inner handles breathing */}
+                {/* Glow — 220×220 container covers full bleed (gradient → 0 at 96px, 14px buffer).
+                    mix-blend-mode on the container (not a child) so it screens against the aurora,
+                    not against the container's own transparent stacking context.
+                    pointer-events:none — click target is a separate sibling div. */}
                 <motion.div
-                  onClick={() => pickPlatform(p.id)}
+                  aria-hidden
                   initial={{ opacity: 0, scale: 0.3, y: 40 }}
                   animate={{
                     opacity: isDimmed ? 0 : (isSelected && selPhase==='travel' ? 0 : 1),
@@ -409,6 +413,7 @@ export default function MobileOnboarding({ onComplete }: Props) {
                     y:       isDimmed ? 20  : (isSelected && selPhase==='travel' ? '28vh' : 0),
                     x:       isSelected && selPhase==='travel' ? p.xOffset : '0vw',
                   }}
+                  exit={{ opacity: 0, scale: 0.4, transition: { duration: 0.3 } }}
                   transition={{
                     opacity: isDimmed ? {duration:0.25} : (isSelected&&selPhase==='travel' ? {duration:0.5,delay:0.3} : {delay:entranceDelay,...ENT_SPRING}),
                     scale:   isSelected&&(selPhase==='travel'||selPhase==='pulse') ? {duration:selPhase==='pulse'?0.15:0.75,...SEL_SPRING} : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
@@ -417,13 +422,13 @@ export default function MobileOnboarding({ onComplete }: Props) {
                   }}
                   style={{
                     position:'absolute', left:p.left, top:'60%',
-                    transform:'translate(-50%,-50%)',
-                    width:DISC, height:DISC,
-                    cursor: selId ? 'default' : 'pointer',
+                    marginLeft:-GLOW_R, marginTop:-GLOW_R,
+                    width:GLOW_D, height:GLOW_D,
+                    mixBlendMode:'screen',
+                    pointerEvents:'none',
                     zIndex:15,
                   }}
                 >
-                  {/* Breathing wrapper — scale oscillation */}
                   <motion.div
                     animate={isBreathing ? { scale: br.scaleKeys, y: [0,-4,0,4,0] } : { scale:1, y:0 }}
                     transition={{
@@ -432,17 +437,30 @@ export default function MobileOnboarding({ onComplete }: Props) {
                     }}
                     style={{ position:'absolute', inset:0 }}
                   >
-                    <div aria-hidden style={{ position:'absolute', inset:'-100px', background:p.disc, pointerEvents:'none', mixBlendMode:'screen' }} />
+                    <div aria-hidden style={{ position:'absolute', inset:0, background:p.disc }} />
                   </motion.div>
                 </motion.div>
 
-                {/* Label — separate element, never moves, only fades */}
+                {/* Invisible click target — 80×80, centered, no background */}
+                <div
+                  onClick={() => pickPlatform(p.id)}
+                  style={{
+                    position:'absolute', left:p.left, top:'60%',
+                    marginLeft:-40, marginTop:-40,
+                    width:80, height:80,
+                    cursor: selId ? 'default' : 'pointer',
+                    pointerEvents: selId ? 'none' : 'auto',
+                    zIndex:16,
+                  }}
+                />
+
+                {/* Label */}
                 <motion.div
                   initial={{ opacity:0 }}
                   animate={{ opacity: selId ? 0 : 0.55 }}
                   transition={{ delay: selId ? 0 : entranceDelay+0.05, duration: selId ? 0.25 : 0.4 }}
                   style={{
-                    position:'absolute', left:p.left, top:`calc(60% + ${LABEL_BELOW}px)`,
+                    position:'absolute', left:p.left, top:'calc(60% + 50px)',
                     transform:'translateX(-50%)',
                     fontFamily:'var(--font-sans)', fontSize:13, fontWeight:400,
                     color:'rgba(255,255,255,1)', letterSpacing:'0.04em',
