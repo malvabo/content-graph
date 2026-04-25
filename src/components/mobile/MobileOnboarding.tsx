@@ -96,57 +96,60 @@ const BLOBS = [
 
 // ─── Platform definitions ─────────────────────────────────────────────────────
 
-// Each platform is a circular "light bulb" — SVG circle + radial gradient + logo glyph,
-// surrounded by a circular CSS halo. No square <div> + mix-blend-mode anywhere; the
-// painted region is geometrically a circle so iOS Safari has no rectangular artifact
-// to expose.
+// Each platform is a "colored cloud" — two stacked CSS radial-gradient circles
+// (halo + dense body) that fade fully to transparent before reaching their bounding
+// box, plus a centered logo glyph. No SVG <circle> with a hard edge, no
+// mix-blend-mode; the painted region's alpha is round all the way out, so there is
+// no rectangle to leak on iOS Safari.
 
 const PLATFORMS = [
-  { id: 'linkedin',  label: 'LinkedIn',  left: '16.5%', xOffset: '33.5vw', mergeRgb: '10,102,194',  glowRgb: '78,162,232',  bulbInner: '#dde9f7', bulbOuter: '#0a66c2' },
-  // Moonlight — warm off-white
-  { id: 'x',         label: 'X',         left: '39%',   xOffset: '11vw',   mergeRgb: '240,235,230', glowRgb: '240,235,230', bulbInner: '#fafaf6', bulbOuter: '#2a2a2a' },
+  { id: 'linkedin',  label: 'LinkedIn',  left: '16.5%', xOffset: '33.5vw', mergeRgb: '10,102,194',  glowRgb: '78,162,232',  bulbInner: '#cfe1f6', bulbOuter: '#0a66c2' },
+  // Silvered moonlight — neutral but with presence
+  { id: 'x',         label: 'X',         left: '39%',   xOffset: '11vw',   mergeRgb: '240,235,230', glowRgb: '230,228,222', bulbInner: '#ffffff', bulbOuter: '#5a5a5a' },
   // Pink to warm orange
-  { id: 'instagram', label: 'Instagram', left: '61%',   xOffset: '-11vw',  mergeRgb: '225,48,108',  glowRgb: '247,119,55',  bulbInner: '#ffd9c4', bulbOuter: '#c93066' },
-  // Soft purple-grey
-  { id: 'threads',   label: 'Threads',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '200,190,215', bulbInner: '#e2dde6', bulbOuter: '#2a2530' },
+  { id: 'instagram', label: 'Instagram', left: '61%',   xOffset: '-11vw',  mergeRgb: '225,48,108',  glowRgb: '247,119,55',  bulbInner: '#ffceb6', bulbOuter: '#c93066' },
+  // Dusk purple
+  { id: 'threads',   label: 'Threads',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '180,160,210', bulbInner: '#d4c4e6', bulbOuter: '#4a3a5e' },
 ] as const;
 
-// Bulb SVG inner glyph per platform — drawn inside the 64×64 bulb viewBox.
+// All logos drawn in a unified 32×32 viewBox so each occupies the same visual area
+// inside the cloud — no per-platform size variation.
 const PLATFORM_LOGO: Record<string, React.ReactNode> = {
   linkedin: (
-    <text x="32" y="42" textAnchor="middle" fontSize="22" fontWeight="800" fill="#fff"
-      fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" letterSpacing="-0.5">in</text>
+    <text x="16" y="22" textAnchor="middle" fontSize="17" fontWeight="800" fill="#fff"
+      fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" letterSpacing="-0.4">in</text>
   ),
   x: (
-    <g stroke="#fff" strokeWidth="3.2" strokeLinecap="round" fill="none">
-      <line x1="22" y1="22" x2="42" y2="42" />
-      <line x1="42" y1="22" x2="22" y2="42" />
+    <g stroke="#fff" strokeWidth="2.5" strokeLinecap="round" fill="none">
+      <line x1="9" y1="9" x2="23" y2="23" />
+      <line x1="23" y1="9" x2="9" y2="23" />
     </g>
   ),
   instagram: (
-    <g fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="20" y="20" width="24" height="24" rx="6.5" />
-      <circle cx="32" cy="32" r="5.5" />
-      <circle cx="40" cy="24" r="1.5" fill="#fff" stroke="none" />
+    <g fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="6" y="6" width="20" height="20" rx="5" />
+      <circle cx="16" cy="16" r="5" />
+      <circle cx="22" cy="10" r="1.2" fill="#fff" stroke="none" />
     </g>
   ),
   threads: (
-    <text x="32" y="42" textAnchor="middle" fontSize="26" fontWeight="800" fill="#fff"
+    <text x="16" y="22" textAnchor="middle" fontSize="22" fontWeight="800" fill="#fff"
       fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">@</text>
   ),
 };
 
-// Bulb size 64px, halo extends to 120px around it. Label sits 50px below bulb center.
+// Cloud click-target 64px; halo extends to ~140px around it. Label sits 50px below
+// the cloud center.
 const BULB = 64;
-const HALO = 120;
 const LABEL_BELOW = BULB / 2 + 22;
 
-// Independent breathing params — all out of phase
+// Unified breathing — same amplitude (0.97↔1.03) for every cloud so all four read as
+// the same size at all times. Only the period and phase offset differ, for liveness.
 const BREATH = [
-  { scalePeriod: 3.8, scaleKeys: [0.96, 1.04, 0.96], driftOffset: 0   },
-  { scalePeriod: 4.6, scaleKeys: [1.03, 0.95, 1.03], driftOffset: 1.75 },
-  { scalePeriod: 5.2, scaleKeys: [0.98, 1.05, 0.98], driftOffset: 3.5  },
-  { scalePeriod: 4.0, scaleKeys: [1.04, 0.93, 1.04], driftOffset: 5.25 },
+  { scalePeriod: 4.2, scaleKeys: [0.97, 1.03, 0.97], driftOffset: 0   },
+  { scalePeriod: 4.6, scaleKeys: [0.97, 1.03, 0.97], driftOffset: 1.6 },
+  { scalePeriod: 5.0, scaleKeys: [0.97, 1.03, 0.97], driftOffset: 3.2 },
+  { scalePeriod: 4.4, scaleKeys: [0.97, 1.03, 0.97], driftOffset: 4.8 },
 ];
 
 // ─── Orb phase targets ────────────────────────────────────────────────────────
@@ -439,7 +442,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                   }}
                   style={{ position:'absolute', inset:0 }}
                 >
-                  {/* Halo — circular CSS gradient, oversized and centered, soft blur */}
+                  {/* Outer halo — large soft cloud, fades fully transparent before the box edge */}
                   <motion.div
                     aria-hidden
                     initial={{ opacity:0, scale:0.5 }}
@@ -448,29 +451,40 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                     style={{
                       position:'absolute',
                       left:'50%', top:'50%',
-                      width: HALO, height: HALO,
-                      marginLeft: -HALO/2, marginTop: -HALO/2,
+                      width: 140, height: 140,
+                      marginLeft: -70, marginTop: -70,
                       borderRadius:'50%',
-                      background: `radial-gradient(circle, rgba(${p.glowRgb},0.45) 0%, rgba(${p.glowRgb},0.14) 48%, rgba(${p.glowRgb},0) 72%)`,
-                      filter:'blur(2px)',
+                      background: `radial-gradient(circle at 50% 50%, rgba(${p.glowRgb},0.42) 0%, rgba(${p.glowRgb},0.14) 32%, rgba(${p.glowRgb},0.04) 55%, rgba(${p.glowRgb},0) 78%)`,
+                      filter:'blur(8px)',
                       pointerEvents:'none',
                     }}
                   />
-                  {/* Bulb — SVG circle with radial-gradient fill + logo glyph */}
-                  <svg
-                    viewBox="0 0 64 64" width={BULB} height={BULB}
-                    style={{ position:'absolute', inset:0, filter:`drop-shadow(0 0 14px rgba(${p.glowRgb},0.55))`, pointerEvents:'none' }}
-                  >
-                    <defs>
-                      <radialGradient id={`bulb-${p.id}`} cx="38%" cy="32%" r="62%">
-                        <stop offset="0%" stopColor={p.bulbInner} />
-                        <stop offset="55%" stopColor={p.bulbOuter} />
-                        <stop offset="100%" stopColor={p.bulbOuter} stopOpacity="0.92" />
-                      </radialGradient>
-                    </defs>
-                    <circle cx="32" cy="32" r="26" fill={`url(#bulb-${p.id})`} />
-                    {PLATFORM_LOGO[p.id]}
-                  </svg>
+                  {/* Cloud body — colored center, fades to transparent before reaching the round box edge */}
+                  <div
+                    aria-hidden
+                    style={{
+                      position:'absolute',
+                      left:'50%', top:'50%',
+                      width: 84, height: 84,
+                      marginLeft: -42, marginTop: -42,
+                      borderRadius:'50%',
+                      background: `radial-gradient(circle at 50% 45%, ${p.bulbInner} 0%, ${p.bulbOuter} 35%, rgba(${p.glowRgb},0.45) 60%, rgba(${p.glowRgb},0) 88%)`,
+                      filter:'blur(3px)',
+                      pointerEvents:'none',
+                    }}
+                  />
+                  {/* Logo — same 32×32 bounding box for all four platforms, centered */}
+                  <div style={{
+                    position:'absolute',
+                    left:'50%', top:'50%',
+                    width: 32, height: 32,
+                    marginLeft: -16, marginTop: -16,
+                    pointerEvents:'none',
+                  }}>
+                    <svg viewBox="0 0 32 32" width="32" height="32" style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.45))' }}>
+                      {PLATFORM_LOGO[p.id]}
+                    </svg>
+                  </div>
                 </motion.div>
               </motion.div>
 
