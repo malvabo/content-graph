@@ -645,6 +645,42 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           )}
         </AnimatePresence>
 
+        {/* ── Back from recording — floating glass button, top-left, in app style ── */}
+        <AnimatePresence>
+          {phase==='recording' && (
+            <motion.button
+              key="back-from-recording"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (initialPhase === 'recording') onComplete();
+                else setPhase('prompt');
+              }}
+              aria-label="Back"
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ delay: 0.2, duration: 0.35 }}
+              style={{
+                position: 'absolute',
+                top: 'calc(var(--space-3) + env(safe-area-inset-top, 0px))',
+                left: 16,
+                width: 40, height: 40, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.10)',
+                color: 'rgba(255,255,255,0.85)',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+                zIndex: 30,
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+            </motion.button>
+          )}
+        </AnimatePresence>
+
         {/* ── Skip — ghosted, bottom-right, 30% opacity ── */}
         <AnimatePresence>
           {isIdle && (
