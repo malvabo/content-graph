@@ -231,8 +231,15 @@ export default function MobileOnboarding({ onComplete }: Props) {
     return () => { clearTimeout(startTimer); clearInterval(tick); };
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function advance()       { if (phase==='idle')  { setPhase('prompt'); setTimeout(()=>setHintVisible(true),1200); } }
+  function advance()       { if (phase==='idle') setPhase('prompt'); }
   function startRecording(){ setHintVisible(false); setPhase('recording'); }
+
+  // Auto-advance from prompt to recording after a brief pause
+  useEffect(() => {
+    if (phase !== 'prompt') return;
+    const t = setTimeout(startRecording, 1500);
+    return () => clearTimeout(t);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   function goToPlatform()  { setPhase('platform'); }
   function triggerPost() {
     if (phase !== 'draft') return;
@@ -530,7 +537,7 @@ export default function MobileOnboarding({ onComplete }: Props) {
 
         {/* ── Headlines ── */}
         <AnimatePresence mode="popLayout">
-          {phase==='idle' && (
+          {phase==='idle' && !isPosted && (
             <motion.div key="h-idle" layoutId="headline"
               initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.12,ease:[0.4,0,0.2,1]}}
               style={{position:'absolute',top:'25%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:44,fontWeight:700,color:'rgba(255,255,255,0.95)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:5}}
