@@ -165,7 +165,7 @@ const ORB: Record<Phase, object> = {
 
 const SPRING    = { type: 'spring' as const, stiffness: 80,  damping: 18, mass: 1 };
 const SEL_SPRING = { type: 'spring' as const, stiffness: 70,  damping: 20 };
-const ENT_SPRING = { type: 'spring' as const, stiffness: 90,  damping: 16 };
+const ENT_SPRING = { type: 'spring' as const, stiffness: 220, damping: 22 };
 const EASE: [number,number,number,number] = [0.4, 0.0, 0.6, 1.0];
 
 // ─── Recording canvas ─────────────────────────────────────────────────────────
@@ -417,7 +417,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           const isTraveling = isSelected && (selPhase === 'travel' || selPhase === 'merge');
           const isBreathing = !selId;
           const br = BREATH[i];
-          const entranceDelay = 0.20 + i * 0.08;
+          const entranceDelay = 0.04 + i * 0.035;
 
           return (
             <div key={p.id}>
@@ -458,7 +458,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                     aria-hidden
                     initial={{ opacity:0, scale:0.5 }}
                     animate={{ opacity:1, scale:1 }}
-                    transition={{ delay:entranceDelay+0.08, ...ENT_SPRING }}
+                    transition={{ delay:entranceDelay+0.03, ...ENT_SPRING }}
                     style={{
                       position:'absolute',
                       left:'50%', top:'50%',
@@ -503,7 +503,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               <motion.div
                 initial={{ opacity:0 }}
                 animate={{ opacity: selId ? 0 : 0.55 }}
-                transition={{ delay: selId ? 0 : entranceDelay+0.05, duration: selId ? 0.25 : 0.4 }}
+                transition={{ delay: selId ? 0 : entranceDelay+0.04, duration: selId ? 0.25 : 0.28 }}
                 style={{
                   position:'absolute', left:p.left, top:`calc(60% + ${LABEL_BELOW}px)`,
                   transform:'translateX(-50%)',
