@@ -185,10 +185,20 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
  * screen-reader users don't have to compose the row themselves, focus-visible
  * ring uses the accent token per design system.
  */
+// Platform color tint used by NoteCard so each generated-content note carries a
+// faint diagonal hint of its destination platform — same vocabulary as the
+// generated-output card on the note sheet.
+const NOTE_TINT: Record<string, string> = {
+  'linkedin-post':  '10,102,194',
+  'twitter-thread': '29,155,240',
+  'twitter-single': '29,155,240',
+};
+
 function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
   const isTranscribing = note.status === 'transcribing';
   const isAudioOnly = note.status === 'ready' && !note.transcript;
   const isError = note.status === 'error';
+  const tintRgb = note.lastGeneration?.kind ? NOTE_TINT[note.lastGeneration.kind] : null;
 
   type PillRole = 'complete' | 'running' | 'idle' | 'error';
   const pillRoleMap: Record<PillRole, { dot: string; bg: string; border: string; fg: string }> = {
@@ -213,29 +223,37 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       onClick={onOpen}
       disabled={isTranscribing}
       aria-label={ariaLabel}
-      className="voice-note-card"
+      className="voice-note-card reduced-motion-safe"
       style={{
         width: '100%', textAlign: 'left',
-        background: 'rgba(255,255,255,0.06)',
-        border: '1px solid rgba(255,255,255,0.10)',
-        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        borderRadius: 'var(--radius-xl)',
-        padding: 'var(--space-4) var(--space-5)', display: 'grid',
+        position: 'relative', overflow: 'hidden',
+        background: tintRgb
+          ? `linear-gradient(155deg, rgba(${tintRgb},0.08) 0%, #1a1c26 55%, #0d0e16 100%)`
+          : 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
+        border: `1px solid ${tintRgb ? `rgba(${tintRgb},0.20)` : 'rgba(255,255,255,0.08)'}`,
+        borderRadius: 22,
+        padding: 'var(--space-4) var(--space-5)',
+        display: 'grid',
         gridTemplateColumns: 'auto 1fr auto', alignItems: 'center',
         columnGap: 'var(--space-4)', rowGap: 4, minHeight: 80,
         cursor: isTranscribing ? 'default' : 'pointer',
-        opacity: isTranscribing ? 0.6 : 1, minWidth: 0, boxSizing: 'border-box',
-        transition: 'border-color 120ms, background 120ms',
+        opacity: isTranscribing ? 0.7 : 1, minWidth: 0, boxSizing: 'border-box',
+        boxShadow: tintRgb
+          ? `0 14px 40px rgba(${tintRgb},0.14), 0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)`
+          : '0 14px 40px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.05)',
+        transition: 'border-color 220ms, box-shadow 220ms, filter 220ms',
       }}
     >
       {/* Status dot — 8×8, pinned left spanning both rows */}
       <span aria-hidden style={{
         gridRow: '1 / span 2', width: 8, height: 8, borderRadius: 'var(--radius-full)',
         background: pillRoleMap[pill?.role ?? 'idle'].dot, flexShrink: 0, marginTop: 8,
+        position: 'relative', zIndex: 1,
       }} />
 
-      {/* Title — 16/500/22px */}
+      {/* Title */}
       <span style={{
+        position: 'relative', zIndex: 1,
         fontFamily: 'var(--font-sans)', fontSize: 'var(--text-heading)', fontWeight: 500,
         lineHeight: '22px', color: 'rgba(255,255,255,0.92)',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
@@ -246,6 +264,7 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       {/* Status pill */}
       {pill ? (
         <span style={{
+          position: 'relative', zIndex: 1,
           height: 24, display: 'inline-flex', alignItems: 'center', gap: 5,
           padding: '0 10px', borderRadius: 'var(--radius-full)',
           background: pillRoleMap[pill.role].bg,
@@ -258,11 +277,12 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
         </span>
       ) : <span aria-hidden />}
 
-      {/* Metadata — 13/500/18px */}
+      {/* Metadata */}
       <span style={{
+        position: 'relative', zIndex: 1,
         gridColumn: '2 / span 2',
         fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400, lineHeight: '20px',
-        color: 'rgba(255,255,255,0.40)',
+        color: 'rgba(255,255,255,0.55)',
       }}>
         {meta}
       </span>
@@ -960,24 +980,111 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
 }) {
   const meta = WIDGET_META[kind];
   const filtered = [...meta.filterFn(notes)].reverse();
+  // Pull the kind's accent rgb from the WIDGET_META.glow string ("rgba(R,G,B,").
+  const m = meta.glow.match(/rgba\((\d+),\s*(\d+),\s*(\d+),/);
+  const kindRgb = m ? `${m[1]},${m[2]},${m[3]}` : '255,255,255';
+  const count = filtered.length;
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <button onClick={onBack} aria-label="Back" style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.08)', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
+    <div style={{
+      flex: 1, display: 'flex', flexDirection: 'column',
+      position: 'relative', overflow: 'hidden',
+      background: 'linear-gradient(180deg, #0a0b14 0%, #060710 60%, #04050c 100%)',
+      color: 'rgba(255,255,255,0.92)',
+    }}>
+      {/* Ambient page-level breathing orbs — same vocabulary as the note sheet,
+          with the leading orb tinted to the library's kind for identity. */}
+      <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+        {[
+          { color: kindRgb,        top: '8%',  left: '-12%', size: 320, dur: 12.5, delay: -2.1 },
+          { color: '144,97,249',   top: '36%', left: '70%',  size: 280, dur: 10.2, delay: -5.6 },
+          { color: '13,191,90',    top: '70%', left: '-8%',  size: 300, dur: 14.8, delay: -8.3 },
+          { color: '255,150,18',   top: '60%', left: '60%',  size: 240, dur: 11.4, delay: -1.4 },
+        ].map((o, i) => (
+          <div key={i} className="widget-glow" style={{
+            position: 'absolute', top: o.top, left: o.left, width: o.size, height: o.size, borderRadius: '50%',
+            background: `radial-gradient(circle, rgba(${o.color},0.32) 0%, rgba(${o.color},0.10) 38%, rgba(${o.color},0) 70%)`,
+            filter: 'blur(20px)',
+            animationName: 'widget-breathe',
+            animationDuration: `${o.dur}s`,
+            animationDelay: `${o.delay}s`,
+            animationTimingFunction: 'cubic-bezier(0.45, 0.05, 0.55, 0.95)',
+            animationIterationCount: 'infinite',
+            willChange: 'transform, opacity',
+          }} />
+        ))}
+      </div>
+
+      {/* Header */}
+      <div style={{
+        position: 'relative', zIndex: 1,
+        padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
+      }}>
+        <button
+          onClick={onBack}
+          aria-label="Back"
+          style={{
+            width: 40, height: 40, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: 'rgba(255,255,255,0.85)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div>
-          <div style={{ fontSize: 'var(--text-title)', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.02em' }}>{meta.label}</div>
-          <div style={{ fontSize: 'var(--text-body-sm)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)' }}>{meta.sublabel}</div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 'var(--text-title)', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            {meta.label}
+          </div>
+          <div style={{ fontSize: 'var(--text-body-sm)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', marginTop: 2 }}>
+            {count === 0 ? meta.sublabel : `${count} ${count === 1 ? 'item' : 'items'}`}
+          </div>
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px 160px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+      {/* List */}
+      <div style={{
+        position: 'relative', zIndex: 1,
+        flex: 1, overflowY: 'auto',
+        padding: '0 16px 160px',
+        display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
         {filtered.length === 0 ? (
-          <div style={{ padding: '60px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', lineHeight: 1.6 }}>
-            Nothing here yet.<br />Record a voice note and generate content to see it here.
+          <div style={{
+            position: 'relative',
+            background: 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 22,
+            boxShadow: '0 14px 40px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.06)',
+            padding: '40px 24px',
+            textAlign: 'center',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+            marginTop: 24,
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-heading)', fontWeight: 600,
+              color: 'rgba(255,255,255,0.85)',
+            }}>
+              Nothing here yet
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55,
+              color: 'rgba(255,255,255,0.55)', maxWidth: 280,
+            }}>
+              Record a voice note and generate content to see it here.
+            </div>
           </div>
         ) : filtered.map(n => (
-          <div key={n.id} style={{ position: 'relative', boxShadow: justRecordedId === n.id ? '0 0 0 2px rgba(13,191,90,0.65), 0 0 24px rgba(13,191,90,0.20)' : 'none', borderRadius: 'var(--radius-xl)', transition: 'box-shadow 400ms ease' }}>
+          <div key={n.id} style={{
+            position: 'relative', borderRadius: 22,
+            boxShadow: justRecordedId === n.id
+              ? '0 0 0 2px rgba(13,191,90,0.55), 0 0 36px rgba(13,191,90,0.30)'
+              : 'none',
+            transition: 'box-shadow 600ms ease',
+          }}>
             <NoteCard note={n} onOpen={() => onOpenNote(n.id)} />
           </div>
         ))}
