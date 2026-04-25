@@ -608,14 +608,18 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           )}
           {phase==='prompt' && (
             <motion.div key="h-prompt"
-              initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.15,ease:[0.4,0,0.2,1]}}
+              initial={{opacity:0,y:16,scale:1.04}} animate={{opacity:1,y:0,scale:1,letterSpacing:'-0.02em'}}
+              exit={{opacity:0,scale:1.03,letterSpacing:'0.08em',transition:{duration:0.6,ease:[0.4,0,0.2,1]}}}
+              transition={{duration:0.4,delay:0.15,ease:[0.4,0,0.2,1]}}
               style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             >What's on your mind?</motion.div>
           )}
           {phase==='recording' && (
             <motion.div key="h-rec"
-              initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.15,ease:[0.4,0,0.2,1]}}
-              style={{position:'absolute',top:'18%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-sm)',fontWeight:600,color:'rgba(255,255,255,0.85)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
+              initial={{opacity:0,scale:0.98}} animate={{opacity:1,scale:1,letterSpacing:'-0.02em'}}
+              exit={{opacity:0,scale:1.03,letterSpacing:'0.08em',transition:{duration:0.55,ease:[0.4,0,0.2,1]}}}
+              transition={{duration:0.7,delay:0.18,ease:[0.4,0,0.2,1]}}
+              style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.88)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             >Go ahead, I'm listening</motion.div>
           )}
           {phase==='platform' && (
