@@ -345,10 +345,24 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
     try { await navigator.clipboard.writeText(gen.text); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* blocked */ }
   };
 
-  // tag style: 500 11px mono uppercase 0.3em letter-spacing #6d6d6d
   const tagStyle: React.CSSProperties = {
-    fontFamily: 'var(--font-mono)', fontSize: 'var(--text-tag)', fontWeight: 500, lineHeight: 1,
-    textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--color-text-tertiary)',
+    fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 500, lineHeight: 1,
+    textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--color-text-tertiary)',
+  };
+
+  const glassCard: React.CSSProperties = {
+    position: 'relative',
+    borderRadius: 22,
+    border: '1px solid var(--color-border-subtle)',
+    background: 'var(--color-bg-card)',
+    boxShadow: '0 14px 40px rgba(0,0,0,0.07), 0 2px 6px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)',
+    overflow: 'hidden',
+  };
+
+  const platformGlow: Record<AssetKind, { rgb: string; accent: string; dur: number; delay: number }> = {
+    'linkedin-post':   { rgb: '10,102,194', accent: '#0a66c2', dur: 7.4, delay: -1.1 },
+    'twitter-thread':  { rgb: '29,155,240', accent: '#1d9bf0', dur: 6.6, delay: -3.2 },
+    'twitter-single':  { rgb: '29,155,240', accent: '#1d9bf0', dur: 5.9, delay: -0.5 },
   };
 
   return createPortal(
@@ -362,21 +376,19 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
         background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', minWidth: 0,
       }}
     >
-      {/* Sheet header — borrows the app's elevated-surface token */}
+      {/* Sheet header */}
       <div style={{
-        flexShrink: 0, padding: 'var(--space-3) var(--space-4)',
-        borderBottom: '1px solid var(--color-border-subtle)',
-        background: 'var(--color-bg-card)',
-        display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 0,
+        flexShrink: 0, padding: 'var(--space-4) var(--space-4) var(--space-3)',
+        display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', minWidth: 0,
       }}>
         <button
           ref={closeBtnRef}
           onClick={close}
           aria-label="Close note"
           className="btn-icon"
-          style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', flexShrink: 0 }}
+          style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', flexShrink: 0, marginTop: 2 }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <label htmlFor={titleId} className="sr-only">Note title</label>
@@ -388,15 +400,16 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
             aria-label="Note title"
             style={{
-              width: '100%', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 600, lineHeight: '24px',
+              width: '100%', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title)', fontWeight: 700, lineHeight: 1.2,
+              letterSpacing: '-0.02em',
               color: 'var(--color-text-primary)', background: 'none',
               border: 'none', borderBottom: '1px solid transparent', outline: 'none', padding: '2px 0',
             }}
             onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-strong)'; }}
           />
           <div style={{
-            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500, lineHeight: '20px',
-            color: 'var(--color-text-tertiary)', marginTop: 2,
+            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 500, lineHeight: 1.4,
+            color: 'var(--color-text-tertiary)', marginTop: 6,
           }}>
             {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
           </div>
@@ -406,24 +419,25 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
       {/* Sheet body */}
       <div style={{
         flex: 1, overflowY: 'auto', overflowX: 'hidden',
-        padding: 'var(--space-5) var(--space-4)',
-        display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', minWidth: 0,
+        padding: 'var(--space-3) var(--space-4) var(--space-5)',
+        display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', minWidth: 0,
       }}>
         {isError ? (
           <div role="alert" style={{
+            ...glassCard,
             background: 'var(--color-danger-bg, #FEF4F4)',
-            border: '1px solid #ECC0C0', borderRadius: 'var(--radius-lg)',
+            border: '1px solid #ECC0C0',
             padding: 'var(--space-4)',
-            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400, lineHeight: 1.55,
+            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55,
             color: 'var(--color-danger-text, #A83030)', wordBreak: 'break-word',
           }}>
             {note.errorReason || 'Transcription failed.'}
           </div>
         ) : note.transcript ? (
-          <section aria-labelledby={`${titleId}-transcript`}>
-            <div id={`${titleId}-transcript`} style={{ ...tagStyle, marginBottom: 'var(--space-2)' }}>Transcript</div>
+          <section aria-labelledby={`${titleId}-transcript`} style={{ ...glassCard, padding: 'var(--space-5)' }}>
+            <div id={`${titleId}-transcript`} style={{ ...tagStyle, marginBottom: 'var(--space-3)' }}>Transcript</div>
             <div style={{
-              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-lg)', fontWeight: 400, lineHeight: 1.75,
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 400, lineHeight: 1.65,
               color: 'var(--color-text-primary)',
               whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
             }}>
@@ -431,20 +445,21 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             </div>
           </section>
         ) : (
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400, lineHeight: 1.55, color: 'var(--color-text-tertiary)' }}>
+          <div style={{ ...glassCard, padding: 'var(--space-4)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55, color: 'var(--color-text-tertiary)' }}>
             This recording has audio but no transcript yet. Add a Groq API key in desktop Settings to transcribe existing audio.
           </div>
         )}
 
         {/* Generator — primary action */}
         {note.transcript && !isError && (
-          <section aria-labelledby={`${titleId}-create`}>
-            <div id={`${titleId}-create`} style={{ ...tagStyle, marginBottom: 'var(--space-2)' }}>Create asset</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-2)' }}>
+          <section aria-labelledby={`${titleId}-create`} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div id={`${titleId}-create`} style={{ ...tagStyle, paddingLeft: 4 }}>Create asset</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-3)' }}>
               {(['linkedin-post', 'twitter-thread', 'twitter-single'] as const).map(k => {
                 const isActive = gen?.kind === k;
                 const isLoadingThis = !!(isActive && gen?.loading);
                 const isSaved = note.lastGeneration?.kind === k;
+                const meta = platformGlow[k];
                 return (
                   <button
                     key={k}
@@ -452,17 +467,25 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                     disabled={isLoadingThis}
                     aria-label={`Generate ${KIND_LABEL[k]}${isSaved ? ' (previously saved)' : ''}`}
                     style={{
-                      width: '100%', minHeight: 44, padding: 'var(--space-3) var(--space-4)',
-                      borderRadius: 'var(--radius-lg)',
-                      border: `1px solid ${isActive ? 'var(--color-accent, #0DBF5A)' : 'var(--color-border-default)'}`,
-                      background: isActive ? 'var(--color-bg-surface)' : 'var(--color-bg-card)',
-                      fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 500, lineHeight: '22px',
+                      ...glassCard,
+                      width: '100%', minHeight: 56, padding: 'var(--space-4) var(--space-4)',
+                      borderRadius: 18,
+                      border: `1px solid ${isActive ? meta.accent : 'var(--color-border-subtle)'}`,
+                      background: isActive
+                        ? `linear-gradient(135deg, rgba(${meta.rgb},0.10) 0%, var(--color-bg-card) 70%)`
+                        : 'var(--color-bg-card)',
+                      boxShadow: isActive
+                        ? `0 14px 40px rgba(${meta.rgb},0.16), 0 2px 6px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)`
+                        : '0 8px 24px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.55)',
+                      cursor: isLoadingThis ? 'progress' : 'pointer',
+                      fontFamily: 'var(--font-sans)', fontSize: 'var(--text-heading)', fontWeight: 600, lineHeight: 1.2,
                       color: 'var(--color-text-primary)', textAlign: 'left',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)',
+                      transition: 'box-shadow 220ms, border-color 220ms, background 220ms',
                     }}
                   >
                     <span>{KIND_LABEL[k]}</span>
-                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500, color: 'var(--color-text-tertiary)' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500, color: isActive ? meta.accent : 'var(--color-text-tertiary)' }}>
                       {isLoadingThis ? 'Generating…' : isSaved ? 'Saved' : '→'}
                     </span>
                   </button>
@@ -472,50 +495,70 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           </section>
         )}
 
-        {/* Generated output — aria-live so screen readers announce completion */}
-        {gen && (gen.loading || gen.text || gen.error) && (
-          <section aria-live="polite" aria-busy={!!gen.loading}
-            style={{
-              background: 'var(--color-bg-surface)',
-              border: '1px solid var(--color-border-subtle)',
-              borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
-              minWidth: 0, overflow: 'hidden',
-            }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-              <span style={tagStyle}>{KIND_LABEL[gen.kind]}</span>
-              {gen.text && !gen.loading && (
-                <button
-                  onClick={copy}
-                  aria-label={copied ? 'Copied to clipboard' : 'Copy generated text'}
-                  className="btn-xs btn-ghost"
-                  style={{ color: 'var(--color-accent, #0DBF5A)' }}
-                >
-                  {copied ? 'Copied' : 'Copy'}
-                </button>
-              )}
-            </div>
-            {gen.loading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }} aria-label="Generating">
-                {[100, 92, 96, 80].map((w, i) => <div key={i} className="skeleton-bar" style={{ height: 12, width: `${w}%`, borderRadius: 'var(--radius-sm)', animationDelay: `${i * 0.1}s` }} />)}
-              </div>
-            ) : gen.error ? (
-              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400, lineHeight: 1.55, color: 'var(--color-danger-text, #A83030)', wordBreak: 'break-word' }}>
-                {gen.error}
-              </div>
-            ) : (
-              <div style={{
-                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.7,
-                color: 'var(--color-text-primary)',
-                whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
+        {/* Generated output — glass card with breathing platform-tinted glow */}
+        {gen && (gen.loading || gen.text || gen.error) && (() => {
+          const meta = platformGlow[gen.kind];
+          return (
+            <section aria-live="polite" aria-busy={!!gen.loading}
+              style={{
+                ...glassCard,
+                padding: 'var(--space-5)',
+                background: `linear-gradient(155deg, var(--color-bg-card) 0%, var(--color-bg-card) 55%, rgba(${meta.rgb},0.06) 100%)`,
+                boxShadow: `0 18px 48px rgba(${meta.rgb},0.14), 0 4px 10px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.6)`,
               }}>
-                {gen.text}
+              <div aria-hidden className="widget-glow" style={{
+                position: 'absolute', inset: '-30%',
+                background: `radial-gradient(ellipse at 30% 30%, rgba(${meta.rgb},0.16) 0%, rgba(${meta.rgb},0.05) 42%, rgba(${meta.rgb},0) 75%)`,
+                animationName: 'widget-breathe',
+                animationDuration: `${meta.dur}s`,
+                animationDelay: `${meta.delay}s`,
+                animationTimingFunction: 'ease-in-out',
+                animationIterationCount: 'infinite',
+                willChange: 'transform, opacity',
+                pointerEvents: 'none',
+                zIndex: 0,
+              }} />
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                  <span style={tagStyle}>{KIND_LABEL[gen.kind]}</span>
+                  {gen.text && !gen.loading && (
+                    <button
+                      onClick={copy}
+                      aria-label={copied ? 'Copied to clipboard' : 'Copy generated text'}
+                      style={{
+                        background: 'transparent', border: 'none', cursor: 'pointer',
+                        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 600,
+                        color: meta.accent, padding: '4px 8px', borderRadius: 8,
+                      }}
+                    >
+                      {copied ? 'Copied' : 'Copy'}
+                    </button>
+                  )}
+                </div>
+                {gen.loading ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} aria-label="Generating">
+                    {[100, 92, 96, 80].map((w, i) => <div key={i} className="skeleton-bar" style={{ height: 14, width: `${w}%`, borderRadius: 8, animationDelay: `${i * 0.1}s` }} />)}
+                  </div>
+                ) : gen.error ? (
+                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55, color: 'var(--color-danger-text, #A83030)', wordBreak: 'break-word' }}>
+                    {gen.error}
+                  </div>
+                ) : (
+                  <div style={{
+                    fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 400, lineHeight: 1.6,
+                    color: 'var(--color-text-primary)',
+                    whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
+                  }}>
+                    {gen.text}
+                  </div>
+                )}
               </div>
-            )}
-          </section>
-        )}
+            </section>
+          );
+        })()}
 
         {/* Footer actions */}
-        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'auto', paddingTop: 'var(--space-4)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'auto', paddingTop: 'var(--space-5)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', justifyContent: 'center' }}>
           {isError && (
             <button onClick={() => { onRerecord(); onClose(); }} className="btn btn-primary" style={{ flex: 1 }}>
               Re-record
@@ -524,7 +567,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           <button
             onClick={() => { onDelete(); onClose(); }}
             className="btn btn-ghost-dest"
-            style={{ flex: isError ? 'none' : 1, minWidth: isError ? 88 : 'auto' }}
+            style={{ flex: isError ? 'none' : 1, minWidth: isError ? 88 : 'auto', fontSize: 'var(--text-body)' }}
           >
             Delete
           </button>
