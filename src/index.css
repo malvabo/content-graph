@@ -493,10 +493,11 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   border: 0;
 }
 
-/* Mobile voice-note card: focus-visible ring per design system + gentle hover. */
+/* Mobile voice-note card: dark glass treatment. Hover lifts the inner top
+   highlight slightly and softens the shadow; focus ring uses the accent token. */
 .voice-note-card:hover:not(:disabled) {
-  border-color: var(--color-border-strong);
-  background: var(--color-bg-card);
+  border-color: rgba(255,255,255,0.14);
+  filter: brightness(1.05);
 }
 .voice-note-card:focus-visible {
   outline: 2px solid var(--color-accent, #0DBF5A);
