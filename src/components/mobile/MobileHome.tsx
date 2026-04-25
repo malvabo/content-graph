@@ -290,6 +290,8 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 }) {
   const updateNote = useVoiceStore(s => s.updateNote);
   const [editTitle, setEditTitle] = useState(note.title);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const [gen, setGen] = useState<Generation | null>(() => note.lastGeneration
     ? { kind: note.lastGeneration.kind, text: note.lastGeneration.text, loading: false }
     : null);
@@ -300,13 +302,26 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
 
-  const saveTitle = () => {
+  const saveTitle = useCallback(() => {
     const t = editTitle.trim();
-    if (!t || t === note.title) return;
+    if (!t) { setEditTitle(note.title); return; }
+    if (t === note.title) return;
     updateNote(note.id, { title: t });
-  };
+  }, [editTitle, note.id, note.title, updateNote]);
 
-  const close = useCallback(() => { saveTitle(); onClose(); }, [onClose]);
+  const finishTitleEdit = () => { saveTitle(); setIsEditingTitle(false); };
+
+  const close = useCallback(() => { saveTitle(); onClose(); }, [onClose, saveTitle]);
+
+  useEffect(() => {
+    if (isEditingTitle) {
+      const id = setTimeout(() => {
+        const el = titleInputRef.current;
+        if (el) { el.focus(); el.select(); }
+      }, 0);
+      return () => clearTimeout(id);
+    }
+  }, [isEditingTitle]);
 
   // a11y: capture the previously-focused element to restore on close, move
   // focus into the sheet, lock body scroll, and listen for Escape.
@@ -376,43 +391,70 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
         background: 'var(--color-bg)', display: 'flex', flexDirection: 'column', minWidth: 0,
       }}
     >
-      {/* Sheet header */}
+      {/* Top nav row — back chevron alone, leaves room for future right-side actions */}
       <div style={{
-        flexShrink: 0, padding: 'var(--space-4) var(--space-4) var(--space-3)',
-        display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', minWidth: 0,
+        flexShrink: 0,
+        padding: 'calc(var(--space-3) + env(safe-area-inset-top, 0px)) var(--space-3) 0',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        minHeight: 44,
       }}>
         <button
           ref={closeBtnRef}
           onClick={close}
           aria-label="Close note"
           className="btn-icon"
-          style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', flexShrink: 0, marginTop: 2 }}
+          style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)' }}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <label htmlFor={titleId} className="sr-only">Note title</label>
+      </div>
+
+      {/* Title block — heading by default, swaps to input on tap */}
+      <div style={{
+        flexShrink: 0,
+        padding: 'var(--space-2) var(--space-4) var(--space-4)',
+      }}>
+        <label htmlFor={titleId} className="sr-only">Note title</label>
+        {isEditingTitle ? (
           <input
+            ref={titleInputRef}
             id={titleId}
             value={editTitle}
             onChange={e => setEditTitle(e.target.value)}
-            onBlur={saveTitle}
-            onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+            onBlur={finishTitleEdit}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') { e.currentTarget.blur(); } }}
             aria-label="Note title"
             style={{
-              width: '100%', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title)', fontWeight: 700, lineHeight: 1.2,
-              letterSpacing: '-0.02em',
-              color: 'var(--color-text-primary)', background: 'none',
-              border: 'none', borderBottom: '1px solid transparent', outline: 'none', padding: '2px 0',
+              display: 'block', width: '100%', margin: 0, padding: 0,
+              background: 'transparent', border: 'none', outline: 'none',
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title)', fontWeight: 700, lineHeight: 1.2,
+              letterSpacing: '-0.02em', color: 'var(--color-text-primary)',
+              caretColor: 'var(--color-accent, #0DBF5A)',
             }}
-            onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-strong)'; }}
           />
-          <div style={{
-            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 500, lineHeight: 1.4,
-            color: 'var(--color-text-tertiary)', marginTop: 6,
-          }}>
-            {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
-          </div>
+        ) : (
+          <h1
+            id={titleId}
+            onClick={() => setIsEditingTitle(true)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsEditingTitle(true); } }}
+            tabIndex={0}
+            role="button"
+            aria-label={`${editTitle}. Tap to edit title.`}
+            style={{
+              margin: 0, padding: 0, cursor: 'text', outline: 'none',
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title)', fontWeight: 700, lineHeight: 1.2,
+              letterSpacing: '-0.02em', color: 'var(--color-text-primary)',
+              wordBreak: 'break-word',
+            }}
+          >
+            {editTitle}
+          </h1>
+        )}
+        <div aria-hidden style={{
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 500, lineHeight: 1.4,
+          color: 'var(--color-text-tertiary)', marginTop: 8,
+        }}>
+          {fmtDuration(note.durationMs)} · {fmtDate(note.createdAt)}
         </div>
       </div>
 
