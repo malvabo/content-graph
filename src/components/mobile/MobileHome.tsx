@@ -672,6 +672,13 @@ function widgetGlowBg(meta: typeof WIDGET_META[WidgetKind], count: number): stri
   return `radial-gradient(ellipse at 50% 50%, ${meta.glow}${op1}) 0%, ${meta.glow}${op2}) 42%, ${meta.glow}0) 75%)`;
 }
 
+function widgetGlowBgB(meta: typeof WIDGET_META[WidgetKind], count: number): string {
+  const sat = count === 0 ? 0.18 : Math.min(0.85, 0.32 + count * 0.10);
+  const op1 = (sat * 0.65).toFixed(2);
+  const op2 = (sat * 0.20).toFixed(2);
+  return `radial-gradient(ellipse 75% 95% at 28% 72%, ${meta.glow}${op1}) 0%, ${meta.glow}${op2}) 50%, ${meta.glow}0) 82%)`;
+}
+
 function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
   kind: WidgetKind; notes: VoiceNote[]; editMode: boolean;
   onRemove: () => void; onClick: () => void;
@@ -690,16 +697,36 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
         transition: 'filter 180ms',
       }}
     >
+      {/* Primary morphing glow */}
+      <div
+        aria-hidden
+        className="widget-glow"
+        style={{
+          position: 'absolute', inset: '-45%',
+          background: widgetGlowBg(meta, count),
+          filter: 'blur(8px)',
+          animationName: 'widget-breathe',
+          animationDuration: `${meta.breathDur * 1.6}s`,
+          animationDelay: `${meta.breathDelay}s`,
+          animationTimingFunction: 'cubic-bezier(0.45, 0.05, 0.55, 0.95)',
+          animationIterationCount: 'infinite',
+          willChange: 'transform, opacity',
+          pointerEvents: 'none',
+        }}
+      />
+      {/* Secondary asymmetric glow — different keyframe phase, different shape, blends with primary into an amorphous morph */}
       <div
         aria-hidden
         className="widget-glow"
         style={{
           position: 'absolute', inset: '-30%',
-          background: widgetGlowBg(meta, count),
-          animationName: 'widget-breathe',
-          animationDuration: `${meta.breathDur}s`,
-          animationDelay: `${meta.breathDelay}s`,
-          animationTimingFunction: 'ease-in-out',
+          background: widgetGlowBgB(meta, count),
+          filter: 'blur(14px)',
+          mixBlendMode: 'lighten',
+          animationName: 'widget-morph-b',
+          animationDuration: `${meta.breathDur * 2.1}s`,
+          animationDelay: `${meta.breathDelay - 1.7}s`,
+          animationTimingFunction: 'cubic-bezier(0.5, 0, 0.5, 1)',
           animationIterationCount: 'infinite',
           willChange: 'transform, opacity',
           pointerEvents: 'none',

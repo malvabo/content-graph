@@ -322,11 +322,23 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   100% { background-position: 200% 0; }
 }
 @keyframes widget-breathe {
-  0%   { transform: translate3d(0%, 0%, 0) scale(1);     opacity: 0.78; }
-  25%  { transform: translate3d(11%, -7%, 0) scale(1.18); opacity: 1;   }
-  50%  { transform: translate3d(4%, 9%, 0)  scale(0.92); opacity: 0.6; }
-  75%  { transform: translate3d(-10%, 2%, 0) scale(1.10); opacity: 0.95; }
-  100% { transform: translate3d(0%, 0%, 0) scale(1);     opacity: 0.78; }
+  0%   { transform: translate3d(0%, 0%, 0)    scale(1);    opacity: 0.78; }
+  14%  { transform: translate3d(14%, -10%, 0) scale(1.22); opacity: 1;    }
+  28%  { transform: translate3d(8%, 14%, 0)   scale(0.92); opacity: 0.7;  }
+  42%  { transform: translate3d(-12%, 6%, 0)  scale(1.16); opacity: 0.95; }
+  57%  { transform: translate3d(-16%, -4%, 0) scale(0.88); opacity: 0.65; }
+  71%  { transform: translate3d(-3%, -14%, 0) scale(1.24); opacity: 1;    }
+  85%  { transform: translate3d(11%, 8%, 0)   scale(1.04); opacity: 0.85; }
+  100% { transform: translate3d(0%, 0%, 0)    scale(1);    opacity: 0.78; }
+}
+@keyframes widget-morph-b {
+  0%   { transform: translate3d(0%, 0%, 0)    scale(1);    opacity: 0.55; }
+  18%  { transform: translate3d(-13%, 15%, 0) scale(1.30); opacity: 0.9;  }
+  36%  { transform: translate3d(-18%, -8%, 0) scale(0.82); opacity: 0.5;  }
+  55%  { transform: translate3d(9%, -17%, 0)  scale(1.22); opacity: 0.95; }
+  73%  { transform: translate3d(15%, 4%, 0)   scale(0.95); opacity: 0.7;  }
+  88%  { transform: translate3d(4%, 13%, 0)   scale(1.12); opacity: 0.85; }
+  100% { transform: translate3d(0%, 0%, 0)    scale(1);    opacity: 0.55; }
 }
 @keyframes add-post-orb-drift {
   0%   { transform: translate3d(0%, 0%, 0) scale(1);      opacity: 0.85; }
