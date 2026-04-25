@@ -154,7 +154,7 @@ const BREATH = [
 const ORB: Record<Phase, object> = {
   idle:      { width: 200, height: 200, borderRadius: 100, top: '60%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
   prompt:    { width: 300, height: 76,  borderRadius: 38,  top: '76%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
-  recording: { width: 160, height: 160, borderRadius: 80,  top: '52%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 1 },
+  recording: { width: 160, height: 160, borderRadius: 80,  top: '52%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 2.8 },
   platform:  { width: 160, height: 44,  borderRadius: 22,  top: '11%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
   draft:     { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
   posting:   { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 0 },
@@ -182,15 +182,20 @@ function RecordingCanvas({ onStop }: { onStop: () => void }) {
       stream=s; audioCtx=new AudioContext(); analyser=audioCtx.createAnalyser(); analyser.fftSize=256; analyser.smoothingTimeConstant=0.7;
       audioCtx.createMediaStreamSource(stream).connect(analyser);
     }).catch(()=>{});
+    const birthStart = Date.now();
+    const BIRTH_MS = 950;
     const draw = () => {
       const w=innerWidth,h=innerHeight,cx=w/2,cy=h*0.52;
       if(analyser){analyser.getByteFrequencyData(arr);let s=0;for(let k=0;k<arr.length;k++)s+=arr[k];levelRef.current=Math.min(1,(s/arr.length)/80);}
       const lv=levelRef.current; spread+=((lv>0.12?10:88)-spread)*0.04;
+      // birth: blobs expand from orb center outward over BIRTH_MS, eased out
+      const birthFrac = Math.min(1, (Date.now() - birthStart) / BIRTH_MS);
+      const birth = Math.pow(birthFrac, 0.45);
       ctx.clearRect(0,0,w,h);
       for(let i=0;i<4;i++){
-        const ang=t*0.65+i*(Math.PI*0.5),r=spread+Math.sin(t*0.45+i*1.1)*20;
+        const ang=t*0.65+i*(Math.PI*0.5),r=(spread+Math.sin(t*0.45+i*1.1)*20)*birth;
         const px=cx+Math.cos(ang)*r*0.88,py=cy+Math.sin(ang)*r*0.72,sz=(155+Math.sin(t*0.9+i*0.8)*38)*(1+lv*0.5);
-        const al=0.22+lv*0.32,hue=145+i*5,gr=ctx.createRadialGradient(px,py,0,px,py,sz);
+        const al=(0.22+lv*0.32)*birth,hue=145+i*5,gr=ctx.createRadialGradient(px,py,0,px,py,sz);
         gr.addColorStop(0,`hsla(${hue},58%,52%,${al.toFixed(2)})`); gr.addColorStop(0.5,`hsla(${hue},50%,48%,${(al*0.28).toFixed(2)})`); gr.addColorStop(1,'transparent');
         ctx.fillStyle=gr; ctx.fillRect(0,0,w,h);
       }
@@ -356,8 +361,9 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           onClick={(e)=>{ if(phase==='prompt'){e.stopPropagation();startRecording();} if(isDraft){e.stopPropagation();triggerPost();} }}
           animate={{...orbTarget,...(orbAbsorb?{scale:[1,1.18,1]}:{})}}
           transition={
-            phase === 'posting'  ? {duration:0.7,ease:[0.4,0,0.8,1]} :
-            isTravelingDown      ? {type:'spring',stiffness:55,damping:18,mass:1} :
+            phase === 'posting'   ? {duration:0.7,ease:[0.4,0,0.8,1]} :
+            phase === 'recording' ? {duration:0.85,ease:[0.16,1,0.3,1]} :
+            isTravelingDown       ? {type:'spring',stiffness:55,damping:18,mass:1} :
             SPRING
           }
           style={{position:'absolute',mixBlendMode:'screen',zIndex:12,cursor:(phase==='prompt'||isDraft)?'pointer':'default',pointerEvents:phase==='recording'?'none':'auto'}}
@@ -374,6 +380,12 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               transition={(isIdle||isDraft)?{duration:3.2,repeat:Infinity,ease:EASE}:{duration:0.5}}
               style={{position:'absolute',inset:'-100px',background:'radial-gradient(80px circle at center, rgba(255,235,210,1) 0%, rgba(255,235,210,0.95) 8%, rgba(255,235,210,0.7) 18%, rgba(255,235,210,0.4) 32%, rgba(255,235,210,0.2) 50%, rgba(255,235,210,0.08) 70%, rgba(255,235,210,0.02) 85%, rgba(255,235,210,0) 100%)'}}
 
+            />
+            {/* Green disperse tint — blooms as orb dissolves into recording clouds */}
+            <motion.div aria-hidden
+              animate={phase === 'recording' ? {opacity: 1, scale: 1} : {opacity: 0, scale: 0.6}}
+              transition={{duration: 0.7, ease: [0.16, 1, 0.3, 1]}}
+              style={{position:'absolute', inset:0, background:'radial-gradient(circle, rgba(16,212,72,0.7) 0%, rgba(6,168,42,0.28) 48%, rgba(16,212,72,0) 80%)', pointerEvents:'none'}}
             />
             {/* Platform color merge flash */}
             {mergeColor && (
