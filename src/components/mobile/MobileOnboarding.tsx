@@ -403,83 +403,94 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
 
         {/* ── Platform discs — mix-blend-mode:screen, horizontal row, independent breath ── */}
         <AnimatePresence>
-          {isPlatform && PLATFORMS.map((p, i) => {
-            const isSelected = selId === p.id;
-            const isDimmed   = selId !== null && !isSelected;
-            const isBreathing = !selId;
-            const br = BREATH[i];
-            const entranceDelay = 0.20 + i * 0.08;
+          {isPlatform && (
+            <motion.div
+              key="platform-discs"
+              exit={{ opacity: 0, transition: { duration: 0.3 } }}
+              style={{ position:'absolute', inset:0, pointerEvents:'none' }}
+            >
+              {PLATFORMS.map((p, i) => {
+                const isSelected  = selId === p.id;
+                const isDimmed    = selId !== null && !isSelected;
+                // covers both travel and the brief merge window so disc never pops back
+                const isTraveling = isSelected && (selPhase === 'travel' || selPhase === 'merge');
+                const isBreathing = !selId;
+                const br = BREATH[i];
+                const entranceDelay = 0.20 + i * 0.08;
 
-            return (
-              <div key={p.id}>
-                {/* Disc — outer handles position & selection, inner handles breathing */}
-                <motion.div
-                  onClick={() => pickPlatform(p.id)}
-                  initial={{ opacity: 0, scale: 0.3, y: 40 }}
-                  animate={{
-                    opacity: isDimmed ? 0 : (isSelected && selPhase==='travel' ? 0 : 1),
-                    scale:   isDimmed ? 0.7 : (isSelected && selPhase==='pulse' ? 1.15 : (isSelected && selPhase==='travel' ? 0.35 : 1)),
-                    y:       isDimmed ? 20  : (isSelected && selPhase==='travel' ? '-80vh' : 0),
-                    x:       isSelected && selPhase==='travel' ? p.xOffset : '0vw',
-                    filter:  isSelected && selPhase==='travel' ? 'saturate(0%)' : 'saturate(100%)',
-                  }}
-                  transition={{
-                    opacity: isDimmed ? {duration:0.25} : (isSelected&&selPhase==='travel' ? {duration:0.5} : {delay:entranceDelay,...ENT_SPRING}),
-                    scale:   isSelected&&(selPhase==='travel'||selPhase==='pulse') ? {duration:selPhase==='pulse'?0.15:0.7,...SEL_SPRING} : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
-                    y:       isSelected&&selPhase==='travel' ? SEL_SPRING : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
-                    x:       SEL_SPRING,
-                    filter:  {duration:0.6},
-                  }}
-                  style={{
-                    position:'absolute', left:p.left, top:'60%',
-                    transform:'translate(-50%,-50%)',
-                    width:DISC, height:DISC,
-                    cursor: selId ? 'default' : 'pointer',
-                    zIndex:15,
-                  }}
-                >
-                  {/* Breathing wrapper — scale oscillation */}
-                  <motion.div
-                    animate={isBreathing ? { scale: br.scaleKeys, y: [0,-4,0,4,0] } : { scale:1, y:0 }}
-                    transition={{
-                      scale: { duration:br.scalePeriod, repeat:isBreathing?Infinity:0, ease:EASE },
-                      y: { duration:7, delay:br.driftOffset, repeat:isBreathing?Infinity:0, ease:'easeInOut' },
-                    }}
-                    style={{ position:'absolute', inset:0 }}
-                  >
-                    {/* Layer 1: inner core */}
-                    <div aria-hidden style={{ position:'absolute', inset:0, background:p.core, mixBlendMode:'screen' }} />
-                    {/* Layer 2: mid glow */}
-                    <div aria-hidden style={{ position:'absolute', inset:0, background:p.mid, mixBlendMode:'screen' }} />
-                    {/* Layer 3: outer bleed — lags entrance by 100ms */}
+                return (
+                  <div key={p.id}>
+                    {/* Disc — outer handles position & selection, inner handles breathing */}
                     <motion.div
-                      aria-hidden
-                      initial={{ opacity:0, scale:0.3 }}
-                      animate={{ opacity:1, scale:1 }}
-                      transition={{ delay:entranceDelay+0.10, ...ENT_SPRING }}
-                      style={{ position:'absolute', inset:'-50%', background:p.bleed, pointerEvents:'none', mixBlendMode:'screen' }}
-                    />
-                  </motion.div>
-                </motion.div>
+                      onClick={() => pickPlatform(p.id)}
+                      initial={{ opacity: 0, scale: 0.3, y: 40 }}
+                      animate={{
+                        opacity: isDimmed ? 0 : (isTraveling ? 0 : 1),
+                        scale:   isDimmed ? 0.7 : (isSelected && selPhase==='pulse' ? 1.15 : (isTraveling ? 0.35 : 1)),
+                        y:       isDimmed ? 20  : (isTraveling ? '-80vh' : 0),
+                        x:       isSelected && selPhase==='travel' ? p.xOffset : '0vw',
+                        filter:  isSelected && selPhase==='travel' ? 'saturate(0%)' : 'saturate(100%)',
+                      }}
+                      transition={{
+                        opacity: isDimmed ? {duration:0.25} : (isTraveling ? {duration:0.5} : {delay:entranceDelay,...ENT_SPRING}),
+                        scale:   isSelected&&(selPhase==='travel'||selPhase==='pulse') ? {duration:selPhase==='pulse'?0.15:0.7,...SEL_SPRING} : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
+                        y:       isSelected&&selPhase==='travel' ? SEL_SPRING : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
+                        x:       SEL_SPRING,
+                        filter:  {duration:0.6},
+                      }}
+                      style={{
+                        position:'absolute', left:p.left, top:'60%',
+                        marginLeft: -(DISC/2), marginTop: -(DISC/2),
+                        width:DISC, height:DISC,
+                        cursor: selId ? 'default' : 'pointer',
+                        pointerEvents:'auto',
+                        zIndex:15,
+                      }}
+                    >
+                      {/* Breathing wrapper — scale oscillation */}
+                      <motion.div
+                        animate={isBreathing ? { scale: br.scaleKeys, y: [0,-4,0,4,0] } : { scale:1, y:0 }}
+                        transition={{
+                          scale: { duration:br.scalePeriod, repeat:isBreathing?Infinity:0, ease:EASE },
+                          y: { duration:7, delay:br.driftOffset, repeat:isBreathing?Infinity:0, ease:'easeInOut' },
+                        }}
+                        style={{ position:'absolute', inset:0 }}
+                      >
+                        {/* Layer 1: inner core */}
+                        <div aria-hidden style={{ position:'absolute', inset:0, background:p.core, mixBlendMode:'screen' }} />
+                        {/* Layer 2: mid glow */}
+                        <div aria-hidden style={{ position:'absolute', inset:0, background:p.mid, mixBlendMode:'screen' }} />
+                        {/* Layer 3: outer bleed — lags entrance by 100ms */}
+                        <motion.div
+                          aria-hidden
+                          initial={{ opacity:0, scale:0.3 }}
+                          animate={{ opacity:1, scale:1 }}
+                          transition={{ delay:entranceDelay+0.10, ...ENT_SPRING }}
+                          style={{ position:'absolute', inset:'-50%', background:p.bleed, pointerEvents:'none', mixBlendMode:'screen' }}
+                        />
+                      </motion.div>
+                    </motion.div>
 
-                {/* Label — separate element, never moves, only fades */}
-                <motion.div
-                  initial={{ opacity:0 }}
-                  animate={{ opacity: selId ? 0 : 0.55 }}
-                  transition={{ delay: selId ? 0 : entranceDelay+0.05, duration: selId ? 0.25 : 0.4 }}
-                  style={{
-                    position:'absolute', left:p.left, top:`calc(60% + ${LABEL_BELOW}px)`,
-                    transform:'translateX(-50%)',
-                    fontFamily:'var(--font-sans)', fontSize:13, fontWeight:400,
-                    color:'rgba(255,255,255,1)', letterSpacing:'0.04em',
-                    whiteSpace:'nowrap', pointerEvents:'none', zIndex:14,
-                  }}
-                >
-                  {p.label}
-                </motion.div>
-              </div>
-            );
-          })}
+                    {/* Label — separate element, never moves, only fades */}
+                    <motion.div
+                      initial={{ opacity:0 }}
+                      animate={{ opacity: selId ? 0 : 0.55 }}
+                      transition={{ delay: selId ? 0 : entranceDelay+0.05, duration: selId ? 0.25 : 0.4 }}
+                      style={{
+                        position:'absolute', left:p.left, top:`calc(60% + ${LABEL_BELOW}px)`,
+                        transform:'translateX(-50%)',
+                        fontFamily:'var(--font-sans)', fontSize:13, fontWeight:400,
+                        color:'rgba(255,255,255,1)', letterSpacing:'0.04em',
+                        whiteSpace:'nowrap', pointerEvents:'none', zIndex:14,
+                      }}
+                    >
+                      {p.label}
+                    </motion.div>
+                  </div>
+                );
+              })}
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* ── Draft: full-bleed scrim for contrast (no edges, no card) ── */}
