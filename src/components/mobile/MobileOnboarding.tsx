@@ -152,12 +152,12 @@ const BREATH = [
 // ─── Orb phase targets ────────────────────────────────────────────────────────
 
 const ORB: Record<Phase, object> = {
-  idle:      { width: 160, height: 160, borderRadius: 80,  top: '60%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
-  prompt:    { width: 300, height: 76,  borderRadius: 38,  top: '76%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
-  recording: { width: 160, height: 160, borderRadius: 80,  top: '52%',  left: '50%', x: '-50%', y: '-50%', opacity: 0 },
-  platform:  { width: 160, height: 44,  borderRadius: 22,  top: '11%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
-  draft:     { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
-  posting:   { width: 360, height: 360, borderRadius: 180, top: '50%',  left: '50%', x: '-50%', y: '-50%', opacity: 1 },
+  idle:      { width: 200, height: 200, borderRadius: 100, top: '60%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
+  prompt:    { width: 300, height: 76,  borderRadius: 38,  top: '76%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
+  recording: { width: 160, height: 160, borderRadius: 80,  top: '52%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 1 },
+  platform:  { width: 160, height: 44,  borderRadius: 22,  top: '11%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
+  draft:     { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
+  posting:   { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 0 },
 };
 
 const SPRING    = { type: 'spring' as const, stiffness: 80,  damping: 18, mass: 1 };
@@ -209,14 +209,12 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
   const [phase, setPhase]       = useState<Phase>(initialPhase ?? 'idle');
   const [selPhase, setSelPhase] = useState<SelPhase>('none');
   const [selId, setSelId]       = useState<string | null>(null);
-  const [hintVisible, setHintVisible]   = useState(false);
   const [orbAbsorb, setOrbAbsorb]       = useState(false);
   const [mergeColor, setMergeColor]     = useState<string | null>(null);
   const [draftText, setDraftText]       = useState('');
   const [displayedCharIdx, setDisplayedCharIdx] = useState(0);
   const [typingDone, setTypingDone]             = useState(false);
   const [isEditing, setIsEditing]               = useState(false);
-  const [postStep, setPostStep]                 = useState<'none'|'bloom'|'reform'>('none');
   const [isPosted, setIsPosted]                 = useState(false);
   const [savedPlatformId, setSavedPlatformId]   = useState<string|null>(null);
 
@@ -242,8 +240,14 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
     return () => { clearTimeout(startTimer); clearInterval(tick); };
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function advance()       { if (phase==='idle')  { setPhase('prompt'); setTimeout(()=>setHintVisible(true),1200); } }
-  function startRecording(){ setHintVisible(false); setPhase('recording'); }
+  useEffect(() => {
+    if (phase !== 'prompt') return;
+    const t = setTimeout(startRecording, 1500);
+    return () => clearTimeout(t);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function advance()       { if (phase === 'idle') setPhase('prompt'); }
+  function startRecording(){ setPhase('recording'); }
   function goToPlatform()  { setPhase('platform'); }
   function triggerPost() {
     if (phase !== 'draft') return;
@@ -262,19 +266,15 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
       ...(savedPlatformId ? { lastGeneration: { kind: kindMap[savedPlatformId] ?? 'twitter-single', text: draftText, createdAt: new Date().toISOString() } } : {}),
     });
     setPhase('posting');
-    setPostStep('bloom');
-    // Bloom peaks, then orb starts reforming toward idle
-    setTimeout(() => setPostStep('reform'), 500);
-    // Orb arrives at idle center — switch phase so it breathes again, show "Posted"
+    // Orb collapses in place (scale→0, opacity→0) at draft position over 700ms
     setTimeout(() => {
       setPhase('idle');
-      setPostStep('none');
       setIsPosted(true);
       setDraftText('');
       setSavedPlatformId(null);
-    }, 900);
-    // Hold 1.2 s, fade "Posted" out, then open home
-    setTimeout(() => { setIsPosted(false); onComplete(); }, 900 + 1200);
+    }, 700);
+    // Hold 1.6 s on success text, then navigate home
+    setTimeout(() => { setIsPosted(false); onComplete(); }, 700 + 1600);
   }
 
   function pickPlatform(id: string) {
@@ -307,13 +307,11 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
     }, 150 + 820 + 420 + 300);
   }
 
-  const isIdle     = phase === 'idle';
-  const isDraft    = phase === 'draft';
-  const isPlatform = phase === 'platform';
-  const isBloom    = phase === 'posting' && postStep === 'bloom';
-  const isReform   = phase === 'posting' && postStep === 'reform';
-  // During reform, animate toward idle so the orb springs back naturally
-  const orbTarget  = isReform ? ORB.idle : ORB[phase];
+  const isIdle          = phase === 'idle';
+  const isDraft         = phase === 'draft';
+  const isPlatform      = phase === 'platform';
+  const isTravelingDown = selPhase === 'travel' || selPhase === 'merge';
+  const orbTarget       = isTravelingDown ? ORB.draft : ORB[phase];
 
   return (
     <LayoutGroup>
@@ -357,7 +355,11 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           layoutId="main-orb"
           onClick={(e)=>{ if(phase==='prompt'){e.stopPropagation();startRecording();} if(isDraft){e.stopPropagation();triggerPost();} }}
           animate={{...orbTarget,...(orbAbsorb?{scale:[1,1.18,1]}:{})}}
-          transition={isBloom ? {type:'spring',stiffness:200,damping:14} : SPRING}
+          transition={
+            phase === 'posting'  ? {duration:0.7,ease:[0.4,0,0.8,1]} :
+            isTravelingDown      ? {type:'spring',stiffness:55,damping:18,mass:1} :
+            SPRING
+          }
           style={{position:'absolute',mixBlendMode:'screen',zIndex:12,cursor:(phase==='prompt'||isDraft)?'pointer':'default',pointerEvents:phase==='recording'?'none':'auto'}}
         >
           {/* Overall scale breath — idle and draft */}
@@ -372,19 +374,6 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               transition={(isIdle||isDraft)?{duration:3.2,repeat:Infinity,ease:EASE}:{duration:0.5}}
               style={{position:'absolute',inset:'-100px',background:'radial-gradient(80px circle at center, rgba(255,235,210,1) 0%, rgba(255,235,210,0.95) 8%, rgba(255,235,210,0.7) 18%, rgba(255,235,210,0.4) 32%, rgba(255,235,210,0.2) 50%, rgba(255,235,210,0.08) 70%, rgba(255,235,210,0.02) 85%, rgba(255,235,210,0) 100%)'}}
 
-            />
-            {/* Bloom flood — invisible in all normal states, only during posting ritual */}
-            <motion.div aria-hidden
-              animate={
-                isBloom  ? {scale:6,opacity:1} :
-                isReform ? {scale:1,opacity:0} :
-                {scale:1,opacity:0}
-              }
-              transition={
-                isBloom  ? {duration:0.45,ease:[0.16,1,0.3,1]} :
-                {duration:0.35,ease:[0.4,0,0.6,1]}
-              }
-              style={{position:'absolute',inset:'-50%',background:'radial-gradient(circle, rgba(255,235,210,0.7) 0%, rgba(255,235,210,0.3) 40%, rgba(255,235,210,0) 70%)',pointerEvents:'none'}}
             />
             {/* Platform color merge flash */}
             {mergeColor && (
@@ -422,14 +411,14 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 animate={{
                   opacity: isDimmed ? 0 : (isTraveling ? 0 : 1),
                   scale:   isDimmed ? 0.7 : (isSelected && selPhase==='pulse' ? 1.15 : (isTraveling ? 0.35 : 1)),
-                  y:       isDimmed ? 20  : (isTraveling ? '-80vh' : 0),
+                  y:       isDimmed ? 20  : (isTraveling ? '28vh' : 0),
                   x:       isSelected && selPhase==='travel' ? p.xOffset : '0vw',
                   filter:  isSelected && selPhase==='travel' ? 'saturate(0%)' : 'saturate(100%)',
                 }}
                 transition={{
                   opacity: isDimmed ? {duration:0.25} : (isTraveling ? {duration:0.5} : {delay:entranceDelay,...ENT_SPRING}),
                   scale:   isSelected&&(selPhase==='travel'||selPhase==='pulse') ? {duration:selPhase==='pulse'?0.15:0.7,...SEL_SPRING} : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
-                  y:       isSelected&&selPhase==='travel' ? SEL_SPRING : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
+                  y:       isSelected&&selPhase==='travel' ? {type:'spring',stiffness:55,damping:18,mass:1} : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
                   x:       SEL_SPRING,
                   filter:  {duration:0.6},
                 }}
@@ -565,34 +554,27 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           )}
         </AnimatePresence>
 
-        {/* ── "Posted" headline + save button ── */}
+        {/* ── Success screen ── */}
         <AnimatePresence>
           {isPosted && (
             <>
-              <motion.div key="h-posted"
+              <motion.div key="h-great"
                 initial={{opacity:0,scale:0.92}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.96}}
                 transition={{duration:0.5,ease:[0.4,0,0.2,1]}}
-                style={{position:'absolute',top:'42%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display)',fontWeight:700,color:'rgba(255,255,255,0.94)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:20}}
-              >Posted</motion.div>
-              <motion.div key="save-btn"
+                style={{position:'absolute',top:'42%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:44,fontWeight:700,color:'rgba(255,255,255,0.94)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:20}}
+              >Great work!</motion.div>
+              <motion.div key="h-saved"
                 initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:8}}
                 transition={{duration:0.4,delay:0.3,ease:[0.4,0,0.2,1]}}
-                style={{position:'absolute',top:'54%',left:0,right:0,display:'flex',justifyContent:'center',zIndex:20}}
-              >
-                <button
-                  onClick={onComplete}
-                  style={{background:'none',border:'none',cursor:'pointer',fontFamily:'var(--font-sans)',fontSize:'var(--text-body)',fontWeight:500,color:'rgba(255,255,255,0.78)',letterSpacing:'0.01em',padding:'12px 32px'}}
-                >
-                  Save to notes
-                </button>
-              </motion.div>
+                style={{position:'absolute',top:'52%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.6)',letterSpacing:'0.01em',pointerEvents:'none',zIndex:20}}
+              >Saved to library.</motion.div>
             </>
           )}
         </AnimatePresence>
 
         {/* ── Headlines ── */}
         <AnimatePresence mode="popLayout">
-          {phase==='idle' && (
+          {phase==='idle' && !isPosted && (
             <motion.div key="h-idle" layoutId="headline"
               initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.12,ease:[0.4,0,0.2,1]}}
               style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
@@ -627,11 +609,6 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
 
         {/* ── Hints ── */}
         <AnimatePresence>
-          {phase==='prompt'&&hintVisible && (
-            <motion.div key="hint-rec" initial={{opacity:0}} animate={{opacity:0.40}} exit={{opacity:0}} transition={{duration:0.8}}
-              style={{position:'absolute',bottom:'10%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-caption)',color:'rgba(255,255,255,1)',letterSpacing:'0.05em',pointerEvents:'none',zIndex:5}}
-            >tap to record</motion.div>
-          )}
           {phase==='recording' && (
             <motion.div key="hint-stop" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{delay:1.2,duration:0.8}}
               style={{position:'absolute',bottom:'10%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-caption)',color:'rgba(255,255,255,0.55)',letterSpacing:'0.05em',pointerEvents:'none',zIndex:5}}
