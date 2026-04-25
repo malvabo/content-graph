@@ -550,28 +550,28 @@ const WIDGET_META: Record<WidgetKind, {
   twitter: {
     label: 'Twitter / X', sublabel: 'Threads & posts',
     glow: 'rgba(29,155,240,', dark: '#040a14', mid: '#09192e', accent: '#1d9bf0',
-    breathDur: 7.2, breathDelay: -1.5,
+    breathDur: 5.4, breathDelay: -1.5,
     filterFn: ns => ns.filter(n => n.lastGeneration?.kind === 'twitter-thread' || n.lastGeneration?.kind === 'twitter-single'),
     countLabel: n => n === 1 ? '1 post' : `${n} posts`,
   },
   linkedin: {
     label: 'LinkedIn', sublabel: 'Posts generated',
     glow: 'rgba(10,102,194,', dark: '#030810', mid: '#071426', accent: '#0a66c2',
-    breathDur: 8.4, breathDelay: -3.8,
+    breathDur: 6.3, breathDelay: -3.8,
     filterFn: ns => ns.filter(n => n.lastGeneration?.kind === 'linkedin-post'),
     countLabel: n => n === 1 ? '1 post' : `${n} posts`,
   },
   voice: {
     label: 'Voice Notes', sublabel: 'All recordings',
     glow: 'rgba(13,191,90,', dark: '#030d05', mid: '#071408', accent: '#0DBF5A',
-    breathDur: 6.8, breathDelay: -0.7,
+    breathDur: 5.0, breathDelay: -0.7,
     filterFn: ns => ns.filter(n => n.status !== 'recording'),
     countLabel: n => n === 1 ? '1 note' : `${n} notes`,
   },
   scripts: {
     label: 'Scripts', sublabel: 'Ready to use',
     glow: 'rgba(144,97,249,', dark: '#06040e', mid: '#120b22', accent: '#9061f9',
-    breathDur: 9.1, breathDelay: -5.2,
+    breathDur: 6.8, breathDelay: -2.2,
     filterFn: ns => ns.filter(n => n.status === 'ready' && !!n.transcript),
     countLabel: n => n === 1 ? '1 script' : `${n} scripts`,
   },
@@ -582,10 +582,10 @@ function widgetBaseBg(meta: typeof WIDGET_META[WidgetKind]): string {
 }
 
 function widgetGlowBg(meta: typeof WIDGET_META[WidgetKind], count: number): string {
-  const sat = count === 0 ? 0.10 : Math.min(1, 0.30 + count * 0.12);
-  const op1 = (sat * 0.58).toFixed(2);
-  const op2 = (sat * 0.17).toFixed(2);
-  return `radial-gradient(ellipse at 50% 50%, ${meta.glow}${op1}) 0%, ${meta.glow}${op2}) 44%, transparent 72%)`;
+  const sat = count === 0 ? 0.22 : Math.min(1, 0.45 + count * 0.12);
+  const op1 = (sat * 0.85).toFixed(2);
+  const op2 = (sat * 0.30).toFixed(2);
+  return `radial-gradient(ellipse at 50% 50%, ${meta.glow}${op1}) 0%, ${meta.glow}${op2}) 42%, ${meta.glow}0) 75%)`;
 }
 
 function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
@@ -610,10 +610,13 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
         aria-hidden
         className="widget-glow"
         style={{
-          position: 'absolute', inset: '-22%',
+          position: 'absolute', inset: '-30%',
           background: widgetGlowBg(meta, count),
-          animation: `widget-breathe ${meta.breathDur}s ease-in-out infinite`,
+          animationName: 'widget-breathe',
+          animationDuration: `${meta.breathDur}s`,
           animationDelay: `${meta.breathDelay}s`,
+          animationTimingFunction: 'ease-in-out',
+          animationIterationCount: 'infinite',
           willChange: 'transform, opacity',
           pointerEvents: 'none',
         }}
