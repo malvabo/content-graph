@@ -543,40 +543,49 @@ const ALL_WIDGET_KINDS: WidgetKind[] = ['twitter', 'linkedin', 'voice', 'scripts
 
 const WIDGET_META: Record<WidgetKind, {
   label: string; sublabel: string; glow: string; dark: string; mid: string; accent: string;
+  breathDur: number; breathDelay: number;
   filterFn: (notes: VoiceNote[]) => VoiceNote[];
   countLabel: (n: number) => string;
 }> = {
   twitter: {
     label: 'Twitter / X', sublabel: 'Threads & posts',
     glow: 'rgba(29,155,240,', dark: '#040a14', mid: '#09192e', accent: '#1d9bf0',
+    breathDur: 5.4, breathDelay: -1.5,
     filterFn: ns => ns.filter(n => n.lastGeneration?.kind === 'twitter-thread' || n.lastGeneration?.kind === 'twitter-single'),
     countLabel: n => n === 1 ? '1 post' : `${n} posts`,
   },
   linkedin: {
     label: 'LinkedIn', sublabel: 'Posts generated',
     glow: 'rgba(10,102,194,', dark: '#030810', mid: '#071426', accent: '#0a66c2',
+    breathDur: 6.3, breathDelay: -3.8,
     filterFn: ns => ns.filter(n => n.lastGeneration?.kind === 'linkedin-post'),
     countLabel: n => n === 1 ? '1 post' : `${n} posts`,
   },
   voice: {
     label: 'Voice Notes', sublabel: 'All recordings',
     glow: 'rgba(13,191,90,', dark: '#030d05', mid: '#071408', accent: '#0DBF5A',
+    breathDur: 5.0, breathDelay: -0.7,
     filterFn: ns => ns.filter(n => n.status !== 'recording'),
     countLabel: n => n === 1 ? '1 note' : `${n} notes`,
   },
   scripts: {
     label: 'Scripts', sublabel: 'Ready to use',
     glow: 'rgba(144,97,249,', dark: '#06040e', mid: '#120b22', accent: '#9061f9',
+    breathDur: 6.8, breathDelay: -2.2,
     filterFn: ns => ns.filter(n => n.status === 'ready' && !!n.transcript),
     countLabel: n => n === 1 ? '1 script' : `${n} scripts`,
   },
 };
 
-function widgetBg(meta: typeof WIDGET_META[WidgetKind], count: number): string {
-  const sat = count === 0 ? 0.10 : Math.min(1, 0.30 + count * 0.12);
-  const op1 = (sat * 0.58).toFixed(2);
-  const op2 = (sat * 0.17).toFixed(2);
-  return `radial-gradient(ellipse at 38% 42%, ${meta.glow}${op1}) 0%, ${meta.glow}${op2}) 44%, ${meta.mid} 68%, ${meta.dark} 100%)`;
+function widgetBaseBg(meta: typeof WIDGET_META[WidgetKind]): string {
+  return `radial-gradient(ellipse at 50% 50%, ${meta.mid} 0%, ${meta.dark} 100%)`;
+}
+
+function widgetGlowBg(meta: typeof WIDGET_META[WidgetKind], count: number): string {
+  const sat = count === 0 ? 0.22 : Math.min(1, 0.45 + count * 0.12);
+  const op1 = (sat * 0.85).toFixed(2);
+  const op2 = (sat * 0.30).toFixed(2);
+  return `radial-gradient(ellipse at 50% 50%, ${meta.glow}${op1}) 0%, ${meta.glow}${op2}) 42%, ${meta.glow}0) 75%)`;
 }
 
 function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
@@ -590,13 +599,28 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
       onClick={editMode ? undefined : onClick}
       aria-label={`${meta.label}: ${meta.countLabel(count)}`}
       style={{
-        aspectRatio: '1 / 1', borderRadius: 20, background: widgetBg(meta, count),
+        aspectRatio: '1 / 1', borderRadius: 20, background: widgetBaseBg(meta),
         border: 'none', cursor: editMode ? 'default' : 'pointer',
         position: 'relative', overflow: 'hidden', textAlign: 'left', padding: 0,
         boxShadow: '0 4px 24px rgba(0,0,0,0.40)',
         transition: 'filter 180ms',
       }}
     >
+      <div
+        aria-hidden
+        className="widget-glow"
+        style={{
+          position: 'absolute', inset: '-30%',
+          background: widgetGlowBg(meta, count),
+          animationName: 'widget-breathe',
+          animationDuration: `${meta.breathDur}s`,
+          animationDelay: `${meta.breathDelay}s`,
+          animationTimingFunction: 'ease-in-out',
+          animationIterationCount: 'infinite',
+          willChange: 'transform, opacity',
+          pointerEvents: 'none',
+        }}
+      />
       {editMode && (
         <div
           role="button"
@@ -611,10 +635,10 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
         >×</div>
       )}
       <div style={{ position: 'absolute', top: 14, left: 14, right: editMode ? 40 : 14 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-sans)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {meta.label}
         </div>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.40)', fontFamily: 'var(--font-sans)', marginTop: 3, letterSpacing: '0.03em' }}>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', marginTop: 3, letterSpacing: '0.02em' }}>
           {meta.sublabel}
         </div>
       </div>
@@ -624,7 +648,7 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
         </span>
       </div>
       <div style={{ position: 'absolute', bottom: 13, left: 14 }}>
-        <span style={{ fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-sans)', color: count > 0 ? meta.accent : 'rgba(255,255,255,0.20)' }}>
+        <span style={{ fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-sans)', color: count > 0 ? meta.accent : 'rgba(255,255,255,0.35)' }}>
           {meta.countLabel(count)}
         </span>
       </div>
@@ -914,12 +938,12 @@ export default function MobileHome() {
           <header style={{ padding: '28px 20px 8px', flexShrink: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div>
               <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.03em' }}>UP150</h1>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.32)', fontFamily: 'var(--font-sans)' }}>Content dashboard</p>
+              <p style={{ margin: '4px 0 0', fontSize: 14, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)' }}>Content dashboard</p>
             </div>
             <button
               onClick={() => setEditMode(m => !m)}
               aria-label={editMode ? 'Done editing' : 'Edit widgets'}
-              style={{ marginTop: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: '5px 14px', fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
+              style={{ marginTop: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: '6px 16px', fontSize: 14, color: 'rgba(255,255,255,0.78)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
             >
               {editMode ? 'Done' : 'Edit'}
             </button>
@@ -947,8 +971,8 @@ export default function MobileHome() {
                   onClick={() => setShowAddSheet(true)}
                   style={{ aspectRatio: '1 / 1', borderRadius: 20, border: '1.5px dashed rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.03)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
-                  <span style={{ fontSize: 28, color: 'rgba(255,255,255,0.20)', lineHeight: 1 }}>+</span>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.20)', fontFamily: 'var(--font-sans)' }}>Add widget</span>
+                  <span style={{ fontSize: 32, color: 'rgba(255,255,255,0.32)', lineHeight: 1 }}>+</span>
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-sans)' }}>Add widget</span>
                 </button>
               )}
             </div>
@@ -964,7 +988,7 @@ export default function MobileHome() {
               borderTop: '1px solid rgba(255,255,255,0.07)',
             }}>
               <button onClick={() => setEditMode(false)} style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,255,255,0.10)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>×</button>
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.40)', fontFamily: 'var(--font-sans)' }}>Edit widgets</span>
+              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--font-sans)' }}>Edit widgets</span>
               <button onClick={() => setEditMode(false)} style={{ width: 50, height: 50, borderRadius: '50%', background: '#0DBF5A', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
               </button>
