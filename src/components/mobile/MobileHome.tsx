@@ -158,7 +158,7 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
               <rect x="6" y="6" width="12" height="12" rx="2" />
             </svg>
           </button>
-          <div style={{ fontSize: 'var(--text-tag)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.10em', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: 'var(--text-tag)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.02em' }}>
             Tap to stop
           </div>
         </div>
@@ -291,7 +291,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   const updateNote = useVoiceStore(s => s.updateNote);
   const [editTitle, setEditTitle] = useState(note.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const titleInputRef = useRef<HTMLInputElement>(null);
+  const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const [gen, setGen] = useState<Generation | null>(() => note.lastGeneration
     ? { kind: note.lastGeneration.kind, text: note.lastGeneration.text, loading: false }
     : null);
@@ -313,15 +313,24 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
   const close = useCallback(() => { saveTitle(); onClose(); }, [onClose, saveTitle]);
 
+  // Keep the title textarea sized to its content so long titles wrap and stay
+  // fully visible (no horizontal clipping like a single-line <input> would do).
+  const sizeTitle = useCallback(() => {
+    const el = titleInputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }, []);
+
   useEffect(() => {
     if (isEditingTitle) {
       const id = setTimeout(() => {
         const el = titleInputRef.current;
-        if (el) { el.focus(); el.select(); }
+        if (el) { el.focus(); el.select(); sizeTitle(); }
       }, 0);
       return () => clearTimeout(id);
     }
-  }, [isEditingTitle]);
+  }, [isEditingTitle, sizeTitle]);
 
   // a11y: capture the previously-focused element to restore on close, move
   // focus into the sheet, lock body scroll, and listen for Escape.
@@ -362,7 +371,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
   const tagStyle: React.CSSProperties = {
     fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 500, lineHeight: 1,
-    textTransform: 'uppercase', letterSpacing: '0.16em', color: 'rgba(255,255,255,0.7)',
+    letterSpacing: '0.02em', color: 'rgba(255,255,255,0.7)',
   };
 
   const glassCard: React.CSSProperties = {
@@ -467,24 +476,27 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
       }}>
         <label htmlFor={titleId} className="sr-only">Note title</label>
         {isEditingTitle ? (
-          <input
+          <textarea
             ref={titleInputRef}
             id={titleId}
             className="note-sheet-title"
+            rows={1}
             value={editTitle}
-            onChange={e => setEditTitle(e.target.value)}
+            onChange={e => { setEditTitle(e.target.value); sizeTitle(); }}
             onBlur={finishTitleEdit}
             onKeyDown={e => {
-              if (e.key === 'Enter') { e.currentTarget.blur(); }
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.blur(); }
               else if (e.key === 'Escape') { setEditTitle(note.title); setIsEditingTitle(false); }
             }}
             aria-label="Note title"
             style={{
               display: 'block', width: '100%', margin: 0, padding: 0,
               background: 'transparent', border: 'none',
+              resize: 'none', overflow: 'hidden',
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title)', fontWeight: 700, lineHeight: 1.2,
               letterSpacing: '-0.02em', color: '#fff',
               caretColor: 'var(--color-accent, #0DBF5A)',
+              wordBreak: 'break-word', overflowWrap: 'anywhere',
             }}
           />
         ) : (
