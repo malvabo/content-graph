@@ -295,6 +295,10 @@ export default function MobileOnboarding({ onComplete }: Props) {
   const isIdle     = phase === 'idle';
   const isDraft    = phase === 'draft';
   const isPlatform = phase === 'platform';
+  // While a disc is traveling down, send the orb to the draft target (bottom center)
+  // so both converge at the same point before the draft text appears.
+  const isTravelingDown = selPhase === 'travel' || selPhase === 'merge';
+  const orbTarget = isTravelingDown ? ORB.draft : ORB[phase];
 
   return (
     <LayoutGroup>
@@ -337,8 +341,12 @@ export default function MobileOnboarding({ onComplete }: Props) {
         <motion.div
           layoutId="main-orb"
           onClick={(e)=>{ if(phase==='prompt'){e.stopPropagation();startRecording();} if(isDraft){e.stopPropagation();triggerPost();} }}
-          animate={{...ORB[phase],...(orbAbsorb?{scale:[1,1.18,1]}:{})}}
-          transition={phase === 'posting' ? {duration:0.7,ease:[0.4,0,0.8,1]} : SPRING}
+          animate={{...orbTarget,...(orbAbsorb?{scale:[1,1.18,1]}:{})}}
+          transition={
+            phase === 'posting'  ? {duration:0.7,ease:[0.4,0,0.8,1]} :
+            isTravelingDown      ? {type:'spring',stiffness:55,damping:18,mass:1} :
+            SPRING
+          }
           style={{position:'absolute',mixBlendMode:'screen',zIndex:12,cursor:(phase==='prompt'||isDraft)?'pointer':'default',pointerEvents:phase==='recording'?'none':'auto'}}
         >
           {/* Overall scale breath — idle and draft */}
@@ -390,17 +398,15 @@ export default function MobileOnboarding({ onComplete }: Props) {
                   initial={{ opacity: 0, scale: 0.3, y: 40 }}
                   animate={{
                     opacity: isDimmed ? 0 : (isSelected && selPhase==='travel' ? 0 : 1),
-                    scale:   isDimmed ? 0.7 : (isSelected && selPhase==='pulse' ? 1.15 : (isSelected && selPhase==='travel' ? 0.35 : 1)),
-                    y:       isDimmed ? 20  : (isSelected && selPhase==='travel' ? '-80vh' : 0),
+                    scale:   isDimmed ? 0.7 : (isSelected && selPhase==='pulse' ? 1.15 : (isSelected && selPhase==='travel' ? 0.2 : 1)),
+                    y:       isDimmed ? 20  : (isSelected && selPhase==='travel' ? '28vh' : 0),
                     x:       isSelected && selPhase==='travel' ? p.xOffset : '0vw',
-                    filter:  isSelected && selPhase==='travel' ? 'saturate(0%)' : 'saturate(100%)',
                   }}
                   transition={{
-                    opacity: isDimmed ? {duration:0.25} : (isSelected&&selPhase==='travel' ? {duration:0.5} : {delay:entranceDelay,...ENT_SPRING}),
-                    scale:   isSelected&&(selPhase==='travel'||selPhase==='pulse') ? {duration:selPhase==='pulse'?0.15:0.7,...SEL_SPRING} : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
-                    y:       isSelected&&selPhase==='travel' ? SEL_SPRING : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
+                    opacity: isDimmed ? {duration:0.25} : (isSelected&&selPhase==='travel' ? {duration:0.5,delay:0.3} : {delay:entranceDelay,...ENT_SPRING}),
+                    scale:   isSelected&&(selPhase==='travel'||selPhase==='pulse') ? {duration:selPhase==='pulse'?0.15:0.75,...SEL_SPRING} : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
+                    y:       isSelected&&selPhase==='travel' ? {type:'spring',stiffness:55,damping:18,mass:1} : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
                     x:       SEL_SPRING,
-                    filter:  {duration:0.6},
                   }}
                   style={{
                     position:'absolute', left:p.left, top:'60%',
