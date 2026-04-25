@@ -88,40 +88,42 @@ const BLOBS = [
 
 // ─── Platform definitions ─────────────────────────────────────────────────────
 
-// Each platform has 3 gradient layers (core / mid / bleed) for the light-not-object look.
-// Positioned in a horizontal row; xOffset = Framer transform needed to travel to pill center (50%).
-
 const PLATFORMS = [
   {
     id: 'linkedin', label: 'LinkedIn', left: '16.5%', xOffset: '33.5vw',
-    core:  'radial-gradient(circle at center, rgba(10,102,194,0.60) 0%, rgba(10,102,194,0) 20%)',
-    mid:   'radial-gradient(circle at center, rgba(10,102,194,0) 0%, rgba(10,102,194,0.40) 22%, rgba(10,102,194,0) 60%)',
-    bleed: 'radial-gradient(circle at center, rgba(10,102,194,0) 0%, rgba(10,102,194,0) 54%, rgba(10,102,194,0.15) 62%, rgba(10,102,194,0) 100%)',
     mergeRgb: '10,102,194',
+    disc: [
+      'radial-gradient(circle at center, rgba(10,102,194,0.60) 0px, rgba(10,102,194,0) 10px)',
+      'radial-gradient(circle at center, rgba(10,102,194,0) 0px, rgba(10,102,194,0.40) 11px, rgba(10,102,194,0) 29px)',
+      'radial-gradient(circle at center, rgba(10,102,194,0) 0px, rgba(10,102,194,0) 52px, rgba(10,102,194,0.15) 60px, rgba(10,102,194,0) 96px)',
+    ].join(', '),
   },
   {
-    // Moonlight — off-white warm, not grey
     id: 'x', label: 'X', left: '39%', xOffset: '11vw',
-    core:  'radial-gradient(circle at center, rgba(240,235,230,0.60) 0%, rgba(240,235,230,0) 20%)',
-    mid:   'radial-gradient(circle at center, rgba(240,235,230,0) 0%, rgba(240,235,230,0.40) 22%, rgba(240,235,230,0) 60%)',
-    bleed: 'radial-gradient(circle at center, rgba(240,235,230,0) 0%, rgba(240,235,230,0) 54%, rgba(240,235,230,0.15) 62%, rgba(240,235,230,0) 100%)',
     mergeRgb: '240,235,230',
+    disc: [
+      'radial-gradient(circle at center, rgba(240,235,230,0.60) 0px, rgba(240,235,230,0) 10px)',
+      'radial-gradient(circle at center, rgba(240,235,230,0) 0px, rgba(240,235,230,0.40) 11px, rgba(240,235,230,0) 29px)',
+      'radial-gradient(circle at center, rgba(240,235,230,0) 0px, rgba(240,235,230,0) 52px, rgba(240,235,230,0.15) 60px, rgba(240,235,230,0) 96px)',
+    ].join(', '),
   },
   {
-    // Pink-to-amber inside the glow stack
     id: 'instagram', label: 'Instagram', left: '61%', xOffset: '-11vw',
-    core:  'radial-gradient(circle at center, rgba(225,48,108,0.60) 0%, rgba(247,119,55,0.30) 12%, rgba(247,119,55,0) 20%)',
-    mid:   'radial-gradient(circle at center, rgba(225,48,108,0) 0%, rgba(225,48,108,0.38) 20%, rgba(247,119,55,0.28) 46%, rgba(247,119,55,0) 60%)',
-    bleed: 'radial-gradient(circle at center, rgba(247,119,55,0) 0%, rgba(247,119,55,0) 54%, rgba(247,119,55,0.14) 62%, rgba(247,119,55,0) 100%)',
     mergeRgb: '225,48,108',
+    disc: [
+      'radial-gradient(circle at center, rgba(225,48,108,0.60) 0px, rgba(247,119,55,0.30) 6px, rgba(247,119,55,0) 10px)',
+      'radial-gradient(circle at center, rgba(225,48,108,0) 0px, rgba(225,48,108,0.38) 10px, rgba(247,119,55,0.28) 22px, rgba(247,119,55,0) 29px)',
+      'radial-gradient(circle at center, rgba(247,119,55,0) 0px, rgba(247,119,55,0) 52px, rgba(247,119,55,0.14) 60px, rgba(247,119,55,0) 96px)',
+    ].join(', '),
   },
   {
-    // Quietest — soft charcoal with faint purple lift
     id: 'threads', label: 'Threads', left: '83.5%', xOffset: '-33.5vw',
-    core:  'radial-gradient(circle at center, rgba(60,50,70,0.60) 0%, rgba(60,50,70,0) 20%)',
-    mid:   'radial-gradient(circle at center, rgba(60,50,70,0) 0%, rgba(60,50,70,0.40) 22%, rgba(60,50,70,0) 60%)',
-    bleed: 'radial-gradient(circle at center, rgba(60,50,70,0) 0%, rgba(60,50,70,0) 54%, rgba(60,50,70,0.15) 62%, rgba(60,50,70,0) 100%)',
     mergeRgb: '60,50,70',
+    disc: [
+      'radial-gradient(circle at center, rgba(60,50,70,0.60) 0px, rgba(60,50,70,0) 10px)',
+      'radial-gradient(circle at center, rgba(60,50,70,0) 0px, rgba(60,50,70,0.40) 11px, rgba(60,50,70,0) 29px)',
+      'radial-gradient(circle at center, rgba(60,50,70,0) 0px, rgba(60,50,70,0) 52px, rgba(60,50,70,0.15) 60px, rgba(60,50,70,0) 96px)',
+    ].join(', '),
   },
 ] as const;
 
@@ -439,18 +441,7 @@ export default function MobileOnboarding({ onComplete }: Props) {
                     }}
                     style={{ position:'absolute', inset:0 }}
                   >
-                    {/* Layer 1: inner core */}
-                    <div aria-hidden style={{ position:'absolute', inset:0, background:p.core, mixBlendMode:'screen' }} />
-                    {/* Layer 2: mid glow */}
-                    <div aria-hidden style={{ position:'absolute', inset:0, background:p.mid, mixBlendMode:'screen' }} />
-                    {/* Layer 3: outer bleed — lags entrance by 100ms */}
-                    <motion.div
-                      aria-hidden
-                      initial={{ opacity:0, scale:0.3 }}
-                      animate={{ opacity:1, scale:1 }}
-                      transition={{ delay:entranceDelay+0.10, ...ENT_SPRING }}
-                      style={{ position:'absolute', inset:'-50%', background:p.bleed, pointerEvents:'none', mixBlendMode:'screen' }}
-                    />
+                    <div aria-hidden style={{ position:'absolute', inset:'-100px', background:p.disc, pointerEvents:'none', mixBlendMode:'screen' }} />
                   </motion.div>
                 </motion.div>
 
