@@ -92,6 +92,7 @@ function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   const isMobile = useIsMobile();
   const [mobileOnboardingDone, setMobileOnboardingDone] = useState(false);
+  const [mobileOnboardingPhase, setMobileOnboardingPhase] = useState<'idle' | 'recording' | undefined>(undefined);
   
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'library'; };
@@ -153,13 +154,18 @@ function AppInner() {
     if (!mobileOnboardingDone) {
       return (
         <div className="flex flex-col" style={{ height: '100dvh' }}>
-          <MobileOnboarding onComplete={() => setMobileOnboardingDone(true)} />
+          <MobileOnboarding
+            initialPhase={mobileOnboardingPhase}
+            onComplete={() => { setMobileOnboardingDone(true); setMobileOnboardingPhase(undefined); }}
+          />
         </div>
       );
     }
     return (
       <div className="flex flex-col" style={{ height: '100dvh' }}>
-        <MobileHome />
+        <MobileHome
+          onAddPost={() => { setMobileOnboardingPhase('recording'); setMobileOnboardingDone(false); }}
+        />
       </div>
     );
   }
