@@ -1,5 +1,18 @@
 # Claude Code — project guidance
 
+## Default behavior — ship every change
+
+**For every user request that produces a code change, the default flow is:
+commit → push → PR → squash-merge to `main`.** No "I'll leave it on the
+branch" — production is `content-graph-five.vercel.app` deploying from
+`main`, and the user's testing environment is that live URL. Anything
+not on `main` is invisible to them. Confirm reaches main before
+declaring the task done.
+
+The only exception: `.claude/` config files. Those are still committed
+to `main` (so they travel with the repo) but Vercel does not deploy
+them, so they will not change anything visible on the live URL.
+
 ## Git workflow
 
 **Always push after every commit.** Use `git push -u origin <branch>` immediately after committing so changes are visible on the remote.
