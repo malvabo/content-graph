@@ -362,6 +362,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
         {/* ── Orb — single gradient, mix-blend-mode:screen, no hard edge ── */}
         <motion.div
           onClick={(e)=>{ if(phase==='prompt'){e.stopPropagation();startRecording();} if(isDraft){e.stopPropagation();triggerPost();} }}
+          initial={{ scale: 0, opacity: 0 }}
           animate={{...orbTarget,...(orbAbsorb?{scale:[1,1.18,1]}:{})}}
           transition={
             phase === 'posting'   ? {duration:0.7,ease:[0.4,0,0.8,1]} :
