@@ -271,40 +271,6 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
   );
 }
 
-/** Aggregated collapsed view for orphan/failed notes.
- *  Uses design-system danger tokens, radius-xl, minHeight 44 (tap target). */
-function ErrorSummary({ failed, onReview }: { failed: VoiceNote[]; onReview: () => void }) {
-  const n = failed.length;
-  return (
-    <button
-      onClick={onReview}
-      aria-label={`${n} recording${n === 1 ? '' : 's'} couldn't be transcribed. Review.`}
-      style={{
-        width: '100%', textAlign: 'left',
-        background: 'rgba(201,48,48,0.14)',
-        border: '1px solid rgba(201,48,48,0.28)',
-        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        borderRadius: 'var(--radius-xl)',
-        padding: 'var(--space-3) var(--space-4)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: 'var(--space-3)', minHeight: 44, minWidth: 0, boxSizing: 'border-box',
-      }}
-    >
-      <span style={{
-        fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, lineHeight: '20px',
-        color: 'rgba(255,107,107,0.95)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis',
-      }}>
-        {n} recording{n === 1 ? '' : 's'} couldn't be transcribed
-      </span>
-      <span aria-hidden style={{
-        fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px',
-        color: 'rgba(255,107,107,0.7)', flexShrink: 0,
-      }}>
-        Review →
-      </span>
-    </button>
-  );
-}
 
 /**
  * Full-screen detail sheet.
@@ -735,9 +701,7 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
 export default function MobileHome() {
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
   const groqKey = useSettingsStore(s => s.groqKey);
-  const anthropicKey = useSettingsStore(s => s.anthropicKey);
   const { user, guest } = useAuthStore();
-  const hasKey = !!(groqKey || anthropicKey);
 
   const [recording, setRecording] = useState(false);
   const [liveText, setLiveText] = useState('');
