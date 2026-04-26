@@ -308,11 +308,6 @@ function pickMimeType(): string | undefined {
   return types.find(t => MR.isTypeSupported(t));
 }
 
-const fmtDuration = (ms: number) => {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  return m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
-};
 
 const fmtDate = (iso: string) => {
   const d = new Date(iso);

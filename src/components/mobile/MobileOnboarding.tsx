@@ -109,32 +109,6 @@ const PLATFORMS = [
   { id: 'threads',   label: 'Threads',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '74,58,94'    },
 ] as const;
 
-// All logos drawn in a unified 32×32 viewBox so each occupies the same visual area
-// inside the cloud — no per-platform size variation.
-const PLATFORM_LOGO: Record<string, React.ReactNode> = {
-  linkedin: (
-    <text x="16" y="22" textAnchor="middle" fontSize="16" fontWeight="800" fill="#fff"
-      fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" letterSpacing="-0.4">in</text>
-  ),
-  x: (
-    <g stroke="#fff" strokeWidth="2.2" strokeLinecap="round" fill="none">
-      <line x1="9" y1="9" x2="23" y2="23" />
-      <line x1="23" y1="9" x2="9" y2="23" />
-    </g>
-  ),
-  instagram: (
-    <g fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="6" y="6" width="20" height="20" rx="5" />
-      <circle cx="16" cy="16" r="5" />
-      <circle cx="22" cy="10" r="1.2" fill="#fff" stroke="none" />
-    </g>
-  ),
-  threads: (
-    <text x="16" y="22" textAnchor="middle" fontSize="15" fontWeight="800" fill="#fff"
-      fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">@</text>
-  ),
-};
-
 // Cloud click-target 64px; halo extends to ~140px around it. Label sits 50px below
 // the cloud center.
 const BULB = 64;
@@ -481,18 +455,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                       pointerEvents:'none',
                     }}
                   />
-                  {/* Logo — same 32×32 bounding box for all four platforms, centered */}
-                  <div style={{
-                    position:'absolute',
-                    left:'50%', top:'50%',
-                    width: 32, height: 32,
-                    marginLeft: -16, marginTop: -16,
-                    pointerEvents:'none',
-                  }}>
-                    <svg viewBox="0 0 32 32" width="32" height="32" style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.45))' }}>
-                      {PLATFORM_LOGO[p.id]}
-                    </svg>
-                  </div>
+
                 </motion.div>
               </motion.div>
 
