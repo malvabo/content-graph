@@ -1863,7 +1863,7 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
         transition: 'filter 180ms',
       }}
     >
-      {/* Primary morphing glow */}
+      {/* Primary glow — fixed, no animation */}
       <div
         aria-hidden
         className="widget-glow"
@@ -1871,16 +1871,10 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
           position: 'absolute', inset: '-45%',
           background: widgetGlowBg(meta, count),
           filter: 'blur(8px)',
-          animationName: 'widget-breathe',
-          animationDuration: `${meta.breathDur * 1.6}s`,
-          animationDelay: `${meta.breathDelay}s`,
-          animationTimingFunction: 'cubic-bezier(0.45, 0.05, 0.55, 0.95)',
-          animationIterationCount: 'infinite',
-          willChange: 'transform, opacity',
           pointerEvents: 'none',
         }}
       />
-      {/* Secondary asymmetric glow — different keyframe phase, different shape, blends with primary into an amorphous morph */}
+      {/* Secondary glow — fixed, no animation */}
       <div
         aria-hidden
         className="widget-glow"
@@ -1889,12 +1883,6 @@ function WidgetCard({ kind, notes, editMode, onRemove, onClick }: {
           background: widgetGlowBgB(meta, count),
           filter: 'blur(14px)',
           mixBlendMode: 'lighten',
-          animationName: 'widget-morph-b',
-          animationDuration: `${meta.breathDur * 2.1}s`,
-          animationDelay: `${meta.breathDelay - 1.7}s`,
-          animationTimingFunction: 'cubic-bezier(0.5, 0, 0.5, 1)',
-          animationIterationCount: 'infinite',
-          willChange: 'transform, opacity',
           pointerEvents: 'none',
         }}
       />
@@ -2093,7 +2081,7 @@ interface MobileHomeProps {
 export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
   const groqKey = useSettingsStore(s => s.groqKey);
-  const { user, guest } = useAuthStore();
+  useAuthStore();
 
   const [recording, setRecording] = useState(false);
   const [liveText, setLiveText] = useState('');
@@ -2287,12 +2275,6 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
       background: 'linear-gradient(160deg, #0d0f1e 0%, #080910 55%, #0c0d18 100%)',
       position: 'relative', minWidth: 0,
     }}>
-      {guest && !user && (
-        <div style={{ background: 'rgba(240,216,160,0.10)', borderBottom: '1px solid rgba(240,216,160,0.15)', padding: '8px 14px', fontSize: 'var(--text-caption)', fontFamily: 'var(--font-sans)', color: 'rgba(240,216,160,0.85)', textAlign: 'center' }}>
-          Guest mode — your work won't be saved.
-        </div>
-      )}
-
       {detailKind ? (
         <DetailView
           kind={detailKind} notes={notes}
@@ -2304,11 +2286,13 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         <>
           {/* Header */}
           <header style={{ padding: '28px 20px 8px', flexShrink: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <div />
+            <span style={{ fontWeight: 500, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', userSelect: 'none', letterSpacing: '0.18em', textTransform: 'uppercase', paddingTop: 10 }}>
+              UP150
+            </span>
             <button
               onClick={() => setEditMode(m => !m)}
               aria-label={editMode ? 'Done editing' : 'Edit widgets'}
-              style={{ marginTop: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, padding: '7px 16px', fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
+              style={{ marginTop: 6, background: 'transparent', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 20, padding: '7px 16px', fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
             >
               {editMode ? 'Done' : 'Edit'}
             </button>
