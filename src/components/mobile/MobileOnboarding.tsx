@@ -113,24 +113,24 @@ const PLATFORMS = [
 // inside the cloud — no per-platform size variation.
 const PLATFORM_LOGO: Record<string, React.ReactNode> = {
   linkedin: (
-    <text x="16" y="22" textAnchor="middle" fontSize="17" fontWeight="800" fill="#fff"
+    <text x="16" y="22" textAnchor="middle" fontSize="16" fontWeight="800" fill="#fff"
       fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" letterSpacing="-0.4">in</text>
   ),
   x: (
-    <g stroke="#fff" strokeWidth="2.5" strokeLinecap="round" fill="none">
+    <g stroke="#fff" strokeWidth="2.2" strokeLinecap="round" fill="none">
       <line x1="9" y1="9" x2="23" y2="23" />
       <line x1="23" y1="9" x2="9" y2="23" />
     </g>
   ),
   instagram: (
-    <g fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <g fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="6" y="6" width="20" height="20" rx="5" />
       <circle cx="16" cy="16" r="5" />
       <circle cx="22" cy="10" r="1.2" fill="#fff" stroke="none" />
     </g>
   ),
   threads: (
-    <text x="16" y="22" textAnchor="middle" fontSize="22" fontWeight="800" fill="#fff"
+    <text x="16" y="22" textAnchor="middle" fontSize="15" fontWeight="800" fill="#fff"
       fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">@</text>
   ),
 };
