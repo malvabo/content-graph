@@ -111,7 +111,7 @@ const PLATFORMS = [
 
 // Cloud click-target 64px; halo extends to ~140px around it. Label sits 50px below
 // the cloud center.
-const BULB = 64;
+const BULB = 48;
 
 // Unified breathing — same amplitude (0.97↔1.03) for every cloud so all four read as
 // the same size at all times. Only the period and phase offset differ, for liveness.
@@ -396,9 +396,9 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 initial={{ opacity: 0, scale: 0.3, y: 40 }}
                 animate={{
                   opacity: isDimmed ? 0 : (isTraveling ? 0 : 1),
-                  scale:   isDimmed ? 0.7 : (isSelected && selPhase==='pulse' ? 1.15 : (isTraveling ? 0.35 : 1)),
+                  scale:   isDimmed ? 0.7 : (isSelected && selPhase==='pulse' ? 1.15 : (isTraveling ? 0 : 1)),
                   y:       isDimmed ? 20  : (isTraveling ? '28vh' : 0),
-                  x:       '0vw',
+                  x:       isTraveling ? p.xOffset : '0vw',
                   filter:  'saturate(100%)',
                 }}
                 transition={{
@@ -432,8 +432,8 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                     style={{
                       position:'absolute',
                       left:'50%', top:'50%',
-                      width: 140, height: 140,
-                      marginLeft: -70, marginTop: -70,
+                      width: 100, height: 100,
+                      marginLeft: -50, marginTop: -50,
                       borderRadius:'50%',
                       background: `radial-gradient(circle at 50% 50%, rgba(${p.glowRgb},0.32) 0%, rgba(${p.glowRgb},0.10) 38%, rgba(${p.glowRgb},0.03) 60%, rgba(${p.glowRgb},0) 80%)`,
                       filter:'blur(8px)',
@@ -446,8 +446,8 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                     style={{
                       position:'absolute',
                       left:'50%', top:'50%',
-                      width: 84, height: 84,
-                      marginLeft: -42, marginTop: -42,
+                      width: 60, height: 60,
+                      marginLeft: -30, marginTop: -30,
                       borderRadius:'50%',
                       background: `radial-gradient(circle at 50% 45%, rgba(${p.glowRgb},0.90) 0%, rgba(${p.glowRgb},0.60) 40%, rgba(${p.glowRgb},0.20) 68%, rgba(${p.glowRgb},0) 90%)`,
                       filter:'blur(3px)',
@@ -581,7 +581,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           )}
           {phase==='platform' && (
             <motion.div key="h-platform"
-              initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:selId?0:0.85,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:selId?0:0.15,ease:[0.4,0,0.2,1]}}
+              initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:selId?0:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:selId?0:0.15,ease:[0.4,0,0.2,1]}}
               style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             >Where should this go?</motion.div>
           )}
