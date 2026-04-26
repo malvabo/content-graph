@@ -12,6 +12,8 @@ interface Generation {
   text: string;
   loading: boolean;
   error?: string;
+  /** What the model originally returned, before any user edits. Used to derive the 'Edited' badge. */
+  originalText?: string;
 }
 
 const KIND_LABEL: Record<AssetKind, string> = {
@@ -313,12 +315,14 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const [gen, setGen] = useState<Generation | null>(() => note.lastGeneration
-    ? { kind: note.lastGeneration.kind, text: note.lastGeneration.text, loading: false }
+    ? { kind: note.lastGeneration.kind, text: note.lastGeneration.text, originalText: note.lastGeneration.text, loading: false }
     : null);
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [editHintDismissed, setEditHintDismissed] = useState(() => sessionStorage.getItem('note-edit-hint-seen') === '1');
   const menuRef = useRef<HTMLDivElement>(null);
+  const postEditorRef = useRef<HTMLTextAreaElement>(null);
   const isError = note.status === 'error';
   const titleId = `voice-sheet-title-${note.id}`;
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -395,12 +399,46 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
     setGen({ kind, text: '', loading: true });
     try {
       const out = await aiExecute(note.transcript, {}, kind);
-      setGen({ kind, text: out, loading: false });
+      setGen({ kind, text: out, originalText: out, loading: false });
       updateNote(note.id, { lastGeneration: { kind, text: out, createdAt: new Date().toISOString() } });
     } catch (e: any) {
       setGen({ kind, text: '', loading: false, error: e?.message || 'Generation failed' });
     }
   }, [note.id, note.transcript, updateNote]);
+
+  // Resize the editable post textarea to its content so the post reads as flowing
+  // page text rather than a constrained input.
+  const sizePostEditor = useCallback(() => {
+    const el = postEditorRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }, []);
+
+  // Auto-save the generated post text whenever it changes (debounced 400ms).
+  useEffect(() => {
+    if (!gen || gen.loading || gen.error || !gen.text) return;
+    if (gen.text === note.lastGeneration?.text && gen.kind === note.lastGeneration?.kind) return;
+    const t = setTimeout(() => {
+      updateNote(note.id, {
+        lastGeneration: {
+          kind: gen.kind,
+          text: gen.text,
+          createdAt: note.lastGeneration?.createdAt ?? new Date().toISOString(),
+        },
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [gen, note.id, note.lastGeneration, updateNote]);
+
+  // Re-size the post editor whenever its text changes (including after regenerate).
+  useEffect(() => { sizePostEditor(); }, [gen?.text, sizePostEditor]);
+
+  const dismissEditHint = useCallback(() => {
+    if (editHintDismissed) return;
+    sessionStorage.setItem('note-edit-hint-seen', '1');
+    setEditHintDismissed(true);
+  }, [editHintDismissed]);
 
   const copy = async () => {
     if (!gen?.text) return;
@@ -634,31 +672,74 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           </div>
         ) : hasGen && gen ? (
           <>
-            {/* Generated post text — no card, no border, just text */}
-            <div style={{
-              padding: '0 var(--space-4)',
-              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 400, lineHeight: 1.6,
-              color: 'rgba(255,255,255,0.92)',
-              whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
-            }}>
-              {gen.text}
-            </div>
+            {/* Generated post — editable in place, no card, no border. Tap drops a cursor. */}
+            <textarea
+              ref={postEditorRef}
+              value={gen.text}
+              onChange={e => { setGen(g => g ? { ...g, text: e.target.value } : g); sizePostEditor(); }}
+              onFocus={dismissEditHint}
+              aria-label="Generated post — tap to edit"
+              spellCheck
+              className="note-post-editor"
+              style={{
+                display: 'block', width: '100%',
+                margin: 0, padding: '0 var(--space-4)',
+                background: 'transparent', border: 'none', outline: 'none', resize: 'none', overflow: 'hidden',
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 400, lineHeight: 1.6,
+                color: 'rgba(255,255,255,0.92)',
+                wordBreak: 'break-word', overflowWrap: 'anywhere',
+                boxSizing: 'border-box',
+              }}
+            />
 
-            {/* Twitter character counter, when relevant */}
-            {gen.kind === 'twitter-single' && (() => {
+            {/* Length indicator + Edited badge */}
+            {(() => {
               const len = gen.text.length;
-              const over = len > 280;
+              const words = gen.text.trim() ? gen.text.trim().split(/\s+/).length : 0;
+              const isTwitterSingle = gen.kind === 'twitter-single';
+              const over = isTwitterSingle && len > 280;
+              const near = isTwitterSingle && len > 250;
+              const indicatorColor = over ? 'rgba(255,127,127,0.95)' : near ? 'rgba(240,216,160,0.95)' : 'rgba(255,255,255,0.45)';
+              const indicatorText = isTwitterSingle ? `${len}/280` : (gen.kind === 'linkedin-post' ? `${words} ${words === 1 ? 'word' : 'words'}` : `${words} ${words === 1 ? 'word' : 'words'} · ${len} chars`);
+              const edited = gen.originalText !== undefined && gen.text !== gen.originalText;
               return (
                 <div style={{
                   padding: 'var(--space-3) var(--space-4) 0',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
                   fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 500,
-                  color: over ? 'rgba(255,127,127,0.95)' : len > 250 ? 'rgba(240,216,160,0.95)' : 'rgba(255,255,255,0.45)',
                   letterSpacing: '0.04em',
                 }}>
-                  {len}/280
+                  <span style={{ color: indicatorColor }}>{indicatorText}</span>
+                  {edited && (
+                    <span aria-live="polite" style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      color: 'rgba(255,255,255,0.55)',
+                      fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500, letterSpacing: 0,
+                    }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+                      </svg>
+                      Edited
+                    </span>
+                  )}
                 </div>
               );
             })()}
+
+            {/* One-time 'Tap to edit' hint, dismisses on first focus */}
+            {!editHintDismissed && (
+              <div aria-hidden style={{
+                padding: 'var(--space-2) var(--space-4) 0',
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500,
+                color: 'rgba(255,255,255,0.40)',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+                </svg>
+                Tap the post to edit
+              </div>
+            )}
 
             {/* Dominant Copy button — full-width */}
             <div style={{ padding: 'var(--space-5) var(--space-4) 0' }}>
