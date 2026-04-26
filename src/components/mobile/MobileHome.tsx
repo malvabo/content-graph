@@ -524,33 +524,36 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
         WebkitBoxOrient: 'vertical',
         overflow: 'hidden',
         wordBreak: 'normal', overflowWrap: 'normal',
+        textAlign: 'left',
       }}>
         {displayTitle}
+      </span>
+
+      {/* Metadata — time directly under title */}
+      <span style={{
+        position: 'relative', zIndex: 1,
+        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 400,
+        color: 'rgba(255,255,255,0.45)',
+        textAlign: 'left',
+      }}>
+        {meta}
       </span>
 
       {/* Preview / state hint — only when the title is a single line */}
       {showPreview && previewText && (
         <span style={{
           position: 'relative', zIndex: 1,
+          marginTop: 2,
           fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400,
           lineHeight: '20px',
           color: isError ? 'rgba(255,127,127,0.85)' : 'rgba(255,255,255,0.55)',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           fontStyle: isTranscribing ? 'italic' : 'normal',
+          textAlign: 'left',
         }}>
           {previewText}
         </span>
       )}
-
-      {/* Metadata — date only, no duration */}
-      <span style={{
-        position: 'relative', zIndex: 1,
-        marginTop: 2,
-        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 400,
-        color: 'rgba(255,255,255,0.45)',
-      }}>
-        {meta}
-      </span>
     </button>
   );
 }
