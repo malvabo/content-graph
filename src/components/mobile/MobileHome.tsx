@@ -22,6 +22,270 @@ const KIND_LABEL: Record<AssetKind, string> = {
   'twitter-single': 'Twitter single',
 };
 
+const ALL_KINDS: AssetKind[] = ['linkedin-post', 'twitter-thread', 'twitter-single'];
+
+const PLATFORM_GLOW: Record<AssetKind, { rgb: string; accent: string; dur: number; delay: number }> = {
+  'linkedin-post':   { rgb: '10,102,194', accent: '#4ea2e8', dur: 7.4, delay: -1.1 },
+  'twitter-thread':  { rgb: '29,155,240', accent: '#5cbcf7', dur: 6.6, delay: -3.2 },
+  'twitter-single':  { rgb: '29,155,240', accent: '#5cbcf7', dur: 5.9, delay: -0.5 },
+};
+
+/**
+ * One row in the 'Also generate for…' section. Single-line collapsed: platform
+ * label on the left, 'Generate' affordance on the right. Tapping streams the
+ * post token-by-token into an inline expansion that mirrors the primary post's
+ * pattern (editable text, length indicator, Copy chip, Regenerate). No card,
+ * no border — just rows.
+ */
+function SecondaryGenRow({ kind, transcript }: { kind: AssetKind; transcript: string }) {
+  const meta = PLATFORM_GLOW[kind];
+  const [text, setText] = useState('');
+  const [originalText, setOriginalText] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const cancelRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const sizeEditor = useCallback(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }, []);
+  useEffect(() => { if (expanded) sizeEditor(); }, [text, expanded, sizeEditor]);
+
+  const runGenerate = useCallback(async (instruction?: string, baseText?: string) => {
+    cancelRef.current = false;
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    setIsStreaming(true);
+    setExpanded(true);
+    setError(null);
+    setText('');
+    const kindLabel = KIND_LABEL[kind].toLowerCase();
+    const prompt = instruction
+      ? [
+          `You are rewriting an existing ${kindLabel} based on this instruction: ${instruction}.`,
+          `Preserve the author's voice. Output only the rewritten post — no preamble, no explanation.`,
+          ``,
+          `ORIGINAL POST:`,
+          baseText ?? '',
+        ].join('\n')
+      : transcript;
+    try {
+      const out = await aiExecute(prompt, {}, kind, undefined, abortRef.current.signal);
+      const parts = out.split(/(\s+)/);
+      let buf = '';
+      for (const p of parts) {
+        if (cancelRef.current) break;
+        buf += p;
+        setText(buf);
+        await new Promise(r => setTimeout(r, 18));
+      }
+      const finalText = cancelRef.current ? buf : out;
+      setText(finalText);
+      setOriginalText(finalText);
+      setIsStreaming(false);
+    } catch (e: any) {
+      const aborted = e?.name === 'AbortError' || cancelRef.current;
+      setIsStreaming(false);
+      if (!aborted) setError(e?.message || 'Generation failed');
+    }
+  }, [kind, transcript]);
+
+  const stop = useCallback(() => {
+    cancelRef.current = true;
+    abortRef.current?.abort();
+    setIsStreaming(false);
+  }, []);
+
+  const onCopy = async () => {
+    if (!text) return;
+    try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* blocked */ }
+  };
+
+  // Collapsed row: just label on the left, Generate on the right.
+  if (!expanded) {
+    return (
+      <button
+        onClick={() => runGenerate()}
+        aria-label={`Generate ${KIND_LABEL[kind]}`}
+        style={{
+          width: '100%',
+          padding: '14px 0',
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          color: 'rgba(255,255,255,0.85)',
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 500,
+          textAlign: 'left',
+        }}
+      >
+        <span>{KIND_LABEL[kind]}</span>
+        <span style={{
+          color: meta.accent, fontWeight: 500,
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+        }}>
+          Generate
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </span>
+      </button>
+    );
+  }
+
+  // Expanded row: post text + length indicator + actions, smaller than primary.
+  const len = text.length;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const isTwitterSingle = kind === 'twitter-single';
+  const over = isTwitterSingle && len > 280;
+  const near = isTwitterSingle && len > 250;
+  const indicatorColor = over ? 'rgba(255,127,127,0.95)' : near ? 'rgba(240,216,160,0.95)' : 'rgba(255,255,255,0.45)';
+  const indicatorText = isTwitterSingle ? `${len}/280` : (kind === 'linkedin-post' ? `${words} ${words === 1 ? 'word' : 'words'}` : `${words} ${words === 1 ? 'word' : 'words'} · ${len} chars`);
+  const edited = originalText !== '' && text !== originalText;
+
+  return (
+    <div style={{ padding: '14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Header row — kind + collapse */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{
+          color: meta.accent, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 600,
+        }}>
+          {KIND_LABEL[kind]}
+        </span>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          {isStreaming && (
+            <button
+              onClick={stop}
+              aria-label="Stop"
+              style={{
+                background: 'rgba(255,107,107,0.18)', border: '1px solid rgba(255,107,107,0.45)',
+                color: 'rgba(255,127,127,0.95)', cursor: 'pointer',
+                padding: '4px 10px', borderRadius: 999,
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 600,
+              }}
+            >
+              Stop
+            </button>
+          )}
+          <button
+            onClick={() => { stop(); setExpanded(false); }}
+            aria-label="Hide"
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'rgba(255,255,255,0.45)',
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500,
+              padding: '4px 6px',
+            }}
+          >
+            Hide
+          </button>
+        </div>
+      </div>
+
+      {/* Editable post text */}
+      <textarea
+        ref={editorRef}
+        value={text}
+        onChange={e => { setText(e.target.value); sizeEditor(); }}
+        aria-label={`${KIND_LABEL[kind]} text`}
+        spellCheck
+        className="note-post-editor"
+        style={{
+          display: 'block', width: '100%',
+          margin: 0, padding: 0,
+          background: 'transparent', border: 'none', outline: 'none', resize: 'none', overflow: 'hidden',
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55,
+          color: 'rgba(255,255,255,0.92)',
+          wordBreak: 'break-word', overflowWrap: 'anywhere',
+        }}
+      />
+
+      {/* Length indicator + Edited badge */}
+      {text && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 500,
+          letterSpacing: '0.04em',
+        }}>
+          <span style={{ color: indicatorColor }}>{indicatorText}</span>
+          {edited && (
+            <span style={{
+              color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500, letterSpacing: 0,
+            }}>
+              Edited
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Actions: Copy + Regenerate (rerolls with the same instruction approach) */}
+      {text && !isStreaming && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            onClick={onCopy}
+            aria-label={copied ? 'Copied' : 'Copy'}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px', borderRadius: 999,
+              background: copied ? `rgba(${meta.rgb},0.30)` : `rgba(${meta.rgb},0.18)`,
+              border: `1px solid rgba(${meta.rgb},0.45)`,
+              color: meta.accent,
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {copied ? (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12"/></svg>
+                Copied
+              </>
+            ) : (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="9" y="9" width="13" height="13" rx="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                Copy
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => runGenerate('Rewrite from a different angle on the same idea.', text)}
+            aria-label="Regenerate"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 12px', borderRadius: 999,
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)',
+              color: 'rgba(255,255,255,0.75)',
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/>
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>
+            </svg>
+            Regenerate
+          </button>
+        </div>
+      )}
+
+      {error && (
+        <div role="alert" style={{
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)',
+          color: 'rgba(255,168,168,0.95)',
+        }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Groq Whisper fallback when live Web Speech produced no transcript. */
 async function transcribeWithGroq(blob: Blob, apiKey: string): Promise<string> {
   const form = new FormData();
@@ -583,15 +847,9 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
     color: 'rgba(255,255,255,0.92)',
   };
 
-  const platformGlow: Record<AssetKind, { rgb: string; accent: string; dur: number; delay: number }> = {
-    'linkedin-post':   { rgb: '10,102,194', accent: '#4ea2e8', dur: 7.4, delay: -1.1 },
-    'twitter-thread':  { rgb: '29,155,240', accent: '#5cbcf7', dur: 6.6, delay: -3.2 },
-    'twitter-single':  { rgb: '29,155,240', accent: '#5cbcf7', dur: 5.9, delay: -0.5 },
-  };
-
   const hasGen = !!(gen?.text && !gen.loading && !gen.error);
   const platformLabel = gen ? KIND_LABEL[gen.kind].split(' ')[0] : null;
-  const platformMeta = gen ? platformGlow[gen.kind] : null;
+  const platformMeta = gen ? PLATFORM_GLOW[gen.kind] : null;
   const platformRgb = platformMeta?.rgb ?? '144,97,249';
   const platformAccent = platformMeta?.accent ?? '#a78bfa';
 
@@ -1111,7 +1369,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                 const isActive = gen?.kind === k;
                 const isLoadingThis = !!(isActive && gen?.loading);
                 const isSaved = note.lastGeneration?.kind === k;
-                const meta = platformGlow[k];
+                const meta = PLATFORM_GLOW[k];
                 return (
                   <button
                     key={k}
@@ -1156,6 +1414,27 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             </div>
           </section>
         ) : null}
+
+        {/* 'Also generate for…' — secondary platforms below the fold. Only when a
+            primary post exists and we have a transcript to feed new generations. */}
+        {hasGen && gen && note.transcript && (
+          <>
+            <div aria-hidden style={{ height: 72, flexShrink: 0 }} />
+            <div style={{ padding: '0 var(--space-4)' }}>
+              <div style={{
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500,
+                color: 'rgba(255,255,255,0.5)',
+                marginBottom: 'var(--space-2)',
+                letterSpacing: '0.01em',
+              }}>
+                Also generate for…
+              </div>
+              {ALL_KINDS.filter(k => k !== gen.kind).map(k => (
+                <SecondaryGenRow key={k} kind={k} transcript={note.transcript} />
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Spacer pushes the View transcript affordance to the bottom of the visible area */}
         <div style={{ flex: 1, minHeight: 24 }} />
