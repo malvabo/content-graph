@@ -290,7 +290,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
   const isPlatform      = phase === 'platform';
   const isTravelingDown = selPhase === 'travel' || selPhase === 'merge';
   const orbTarget       = isTravelingDown ? ORB.draft
-                        : (isPosted ? ORB.posting : ORB[phase]);
+                        : (isPosted ? ORB.draft : ORB[phase]);
 
   return (
     <LayoutGroup>
