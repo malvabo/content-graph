@@ -103,13 +103,10 @@ const BLOBS = [
 // no rectangle to leak on iOS Safari.
 
 const PLATFORMS = [
-  { id: 'linkedin',  label: 'LinkedIn',  left: '16.5%', xOffset: '33.5vw', mergeRgb: '10,102,194',  glowRgb: '78,162,232',  bulbInner: '#cfe1f6', bulbOuter: '#0a66c2' },
-  // Silvered moonlight — neutral but with presence
-  { id: 'x',         label: 'X',         left: '39%',   xOffset: '11vw',   mergeRgb: '240,235,230', glowRgb: '230,228,222', bulbInner: '#ffffff', bulbOuter: '#5a5a5a' },
-  // Pink to warm orange
-  { id: 'instagram', label: 'Instagram', left: '61%',   xOffset: '-11vw',  mergeRgb: '225,48,108',  glowRgb: '247,119,55',  bulbInner: '#ffceb6', bulbOuter: '#c93066' },
-  // Dusk purple
-  { id: 'threads',   label: 'Threads',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '180,160,210', bulbInner: '#d4c4e6', bulbOuter: '#4a3a5e' },
+  { id: 'linkedin',  label: 'LinkedIn',  left: '16.5%', xOffset: '33.5vw', mergeRgb: '10,102,194',  glowRgb: '10,102,194',  bulbInner: '#cfe1f6', bulbOuter: '#0a66c2' },
+  { id: 'x',         label: 'X',         left: '39%',   xOffset: '11vw',   mergeRgb: '240,235,230', glowRgb: '90,90,90',    bulbInner: '#ffffff', bulbOuter: '#5a5a5a' },
+  { id: 'instagram', label: 'Instagram', left: '61%',   xOffset: '-11vw',  mergeRgb: '225,48,108',  glowRgb: '201,48,102',  bulbInner: '#ffceb6', bulbOuter: '#c93066' },
+  { id: 'threads',   label: 'Threads',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '74,58,94',    bulbInner: '#d4c4e6', bulbOuter: '#4a3a5e' },
 ] as const;
 
 // All logos drawn in a unified 32×32 viewBox so each occupies the same visual area
@@ -465,7 +462,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                       width: 140, height: 140,
                       marginLeft: -70, marginTop: -70,
                       borderRadius:'50%',
-                      background: `radial-gradient(circle at 50% 50%, rgba(${p.glowRgb},0.42) 0%, rgba(${p.glowRgb},0.14) 32%, rgba(${p.glowRgb},0.04) 55%, rgba(${p.glowRgb},0) 78%)`,
+                      background: `radial-gradient(circle at 50% 50%, rgba(${p.glowRgb},0.32) 0%, rgba(${p.glowRgb},0.10) 38%, rgba(${p.glowRgb},0.03) 60%, rgba(${p.glowRgb},0) 80%)`,
                       filter:'blur(8px)',
                       pointerEvents:'none',
                     }}
@@ -479,7 +476,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                       width: 84, height: 84,
                       marginLeft: -42, marginTop: -42,
                       borderRadius:'50%',
-                      background: `radial-gradient(circle at 50% 45%, ${p.bulbInner} 0%, ${p.bulbOuter} 35%, rgba(${p.glowRgb},0.45) 60%, rgba(${p.glowRgb},0) 88%)`,
+                      background: `radial-gradient(circle at 50% 45%, ${p.bulbInner} 0%, ${p.bulbOuter} 35%, rgba(${p.glowRgb},0.30) 60%, rgba(${p.glowRgb},0) 88%)`,
                       filter:'blur(3px)',
                       pointerEvents:'none',
                     }}
@@ -632,7 +629,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-16}}
               transition={{duration:0.4,delay:0.9,ease:[0.4,0,0.2,1]}}
               style={{position:'absolute',top:'6%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-title-sm)',fontWeight:700,color:'rgba(255,255,255,0.88)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:5}}
-            >Here's your draft</motion.div>
+            >Continue from where you left off</motion.div>
           )}
         </AnimatePresence>
 
