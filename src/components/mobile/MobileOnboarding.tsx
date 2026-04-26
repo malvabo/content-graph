@@ -317,7 +317,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
   const isPlatform      = phase === 'platform';
   const isTravelingDown = selPhase === 'travel' || selPhase === 'merge';
   const orbTarget       = isTravelingDown ? ORB.draft
-                        : (isPosted ? {...ORB.idle, top: '48%'} : ORB[phase]);
+                        : (isPosted ? ORB.posting : ORB[phase]);
 
   return (
     <LayoutGroup>
@@ -590,6 +590,21 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 transition={{duration:0.4,delay:0.3,ease:[0.4,0,0.2,1]}}
                 style={{position:'absolute',top:'52%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.6)',letterSpacing:'0.01em',pointerEvents:'none',zIndex:20}}
               >Saved to library.</motion.div>
+              {/* Success light — appears below text, shrinks 1→0 */}
+              <motion.div key="success-orb"
+                initial={{scale:1,opacity:0.85}}
+                animate={{scale:0,opacity:0}}
+                transition={{duration:1.1,delay:0.5,ease:[0.4,0,0.8,1]}}
+                style={{
+                  position:'absolute',top:'64%',left:'50%',
+                  width:120,height:120,
+                  marginLeft:-60,marginTop:-60,
+                  borderRadius:'50%',
+                  background:'radial-gradient(circle, rgba(255,235,210,0.95) 0%, rgba(255,180,80,0.55) 40%, rgba(255,120,30,0.20) 70%, rgba(255,100,20,0) 100%)',
+                  mixBlendMode:'screen',
+                  pointerEvents:'none',zIndex:20,
+                }}
+              />
             </>
           )}
         </AnimatePresence>
