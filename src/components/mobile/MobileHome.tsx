@@ -321,8 +321,20 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [editHintDismissed, setEditHintDismissed] = useState(() => sessionStorage.getItem('note-edit-hint-seen') === '1');
+  // Steerable regenerate
+  const [chooserOpen, setChooserOpen] = useState(false);
+  const [customMode, setCustomMode] = useState(false);
+  const [customText, setCustomText] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  type Version = { kind: AssetKind; text: string; createdAt: string };
+  const [versions, setVersions] = useState<Version[]>([]);
+  const [versionsOpen, setVersionsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const versionsRef = useRef<HTMLDivElement>(null);
   const postEditorRef = useRef<HTMLTextAreaElement>(null);
+  const customInputRef = useRef<HTMLInputElement>(null);
+  const streamCancelRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
   const isError = note.status === 'error';
   const titleId = `voice-sheet-title-${note.id}`;
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -439,6 +451,117 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
     sessionStorage.setItem('note-edit-hint-seen', '1');
     setEditHintDismissed(true);
   }, [editHintDismissed]);
+
+  // Close the versions dropdown on outside click / Escape.
+  useEffect(() => {
+    if (!versionsOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (versionsRef.current && !versionsRef.current.contains(e.target as Node)) setVersionsOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setVersionsOpen(false); };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [versionsOpen]);
+
+  // Stop any in-flight stream cleanly.
+  const stopStream = useCallback(() => {
+    streamCancelRef.current = true;
+    abortRef.current?.abort();
+    setIsStreaming(false);
+  }, []);
+
+  // Steerable regenerate: builds a rewrite prompt with the user's instruction,
+  // saves the current text as a version, then streams the new text in token by
+  // token (whitespace-preserving). Stop button aborts cleanly and keeps whatever
+  // has streamed so far.
+  const regenerateWith = useCallback(async (instruction: string) => {
+    if (!gen || !gen.text) return;
+    const currentKind = gen.kind;
+    const currentText = gen.text;
+
+    // Push current state to versions
+    setVersions(v => [...v, { kind: currentKind, text: currentText, createdAt: new Date().toISOString() }]);
+    setChooserOpen(false);
+    setCustomMode(false);
+    setCustomText('');
+
+    streamCancelRef.current = false;
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+
+    setIsStreaming(true);
+    setGen(g => g ? { ...g, text: '', loading: true, error: undefined } : g);
+
+    const kindLabel = KIND_LABEL[currentKind].toLowerCase();
+    const prompt = [
+      `You are rewriting an existing ${kindLabel} based on this instruction: ${instruction}.`,
+      `Preserve the author's voice. Output only the rewritten post — no preamble, no explanation.`,
+      ``,
+      `ORIGINAL POST:`,
+      currentText,
+    ].join('\n');
+
+    try {
+      const out = await aiExecute(prompt, {}, currentKind, undefined, abortRef.current.signal);
+      // Token-by-token reveal (whitespace-preserving split)
+      const parts = out.split(/(\s+)/);
+      let buf = '';
+      for (const p of parts) {
+        if (streamCancelRef.current) break;
+        buf += p;
+        setGen(g => g ? { ...g, text: buf, loading: false, error: undefined } : g);
+        await new Promise(r => setTimeout(r, 18));
+      }
+      const finalText = streamCancelRef.current ? buf : out;
+      setGen(g => g ? { ...g, text: finalText, originalText: finalText, loading: false } : g);
+      setIsStreaming(false);
+      updateNote(note.id, {
+        lastGeneration: { kind: currentKind, text: finalText, createdAt: new Date().toISOString() },
+      });
+    } catch (e: any) {
+      const aborted = e?.name === 'AbortError' || streamCancelRef.current;
+      setIsStreaming(false);
+      if (aborted) {
+        // Keep partial output on abort; turn off loading
+        setGen(g => g ? { ...g, loading: false } : g);
+      } else {
+        setGen(g => g ? { ...g, loading: false, error: e?.message || 'Regeneration failed' } : g);
+      }
+    }
+  }, [gen, note.id, updateNote]);
+
+  const restoreVersion = useCallback((idx: number) => {
+    const target = versions[idx];
+    if (!target || !gen) return;
+    // Save current as another version so the restore is reversible
+    setVersions(v => [...v, { kind: gen.kind, text: gen.text, createdAt: new Date().toISOString() }]);
+    setGen(g => g ? { ...g, kind: target.kind, text: target.text, originalText: target.text, loading: false, error: undefined } : g);
+    setVersionsOpen(false);
+    updateNote(note.id, {
+      lastGeneration: { kind: target.kind, text: target.text, createdAt: new Date().toISOString() },
+    });
+  }, [versions, gen, note.id, updateNote]);
+
+  // When custom mode opens, focus the input.
+  useEffect(() => {
+    if (customMode) {
+      const id = setTimeout(() => customInputRef.current?.focus(), 0);
+      return () => clearTimeout(id);
+    }
+  }, [customMode]);
+
+  const formatVersionTime = (iso: string) => {
+    const d = new Date(iso);
+    const diff = Date.now() - d.getTime();
+    if (diff < 60_000) return 'Just now';
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
 
   const copy = async () => {
     if (!gen?.text) return;
@@ -710,18 +833,81 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                   letterSpacing: '0.04em',
                 }}>
                   <span style={{ color: indicatorColor }}>{indicatorText}</span>
-                  {edited && (
-                    <span aria-live="polite" style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                      color: 'rgba(255,255,255,0.55)',
-                      fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500, letterSpacing: 0,
-                    }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
-                      </svg>
-                      Edited
-                    </span>
-                  )}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+                    {edited && (
+                      <span aria-live="polite" style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        color: 'rgba(255,255,255,0.55)',
+                        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500, letterSpacing: 0,
+                      }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+                        </svg>
+                        Edited
+                      </span>
+                    )}
+                    {versions.length > 0 && (
+                      <div ref={versionsRef} style={{ position: 'relative' }}>
+                        <button
+                          onClick={() => setVersionsOpen(o => !o)}
+                          aria-haspopup="menu"
+                          aria-expanded={versionsOpen}
+                          aria-label={`Version ${versions.length + 1} of ${versions.length + 1}. View previous versions.`}
+                          style={{
+                            background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px',
+                            fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 600,
+                            color: 'rgba(255,255,255,0.65)', letterSpacing: '0.04em',
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                          }}
+                        >
+                          v{versions.length + 1}
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ transform: versionsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms' }}>
+                            <polyline points="6 9 12 15 18 9"/>
+                          </svg>
+                        </button>
+                        {versionsOpen && (
+                          <div role="menu" style={{
+                            position: 'absolute', top: 28, right: 0, minWidth: 240, maxWidth: 320,
+                            background: 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
+                            border: '1px solid rgba(255,255,255,0.10)',
+                            borderRadius: 14,
+                            padding: 6,
+                            boxShadow: '0 18px 48px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)',
+                            zIndex: 5,
+                          }}>
+                            {versions.map((v, i) => (
+                              <button
+                                key={i}
+                                role="menuitem"
+                                onClick={() => restoreVersion(i)}
+                                style={{
+                                  display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2,
+                                  width: '100%', textAlign: 'left',
+                                  padding: '10px 12px', borderRadius: 10,
+                                  background: 'transparent', border: 'none', cursor: 'pointer',
+                                }}
+                              >
+                                <span style={{
+                                  fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 600,
+                                  color: 'rgba(255,255,255,0.85)', letterSpacing: '0.04em',
+                                }}>
+                                  v{i + 1} <span style={{ color: 'rgba(255,255,255,0.45)', fontWeight: 500, marginLeft: 6 }}>{formatVersionTime(v.createdAt)}</span>
+                                </span>
+                                <span style={{
+                                  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400, lineHeight: 1.35,
+                                  color: 'rgba(255,255,255,0.65)',
+                                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden', textOverflow: 'ellipsis',
+                                }}>
+                                  {v.text}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })()}
@@ -779,25 +965,141 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
               </button>
             </div>
 
-            {/* Quieter Regenerate */}
-            <div style={{ padding: 'var(--space-3) var(--space-4) 0', display: 'flex', justifyContent: 'center' }}>
-              <button
-                onClick={() => generate(gen.kind)}
-                aria-label="Regenerate"
-                style={{
-                  background: 'transparent', border: 'none', cursor: 'pointer',
-                  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
-                  color: 'rgba(255,255,255,0.55)',
-                  padding: '8px 12px',
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/>
-                  <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>
-                </svg>
-                Regenerate
-              </button>
+            {/* Steerable regenerate: chooser + custom + Stop */}
+            <div style={{ padding: 'var(--space-3) var(--space-4) 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
+              {isStreaming ? (
+                <button
+                  onClick={stopStream}
+                  aria-label="Stop regenerating"
+                  style={{
+                    background: 'rgba(255,107,107,0.18)', border: '1px solid rgba(255,107,107,0.45)',
+                    color: 'rgba(255,127,127,0.95)', cursor: 'pointer',
+                    padding: '8px 16px', borderRadius: 999,
+                    fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 600,
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <rect x="6" y="6" width="12" height="12" rx="1"/>
+                  </svg>
+                  Stop
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setChooserOpen(o => !o); setCustomMode(false); }}
+                  aria-haspopup="menu"
+                  aria-expanded={chooserOpen}
+                  aria-label="Regenerate options"
+                  style={{
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
+                    color: 'rgba(255,255,255,0.55)',
+                    padding: '8px 12px',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/>
+                    <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>
+                  </svg>
+                  Regenerate
+                </button>
+              )}
+
+              {chooserOpen && !isStreaming && (
+                <div role="menu" style={{
+                  display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8,
+                  width: '100%',
+                }}>
+                  {[
+                    { id: 'shorter',     label: 'Shorter',         instr: 'Make it shorter and tighter while preserving the core message.' },
+                    { id: 'longer',      label: 'Longer',          instr: 'Expand it with more substance and supporting detail. Do not pad with filler.' },
+                    { id: 'casual',      label: 'More casual',     instr: 'Rewrite in a more casual, conversational tone — looser, less formal.' },
+                    { id: 'direct',      label: 'More direct',     instr: 'Rewrite to be more direct and assertive. Cut hedging and softeners.' },
+                    { id: 'angle',       label: 'Different angle', instr: 'Rewrite from a different angle or perspective on the same idea. Keep the platform conventions.' },
+                  ].map(opt => (
+                    <button
+                      key={opt.id}
+                      role="menuitem"
+                      onClick={() => regenerateWith(opt.instr)}
+                      className="reduced-motion-safe"
+                      style={{
+                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)',
+                        color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
+                        padding: '7px 14px', borderRadius: 999,
+                        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
+                        transition: 'background 180ms, border-color 180ms',
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                  <button
+                    role="menuitem"
+                    onClick={() => setCustomMode(c => !c)}
+                    className="reduced-motion-safe"
+                    style={{
+                      background: customMode ? 'rgba(144,97,249,0.20)' : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${customMode ? 'rgba(144,97,249,0.50)' : 'rgba(255,255,255,0.10)'}`,
+                      color: customMode ? '#c4b5fd' : 'rgba(255,255,255,0.85)',
+                      cursor: 'pointer',
+                      padding: '7px 14px', borderRadius: 999,
+                      fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
+                    }}
+                  >
+                    Custom…
+                  </button>
+                </div>
+              )}
+
+              {chooserOpen && customMode && !isStreaming && (
+                <form
+                  onSubmit={e => {
+                    e.preventDefault();
+                    const txt = customText.trim();
+                    if (!txt) return;
+                    regenerateWith(txt);
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '6px 6px 6px 14px',
+                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)',
+                    borderRadius: 999,
+                  }}
+                >
+                  <input
+                    ref={customInputRef}
+                    value={customText}
+                    onChange={e => setCustomText(e.target.value)}
+                    placeholder="What should change?"
+                    aria-label="Custom regeneration instruction"
+                    style={{
+                      flex: 1, minWidth: 0,
+                      background: 'transparent', border: 'none', outline: 'none',
+                      color: '#fff',
+                      fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)',
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!customText.trim()}
+                    aria-label="Send custom instruction"
+                    style={{
+                      background: customText.trim() ? `linear-gradient(135deg, rgba(${platformRgb},0.95) 0%, rgba(${platformRgb},0.80) 100%)` : 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      color: '#fff', cursor: customText.trim() ? 'pointer' : 'not-allowed',
+                      width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: customText.trim() ? 1 : 0.4,
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </button>
+                </form>
+              )}
             </div>
           </>
         ) : note.transcript ? (
