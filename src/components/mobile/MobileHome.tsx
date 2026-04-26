@@ -601,6 +601,9 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   // Track secondary gen text per kind so 'Export all' can combine everything.
   const [secondaryGens, setSecondaryGens] = useState<Partial<Record<AssetKind, string>>>({});
   const [exportToast, setExportToast] = useState<string | null>(null);
+  // Editable-field affordances on the primary post
+  const [postFocused, setPostFocused] = useState(false);
+  const [postCountPulse, setPostCountPulse] = useState(0);
   const transcriptEditorRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const versionsRef = useRef<HTMLDivElement>(null);
@@ -1182,25 +1185,45 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           </div>
         ) : hasGen && gen ? (
           <>
-            {/* Generated post — editable in place, no card, no border. Tap drops a cursor. */}
-            <textarea
-              ref={postEditorRef}
-              value={gen.text}
-              onChange={e => { setGen(g => g ? { ...g, text: e.target.value } : g); sizePostEditor(); }}
-              onFocus={dismissEditHint}
-              aria-label="Generated post — tap to edit"
-              spellCheck
-              className="note-post-editor"
+            {/* Generated post — editable in place. Subtle field container hints
+                'this is editable' without breaking the calm aesthetic: faint
+                background tint, hover/focus inset border, brighter on focus. */}
+            <div
+              onClick={() => postEditorRef.current?.focus()}
               style={{
-                display: 'block', width: '100%',
-                margin: 0, padding: '0 var(--space-4)',
-                background: 'transparent', border: 'none', outline: 'none', resize: 'none', overflow: 'hidden',
-                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 400, lineHeight: 1.6,
-                color: 'rgba(255,255,255,0.92)',
-                wordBreak: 'break-word', overflowWrap: 'anywhere',
-                boxSizing: 'border-box',
+                margin: '0 var(--space-4)',
+                padding: 20,
+                borderRadius: 16,
+                background: postFocused ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
+                boxShadow: `inset 0 0 0 1px ${postFocused ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)'}`,
+                cursor: 'text',
+                transition: 'background 200ms, box-shadow 200ms',
               }}
-            />
+            >
+              <textarea
+                ref={postEditorRef}
+                value={gen.text}
+                onChange={e => {
+                  setGen(g => g ? { ...g, text: e.target.value } : g);
+                  sizePostEditor();
+                  setPostCountPulse(k => k + 1);
+                }}
+                onFocus={() => { setPostFocused(true); dismissEditHint(); }}
+                onBlur={() => setPostFocused(false)}
+                aria-label="Generated post — tap to edit"
+                spellCheck
+                className="note-post-editor"
+                style={{
+                  display: 'block', width: '100%',
+                  margin: 0, padding: 0,
+                  background: 'transparent', border: 'none', outline: 'none', resize: 'none', overflow: 'hidden',
+                  fontFamily: 'var(--font-sans)', fontSize: 17, fontWeight: 400, lineHeight: 1.6,
+                  color: 'rgba(255,255,255,0.95)',
+                  wordBreak: 'break-word', overflowWrap: 'anywhere',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
 
             {/* Length indicator + Edited badge */}
             {(() => {
@@ -1219,7 +1242,16 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                   fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 500,
                   letterSpacing: '0.04em',
                 }}>
-                  <span style={{ color: indicatorColor }}>{indicatorText}</span>
+                  <span
+                    key={postCountPulse}
+                    style={{
+                      color: indicatorColor,
+                      display: 'inline-block',
+                      animation: 'count-pulse 220ms ease-out',
+                    }}
+                  >
+                    {indicatorText}
+                  </span>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
                     {edited && (
                       <span aria-live="polite" style={{
@@ -1314,25 +1346,25 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
               </div>
             )}
 
-            {/* Dominant Copy button — full-width */}
-            <div style={{ padding: 'var(--space-5) var(--space-4) 0' }}>
+            {/* Copy — confident but not dominant. ~70% width, softer fill, lighter glow. */}
+            <div style={{ padding: 'var(--space-5) var(--space-4) 0', display: 'flex', justifyContent: 'center' }}>
               <button
                 onClick={copy}
                 aria-label={copied ? 'Copied to clipboard' : 'Copy generated text'}
                 className="reduced-motion-safe"
                 style={{
-                  width: '100%', minHeight: 56,
-                  padding: '14px 24px', borderRadius: 999,
+                  width: '70%', minWidth: 200, maxWidth: 360, minHeight: 52,
+                  padding: '12px 22px', borderRadius: 999,
                   background: copied
-                    ? `linear-gradient(135deg, rgba(${platformRgb},0.55) 0%, rgba(${platformRgb},0.85) 100%)`
-                    : `linear-gradient(135deg, rgba(${platformRgb},0.95) 0%, rgba(${platformRgb},0.80) 100%)`,
-                  border: '1px solid rgba(255,255,255,0.18)',
+                    ? `linear-gradient(135deg, rgba(${platformRgb},0.45) 0%, rgba(${platformRgb},0.65) 100%)`
+                    : `linear-gradient(135deg, rgba(${platformRgb},0.70) 0%, rgba(${platformRgb},0.55) 100%)`,
+                  border: '1px solid rgba(255,255,255,0.12)',
                   color: '#fff',
-                  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-lg)', fontWeight: 600, letterSpacing: '-0.01em',
+                  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 600, letterSpacing: '-0.01em',
                   cursor: 'pointer',
-                  boxShadow: `0 14px 36px rgba(${platformRgb},0.45), inset 0 1px 0 rgba(255,255,255,0.14)`,
+                  boxShadow: `0 8px 22px rgba(${platformRgb},0.22), inset 0 1px 0 rgba(255,255,255,0.10)`,
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  transition: 'background 220ms',
+                  transition: 'background 220ms, box-shadow 220ms',
                 }}
               >
                 {copied ? (

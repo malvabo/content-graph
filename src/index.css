@@ -321,6 +321,11 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+@keyframes count-pulse {
+  0%   { transform: scale(1);    }
+  40%  { transform: scale(1.08); }
+  100% { transform: scale(1);    }
+}
 @keyframes widget-breathe {
   0%   { transform: translate3d(0%, 0%, 0)    scale(1);    opacity: 0.78; }
   14%  { transform: translate3d(14%, -10%, 0) scale(1.22); opacity: 1;    }
