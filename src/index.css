@@ -392,6 +392,13 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   outline-offset: 4px;
 }
 
+/* Editable generated post — warm-white caret to match the orb light, soft warm selection */
+.note-post-editor {
+  caret-color: rgba(255,235,210,0.95);
+}
+.note-post-editor::selection { background: rgba(255,220,200,0.25); }
+.note-post-editor::-moz-selection { background: rgba(255,220,200,0.25); }
+
 /* ── Edge animation ── */
 .react-flow__edge.animated path {
   stroke: var(--color-accent) !important;
