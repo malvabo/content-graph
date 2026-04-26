@@ -1830,7 +1830,7 @@ const WIDGET_META: Record<WidgetKind, {
   voice: {
     label: 'Voice Notes', sublabel: 'All recordings',
     glow: 'rgba(13,191,90,', dark: '#030d05', mid: '#071408', accent: '#0DBF5A',
-    breathDur: 5.0, breathDelay: -0.7,
+    breathDur: 10.0, breathDelay: -0.7,
     filterFn: ns => ns.filter(n => n.status !== 'recording'),
     countLabel: n => n === 1 ? '1 note' : `${n} notes`,
   },
