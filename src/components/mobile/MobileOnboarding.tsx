@@ -536,49 +536,9 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 transition={{duration:0.4,delay:0.3,ease:[0.4,0,0.2,1]}}
                 style={{position:'absolute',top:'52%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.6)',letterSpacing:'0.01em',pointerEvents:'none',zIndex:20}}
               >Saved to library.</motion.div>
-              {/* Library cloud — warm lights representing saved posts */}
-              {[
-                { left:'16%', top:'78%', w:78,  rgb:'255,155,55', delay:0.05 },
-                { left:'32%', top:'84%', w:56,  rgb:'255,190,78', delay:0.20 },
-                { left:'50%', top:'76%', w:96,  rgb:'255,210,95', delay:0.08 },
-                { left:'65%', top:'83%', w:64,  rgb:'255,145,48', delay:0.24 },
-                { left:'80%', top:'79%', w:52,  rgb:'255,168,62', delay:0.13 },
-                { left:'24%', top:'89%', w:46,  rgb:'255,178,68', delay:0.30 },
-                { left:'57%', top:'91%', w:60,  rgb:'255,130,42', delay:0.17 },
-                { left:'43%', top:'86%', w:70,  rgb:'255,198,82', delay:0.36 },
-              ].map((l, i) => (
-                <motion.div
-                  key={`lib-${i}`}
-                  initial={{opacity:0,scale:0.2}}
-                  animate={{opacity:1,scale:1}}
-                  exit={{opacity:0,scale:0.2}}
-                  transition={{duration:0.75,delay:l.delay,ease:[0.2,0,0.4,1]}}
-                  style={{
-                    position:'absolute', left:l.left, top:l.top,
-                    width:l.w, height:l.w,
-                    marginLeft:-l.w/2, marginTop:-l.w/2,
-                    borderRadius:'50%',
-                    background:`radial-gradient(circle, rgba(${l.rgb},0.82) 0%, rgba(${l.rgb},0.32) 44%, rgba(${l.rgb},0) 76%)`,
-                    mixBlendMode:'screen', filter:'blur(6px)',
-                    pointerEvents:'none', zIndex:20,
-                  }}
-                />
-              ))}
-              {/* New light travels down to join the library */}
-              <motion.div key="success-orb"
-                initial={{scale:1,opacity:0.9,y:0}}
-                animate={{scale:0.4,opacity:0,y:160}}
-                transition={{duration:1.2,delay:0.35,ease:[0.4,0,0.8,1]}}
-                style={{
-                  position:'absolute',top:'64%',left:'50%',
-                  width:120,height:120,
-                  marginLeft:-60,marginTop:-60,
-                  borderRadius:'50%',
-                  background:'radial-gradient(circle, rgba(255,235,210,0.95) 0%, rgba(255,180,80,0.55) 40%, rgba(255,120,30,0.20) 70%, rgba(255,100,20,0) 100%)',
-                  mixBlendMode:'screen',
-                  pointerEvents:'none',zIndex:21,
-                }}
-              />
+              {/* No library cloud orbs, no extra success-orb travel: the page
+                  already shows the aurora background from the previous screens.
+                  Keep the moment calm — just the two headlines on the same lights. */}
             </>
           )}
         </AnimatePresence>
