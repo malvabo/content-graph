@@ -457,6 +457,22 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
 
                 </motion.div>
               </motion.div>
+
+              {/* Label below disc */}
+              <motion.div
+                initial={{ opacity:0 }}
+                animate={{ opacity: selId ? 0 : 0.65 }}
+                transition={{ delay: selId ? 0 : entranceDelay+0.04, duration: selId ? 0.2 : 0.28 }}
+                style={{
+                  position:'absolute', left:p.left, top:'calc(60% + 42px)',
+                  transform:'translateX(-50%)',
+                  fontFamily:'var(--font-sans)', fontSize:'var(--text-caption)', fontWeight:400,
+                  color:'rgba(255,255,255,1)', letterSpacing:'0.04em',
+                  whiteSpace:'nowrap', pointerEvents:'none', zIndex:14,
+                }}
+              >
+                {p.label}
+              </motion.div>
             </div>
           );
         })}
@@ -536,9 +552,32 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 transition={{duration:0.4,delay:0.3,ease:[0.4,0,0.2,1]}}
                 style={{position:'absolute',top:'52%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.6)',letterSpacing:'0.01em',pointerEvents:'none',zIndex:20}}
               >Saved to library.</motion.div>
-              {/* No library cloud orbs, no extra success-orb travel: the page
-                  already shows the aurora background from the previous screens.
-                  Keep the moment calm — just the two headlines on the same lights. */}
+              {/* Extra lights bloom 0→1 alongside the existing draft orb */}
+              {[
+                { left:'22%', top:'82%', w:70,  rgb:'255,155,55', delay:0.1 },
+                { left:'38%', top:'87%', w:52,  rgb:'255,195,80', delay:0.22 },
+                { left:'62%', top:'83%', w:80,  rgb:'255,210,90', delay:0.08 },
+                { left:'76%', top:'88%', w:58,  rgb:'255,145,48', delay:0.18 },
+                { left:'30%', top:'91%', w:44,  rgb:'255,175,65', delay:0.30 },
+                { left:'68%', top:'90%', w:62,  rgb:'255,130,42', delay:0.14 },
+              ].map((l, i) => (
+                <motion.div
+                  key={`s-orb-${i}`}
+                  initial={{opacity:0, scale:0.4}}
+                  animate={{opacity:1, scale:1}}
+                  exit={{opacity:0, scale:0.4}}
+                  transition={{duration:0.8, delay:l.delay, ease:[0.2,0,0.4,1]}}
+                  style={{
+                    position:'absolute', left:l.left, top:l.top,
+                    width:l.w, height:l.w,
+                    marginLeft:-l.w/2, marginTop:-l.w/2,
+                    borderRadius:'50%',
+                    background:`radial-gradient(circle, rgba(${l.rgb},0.85) 0%, rgba(${l.rgb},0.32) 44%, rgba(${l.rgb},0) 76%)`,
+                    mixBlendMode:'screen', filter:'blur(5px)',
+                    pointerEvents:'none', zIndex:20,
+                  }}
+                />
+              ))}
             </>
           )}
         </AnimatePresence>
