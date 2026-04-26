@@ -37,7 +37,7 @@ const PLATFORM_GLOW: Record<AssetKind, { rgb: string; accent: string; dur: numbe
  * pattern (editable text, length indicator, Copy chip, Regenerate). No card,
  * no border — just rows.
  */
-function SecondaryGenRow({ kind, transcript }: { kind: AssetKind; transcript: string }) {
+function SecondaryGenRow({ kind, transcript, onTextChange }: { kind: AssetKind; transcript: string; onTextChange?: (kind: AssetKind, text: string) => void }) {
   const meta = PLATFORM_GLOW[kind];
   const [text, setText] = useState('');
   const [originalText, setOriginalText] = useState('');
@@ -56,6 +56,7 @@ function SecondaryGenRow({ kind, transcript }: { kind: AssetKind; transcript: st
     el.style.height = el.scrollHeight + 'px';
   }, []);
   useEffect(() => { if (expanded) sizeEditor(); }, [text, expanded, sizeEditor]);
+  useEffect(() => { onTextChange?.(kind, text); }, [text, kind, onTextChange]);
 
   const runGenerate = useCallback(async (instruction?: string, baseText?: string) => {
     cancelRef.current = false;
@@ -593,6 +594,16 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   type Version = { kind: AssetKind; text: string; createdAt: string };
   const [versions, setVersions] = useState<Version[]>([]);
   const [versionsOpen, setVersionsOpen] = useState(false);
+  // Transcript editing + stale-edit banner
+  const [isEditingTranscript, setIsEditingTranscript] = useState(false);
+  const [transcriptDraft, setTranscriptDraft] = useState(note.transcript ?? '');
+  const [showStaleBanner, setShowStaleBanner] = useState(false);
+  // Delete confirmation
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // Track secondary gen text per kind so 'Export all' can combine everything.
+  const [secondaryGens, setSecondaryGens] = useState<Partial<Record<AssetKind, string>>>({});
+  const [exportToast, setExportToast] = useState<string | null>(null);
+  const transcriptEditorRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const versionsRef = useRef<HTMLDivElement>(null);
   const postEditorRef = useRef<HTMLTextAreaElement>(null);
@@ -818,6 +829,68 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
     }
   }, [customMode]);
 
+  // Auto-grow + focus the transcript editor when it opens.
+  const sizeTranscriptEditor = useCallback(() => {
+    const el = transcriptEditorRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }, []);
+  useEffect(() => {
+    if (!isEditingTranscript) return;
+    setTranscriptDraft(note.transcript ?? '');
+    setShowTranscript(true);
+    const id = setTimeout(() => {
+      const el = transcriptEditorRef.current;
+      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); sizeTranscriptEditor(); }
+    }, 0);
+    return () => clearTimeout(id);
+  }, [isEditingTranscript, note.transcript, sizeTranscriptEditor]);
+
+  const saveTranscript = useCallback(() => {
+    const t = transcriptDraft.trim();
+    if (!t) { setIsEditingTranscript(false); return; }
+    if (t === note.transcript) { setIsEditingTranscript(false); return; }
+    updateNote(note.id, { transcript: t });
+    setIsEditingTranscript(false);
+    setShowStaleBanner(true);
+  }, [transcriptDraft, note.id, note.transcript, updateNote]);
+
+  const cancelTranscriptEdit = useCallback(() => {
+    setTranscriptDraft(note.transcript ?? '');
+    setIsEditingTranscript(false);
+  }, [note.transcript]);
+
+  const regenerateAllPosts = useCallback(async () => {
+    setShowStaleBanner(false);
+    if (gen?.kind) {
+      await generate(gen.kind);
+    }
+  }, [gen?.kind, generate]);
+
+  const exportAllGenerated = useCallback(async () => {
+    const blocks: string[] = [];
+    if (gen?.text) blocks.push(`${KIND_LABEL[gen.kind]}\n\n${gen.text}`);
+    for (const kind of ALL_KINDS) {
+      if (gen && kind === gen.kind) continue;
+      const t = secondaryGens[kind];
+      if (t) blocks.push(`${KIND_LABEL[kind]}\n\n${t}`);
+    }
+    if (blocks.length === 0) {
+      setExportToast('Nothing to export yet');
+      setTimeout(() => setExportToast(null), 1800);
+      return;
+    }
+    const combined = blocks.join('\n\n---\n\n');
+    try {
+      await navigator.clipboard.writeText(combined);
+      setExportToast('Copied all generated text');
+    } catch {
+      setExportToast('Copy blocked by browser');
+    }
+    setTimeout(() => setExportToast(null), 1800);
+  }, [gen, secondaryGens]);
+
   const formatVersionTime = (iso: string) => {
     const d = new Date(iso);
     const diff = Date.now() - d.getTime();
@@ -931,7 +1004,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           </button>
           {menuOpen && (
             <div role="menu" style={{
-              position: 'absolute', top: 48, right: 0, minWidth: 200,
+              position: 'absolute', top: 48, right: 0, minWidth: 220,
               background: 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
               border: '1px solid rgba(255,255,255,0.10)',
               borderRadius: 14,
@@ -946,6 +1019,22 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
               >
                 Edit title
               </button>
+              {note.transcript && (
+                <button
+                  role="menuitem"
+                  onClick={() => { setMenuOpen(false); setIsEditingTranscript(true); }}
+                  style={menuItemStyle}
+                >
+                  Edit transcript
+                </button>
+              )}
+              <button
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); exportAllGenerated(); }}
+                style={menuItemStyle}
+              >
+                Export all generated text
+              </button>
               {isError && (
                 <button
                   role="menuitem"
@@ -955,12 +1044,13 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                   Re-record
                 </button>
               )}
+              <div aria-hidden style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
               <button
                 role="menuitem"
-                onClick={() => { setMenuOpen(false); onDelete(); onClose(); }}
+                onClick={() => { setMenuOpen(false); setConfirmingDelete(true); }}
                 style={{ ...menuItemStyle, color: 'rgba(255,127,127,0.95)' }}
               >
-                Delete
+                Delete this post
               </button>
             </div>
           )}
@@ -1026,6 +1116,47 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           </span>
         )}
       </div>
+
+      {/* Stale-edit banner — shown after the user saves a transcript edit. */}
+      {showStaleBanner && (
+        <div role="status" style={{
+          position: 'relative', zIndex: 1,
+          margin: '0 var(--space-4) var(--space-4)',
+          padding: '12px 14px', borderRadius: 14,
+          background: 'linear-gradient(155deg, rgba(240,216,160,0.12) 0%, #1a1c26 65%, #0d0e16 100%)',
+          border: '1px solid rgba(240,216,160,0.30)',
+          display: 'flex', alignItems: 'center', gap: 10,
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)',
+          color: 'rgba(255,255,255,0.85)',
+        }}>
+          <div style={{ flex: 1 }}>Transcript edited. Regenerate posts?</div>
+          <button
+            onClick={regenerateAllPosts}
+            style={{
+              background: 'rgba(240,216,160,0.22)', border: '1px solid rgba(240,216,160,0.50)',
+              color: 'rgba(255,235,180,0.95)', cursor: 'pointer',
+              padding: '6px 12px', borderRadius: 999,
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 600,
+            }}
+          >
+            Regenerate all
+          </button>
+          <button
+            onClick={() => setShowStaleBanner(false)}
+            aria-label="Dismiss banner"
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'rgba(255,255,255,0.55)',
+              width: 28, height: 28, borderRadius: '50%',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Body */}
       <div style={{
@@ -1430,7 +1561,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                 Also generate for…
               </div>
               {ALL_KINDS.filter(k => k !== gen.kind).map(k => (
-                <SecondaryGenRow key={k} kind={k} transcript={note.transcript} />
+                <SecondaryGenRow key={k} kind={k} transcript={note.transcript} onTextChange={(kk, t) => setSecondaryGens(s => ({ ...s, [kk]: t }))} />
               ))}
             </div>
           </>
@@ -1451,12 +1582,83 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 18,
                 padding: 'var(--space-4)',
-                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', lineHeight: 1.55,
-                color: 'rgba(255,255,255,0.85)',
-                whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
                 boxShadow: '0 10px 28px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.05)',
+                display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
               }}>
-                {note.transcript}
+                {isEditingTranscript ? (
+                  <textarea
+                    ref={transcriptEditorRef}
+                    value={transcriptDraft}
+                    onChange={e => { setTranscriptDraft(e.target.value); sizeTranscriptEditor(); }}
+                    onKeyDown={e => {
+                      if (e.key === 'Escape') { e.preventDefault(); cancelTranscriptEdit(); }
+                      else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); saveTranscript(); }
+                    }}
+                    aria-label="Edit transcript"
+                    spellCheck
+                    className="note-post-editor"
+                    style={{
+                      display: 'block', width: '100%', margin: 0, padding: 0,
+                      background: 'transparent', border: 'none', outline: 'none', resize: 'none', overflow: 'hidden',
+                      fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', lineHeight: 1.55,
+                      color: 'rgba(255,255,255,0.92)',
+                      wordBreak: 'break-word', overflowWrap: 'anywhere',
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', lineHeight: 1.55,
+                    color: 'rgba(255,255,255,0.85)',
+                    whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere',
+                  }}>
+                    {note.transcript}
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                  {isEditingTranscript ? (
+                    <>
+                      <button
+                        onClick={cancelTranscriptEdit}
+                        style={{
+                          background: 'transparent', border: 'none', cursor: 'pointer',
+                          color: 'rgba(255,255,255,0.55)',
+                          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
+                          padding: '6px 10px',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={saveTranscript}
+                        style={{
+                          background: 'rgba(13,191,90,0.22)', border: '1px solid rgba(13,191,90,0.50)',
+                          color: 'rgba(80,220,140,0.95)', cursor: 'pointer',
+                          padding: '6px 14px', borderRadius: 999,
+                          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 600,
+                        }}
+                      >
+                        Save
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setIsEditingTranscript(true)}
+                      aria-label="Edit transcript"
+                      style={{
+                        background: 'transparent', border: 'none', cursor: 'pointer',
+                        color: 'rgba(255,255,255,0.65)',
+                        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
+                        padding: '6px 10px',
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                      }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+                      </svg>
+                      Edit transcript
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             <button
@@ -1479,6 +1681,86 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
           </div>
         )}
       </div>
+
+      {/* Export toast */}
+      {exportToast && (
+        <div role="status" style={{
+          position: 'absolute', left: '50%', bottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
+          transform: 'translateX(-50%)',
+          padding: '10px 18px', borderRadius: 999,
+          background: 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
+          border: '1px solid rgba(255,255,255,0.10)',
+          color: 'rgba(255,255,255,0.92)',
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
+          boxShadow: '0 14px 36px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)',
+          zIndex: 10,
+        }}>
+          {exportToast}
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {confirmingDelete && (
+        <div role="alertdialog" aria-modal="true" aria-labelledby="confirm-delete-title"
+          style={{
+            position: 'absolute', inset: 0, zIndex: 12,
+            background: 'rgba(0,0,0,0.55)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 'var(--space-4)',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setConfirmingDelete(false); }}
+        >
+          <div style={{
+            width: '100%', maxWidth: 360,
+            background: 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
+            border: '1px solid rgba(255,107,107,0.30)',
+            borderRadius: 22,
+            padding: 'var(--space-5)',
+            boxShadow: '0 22px 56px rgba(0,0,0,0.55), 0 4px 10px rgba(255,107,107,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
+            display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
+          }}>
+            <div id="confirm-delete-title" style={{
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-title-sm)', fontWeight: 700, lineHeight: 1.25,
+              color: '#fff', letterSpacing: '-0.01em',
+            }}>
+              Delete this post?
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', lineHeight: 1.5,
+              color: 'rgba(255,255,255,0.65)',
+            }}>
+              This deletes the recording, transcript, and all generated content. This can't be undone.
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 'var(--space-2)' }}>
+              <button
+                onClick={() => setConfirmingDelete(false)}
+                style={{
+                  background: 'transparent', border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
+                  padding: '10px 18px', borderRadius: 999,
+                  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 500,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setConfirmingDelete(false); onDelete(); onClose(); }}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(201,48,48,0.95) 0%, rgba(168,40,40,0.95) 100%)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: '#fff', cursor: 'pointer',
+                  padding: '10px 18px', borderRadius: 999,
+                  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 600,
+                  boxShadow: '0 12px 28px rgba(201,48,48,0.40)',
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body,
   );
