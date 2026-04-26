@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useVoiceStore, type VoiceNote } from '../../store/voiceStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -467,23 +467,32 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
   const isError = note.status === 'error';
   const tintRgb = note.lastGeneration?.kind ? NOTE_TINT[note.lastGeneration.kind] : null;
 
-  type PillRole = 'complete' | 'running' | 'idle' | 'error';
-  const pillRoleMap: Record<PillRole, { dot: string; bg: string; border: string; fg: string }> = {
-    complete: { dot: '#0DBF5A', bg: 'rgba(13,191,90,0.14)', border: 'rgba(13,191,90,0.28)', fg: 'rgba(13,191,90,0.95)' },
-    running:  { dot: '#F0D8A0', bg: 'rgba(240,216,160,0.14)', border: 'rgba(240,216,160,0.28)', fg: 'rgba(240,216,160,0.95)' },
-    idle:     { dot: 'rgba(255,255,255,0.30)', bg: 'rgba(255,255,255,0.07)', border: 'transparent', fg: 'rgba(255,255,255,0.45)' },
-    error:    { dot: '#ff6b6b', bg: 'rgba(201,48,48,0.14)', border: 'rgba(201,48,48,0.28)', fg: 'rgba(255,107,107,0.95)' },
-  };
-
-  const pill = isTranscribing ? { role: 'running' as PillRole, label: 'Transcribing' }
-    : isError ? { role: 'error' as PillRole, label: 'Failed' }
-    : isAudioOnly ? { role: 'idle' as PillRole, label: 'Audio only' }
-    : note.lastGeneration ? { role: 'complete' as PillRole, label: KIND_LABEL[note.lastGeneration.kind].split(' ')[0] }
-    : null;
-
   const displayTitle = isAudioOnly && note.title === 'Untitled note' ? 'Audio recording' : note.title;
-  const meta = `${fmtDuration(note.durationMs)} · ${fmtDate(note.createdAt)}`;
-  const ariaLabel = `${displayTitle}. ${meta}${pill ? '. Status: ' + pill.label : ''}. Open.`;
+
+  // Preview = first non-empty line of the generated post. Falls back to a quiet
+  // state hint when there's no generation yet (transcribing / error / audio only).
+  const genFirstLine = note.lastGeneration?.text
+    ? (note.lastGeneration.text.split('\n').find(l => l.trim()) ?? '').trim()
+    : '';
+  const previewText = isTranscribing ? 'Transcribing…'
+    : isError ? (note.errorReason || 'Transcription failed')
+    : isAudioOnly ? 'Audio only'
+    : genFirstLine;
+
+  const meta = fmtDate(note.createdAt);
+  const ariaLabel = `${displayTitle}.${previewText ? ' ' + previewText + '.' : ''} ${meta}. Open.`;
+
+  // Show preview only when the title fits on a single line. Measured against
+  // the rendered title's clientHeight so we respect natural word wrap.
+  const titleRef = useRef<HTMLSpanElement>(null);
+  const [showPreview, setShowPreview] = useState(true);
+  useLayoutEffect(() => {
+    const el = titleRef.current;
+    if (!el) { setShowPreview(false); return; }
+    const lh = parseFloat(getComputedStyle(el).lineHeight) || 24;
+    const lines = Math.round(el.getBoundingClientRect().height / lh);
+    setShowPreview(lines <= 1 && previewText.length > 0);
+  }, [displayTitle, previewText]);
 
   return (
     <button
@@ -499,10 +508,8 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
           : 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
         border: `1px solid ${tintRgb ? `rgba(${tintRgb},0.20)` : 'rgba(255,255,255,0.08)'}`,
         borderRadius: 22,
-        padding: 'var(--space-4) var(--space-5)',
-        display: 'grid',
-        gridTemplateColumns: 'auto 1fr auto', alignItems: 'center',
-        columnGap: 'var(--space-4)', rowGap: 4, minHeight: 80,
+        padding: '16px 20px',
+        display: 'flex', flexDirection: 'column', gap: 4,
         cursor: isTranscribing ? 'default' : 'pointer',
         opacity: isTranscribing ? 0.7 : 1, minWidth: 0, boxSizing: 'border-box',
         boxShadow: tintRgb
@@ -511,45 +518,41 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
         transition: 'border-color 220ms, box-shadow 220ms, filter 220ms',
       }}
     >
-      {/* Status dot — 8×8, pinned left spanning both rows */}
-      <span aria-hidden style={{
-        gridRow: '1 / span 2', width: 8, height: 8, borderRadius: 'var(--radius-full)',
-        background: pillRoleMap[pill?.role ?? 'idle'].dot, flexShrink: 0, marginTop: 8,
-        position: 'relative', zIndex: 1,
-      }} />
-
-      {/* Title */}
-      <span style={{
+      {/* Title — clamped to 2 lines, broken at word boundaries */}
+      <span ref={titleRef} style={{
         position: 'relative', zIndex: 1,
         fontFamily: 'var(--font-sans)', fontSize: 'var(--text-heading)', fontWeight: 500,
-        lineHeight: '22px', color: 'rgba(255,255,255,0.92)',
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
+        lineHeight: '24px',
+        color: 'rgba(255,255,255,0.92)',
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+        wordBreak: 'normal', overflowWrap: 'normal',
       }}>
         {displayTitle}
       </span>
 
-      {/* Status pill */}
-      {pill ? (
+      {/* Preview / state hint — only when the title is a single line */}
+      {showPreview && previewText && (
         <span style={{
           position: 'relative', zIndex: 1,
-          height: 24, display: 'inline-flex', alignItems: 'center', gap: 5,
-          padding: '0 10px', borderRadius: 'var(--radius-full)',
-          background: pillRoleMap[pill.role].bg,
-          border: `1px solid ${pillRoleMap[pill.role].border}`,
-          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500,
-          color: pillRoleMap[pill.role].fg, flexShrink: 0,
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400,
+          lineHeight: '20px',
+          color: isError ? 'rgba(255,127,127,0.85)' : 'rgba(255,255,255,0.55)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          fontStyle: isTranscribing ? 'italic' : 'normal',
         }}>
-          <span aria-hidden style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: pillRoleMap[pill.role].dot }} />
-          {pill.label}
+          {previewText}
         </span>
-      ) : <span aria-hidden />}
+      )}
 
-      {/* Metadata */}
+      {/* Metadata — date only, no duration */}
       <span style={{
         position: 'relative', zIndex: 1,
-        gridColumn: '2 / span 2',
-        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400, lineHeight: '20px',
-        color: 'rgba(255,255,255,0.55)',
+        marginTop: 2,
+        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 400,
+        color: 'rgba(255,255,255,0.45)',
       }}>
         {meta}
       </span>
