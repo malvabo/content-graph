@@ -112,7 +112,6 @@ const PLATFORMS = [
 // Cloud click-target 64px; halo extends to ~140px around it. Label sits 50px below
 // the cloud center.
 const BULB = 64;
-const LABEL_BELOW = BULB / 2 + 22;
 
 // Unified breathing — same amplitude (0.97↔1.03) for every cloud so all four read as
 // the same size at all times. Only the period and phase offset differ, for liveness.
@@ -457,22 +456,6 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                   />
 
                 </motion.div>
-              </motion.div>
-
-              {/* Label — separate element, never moves, only fades */}
-              <motion.div
-                initial={{ opacity:0 }}
-                animate={{ opacity: selId ? 0 : 0.55 }}
-                transition={{ delay: selId ? 0 : entranceDelay+0.04, duration: selId ? 0.25 : 0.28 }}
-                style={{
-                  position:'absolute', left:p.left, top:`calc(60% + ${LABEL_BELOW}px)`,
-                  transform:'translateX(-50%)',
-                  fontFamily:'var(--font-sans)', fontSize:'var(--text-caption)', fontWeight:400,
-                  color:'rgba(255,255,255,1)', letterSpacing:'0.04em',
-                  whiteSpace:'nowrap', pointerEvents:'none', zIndex:14,
-                }}
-              >
-                {p.label}
               </motion.div>
             </div>
           );
