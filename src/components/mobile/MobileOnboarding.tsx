@@ -103,10 +103,10 @@ const BLOBS = [
 // no rectangle to leak on iOS Safari.
 
 const PLATFORMS = [
-  { id: 'linkedin',  label: 'LinkedIn',  left: '16.5%', xOffset: '33.5vw', mergeRgb: '10,102,194',  glowRgb: '10,102,194',  bulbInner: '#cfe1f6', bulbOuter: '#0a66c2' },
-  { id: 'x',         label: 'X',         left: '39%',   xOffset: '11vw',   mergeRgb: '240,235,230', glowRgb: '90,90,90',    bulbInner: '#ffffff', bulbOuter: '#5a5a5a' },
-  { id: 'instagram', label: 'Instagram', left: '61%',   xOffset: '-11vw',  mergeRgb: '225,48,108',  glowRgb: '201,48,102',  bulbInner: '#ffceb6', bulbOuter: '#c93066' },
-  { id: 'threads',   label: 'Threads',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '74,58,94',    bulbInner: '#d4c4e6', bulbOuter: '#4a3a5e' },
+  { id: 'linkedin',  label: 'LinkedIn',  left: '16.5%', xOffset: '33.5vw', mergeRgb: '10,102,194',  glowRgb: '10,102,194'  },
+  { id: 'x',         label: 'X',         left: '39%',   xOffset: '11vw',   mergeRgb: '240,235,230', glowRgb: '90,90,90'    },
+  { id: 'instagram', label: 'Instagram', left: '61%',   xOffset: '-11vw',  mergeRgb: '225,48,108',  glowRgb: '201,48,102'  },
+  { id: 'threads',   label: 'Threads',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '74,58,94'    },
 ] as const;
 
 // All logos drawn in a unified 32×32 viewBox so each occupies the same visual area
@@ -476,7 +476,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                       width: 84, height: 84,
                       marginLeft: -42, marginTop: -42,
                       borderRadius:'50%',
-                      background: `radial-gradient(circle at 50% 45%, ${p.bulbInner} 0%, ${p.bulbOuter} 35%, rgba(${p.glowRgb},0.30) 60%, rgba(${p.glowRgb},0) 88%)`,
+                      background: `radial-gradient(circle at 50% 45%, rgba(${p.glowRgb},0.90) 0%, rgba(${p.glowRgb},0.60) 40%, rgba(${p.glowRgb},0.20) 68%, rgba(${p.glowRgb},0) 90%)`,
                       filter:'blur(3px)',
                       pointerEvents:'none',
                     }}
