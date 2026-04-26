@@ -2301,10 +2301,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         <>
           {/* Header */}
           <header style={{ padding: '28px 20px 8px', flexShrink: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <div>
-              <h1 style={{ margin: 0, fontSize: 'var(--text-title-lg)', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sans)', letterSpacing: '-0.03em' }}>UP150</h1>
-              <p style={{ margin: '4px 0 0', fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--font-sans)' }}>Content dashboard</p>
-            </div>
+            <div />
             <button
               onClick={() => setEditMode(m => !m)}
               aria-label={editMode ? 'Done editing' : 'Edit widgets'}
