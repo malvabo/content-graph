@@ -770,7 +770,9 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
     abortRef.current = new AbortController();
 
     setIsStreaming(true);
-    setGen(g => g ? { ...g, text: '', loading: true, error: undefined } : g);
+    // Don't blank the text — keep the old post visible while waiting for the
+    // first token, then overwrite progressively. No 'empty screen' state.
+    setGen(g => g ? { ...g, loading: true, error: undefined } : g);
 
     const kindLabel = KIND_LABEL[currentKind].toLowerCase();
     const prompt = [
@@ -1210,6 +1212,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                 }}
                 onFocus={() => { setPostFocused(true); dismissEditHint(); }}
                 onBlur={() => setPostFocused(false)}
+                disabled={isStreaming}
                 aria-label="Generated post — tap to edit"
                 spellCheck
                 className="note-post-editor"
@@ -1221,6 +1224,9 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                   color: 'rgba(255,255,255,0.95)',
                   wordBreak: 'break-word', overflowWrap: 'anywhere',
                   boxSizing: 'border-box',
+                  opacity: isStreaming ? 0.65 : 1,
+                  transition: 'opacity 220ms',
+                  cursor: isStreaming ? 'progress' : 'text',
                 }}
               />
             </div>
