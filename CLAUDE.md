@@ -1,45 +1,38 @@
 # Claude Code — project guidance
 
-## Default behavior — ship every change
+## Default behavior — commit straight to main
 
 **For every user request that produces a code change, the default flow is:
-commit → push → PR → squash-merge to `main`.** No "I'll leave it on the
-branch" — production is `content-graph-five.vercel.app` deploying from
-`main`, and the user's testing environment is that live URL. Anything
-not on `main` is invisible to them. Confirm reaches main before
-declaring the task done.
+commit on `main` → push to `origin/main`.** No feature branch, no PR,
+no squash-merge ceremony. Single-developer project; the PR overhead
+isn't earning anything.
 
-The only exception: `.claude/` config files. Those are still committed
-to `main` (so they travel with the repo) but Vercel does not deploy
-them, so they will not change anything visible on the live URL.
+Production is `content-graph-five.vercel.app` deploying from `main`,
+and the user's testing environment is the live URL. So pushing to
+`main` *is* shipping.
+
+`.claude/` config files are still committed (so they travel with the
+repo) but Vercel does not deploy them, so they will not change
+anything visible on the live URL.
 
 ## Git workflow
 
-**Always push after every commit.** Use `git push -u origin <branch>` immediately after committing so changes are visible on the remote.
+1. Stay on `main` (`git checkout main` if not already).
+2. Make the edit.
+3. Commit with a clear, descriptive message.
+4. `git push origin main` immediately so the change is on the remote.
 
-**Always open a PR to `main` when work is complete.** After pushing, open a PR so changes can be reviewed and deployed to production.
+If `main` has diverged from `origin/main` (sandboxed checkpoints,
+auto-applied changes, etc.), reset cleanly with
+`git reset --hard origin/main` *before* starting the edit. Don't try
+to reconcile drift mid-task.
 
-## Deployment
+### When to use a branch + PR anyway
 
-**Always ship finished work to `main`.** This project deploys to
-`content-graph-five.vercel.app` from `main`, so any work that isn't
-merged to `main` is invisible in production. Pattern:
+Only when:
+- The user explicitly asks for a PR.
+- The change is risky or needs review (large refactor, schema
+  migration, dependency upgrade).
+- A team member needs to be tagged.
 
-1. Develop on a feature branch (`claude/<slug>`).
-2. When the change is ready, open a PR to `main` and merge it
-   (squash preferred).
-3. Confirm Vercel auto-deploys (production URL picks up the commit
-   within ~1–2 min).
-
-Leaving work on a feature branch without merging is the wrong
-default here — the user's testing environment is the live URL, not
-a local dev server.
-
-### Branch-to-branch handoffs
-
-If `main` has evolved significantly while a feature branch was open,
-don't blindly merge. Read `git log origin/main..HEAD` and check
-whether parts of the feature branch have been superseded by work
-already on `main`. Port only what's still needed, cleanly, to a
-fresh branch off `origin/main`. Close the stale branch's PR with a
-short reason.
+Otherwise, default is direct push.
