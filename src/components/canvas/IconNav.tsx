@@ -149,7 +149,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
           padding: '12px 4px', gap: 2, flexShrink: 0,
           background: 'var(--color-nav-bg)',
           border: '1px solid var(--color-border-subtle)',
-          borderRadius: 16,
+          borderRadius: 8,
           boxShadow: '0px 2px 10px 0px rgba(0, 0, 0, 0.1)',
           position: 'relative', zIndex: 2,
           overflow: 'hidden',
