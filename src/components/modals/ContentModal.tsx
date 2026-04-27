@@ -1,9 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ModalShell, AiPopover } from './Modals';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 /* ── Measure viewport Y of selection start within a textarea ── */
 function getSelectionY(ta: HTMLTextAreaElement, selStart: number): number {
@@ -393,46 +390,51 @@ function VoiceModal({ title, text, onClose, onSave, onTitleChange, extraActions 
     onTitleChange?.(t);
   };
 
+  const handleClose = () => { commitTitle(); onClose(); };
+
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) { commitTitle(); onClose(); } }}>
-      <DialogContent maxWidth={720}>
-        <DialogHeader>
-          <Label htmlFor="voice-note-title" className="sr-only">Title</Label>
-          <Input
-            id="voice-note-title"
-            value={editTitle}
-            onChange={e => setEditTitle(e.target.value)}
-            onBlur={commitTitle}
-            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-            className="border-transparent shadow-none text-[length:var(--text-md)] font-[var(--weight-medium)] text-[var(--color-text-primary)] h-auto py-0.5 px-0"
-          />
-        </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 pb-4 pt-2" style={{ scrollbarWidth: 'thin' }}>
-          <div
-            className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-card)] transition-colors focus-within:border-[var(--color-border-strong)]"
-          >
-            <textarea
-              ref={ref}
-              value={content}
-              onChange={e => setContent(e.target.value)}
-              className="w-full resize-none border-none bg-transparent outline-none text-[length:var(--text-sm)] leading-[var(--leading-normal)] text-[var(--color-text-primary)] p-3"
-              style={{ minHeight: 400, overflow: 'hidden', fontFamily: 'var(--font-sans)' }}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          {extraActions?.map((a, i) => (
-            <Button
-              key={a.label}
-              variant={i === 0 ? 'secondary' : 'green'}
-              onClick={() => { onSave?.(content); a.onClick(content); onClose(); }}
-            >
+    <ModalShell onClose={handleClose} maxWidth={720}>
+      {/* Header: editable title + close button — matches other modal headers */}
+      <div className="flex items-center justify-between shrink-0" style={{ padding: HP, borderBottom: '1px solid var(--color-border-subtle)' }}>
+        <input
+          aria-label="Note title"
+          value={editTitle}
+          onChange={e => setEditTitle(e.target.value)}
+          onBlur={commitTitle}
+          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+          style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-md)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'none', border: 'none', outline: 'none', flex: 1, minWidth: 0, padding: 0, letterSpacing: '-0.01em' }}
+        />
+        <button aria-label="Close" onClick={handleClose}
+          style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', flexShrink: 0, transition: 'background 100ms' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto" style={{ padding: CP, scrollbarWidth: 'thin' }}>
+        <textarea
+          ref={ref}
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          className="w-full resize-none border-none bg-transparent outline-none"
+          style={{ minHeight: 360, overflow: 'hidden', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', color: 'var(--color-text-primary)', padding: 0 }}
+        />
+      </div>
+
+      {/* Footer */}
+      {extraActions && extraActions.length > 0 && (
+        <div className="flex items-center justify-end gap-2 shrink-0" style={{ padding: FP, borderTop: '1px solid var(--color-border-subtle)' }}>
+          {extraActions.map((a, i) => (
+            <Button key={a.label} variant={i === 0 ? 'secondary' : 'green'}
+              onClick={() => { onSave?.(content); a.onClick(content); handleClose(); }}>
               {a.label}
             </Button>
           ))}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      )}
+    </ModalShell>
   );
 }
 
