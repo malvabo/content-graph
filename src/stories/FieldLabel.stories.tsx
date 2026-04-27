@@ -1,43 +1,52 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import '../index.css';
-
-function FieldLabel({ label = 'Field label', withInput = false }: { label?: string; withInput?: boolean }) {
-  return (
-    <div style={{ fontFamily: 'var(--font-sans)', maxWidth: 'var(--size-panel)' }}>
-      <label className="text-field-label">{label}</label>
-      {withInput && (
-        <input placeholder="Enter value..." style={{ width: '100%', height: 'var(--size-control-md)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-default)', padding: '0 var(--space-3)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }} />
-      )}
-    </div>
-  );
-}
+import { Field, FieldGroup, FieldLabel, FieldDescription } from '../components/ui/field';
 
 const meta: Meta<typeof FieldLabel> = {
-  title: 'Components/Form/FieldLabel',
+  title: 'Components/Form/Field Label',
   component: FieldLabel,
   tags: ['autodocs'],
   argTypes: {
-    label: { control: 'text' },
-    withInput: { control: 'boolean' },
+    children: { control: 'text' },
   },
 };
 export default meta;
 
-export const Default: StoryObj<typeof FieldLabel> = { args: { label: 'Goal' } };
-export const WithInput: StoryObj<typeof FieldLabel> = { args: { label: 'SEO keyword', withInput: true } };
-export const Comparison: StoryObj<typeof FieldLabel> = {
+export const Default: StoryObj<typeof FieldLabel> = {
+  args: { children: 'Goal' },
+};
+
+export const WithInput: StoryObj<typeof FieldLabel> = {
   render: () => (
-    <div style={{ fontFamily: 'var(--font-sans)', display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div>
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginBottom: 8 }}>OLD — uppercase label (.text-label)</div>
-        <label className="text-label">Goal</label>
-        <input placeholder="Thought leadership" style={{ width: 280, height: 'var(--size-control-md)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-default)', padding: '0 var(--space-3)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }} />
-      </div>
-      <div>
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-disabled)', marginBottom: 8 }}>NEW — sentence case label (.text-field-label)</div>
-        <label className="text-field-label">Goal</label>
-        <input placeholder="Thought leadership" style={{ width: 280, height: 'var(--size-control-md)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-default)', padding: '0 var(--space-3)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)' }} />
-      </div>
-    </div>
+    <Field style={{ maxWidth: 280, fontFamily: 'var(--font-sans)' }}>
+      <FieldLabel>SEO keyword</FieldLabel>
+      <input className="form-input" placeholder="Enter value..." style={{ width: '100%' }} />
+    </Field>
+  ),
+};
+
+export const WithDescription: StoryObj<typeof FieldLabel> = {
+  render: () => (
+    <Field style={{ maxWidth: 280, fontFamily: 'var(--font-sans)' }}>
+      <FieldLabel>Model</FieldLabel>
+      <FieldDescription>Applies to all generate nodes unless overridden.</FieldDescription>
+      <input className="form-input" placeholder="claude-sonnet-4" style={{ width: '100%' }} />
+    </Field>
+  ),
+};
+
+export const FieldGroupExample: StoryObj = {
+  render: () => (
+    <FieldGroup style={{ maxWidth: 320, fontFamily: 'var(--font-sans)' }}>
+      <Field>
+        <FieldLabel>Goal</FieldLabel>
+        <input className="form-input" placeholder="Thought leadership" style={{ width: '100%' }} />
+      </Field>
+      <Field>
+        <FieldLabel>Tone</FieldLabel>
+        <FieldDescription>Affects voice across all generate nodes.</FieldDescription>
+        <input className="form-input" placeholder="Authoritative" style={{ width: '100%' }} />
+      </Field>
+    </FieldGroup>
   ),
 };
