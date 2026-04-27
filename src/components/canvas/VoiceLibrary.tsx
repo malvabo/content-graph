@@ -503,8 +503,8 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
             Learn
           </button>
           {!recording && (
-            <button onClick={startRecording} className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>
+            <button onClick={startRecording} className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
               New recording
             </button>
           )}

@@ -129,7 +129,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
           </button>
         </div>
 
-        {/* Center: graph name + auto-layout */}
+        {/* Center: graph name */}
         <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, maxWidth: 420, minWidth: 120 }}>
           <input
             aria-label="Graph name"
@@ -148,6 +148,11 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
             onFocus={(e) => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
             onBlur={(e) => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
           />
+        </div>
+
+        {/* Right: actions */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--space-1)' }}>
+
           <button
             className="btn-ghost btn-sm hidden md:inline-flex"
             style={{ gap: 6, border: 'none' }}
@@ -156,10 +161,6 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
             <LayoutIcon />
             Auto-layout
           </button>
-        </div>
-
-        {/* Right: actions */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--space-1)' }}>
 
           <button
             onClick={handleRunAll}

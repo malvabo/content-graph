@@ -44,10 +44,10 @@ function NavItem({
       className="nav-item"
       style={{
         display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-        padding: '7px 10px', borderRadius: 18,
+        padding: '7px 10px', borderRadius: 6,
         background: active ? 'var(--color-nav-item-active)' : 'transparent',
         color: active ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
-        boxShadow: active ? '0 1px 3px 0 rgba(0,0,0,0.10), 0 4px 12px 0 rgba(0,0,0,0.06)' : 'none',
+        boxShadow: 'none',
         justifyContent: 'flex-start', border: 'none', cursor: 'pointer',
         fontFamily: 'var(--font-sans)', overflow: 'hidden',
         transition: 'background 100ms, color 100ms',
