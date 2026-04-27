@@ -554,12 +554,12 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               >Saved to library.</motion.div>
               {/* Extra lights bloom 0→1 alongside the existing draft orb */}
               {[
-                { left:'22%', top:'82%', w:70,  rgb:'255,155,55', delay:0.1 },
-                { left:'38%', top:'87%', w:52,  rgb:'255,195,80', delay:0.22 },
-                { left:'62%', top:'83%', w:80,  rgb:'255,210,90', delay:0.08 },
-                { left:'76%', top:'88%', w:58,  rgb:'255,145,48', delay:0.18 },
-                { left:'30%', top:'91%', w:44,  rgb:'255,175,65', delay:0.30 },
-                { left:'68%', top:'90%', w:62,  rgb:'255,130,42', delay:0.14 },
+                { left:'22%', top:'82%', w:70,  rgb:'255,225,130', delay:0.1 },
+                { left:'38%', top:'87%', w:52,  rgb:'255,225,130', delay:0.22 },
+                { left:'62%', top:'83%', w:80,  rgb:'255,225,130', delay:0.08 },
+                { left:'76%', top:'88%', w:58,  rgb:'255,225,130', delay:0.18 },
+                { left:'30%', top:'91%', w:44,  rgb:'255,225,130', delay:0.30 },
+                { left:'68%', top:'90%', w:62,  rgb:'255,225,130', delay:0.14 },
               ].map((l, i) => (
                 <motion.div
                   key={`s-orb-${i}`}
