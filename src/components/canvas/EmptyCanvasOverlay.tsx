@@ -153,7 +153,7 @@ export default function EmptyCanvasOverlay() {
             const { nodes: n } = t.build();
             const nodeLabels = n.slice(0, 2).map(nd => nd.data.label);
             const extra = n.length - 2;
-            return <TemplateCard key={t.name} title={t.name} meta={`${n.length} nodes`} pills={nodeLabels} extraCount={extra > 0 ? extra : undefined} onClick={() => loadTemplate(i)} />;
+            return <TemplateCard key={t.name} title={t.name} meta={`${n.length} nodes`} pills={nodeLabels} extraCount={extra > 0 ? extra : undefined} icon={t.icon} onClick={() => loadTemplate(i)} />;
           })}
         </div>
       </div>

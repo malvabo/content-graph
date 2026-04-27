@@ -67,6 +67,7 @@ export default function TemplatePickerModal({ onClose, onStartScratch, onPickTem
                     description={t.description}
                     pills={[]}
                     graphData={{ nodes, edges }}
+                    icon={t.icon}
                     onClick={() => onPickTemplate(i)}
                   />
                 );

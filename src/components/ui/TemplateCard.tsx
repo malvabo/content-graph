@@ -4,6 +4,12 @@ import GraphSchematic from './GraphSchematic';
 interface GraphNode { id: string; position: { x: number; y: number }; data: { category: string; label: string; description?: string } }
 interface GraphEdge { source: string; target: string }
 
+const PenIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+  </svg>
+);
+
 interface TemplateCardProps {
   title: string;
   meta: string;
@@ -12,9 +18,10 @@ interface TemplateCardProps {
   extraCount?: number;
   onClick?: () => void;
   graphData?: { nodes: GraphNode[]; edges: GraphEdge[] };
+  icon?: string;
 }
 
-export default function TemplateCard({ title, meta, description, pills, extraCount, onClick, graphData }: TemplateCardProps) {
+export default function TemplateCard({ title, meta, description, pills, extraCount, onClick, graphData, icon }: TemplateCardProps) {
   const HP = 20;
   return (
     <button onClick={onClick} style={{
@@ -51,7 +58,11 @@ export default function TemplateCard({ title, meta, description, pills, extraCou
           fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)',
           color: 'var(--color-text-primary)', lineHeight: 1.4,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{title}</div>
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          {icon === 'pen' && <PenIcon />}
+          {title}
+        </div>
         <div style={{
           fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-normal)',
           color: 'var(--color-text-tertiary)', lineHeight: 1.4,

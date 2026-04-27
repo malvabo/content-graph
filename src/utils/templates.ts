@@ -18,11 +18,12 @@ function makeEdge(source: string, target: string): Edge {
 }
 
 export type TemplateCategory = 'Repurposing' | 'Research' | 'Transcript';
-export interface Template { name: string; description: string; category: TemplateCategory; build: () => { nodes: ContentNode[]; edges: Edge[] } }
+export interface Template { name: string; description: string; category: TemplateCategory; icon?: string; build: () => { nodes: ContentNode[]; edges: Edge[] } }
 
 export const TEMPLATES: Template[] = [
   {
     name: 'Article → Everywhere',
+    icon: 'pen',
     description: 'One article repurposed to LinkedIn, newsletter, and Twitter',
     category: 'Repurposing',
     build: () => {
