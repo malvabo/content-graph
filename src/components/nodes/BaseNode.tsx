@@ -12,7 +12,8 @@ import { GenerateNodeInline } from './GenerateNodes';
 import { RefineInline } from './TransformNodes';
 import { ExportInline } from './OutputNodes';
 import { ImagePromptInline } from './ImagePromptNode';
-import { VoiceSourceInline } from './VoiceSourceNode';
+import { VoiceSourceInline, SAMPLE_VOICE_CONTENT } from './VoiceSourceNode';
+import { useVoiceStore } from '../../store/voiceStore';
 import { InfographicInline } from './InfographicNode';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import { useGraphStore } from '../../store/graphStore';
@@ -244,7 +245,13 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {expandOpen && ["text-source", "file-source", "refine", "voice-source"].includes(data.subtype) && (() => {
         const output = useOutputStore.getState().outputs[id]?.text;
         const configText = (data.config?.text as string) || "";
-        return <ContentModal subtype={data.subtype} title={data.label} text={output || configText || ""} onClose={() => setExpandOpen(false)} onSave={(t: string) => { useOutputStore.getState().setOutput(id, { text: t }); if (data.subtype === 'text-source') useGraphStore.getState().updateNodeConfig(id, { text: t }); }} />;
+        let modalText = output || configText || "";
+        if (data.subtype === 'voice-source') {
+          const voiceNoteId = data.config?.voiceNoteId as string | undefined;
+          const note = voiceNoteId ? useVoiceStore.getState().notes.find((n: { id: string }) => n.id === voiceNoteId) : null;
+          modalText = note?.transcript || SAMPLE_VOICE_CONTENT;
+        }
+        return <ContentModal subtype={data.subtype} title={data.label} text={modalText} onClose={() => setExpandOpen(false)} onSave={(t: string) => { useOutputStore.getState().setOutput(id, { text: t }); if (data.subtype === 'text-source') useGraphStore.getState().updateNodeConfig(id, { text: t }); }} />;
       })()}
       {def?.hasOutput && <Handle type="source" position={Position.Right} id="text" className={HANDLE_CLS} style={hiSource ? { borderColor: 'var(--color-accent)', backgroundColor: 'var(--color-accent)' } : undefined} />}
     </div>
