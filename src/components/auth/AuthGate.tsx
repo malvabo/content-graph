@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
+import TypewriterLogo from '../TypewriterLogo';
 
 export default function AuthGate() {
   const { signIn, signUp, signInWithGoogle, continueAsGuest } = useAuthStore();
@@ -89,25 +90,8 @@ export default function AuthGate() {
       <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 380 }}>
         {/* Logo + heading */}
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-          <div aria-hidden style={{
-            width: 80, height: 80, margin: '0 auto var(--space-4)',
-            position: 'relative',
-          }}>
-            <div style={{
-              position: 'absolute', inset: '-30%',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(144,97,249,0.50) 0%, rgba(144,97,249,0.14) 38%, rgba(144,97,249,0) 72%)',
-              filter: 'blur(10px)',
-            }} />
-            <div style={{
-              position: 'absolute', inset: 0,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle at 38% 32%, #d6c8f5 0%, #8463e8 45%, #4a3a9e 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontWeight: 700, fontSize: 28, letterSpacing: '-0.04em',
-              fontFamily: 'var(--font-sans)',
-              boxShadow: '0 12px 32px rgba(144,97,249,0.45), inset 0 1px 0 rgba(255,255,255,0.25)',
-            }}>up</div>
+          <div style={{ margin: '0 auto var(--space-4)' }}>
+            <TypewriterLogo />
           </div>
           <h1 style={{
             fontWeight: 700, fontSize: 'var(--text-title)', lineHeight: 1.2,
