@@ -138,7 +138,79 @@ const SEL_SPRING = { type: 'spring' as const, stiffness: 70,  damping: 20 };
 const ENT_SPRING = { type: 'spring' as const, stiffness: 220, damping: 22 };
 const EASE: [number,number,number,number] = [0.4, 0.0, 0.6, 1.0];
 
-// ─── Recording canvas ─────────────────────────────────────────────────────────
+// ─── Skeumorphic social-media tokens — gold glass discs with embossed brand glyphs ──
+const SOCIAL_PATHS: Record<string, React.ReactNode> = {
+  linkedin: (
+    <>
+      <rect x="3.5" y="8.5" width="2.6" height="9" rx="0.4" />
+      <circle cx="4.8" cy="6" r="1.6" />
+      <path d="M9 8.5 h2.6 v1.4 c.6-.95 1.75-1.7 3.4-1.7 c2.4 0 3.5 1.45 3.5 4 v5.3 h-2.6 v-4.7 c0-1.4-.5-2.2-1.7-2.2 c-1.4 0-2 .9-2 2.2 v4.7 H9 z" />
+    </>
+  ),
+  x: <path d="M4.5 4 h2.7 L11.7 9.6 L16.2 4 h2.7 L13.1 11.4 L19.5 20 h-2.8 L11.6 13 L6.4 20 H3.6 L10 11.6 z" />,
+  instagram: (
+    <>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="4.6" fill="none" strokeWidth="1.7" stroke="currentColor" />
+      <circle cx="12" cy="12" r="3.9" fill="none" strokeWidth="1.7" stroke="currentColor" />
+      <circle cx="17" cy="7" r="1.05" />
+    </>
+  ),
+  threads: (
+    <path
+      d="M12 4.4 c4.5 0 7.4 2.7 7.4 7.6 c0 4-2.5 7.4-7 7.4 c-4.6 0-7.5-2.8-7.5-7.5 c0-2.8 1.2-5.1 3.7-5.8 c2-.6 4 .3 4.8 2 c.7 1.5.5 3.3-.4 4.5 c-.7.95-1.85 1.4-3.05 1.4 c-1.5 0-2.5-1-2.5-2.3 c0-1 .8-2 2-2 c.7 0 1.4.4 1.4 1.2"
+      stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"
+    />
+  ),
+  youtube: (
+    <>
+      <rect x="2.5" y="6" width="19" height="12" rx="3" />
+      <path d="M10.5 9 L16 12 L10.5 15 z" fill="rgba(0,0,0,0.55)" />
+    </>
+  ),
+  tiktok: (
+    <>
+      <path d="M14 3 v9.7" stroke="currentColor" strokeWidth="1.9" fill="none" strokeLinecap="round" />
+      <path d="M14 12.5 a4 4 0 1 1 -4 -4" stroke="currentColor" strokeWidth="1.9" fill="none" strokeLinecap="round" />
+      <path d="M14 3 c0 3 2.2 5 5 5" stroke="currentColor" strokeWidth="1.9" fill="none" strokeLinecap="round" />
+    </>
+  ),
+};
+
+function SocialIcon({ id, size }: { id: string; size: number }) {
+  const iconSize = size * 0.6;
+  return (
+    <div
+      style={{
+        width: size, height: size, borderRadius: '50%',
+        // Gold-glass body: warm light source from upper-left, deep amber falloff
+        background:
+          'radial-gradient(circle at 32% 26%, #fff7e0 0%, #f6dc97 30%, #b88a3a 70%, #5a3f12 100%)',
+        // Skeumorphic float: top sheen, bottom shade, soft warm halo, hard contact shadow
+        boxShadow: [
+          'inset 0 1.5px 0 rgba(255,255,255,0.55)',
+          'inset 0 -2px 5px rgba(60,30,0,0.45)',
+          '0 4px 10px rgba(0,0,0,0.45)',
+          '0 1px 2.5px rgba(0,0,0,0.50)',
+          '0 0 18px rgba(255,210,120,0.55)',
+        ].join(', '),
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        position: 'relative',
+      }}
+    >
+      <svg
+        width={iconSize} height={iconSize} viewBox="0 0 24 24"
+        style={{
+          color: '#fbf2d8',
+          filter: 'drop-shadow(0 1px 0 rgba(0,0,0,0.55)) drop-shadow(0 -0.5px 0 rgba(255,255,255,0.35))',
+        }}
+        fill="currentColor"
+      >
+        {SOCIAL_PATHS[id]}
+      </svg>
+    </div>
+  );
+}
+
 
 function RecordingCanvas({ onStop }: { onStop: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -557,16 +629,17 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                   generous canvas extension so the cloud falls off naturally), with
                   a yellow tint and varied radii. */}
               {[
-                { left:'22%', top:'82%', r:70, delay:0.1 },
-                { left:'38%', top:'87%', r:52, delay:0.22 },
-                { left:'62%', top:'83%', r:80, delay:0.08 },
-                { left:'76%', top:'88%', r:58, delay:0.18 },
-                { left:'30%', top:'91%', r:44, delay:0.30 },
-                { left:'68%', top:'90%', r:62, delay:0.14 },
-              ].map((l, i) => {
+                { left:'22%', top:'82%', r:70, delay:0.1,  social:'instagram' },
+                { left:'38%', top:'87%', r:52, delay:0.22, social:'youtube'   },
+                { left:'62%', top:'83%', r:80, delay:0.08, social:'linkedin'  },
+                { left:'76%', top:'88%', r:58, delay:0.18, social:'tiktok'    },
+                { left:'30%', top:'91%', r:44, delay:0.30, social:'threads'   },
+                { left:'68%', top:'90%', r:62, delay:0.14, social:'x'         },
+              ].flatMap((l, i) => {
                 const RGB = '255,225,130';
                 const D = l.r * 3;
-                return (
+                const tokenSize = Math.round(l.r * 0.75);
+                return [
                   <motion.div
                     key={`s-orb-${i}`}
                     initial={{opacity:0, scale:0.4}}
@@ -581,8 +654,22 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                       mixBlendMode:'screen',
                       pointerEvents:'none', zIndex:20,
                     }}
-                  />
-                );
+                  />,
+                  <motion.div
+                    key={`s-icon-${i}`}
+                    initial={{opacity:0, scale:0.3, y:6}}
+                    animate={{opacity:1, scale:1,   y:0}}
+                    exit={{opacity:0, scale:0.3, y:6}}
+                    transition={{duration:0.7, delay:l.delay + 0.12, ease:[0.16,1,0.3,1]}}
+                    style={{
+                      position:'absolute', left:l.left, top:l.top,
+                      marginLeft:-tokenSize/2, marginTop:-tokenSize/2,
+                      pointerEvents:'none', zIndex:21,
+                    }}
+                  >
+                    <SocialIcon id={l.social} size={tokenSize} />
+                  </motion.div>,
+                ];
               })}
             </>
           )}
