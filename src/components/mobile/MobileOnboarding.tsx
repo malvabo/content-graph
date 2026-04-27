@@ -572,8 +572,8 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                     width:l.w, height:l.w,
                     marginLeft:-l.w/2, marginTop:-l.w/2,
                     borderRadius:'50%',
-                    background:`radial-gradient(circle, rgba(${l.rgb},0.85) 0%, rgba(${l.rgb},0.32) 44%, rgba(${l.rgb},0) 76%)`,
-                    mixBlendMode:'screen', filter:'blur(5px)',
+                    background:`radial-gradient(circle at center, rgba(${l.rgb},1) 0%, rgba(${l.rgb},0.95) 8%, rgba(${l.rgb},0.7) 18%, rgba(${l.rgb},0.4) 32%, rgba(${l.rgb},0.2) 50%, rgba(${l.rgb},0.08) 70%, rgba(${l.rgb},0.02) 85%, rgba(${l.rgb},0) 100%)`,
+                    mixBlendMode:'screen',
                     pointerEvents:'none', zIndex:20,
                   }}
                 />
