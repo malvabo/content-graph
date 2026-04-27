@@ -1570,7 +1570,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             primary post exists and we have a transcript to feed new generations. */}
         {hasGen && gen && note.transcript && (
           <>
-            <div aria-hidden style={{ height: 72, flexShrink: 0 }} />
+            <div aria-hidden style={{ height: 20, flexShrink: 0 }} />
             <div style={{ padding: '0 var(--space-4)' }}>
               <div style={{
                 fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500,
