@@ -504,7 +504,7 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
         border: `1px solid ${tintRgb ? `rgba(${tintRgb},0.20)` : 'rgba(255,255,255,0.08)'}`,
         borderRadius: 22,
         padding: '16px 20px',
-        display: 'flex', flexDirection: 'column', gap: 4,
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4,
         cursor: isTranscribing ? 'default' : 'pointer',
         opacity: isTranscribing ? 0.7 : 1, minWidth: 0, boxSizing: 'border-box',
         boxShadow: tintRgb
@@ -516,6 +516,7 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       {/* Title — clamped to 2 lines, broken at word boundaries */}
       <span ref={titleRef} style={{
         position: 'relative', zIndex: 1,
+        width: '100%',
         fontFamily: 'var(--font-sans)', fontSize: 'var(--text-heading)', fontWeight: 500,
         lineHeight: '24px',
         color: 'rgba(255,255,255,0.92)',
@@ -532,6 +533,7 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       {/* Metadata — time directly under title */}
       <span style={{
         position: 'relative', zIndex: 1,
+        width: '100%',
         fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 400,
         color: 'rgba(255,255,255,0.45)',
         textAlign: 'left',
@@ -543,6 +545,7 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
       {showPreview && previewText && (
         <span style={{
           position: 'relative', zIndex: 1,
+          width: '100%',
           marginTop: 2,
           fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 400,
           lineHeight: '20px',
