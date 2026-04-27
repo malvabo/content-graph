@@ -109,9 +109,17 @@ const PLATFORMS = [
   { id: 'threads',   label: 'Threads',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '74,58,94'    },
 ] as const;
 
-// Cloud click-target 64px; halo extends to ~140px around it. Label sits 50px below
-// the cloud center.
-const BULB = 48;
+// Cloud click-target 64px; halo extends to ~140px around it. Label sits 8px below
+// the tile (4px ring gap + 4px more breathing room).
+const BULB = 64;
+
+// Brand fill for selected state (full-saturation tile background).
+const BRAND_FILL: Record<string, string> = {
+  linkedin:  '10,102,194',
+  x:         '0,0,0',
+  instagram: '225,48,108',
+  threads:   '0,0,0',
+};
 
 // Unified breathing — same amplitude (0.97↔1.03) for every cloud so all four read as
 // the same size at all times. Only the period and phase offset differ, for liveness.
@@ -495,51 +503,72 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                   }}
                   style={{ position:'absolute', inset:0 }}
                 >
-                  {/* Outer halo — large soft cloud, fades fully transparent before the box edge */}
+                  {/* Selected ring — 2px white, 4px outside the tile (76×76 around 64×64) */}
                   <motion.div
                     aria-hidden
-                    initial={{ opacity:0, scale:0.5 }}
-                    animate={{ opacity:1, scale:1 }}
-                    transition={{ delay:entranceDelay+0.03, ...ENT_SPRING }}
+                    initial={false}
+                    animate={{ opacity: isSelected ? 1 : 0, scale: isSelected ? 1 : 0.85 }}
+                    transition={{ duration: 0.22, ease: [0.2, 0, 0.2, 1] }}
                     style={{
                       position:'absolute',
                       left:'50%', top:'50%',
-                      width: 100, height: 100,
-                      marginLeft: -50, marginTop: -50,
+                      width: 76, height: 76,
+                      marginLeft: -38, marginTop: -38,
                       borderRadius:'50%',
-                      background: `radial-gradient(circle at 50% 50%, rgba(${p.glowRgb},0.32) 0%, rgba(${p.glowRgb},0.10) 38%, rgba(${p.glowRgb},0.03) 60%, rgba(${p.glowRgb},0) 80%)`,
-                      filter:'blur(8px)',
+                      border:'2px solid rgba(255,255,255,1)',
                       pointerEvents:'none',
                     }}
                   />
-                  {/* Cloud body — colored center, fades to transparent before reaching the round box edge */}
-                  <div
+                  {/* Frosted-glass tile — 64×64, fills with brand color when selected */}
+                  <motion.div
                     aria-hidden
+                    initial={{ opacity:0, scale:0.6 }}
+                    animate={{
+                      opacity: 1,
+                      scale: 1,
+                      background: isSelected ? `rgb(${BRAND_FILL[p.id] ?? p.mergeRgb})` : 'rgba(255,255,255,0.06)',
+                    }}
+                    transition={{
+                      opacity: { delay: entranceDelay + 0.03, ...ENT_SPRING },
+                      scale:   { delay: entranceDelay + 0.03, ...ENT_SPRING },
+                      background: { duration: 0.25, ease: [0.2, 0, 0.2, 1] },
+                    }}
                     style={{
-                      position:'absolute',
-                      left:'50%', top:'50%',
-                      width: 60, height: 60,
-                      marginLeft: -30, marginTop: -30,
+                      position:'absolute', inset:0,
                       borderRadius:'50%',
-                      background: `radial-gradient(circle at 50% 45%, rgba(${p.glowRgb},0.90) 0%, rgba(${p.glowRgb},0.60) 40%, rgba(${p.glowRgb},0.20) 68%, rgba(${p.glowRgb},0) 90%)`,
-                      filter:'blur(3px)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: `0 0 28px 4px rgba(${p.glowRgb}, 0.35), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.18)`,
+                      display:'flex', alignItems:'center', justifyContent:'center',
                       pointerEvents:'none',
                     }}
-                  />
+                  >
+                    <svg
+                      width={28} height={28} viewBox="0 0 24 24"
+                      style={{
+                        color: '#ffffff',
+                        opacity: isSelected ? 1 : 0.6,
+                        transition: 'opacity 220ms cubic-bezier(0.2,0,0.2,1)',
+                      }}
+                      fill="currentColor"
+                    >
+                      {SOCIAL_PATHS[p.id]}
+                    </svg>
+                  </motion.div>
 
                 </motion.div>
               </motion.div>
 
-              {/* Label below disc */}
+              {/* Label — 13px medium, white at 80%, 8px below the 64px tile */}
               <motion.div
                 initial={{ opacity:0 }}
-                animate={{ opacity: selId ? 0 : 0.65 }}
+                animate={{ opacity: selId ? 0 : 0.8 }}
                 transition={{ delay: selId ? 0 : entranceDelay+0.04, duration: selId ? 0.2 : 0.28 }}
                 style={{
-                  position:'absolute', left:p.left, top:'calc(60% + 42px)',
+                  position:'absolute', left:p.left, top:'calc(60% + 40px)',
                   transform:'translateX(-50%)',
-                  fontFamily:'var(--font-sans)', fontSize:'var(--text-caption)', fontWeight:400,
-                  color:'rgba(255,255,255,1)', letterSpacing:'0.04em',
+                  fontFamily:'var(--font-sans)', fontSize:13, fontWeight:500,
+                  color:'#ffffff', letterSpacing:'0.02em',
                   whiteSpace:'nowrap', pointerEvents:'none', zIndex:14,
                 }}
               >
