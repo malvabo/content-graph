@@ -552,32 +552,38 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 transition={{duration:0.4,delay:0.3,ease:[0.4,0,0.2,1]}}
                 style={{position:'absolute',top:'52%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.6)',letterSpacing:'0.01em',pointerEvents:'none',zIndex:20}}
               >Saved to library.</motion.div>
-              {/* Extra lights bloom 0→1 alongside the existing draft orb */}
+              {/* Extra lights bloom 0→1 alongside the existing draft orb.
+                  Each renders identically to the main orb (fixed-px gradient with
+                  generous canvas extension so the cloud falls off naturally), with
+                  a yellow tint and varied radii. */}
               {[
-                { left:'22%', top:'82%', w:70,  rgb:'255,225,130', delay:0.1 },
-                { left:'38%', top:'87%', w:52,  rgb:'255,225,130', delay:0.22 },
-                { left:'62%', top:'83%', w:80,  rgb:'255,225,130', delay:0.08 },
-                { left:'76%', top:'88%', w:58,  rgb:'255,225,130', delay:0.18 },
-                { left:'30%', top:'91%', w:44,  rgb:'255,225,130', delay:0.30 },
-                { left:'68%', top:'90%', w:62,  rgb:'255,225,130', delay:0.14 },
-              ].map((l, i) => (
-                <motion.div
-                  key={`s-orb-${i}`}
-                  initial={{opacity:0, scale:0.4}}
-                  animate={{opacity:1, scale:1}}
-                  exit={{opacity:0, scale:0.4}}
-                  transition={{duration:0.8, delay:l.delay, ease:[0.2,0,0.4,1]}}
-                  style={{
-                    position:'absolute', left:l.left, top:l.top,
-                    width:l.w, height:l.w,
-                    marginLeft:-l.w/2, marginTop:-l.w/2,
-                    borderRadius:'50%',
-                    background:`radial-gradient(circle at center, rgba(${l.rgb},1) 0%, rgba(${l.rgb},0.95) 8%, rgba(${l.rgb},0.7) 18%, rgba(${l.rgb},0.4) 32%, rgba(${l.rgb},0.2) 50%, rgba(${l.rgb},0.08) 70%, rgba(${l.rgb},0.02) 85%, rgba(${l.rgb},0) 100%)`,
-                    mixBlendMode:'screen',
-                    pointerEvents:'none', zIndex:20,
-                  }}
-                />
-              ))}
+                { left:'22%', top:'82%', r:70, delay:0.1 },
+                { left:'38%', top:'87%', r:52, delay:0.22 },
+                { left:'62%', top:'83%', r:80, delay:0.08 },
+                { left:'76%', top:'88%', r:58, delay:0.18 },
+                { left:'30%', top:'91%', r:44, delay:0.30 },
+                { left:'68%', top:'90%', r:62, delay:0.14 },
+              ].map((l, i) => {
+                const RGB = '255,225,130';
+                const D = l.r * 3;
+                return (
+                  <motion.div
+                    key={`s-orb-${i}`}
+                    initial={{opacity:0, scale:0.4}}
+                    animate={{opacity:1, scale:1}}
+                    exit={{opacity:0, scale:0.4}}
+                    transition={{duration:0.8, delay:l.delay, ease:[0.2,0,0.4,1]}}
+                    style={{
+                      position:'absolute', left:l.left, top:l.top,
+                      width:D, height:D,
+                      marginLeft:-D/2, marginTop:-D/2,
+                      background:`radial-gradient(${l.r}px circle at center, rgba(${RGB},1) 0%, rgba(${RGB},0.95) 8%, rgba(${RGB},0.7) 18%, rgba(${RGB},0.4) 32%, rgba(${RGB},0.2) 50%, rgba(${RGB},0.08) 70%, rgba(${RGB},0.02) 85%, rgba(${RGB},0) 100%)`,
+                      mixBlendMode:'screen',
+                      pointerEvents:'none', zIndex:20,
+                    }}
+                  />
+                );
+              })}
             </>
           )}
         </AnimatePresence>
