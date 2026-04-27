@@ -167,6 +167,9 @@ export default function IconNav({ activeView, onViewChange }: Props) {
           <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             <Logo />
           </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--color-text-primary)', whiteSpace: 'nowrap' }}>
+            up150
+          </span>
         </div>
 
         <NavItem icon={<WorkflowIcon />} label="Workflows" expanded={true} active={activeView === 'library' || activeView === 'workflow'} onClick={() => onViewChange('library')} />
