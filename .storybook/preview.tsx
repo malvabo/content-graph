@@ -24,6 +24,7 @@ const preview: Preview = {
     (Story, context) => {
       const theme = context.globals.theme || 'light';
       document.documentElement.classList.toggle('dark', theme === 'dark');
+      document.body.style.overflow = 'auto';
       return (
         <div style={{ background: 'var(--color-bg)', padding: 24 }}>
           <Story />
