@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export default function TypewriterLogo({ fontSize = 44 }: { fontSize?: number }) {
+export default function TypewriterLogo({ fontSize = 96 }: { fontSize?: number }) {
   const label = 'up150';
   const [len, setLen] = useState(0);
   const [deleting, setDeleting] = useState(false);
