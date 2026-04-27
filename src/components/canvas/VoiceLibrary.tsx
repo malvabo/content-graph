@@ -11,6 +11,8 @@ import { computeSafePosition } from '../../utils/nodePlacement';
 import ContentModal from '../modals/ContentModal';
 import RecordButton from './RecordButton';
 
+const SAMPLE_CONTENT = "Movement in Gemini is not merely decorative; it's an essential guiding element. Each animation has a defined start and end point, creating a sense of directional flow that mirrors user actions. This sense of responsiveness helps users intuitively understand that the system is working with them. Inner activity within the motion conveys thinking, analysis, and intelligence, making Gemini's processing feel more transparent. Motion allows users to see information coming together, visualizing Gemini's conversations and listening abilities.";
+
 /** Sync every voice-source node's output to match the note's latest transcript.
  *  Called after transcription succeeds (initial stop or retry) so workflow nodes
  *  that already reference this note don't show stale text. */
@@ -641,18 +643,21 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                               {displayTitle}
                             </span>
                             {isError ? (
-                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 400, lineHeight: '16px', color: 'var(--color-danger-text, #A83030)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-danger-text, #A83030)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {note.errorReason || 'Transcription failed.'}
-                              </span>
-                            ) : note.transcript ? (
-                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 400, lineHeight: '16px', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {note.transcript}
                               </span>
                             ) : isTranscribing ? (
                               <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px', color: 'var(--color-warning-text, #6A4A10)' }}>
                                 Transcribing…
                               </span>
-                            ) : null}
+                            ) : (
+                              <div style={{ position: 'relative', overflow: 'hidden' }}>
+                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-text-tertiary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                  {note.transcript || SAMPLE_CONTENT}
+                                </span>
+                                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 16, background: `linear-gradient(to bottom, transparent, ${isError ? 'var(--color-danger-bg, #FEF4F4)' : 'var(--color-bg-card))'})`, pointerEvents: 'none' }} />
+                              </div>
+                            )}
                           </div>
 
                           {/* Waveform (decorative) */}
@@ -743,7 +748,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
           <ContentModal
             subtype="voice-source"
             title={note.title}
-            text={note.transcript}
+            text={note.transcript || SAMPLE_CONTENT}
             onClose={() => setViewId(null)}
             onSave={persistTranscript}
             onTitleChange={(t: string) => updateNote(note.id, { title: t })}
