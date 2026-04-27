@@ -1206,6 +1206,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                   background: 'transparent', border: 'none', outline: 'none', resize: 'none', overflow: 'hidden',
                   fontFamily: 'var(--font-sans)', fontSize: 17, fontWeight: 400, lineHeight: 1.6,
                   color: 'rgba(255,255,255,0.95)',
+                  textAlign: 'left',
                   wordBreak: 'break-word', overflowWrap: 'anywhere',
                   boxSizing: 'border-box',
                   opacity: isStreaming ? 0.65 : 1,
@@ -1336,14 +1337,14 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
               </div>
             )}
 
-            {/* Copy — confident but not dominant. ~70% width, softer fill, lighter glow. */}
-            <div style={{ padding: 'var(--space-5) var(--space-4) 0', display: 'flex', justifyContent: 'center' }}>
+            {/* Copy — full-width primary action under the post. */}
+            <div style={{ padding: 'var(--space-5) var(--space-4) 0' }}>
               <button
                 onClick={copy}
                 aria-label={copied ? 'Copied to clipboard' : 'Copy generated text'}
                 className="reduced-motion-safe"
                 style={{
-                  width: '70%', minWidth: 200, maxWidth: 360, minHeight: 52,
+                  width: '100%', minHeight: 52,
                   padding: '12px 22px', borderRadius: 999,
                   background: copied
                     ? `linear-gradient(135deg, rgba(${platformRgb},0.45) 0%, rgba(${platformRgb},0.65) 100%)`
@@ -1570,7 +1571,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
             primary post exists and we have a transcript to feed new generations. */}
         {hasGen && gen && note.transcript && (
           <>
-            <div aria-hidden style={{ height: 72, flexShrink: 0 }} />
+            <div aria-hidden style={{ height: 20, flexShrink: 0 }} />
             <div style={{ padding: '0 var(--space-4)' }}>
               <div style={{
                 fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500,
@@ -2030,7 +2031,7 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
       <div style={{
         position: 'relative', zIndex: 1,
         flex: 1, overflowY: 'auto',
-        padding: '0 16px 160px',
+        padding: '0 16px 24px',
         display: 'flex', flexDirection: 'column', gap: 12,
       }}>
         {filtered.length === 0 ? (
@@ -2346,8 +2347,8 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         </>
       )}
 
-      {/* Add a post — hidden during edit mode */}
-      {!editMode && onAddPost && (
+      {/* Add a post — hidden during edit mode and on the list/detail page */}
+      {!editMode && !detailKind && onAddPost && (
         <div style={{
           position: 'absolute',
           bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))',
