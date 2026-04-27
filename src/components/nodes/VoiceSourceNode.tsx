@@ -54,34 +54,19 @@ export function VoiceSourceInline({ id, onExpand }: { id: string; onExpand?: () 
         className="nowheel"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => { e.stopPropagation(); onExpand?.(); }}
-        style={{
-          flex: 1,
-          overflow: 'hidden',
-          fontSize: 'var(--text-sm)',
-          lineHeight: 'var(--leading-relaxed)',
-          color: selected ? 'var(--color-text-secondary)' : 'var(--color-text-placeholder)',
-          background: 'var(--color-bg-surface)',
-          borderRadius: 'var(--radius-md)',
-          padding: 'var(--space-2)',
-          cursor: onExpand ? 'pointer' : 'default',
-          position: 'relative',
-          transition: 'background 150ms',
-        }}
-        onMouseEnter={e => { if (onExpand) e.currentTarget.style.background = 'var(--color-bg-hover, var(--color-bg-surface))'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+        style={{ flex: 1, position: 'relative', overflow: 'hidden', cursor: onExpand ? 'pointer' : 'default' }}
       >
         {selected ? (
           <>
-            <span style={{ fontFamily: 'var(--font-sans)', display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            <div style={{ fontWeight: 'var(--weight-normal)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>
               {selected.transcript || SAMPLE_CONTENT}
-            </span>
-            {/* Fade + click hint at bottom */}
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 32, background: 'linear-gradient(to bottom, transparent, var(--color-bg-surface))', borderRadius: '0 0 var(--radius-md) var(--radius-md)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 4 }}>
-              {onExpand && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-placeholder)', fontFamily: 'var(--font-sans)' }}>click to edit</span>}
+            </div>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 48, background: 'linear-gradient(transparent, var(--color-bg-card))', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 2, cursor: 'pointer' }}>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', letterSpacing: '0.01em' }}>···</span>
             </div>
           </>
         ) : (
-          <span style={{ fontFamily: 'var(--font-sans)', fontStyle: 'italic' }}>Select a note to see transcript</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-placeholder)', fontStyle: 'italic' }}>Select a note to see transcript</span>
         )}
       </div>
     </div>
