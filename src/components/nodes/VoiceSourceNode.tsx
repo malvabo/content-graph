@@ -3,6 +3,8 @@ import { useOutputStore } from '../../store/outputStore';
 import { useVoiceStore } from '../../store/voiceStore';
 import { useMemo } from 'react';
 
+const SAMPLE_CONTENT = "Movement in Gemini is not merely decorative; it's an essential guiding element. Each animation has a defined start and end point, creating a sense of directional flow that mirrors user actions. This sense of responsiveness helps users intuitively understand that the system is working with them. Inner activity within the motion conveys thinking, analysis, and intelligence, making Gemini's processing feel more transparent. Motion allows users to see information coming together, visualizing Gemini's conversations and listening abilities.";
+
 function formatDuration(ms: number) {
   const s = Math.round(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -71,7 +73,7 @@ export function VoiceSourceInline({ id, onExpand }: { id: string; onExpand?: () 
         {selected ? (
           <>
             <span style={{ fontFamily: 'var(--font-sans)', display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {selected.transcript}
+              {selected.transcript || SAMPLE_CONTENT}
             </span>
             {/* Fade + click hint at bottom */}
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 32, background: 'linear-gradient(to bottom, transparent, var(--color-bg-surface))', borderRadius: '0 0 var(--radius-md) var(--radius-md)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 4 }}>
