@@ -352,7 +352,7 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
       const cx = w / 2, cy = h * 0.54;
 
       const hasSpeech = liveTextRef.current.length > 3;
-      const targetSpread = hasSpeech ? 14 : 88;
+      const targetSpread = hasSpeech ? 10 : 60;
       spread += (targetSpread - spread) * 0.035;
 
       ctx.fillStyle = '#080910';
@@ -360,10 +360,10 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
 
       for (let i = 0; i < 4; i++) {
         const angle = t * 0.65 + i * (Math.PI * 0.5);
-        const r = spread + Math.sin(t * 0.45 + i * 1.1) * 20;
+        const r = spread + Math.sin(t * 0.45 + i * 1.1) * 14;
         const px = cx + Math.cos(angle) * r * 0.88;
         const py = cy + Math.sin(angle) * r * 0.72;
-        const sz = 155 + Math.sin(t * 0.9 + i * 0.8) * 38;
+        const sz = 95 + Math.sin(t * 0.9 + i * 0.8) * 22;
         const grad = ctx.createRadialGradient(px, py, 0, px, py, sz);
         const hue = 145 + i * 5;
         grad.addColorStop(0, `hsla(${hue},58%,52%,0.22)`);
