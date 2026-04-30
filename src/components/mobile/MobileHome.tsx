@@ -2289,14 +2289,14 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
       ) : (
         <>
           {/* Header */}
-          <header style={{ padding: '28px 20px 8px', flexShrink: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 500, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', userSelect: 'none', letterSpacing: '0.18em', textTransform: 'uppercase', paddingTop: 10 }}>
+          <header style={{ padding: '28px 20px 8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontWeight: 500, fontSize: 22, fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', userSelect: 'none', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
               UP150
             </span>
             <button
               onClick={() => setEditMode(m => !m)}
               aria-label={editMode ? 'Done editing' : 'Edit widgets'}
-              style={{ marginTop: 6, background: 'transparent', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 20, padding: '7px 16px', fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
+              style={{ background: 'transparent', border: 'none', padding: '6px 4px', fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
             >
               {editMode ? 'Done' : 'Edit'}
             </button>
