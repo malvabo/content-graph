@@ -589,7 +589,6 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
-  const [editHintDismissed, setEditHintDismissed] = useState(() => sessionStorage.getItem('note-edit-hint-seen') === '1');
   // Steerable regenerate
   const [chooserOpen, setChooserOpen] = useState(false);
   const [customMode, setCustomMode] = useState(false);
@@ -727,12 +726,6 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
   // Re-size the post editor whenever its text changes (including after regenerate).
   useEffect(() => { sizePostEditor(); }, [gen?.text, sizePostEditor]);
-
-  const dismissEditHint = useCallback(() => {
-    if (editHintDismissed) return;
-    sessionStorage.setItem('note-edit-hint-seen', '1');
-    setEditHintDismissed(true);
-  }, [editHintDismissed]);
 
   // Close the versions dropdown on outside click / Escape.
   useEffect(() => {
@@ -1197,7 +1190,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                   sizePostEditor();
                   setPostCountPulse(k => k + 1);
                 }}
-                onFocus={() => { setPostFocused(true); dismissEditHint(); }}
+                onFocus={() => setPostFocused(true)}
                 onBlur={() => setPostFocused(false)}
                 disabled={isStreaming}
                 aria-label="Generated post — tap to edit"
@@ -1324,21 +1317,6 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                 </div>
               );
             })()}
-
-            {/* One-time 'Tap to edit' hint, dismisses on first focus */}
-            {!editHintDismissed && (
-              <div aria-hidden style={{
-                padding: 'var(--space-2) var(--space-4) 0',
-                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-caption)', fontWeight: 500,
-                color: 'rgba(255,255,255,0.40)',
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-              }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
-                </svg>
-                Tap the post to edit
-              </div>
-            )}
 
             {/* Copy — full-width primary action under the post. */}
             <div style={{ padding: 'var(--space-5) var(--space-4) 0' }}>
