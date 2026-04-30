@@ -184,41 +184,6 @@ const SOCIAL_PATHS: Record<string, React.ReactNode> = {
   ),
 };
 
-function SocialIcon({ id, size }: { id: string; size: number }) {
-  const iconSize = size * 0.6;
-  return (
-    <div
-      style={{
-        width: size, height: size, borderRadius: '50%',
-        // Gold-glass body: warm light source from upper-left, deep amber falloff
-        background:
-          'radial-gradient(circle at 32% 26%, #fff7e0 0%, #f6dc97 30%, #b88a3a 70%, #5a3f12 100%)',
-        // Skeumorphic float: top sheen, bottom shade, soft warm halo, hard contact shadow
-        boxShadow: [
-          'inset 0 1.5px 0 rgba(255,255,255,0.55)',
-          'inset 0 -2px 5px rgba(60,30,0,0.45)',
-          '0 4px 10px rgba(0,0,0,0.45)',
-          '0 1px 2.5px rgba(0,0,0,0.50)',
-          '0 0 18px rgba(255,210,120,0.55)',
-        ].join(', '),
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        position: 'relative',
-      }}
-    >
-      <svg
-        width={iconSize} height={iconSize} viewBox="0 0 24 24"
-        style={{
-          color: '#fbf2d8',
-          filter: 'drop-shadow(0 1px 0 rgba(0,0,0,0.55)) drop-shadow(0 -0.5px 0 rgba(255,255,255,0.35))',
-        }}
-        fill="currentColor"
-      >
-        {SOCIAL_PATHS[id]}
-      </svg>
-    </div>
-  );
-}
-
 
 function RecordingCanvas({ onStop }: { onStop: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -658,17 +623,16 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                   generous canvas extension so the cloud falls off naturally), with
                   a yellow tint and varied radii. */}
               {[
-                { left:'22%', top:'82%', r:70, delay:0.1,  social:'instagram' },
-                { left:'38%', top:'87%', r:52, delay:0.22, social:'youtube'   },
-                { left:'62%', top:'83%', r:80, delay:0.08, social:'linkedin'  },
-                { left:'76%', top:'88%', r:58, delay:0.18, social:'tiktok'    },
-                { left:'30%', top:'91%', r:44, delay:0.30, social:'threads'   },
-                { left:'68%', top:'90%', r:62, delay:0.14, social:'x'         },
-              ].flatMap((l, i) => {
+                { left:'22%', top:'82%', r:70, delay:0.1  },
+                { left:'38%', top:'87%', r:52, delay:0.22 },
+                { left:'62%', top:'83%', r:80, delay:0.08 },
+                { left:'76%', top:'88%', r:58, delay:0.18 },
+                { left:'30%', top:'91%', r:44, delay:0.30 },
+                { left:'68%', top:'90%', r:62, delay:0.14 },
+              ].map((l, i) => {
                 const RGB = '255,225,130';
                 const D = l.r * 3;
-                const tokenSize = Math.round(l.r * 0.75);
-                return [
+                return (
                   <motion.div
                     key={`s-orb-${i}`}
                     initial={{opacity:0, scale:0.4}}
@@ -683,22 +647,8 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                       mixBlendMode:'screen',
                       pointerEvents:'none', zIndex:20,
                     }}
-                  />,
-                  <motion.div
-                    key={`s-icon-${i}`}
-                    initial={{opacity:0, scale:0.3, y:6}}
-                    animate={{opacity:1, scale:1,   y:0}}
-                    exit={{opacity:0, scale:0.3, y:6}}
-                    transition={{duration:0.7, delay:l.delay + 0.12, ease:[0.16,1,0.3,1]}}
-                    style={{
-                      position:'absolute', left:l.left, top:l.top,
-                      marginLeft:-tokenSize/2, marginTop:-tokenSize/2,
-                      pointerEvents:'none', zIndex:21,
-                    }}
-                  >
-                    <SocialIcon id={l.social} size={tokenSize} />
-                  </motion.div>,
-                ];
+                  />
+                );
               })}
             </>
           )}
