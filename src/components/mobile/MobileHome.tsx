@@ -1943,9 +1943,6 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
 }) {
   const meta = WIDGET_META[kind];
   const filtered = [...meta.filterFn(notes)].reverse();
-  // Pull the kind's accent rgb from the WIDGET_META.glow string ("rgba(R,G,B,").
-  const m = meta.glow.match(/rgba\((\d+),\s*(\d+),\s*(\d+),/);
-  const kindRgb = m ? `${m[1]},${m[2]},${m[3]}` : '255,255,255';
   const count = filtered.length;
   return (
     <div style={{
@@ -1954,29 +1951,6 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
       background: 'linear-gradient(180deg, #0a0b14 0%, #060710 60%, #04050c 100%)',
       color: 'rgba(255,255,255,0.92)',
     }}>
-      {/* Ambient page-level breathing orbs — same vocabulary as the note sheet,
-          with the leading orb tinted to the library's kind for identity. */}
-      <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-        {[
-          { color: kindRgb,        top: '8%',  left: '-12%', size: 320, dur: 12.5, delay: -2.1 },
-          { color: '144,97,249',   top: '36%', left: '70%',  size: 280, dur: 10.2, delay: -5.6 },
-          { color: '13,191,90',    top: '70%', left: '-8%',  size: 300, dur: 14.8, delay: -8.3 },
-          { color: '255,150,18',   top: '60%', left: '60%',  size: 240, dur: 11.4, delay: -1.4 },
-        ].map((o, i) => (
-          <div key={i} className="widget-glow" style={{
-            position: 'absolute', top: o.top, left: o.left, width: o.size, height: o.size, borderRadius: '50%',
-            background: `radial-gradient(circle, rgba(${o.color},0.32) 0%, rgba(${o.color},0.10) 38%, rgba(${o.color},0) 70%)`,
-            filter: 'blur(20px)',
-            animationName: 'widget-breathe',
-            animationDuration: `${o.dur}s`,
-            animationDelay: `${o.delay}s`,
-            animationTimingFunction: 'cubic-bezier(0.45, 0.05, 0.55, 0.95)',
-            animationIterationCount: 'infinite',
-            willChange: 'transform, opacity',
-          }} />
-        ))}
-      </div>
-
       {/* Header */}
       <div style={{
         position: 'relative', zIndex: 1,
