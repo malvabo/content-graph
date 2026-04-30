@@ -141,6 +141,57 @@ const ORB: Record<Phase, object> = {
   posting:   { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 0 },
 };
 
+// Per-character "dissolve from particles" headline animations — no blur, just
+// staggered opacity + tiny scale + sub-pixel jitter so letters appear to coalesce.
+const HEADLINE_VARIANTS = {
+  hidden:  { transition: { staggerChildren: 0.014, staggerDirection: -1 } },
+  visible: { transition: { staggerChildren: 0.022, delayChildren: 0.06 } },
+};
+const HEADLINE_CHAR_VARIANTS = {
+  hidden: (i: number) => ({
+    opacity: 0, scale: 0.35,
+    x: Math.cos(i * 1.7) * 5, y: Math.sin(i * 1.7) * 5,
+    transition: { duration: 0.30, ease: [0.4, 0, 0.6, 1] as [number, number, number, number] },
+  }),
+  visible: () => ({
+    opacity: 1, scale: 1, x: 0, y: 0,
+    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
+  }),
+};
+
+function ParticleHeadline({ text, style, hidden }: {
+  text: string; style: React.CSSProperties; hidden?: boolean;
+}) {
+  const words = text.split(' ');
+  let charIdx = 0;
+  return (
+    <motion.div
+      initial="hidden"
+      animate={hidden ? 'hidden' : 'visible'}
+      exit="hidden"
+      variants={HEADLINE_VARIANTS}
+      style={style}
+    >
+      {words.map((word, wi) => (
+        <span key={wi} style={{ display: 'inline-block' }}>
+          {Array.from(word).map(ch => {
+            const i = charIdx++;
+            return (
+              <motion.span
+                key={i}
+                custom={i}
+                variants={HEADLINE_CHAR_VARIANTS}
+                style={{ display: 'inline-block' }}
+              >{ch}</motion.span>
+            );
+          })}
+          {wi < words.length - 1 && ' '}
+        </span>
+      ))}
+    </motion.div>
+  );
+}
+
 const SPRING    = { type: 'spring' as const, stiffness: 80,  damping: 18, mass: 1 };
 const SEL_SPRING = { type: 'spring' as const, stiffness: 70,  damping: 20 };
 const ENT_SPRING = { type: 'spring' as const, stiffness: 220, damping: 22 };
@@ -608,27 +659,25 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
         <AnimatePresence>
           {isPosted && (
             <>
-              <motion.div key="h-great"
-                initial={{opacity:0,scale:0.92}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.96}}
-                transition={{duration:0.5,ease:[0.4,0,0.2,1]}}
+              <ParticleHeadline
+                key="h-great"
+                text="Great work!"
                 style={{position:'absolute',top:'42%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:44,fontWeight:700,color:'rgba(255,255,255,0.94)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:20}}
-              >Great work!</motion.div>
-              <motion.div key="h-saved"
-                initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:8}}
-                transition={{duration:0.4,delay:0.3,ease:[0.4,0,0.2,1]}}
+              />
+              <ParticleHeadline
+                key="h-saved"
+                text="Saved to library."
                 style={{position:'absolute',top:'52%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.6)',letterSpacing:'0.01em',pointerEvents:'none',zIndex:20}}
-              >Saved to library.</motion.div>
-              {/* Extra lights bloom 0→1 alongside the existing draft orb.
-                  Each renders identically to the main orb (fixed-px gradient with
-                  generous canvas extension so the cloud falls off naturally), with
-                  a yellow tint and varied radii. */}
+              />
+              {/* Tighter, smaller cluster of lights around the draft orb (50%, 88%) —
+                  symmetric arc, gently varied sizes. */}
               {[
-                { left:'22%', top:'82%', r:70, delay:0.1  },
-                { left:'38%', top:'87%', r:52, delay:0.22 },
-                { left:'62%', top:'83%', r:80, delay:0.08 },
-                { left:'76%', top:'88%', r:58, delay:0.18 },
-                { left:'30%', top:'91%', r:44, delay:0.30 },
-                { left:'68%', top:'90%', r:62, delay:0.14 },
+                { left:'28%', top:'83%', r:42, delay:0.10 },
+                { left:'72%', top:'83%', r:42, delay:0.16 },
+                { left:'40%', top:'89%', r:30, delay:0.22 },
+                { left:'60%', top:'89%', r:30, delay:0.08 },
+                { left:'32%', top:'93%', r:22, delay:0.30 },
+                { left:'68%', top:'93%', r:22, delay:0.18 },
               ].map((l, i) => {
                 const RGB = '255,225,130';
                 const D = l.r * 3;
@@ -654,42 +703,43 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           )}
         </AnimatePresence>
 
-        {/* ── Headlines ── */}
+        {/* ── Headlines — particle dissolve, no blur ── */}
         <AnimatePresence mode="popLayout">
           {phase==='idle' && !isPosted && (
-            <motion.div key="h-idle" layoutId="headline"
-              initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:0.12,ease:[0.4,0,0.2,1]}}
+            <ParticleHeadline
+              key="h-idle"
+              text="Let's write a post"
               style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
-            >Let's write a post</motion.div>
+            />
           )}
           {phase==='prompt' && (
-            <motion.div key="h-prompt"
-              initial={{opacity:0,y:16,scale:1.04}} animate={{opacity:1,y:0,scale:1,letterSpacing:'-0.02em'}}
-              exit={{opacity:0,scale:1.03,letterSpacing:'0.08em',transition:{duration:0.6,ease:[0.4,0,0.2,1]}}}
-              transition={{duration:0.4,delay:0.15,ease:[0.4,0,0.2,1]}}
+            <ParticleHeadline
+              key="h-prompt"
+              text="What's on your mind?"
               style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
-            >What's on your mind?</motion.div>
+            />
           )}
           {phase==='recording' && (
-            <motion.div key="h-rec"
-              initial={{opacity:0,scale:0.98}} animate={{opacity:1,scale:1,letterSpacing:'-0.02em'}}
-              exit={{opacity:0,scale:1.03,letterSpacing:'0.08em',transition:{duration:0.55,ease:[0.4,0,0.2,1]}}}
-              transition={{duration:0.7,delay:0.18,ease:[0.4,0,0.2,1]}}
+            <ParticleHeadline
+              key="h-rec"
+              text="Go ahead, I'm listening"
               style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.88)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
-            >Go ahead, I'm listening</motion.div>
+            />
           )}
           {phase==='platform' && (
-            <motion.div key="h-platform"
-              initial={{opacity:0,y:20,scale:1.05}} animate={{opacity:selId?0:1,y:0,scale:1}} exit={{opacity:0,y:-20,scale:0.9}} transition={{duration:0.35,delay:selId?0:0.15,ease:[0.4,0,0.2,1]}}
+            <ParticleHeadline
+              key="h-platform"
+              text="Where should this go?"
+              hidden={!!selId}
               style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
-            >Where should this go?</motion.div>
+            />
           )}
           {isDraft && (
-            <motion.div key="h-draft"
-              initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-16}}
-              transition={{duration:0.4,delay:0.9,ease:[0.4,0,0.2,1]}}
+            <ParticleHeadline
+              key="h-draft"
+              text="Continue from where you left off"
               style={{position:'absolute',top:'6%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-title-sm)',fontWeight:700,color:'rgba(255,255,255,0.88)',letterSpacing:'-0.02em',pointerEvents:'none',zIndex:5}}
-            >Continue from where you left off</motion.div>
+            />
           )}
         </AnimatePresence>
 
