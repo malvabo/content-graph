@@ -409,22 +409,68 @@
 
     // ---------- Notes ----------
     // The SPA's voice store is persisted to localStorage under
-    // 'content-graph-voice' (zustand persist). We read from it so this static
-    // page can render the user's actual notes without any backend wiring.
-    function loadNotes() {
+    // 'content-graph-voice' and scripts under 'content-graph-scripts' (zustand
+    // persist). We pull from both so this static page can render the user's
+    // real content without any backend wiring.
+    function readStore(key) {
       try {
-        const raw = localStorage.getItem('content-graph-voice');
-        if (!raw) return [];
-        const parsed = JSON.parse(raw);
-        const notes = parsed?.state?.notes;
-        if (!Array.isArray(notes)) return [];
-        return notes
-          .filter((n) => n && n.status !== 'error')
-          .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-      } catch (e) {
-        console.warn('Failed to load notes:', e);
-        return [];
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch {
+        return null;
       }
+    }
+
+    function loadNotes() {
+      const items = [];
+
+      const voice = readStore('content-graph-voice');
+      const voiceNotes = voice?.state?.notes;
+      if (Array.isArray(voiceNotes)) {
+        for (const n of voiceNotes) {
+          if (!n || n.status === 'error') continue;
+          items.push({
+            kind: 'Voice',
+            title: (n.title || '').trim() || 'Untitled note',
+            body: (n.transcript || '').trim() || 'No transcript yet.',
+            createdAt: n.createdAt,
+            durationMs: n.durationMs,
+            generated: !!n.lastGeneration,
+          });
+        }
+      }
+
+      const scripts = readStore('content-graph-scripts');
+      const scriptList = scripts?.state?.scripts;
+      if (Array.isArray(scriptList)) {
+        for (const s of scriptList) {
+          if (!s || !s.content) continue;
+          items.push({
+            kind: 'Script',
+            title: (s.title || '').trim() || 'Untitled script',
+            body: s.content.trim(),
+            createdAt: s.createdAt,
+            generated: false,
+          });
+        }
+      }
+
+      items.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+      // No real content? Seed with a tiny demo so first-time visitors see the
+      // spacial mechanic before recording anything.
+      if (items.length === 0) {
+        const now = new Date().toISOString();
+        return [
+          { kind: 'Demo', title: 'Welcome to Spacial', body: 'Wave your hand left and right. The card you point at floats forward. Pinch to focus, sweep to browse.', createdAt: now, generated: false, demo: true },
+          { kind: 'Demo', title: 'Your notes live here', body: 'Record a voice note in UP150 and it shows up in this 3D space, ready to flick through with your hand.', createdAt: now, generated: false, demo: true },
+          { kind: 'Demo', title: 'Why spacial?', body: 'A glance is faster than a tap. Notes laid out in space let you browse without scrolling — like fanning a deck of cards across your desk.', createdAt: now, generated: false, demo: true },
+          { kind: 'Demo', title: 'Built in your browser', body: 'Hand tracking runs locally via MediaPipe. Camera frames never leave your device.', createdAt: now, generated: false, demo: true },
+        ];
+      }
+
+      return items;
     }
 
     function fmtDate(iso) {
@@ -450,35 +496,21 @@
       const track = document.getElementById('track');
       track.innerHTML = '';
 
-      if (notes.length === 0) {
-        const el = document.createElement('div');
-        el.className = 'card empty focused';
-        el.innerHTML = `
-          <div class="glyph"><svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h12"/></svg></div>
-          <h2>No notes yet</h2>
-          <p>Record a voice note in UP150 and it'll appear here, floating in space.</p>
-        `;
-        track.appendChild(el);
-        return [el];
-      }
-
       return notes.map((n, i) => {
         const el = document.createElement('div');
         el.className = 'card';
-        const title = (n.title || '').trim() || 'Untitled note';
-        const body = (n.transcript || '').trim() || 'No transcript available.';
         const dur = fmtDuration(n.durationMs);
         el.innerHTML = `
           <div class="meta">
-            <span>${i + 1} · ${fmtDate(n.createdAt)}</span>
+            <span>${n.kind} · ${fmtDate(n.createdAt) || `${i + 1} of ${notes.length}`}</span>
             ${dur ? `<span>${dur}</span>` : ''}
           </div>
           <div class="title"></div>
           <div class="body"></div>
-          ${n.lastGeneration ? '<span class="badge">Generated</span>' : ''}
+          ${n.generated ? '<span class="badge">Generated</span>' : ''}
         `;
-        el.querySelector('.title').textContent = title;
-        el.querySelector('.body').textContent = body;
+        el.querySelector('.title').textContent = n.title;
+        el.querySelector('.body').textContent = n.body;
         track.appendChild(el);
         return el;
       });
@@ -521,8 +553,10 @@
     const cards = buildCards(notes);
     const N = cards.length;
 
+    const isDemo = notes.length > 0 && notes.every(n => n.demo);
     counterEl.textContent = N === 0 ? '0 notes' : `1 / ${N}`;
-    if (N === 0) hintEl.textContent = 'Record a note in UP150 to fill this space';
+    if (isDemo) hintEl.textContent = 'Demo · record a note in UP150 to see your own';
+    else hintEl.textContent = 'Move your hand left or right';
 
     // Build progress pips
     progressEl.innerHTML = '';
