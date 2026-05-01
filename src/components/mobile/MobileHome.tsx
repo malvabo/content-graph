@@ -2245,13 +2245,23 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
             <span style={{ fontWeight: 500, fontSize: 22, fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', userSelect: 'none', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
               UP150
             </span>
-            <button
-              onClick={() => setEditMode(m => !m)}
-              aria-label={editMode ? 'Done editing' : 'Edit widgets'}
-              style={{ background: 'transparent', border: 'none', padding: '6px 4px', fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
-            >
-              {editMode ? 'Done' : 'Edit'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <a
+                href="/hand-tracking"
+                aria-label="Open Spacial"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', textDecoration: 'none' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11V5.5a1.5 1.5 0 1 1 3 0V10"/><path d="M12 10V4.5a1.5 1.5 0 1 1 3 0V11"/><path d="M15 11V6.5a1.5 1.5 0 1 1 3 0V14"/><path d="M9 11V8.5a1.5 1.5 0 0 0-3 0V15c0 3.5 2.5 6 6 6s6-2.5 6-6"/></svg>
+                Spacial
+              </a>
+              <button
+                onClick={() => setEditMode(m => !m)}
+                aria-label={editMode ? 'Done editing' : 'Edit widgets'}
+                style={{ background: 'transparent', border: 'none', padding: '6px 4px', fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
+              >
+                {editMode ? 'Done' : 'Edit'}
+              </button>
+            </div>
           </header>
 
           {errorMsg && (
