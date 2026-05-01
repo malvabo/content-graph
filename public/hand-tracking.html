@@ -82,11 +82,12 @@
     }
 
     .card {
+      --expand: 0;
       position: absolute;
       top: 50%;
       left: 50%;
-      width: min(78vw, 320px);
-      height: min(50vh, 420px);
+      width: calc(min(78vw, 320px) + var(--expand) * min(14vw, 80px));
+      height: calc(min(50vh, 420px) + var(--expand) * min(34vh, 280px));
       transform: translate(-50%, -50%);
       transform-style: preserve-3d;
       border-radius: 22px;
@@ -101,14 +102,14 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      will-change: transform, opacity;
+      will-change: transform, opacity, width, height;
       transition: box-shadow 0.3s ease;
     }
     .card.focused {
       box-shadow:
-        0 40px 100px rgba(176, 111, 232, 0.35),
-        0 0 0 1px rgba(176, 111, 232, 0.5) inset,
-        0 0 60px rgba(176, 111, 232, 0.15);
+        0 40px 100px rgba(176, 111, 232, calc(0.35 + var(--expand) * 0.2)),
+        0 0 0 1px rgba(176, 111, 232, calc(0.5 + var(--expand) * 0.3)) inset,
+        0 0 calc(60px + var(--expand) * 60px) rgba(176, 111, 232, calc(0.15 + var(--expand) * 0.25));
     }
     .card .meta {
       display: flex;
@@ -138,12 +139,14 @@
       line-height: 1.55;
       color: rgba(255, 255, 255, 0.78);
       overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 12;
-      -webkit-box-orient: vertical;
-      mask-image: linear-gradient(180deg, #000 80%, transparent);
-      -webkit-mask-image: linear-gradient(180deg, #000 80%, transparent);
+      mask-image: linear-gradient(180deg, #000 calc(70% + var(--expand) * 28%), transparent);
+      -webkit-mask-image: linear-gradient(180deg, #000 calc(70% + var(--expand) * 28%), transparent);
     }
+    .card.focused .body {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .card.focused .body::-webkit-scrollbar { width: 0; height: 0; }
     .card .badge {
       display: inline-flex;
       padding: 3px 10px;
@@ -556,7 +559,7 @@
     const isDemo = notes.length > 0 && notes.every(n => n.demo);
     counterEl.textContent = N === 0 ? '0 notes' : `1 / ${N}`;
     if (isDemo) hintEl.textContent = 'Demo · record a note in UP150 to see your own';
-    else hintEl.textContent = 'Move your hand left or right';
+    else hintEl.textContent = 'Open your hand to expand · flick left or right to browse';
 
     // Build progress pips
     progressEl.innerHTML = '';
@@ -570,14 +573,19 @@
     }
     const pips = Array.from(progressEl.children);
 
-    // Continuous focused index — fractional, smoothed.
-    let focus = 0;
-    let targetFocus = 0;
+    // Discrete focus — always settles on an integer card index. Smoothed
+    // displayFocus animates between integer values during transitions.
+    let focusIndex = 0;        // integer: which card is centered
+    let displayFocus = 0;      // fractional: animates toward focusIndex
+    let smoothedExpand = 0;    // 0..1, how 'expanded' the focused card is
+
+    function setFocus(i) {
+      focusIndex = Math.max(0, Math.min(N - 1, i));
+    }
 
     function applyCardTransforms() {
-      const fi = Math.round(focus);
       for (let i = 0; i < cards.length; i++) {
-        const offset = i - focus;
+        const offset = i - displayFocus;
         const abs = Math.abs(offset);
         if (abs > 4) {
           cards[i].style.display = 'none';
@@ -585,28 +593,55 @@
         }
         cards[i].style.display = '';
 
-        // Spacial layout: cards arc back from the focus point.
-        const tx = offset * 220;
-        const tz = -Math.min(abs, 3) * 90;
+        // When the focused card expands, push side cards further out so they
+        // don't intersect it.
+        const expandPush = (i === focusIndex ? 0 : smoothedExpand) * 80;
+        const tx = offset * 220 + Math.sign(offset) * expandPush;
+        const tz = -Math.min(abs, 3) * 90 - (i === focusIndex ? 0 : smoothedExpand * 60);
         const ty = abs * 6;
         const ry = -offset * 10;
-        const opacity = Math.max(0, 1 - abs * 0.22);
+        const opacity = Math.max(0, 1 - abs * 0.22 - (i === focusIndex ? 0 : smoothedExpand * 0.35));
 
         cards[i].style.transform = `translate(-50%, -50%) translate3d(${tx}px, ${ty}px, ${tz}px) rotateY(${ry}deg)`;
         cards[i].style.opacity = String(opacity);
         cards[i].style.zIndex = String(100 - Math.round(abs * 10));
-        cards[i].classList.toggle('focused', i === fi);
+        const isFocused = i === focusIndex;
+        cards[i].classList.toggle('focused', isFocused);
+        cards[i].style.setProperty('--expand', isFocused ? smoothedExpand.toFixed(3) : '0');
       }
 
-      if (N > 0) counterEl.textContent = `${Math.min(N, fi + 1)} / ${N}`;
+      if (N > 0) counterEl.textContent = `${focusIndex + 1} / ${N}`;
 
       if (pips.length) {
-        const pipFocus = Math.round((fi / Math.max(1, N - 1)) * (pips.length - 1));
+        const pipFocus = Math.round((focusIndex / Math.max(1, N - 1)) * (pips.length - 1));
         pips.forEach((p, i) => p.classList.toggle('active', i === pipFocus));
       }
     }
 
     applyCardTransforms();
+
+    // Touch swipe fallback for mobile (and a sanity check before camera is on).
+    {
+      let startX = 0, startY = 0, startT = 0;
+      window.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startT = performance.now();
+      }, { passive: true });
+      window.addEventListener('touchend', (e) => {
+        if (!startT) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
+        const dt = performance.now() - startT;
+        startT = 0;
+        if (dt > 500) return;
+        if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+        if (dx < 0) setFocus(focusIndex + 1);
+        else setFocus(focusIndex - 1);
+      }, { passive: true });
+    }
 
     // ---------- MediaPipe ----------
     let handLandmarker = null;
@@ -698,7 +733,24 @@
     // ---------- Loop ----------
     let running = false;
     let lastVideoTime = -1;
-    let smoothedHandX = null;
+    let prevHandX = null;
+    let prevHandTime = 0;
+    let swipeCooldownMs = 0;
+    let lastFrameTime = performance.now();
+
+    /**
+     * Hand spread heuristic: distance(thumb tip, pinky tip) divided by palm
+     * length (wrist to index MCP). Closed fist ~ 1.2, open palm ~ 2.6.
+     * Mapped into 0..1 with a soft floor/ceiling.
+     */
+    function calcSpread(lm) {
+      const palm = Math.hypot(lm[0].x - lm[5].x, lm[0].y - lm[5].y);
+      if (!palm) return 0;
+      const span = Math.hypot(lm[4].x - lm[20].x, lm[4].y - lm[20].y);
+      const ratio = span / palm;
+      const t = (ratio - 1.3) / (2.6 - 1.3);
+      return Math.max(0, Math.min(1, t));
+    }
 
     function loop() {
       if (!running) return;
@@ -706,52 +758,65 @@
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
+      const now = performance.now();
+      const dt = (now - lastFrameTime) / 1000;
+      lastFrameTime = now;
+      swipeCooldownMs = Math.max(0, swipeCooldownMs - dt * 1000);
+
       let result = null;
       if (handLandmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
         try {
-          result = handLandmarker.detectForVideo(video, performance.now());
+          result = handLandmarker.detectForVideo(video, now);
         } catch (e) {
           console.error('Inference error:', e);
         }
       }
 
+      let targetExpand = smoothedExpand;
+
       if (result && result.landmarks && result.landmarks.length > 0) {
         const lm = result.landmarks[0];
         drawHand(lm, w, h);
 
-        // Use the palm centroid (landmark 9 = middle finger MCP) as the pointer.
-        const handX = lm[9].x; // 0..1 in video coords
-        // Map to mirrored display coords (we render the camera mirrored, so the
-        // user's right hand in the world appears on the right side of the screen).
-        const displayX = 1 - handX;
+        // Hand-X in mirrored display coords (camera frame is mirrored on screen).
+        const displayX = 1 - lm[9].x;
 
-        if (smoothedHandX == null) smoothedHandX = displayX;
-        else smoothedHandX += (displayX - smoothedHandX) * 0.25;
-
-        if (N > 0) {
-          // Map hand X to a focused card index. Apply a deadzone in the center
-          // so subtle motion doesn't drift, and a softer curve at edges.
-          const centered = (smoothedHandX - 0.5) * 2; // -1..1
-          const dz = 0.08;
-          let s = 0;
-          if (centered > dz) s = (centered - dz) / (1 - dz);
-          else if (centered < -dz) s = (centered + dz) / (1 - dz);
-          // Eased response feels more spacial than linear.
-          const eased = Math.sign(s) * Math.pow(Math.abs(s), 1.3);
-          targetFocus = ((N - 1) / 2) + eased * ((N - 1) / 2);
-          targetFocus = Math.max(0, Math.min(N - 1, targetFocus));
+        // Velocity-based discrete swipe: a quick horizontal flick with the
+        // hand advances one card. Cooldown prevents a single flick from
+        // chaining several advances.
+        if (prevHandX != null && prevHandTime > 0) {
+          const ddt = (now - prevHandTime) / 1000;
+          if (ddt > 0 && ddt < 0.2) {
+            const vx = (displayX - prevHandX) / ddt;
+            if (swipeCooldownMs <= 0 && Math.abs(vx) > 1.6 && N > 1) {
+              if (vx < 0) setFocus(focusIndex + 1);
+              else setFocus(focusIndex - 1);
+              swipeCooldownMs = 650;
+            }
+          }
         }
+        prevHandX = displayX;
+        prevHandTime = now;
 
-        setStatus(N === 0 ? 'Tracking · no notes' : 'Tracking', 'ok');
+        // Hand openness drives expansion of the focused card.
+        targetExpand = calcSpread(lm);
+
+        const expandPct = Math.round(targetExpand * 100);
+        if (targetExpand > 0.6) setStatus(`Expanded ${expandPct}%`, 'ok');
+        else if (targetExpand > 0.25) setStatus(`Opening ${expandPct}%`, 'ok');
+        else setStatus(N === 0 ? 'Tracking · no notes' : 'Tracking', 'ok');
       } else {
+        prevHandX = null;
+        targetExpand = 0;
         setStatus(N === 0 ? 'Looking · no notes' : 'Looking for hand', 'idle');
       }
 
-      // Smooth focus toward target.
-      focus += (targetFocus - focus) * 0.18;
-      applyCardTransforms();
+      // Smooth expand and focus animation.
+      smoothedExpand += (targetExpand - smoothedExpand) * Math.min(1, dt * 7);
+      displayFocus += (focusIndex - displayFocus) * Math.min(1, dt * 8);
 
+      applyCardTransforms();
       requestAnimationFrame(loop);
     }
 
@@ -782,12 +847,15 @@
       }
     });
 
-    // Keyboard fallback for desktop debugging — also handy if a hand isn't
-    // available, the user can still navigate with arrow keys.
+    // Keyboard fallback — handy on desktop where a webcam isn't available.
+    // Up/Down expand and collapse the focused card; Left/Right browse.
+    let keyboardExpand = 0;
     window.addEventListener('keydown', (e) => {
       if (N === 0) return;
-      if (e.key === 'ArrowRight') targetFocus = Math.min(N - 1, Math.round(targetFocus) + 1);
-      else if (e.key === 'ArrowLeft') targetFocus = Math.max(0, Math.round(targetFocus) - 1);
+      if (e.key === 'ArrowRight') setFocus(focusIndex + 1);
+      else if (e.key === 'ArrowLeft') setFocus(focusIndex - 1);
+      else if (e.key === 'ArrowUp') { keyboardExpand = 1; smoothedExpand = 1; applyCardTransforms(); }
+      else if (e.key === 'ArrowDown') { keyboardExpand = 0; smoothedExpand = 0; applyCardTransforms(); }
     });
 
     // Pause when tab hidden.
