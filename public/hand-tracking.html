@@ -789,10 +789,13 @@
           const ddt = (now - prevHandTime) / 1000;
           if (ddt > 0 && ddt < 0.2) {
             const vx = (displayX - prevHandX) / ddt;
-            if (swipeCooldownMs <= 0 && Math.abs(vx) > 1.6 && N > 1) {
+            // Require a clearly intentional flick. Long cooldown after a swipe
+            // gives the user (and the eye) time to settle on the new card
+            // before another transition can fire.
+            if (swipeCooldownMs <= 0 && Math.abs(vx) > 2.4 && N > 1) {
               if (vx < 0) setFocus(focusIndex + 1);
               else setFocus(focusIndex - 1);
-              swipeCooldownMs = 650;
+              swipeCooldownMs = 1300;
             }
           }
         }
@@ -812,9 +815,10 @@
         setStatus(N === 0 ? 'Looking · no notes' : 'Looking for hand', 'idle');
       }
 
-      // Smooth expand and focus animation.
-      smoothedExpand += (targetExpand - smoothedExpand) * Math.min(1, dt * 7);
-      displayFocus += (focusIndex - displayFocus) * Math.min(1, dt * 8);
+      // Smooth expand and focus animation. Tuned for human reading pace —
+      // card transitions take roughly 700-900ms, expansion ~400ms.
+      smoothedExpand += (targetExpand - smoothedExpand) * Math.min(1, dt * 4.5);
+      displayFocus += (focusIndex - displayFocus) * Math.min(1, dt * 3.2);
 
       applyCardTransforms();
       requestAnimationFrame(loop);
