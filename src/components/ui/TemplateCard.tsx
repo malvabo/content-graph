@@ -1,4 +1,5 @@
 /* ── TemplateCard — DS component matching Figma node 8-298 ── */
+import { useState, useRef } from 'react';
 import GraphSchematic from './GraphSchematic';
 
 interface GraphNode { id: string; position: { x: number; y: number }; data: { category: string; label: string; description?: string } }
@@ -19,10 +20,30 @@ interface TemplateCardProps {
   onClick?: () => void;
   graphData?: { nodes: GraphNode[]; edges: GraphEdge[] };
   icon?: string;
+  previewVideo?: string;
 }
 
-export default function TemplateCard({ title, meta, description, pills, extraCount, onClick, graphData, icon }: TemplateCardProps) {
+export default function TemplateCard({ title, meta, description, pills, extraCount, onClick, graphData, icon, previewVideo = '/nodes4.mp4' }: TemplateCardProps) {
   const HP = 20;
+  const [hovered, setHovered] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    setHovered(true);
+    e.currentTarget.style.borderColor = 'var(--color-border-strong)';
+    e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+    e.currentTarget.style.transform = 'translateY(-1px)';
+    videoRef.current?.play().catch(() => {});
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    setHovered(false);
+    e.currentTarget.style.borderColor = 'var(--color-border-default)';
+    e.currentTarget.style.boxShadow = 'none';
+    e.currentTarget.style.transform = 'translateY(0)';
+    if (videoRef.current) { videoRef.current.pause(); videoRef.current.currentTime = 0; }
+  };
+
   return (
     <button onClick={onClick} style={{
       display: 'flex', width: '100%', flexDirection: 'column',
@@ -33,19 +54,41 @@ export default function TemplateCard({ title, meta, description, pills, extraCou
       cursor: 'pointer', textAlign: 'left', overflow: 'hidden',
       transition: 'border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out',
     }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'var(--color-border-strong)';
-        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-        e.currentTarget.style.transform = 'translateY(-1px)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = 'var(--color-border-default)';
-        e.currentTarget.style.boxShadow = 'none';
-        e.currentTarget.style.transform = 'translateY(0)';
-      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {graphData && graphData.nodes.length > 0 && (
-        <GraphSchematic nodes={graphData.nodes} edges={graphData.edges} />
+        <div style={{ position: 'relative' }}>
+          <GraphSchematic nodes={graphData.nodes} edges={graphData.edges} />
+
+          {/* stroke ring on hover */}
+          {hovered && (
+            <div style={{
+              position: 'absolute', inset: 0, pointerEvents: 'none',
+              borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+              boxShadow: 'inset 0 0 0 2px var(--color-accent)',
+              transition: 'opacity 150ms ease',
+            }} />
+          )}
+
+          {/* video overlay on hover */}
+          <video
+            ref={videoRef}
+            src={previewVideo}
+            muted
+            loop
+            playsInline
+            preload="none"
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              objectFit: 'cover',
+              borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+              opacity: hovered ? 1 : 0,
+              transition: 'opacity 200ms ease',
+              pointerEvents: 'none',
+            }}
+          />
+        </div>
       )}
 
       {/* Title + meta + optional description */}
