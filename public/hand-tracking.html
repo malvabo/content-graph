@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>Hand Tracking</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0a0a;
+      --fg: #ededed;
+      --muted: rgba(255, 255, 255, 0.6);
+      --line: rgba(255, 255, 255, 0.1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .stage {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+
+    .frame {
+      position: relative;
+      background: #000;
+      border-radius: 14px;
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+      width: min(calc(100vw - 32px), calc((100vh - 32px) * 16 / 9));
+      max-height: calc(100vh - 32px);
+      box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    video, canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    video {
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+    canvas {
+      transform: scaleX(-1);
+      pointer-events: none;
+    }
+
+    /* Top HUD */
+    .top {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 18px;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(12px) saturate(140%);
+      -webkit-backdrop-filter: blur(12px) saturate(140%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      letter-spacing: 0.3px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.8);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    .dot.idle {
+      background: #fbbf24;
+      box-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+    }
+    .dot.error {
+      background: #f87171;
+      box-shadow: 0 0 8px rgba(248, 113, 113, 0.8);
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Bottom controls */
+    .controls {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      display: flex;
+      gap: 2px;
+      padding: 5px;
+      background: rgba(20, 20, 20, 0.55);
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .controls.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .controls button {
+      padding: 8px 14px;
+      background: transparent;
+      color: var(--muted);
+      border: 0;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+      letter-spacing: 0.2px;
+    }
+    .controls button:hover { color: var(--fg); }
+    .controls button.active {
+      background: rgba(255, 255, 255, 0.14);
+      color: var(--fg);
+    }
+
+    /* Intro overlay */
+    .intro {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(ellipse at center, #141414 0%, #050505 80%);
+      z-index: 20;
+      transition: opacity 0.6s ease;
+    }
+    .intro.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .intro-inner {
+      text-align: center;
+      max-width: 440px;
+      padding: 32px;
+    }
+    .glyph {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 20px;
+      border-radius: 14px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255, 200, 190, 0.4), transparent 60%),
+        linear-gradient(135deg, #ff9788, #b06fe8);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 10px 30px rgba(176, 111, 232, 0.3);
+    }
+    .glyph svg {
+      width: 28px; height: 28px;
+      stroke: #fff;
+      stroke-width: 1.6;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .intro h1 {
+      font-size: 34px;
+      font-weight: 600;
+      letter-spacing: -0.8px;
+      margin-bottom: 10px;
+      background: linear-gradient(180deg, #fff, rgba(255, 255, 255, 0.65));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .intro p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+    .intro button {
+      padding: 13px 30px;
+      font-size: 15px;
+      font-weight: 500;
+      background: #fff;
+      color: #000;
+      border: 0;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.1s ease, opacity 0.15s ease;
+      letter-spacing: 0.1px;
+    }
+    .intro button:hover { opacity: 0.92; }
+    .intro button:active { transform: scale(0.97); }
+    .intro.loading button {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .intro .small {
+      margin-top: 18px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.2px;
+    }
+
+    /* Toast */
+    .toast {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 16px;
+      background: rgba(220, 40, 40, 0.18);
+      border: 1px solid rgba(220, 40, 40, 0.4);
+      border-radius: 10px;
+      font-size: 13px;
+      color: #ffb0b0;
+      z-index: 10;
+      max-width: 90%;
+      text-align: center;
+      backdrop-filter: blur(8px);
+    }
+
+    /* Subtle vignette over the video for HUD legibility */
+    .vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, transparent 12%, transparent 80%, rgba(0, 0, 0, 0.35) 100%);
+      z-index: 4;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="frame" id="frame">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="overlay"></canvas>
+      <div class="vignette"></div>
+
+      <div class="top">
+        <div class="badge">
+          <span class="dot idle" id="dot"></span>
+          <span id="status">Ready</span>
+        </div>
+        <div class="badge" id="fps">— fps</div>
+      </div>
+
+      <div class="controls" id="controls">
+        <button class="active" data-toggle="hands">Hands</button>
+        <button class="active" data-toggle="face">Face mask</button>
+        <button class="active" data-toggle="mirror">Mirror</button>
+      </div>
+
+      <div class="intro" id="intro">
+        <div class="intro-inner">
+          <div class="glyph" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M9 11V5.5a1.5 1.5 0 1 1 3 0V10" />
+              <path d="M12 10V4.5a1.5 1.5 0 1 1 3 0V11" />
+              <path d="M15 11V6.5a1.5 1.5 0 1 1 3 0V14" />
+              <path d="M9 11V8.5a1.5 1.5 0 0 0-3 0V15c0 3.5 2.5 6 6 6s6-2.5 6-6" />
+            </svg>
+          </div>
+          <h1>Hand Tracking</h1>
+          <p>Real-time hand and face detection running entirely in your browser. No data leaves your device.</p>
+          <button id="startBtn">Allow camera</button>
+          <div class="small">Works best in Chrome &amp; Safari · Desktop or mobile</div>
+        </div>
+      </div>
+
+      <div id="toast" class="toast" style="display: none"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      FilesetResolver,
+      HandLandmarker,
+      FaceDetector,
+    } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+    const intro = document.getElementById('intro');
+    const startBtn = document.getElementById('startBtn');
+    const statusEl = document.getElementById('status');
+    const dot = document.getElementById('dot');
+    const fpsEl = document.getElementById('fps');
+    const controls = document.getElementById('controls');
+    const toast = document.getElementById('toast');
+    const frame = document.getElementById('frame');
+
+    // 21-point hand connection topology (MediaPipe convention).
+    const HAND_CONNECTIONS = [
+      [0, 1], [1, 2], [2, 3], [3, 4],         // thumb
+      [0, 5], [5, 6], [6, 7], [7, 8],         // index
+      [5, 9], [9, 10], [10, 11], [11, 12],    // middle
+      [9, 13], [13, 14], [14, 15], [15, 16],  // ring
+      [13, 17], [17, 18], [18, 19], [19, 20], // pinky
+      [0, 17],                                // palm
+    ];
+
+    const opts = { hands: true, face: true, mirror: true };
+
+    document.querySelectorAll('.controls button').forEach((b) => {
+      b.addEventListener('click', () => {
+        const k = b.dataset.toggle;
+        opts[k] = !opts[k];
+        b.classList.toggle('active', opts[k]);
+        if (k === 'mirror') applyMirror();
+      });
+    });
+
+    function applyMirror() {
+      const t = opts.mirror ? 'scaleX(-1)' : 'scaleX(1)';
+      video.style.transform = t;
+      canvas.style.transform = t;
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      dot.className = 'dot error';
+      statusEl.textContent = 'Error';
+    }
+
+    function setStatus(text, mode) {
+      statusEl.textContent = text;
+      dot.className = 'dot' + (mode === 'idle' ? ' idle' : mode === 'error' ? ' error' : '');
+    }
+
+    let handLandmarker = null;
+    let faceDetector = null;
+
+    async function loadModels() {
+      const fileset = await FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
+      );
+      [handLandmarker, faceDetector] = await Promise.all([
+        HandLandmarker.createFromOptions(fileset, {
+          baseOptions: {
+            modelAssetPath:
+              'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          numHands: 2,
+          minHandDetectionConfidence: 0.5,
+          minHandPresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        }),
+        FaceDetector.createFromOptions(fileset, {
+          baseOptions: {
+            modelAssetPath:
+              'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite',
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          minDetectionConfidence: 0.5,
+        }),
+      ]);
+    }
+
+    async function startCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user',
+        },
+        audio: false,
+      });
+      video.srcObject = stream;
+      await new Promise((resolve) => {
+        if (video.readyState >= 1) resolve();
+        else video.onloadedmetadata = () => resolve();
+      });
+      await video.play();
+
+      // Match the frame's aspect ratio to the actual stream so the overlay
+      // canvas aligns 1:1 with what the user sees (no cropping math needed).
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      if (w && h) {
+        frame.style.aspectRatio = `${w} / ${h}`;
+        frame.style.width = `min(calc(100vw - 32px), calc((100vh - 32px) * ${w / h}))`;
+        canvas.width = w;
+        canvas.height = h;
+      }
+    }
+
+    // Smooth face circle position to reduce jitter between frames.
+    let smoothedFace = null;
+    function smoothFace(target) {
+      if (!target) return null;
+      if (!smoothedFace) {
+        smoothedFace = { ...target };
+      } else {
+        const a = 0.35;
+        smoothedFace.cx += (target.cx - smoothedFace.cx) * a;
+        smoothedFace.cy += (target.cy - smoothedFace.cy) * a;
+        smoothedFace.r += (target.r - smoothedFace.r) * a;
+      }
+      return smoothedFace;
+    }
+
+    function drawFaceMask(face) {
+      const { cx, cy, r } = face;
+
+      // Outer halo
+      const halo = ctx.createRadialGradient(cx, cy, r * 0.4, cx, cy, r * 1.55);
+      halo.addColorStop(0, 'rgba(170, 110, 255, 0.35)');
+      halo.addColorStop(0.55, 'rgba(120, 80, 220, 0.22)');
+      halo.addColorStop(1, 'rgba(80, 50, 180, 0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 1.55, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner core — translucent purple/blue, lets a hint of the face show through.
+      const core = ctx.createRadialGradient(cx, cy - r * 0.18, r * 0.05, cx, cy, r);
+      core.addColorStop(0, 'rgba(190, 150, 255, 0.55)');
+      core.addColorStop(0.55, 'rgba(120, 90, 230, 0.7)');
+      core.addColorStop(1, 'rgba(70, 50, 170, 0.85)');
+      ctx.fillStyle = core;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Specular highlight
+      const spec = ctx.createRadialGradient(
+        cx - r * 0.35, cy - r * 0.4, 0,
+        cx - r * 0.35, cy - r * 0.4, r * 0.55
+      );
+      spec.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
+      spec.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = spec;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Crisp outline
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.lineWidth = Math.max(1, r * 0.012);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function drawHands(landmarks, w, h) {
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      for (const lm of landmarks) {
+        // Glow pass
+        ctx.strokeStyle = 'rgba(255, 175, 165, 0.35)';
+        ctx.lineWidth = Math.max(4, w * 0.006);
+        ctx.beginPath();
+        for (const [a, b] of HAND_CONNECTIONS) {
+          ctx.moveTo(lm[a].x * w, lm[a].y * h);
+          ctx.lineTo(lm[b].x * w, lm[b].y * h);
+        }
+        ctx.stroke();
+
+        // Main bones
+        ctx.strokeStyle = '#ff9788';
+        ctx.lineWidth = Math.max(1.5, w * 0.0022);
+        ctx.beginPath();
+        for (const [a, b] of HAND_CONNECTIONS) {
+          ctx.moveTo(lm[a].x * w, lm[a].y * h);
+          ctx.lineTo(lm[b].x * w, lm[b].y * h);
+        }
+        ctx.stroke();
+
+        // Joints
+        for (let i = 0; i < lm.length; i++) {
+          const p = lm[i];
+          const x = p.x * w;
+          const y = p.y * h;
+          const isWrist = i === 0;
+          const isTip = i === 4 || i === 8 || i === 12 || i === 16 || i === 20;
+          const r = isWrist ? Math.max(4, w * 0.005) : isTip ? Math.max(3, w * 0.004) : Math.max(2, w * 0.003);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#ff9788';
+          ctx.lineWidth = Math.max(1.2, w * 0.0015);
+          ctx.stroke();
+        }
+      }
+    }
+
+    let running = false;
+    let lastVideoTime = -1;
+    let frameCount = 0;
+    let fpsTime = performance.now();
+
+    function loop() {
+      if (!running) return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const now = performance.now();
+      let handResult = null;
+      let faceResult = null;
+
+      if (video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime;
+        try {
+          if (opts.hands && handLandmarker) {
+            handResult = handLandmarker.detectForVideo(video, now);
+          }
+          if (opts.face && faceDetector) {
+            faceResult = faceDetector.detectForVideo(video, now);
+          }
+        } catch (err) {
+          console.error('Inference error:', err);
+        }
+      }
+
+      // Face first (under hands), so hands occluding the face render on top.
+      let face = null;
+      if (opts.face && faceResult && faceResult.detections && faceResult.detections.length > 0) {
+        const d = faceResult.detections[0].boundingBox;
+        face = {
+          cx: d.originX + d.width / 2,
+          cy: d.originY + d.height / 2,
+          r: Math.max(d.width, d.height) * 0.6,
+        };
+      }
+      face = smoothFace(face);
+      if (opts.face && face) drawFaceMask(face);
+
+      // Hands
+      if (opts.hands && handResult && handResult.landmarks) {
+        drawHands(handResult.landmarks, w, h);
+        const n = handResult.landmarks.length;
+        if (n === 0) setStatus('Looking for hands', 'idle');
+        else if (n === 1) setStatus('1 hand tracked', 'ok');
+        else setStatus(`${n} hands tracked`, 'ok');
+      } else if (!opts.hands) {
+        setStatus('Hands off', 'idle');
+      }
+
+      frameCount++;
+      if (now - fpsTime > 500) {
+        const fps = Math.round((frameCount * 1000) / (now - fpsTime));
+        fpsEl.textContent = `${fps} fps`;
+        frameCount = 0;
+        fpsTime = now;
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    startBtn.addEventListener('click', async () => {
+      intro.classList.add('loading');
+      startBtn.textContent = 'Loading…';
+      setStatus('Loading models', 'idle');
+      try {
+        await Promise.all([loadModels(), startCamera()]);
+        applyMirror();
+        intro.classList.add('hidden');
+        controls.classList.add('show');
+        running = true;
+        setStatus('Looking for hands', 'idle');
+        loop();
+      } catch (err) {
+        console.error(err);
+        intro.classList.remove('loading');
+        startBtn.textContent = 'Try again';
+        const msg =
+          err && err.name === 'NotAllowedError'
+            ? 'Camera permission denied. Enable camera access and try again.'
+            : err && err.name === 'NotFoundError'
+            ? 'No camera found on this device.'
+            : err && err.message
+            ? err.message
+            : 'Failed to start. Check your connection and try again.';
+        showToast(msg);
+      }
+    });
+
+    // Pause work when tab hidden — saves CPU/battery.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        running = false;
+      } else if (handLandmarker && video.srcObject) {
+        running = true;
+        loop();
+      }
+    });
+  </script>
+</body>
+</html>
