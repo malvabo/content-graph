@@ -61,16 +61,6 @@ export default function TemplateCard({ title, meta, description, pills, extraCou
         <div style={{ position: 'relative' }}>
           <GraphSchematic nodes={graphData.nodes} edges={graphData.edges} />
 
-          {/* stroke ring on hover */}
-          {hovered && (
-            <div style={{
-              position: 'absolute', inset: 0, pointerEvents: 'none',
-              borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-              boxShadow: 'inset 0 0 0 2px var(--color-accent)',
-              transition: 'opacity 150ms ease',
-            }} />
-          )}
-
           {/* video overlay on hover */}
           <video
             ref={videoRef}
@@ -88,6 +78,16 @@ export default function TemplateCard({ title, meta, description, pills, extraCou
               pointerEvents: 'none',
             }}
           />
+
+          {/* stroke ring — above video */}
+          <div style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+            boxShadow: `inset 0 0 0 2px var(--color-accent)`,
+            opacity: hovered ? 1 : 0,
+            transition: 'opacity 150ms ease',
+            zIndex: 2,
+          }} />
         </div>
       )}
 
