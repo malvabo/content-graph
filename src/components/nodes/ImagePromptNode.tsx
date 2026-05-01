@@ -8,40 +8,38 @@ import { getDims } from '../../utils/imageDims';
 import { useSettingsStore } from '../../store/settingsStore';
 import { cssAspect } from '../../utils/imageDims';
 
-function AbstractPlaceholder({ aspect }: { aspect: string | undefined }) {
+function AbstractPlaceholder({ aspect, uid }: { aspect: string | undefined; uid: string }) {
+  const a = `ip-a-${uid}`, b = `ip-b-${uid}`, c = `ip-c-${uid}`;
   return (
-    <div style={{ width: '100%', aspectRatio: cssAspect(aspect), borderRadius: 'var(--radius-lg)', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ width: '100%', aspectRatio: cssAspect(aspect), borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <radialGradient id="ig-a" cx="30%" cy="30%" r="55%">
-            <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.18" />
+          <radialGradient id={a} cx="25%" cy="35%" r="55%">
+            <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.20" />
             <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
           </radialGradient>
-          <radialGradient id="ig-b" cx="75%" cy="70%" r="50%">
-            <stop offset="0%" stopColor="var(--p-violet-500)" stopOpacity="0.14" />
+          <radialGradient id={b} cx="78%" cy="68%" r="50%">
+            <stop offset="0%" stopColor="var(--p-violet-500)" stopOpacity="0.15" />
             <stop offset="100%" stopColor="var(--p-violet-500)" stopOpacity="0" />
           </radialGradient>
-          <radialGradient id="ig-c" cx="60%" cy="20%" r="40%">
+          <radialGradient id={c} cx="62%" cy="18%" r="38%">
             <stop offset="0%" stopColor="var(--p-amber-400)" stopOpacity="0.10" />
             <stop offset="100%" stopColor="var(--p-amber-400)" stopOpacity="0" />
           </radialGradient>
         </defs>
         <rect width="100" height="100" fill="var(--color-bg-surface)" />
-        <rect width="100" height="100" fill="url(#ig-a)" />
-        <rect width="100" height="100" fill="url(#ig-b)" />
-        <rect width="100" height="100" fill="url(#ig-c)" />
-        {/* horizontal bands */}
-        <rect x="0" y="38" width="100" height="0.5" fill="var(--color-border)" opacity="0.5" />
-        <rect x="0" y="62" width="100" height="0.5" fill="var(--color-border)" opacity="0.5" />
-        {/* vertical bands */}
-        <rect x="33" y="0" width="0.5" height="100" fill="var(--color-border)" opacity="0.5" />
-        <rect x="66" y="0" width="0.5" height="100" fill="var(--color-border)" opacity="0.5" />
-        {/* icon */}
-        <g transform="translate(50,50)" opacity="0.3">
-          <rect x="-9" y="-7" width="18" height="14" rx="2" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.2" />
-          <circle cx="-4" cy="-2" r="2.5" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1" />
-          <polyline points="-9,4 -3,-1 2,3 6,-2 9,4" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1" strokeLinejoin="round" />
-        </g>
+        <rect width="100" height="100" fill={`url(#${a})`} />
+        <rect width="100" height="100" fill={`url(#${b})`} />
+        <rect width="100" height="100" fill={`url(#${c})`} />
+        {/* rule of thirds grid */}
+        <line x1="0" y1="33" x2="100" y2="33" stroke="var(--color-border)" strokeWidth="0.4" opacity="0.6" />
+        <line x1="0" y1="67" x2="100" y2="67" stroke="var(--color-border)" strokeWidth="0.4" opacity="0.6" />
+        <line x1="33" y1="0" x2="33" y2="100" stroke="var(--color-border)" strokeWidth="0.4" opacity="0.6" />
+        <line x1="67" y1="0" x2="67" y2="100" stroke="var(--color-border)" strokeWidth="0.4" opacity="0.6" />
+        {/* geometric shapes — pure abstraction, no representational icon */}
+        <rect x="28" y="32" width="44" height="1.5" rx="0.75" fill="var(--color-text-disabled)" opacity="0.35" />
+        <rect x="35" y="38" width="30" height="1.5" rx="0.75" fill="var(--color-text-disabled)" opacity="0.22" />
+        <rect x="39" y="44" width="22" height="1.5" rx="0.75" fill="var(--color-text-disabled)" opacity="0.14" />
       </svg>
     </div>
   );
@@ -177,7 +175,7 @@ export function ImagePromptInline({ id, expandOpen, onExpandClose }: { id: strin
 
       {!showImage && !showSkeleton && !isError && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <AbstractPlaceholder aspect={aspect} />
+          <AbstractPlaceholder aspect={aspect} uid={id} />
           <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Connect a text source, then Run</span>
         </div>
       )}
