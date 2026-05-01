@@ -6,6 +6,46 @@ import { ImageModal } from '../modals/Modals';
 import { getDims } from '../../utils/imageDims';
 
 import { useSettingsStore } from '../../store/settingsStore';
+import { cssAspect } from '../../utils/imageDims';
+
+function AbstractPlaceholder({ aspect }: { aspect: string | undefined }) {
+  return (
+    <div style={{ width: '100%', aspectRatio: cssAspect(aspect), borderRadius: 'var(--radius-lg)', overflow: 'hidden', position: 'relative' }}>
+      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="ig-a" cx="30%" cy="30%" r="55%">
+            <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id="ig-b" cx="75%" cy="70%" r="50%">
+            <stop offset="0%" stopColor="var(--p-violet-500)" stopOpacity="0.14" />
+            <stop offset="100%" stopColor="var(--p-violet-500)" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id="ig-c" cx="60%" cy="20%" r="40%">
+            <stop offset="0%" stopColor="var(--p-amber-400)" stopOpacity="0.10" />
+            <stop offset="100%" stopColor="var(--p-amber-400)" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <rect width="100" height="100" fill="var(--color-bg-surface)" />
+        <rect width="100" height="100" fill="url(#ig-a)" />
+        <rect width="100" height="100" fill="url(#ig-b)" />
+        <rect width="100" height="100" fill="url(#ig-c)" />
+        {/* horizontal bands */}
+        <rect x="0" y="38" width="100" height="0.5" fill="var(--color-border)" opacity="0.5" />
+        <rect x="0" y="62" width="100" height="0.5" fill="var(--color-border)" opacity="0.5" />
+        {/* vertical bands */}
+        <rect x="33" y="0" width="0.5" height="100" fill="var(--color-border)" opacity="0.5" />
+        <rect x="66" y="0" width="0.5" height="100" fill="var(--color-border)" opacity="0.5" />
+        {/* icon */}
+        <g transform="translate(50,50)" opacity="0.3">
+          <rect x="-9" y="-7" width="18" height="14" rx="2" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.2" />
+          <circle cx="-4" cy="-2" r="2.5" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1" />
+          <polyline points="-9,4 -3,-1 2,3 6,-2 9,4" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1" strokeLinejoin="round" />
+        </g>
+      </svg>
+    </div>
+  );
+}
 
 // Together AI only supports sizes that are multiples of 64
 function snapToGrid(n: number, grid = 64): number { return Math.round(n / grid) * grid; }
@@ -136,8 +176,9 @@ export function ImagePromptInline({ id, expandOpen, onExpandClose }: { id: strin
       )}
 
       {!showImage && !showSkeleton && !isError && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
-          Connect a text source, then Run
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <AbstractPlaceholder aspect={aspect} />
+          <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Connect a text source, then Run</span>
         </div>
       )}
 
