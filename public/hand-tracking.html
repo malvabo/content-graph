@@ -1032,9 +1032,9 @@
         // exactly one card.
         if (prevHandX != null && prevHandTime > 0) {
           const ddt = (now - prevHandTime) / 1000;
-          if (ddt > 0 && ddt < 0.2) {
+          if (ddt > 0 && ddt < 0.35) {
             const vx = (displayX - prevHandX) / ddt;
-            if (swipeCooldownMs <= 0 && Math.abs(vx) > 2.4 && N > 1) {
+            if (swipeCooldownMs <= 0 && Math.abs(vx) > 0.9 && N > 1) {
               if (vx < 0) setFocus(focusIndex + 1);
               else setFocus(focusIndex - 1);
               swipeCooldownMs = 1300;
