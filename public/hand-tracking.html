@@ -329,6 +329,211 @@
       color: rgba(255, 255, 255, 0.4);
     }
 
+    /* Full-screen edit view */
+    .fullscreen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: linear-gradient(180deg, #0c0a14 0%, #050608 100%);
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .fullscreen.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .fs-shell {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: calc(14px + env(safe-area-inset-top, 0px)) 0 calc(14px + env(safe-area-inset-bottom, 0px));
+      min-height: 0;
+    }
+    .fs-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 18px 14px;
+    }
+    .fs-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--fg);
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .fs-back:hover { background: rgba(255, 255, 255, 0.08); }
+    .fs-meta-pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(176, 111, 232, 0.12);
+      border: 1px solid rgba(176, 111, 232, 0.25);
+      font-size: 11px;
+      letter-spacing: 0.4px;
+      color: #d9bfff;
+      text-transform: uppercase;
+    }
+    .fs-spacer { flex: 1; }
+    .fs-scroll {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 22px 24px;
+      min-height: 0;
+    }
+    .fs-scroll::-webkit-scrollbar { width: 0; }
+    .fs-title {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.6px;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+    .fs-body {
+      font-size: 16px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.85);
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .fs-body.editing {
+      opacity: 0.45;
+      transition: opacity 0.3s;
+    }
+    .fs-body.changed {
+      animation: fadeIn 0.45s ease;
+    }
+    .fs-body .diff-add {
+      background: rgba(116, 224, 144, 0.18);
+      border-radius: 3px;
+      padding: 0 2px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fs-footer {
+      padding: 12px 22px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .fs-transcript {
+      min-height: 18px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+      font-style: italic;
+      text-align: center;
+      max-width: 100%;
+      max-height: 4.4em;
+      overflow: hidden;
+      mask-image: linear-gradient(180deg, #000 60%, transparent);
+      -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent);
+    }
+    .fs-transcript.live::before {
+      content: '';
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #f87171;
+      box-shadow: 0 0 8px rgba(248, 113, 113, 0.8);
+      margin-right: 8px;
+      vertical-align: middle;
+      animation: pulse 1.2s infinite;
+    }
+    .fs-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .fs-mic {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 0;
+      background: linear-gradient(135deg, var(--accent-warm), var(--accent));
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(176, 111, 232, 0.4);
+      display: grid;
+      place-items: center;
+      transition: transform 0.15s ease;
+    }
+    .fs-mic:active { transform: scale(0.96); }
+    .fs-mic.recording { background: linear-gradient(135deg, #ff5470, #ff8a5b); }
+    .fs-mic.recording .fs-mic-ring {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 84, 112, 0.55);
+      animation: ringPulse 1.4s ease-out infinite;
+    }
+    @keyframes ringPulse {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+    .fs-mic.thinking {
+      background: rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+    }
+    .fs-mic.thinking svg { display: none; }
+    .fs-mic.thinking::after {
+      content: '';
+      width: 22px; height: 22px;
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fs-btn {
+      padding: 11px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+    .fs-btn-ghost {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: var(--fg);
+    }
+    .fs-btn-ghost:hover { background: rgba(255, 255, 255, 0.1); }
+    .fs-btn-primary {
+      background: #fff;
+      color: #000;
+    }
+    .fs-btn-primary:hover { opacity: 0.92; }
+    .fs-hint {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.45);
+      text-align: center;
+      letter-spacing: 0.2px;
+    }
+
+    /* Make focused card look tappable */
+    .card.focused { cursor: pointer; }
+
     /* Toast */
     .toast {
       position: fixed;
@@ -398,6 +603,39 @@
 
   <div id="toast" class="toast" style="display: none"></div>
 
+  <div class="fullscreen" id="fullscreen" aria-hidden="true">
+    <div class="fs-shell">
+      <header class="fs-header">
+        <button class="fs-back" id="fsBack" aria-label="Back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          Back
+        </button>
+        <div class="fs-meta-pill" id="fsMetaPill">—</div>
+        <div class="fs-spacer"></div>
+      </header>
+      <div class="fs-scroll" id="fsScroll">
+        <h1 class="fs-title" id="fsTitle">—</h1>
+        <div class="fs-body" id="fsBody">—</div>
+      </div>
+      <div class="fs-footer">
+        <div class="fs-transcript" id="fsTranscript"></div>
+        <div class="fs-controls">
+          <button class="fs-btn fs-btn-ghost" id="fsCancel" hidden>Discard</button>
+          <button class="fs-btn fs-btn-primary" id="fsAccept" hidden>Save</button>
+          <button class="fs-mic" id="fsMic" aria-label="Talk to edit">
+            <span class="fs-mic-ring"></span>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="3" width="6" height="12" rx="3"/>
+              <path d="M5 11a7 7 0 0 0 14 0"/>
+              <path d="M12 18v3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="fs-hint" id="fsHint">Tap and tell the AI what to change</div>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import {
       FilesetResolver,
@@ -428,6 +666,8 @@
         for (const n of voiceNotes) {
           if (!n || n.status === 'error') continue;
           items.push({
+            id: n.id,
+            source: 'voice',
             kind: 'Voice',
             title: (n.title || '').trim() || 'Untitled note',
             body: (n.transcript || '').trim() || 'No transcript yet.',
@@ -444,6 +684,8 @@
         for (const s of scriptList) {
           if (!s || !s.content) continue;
           items.push({
+            id: s.id,
+            source: 'script',
             kind: 'Script',
             title: (s.title || '').trim() || 'Untitled script',
             body: s.content.trim(),
@@ -460,14 +702,45 @@
       if (items.length === 0) {
         const now = new Date().toISOString();
         return [
-          { kind: 'Demo', title: 'Welcome to Spacial', body: 'Wave your hand left and right. The card you point at floats forward. Pinch to focus, sweep to browse.', createdAt: now, generated: false, demo: true },
-          { kind: 'Demo', title: 'Your notes live here', body: 'Record a voice note in UP150 and it shows up in this 3D space, ready to flick through with your hand.', createdAt: now, generated: false, demo: true },
-          { kind: 'Demo', title: 'Why spacial?', body: 'A glance is faster than a tap. Notes laid out in space let you browse without scrolling — like fanning a deck of cards across your desk.', createdAt: now, generated: false, demo: true },
-          { kind: 'Demo', title: 'Built in your browser', body: 'Hand tracking runs locally via MediaPipe. Camera frames never leave your device.', createdAt: now, generated: false, demo: true },
+          { id: 'demo-1', source: 'demo', kind: 'Demo', title: 'Welcome to Spacial', body: 'Wave your hand left and right to flick between notes. Tap the centered card to expand, then speak — the AI rewrites the text when you finish talking.', createdAt: now, generated: false, demo: true },
+          { id: 'demo-2', source: 'demo', kind: 'Demo', title: 'Your notes live here', body: 'Record a voice note in UP150 and it shows up in this 3D space, ready to flick through with your hand.', createdAt: now, generated: false, demo: true },
+          { id: 'demo-3', source: 'demo', kind: 'Demo', title: 'Why spacial?', body: 'A glance is faster than a tap. Notes laid out in space let you browse without scrolling — like fanning a deck of cards across your desk.', createdAt: now, generated: false, demo: true },
+          { id: 'demo-4', source: 'demo', kind: 'Demo', title: 'Built in your browser', body: 'Hand tracking runs locally via MediaPipe. Camera frames never leave your device.', createdAt: now, generated: false, demo: true },
         ];
       }
 
       return items;
+    }
+
+    /**
+     * Persist a note edit back to the SPA's localStorage so UP150 picks up the
+     * change next time it loads. Demos are in-memory only.
+     */
+    function saveEditedNote(note, newBody) {
+      if (note.source === 'voice') {
+        const data = readStore('content-graph-voice');
+        if (!data?.state?.notes) return false;
+        const target = data.state.notes.find((n) => n.id === note.id);
+        if (!target) return false;
+        target.transcript = newBody;
+        localStorage.setItem('content-graph-voice', JSON.stringify(data));
+        return true;
+      }
+      if (note.source === 'script') {
+        const data = readStore('content-graph-scripts');
+        if (!data?.state?.scripts) return false;
+        const target = data.state.scripts.find((s) => s.id === note.id);
+        if (!target) return false;
+        target.content = newBody;
+        localStorage.setItem('content-graph-scripts', JSON.stringify(data));
+        return true;
+      }
+      return false; // demo
+    }
+
+    function readApiKey() {
+      const settings = readStore('content-graph-settings');
+      return settings?.state?.anthropicKey || '';
     }
 
     function fmtDate(iso) {
@@ -822,6 +1095,261 @@
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) running = false;
       else if (handLandmarker && video.srcObject) { running = true; loop(); }
+    });
+
+    // ---------- Full-screen edit (voice + AI) ----------
+    const fs = document.getElementById('fullscreen');
+    const fsBack = document.getElementById('fsBack');
+    const fsTitle = document.getElementById('fsTitle');
+    const fsBody = document.getElementById('fsBody');
+    const fsMetaPill = document.getElementById('fsMetaPill');
+    const fsMic = document.getElementById('fsMic');
+    const fsTranscript = document.getElementById('fsTranscript');
+    const fsHint = document.getElementById('fsHint');
+    const fsAccept = document.getElementById('fsAccept');
+    const fsCancel = document.getElementById('fsCancel');
+
+    let fsNote = null;          // currently open note
+    let fsOriginalBody = '';
+    let fsProposedBody = null;
+    let recognition = null;
+    let recordingActive = false;
+
+    function openFullscreen(note) {
+      fsNote = note;
+      fsOriginalBody = note.body;
+      fsProposedBody = null;
+      fsTitle.textContent = note.title;
+      fsBody.textContent = note.body;
+      fsBody.classList.remove('editing', 'changed');
+      fsMetaPill.textContent = note.kind;
+      fsTranscript.textContent = '';
+      fsTranscript.classList.remove('live');
+      fsAccept.hidden = true;
+      fsCancel.hidden = true;
+      fsHint.textContent = note.demo
+        ? 'Demo · changes won’t persist. Tap mic and speak.'
+        : 'Tap and tell the AI what to change';
+      fs.classList.add('open');
+      fs.setAttribute('aria-hidden', 'false');
+      // Pause spacial loop while in full screen — saves cycles and the camera
+      // overlay isn't visible.
+      running = false;
+    }
+
+    function closeFullscreen() {
+      stopRecording();
+      fs.classList.remove('open');
+      fs.setAttribute('aria-hidden', 'true');
+      fsNote = null;
+      // Resume spacial loop.
+      if (handLandmarker && video.srcObject && !document.hidden) {
+        running = true;
+        loop();
+      }
+    }
+
+    fsBack.addEventListener('click', closeFullscreen);
+
+    // Tap on the focused card opens the full-screen view.
+    document.getElementById('track').addEventListener('click', (e) => {
+      const card = e.target.closest('.card');
+      if (!card) return;
+      const idx = cards.indexOf(card);
+      if (idx === -1) return;
+      if (idx !== focusIndex) {
+        // Tapping a side card just brings it into focus first.
+        setFocus(idx);
+        return;
+      }
+      openFullscreen(notes[idx]);
+    });
+
+    // ---------- Voice recognition ----------
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    function startRecording() {
+      if (!SR) {
+        showFsToast('Voice editing needs a browser with speech recognition (Chrome, Safari).');
+        return;
+      }
+      if (recordingActive) return;
+
+      recognition = new SR();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = navigator.language || 'en-US';
+
+      let finalTranscript = '';
+
+      recognition.onstart = () => {
+        recordingActive = true;
+        fsMic.classList.add('recording');
+        fsTranscript.classList.add('live');
+        fsTranscript.textContent = 'Listening…';
+        fsHint.textContent = 'Speak your edit. Pause when done.';
+        fsAccept.hidden = true;
+        fsCancel.hidden = true;
+      };
+
+      recognition.onresult = (e) => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const r = e.results[i];
+          if (r.isFinal) finalTranscript += r[0].transcript;
+          else interim += r[0].transcript;
+        }
+        const display = (finalTranscript + interim).trim();
+        fsTranscript.textContent = display || 'Listening…';
+      };
+
+      recognition.onerror = (e) => {
+        recordingActive = false;
+        fsMic.classList.remove('recording');
+        fsTranscript.classList.remove('live');
+        if (e.error === 'no-speech') {
+          fsTranscript.textContent = 'Didn’t catch that. Tap to try again.';
+        } else if (e.error === 'not-allowed') {
+          fsTranscript.textContent = 'Microphone permission was denied.';
+        } else {
+          fsTranscript.textContent = 'Voice input error: ' + e.error;
+        }
+        fsHint.textContent = 'Tap to try again';
+      };
+
+      recognition.onend = async () => {
+        recordingActive = false;
+        fsMic.classList.remove('recording');
+        fsTranscript.classList.remove('live');
+        const instruction = finalTranscript.trim();
+        if (!instruction) {
+          fsHint.textContent = 'Didn’t catch anything. Tap to try again.';
+          return;
+        }
+        await runAiEdit(instruction);
+      };
+
+      try {
+        recognition.start();
+      } catch (e) {
+        console.error(e);
+        fsTranscript.textContent = 'Could not start recording.';
+      }
+    }
+
+    function stopRecording() {
+      if (!recognition) return;
+      try { recognition.stop(); } catch {}
+      recognition = null;
+      recordingActive = false;
+      fsMic.classList.remove('recording');
+      fsTranscript.classList.remove('live');
+    }
+
+    fsMic.addEventListener('click', () => {
+      if (recordingActive) stopRecording();
+      else startRecording();
+    });
+
+    // ---------- Anthropic call ----------
+    async function runAiEdit(instruction) {
+      if (!fsNote) return;
+      const apiKey = readApiKey();
+      if (!apiKey) {
+        fsTranscript.textContent = 'No API key. Add your Anthropic key in UP150 settings, then come back.';
+        fsHint.textContent = 'Settings → API keys → Anthropic';
+        return;
+      }
+      fsMic.classList.add('thinking');
+      fsBody.classList.add('editing');
+      fsHint.textContent = 'Thinking…';
+
+      try {
+        const system = 'You are a careful editor. The user will give you the original text of a personal note and a spoken instruction describing the edit they want. Apply the instruction and return ONLY the edited text — no preamble, no explanations, no markdown fences. Preserve the user’s voice and intent. If the instruction is ambiguous, make the smallest reasonable change.';
+        const user = `Original note (between fences):\n\n---\n${fsOriginalBody}\n---\n\nSpoken instruction: ${instruction}\n\nReturn the edited note text only.`;
+
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 4096,
+            system,
+            messages: [{ role: 'user', content: user }],
+          }),
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`API ${res.status}: ${txt.slice(0, 160)}`);
+        }
+        const data = await res.json();
+        const out = data?.content?.[0]?.text?.trim();
+        if (!out) throw new Error('Empty response');
+
+        fsProposedBody = out;
+        fsBody.textContent = out;
+        fsBody.classList.remove('editing');
+        fsBody.classList.add('changed');
+        fsAccept.hidden = false;
+        fsCancel.hidden = false;
+        fsHint.textContent = fsNote.demo
+          ? 'Demo edit — saves only in this view'
+          : 'Tap save to write back to UP150';
+      } catch (err) {
+        console.error(err);
+        fsBody.classList.remove('editing');
+        fsTranscript.textContent = 'Edit failed: ' + (err.message || 'unknown error');
+        fsHint.textContent = 'Tap mic to try again';
+      } finally {
+        fsMic.classList.remove('thinking');
+      }
+    }
+
+    fsAccept.addEventListener('click', () => {
+      if (!fsProposedBody || !fsNote) return;
+      fsNote.body = fsProposedBody;
+      fsOriginalBody = fsProposedBody;
+      const saved = saveEditedNote(fsNote, fsProposedBody);
+      fsProposedBody = null;
+      fsAccept.hidden = true;
+      fsCancel.hidden = true;
+      fsTranscript.textContent = saved ? 'Saved to UP150' : (fsNote.demo ? 'Saved in this session' : 'Could not write back');
+      fsHint.textContent = 'Tap mic for another edit';
+      // Update the underlying card preview too.
+      const idx = notes.indexOf(fsNote);
+      if (idx !== -1) {
+        const bodyEl = cards[idx].querySelector('.body');
+        if (bodyEl) bodyEl.textContent = fsProposedBody || fsNote.body;
+      }
+    });
+
+    fsCancel.addEventListener('click', () => {
+      if (!fsNote) return;
+      fsBody.textContent = fsOriginalBody;
+      fsBody.classList.remove('changed');
+      fsProposedBody = null;
+      fsAccept.hidden = true;
+      fsCancel.hidden = true;
+      fsTranscript.textContent = '';
+      fsHint.textContent = 'Tap mic to try a different edit';
+    });
+
+    // Local-to-fullscreen toast (reuses the global toast styling).
+    function showFsToast(msg) {
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      toast.style.zIndex = '60';
+      setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+
+    // Escape key closes fullscreen on desktop.
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && fs.classList.contains('open')) closeFullscreen();
     });
   </script>
 </body>
