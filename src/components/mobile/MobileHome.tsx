@@ -562,6 +562,99 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
 }
 
 
+/** Full-screen text-entry sheet for typing a note instead of speaking one. */
+function TypeNoteSheet({ onSave, onClose }: { onSave: (text: string) => void; onClose: () => void }) {
+  const [text, setText] = useState('');
+  const textRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    textRef.current?.focus();
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Type a note"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9998,
+        background: 'linear-gradient(180deg, #0a0b14 0%, #060710 60%, #04050c 100%)',
+        display: 'flex', flexDirection: 'column',
+        color: 'rgba(255,255,255,0.92)',
+      }}
+    >
+      {/* Header */}
+      <div style={{
+        flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: 'calc(var(--space-4) + env(safe-area-inset-top, 0px)) var(--space-4) var(--space-3)',
+      }}>
+        <button
+          onClick={onClose}
+          aria-label="Cancel"
+          style={{
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)',
+            color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
+            width: 40, height: 40, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+        </button>
+
+        <button
+          onClick={() => { if (text.trim()) onSave(text.trim()); }}
+          disabled={!text.trim()}
+          aria-label="Save note"
+          style={{
+            background: text.trim() ? 'rgba(13,191,90,0.88)' : 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: '#fff', cursor: text.trim() ? 'pointer' : 'default',
+            padding: '8px 20px', borderRadius: 999,
+            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 600,
+            opacity: text.trim() ? 1 : 0.4,
+            transition: 'background 200ms, opacity 200ms',
+          }}
+        >
+          Save
+        </button>
+      </div>
+
+      {/* Textarea */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 var(--space-4) var(--space-4)' }}>
+        <textarea
+          ref={textRef}
+          value={text}
+          onChange={e => setText(e.target.value)}
+          placeholder="What's on your mind?"
+          aria-label="Note text"
+          style={{
+            display: 'block', width: '100%', height: '100%', minHeight: 200,
+            background: 'transparent', border: 'none', outline: 'none', resize: 'none',
+            fontFamily: 'var(--font-sans)', fontSize: 17, fontWeight: 400, lineHeight: 1.65,
+            color: 'rgba(255,255,255,0.92)',
+            caretColor: 'var(--color-accent, #0DBF5A)',
+            boxSizing: 'border-box',
+          }}
+        />
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 /**
  * Full-screen detail sheet.
  * A11y: role="dialog" + aria-modal, aria-labelledby wired to the title,
@@ -1421,8 +1514,9 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
               {chooserOpen && !isStreaming && (
                 <div role="menu" style={{
-                  display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8,
+                  display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12,
                   width: '100%',
+                  padding: '4px 0',
                 }}>
                   {[
                     { id: 'shorter',     label: 'Shorter',         instr: 'Make it shorter and tighter while preserving the core message.' },
@@ -1439,7 +1533,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                       style={{
                         background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)',
                         color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
-                        padding: '7px 14px', borderRadius: 999,
+                        padding: '9px 18px', borderRadius: 999,
                         fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
                         transition: 'background 180ms, border-color 180ms',
                       }}
@@ -1456,7 +1550,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                       border: `1px solid ${customMode ? 'rgba(144,97,249,0.50)' : 'rgba(255,255,255,0.10)'}`,
                       color: customMode ? '#c4b5fd' : 'rgba(255,255,255,0.85)',
                       cursor: 'pointer',
-                      padding: '7px 14px', borderRadius: 999,
+                      padding: '9px 18px', borderRadius: 999,
                       fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
                     }}
                   >
@@ -2088,6 +2182,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
   useAuthStore();
 
   const [recording, setRecording] = useState(false);
+  const [showTypeNote, setShowTypeNote] = useState(false);
   const [liveText, setLiveText] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);
@@ -2199,6 +2294,16 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     startTimeRef.current = Date.now();
     setRecording(true);
     addNote({ id, title: 'Recording…', durationMs: 0, transcript: '', status: 'recording', createdAt: new Date().toISOString() });
+  }, [addNote]);
+
+  const handleSaveTypedNote = useCallback((text: string) => {
+    const id = `note-typed-${Date.now()}`;
+    const firstLine = text.split('\n').find(l => l.trim()) ?? '';
+    const title = firstLine.length > 60 ? firstLine.slice(0, 57) + '…' : (firstLine || 'Untitled note');
+    addNote({ id, title, durationMs: 0, transcript: text, status: 'ready', createdAt: new Date().toISOString() });
+    setShowTypeNote(false);
+    setJustRecordedId(id);
+    setOpenNoteId(id);
   }, [addNote]);
 
   const stopRecording = useCallback(async () => {
@@ -2356,7 +2461,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
           position: 'absolute',
           bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))',
           left: 16, right: 16,
-          display: 'flex', justifyContent: 'center',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
           pointerEvents: 'none',
         }}>
           <button
@@ -2402,10 +2507,27 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
 
             <span style={{ position: 'relative', zIndex: 1 }}>Capture your thought</span>
           </button>
+
+          <button
+            onClick={() => setShowTypeNote(true)}
+            aria-label="Type a note instead"
+            style={{
+              pointerEvents: 'auto',
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
+              color: 'rgba(255,255,255,0.40)',
+              padding: '6px 16px', minHeight: 36,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            or type a note
+          </button>
         </div>
       )}
 
       {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} />}
+
+      {showTypeNote && <TypeNoteSheet onSave={handleSaveTypedNote} onClose={() => setShowTypeNote(false)} />}
 
       {openNote && (
         <NoteSheet
