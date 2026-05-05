@@ -499,18 +499,16 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
         width: '100%', textAlign: 'left',
         position: 'relative', overflow: 'hidden',
         background: tintRgb
-          ? `linear-gradient(155deg, rgba(${tintRgb},0.08) 0%, #1a1c26 55%, #0d0e16 100%)`
-          : 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
-        border: `1px solid ${tintRgb ? `rgba(${tintRgb},0.20)` : 'rgba(255,255,255,0.08)'}`,
+          ? `rgba(${tintRgb},0.06)`
+          : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${tintRgb ? `rgba(${tintRgb},0.18)` : 'rgba(255,255,255,0.07)'}`,
         borderRadius: 22,
         padding: '16px 20px',
         display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4,
         cursor: isTranscribing ? 'default' : 'pointer',
         opacity: isTranscribing ? 0.7 : 1, minWidth: 0, boxSizing: 'border-box',
-        boxShadow: tintRgb
-          ? `0 14px 40px rgba(${tintRgb},0.14), 0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)`
-          : '0 14px 40px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.05)',
-        transition: 'border-color 220ms, box-shadow 220ms, filter 220ms',
+        boxShadow: 'none',
+        transition: 'border-color 220ms, filter 220ms',
       }}
     >
       {/* Title — clamped to 2 lines, broken at word boundaries */}
@@ -2112,7 +2110,7 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
           <div key={n.id} style={{
             position: 'relative', borderRadius: 22,
             boxShadow: justRecordedId === n.id
-              ? '0 0 0 2px rgba(13,191,90,0.55), 0 0 36px rgba(13,191,90,0.30)'
+              ? '0 0 0 1.5px rgba(13,191,90,0.50)'
               : 'none',
             transition: 'box-shadow 600ms ease',
           }}>
