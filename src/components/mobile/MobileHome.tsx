@@ -499,18 +499,16 @@ function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
         width: '100%', textAlign: 'left',
         position: 'relative', overflow: 'hidden',
         background: tintRgb
-          ? `linear-gradient(155deg, rgba(${tintRgb},0.08) 0%, #1a1c26 55%, #0d0e16 100%)`
-          : 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
-        border: `1px solid ${tintRgb ? `rgba(${tintRgb},0.20)` : 'rgba(255,255,255,0.08)'}`,
-        borderRadius: 22,
+          ? `linear-gradient(rgba(${tintRgb},0.05), rgba(${tintRgb},0.05)), #0c0d14`
+          : '#0c0d14',
+        border: `1px solid ${tintRgb ? `rgba(${tintRgb},0.10)` : 'rgba(255,255,255,0.05)'}`,
+        borderRadius: 18,
         padding: '16px 20px',
         display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4,
         cursor: isTranscribing ? 'default' : 'pointer',
         opacity: isTranscribing ? 0.7 : 1, minWidth: 0, boxSizing: 'border-box',
-        boxShadow: tintRgb
-          ? `0 14px 40px rgba(${tintRgb},0.14), 0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)`
-          : '0 14px 40px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.05)',
-        transition: 'border-color 220ms, box-shadow 220ms, filter 220ms',
+        boxShadow: 'none',
+        transition: 'border-color 220ms, background 220ms',
       }}
     >
       {/* Title — clamped to 2 lines, broken at word boundaries */}
@@ -1948,7 +1946,7 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
       position: 'relative', overflow: 'hidden',
-      background: 'linear-gradient(180deg, #0a0b14 0%, #060710 60%, #04050c 100%)',
+      background: '#15161e',
       color: 'rgba(255,255,255,0.92)',
     }}>
       {/* Header */}
@@ -1992,10 +1990,10 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
         {filtered.length === 0 ? (
           <div style={{
             position: 'relative',
-            background: 'linear-gradient(155deg, #1a1c26 0%, #0d0e16 100%)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 22,
-            boxShadow: '0 14px 40px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.06)',
+            background: '#0c0d14',
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: 18,
+            boxShadow: 'none',
             padding: '40px 24px',
             textAlign: 'center',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
@@ -2016,7 +2014,7 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
           </div>
         ) : filtered.map(n => (
           <div key={n.id} style={{
-            position: 'relative', borderRadius: 22,
+            position: 'relative', borderRadius: 18,
             boxShadow: justRecordedId === n.id
               ? '0 0 0 2px rgba(13,191,90,0.55), 0 0 36px rgba(13,191,90,0.30)'
               : 'none',
