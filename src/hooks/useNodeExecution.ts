@@ -15,7 +15,6 @@ export function getUpstreamText(nodeId: string): { text: string; inputCount: num
 
   const chunks = upstreamIds.map((id) => {
     const node = nodes.find((n) => n.id === id);
-    if (node?.data.subtype === 'prompt') return null; // prompt nodes inject instructions, not content
     const text = outputs[id]?.text
       || (node?.data.category === 'source' ? (node.data.config.text as string) : '')
       || '';
@@ -33,17 +32,6 @@ export function getUpstreamText(nodeId: string): { text: string; inputCount: num
     .map((c, i) => `## Input ${i + 1} — ${c.node.data.label} (${c.node.data.subtype})\n${c.text}`)
     .join('\n\n');
   return { text: labeled, inputCount: chunks.length };
-}
-
-export function getUpstreamPromptInstructions(nodeId: string): string | undefined {
-  const { nodes, edges } = useGraphStore.getState();
-  const instructions = edges
-    .filter((e) => e.target === nodeId)
-    .map((e) => nodes.find((n) => n.id === e.source))
-    .filter((n): n is NonNullable<typeof n> => n?.data.subtype === 'prompt')
-    .map((n) => (n.data.config.prompt as string)?.trim())
-    .filter(Boolean);
-  return instructions.length > 0 ? instructions.join('\n') : undefined;
 }
 
 export function useNodeExecution() {
@@ -82,8 +70,7 @@ export function useNodeExecution() {
       setStatus(nodeId, 'running');
       try {
         if (signal?.aborted) { setStatus(nodeId, 'idle'); return; }
-        const extraInstruction = getUpstreamPromptInstructions(nodeId);
-        const result = await executor(input, node.data.config as Record<string, unknown>, { inputCount, extraInstruction });
+        const result = await executor(input, node.data.config as Record<string, unknown>, { inputCount });
         if (signal?.aborted) { setStatus(nodeId, 'idle'); return; }
         setOutput(nodeId, { text: result });
         setStatus(nodeId, 'complete');
@@ -121,12 +108,6 @@ export function useNodeExecution() {
           // Read fresh node state each iteration
           const node = useGraphStore.getState().nodes.find((n) => n.id === id);
           if (!node) continue;
-
-          // Prompt nodes are passive filters — mark complete without executing
-          if (node.data.subtype === 'prompt') {
-            useExecutionStore.getState().setStatus(id, 'complete');
-            continue;
-          }
 
           if (node.data.category === 'source') {
             const prepare = node.data.config.prepare as string | undefined;

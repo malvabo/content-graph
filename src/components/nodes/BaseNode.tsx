@@ -37,7 +37,7 @@ function UpstreamInputsList({ id }: { id: string }) {
     .filter(e => e.target === id)
     .map(e => {
       const n = nodes.find(x => x.id === e.source);
-      if (!n || n.data.subtype === 'prompt') return null;
+      if (!n) return null;
       return {
         id: n.id,
         label: n.data.label,
@@ -170,8 +170,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         outlineOffset: -2,
       }}
     >
-      {/* Run button (bottom-right, hover only) — hide for source and prompt nodes */}
-      {data.category !== 'source' && data.subtype !== 'prompt' && <button
+      {/* Run button (bottom-right, hover only) — hide for source nodes */}
+      {data.category !== 'source' && <button
         onMouseDown={e => e.stopPropagation()}
         onClick={() => runNode(id, async (input, config, meta) => aiExecute(input, config, data.subtype, meta))}
         style={{
