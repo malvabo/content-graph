@@ -170,8 +170,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         outlineOffset: -2,
       }}
     >
-      {/* Run button (bottom-right, hover only) — hide for source nodes */}
-      {data.category !== 'source' && <button
+      {/* Run button (bottom-right, hover only) — hide for source and prompt nodes */}
+      {data.category !== 'source' && data.subtype !== 'prompt' && <button
         onMouseDown={e => e.stopPropagation()}
         onClick={() => runNode(id, async (input, config, meta) => aiExecute(input, config, data.subtype, meta))}
         style={{
@@ -202,12 +202,12 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         <div className="flex-1 min-w-0">
           <div style={{ fontWeight: 500, fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', color: 'var(--color-text-primary)' }} className="truncate" title={data.label}>{data.label}</div>
         </div>
-        {/* Expand + Close — visible on hover */}
+        {/* Expand + Close — visible on hover; hidden for prompt node */}
         <div className="flex items-center gap-0.5 shrink-0" style={{ opacity: hovered ? 1 : 0.5, transition: 'opacity 150ms' }}>
-          <button onMouseDown={e => e.stopPropagation()} onClick={() => setExpandOpen(true)}
+          {data.subtype !== 'prompt' && <button onMouseDown={e => e.stopPropagation()} onClick={() => setExpandOpen(true)}
             style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
-          </button>
+          </button>}
           <button onMouseDown={e => e.stopPropagation()} onClick={() => { if (window.confirm('Delete this node?')) { useGraphStore.getState().removeNode(id); } }}
             style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text-tertiary)' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
