@@ -86,6 +86,7 @@ async function callGroq(apiKey: string, model: string, system: string, input: st
 
 export interface AiExecuteMeta {
   inputCount?: number;
+  extraInstruction?: string;
 }
 
 export async function aiExecute(input: string, config: Record<string, unknown>, subtype: string, meta?: AiExecuteMeta, signal?: AbortSignal): Promise<string> {
@@ -123,9 +124,7 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
     throw new Error('No API key set. Go to Settings to add one.');
   }
 
-  let system = subtype === 'prompt'
-    ? ((config.prompt as string)?.trim() || 'Process the input and return a useful result.')
-    : (SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`);
+  let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
 
   // Multi-input synthesis hint — only when 2+ upstream sources were fanned in.
   const inputCount = meta?.inputCount ?? 0;
@@ -182,6 +181,11 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
     if (brand?.referenceImages?.length) {
       system += `\n\nThe brand has ${brand.referenceImages.length} reference image(s) defining the visual style. Ensure the generated prompt produces images consistent with this established visual direction.`;
     }
+  }
+
+  // Inject upstream Prompt node instruction
+  if (meta?.extraInstruction) {
+    system += `\n\nADDITIONAL INSTRUCTIONS: ${meta.extraInstruction}`;
   }
 
   if (activeProvider === 'anthropic') return callAnthropic(apiKey, activeModel, system, input, signal);
