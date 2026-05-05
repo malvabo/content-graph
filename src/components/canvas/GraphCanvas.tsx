@@ -140,7 +140,6 @@ export default function GraphCanvas() {
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
         onNodeContextMenu={(e, node) => onNodeContextMenu(e, node.id)}
         onPaneClick={() => { setSelectedNodeId(null); dismissFirstRun(); closeMenu(); setSpotlight(null); }}
-        onDoubleClick={() => {}}
         deleteKeyCode={['Backspace', 'Delete']}
         fitView={false} panOnScroll selectionOnDrag selectionKeyCode="Shift"
         proOptions={{ hideAttribution: true }}
