@@ -31,6 +31,7 @@ export const NODE_DEFS: NodeDef[] = [
   { subtype: 'brand-voice', label: 'Brand Voice', badge: 'Bv', category: 'output', description: 'Rewrite in your brand voice', hasInput: true, hasOutput: true },
   // Advanced (collapsed in palette)
   { subtype: 'refine', label: 'Refine', badge: 'Rf', category: 'transform', description: 'Directive for what to extract or change', hasInput: true, hasOutput: true },
+  { subtype: 'prompt', label: 'Prompt', badge: 'Pm', category: 'transform', description: 'Custom system prompt applied to input', hasInput: true, hasOutput: true, maxInputs: 8 },
 ];
 
 export const NODE_DEFS_BY_SUBTYPE = Object.fromEntries(NODE_DEFS.map((d) => [d.subtype, d]));
@@ -60,6 +61,7 @@ export const IMAGE_RESOLUTION_OPTIONS = ['512x512', '1024x1024', '1024x1536', '1
 
 export const DEFAULT_MODELS: Record<string, string> = {
   'refine': 'claude-opus-4',
+  'prompt': 'claude-opus-4',
   'linkedin-post': 'claude-opus-4',
   'twitter-thread': 'claude-opus-4',
   'twitter-single': 'claude-opus-4',

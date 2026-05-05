@@ -123,7 +123,9 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
     throw new Error('No API key set. Go to Settings to add one.');
   }
 
-  let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;
+  let system = subtype === 'prompt'
+    ? ((config.prompt as string)?.trim() || 'Process the input and return a useful result.')
+    : (SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`);
 
   // Multi-input synthesis hint — only when 2+ upstream sources were fanned in.
   const inputCount = meta?.inputCount ?? 0;

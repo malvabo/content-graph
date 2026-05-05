@@ -111,6 +111,7 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
     <Field label="Resolution"><Select value={c.resolution as string ?? '1024x1024'} onChange={(v) => s('resolution', v)} options={IMAGE_RESOLUTION_OPTIONS} /></Field>
   </>,
   'refine': () => <></>,
+  'prompt': () => <></>,
   'export': (c, s) => <>
     <Field label="Formats">
       <div className="flex flex-wrap gap-1">

@@ -9,7 +9,7 @@ import { useNodeExecution } from '../../hooks/useNodeExecution';
 import type { ContentNode } from '../../store/graphStore';
 import { TextSourceInline, ImageSourceInline, FileSourceInline } from './SourceNodes';
 import { GenerateNodeInline } from './GenerateNodes';
-import { RefineInline } from './TransformNodes';
+import { RefineInline, PromptInline } from './TransformNodes';
 import { ExportInline } from './OutputNodes';
 import { ImagePromptInline } from './ImagePromptNode';
 import { VoiceSourceInline, SAMPLE_VOICE_CONTENT } from './VoiceSourceNode';
@@ -233,6 +233,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
         {data.subtype === 'voice-source' && <VoiceSourceInline id={id} onExpand={() => setExpandOpen(true)} />}
         {data.subtype === 'refine' && <RefineInline id={id} />}
+        {data.subtype === 'prompt' && <PromptInline id={id} />}
         {(data.subtype === 'image-prompt' || data.subtype === 'video') && <ImagePromptInline id={id} expandOpen={expandOpen} onExpandClose={() => setExpandOpen(false)} />}
         {data.subtype === 'export' && <ExportInline id={id} />}
         {data.subtype === 'infographic' && <InfographicInline id={id} />}
