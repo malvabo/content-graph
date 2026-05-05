@@ -29,6 +29,7 @@ export const NODE_DEFS: NodeDef[] = [
   // Output
   { subtype: 'export', label: 'Export', badge: 'Ex', category: 'output', description: 'Platform-ready package', hasInput: true, hasOutput: false, maxInputs: 8 },
   { subtype: 'brand-voice', label: 'Brand Voice', badge: 'Bv', category: 'output', description: 'Rewrite in your brand voice', hasInput: true, hasOutput: true },
+  { subtype: 'prompt', label: 'Prompt', badge: 'Pm', category: 'generate', description: 'Custom instruction applied to connected nodes', hasInput: false, hasOutput: true },
   // Advanced (collapsed in palette)
   { subtype: 'refine', label: 'Refine', badge: 'Rf', category: 'transform', description: 'Directive for what to extract or change', hasInput: true, hasOutput: true },
 ];

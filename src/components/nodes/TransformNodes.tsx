@@ -35,3 +35,21 @@ export function RefineInline({ id }: { id: string }) {
     </div>
   );
 }
+
+export function PromptInline({ id }: { id: string }) {
+  const config = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.config);
+  const updateConfig = useGraphStore((s) => s.updateNodeConfig);
+  const prompt = (config?.prompt as string) ?? '';
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+      <textarea
+        className="form-textarea" style={{ flex: 1, minHeight: 0 }}
+        placeholder="e.g. Write in a casual tone. Focus on actionable advice. Keep it under 100 words."
+        value={prompt}
+        onChange={(e) => updateConfig(id, { prompt: e.target.value })}
+        aria-label="Custom prompt"
+      />
+    </div>
+  );
+}

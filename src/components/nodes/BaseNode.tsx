@@ -9,7 +9,7 @@ import { useNodeExecution } from '../../hooks/useNodeExecution';
 import type { ContentNode } from '../../store/graphStore';
 import { TextSourceInline, ImageSourceInline, FileSourceInline } from './SourceNodes';
 import { GenerateNodeInline } from './GenerateNodes';
-import { RefineInline } from './TransformNodes';
+import { RefineInline, PromptInline } from './TransformNodes';
 import { ExportInline } from './OutputNodes';
 import { ImagePromptInline } from './ImagePromptNode';
 import { VoiceSourceInline, SAMPLE_VOICE_CONTENT } from './VoiceSourceNode';
@@ -37,7 +37,7 @@ function UpstreamInputsList({ id }: { id: string }) {
     .filter(e => e.target === id)
     .map(e => {
       const n = nodes.find(x => x.id === e.source);
-      if (!n) return null;
+      if (!n || n.data.subtype === 'prompt') return null;
       return {
         id: n.id,
         label: n.data.label,
@@ -170,8 +170,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         outlineOffset: -2,
       }}
     >
-      {/* Run button (bottom-right, hover only) — hide for source nodes */}
-      {data.category !== 'source' && <button
+      {/* Run button (bottom-right, hover only) — hide for source and prompt nodes */}
+      {data.category !== 'source' && data.subtype !== 'prompt' && <button
         onMouseDown={e => e.stopPropagation()}
         onClick={() => runNode(id, async (input, config, meta) => aiExecute(input, config, data.subtype, meta))}
         style={{
@@ -233,10 +233,11 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
         {data.subtype === 'voice-source' && <VoiceSourceInline id={id} onExpand={() => setExpandOpen(true)} />}
         {data.subtype === 'refine' && <RefineInline id={id} />}
+        {data.subtype === 'prompt' && <PromptInline id={id} />}
         {(data.subtype === 'image-prompt' || data.subtype === 'video') && <ImagePromptInline id={id} expandOpen={expandOpen} onExpandClose={() => setExpandOpen(false)} />}
         {data.subtype === 'export' && <ExportInline id={id} />}
         {data.subtype === 'infographic' && <InfographicInline id={id} />}
-        {data.category === 'generate' && !['image-prompt', 'video', 'infographic'].includes(data.subtype) && (
+        {data.category === 'generate' && !['image-prompt', 'video', 'infographic', 'prompt'].includes(data.subtype) && (
           <GenerateNodeInline id={id} subtype={data.subtype} expandOpen={expandOpen} onExpand={() => setExpandOpen(true)} onExpandClose={() => setExpandOpen(false)} />
         )}
       </div>
