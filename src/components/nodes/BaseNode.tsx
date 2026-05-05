@@ -237,7 +237,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         {(data.subtype === 'image-prompt' || data.subtype === 'video') && <ImagePromptInline id={id} expandOpen={expandOpen} onExpandClose={() => setExpandOpen(false)} />}
         {data.subtype === 'export' && <ExportInline id={id} />}
         {data.subtype === 'infographic' && <InfographicInline id={id} />}
-        {data.category === 'generate' && !['image-prompt', 'video', 'infographic'].includes(data.subtype) && (
+        {data.category === 'generate' && !['image-prompt', 'video', 'infographic', 'prompt'].includes(data.subtype) && (
           <GenerateNodeInline id={id} subtype={data.subtype} expandOpen={expandOpen} onExpand={() => setExpandOpen(true)} onExpandClose={() => setExpandOpen(false)} />
         )}
       </div>
