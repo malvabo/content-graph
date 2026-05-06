@@ -144,8 +144,8 @@ const ORB: Record<Phase, object> = {
 // Per-character particle dissolve — characters scatter to random positions on exit,
 // coalesce from scattered positions on enter.
 const HEADLINE_VARIANTS = {
-  hidden:  { transition: { staggerChildren: 0.012, staggerDirection: -1 } },
-  visible: { transition: { staggerChildren: 0.020, delayChildren: 0.04 } },
+  hidden:  { transition: { staggerChildren: 0 } },
+  visible: { transition: { staggerChildren: 0, delayChildren: 0 } },
 };
 const HEADLINE_CHAR_VARIANTS = {
   hidden: (i: number) => ({
