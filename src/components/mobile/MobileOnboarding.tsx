@@ -141,14 +141,22 @@ const ORB: Record<Phase, object> = {
   posting:   { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 0 },
 };
 
-// Per-character fade-up — subtle stagger, no scatter or scale jitter
+// Per-character particle dissolve — characters scatter to random positions on exit,
+// coalesce from scattered positions on enter.
 const HEADLINE_VARIANTS = {
-  hidden:  { transition: { staggerChildren: 0.006, staggerDirection: -1 } },
-  visible: { transition: { staggerChildren: 0.015, delayChildren: 0.03 } },
+  hidden:  { transition: { staggerChildren: 0.012, staggerDirection: -1 } },
+  visible: { transition: { staggerChildren: 0.020, delayChildren: 0.04 } },
 };
 const HEADLINE_CHAR_VARIANTS = {
-  hidden:  { opacity: 0, y: 8,  transition: { duration: 0.18, ease: [0.4, 0, 1, 1]   as [number,number,number,number] } },
-  visible: { opacity: 1, y: 0,  transition: { duration: 0.38, ease: [0.0, 0, 0.2, 1] as [number,number,number,number] } },
+  hidden: (i: number) => ({
+    opacity: 0, scale: 0.2,
+    x: Math.cos(i * 2.1) * 18, y: Math.sin(i * 2.1) * 18,
+    transition: { duration: 0.28, ease: [0.4, 0, 0.8, 1] as [number,number,number,number] },
+  }),
+  visible: (i: number) => ({
+    opacity: 1, scale: 1, x: 0, y: 0,
+    transition: { duration: 0.52, ease: [0.16, 1, 0.3, 1] as [number,number,number,number] },
+  }),
 };
 
 function ParticleHeadline({ text, style, hidden }: {
@@ -171,6 +179,7 @@ function ParticleHeadline({ text, style, hidden }: {
             return (
               <motion.span
                 key={i}
+                custom={i}
                 variants={HEADLINE_CHAR_VARIANTS}
                 style={{ display: 'inline-block' }}
               >{ch}</motion.span>
