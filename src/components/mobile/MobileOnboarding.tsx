@@ -111,7 +111,7 @@ const PLATFORMS = [
 
 // Cloud click-target 64px; halo extends to ~140px around it. Label sits 8px below
 // the tile (4px ring gap + 4px more breathing room).
-const BULB = 64;
+const BULB = 88;
 
 // Brand fill for selected state (full-saturation tile background).
 const BRAND_FILL: Record<string, string> = {
@@ -518,8 +518,8 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                     style={{
                       position:'absolute',
                       left:'50%', top:'50%',
-                      width: 76, height: 76,
-                      marginLeft: -38, marginTop: -38,
+                      width: 100, height: 100,
+                      marginLeft: -50, marginTop: -50,
                       borderRadius:'50%',
                       border:'2px solid rgba(255,255,255,1)',
                       pointerEvents:'none',
@@ -550,7 +550,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                     }}
                   >
                     <svg
-                      width={28} height={28} viewBox="0 0 24 24"
+                      width={36} height={36} viewBox="0 0 24 24"
                       style={{
                         color: '#ffffff',
                         opacity: isSelected ? 1 : 0.6,
@@ -565,13 +565,13 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 </motion.div>
               </motion.div>
 
-              {/* Label — 13px medium, white at 80%, 8px below the 64px tile */}
+              {/* Label — 13px medium, white at 80%, below the tile */}
               <motion.div
                 initial={{ opacity:0 }}
                 animate={{ opacity: selId ? 0 : 0.8 }}
                 transition={{ delay: selId ? 0 : entranceDelay+0.04, duration: selId ? 0.2 : 0.28 }}
                 style={{
-                  position:'absolute', left:p.left, top:'calc(60% + 40px)',
+                  position:'absolute', left:p.left, top:'calc(60% + 54px)',
                   transform:'translateX(-50%)',
                   fontFamily:'var(--font-sans)', fontSize:13, fontWeight:500,
                   color:'#ffffff', letterSpacing:'0.02em',
