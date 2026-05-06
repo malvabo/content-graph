@@ -29,18 +29,24 @@ function canConnect(fromSubtype: string, toSubtype: string): boolean {
 const HANDLE_CLS = "!w-3 !h-3 !border-[1.5px] border-[var(--color-border-handle)] bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)] !transition-colors";
 
 
-type DropDef = { key: string; label: string; opts: readonly string[] };
+type DropDef = { key: string; opts: readonly string[] };
 const DROP_DEFS: Record<string, DropDef[]> = {
-  'linkedin-post':  [{ key: 'tone',     label: 'Tone',     opts: ['Authoritative','Conversational','Vulnerable','Data-driven','Contrarian'] }, { key: 'length', label: 'Length', opts: ['Short ~150w','Medium ~280w','Long ~450w'] }],
-  'twitter-thread': [{ key: 'tone',     label: 'Tone',     opts: ['Analytical','Personal','Educational','Provocative'] }],
-  'twitter-single': [{ key: 'angle',    label: 'Angle',    opts: ['Most quotable insight','Strongest stat','Contrarian take','Call to action'] }],
-  'newsletter':     [{ key: 'type',     label: 'Type',     opts: ['Full issue','Feature section','TL;DR','Deep dive','Roundup intro'] }],
-  'infographic':    [{ key: 'type',     label: 'Type',     opts: ['Process','Statistical','Comparison','Timeline','Listicle','Anatomy'] }],
-  'quote-card':     [{ key: 'format',   label: 'Format',   opts: ['Single quote','Multiple options'] }],
-  'image-prompt':   [{ key: 'style',    label: 'Style',    opts: ['Photography','Flat illustration','3D render','Abstract','Editorial graphic'] }, { key: 'aspect', label: 'Aspect', opts: ['1:1','4:5','16:9','9:16','1.91:1'] }],
-  'brand-voice':    [{ key: 'strength', label: 'Strength', opts: ['Light touch','Moderate','Full rewrite'] }],
+  'linkedin-post':  [{ key: 'tone',     opts: ['Authoritative','Conversational','Vulnerable','Data-driven','Contrarian'] }, { key: 'length', opts: ['Short ~150w','Medium ~280w','Long ~450w'] }],
+  'twitter-thread': [{ key: 'tone',     opts: ['Analytical','Personal','Educational','Provocative'] }],
+  'twitter-single': [{ key: 'angle',    opts: ['Most quotable insight','Strongest stat','Contrarian take','Call to action'] }],
+  'newsletter':     [{ key: 'type',     opts: ['Full issue','Feature section','TL;DR','Deep dive','Roundup intro'] }],
+  'infographic':    [{ key: 'type',     opts: ['Process','Statistical','Comparison','Timeline','Listicle','Anatomy'] }],
+  'quote-card':     [{ key: 'format',   opts: ['Single quote','Multiple options'] }],
+  'image-prompt':   [{ key: 'style',    opts: ['Photography','Flat illustration','3D render','Abstract','Editorial graphic'] }, { key: 'aspect', opts: ['1:1','4:5','16:9','9:16','1.91:1'] }],
+  'brand-voice':    [{ key: 'strength', opts: ['Light touch','Moderate','Full rewrite'] }],
 };
 const MODEL_NODES = new Set(['linkedin-post','twitter-thread','twitter-single','newsletter','infographic','quote-card','brand-voice','refine','prompt']);
+const MODEL_LABELS: [string, string][] = [
+  ['claude-haiku-4','Haiku'],['claude-sonnet-4','Sonnet'],['claude-opus-4','Opus'],
+  ['gpt-4o-mini','4o mini'],['gpt-4o','4o'],['o4-mini','o4-mini'],
+  ['gemini-2.0-flash','Flash'],['gemini-2.5-flash','Flash 2.5'],
+  ['llama-3.3-70b','Llama 70b'],['llama-4-scout','Llama 4'],
+];
 
 function NodeConfigChips({ id, subtype }: { id: string; subtype: string }) {
   const config = useGraphStore(s => s.nodes.find(n => n.id === id)?.data.config);
@@ -50,40 +56,34 @@ function NodeConfigChips({ id, subtype }: { id: string; subtype: string }) {
   const showModel = MODEL_NODES.has(subtype);
   if (!dropDefs.length && !showModel) return null;
 
-  const selStyle: React.CSSProperties = {
-    fontSize: 11, height: 22, padding: '0 4px',
-    borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-default)',
-    background: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)',
-    fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 1, minWidth: 0,
+  const chipSel: React.CSSProperties = {
+    fontSize: 11, padding: '2px 6px',
+    borderRadius: 'var(--radius-full)',
+    border: '1px solid var(--color-border-default)',
+    background: 'var(--color-bg-surface)',
+    color: 'var(--color-text-secondary)',
+    fontFamily: 'var(--font-sans)',
+    cursor: 'pointer',
+    maxWidth: 120,
   };
 
   return (
-    <div className="nowheel" style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 8, marginTop: 'auto' }}
+    <div className="nowheel" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, paddingTop: 8 }}
       onMouseDown={e => e.stopPropagation()}>
-      {dropDefs.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(dropDefs.length, 2)}, 1fr)`, gap: 4 }}>
-          {dropDefs.map(({ key, label, opts }) => {
-            const val = (config?.[key] as string) ?? opts[0];
-            return (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0 }}>
-                <span style={{ fontSize: 10, color: 'var(--color-text-disabled)', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap', flexShrink: 0 }}>{label}</span>
-                <select style={selStyle} value={val} onChange={e => updateConfig(id, { [key]: e.target.value })}>
-                  {opts.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {dropDefs.map(({ key, opts }) => {
+        const val = (config?.[key] as string) ?? opts[0];
+        return (
+          <select key={key} style={chipSel} value={val} onChange={e => updateConfig(id, { [key]: e.target.value })}>
+            {opts.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        );
+      })}
       {showModel && (() => {
         const model = (config?.model as string) ?? DEFAULT_MODELS[subtype] ?? 'claude-opus-4';
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ fontSize: 10, color: 'var(--color-text-disabled)', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap', flexShrink: 0 }}>Model</span>
-            <select style={{ ...selStyle, color: 'var(--color-text-tertiary)' }} value={model} onChange={e => updateConfig(id, { model: e.target.value })}>
-              {MODEL_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
+          <select style={{ ...chipSel, color: 'var(--color-text-tertiary)' }} value={model} onChange={e => updateConfig(id, { model: e.target.value })}>
+            {MODEL_LABELS.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+          </select>
         );
       })()}
     </div>
