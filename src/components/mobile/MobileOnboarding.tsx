@@ -85,13 +85,13 @@ anyway that's the whole thought`,
 // Distances from orb center: amber 205px, purple 128px, pink 359px, green 235px — no ring.
 const BLOBS = [
   // Amber — bottom-right, far below orb
-  { color: 'radial-gradient(ellipse, rgba(255,150,18,0.88) 0%, rgba(255,90,5,0.42) 44%, transparent 70%)', w: 540, h: 460, xPath: ['11%','22%','6%','18%','11%'], yPath: ['53%','61%','46%','57%','53%'], xDur: 31, yDur: 43 },
+  { color: 'radial-gradient(ellipse, rgba(255,150,18,0.88) 0%, rgba(255,90,5,0.42) 44%, transparent 70%)', w: 540, h: 460, xPath: ['11%','22%','6%','18%','11%'], yPath: ['53%','56%','51%','54%','53%'], xDur: 31, yDur: 55 },
   // Purple — mid-left, well below headline zone
-  { color: 'radial-gradient(ellipse, rgba(98,12,255,0.82) 0%, rgba(68,0,218,0.38) 44%, transparent 70%)', w: 500, h: 460, xPath: ['-42%','-28%','-46%','-34%','-42%'], yPath: ['25%','34%','20%','30%','25%'], xDur: 38, yDur: 27 },
+  { color: 'radial-gradient(ellipse, rgba(98,12,255,0.82) 0%, rgba(68,0,218,0.38) 44%, transparent 70%)', w: 500, h: 460, xPath: ['-42%','-28%','-46%','-34%','-42%'], yPath: ['25%','27%','23%','26%','25%'], xDur: 38, yDur: 48 },
   // Pink — upper-right corner, far from orb
-  { color: 'radial-gradient(ellipse, rgba(255,48,148,0.78) 0%, rgba(218,18,110,0.34) 44%, transparent 70%)', w: 440, h: 400, xPath: ['26%','38%','20%','34%','26%'], yPath: ['-4%','6%','-8%','2%','-4%'], xDur: 29, yDur: 47 },
+  { color: 'radial-gradient(ellipse, rgba(255,48,148,0.78) 0%, rgba(218,18,110,0.34) 44%, transparent 70%)', w: 440, h: 400, xPath: ['26%','38%','20%','34%','26%'], yPath: ['-4%','-2%','-6%','-3%','-4%'], xDur: 29, yDur: 60 },
   // Green — far lower-left
-  { color: 'radial-gradient(ellipse, rgba(16,212,72,0.68) 0%, rgba(6,168,42,0.28) 44%, transparent 70%)', w: 420, h: 380, xPath: ['-46%','-32%','-50%','-38%','-46%'], yPath: ['57%','66%','51%','62%','57%'], xDur: 35, yDur: 25 },
+  { color: 'radial-gradient(ellipse, rgba(16,212,72,0.68) 0%, rgba(6,168,42,0.28) 44%, transparent 70%)', w: 420, h: 380, xPath: ['-46%','-32%','-50%','-38%','-46%'], yPath: ['57%','59%','55%','58%','57%'], xDur: 35, yDur: 52 },
 ];
 
 // ─── Platform definitions ─────────────────────────────────────────────────────
@@ -141,22 +141,14 @@ const ORB: Record<Phase, object> = {
   posting:   { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 0 },
 };
 
-// Per-character "dissolve from particles" headline animations — no blur, just
-// staggered opacity + tiny scale + sub-pixel jitter so letters appear to coalesce.
+// Per-character fade-up — subtle stagger, no scatter or scale jitter
 const HEADLINE_VARIANTS = {
-  hidden:  { transition: { staggerChildren: 0.014, staggerDirection: -1 } },
-  visible: { transition: { staggerChildren: 0.022, delayChildren: 0.06 } },
+  hidden:  { transition: { staggerChildren: 0.006, staggerDirection: -1 } },
+  visible: { transition: { staggerChildren: 0.015, delayChildren: 0.03 } },
 };
 const HEADLINE_CHAR_VARIANTS = {
-  hidden: (i: number) => ({
-    opacity: 0, scale: 0.35,
-    x: Math.cos(i * 1.7) * 5, y: Math.sin(i * 1.7) * 5,
-    transition: { duration: 0.30, ease: [0.4, 0, 0.6, 1] as [number, number, number, number] },
-  }),
-  visible: () => ({
-    opacity: 1, scale: 1, x: 0, y: 0,
-    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
-  }),
+  hidden:  { opacity: 0, y: 8,  transition: { duration: 0.18, ease: [0.4, 0, 1, 1]   as [number,number,number,number] } },
+  visible: { opacity: 1, y: 0,  transition: { duration: 0.38, ease: [0.0, 0, 0.2, 1] as [number,number,number,number] } },
 };
 
 function ParticleHeadline({ text, style, hidden }: {
@@ -179,7 +171,6 @@ function ParticleHeadline({ text, style, hidden }: {
             return (
               <motion.span
                 key={i}
-                custom={i}
                 variants={HEADLINE_CHAR_VARIANTS}
                 style={{ display: 'inline-block' }}
               >{ch}</motion.span>
@@ -512,10 +503,9 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               >
                 {/* Breathing wrapper — scale + drift */}
                 <motion.div
-                  animate={isBreathing ? { scale: br.scaleKeys, y: [0,-4,0,4,0] } : { scale:1, y:0 }}
+                  animate={isBreathing ? { scale: br.scaleKeys } : { scale: 1 }}
                   transition={{
-                    scale: { duration:br.scalePeriod, repeat:isBreathing?Infinity:0, ease:EASE },
-                    y: { duration:7, delay:br.driftOffset, repeat:isBreathing?Infinity:0, ease:'easeInOut' },
+                    scale: { duration: br.scalePeriod, repeat: isBreathing ? Infinity : 0, ease: EASE },
                   }}
                   style={{ position:'absolute', inset:0 }}
                 >
