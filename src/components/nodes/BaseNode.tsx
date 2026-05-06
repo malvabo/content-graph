@@ -29,68 +29,61 @@ function canConnect(fromSubtype: string, toSubtype: string): boolean {
 const HANDLE_CLS = "!w-3 !h-3 !border-[1.5px] border-[var(--color-border-handle)] bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)] !transition-colors";
 
 
-const MODEL_SHORT: Record<string, string> = {
-  'claude-haiku-4': 'Haiku', 'claude-sonnet-4': 'Sonnet', 'claude-opus-4': 'Opus',
-  'gpt-4o-mini': '4o mini', 'gpt-4o': '4o', 'o4-mini': 'o4',
-  'gemini-2.0-flash': 'Flash', 'gemini-2.5-flash': 'Flash 2.5',
-  'llama-3.3-70b': 'Llama', 'llama-4-scout': 'L4 Scout',
+type DropDef = { key: string; label: string; opts: readonly string[] };
+const DROP_DEFS: Record<string, DropDef[]> = {
+  'linkedin-post':  [{ key: 'tone',     label: 'Tone',     opts: ['Authoritative','Conversational','Vulnerable','Data-driven','Contrarian'] }, { key: 'length', label: 'Length', opts: ['Short ~150w','Medium ~280w','Long ~450w'] }],
+  'twitter-thread': [{ key: 'tone',     label: 'Tone',     opts: ['Analytical','Personal','Educational','Provocative'] }],
+  'twitter-single': [{ key: 'angle',    label: 'Angle',    opts: ['Most quotable insight','Strongest stat','Contrarian take','Call to action'] }],
+  'newsletter':     [{ key: 'type',     label: 'Type',     opts: ['Full issue','Feature section','TL;DR','Deep dive','Roundup intro'] }],
+  'infographic':    [{ key: 'type',     label: 'Type',     opts: ['Process','Statistical','Comparison','Timeline','Listicle','Anatomy'] }],
+  'quote-card':     [{ key: 'format',   label: 'Format',   opts: ['Single quote','Multiple options'] }],
+  'image-prompt':   [{ key: 'style',    label: 'Style',    opts: ['Photography','Flat illustration','3D render','Abstract','Editorial graphic'] }, { key: 'aspect', label: 'Aspect', opts: ['1:1','4:5','16:9','9:16','1.91:1'] }],
+  'brand-voice':    [{ key: 'strength', label: 'Strength', opts: ['Light touch','Moderate','Full rewrite'] }],
 };
-
-type ChipDef = { key: string; opts?: readonly string[]; fmt?: (v: string) => string };
-const CHIP_DEFS: Record<string, ChipDef[]> = {
-  'linkedin-post':  [{ key: 'tone',     opts: ['Authoritative','Conversational','Vulnerable','Data-driven','Contrarian'] }, { key: 'length', opts: ['Short ~150w','Medium ~280w','Long ~450w'], fmt: v => v.split(' ')[0] }],
-  'twitter-thread': [{ key: 'tone',     opts: ['Analytical','Personal','Educational','Provocative'] }],
-  'twitter-single': [{ key: 'angle',    opts: ['Most quotable insight','Strongest stat','Contrarian take','Call to action'], fmt: v => v.length > 16 ? v.slice(0,14)+'…' : v }],
-  'newsletter':     [{ key: 'type',     opts: ['Full issue','Feature section','TL;DR','Deep dive','Roundup intro'] }],
-  'infographic':    [{ key: 'type',     opts: ['Process','Statistical','Comparison','Timeline','Listicle','Anatomy'] }],
-  'quote-card':     [{ key: 'format',   opts: ['Single quote','Multiple options'] }],
-  'image-prompt':   [{ key: 'style',    opts: ['Photography','Flat illustration','3D render','Abstract','Editorial graphic'], fmt: v => v.length > 16 ? v.slice(0,14)+'…' : v }, { key: 'aspect', opts: ['1:1','4:5','16:9','9:16','1.91:1'] }],
-  'brand-voice':    [{ key: 'strength', opts: ['Light touch','Moderate','Full rewrite'], fmt: v => v === 'Light touch' ? 'Light' : v }],
-};
-const MODEL_NODES = new Set(['linkedin-post','twitter-thread','twitter-single','newsletter','infographic','quote-card','brand-voice','refine','file-source']);
+const MODEL_NODES = new Set(['linkedin-post','twitter-thread','twitter-single','newsletter','infographic','quote-card','brand-voice','refine','prompt']);
 
 function NodeConfigChips({ id, subtype }: { id: string; subtype: string }) {
   const config = useGraphStore(s => s.nodes.find(n => n.id === id)?.data.config);
   const updateConfig = useGraphStore(s => s.updateNodeConfig);
 
-  const chipDefs = CHIP_DEFS[subtype] ?? [];
+  const dropDefs = DROP_DEFS[subtype] ?? [];
   const showModel = MODEL_NODES.has(subtype);
-  if (!chipDefs.length && !showModel) return null;
+  if (!dropDefs.length && !showModel) return null;
 
-  const cycle = (key: string, opts: readonly string[], current: string) => {
-    const next = opts[(opts.indexOf(current) + 1) % opts.length];
-    updateConfig(id, { [key]: next });
-  };
-
-  const chipStyle: React.CSSProperties = {
-    fontSize: 11, lineHeight: '16px', padding: '2px 8px',
-    borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)',
+  const selStyle: React.CSSProperties = {
+    fontSize: 11, height: 22, padding: '0 4px',
+    borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-default)',
     background: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)',
-    cursor: 'pointer', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
-    transition: 'border-color 100ms',
+    fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 1, minWidth: 0,
   };
 
   return (
-    <div className="nowheel" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, paddingTop: 8, marginTop: 'auto' }}
+    <div className="nowheel" style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 8, marginTop: 'auto' }}
       onMouseDown={e => e.stopPropagation()}>
-      {chipDefs.map(({ key, opts, fmt }) => {
-        const val = (config?.[key] as string) ?? (opts?.[0] ?? '');
-        const label = fmt ? fmt(val) : val;
-        return (
-          <button key={key} style={chipStyle}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
-            onClick={() => opts && cycle(key, opts, val)}>{label}</button>
-        );
-      })}
+      {dropDefs.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(dropDefs.length, 2)}, 1fr)`, gap: 4 }}>
+          {dropDefs.map(({ key, label, opts }) => {
+            const val = (config?.[key] as string) ?? opts[0];
+            return (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0 }}>
+                <span style={{ fontSize: 10, color: 'var(--color-text-disabled)', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap', flexShrink: 0 }}>{label}</span>
+                <select style={selStyle} value={val} onChange={e => updateConfig(id, { [key]: e.target.value })}>
+                  {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {showModel && (() => {
         const model = (config?.model as string) ?? DEFAULT_MODELS[subtype] ?? 'claude-opus-4';
-        const label = MODEL_SHORT[model] ?? model;
         return (
-          <button style={{ ...chipStyle, color: 'var(--color-text-tertiary)' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
-            onClick={() => cycle('model', MODEL_OPTIONS, model)}>{label}</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            <span style={{ fontSize: 10, color: 'var(--color-text-disabled)', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap', flexShrink: 0 }}>Model</span>
+            <select style={{ ...selStyle, color: 'var(--color-text-tertiary)' }} value={model} onChange={e => updateConfig(id, { model: e.target.value })}>
+              {MODEL_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
         );
       })()}
     </div>
