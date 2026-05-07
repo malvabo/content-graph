@@ -54,6 +54,7 @@
   --color-bg: #fbfbf9;
   --color-bg-surface: #edefea;       /* elevated blocks (Get started cards, hero bands) */
   --color-bg-card: var(--p-white);
+  --color-bg-modal: #f4f4f2;
   --color-bg-popover: var(--color-bg-card);
   --color-bg-subtle: var(--p-neutral-50);
   --color-bg-dark: var(--p-neutral-950);
@@ -298,6 +299,7 @@
   --color-bg: #0f0f0f;
   --color-bg-surface: #161619;
   --color-bg-card: #1a1a1e;
+  --color-bg-modal: #111114;
   --color-bg-popover: #1a1a1e;
   --color-bg-subtle: #131316;
   --color-bg-dark: #0a0a0c;
