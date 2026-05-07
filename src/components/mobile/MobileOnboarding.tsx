@@ -106,7 +106,7 @@ const PLATFORMS = [
   { id: 'linkedin',  label: 'LinkedIn',  left: '16.5%', xOffset: '33.5vw', mergeRgb: '10,102,194',  glowRgb: '10,102,194'  },
   { id: 'x',         label: 'X',         left: '39%',   xOffset: '11vw',   mergeRgb: '240,235,230', glowRgb: '90,90,90'    },
   { id: 'instagram', label: 'Instagram', left: '61%',   xOffset: '-11vw',  mergeRgb: '225,48,108',  glowRgb: '201,48,102'  },
-  { id: 'threads',   label: 'Threads',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '74,58,94'    },
+  { id: 'threads',   label: 'Scripts',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '74,58,94'    },
 ] as const;
 
 // Cloud click-target 64px; halo extends to ~140px around it. Label sits 8px below
