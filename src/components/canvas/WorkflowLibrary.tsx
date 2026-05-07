@@ -222,7 +222,6 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             <thead>
               <tr style={{ textAlign: 'left', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
                 <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Name</th>
-                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>State</th>
                 <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Updated</th>
                 <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Steps</th>
                 <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Flow</th>
@@ -240,9 +239,6 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
                     onMouseEnter={() => setHoverId(item.id)} onMouseLeave={() => setHoverId(null)}
                     style={{ borderTop: '1px solid var(--color-border-subtle)', cursor: 'pointer', background: hoverId === item.id ? 'var(--color-bg-surface)' : 'transparent', transition: 'background 100ms' }}>
                     <td style={{ padding: '14px 12px', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>{item.name}</td>
-                    <td style={{ padding: '14px 12px' }}>
-                      <span style={{ display: 'inline-flex', padding: '2px 10px', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>{stateLabel}</span>
-                    </td>
                     <td style={{ padding: '14px 12px', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>{fmt(item.savedAt)}</td>
                     <td style={{ padding: '14px 12px', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>{item.nodes.length}</td>
                     <td style={{ padding: '14px 12px', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
