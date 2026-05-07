@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useGraphStore } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
@@ -14,23 +14,61 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 function Select({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: readonly string[] }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [dropRect, setDropRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleToggle = () => {
+    if (!open && triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setDropRect({ top: r.bottom + 4, left: r.left, width: r.width });
+    }
+    setOpen(o => !o);
+  };
+
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const close = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (menuRef.current?.contains(t) || triggerRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    // Also close on any scroll so the fixed dropdown doesn't detach from its trigger.
+    const onScroll = () => setOpen(false);
+    document.addEventListener('mousedown', close);
+    document.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('scroll', onScroll, true);
+    };
   }, [open]);
+
+  const dropStyle: CSSProperties = dropRect ? {
+    position: 'fixed',
+    top: dropRect.top,
+    left: dropRect.left,
+    width: dropRect.width,
+    background: 'var(--color-bg-card)',
+    boxShadow: 'var(--shadow-md)',
+    border: '1px solid var(--color-border-subtle)',
+    borderRadius: 'var(--radius-lg)',
+    maxHeight: 220,
+    overflowY: 'auto',
+    scrollbarWidth: 'thin',
+    padding: 'var(--space-1) 0',
+    zIndex: 'var(--z-popover)',
+  } as CSSProperties : {};
+
   return (
-    <div ref={ref} className="relative">
-      <button className="w-full h-8 text-sm text-left rounded-[10px] px-2.5 flex items-center"
+    <div className="relative">
+      <button ref={triggerRef} className="w-full h-8 text-sm text-left rounded-[10px] px-2.5 flex items-center"
         style={{ background: 'var(--color-bg-card)', color: 'var(--color-text-primary)', justifyContent: 'space-between', border: `1px solid ${open ? 'var(--color-border-strong)' : 'var(--color-border-default)'}`, boxShadow: open ? 'var(--shadow-sm)' : 'none', transition: 'border-color 150ms, box-shadow 150ms' }}
-        onClick={() => setOpen(!open)}>
+        onClick={handleToggle}>
         <span className="truncate">{value}</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.4, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}><path d="m6 9 6 6 6-6"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.4, flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}><path d="m6 9 6 6 6-6"/></svg>
       </button>
-      {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 rounded-lg z-50" style={{ background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-md)', border: '1px solid var(--color-border-subtle)', maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'thin', padding: 'var(--space-1) 0' }}>
+      {open && dropRect && (
+        <div ref={menuRef} style={dropStyle}>
           {options.map((o, i) => (
             <button key={o} className="w-full text-left px-3 py-2 text-sm"
               style={{ background: o === value ? 'var(--color-bg-surface)' : 'transparent', color: o === value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)', fontWeight: o === value ? 500 : 400, borderBottom: i < options.length - 1 ? '1px solid var(--color-border-subtle)' : 'none' }}
