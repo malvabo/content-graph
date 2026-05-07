@@ -1,5 +1,5 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import ContentModal from '../modals/ContentModal';
@@ -29,62 +29,105 @@ function canConnect(fromSubtype: string, toSubtype: string): boolean {
 const HANDLE_CLS = "!w-3 !h-3 !border-[1.5px] border-[var(--color-border-handle)] bg-[var(--color-bg-card)] hover:!border-[var(--color-accent)] hover:!bg-[var(--color-bg-surface)] !transition-colors";
 
 
-type DropDef = { key: string; opts: readonly string[] };
-const DROP_DEFS: Record<string, DropDef[]> = {
-  'linkedin-post':  [{ key: 'tone',     opts: ['Authoritative','Conversational','Vulnerable','Data-driven','Contrarian'] }, { key: 'length', opts: ['Short ~150w','Medium ~280w','Long ~450w'] }],
+const MODEL_SHORT: Record<string, string> = {
+  'claude-haiku-4': 'Haiku', 'claude-sonnet-4': 'Sonnet', 'claude-opus-4': 'Opus',
+  'gpt-4o-mini': '4o mini', 'gpt-4o': '4o', 'o4-mini': 'o4',
+  'gemini-2.0-flash': 'Flash', 'gemini-2.5-flash': 'Flash 2.5',
+  'llama-3.3-70b': 'Llama', 'llama-4-scout': 'L4 Scout',
+};
+const MODEL_OPTS = Object.keys(MODEL_SHORT);
+
+type ChipDef = { key: string; opts: readonly string[]; fmt?: (v: string) => string };
+const CHIP_DEFS: Record<string, ChipDef[]> = {
+  'linkedin-post':  [{ key: 'tone',     opts: ['Authoritative','Conversational','Vulnerable','Data-driven','Contrarian'] }, { key: 'length', opts: ['Short ~150w','Medium ~280w','Long ~450w'], fmt: v => v.split(' ')[0] }],
   'twitter-thread': [{ key: 'tone',     opts: ['Analytical','Personal','Educational','Provocative'] }],
-  'twitter-single': [{ key: 'angle',    opts: ['Most quotable insight','Strongest stat','Contrarian take','Call to action'] }],
+  'twitter-single': [{ key: 'angle',    opts: ['Most quotable insight','Strongest stat','Contrarian take','Call to action'], fmt: v => v.length > 16 ? v.slice(0,14)+'…' : v }],
   'newsletter':     [{ key: 'type',     opts: ['Full issue','Feature section','TL;DR','Deep dive','Roundup intro'] }],
   'infographic':    [{ key: 'type',     opts: ['Process','Statistical','Comparison','Timeline','Listicle','Anatomy'] }],
   'quote-card':     [{ key: 'format',   opts: ['Single quote','Multiple options'] }],
-  'image-prompt':   [{ key: 'style',    opts: ['Photography','Flat illustration','3D render','Abstract','Editorial graphic'] }, { key: 'aspect', opts: ['1:1','4:5','16:9','9:16','1.91:1'] }],
-  'brand-voice':    [{ key: 'strength', opts: ['Light touch','Moderate','Full rewrite'] }],
+  'image-prompt':   [{ key: 'style',    opts: ['Photography','Flat illustration','3D render','Abstract','Editorial graphic'], fmt: v => v.length > 16 ? v.slice(0,14)+'…' : v }, { key: 'aspect', opts: ['1:1','4:5','16:9','9:16','1.91:1'] }],
+  'brand-voice':    [{ key: 'strength', opts: ['Light touch','Moderate','Full rewrite'], fmt: v => v === 'Light touch' ? 'Light' : v }],
 };
 const MODEL_NODES = new Set(['linkedin-post','twitter-thread','twitter-single','newsletter','infographic','quote-card','brand-voice','refine']);
-const MODEL_LABELS: [string, string][] = [
-  ['claude-haiku-4','Haiku'],['claude-sonnet-4','Sonnet'],['claude-opus-4','Opus'],
-  ['gpt-4o-mini','4o mini'],['gpt-4o','4o'],['o4-mini','o4-mini'],
-  ['gemini-2.0-flash','Flash'],['gemini-2.5-flash','Flash 2.5'],
-  ['llama-3.3-70b','Llama 70b'],['llama-4-scout','Llama 4'],
-];
+
+const chipStyle: React.CSSProperties = {
+  fontSize: 11, lineHeight: '16px', padding: '2px 8px',
+  borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)',
+  background: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)',
+  cursor: 'pointer', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
+  transition: 'border-color 100ms',
+};
+
+function ChipSelect({ value, opts, fmt, dimmed, onChange }: {
+  value: string; opts: readonly string[]; fmt?: (v: string) => string;
+  dimmed?: boolean; onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const label = fmt ? fmt(value) : value;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        style={{ ...chipStyle, color: dimmed ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)' }}
+        onMouseDown={e => e.stopPropagation()}
+        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+      >{label} ▾</button>
+      {open && (
+        <div
+          onMouseDown={e => e.stopPropagation()}
+          style={{
+            position: 'absolute', bottom: 'calc(100% + 4px)', left: 0,
+            background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
+            borderRadius: 'var(--radius-md)', padding: '4px 0', zIndex: 1000,
+            minWidth: 140, boxShadow: 'var(--shadow-md)',
+          }}
+        >
+          {opts.map(o => (
+            <button key={o} style={{
+              display: 'block', width: '100%', textAlign: 'left',
+              padding: '5px 12px', fontSize: 12, lineHeight: '16px',
+              fontFamily: 'var(--font-sans)', background: 'none', border: 'none', cursor: 'pointer',
+              color: o === value ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+              fontWeight: o === value ? 500 : 400,
+            }}
+              onMouseDown={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); onChange(o); setOpen(false); }}
+            >{o}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function NodeConfigChips({ id, subtype }: { id: string; subtype: string }) {
   const config = useGraphStore(s => s.nodes.find(n => n.id === id)?.data.config);
   const updateConfig = useGraphStore(s => s.updateNodeConfig);
 
-  const dropDefs = DROP_DEFS[subtype] ?? [];
+  const chipDefs = CHIP_DEFS[subtype] ?? [];
   const showModel = MODEL_NODES.has(subtype);
-  if (!dropDefs.length && !showModel) return null;
-
-  const chipSel: React.CSSProperties = {
-    fontSize: 11, padding: '2px 6px',
-    borderRadius: 'var(--radius-full)',
-    border: '1px solid var(--color-border-default)',
-    background: 'var(--color-bg-surface)',
-    color: 'var(--color-text-secondary)',
-    fontFamily: 'var(--font-sans)',
-    cursor: 'pointer',
-    maxWidth: 120,
-  };
+  if (!chipDefs.length && !showModel) return null;
 
   return (
-    <div className="nowheel" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, paddingTop: 8, flexShrink: 0 }}
+    <div className="nowheel" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, paddingTop: 8, marginTop: 'auto', flexShrink: 0 }}
       onMouseDown={e => e.stopPropagation()}>
-      {dropDefs.map(({ key, opts }) => {
+      {chipDefs.map(({ key, opts, fmt }) => {
         const val = (config?.[key] as string) ?? opts[0];
-        return (
-          <select key={key} style={chipSel} value={val} onChange={e => updateConfig(id, { [key]: e.target.value })}>
-            {opts.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        );
+        return <ChipSelect key={key} value={val} opts={opts} fmt={fmt} onChange={v => updateConfig(id, { [key]: v })} />;
       })}
       {showModel && (() => {
         const model = (config?.model as string) ?? DEFAULT_MODELS[subtype] ?? 'claude-opus-4';
-        return (
-          <select style={{ ...chipSel, color: 'var(--color-text-tertiary)' }} value={model} onChange={e => updateConfig(id, { model: e.target.value })}>
-            {MODEL_LABELS.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
-          </select>
-        );
+        return <ChipSelect value={model} opts={MODEL_OPTS} fmt={v => MODEL_SHORT[v] ?? v} dimmed onChange={v => updateConfig(id, { model: v })} />;
       })()}
     </div>
   );
