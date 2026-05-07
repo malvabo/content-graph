@@ -907,30 +907,6 @@ ${text}`
           </div>
         </div>
 
-        {/* ── Status bar ── */}
-        {(() => {
-          const total = accepted.size + dismissed.size;
-          const rate  = total > 0 ? Math.round(accepted.size / total * 100) : null;
-          return (
-            <div style={{ background:C.white, borderTop:`1px solid ${C.border}`, padding:"8px 24px", display:"flex", alignItems:"center", gap:10, fontSize:12, color:C.mute, fontWeight:500, flexShrink:0 }}>
-              <span>{wc} words</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span>{paras.length} paragraphs</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: allInsights.filter(i=>i.data.type==="science").length > 0 ? TAG.science.text : C.mute }}>{allInsights.filter(i=>i.data.type==="science").length} science</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: allInsights.filter(i=>i.data.type==="metaphor").length > 0 ? TAG.metaphor.text : C.mute }}>{allInsights.filter(i=>i.data.type==="metaphor").length} metaphors</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: allInsights.filter(i=>i.data.type==="logic").length > 0 ? TAG.logic.text : C.mute }}>{allInsights.filter(i=>i.data.type==="logic").length} logic gaps</span>
-              {rate !== null && <>
-                <span style={{ opacity:0.3 }}>·</span>
-                <span style={{ color: rate >= 60 ? TAG.metaphor.text : rate >= 30 ? TAG.logic.text : C.mute }}>
-                  AI acceptance {rate}%
-                </span>
-              </>}
-            </div>
-          );
-        })()}
       </div>
     </>
   );
