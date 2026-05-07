@@ -55,7 +55,16 @@ ${script}`;
 }
 
 function parseCards(raw: string) {
-  const sections = raw.split('---').map(s => s.trim()).filter(Boolean);
+  // Strip markdown code fences
+  let text = raw.replace(/```[a-z]*\n?/g, '').trim();
+
+  // Start from the first --- so any intro prose is ignored
+  const firstDelim = text.indexOf('---');
+  if (firstDelim > 0) text = text.slice(firstDelim);
+
+  // Split on any run of dashes (handles --- and ----)
+  const sections = text.split(/---+/).map(s => s.trim()).filter(Boolean);
+
   return sections.map((section, i) => {
     const lines = section.split('\n').map(l => l.trim()).filter(Boolean);
     const title = lines[0] ?? `Card ${i + 1}`;
