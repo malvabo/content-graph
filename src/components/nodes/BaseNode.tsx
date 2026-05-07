@@ -68,7 +68,7 @@ function NodeConfigChips({ id, subtype }: { id: string; subtype: string }) {
   };
 
   return (
-    <div className="nowheel" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, paddingTop: 8 }}
+    <div className="nowheel" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, paddingTop: 8, flexShrink: 0 }}
       onMouseDown={e => e.stopPropagation()}>
       {dropDefs.map(({ key, opts }) => {
         const val = (config?.[key] as string) ?? opts[0];
