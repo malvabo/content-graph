@@ -1,7 +1,6 @@
 import { useGraphStore } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useExecutionStore } from '../../store/executionStore';
-import { MODEL_OPTIONS, DEFAULT_MODELS } from '../../utils/nodeDefs';
 
 export function RefineInline({ id }: { id: string }) {
   const config = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.config);
@@ -43,7 +42,6 @@ export function PromptInline({ id }: { id: string }) {
   const status = useExecutionStore((s) => s.status[id] ?? 'idle');
   const output = useOutputStore((s) => s.outputs[id]?.text);
   const prompt = (config?.prompt as string) ?? '';
-  const model = (config?.model as string) ?? DEFAULT_MODELS['prompt'];
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
@@ -54,14 +52,6 @@ export function PromptInline({ id }: { id: string }) {
         onChange={(e) => updateConfig(id, { prompt: e.target.value })}
         aria-label="Custom prompt"
       />
-      <select
-        className="form-input text-sm"
-        value={model}
-        onChange={(e) => updateConfig(id, { model: e.target.value })}
-        aria-label="Model"
-      >
-        {MODEL_OPTIONS.map((m) => <option key={m} value={m}>{m}</option>)}
-      </select>
       {status === 'complete' && output && (
         <div className="nowheel border-t border-[var(--color-border-default)] pt-1.5 mt-1 max-h-[120px] overflow-y-auto text-sm text-[var(--color-text-secondary)] leading-relaxed" style={{ scrollbarWidth: 'thin' }}>
           {output}

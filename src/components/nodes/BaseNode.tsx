@@ -40,7 +40,7 @@ const DROP_DEFS: Record<string, DropDef[]> = {
   'image-prompt':   [{ key: 'style',    opts: ['Photography','Flat illustration','3D render','Abstract','Editorial graphic'] }, { key: 'aspect', opts: ['1:1','4:5','16:9','9:16','1.91:1'] }],
   'brand-voice':    [{ key: 'strength', opts: ['Light touch','Moderate','Full rewrite'] }],
 };
-const MODEL_NODES = new Set(['linkedin-post','twitter-thread','twitter-single','newsletter','infographic','quote-card','brand-voice','refine','prompt']);
+const MODEL_NODES = new Set(['linkedin-post','twitter-thread','twitter-single','newsletter','infographic','quote-card','brand-voice','refine']);
 const MODEL_LABELS: [string, string][] = [
   ['claude-haiku-4','Haiku'],['claude-sonnet-4','Sonnet'],['claude-opus-4','Opus'],
   ['gpt-4o-mini','4o mini'],['gpt-4o','4o'],['o4-mini','o4-mini'],
