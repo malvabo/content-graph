@@ -14,20 +14,18 @@ export function getUpstreamText(nodeId: string): { text: string; inputCount: num
   const outputs = useOutputStore.getState().outputs;
   const upstreamIds = edges.filter((e) => e.target === nodeId).map((e) => e.source);
 
-  // Separate prompt filter nodes from content nodes
+  // Collect prompt filters from upstream Prompt nodes (which are also pass-through content)
   const promptFilters: string[] = [];
-  const contentIds: string[] = [];
   for (const id of upstreamIds) {
     const node = nodes.find((n) => n.id === id);
     if (node?.data.subtype === 'prompt') {
       const f = (node.data.config.prompt as string)?.trim();
       if (f) promptFilters.push(f);
-    } else {
-      contentIds.push(id);
     }
   }
 
-  const chunks = contentIds.map((id) => {
+  // All upstream nodes contribute content — Prompt nodes are pass-through
+  const chunks = upstreamIds.map((id) => {
     const node = nodes.find((n) => n.id === id);
     const text = outputs[id]?.text
       || (node?.data.category === 'source' ? (node.data.config.text as string) : '')
@@ -125,8 +123,10 @@ export function useNodeExecution() {
           const node = useGraphStore.getState().nodes.find((n) => n.id === id);
           if (!node) continue;
 
-          // Prompt nodes are passive filters — no AI call needed
+          // Prompt nodes are pass-through — copy upstream content, inject filter downstream, no AI call
           if (node.data.subtype === 'prompt') {
+            const { text } = getUpstreamText(id);
+            if (text) useOutputStore.getState().setOutput(id, { text });
             useExecutionStore.getState().setStatus(id, 'complete');
             continue;
           }
