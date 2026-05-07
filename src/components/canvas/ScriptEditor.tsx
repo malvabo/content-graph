@@ -13,22 +13,17 @@ If the talk has 5 sections, return 5 cards. No more.
 Each card contains only what the speaker needs to glance at to unlock that section.
 Not a summary. Not the full content. Just the anchor.
 
-## Card format
+Rules:
+- title: 2–4 words. Verbatim sections (hook, close) get a ★ prefix.
+- anchor: one sentence only — the core idea that unlocks this section
+- keywords: 2–4 load-bearing words, dot-separated
 
----
-[SECTION TITLE]
-[one sentence — the core idea that unlocks this section]
-[word] · [word] · [word]
----
+Return ONLY valid JSON array — no markdown fences, no explanation:
+[
+  { "title": "★ The Hook", "anchor": "one sentence", "keywords": "word · word · word" }
+]
 
-## Rules
-- Title: 2–4 words
-- Anchor sentence: one line only
-- Keywords: 2–4 load-bearing words, dot-separated
-- Verbatim sections (hook, close): mark with ★
-- No explanations, no elaboration, no extras
-
-## Script
+Script:
 ${script}`;
 
   if (anthropicKey) {
@@ -55,24 +50,16 @@ ${script}`;
 }
 
 function parseCards(raw: string) {
-  // Strip markdown code fences
-  let text = raw.replace(/```[a-z]*\n?/g, '').trim();
-
-  // Start from the first --- so any intro prose is ignored
-  const firstDelim = text.indexOf('---');
-  if (firstDelim > 0) text = text.slice(firstDelim);
-
-  // Split on any run of dashes (handles --- and ----)
-  const sections = text.split(/---+/).map(s => s.trim()).filter(Boolean);
-
-  return sections.map((section, i) => {
-    const lines = section.split('\n').map(l => l.trim()).filter(Boolean);
-    const title = lines[0] ?? `Card ${i + 1}`;
-    const anchor = lines[1] ?? '';
-    const keywords = lines[2] ?? '';
-    const body = [anchor, keywords ? `<span style="opacity:0.6;font-size:0.9em">${keywords}</span>` : ''].filter(Boolean).join('<br>');
-    return { id: `c${Date.now().toString(36)}-${i}`, headline: title, body };
-  });
+  const cleaned = raw.replace(/```[a-z]*\n?/g, '').trim();
+  const parsed: { title?: string; anchor?: string; keywords?: string }[] = JSON.parse(cleaned);
+  return parsed.map((item, i) => ({
+    id: `c${Date.now().toString(36)}-${i}`,
+    headline: item.title ?? `Card ${i + 1}`,
+    body: [
+      item.anchor,
+      item.keywords ? `<span style="opacity:0.6;font-size:0.9em">${item.keywords}</span>` : '',
+    ].filter(Boolean).join('<br>'),
+  }));
 }
 
 export default function ScriptEditor({ scriptId, onBack }: { scriptId: string; onBack: () => void }) {
