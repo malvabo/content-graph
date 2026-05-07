@@ -12,8 +12,8 @@ import { forwardRef } from 'react';
 const menuStyle: CSSProperties = {
   background: 'var(--color-bg-popover)',
   border: '1px solid var(--color-border-default)',
-  borderRadius: 10,
-  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+  borderRadius: 'var(--radius-xl)',
+  boxShadow: 'var(--shadow-md)',
   padding: 4,
   minWidth: 200,
   fontFamily: 'var(--font-sans)',
@@ -72,14 +72,14 @@ export function MenuItem({ icon, children, onClick, danger, disabled, selected, 
         alignItems: 'center',
         gap: 10,
         padding: '6px 8px',
-        borderRadius: 6,
+        borderRadius: 'var(--radius-md)',
         background: baseBg,
         border: 'none',
         cursor: disabled ? 'default' : 'pointer',
         color,
-        fontSize: 14,
-        lineHeight: '20px',
-        fontWeight: 500,
+        fontSize: 'var(--text-sm)',
+        lineHeight: 'var(--leading-fixed)',
+        fontWeight: 'var(--weight-medium)',
         fontFamily: 'inherit',
         textAlign: 'left',
       }}
@@ -95,7 +95,7 @@ export function MenuItem({ icon, children, onClick, danger, disabled, selected, 
         {children}
       </span>
       {right && (
-        <span style={{ flexShrink: 0, fontSize: 12, color: 'var(--color-text-tertiary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ flexShrink: 0, fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           {right}
         </span>
       )}

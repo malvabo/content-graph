@@ -56,15 +56,30 @@ function NodeConfigChips({ id, subtype }: { id: string; subtype: string }) {
   const showModel = MODEL_NODES.has(subtype);
   if (!dropDefs.length && !showModel) return null;
 
-  const chipSel: React.CSSProperties = {
-    fontSize: 11, padding: '2px 6px',
+  // Split background so the chevron image survives — the global select rule sets
+  // background as a shorthand (color + url), so any inline background shorthand
+  // would wipe the chevron. Splitting into backgroundColor + backgroundImage
+  // keeps both properties independent.
+  const chipBase: React.CSSProperties = {
+    fontSize: 'var(--text-xs)',
+    lineHeight: 1,
+    paddingTop: 3,
+    paddingBottom: 3,
+    paddingLeft: 8,
+    paddingRight: 20,
     borderRadius: 'var(--radius-full)',
     border: '1px solid var(--color-border-default)',
-    background: 'var(--color-bg-surface)',
+    backgroundColor: 'var(--color-bg-surface)',
+    backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 6px center',
     color: 'var(--color-text-secondary)',
     fontFamily: 'var(--font-sans)',
+    fontWeight: 'var(--weight-medium)' as React.CSSProperties['fontWeight'],
     cursor: 'pointer',
-    maxWidth: 120,
+    appearance: 'none',
+    maxWidth: 160,
+    outline: 'none',
   };
 
   return (
@@ -73,7 +88,7 @@ function NodeConfigChips({ id, subtype }: { id: string; subtype: string }) {
       {dropDefs.map(({ key, opts }) => {
         const val = (config?.[key] as string) ?? opts[0];
         return (
-          <select key={key} style={chipSel} value={val} onChange={e => updateConfig(id, { [key]: e.target.value })}>
+          <select key={key} style={chipBase} value={val} onChange={e => updateConfig(id, { [key]: e.target.value })}>
             {opts.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
         );
@@ -81,7 +96,7 @@ function NodeConfigChips({ id, subtype }: { id: string; subtype: string }) {
       {showModel && (() => {
         const model = (config?.model as string) ?? DEFAULT_MODELS[subtype] ?? 'claude-opus-4';
         return (
-          <select style={{ ...chipSel, color: 'var(--color-text-tertiary)' }} value={model} onChange={e => updateConfig(id, { model: e.target.value })}>
+          <select style={{ ...chipBase, color: 'var(--color-text-tertiary)' }} value={model} onChange={e => updateConfig(id, { model: e.target.value })}>
             {MODEL_LABELS.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
           </select>
         );
