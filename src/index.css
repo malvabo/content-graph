@@ -512,7 +512,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   filter: brightness(1.05);
 }
 .voice-note-card:focus-visible {
-  outline: 2px solid var(--color-accent, #0DBF5A);
+  outline: 2px solid var(--color-accent, #1D7242);
   outline-offset: 2px;
 }
 
@@ -522,7 +522,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   background: var(--color-bg-card);
 }
 .voice-note-row:focus-visible {
-  outline: 2px solid var(--color-accent, #0DBF5A);
+  outline: 2px solid var(--color-accent, #1D7242);
   outline-offset: 2px;
 }
 

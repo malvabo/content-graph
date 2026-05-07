@@ -7,9 +7,9 @@
   /* ── Primitive Colors ── */
   --p-white: #FFFFFF;
   --p-black: #1A1A1A;
-  --p-green-500: #0DBF5A;
-  --p-green-600: #0BAF52;
-  --p-green-700: #0A9F4A;
+  --p-green-500: #1D7242;
+  --p-green-600: #1A673B;
+  --p-green-700: #175B35;
   --p-red-500: #C93030;
   --p-red-600: #B52828;
   --p-red-700: #A02020;
@@ -45,7 +45,7 @@
   /* Status primitives */
   --p-status-idle: #C8C8C8;
   --p-status-running: #F0D8A0;
-  --p-status-complete: #0DBF5A;
+  --p-status-complete: #1D7242;
   --p-status-error: #C93030;
 
   /* ── Semantic Colors ── */
@@ -82,7 +82,7 @@
   --color-accent: var(--p-green-500);
   --color-accent-hover: var(--p-green-600);
   --color-accent-active: var(--p-green-700);
-  --color-accent-subtle: #0A5C2A;
+  --color-accent-subtle: #0F4A28;
 
   /* Status: Success */
   --color-success-bg: var(--p-neutral-50);
@@ -155,7 +155,7 @@
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.08);
   --shadow-md: 0 2px 6px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.12);
   --shadow-lg: 0 4px 12px rgba(0,0,0,0.08), 0 12px 36px rgba(0,0,0,0.14);
-  --shadow-glow: 0 0 16px rgba(13,191,90,0.2);
+  --shadow-glow: 0 0 16px rgba(29,114,66,0.2);
 
   /* ── Transitions ── */
   --duration-fast: 80ms;
@@ -270,11 +270,11 @@
   --color-interactive-default: #1e1e24;
   --color-interactive-hover: #262630;
   --color-interactive-active: #2e2e36;
-  --color-accent-subtle: #4ade80;
-  --color-accent: #0DBF5A;
-  --color-accent-hover: #0BAF52;
-  --color-accent-active: #0A9F4A;
-  --color-interactive-focus: #0DBF5A;
+  --color-accent-subtle: #1D4F30;
+  --color-accent: #1D7242;
+  --color-accent-hover: #1A673B;
+  --color-accent-active: #175B35;
+  --color-interactive-focus: #1D7242;
   --color-danger: #f06060;
   --color-danger-hover: #e04040;
   --color-danger-active: #d03030;
@@ -295,7 +295,7 @@
   --shadow-sm: 0 2px 12px rgba(0,0,0,0.4);
   --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-  --shadow-glow: 0 0 16px rgba(13,191,90,0.3);
+  --shadow-glow: 0 0 16px rgba(29,114,66,0.3);
   --color-badge-source-bg: #201e1a;
   --color-badge-source-text: #b0a898;
   --color-badge-generate-bg: #1a201a;
