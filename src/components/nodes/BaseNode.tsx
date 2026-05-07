@@ -226,9 +226,10 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         display: 'flex',
         flexDirection: 'column',
         opacity: dragDimmed ? 0.4 : 1,
-        transition: 'opacity 200ms ease, border-color 150ms ease, outline-color 150ms ease',
+        transition: 'opacity 200ms ease, border-color 150ms ease',
         boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : isRunning ? `0 0 ${20 * glowIntensity}px ${4 * glowIntensity}px rgba(13,191,90,${0.25 * glowIntensity})` : 'none',
-        outline: selected ? '2px solid var(--color-accent)' : 'none',
+        outline: '2px solid',
+        outlineColor: selected ? 'var(--color-accent)' : 'transparent',
         outlineOffset: -2,
       }}
     >
