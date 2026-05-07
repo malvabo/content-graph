@@ -620,9 +620,10 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
   const [staleInsights, setStaleInsights] = useState(false);
   const [undoStack, setUndoStack]     = useState([]);
   const analysisTextRef = useRef('');
-  const taRef      = useRef(null);
-  const overlayRef = useRef(null);
-  const insightRef = useRef(null);
+  const taRef        = useRef(null);
+  const overlayRef   = useRef(null);
+  const clickLayerRef = useRef(null);
+  const insightRef   = useRef(null);
   const cardRefs    = useRef({});
   const autoSaveRef = useRef(null);
   const hlTimerRef  = useRef(null);
@@ -725,7 +726,8 @@ ${text}`
   const onScroll = useCallback(() => {
     if (!taRef.current) return;
     const el = taRef.current;
-    if (overlayRef.current) overlayRef.current.scrollTop = el.scrollTop;
+    if (overlayRef.current)    overlayRef.current.scrollTop    = el.scrollTop;
+    if (clickLayerRef.current) clickLayerRef.current.scrollTop = el.scrollTop;
   }, []);
 
   /* ── Reverse linking: click card scrolls editor to phrase ── */
@@ -795,28 +797,20 @@ ${text}`
 
             {/* highlight overlay */}
             <div ref={overlayRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:1, color:"transparent", fontFamily:"'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
-              {paras.map((p,pi) => (
-                <p key={pi} style={{ marginBottom:28 }}>
-                  {tokenize(p, aiInsights || []).map((s,i) =>
-                    s.type==="plain"
-                      ? <span key={i}>{s.text}</span>
-                      : <span key={i} style={{ background: highlighted===s.key ? HL[s.type].activeBg : HL[s.type].bg, borderBottom:`2px solid ${HL[s.type].line}`, borderRadius:3, color:"transparent", boxShadow: highlighted===s.key ? `0 0 0 2px ${HL[s.type].line}` : "none", transition:"background 0.2s, box-shadow 0.2s" }}>{s.text}</span>
-                  )}
-                </p>
-              ))}
+              {tokenize(text, aiInsights || []).map((s,i) =>
+                s.type==="plain"
+                  ? <span key={i}>{s.text}</span>
+                  : <span key={i} style={{ background: highlighted===s.key ? HL[s.type].activeBg : HL[s.type].bg, borderBottom:`2px solid ${HL[s.type].line}`, borderRadius:3, color:"transparent", boxShadow: highlighted===s.key ? `0 0 0 2px ${HL[s.type].line}` : "none", transition:"background 0.2s, box-shadow 0.2s" }}>{s.text}</span>
+              )}
             </div>
 
             {/* click layer */}
-            <div style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
-              {paras.map((p,pi) => (
-                <p key={pi} style={{ marginBottom:28 }}>
-                  {tokenize(p, aiInsights || []).map((s,i) =>
-                    s.type==="plain"
-                      ? <span key={i}>{s.text}</span>
-                      : <span key={i} className="hl-span" style={{ pointerEvents:"all", color:"transparent", background: highlighted===s.key ? HL[s.type].activeBg : "transparent", borderBottom:"2px solid transparent", borderRadius:3, boxShadow: highlighted===s.key ? `0 0 0 2px ${HL[s.type].line}` : "none", transition:"background 0.2s, box-shadow 0.2s" }} onClick={(e) => handleSpanClick(s.key, e)}>{s.text}</span>
-                  )}
-                </p>
-              ))}
+            <div ref={clickLayerRef} style={{ position:"absolute", inset:0, overflow:"hidden", padding:"28px 32px", pointerEvents:"none", fontSize:15, lineHeight:1.85, whiteSpace:"pre-wrap", wordBreak:"break-word", zIndex:3, color:"transparent", fontFamily:"'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, system-ui, sans-serif", letterSpacing:"-0.01em" }}>
+              {tokenize(text, aiInsights || []).map((s,i) =>
+                s.type==="plain"
+                  ? <span key={i}>{s.text}</span>
+                  : <span key={i} className="hl-span" style={{ pointerEvents:"all", color:"transparent", background: highlighted===s.key ? HL[s.type].activeBg : "transparent", borderBottom:"2px solid transparent", borderRadius:3, boxShadow: highlighted===s.key ? `0 0 0 2px ${HL[s.type].line}` : "none", transition:"background 0.2s, box-shadow 0.2s" }} onClick={(e) => handleSpanClick(s.key, e)}>{s.text}</span>
+              )}
             </div>
 
             <textarea
@@ -824,7 +818,7 @@ ${text}`
               onChange={e => setText(e.target.value)}
               onScroll={onScroll}
               placeholder="Paste or write your talk script here…"
-              style={{ flex:1, outline:"none", border:"none", background:"transparent", padding:"28px 32px", fontSize:15, lineHeight:1.85, color:C.text, position:"relative", zIndex:2, letterSpacing:"-0.01em" }}
+              style={{ flex:1, outline:"none", border:"none", background:"transparent", padding:"28px 32px", fontSize:15, lineHeight:1.85, color:C.text, position:"relative", zIndex:2, letterSpacing:"-0.01em", fontFamily:"'Graphik', 'Graphik Web', -apple-system, BlinkMacSystemFont, system-ui, sans-serif" }}
             />
           </div>
 
