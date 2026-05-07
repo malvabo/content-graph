@@ -391,8 +391,9 @@ function Card({ children, elRef, highlighted }) {
       background: C.white,
       borderRadius:12,
       padding:"20px",
+      textAlign:"left",
       boxShadow: highlighted
-        ? "0 0 0 1.5px #0DBF5A, 0 4px 16px rgba(13,191,90,0.12)"
+        ? "0 0 0 1.5px #1D7242, 0 4px 16px rgba(29,114,66,0.12)"
         : `0 2px 8px ${C.border}, 0 0 0 1px transparent`,
       transition:"box-shadow 0.25s ease",
     }}>
@@ -457,7 +458,7 @@ function RephraseBlock({ rephrase, onApply }) {
       <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.sub, marginBottom:6 }}>Rephrase to</p>
       <p style={{ fontSize:13, color:C.text, lineHeight:1.6, marginBottom:10 }}>"{rephrase}"</p>
       <button onClick={onApply} style={{
-        background:"#0DBF5A", color:C.white, border:"none", borderRadius:8,
+        background:"#1D7242", color:C.white, border:"none", borderRadius:8,
         fontSize:12, fontWeight:600, padding:"6px 16px", cursor:"pointer", transition:"opacity 100ms",
       }}
         onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
