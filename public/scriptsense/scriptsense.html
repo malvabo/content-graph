@@ -627,28 +627,48 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
   const cardRefs    = useRef({});
   const autoSaveRef = useRef(null);
   const hlTimerRef  = useRef(null);
+  const pendingSaveRef = useRef(null);
   const [saveStatus, setSaveStatus] = useState(null);
 
   /* ── Auto-save (debounced 1.2s, min 10 words) ── */
   useEffect(() => {
     const wc = text.split(/\s+/).filter(Boolean).length;
-    if (wc < 10) return;
+    if (wc < 10) { pendingSaveRef.current = null; return; }
+    const data = {
+      id: draft?.id ?? Date.now().toString(),
+      title,
+      text,
+      wordCount: wc,
+      createdAt: draft?.createdAt ?? Date.now(),
+      updatedAt: Date.now(),
+    };
+    pendingSaveRef.current = data;
     setSaveStatus("saving");
     clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(() => {
-      onSave({
-        id: draft?.id ?? Date.now().toString(),
-        title,
-        text,
-        wordCount: wc,
-        createdAt: draft?.createdAt ?? Date.now(),
-        updatedAt: Date.now(),
-      });
+      onSave(data);
+      pendingSaveRef.current = null;
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus(null), 2000);
     }, 1200);
     return () => clearTimeout(autoSaveRef.current);
   }, [text, title]);
+
+  /* ── Flush pending save on page unload so in-debounce edits aren't lost ── */
+  useEffect(() => {
+    const flush = () => {
+      const data = pendingSaveRef.current;
+      if (!data) return;
+      try {
+        const prev = JSON.parse(localStorage.getItem("ss_drafts") || "[]");
+        const exists = prev.find(p => p.id === data.id);
+        const next = exists ? prev.map(p => p.id === data.id ? data : p) : [data, ...prev];
+        localStorage.setItem("ss_drafts", JSON.stringify(next));
+      } catch {}
+    };
+    window.addEventListener('beforeunload', flush);
+    return () => window.removeEventListener('beforeunload', flush);
+  }, []);
 
   /* ── Mark insights stale when text changes after analysis ── */
   useEffect(() => {
@@ -887,30 +907,6 @@ ${text}`
           </div>
         </div>
 
-        {/* ── Status bar ── */}
-        {(() => {
-          const total = accepted.size + dismissed.size;
-          const rate  = total > 0 ? Math.round(accepted.size / total * 100) : null;
-          return (
-            <div style={{ background:C.white, borderTop:`1px solid ${C.border}`, padding:"8px 24px", display:"flex", alignItems:"center", gap:10, fontSize:12, color:C.mute, fontWeight:500, flexShrink:0 }}>
-              <span>{wc} words</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span>{paras.length} paragraphs</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: allInsights.filter(i=>i.data.type==="science").length > 0 ? TAG.science.text : C.mute }}>{allInsights.filter(i=>i.data.type==="science").length} science</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: allInsights.filter(i=>i.data.type==="metaphor").length > 0 ? TAG.metaphor.text : C.mute }}>{allInsights.filter(i=>i.data.type==="metaphor").length} metaphors</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: allInsights.filter(i=>i.data.type==="logic").length > 0 ? TAG.logic.text : C.mute }}>{allInsights.filter(i=>i.data.type==="logic").length} logic gaps</span>
-              {rate !== null && <>
-                <span style={{ opacity:0.3 }}>·</span>
-                <span style={{ color: rate >= 60 ? TAG.metaphor.text : rate >= 30 ? TAG.logic.text : C.mute }}>
-                  AI acceptance {rate}%
-                </span>
-              </>}
-            </div>
-          );
-        })()}
       </div>
     </>
   );
@@ -919,10 +915,16 @@ ${text}`
 /* ─────────────────── Router ─────────────────── */
 function ContentGraph() {
   const [view, setView]           = useState("editor");
-  const [currentDraft, setCurrentDraft] = useState(null);
   const [drafts, setDrafts]       = useState(() => {
     try { return JSON.parse(localStorage.getItem("ss_drafts") || "[]"); }
     catch { return []; }
+  });
+  const [currentDraft, setCurrentDraft] = useState(() => {
+    try {
+      const d = JSON.parse(localStorage.getItem("ss_drafts") || "[]");
+      if (!d.length) return null;
+      return d.reduce((a, b) => (a.updatedAt > b.updatedAt ? a : b));
+    } catch { return null; }
   });
 
   const saveDraft = useCallback((d) => {

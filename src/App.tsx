@@ -198,19 +198,19 @@ function AppInner() {
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
         {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => {
-          // ScriptSensePanel buffers non-empty initialText into a ref and blanks
-          // it after flushing to the iframe, so clearing here is safe and
-          // prevents this transcript from re-firing on later unrelated renders.
           setVoiceTranscript(t);
           setActiveView('scriptsense');
-          setVoiceTranscript('');
+          // Clear after a tick so React renders one cycle with the non-empty
+          // value — React 18 batches same-handler updates, so clearing here
+          // immediately would mean ScriptSensePanel always sees initialText=''.
+          setTimeout(() => setVoiceTranscript(''), 0);
         }} />}
 
         {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(id, content) => {
           setActiveScriptId(id);
           setVoiceTranscript(content);
           setActiveView('scriptsense');
-          setVoiceTranscript('');
+          setTimeout(() => setVoiceTranscript(''), 0);
         }} />}
 
         {/* ScriptSense stays mounted once opened so iframe state (draft, insights,
