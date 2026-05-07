@@ -29,7 +29,7 @@ export const NODE_DEFS: NodeDef[] = [
   // Output
   { subtype: 'export', label: 'Export', badge: 'Ex', category: 'output', description: 'Platform-ready package', hasInput: true, hasOutput: false, maxInputs: 8 },
   { subtype: 'brand-voice', label: 'Brand Voice', badge: 'Bv', category: 'output', description: 'Rewrite in your brand voice', hasInput: true, hasOutput: true },
-  { subtype: 'prompt', label: 'Prompt', badge: 'Pm', category: 'generate', description: 'Custom prompt applied to input text', hasInput: true, hasOutput: true, maxInputs: 8 },
+  { subtype: 'prompt', label: 'Prompt', badge: 'Pm', category: 'transform', description: 'Topic or focus filter injected into downstream nodes', hasInput: true, hasOutput: true, maxInputs: 8 },
   // Advanced (collapsed in palette)
   { subtype: 'refine', label: 'Refine', badge: 'Rf', category: 'transform', description: 'Directive for what to extract or change', hasInput: true, hasOutput: true },
 ];
@@ -60,7 +60,6 @@ export const IMAGE_MODEL_OPTIONS = ['FLUX.1 schnell', 'FLUX.1 dev', 'DALL·E 3',
 export const IMAGE_RESOLUTION_OPTIONS = ['512x512', '1024x1024', '1024x1536', '1536x1024', '1792x1024'] as const;
 
 export const DEFAULT_MODELS: Record<string, string> = {
-  'prompt': 'claude-opus-4',
   'refine': 'claude-opus-4',
   'linkedin-post': 'claude-opus-4',
   'twitter-thread': 'claude-opus-4',
