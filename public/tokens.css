@@ -217,7 +217,7 @@
   /* ── Edge/dot ── */
   --color-dot: var(--p-neutral-300);
   --color-edge: var(--p-neutral-500);
-  --dot-gap: 12px;
+  --dot-gap: 24px;
   --dot-size: 1.5px;
 
   /* ── Legacy aliases (backward compat) ── */
