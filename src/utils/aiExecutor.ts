@@ -86,6 +86,7 @@ async function callGroq(apiKey: string, model: string, system: string, input: st
 
 export interface AiExecuteMeta {
   inputCount?: number;
+  promptFilters?: string[];
 }
 
 export async function aiExecute(input: string, config: Record<string, unknown>, subtype: string, meta?: AiExecuteMeta, signal?: AbortSignal): Promise<string> {
@@ -155,6 +156,12 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
   // Inject brand visual identity for visual nodes
   if (brand?.colors && ['infographic', 'quote-card', 'image-prompt'].includes(subtype)) {
     system += `\n\nBRAND VISUAL IDENTITY: Primary color ${brand.colors.primary}, secondary ${brand.colors.secondary}, accent ${brand.colors.accent}. Incorporate these into the visual direction.`;
+  }
+
+  // Inject prompt filter(s) from upstream Prompt nodes
+  const filters = meta?.promptFilters;
+  if (filters?.length) {
+    system += `\n\nFOCUS FILTER: ${filters.join(' | ')}. Shape this piece around these topics — do not mention the filter instruction in your output.`;
   }
 
   // Node-level tone override

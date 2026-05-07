@@ -39,24 +39,20 @@ export function RefineInline({ id }: { id: string }) {
 export function PromptInline({ id }: { id: string }) {
   const config = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.config);
   const updateConfig = useGraphStore((s) => s.updateNodeConfig);
-  const status = useExecutionStore((s) => s.status[id] ?? 'idle');
-  const output = useOutputStore((s) => s.outputs[id]?.text);
   const prompt = (config?.prompt as string) ?? '';
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
       <textarea
         className="form-textarea" style={{ flex: 1, minHeight: 0 }}
-        placeholder="e.g. Summarize in 3 bullet points. Translate to Spanish. Extract action items."
+        placeholder="e.g. Focus on ROI. Only cover the leadership angle. Emphasize the risk."
         value={prompt}
         onChange={(e) => updateConfig(id, { prompt: e.target.value })}
-        aria-label="Custom prompt"
+        aria-label="Prompt filter"
       />
-      {status === 'complete' && output && (
-        <div className="nowheel border-t border-[var(--color-border-default)] pt-1.5 mt-1 max-h-[120px] overflow-y-auto text-sm text-[var(--color-text-secondary)] leading-relaxed" style={{ scrollbarWidth: 'thin' }}>
-          {output}
-        </div>
-      )}
+      <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)', lineHeight: 1.4 }}>
+        This filter is injected into all connected downstream nodes.
+      </p>
     </div>
   );
 }

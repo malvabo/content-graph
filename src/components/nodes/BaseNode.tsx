@@ -247,8 +247,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         outlineOffset: -2,
       }}
     >
-      {/* Run button (bottom-right, hover only) — hide for source nodes */}
-      {data.category !== 'source' && <button
+      {/* Run button (bottom-right, hover only) — hide for source and prompt nodes */}
+      {data.category !== 'source' && data.subtype !== 'prompt' && <button
         onMouseDown={e => e.stopPropagation()}
         onClick={() => runNode(id, async (input, config, meta) => aiExecute(input, config, data.subtype, meta))}
         style={{
