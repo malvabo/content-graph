@@ -514,6 +514,10 @@ struct HomeView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 40)
             }
+            .scrollDismissesKeyboard(.immediately)
+        }
+        .onTapGesture {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
     }
 }
