@@ -542,11 +542,117 @@ private struct SourceCard: View {
     }
 }
 
+// MARK: - Tag Pill
+
+private struct TagPill: View {
+    let tag: String
+    let isSelected: Bool
+    var onTap: () -> Void
+
+    private let accent = Color(red: 0.05, green: 0.75, blue: 0.35)
+
+    var body: some View {
+        Button(action: onTap) {
+            Text(tag)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(isSelected ? accent : Color.white.opacity(0.55))
+                .lineLimit(1)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(isSelected ? accent.opacity(0.12) : Color.white.opacity(0.07))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(isSelected ? accent.opacity(0.45) : Color.white.opacity(0.12), lineWidth: 0.5)
+                )
+        }
+        .buttonStyle(.plain)
+        .animation(.easeOut(duration: 0.15), value: isSelected)
+    }
+}
+
+// MARK: - Tag Picker Sheet
+
+private struct TagPickerSheet: View {
+    let allTags: [String]
+    @Binding var selectedTags: Set<String>
+    @Environment(\.dismiss) private var dismiss
+
+    private let accent = Color(red: 0.05, green: 0.75, blue: 0.35)
+    private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Capsule()
+                .fill(Color.white.opacity(0.18))
+                .frame(width: 36, height: 4)
+                .padding(.top, 10)
+
+            HStack {
+                Text("Content type")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer()
+                Button("Done") { dismiss() }
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(accent)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 12)
+
+            Divider().background(Color.white.opacity(0.07))
+
+            ScrollView(showsIndicators: false) {
+                LazyVGrid(columns: columns, spacing: 10) {
+                    ForEach(allTags, id: \.self) { tag in
+                        let isSelected = selectedTags.contains(tag)
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            if isSelected { selectedTags.remove(tag) } else { selectedTags.insert(tag) }
+                        } label: {
+                            Text(tag)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(isSelected ? accent : Color.white.opacity(0.7))
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(isSelected ? accent.opacity(0.12) : Color.white.opacity(0.07))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .stroke(isSelected ? accent.opacity(0.45) : Color.white.opacity(0.1), lineWidth: 0.5)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .animation(.easeOut(duration: 0.15), value: isSelected)
+                    }
+                }
+                .padding(16)
+            }
+        }
+        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+    }
+}
+
 // MARK: - Generate Card
 
 private struct GenerateCard: View {
     @Binding var prompt: String
     @State private var expanded = true
+    @State private var selectedTags: Set<String> = []
+    @State private var showTagPicker = false
+
+    private let allTags = [
+        "Newsletter", "LinkedIn Post", "Twitter Thread", "Twitter Single",
+        "Slack Message", "Quote Card", "Infographic", "Video",
+        "Blog Post", "Email", "Instagram Caption", "YouTube Script",
+        "Press Release", "Summary", "Podcast Script", "Landing Page",
+    ]
 
     var body: some View {
         GlassCard {
@@ -555,6 +661,7 @@ private struct GenerateCard: View {
                 if expanded {
                     VStack(spacing: 0) {
                         Divider().background(Color.white.opacity(0.07))
+
                         ZStack(alignment: .topLeading) {
                             if prompt.isEmpty {
                                 Text("Describe what you want to create…")
@@ -574,10 +681,56 @@ private struct GenerateCard: View {
                                 .padding(.top, 8)
                                 .padding(.bottom, 12)
                         }
+
+                        Divider().background(Color.white.opacity(0.07))
+
+                        // Tag row
+                        HStack(spacing: 0) {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(allTags, id: \.self) { tag in
+                                        TagPill(tag: tag, isSelected: selectedTags.contains(tag)) {
+                                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                            if selectedTags.contains(tag) { selectedTags.remove(tag) }
+                                            else { selectedTags.insert(tag) }
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                            }
+
+                            Rectangle()
+                                .fill(Color.white.opacity(0.07))
+                                .frame(width: 0.5)
+                                .padding(.vertical, 8)
+
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                showTagPicker = true
+                            } label: {
+                                Image(systemName: "square.grid.2x2")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(
+                                        selectedTags.isEmpty
+                                            ? Color.white.opacity(0.4)
+                                            : Color(red: 0.05, green: 0.75, blue: 0.35).opacity(0.8)
+                                    )
+                                    .frame(width: 48, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                     .transition(.opacity)
                 }
             }
+        }
+        .sheet(isPresented: $showTagPicker) {
+            TagPickerSheet(allTags: allTags, selectedTags: $selectedTags)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }
