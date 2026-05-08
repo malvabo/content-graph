@@ -185,12 +185,12 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
             <input
               aria-label="Script name"
               className="outline-none"
-              style={{ fontWeight: 500, fontSize: 15, lineHeight: '22px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 4px', maxWidth: 280, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              style={{ fontWeight: 500, fontSize: 15, lineHeight: '22px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em', background: 'none', border: 'none', borderBottom: '1px solid var(--color-border-subtle)', borderRadius: 0, padding: '2px 4px', width: 220, maxWidth: '30vw', textAlign: 'center' }}
               value={title}
               placeholder="Untitled"
               onChange={e => updateScript(scriptId, { title: e.target.value })}
               onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
-              onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
+              onBlur={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-subtle)'; }}
             />
           )}
         </div>
