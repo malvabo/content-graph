@@ -248,7 +248,7 @@
   --color-badge-source-bg: #EAEAEA;
   --color-badge-source-text: #555555;
   --color-badge-generate-bg: #E8EDE8;
-  --color-badge-generate-text: #3A5C3A;
+  --color-badge-generate-text: #4A4A3A;
   --color-badge-output-bg: #EBEBEA;
   --color-badge-output-text: #4A4A3A;
   --color-badge-transform-bg: #EAEAEB;
@@ -326,11 +326,11 @@
   --color-interactive-default: #1e1e24;
   --color-interactive-hover: #262630;
   --color-interactive-active: #2e2e36;
-  --color-accent-subtle: #1D4F30;
-  --color-accent: #1D7242;
-  --color-accent-hover: #1A673B;
-  --color-accent-active: #175B35;
-  --color-interactive-focus: #1D7242;
+  --color-accent-subtle: #0a4a25;
+  --color-accent: #0DBF5A;
+  --color-accent-hover: #0aaa50;
+  --color-accent-active: #089040;
+  --color-interactive-focus: #0DBF5A;
   --color-danger: #f06060;
   --color-danger-hover: #e04040;
   --color-danger-active: #d03030;
