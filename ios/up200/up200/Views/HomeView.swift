@@ -71,14 +71,14 @@ struct AnimatedLightsButton: View {
                 HStack(spacing: 8) {
                     if let icon {
                         Image(systemName: icon)
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: 17, weight: .semibold))
                     }
                     Text(title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 18, weight: .semibold))
                 }
                 .foregroundColor(.white)
             }
-            .frame(height: 52)
+            .frame(height: 54)
             .clipped()
         }
         .buttonStyle(.plain)
@@ -111,7 +111,7 @@ private struct ImportSheetView: View {
                 .padding(.top, 10)
 
             Text("Import content")
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.white)
 
             Button {
@@ -120,9 +120,9 @@ private struct ImportSheetView: View {
             } label: {
                 VStack(spacing: 10) {
                     Image(systemName: "globe")
-                        .font(.system(size: 26, weight: .medium))
+                        .font(.system(size: 28, weight: .medium))
                     Text("Paste a link")
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.system(size: 17, weight: .medium))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -140,9 +140,9 @@ private struct ImportSheetView: View {
                     } label: {
                         VStack(spacing: 10) {
                             Image(systemName: item.icon)
-                                .font(.system(size: 26, weight: .regular))
+                                .font(.system(size: 28, weight: .regular))
                             Text(item.label)
-                                .font(.system(size: 15, weight: .medium))
+                                .font(.system(size: 17, weight: .medium))
                                 .multilineTextAlignment(.center)
                         }
                         .foregroundColor(.white)
@@ -171,15 +171,15 @@ private struct SourceChip: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: item.icon)
-                .font(.system(size: 11, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundColor(Color.white.opacity(0.6))
             Text(item.label)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 14, weight: .medium))
                 .foregroundColor(Color.white.opacity(0.75))
                 .lineLimit(1)
             Button(action: onRemove) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundColor(Color.white.opacity(0.4))
                     .frame(width: 22, height: 22)
                     .contentShape(Rectangle())
@@ -224,10 +224,10 @@ private struct SectionHeader: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: expanded ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(Color.white.opacity(0.35))
                 Text(title)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 18, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.85))
                 Spacer()
             }
@@ -247,16 +247,16 @@ private struct LinkInputRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "link")
-                .font(.system(size: 13))
+                .font(.system(size: 15))
                 .foregroundColor(Color.white.opacity(0.4))
             TextField("https://…", text: $link)
-                .font(.system(size: 13))
+                .font(.system(size: 15))
                 .foregroundColor(.white)
                 .autocapitalization(.none)
                 .keyboardType(.URL)
             Button(action: onRemove) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 15))
+                    .font(.system(size: 17))
                     .foregroundColor(Color.white.opacity(0.25))
                     .frame(width: 32, height: 32)
                     .contentShape(Rectangle())
@@ -298,12 +298,11 @@ private struct VoiceRecordRow: View {
                 .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: pulse)
 
             Text(isRecording ? timeLabel : "Tap to record")
-                .font(.system(size: 14, design: isRecording ? .monospaced : .default))
+                .font(.system(size: 16, design: isRecording ? .monospaced : .default))
                 .foregroundColor(Color.white.opacity(isRecording ? 0.85 : 0.4))
 
             Spacer()
 
-            // Record / Stop — animated lights capsule
             Button {
                 let hap = UIImpactFeedbackGenerator(style: .medium)
                 hap.impactOccurred()
@@ -333,7 +332,7 @@ private struct VoiceRecordRow: View {
                         .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
 
                     Image(systemName: isRecording ? "stop.fill" : "mic.fill")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
                 }
                 .frame(width: 68, height: 36)
@@ -343,7 +342,7 @@ private struct VoiceRecordRow: View {
 
             Button(action: onCancel) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundColor(Color.white.opacity(0.4))
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
@@ -379,17 +378,16 @@ private struct SourceCard: View {
     var body: some View {
         GlassCard {
             VStack(spacing: 0) {
-                // Header row
                 HStack {
                     Button {
                         withAnimation(.easeInOut(duration: 0.22)) { expanded.toggle() }
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: expanded ? "chevron.down" : "chevron.right")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(Color.white.opacity(0.35))
                             Text("Source")
-                                .font(.system(size: 16, weight: .medium))
+                                .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(Color.white.opacity(0.85))
                         }
                     }
@@ -405,23 +403,22 @@ private struct SourceCard: View {
                                 .fill(Color.white.opacity(0.08))
                                 .frame(width: 30, height: 30)
                             Image(systemName: "plus")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(Color.white.opacity(0.6))
                         }
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
 
-                // Expanded content
                 if expanded {
                     VStack(spacing: 0) {
                         Divider().background(Color.white.opacity(0.07))
 
-                        // Chips
                         if !sources.isEmpty {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 8) {
@@ -440,7 +437,6 @@ private struct SourceCard: View {
                             Divider().background(Color.white.opacity(0.07))
                         }
 
-                        // Link input
                         if sources.contains(where: { $0.type == .link }) {
                             LinkInputRow(link: $linkText) {
                                 sources.removeAll { $0.type == .link }
@@ -448,19 +444,18 @@ private struct SourceCard: View {
                             }
                         }
 
-                        // Text input
                         if showWriteText || sources.contains(where: { $0.type == .text }) {
                             ZStack(alignment: .topLeading) {
                                 if text.isEmpty {
                                     Text("Paste your text, transcript or notes…")
-                                        .font(.system(size: 14))
+                                        .font(.system(size: 16))
                                         .foregroundColor(Color.white.opacity(0.25))
                                         .padding(.horizontal, 16)
                                         .padding(.top, 14)
                                         .allowsHitTesting(false)
                                 }
                                 TextEditor(text: $text)
-                                    .font(.system(size: 14))
+                                    .font(.system(size: 16))
                                     .foregroundColor(Color.white.opacity(0.85))
                                     .scrollContentBackground(.hidden)
                                     .background(.clear)
@@ -472,7 +467,6 @@ private struct SourceCard: View {
                             }
                         }
 
-                        // Voice record row
                         if showVoiceRecord {
                             if !sources.isEmpty || showWriteText {
                                 Divider().background(Color.white.opacity(0.07))
@@ -488,11 +482,10 @@ private struct SourceCard: View {
                             }
                         }
 
-                        // Empty hint
                         if sources.isEmpty && !showWriteText && !showVoiceRecord {
                             HStack {
                                 Text("Tap + to add source content")
-                                    .font(.system(size: 13))
+                                    .font(.system(size: 15))
                                     .foregroundColor(Color.white.opacity(0.22))
                                 Spacer()
                             }
@@ -565,14 +558,14 @@ private struct GenerateCard: View {
                         ZStack(alignment: .topLeading) {
                             if prompt.isEmpty {
                                 Text("Describe what you want to create…")
-                                    .font(.system(size: 14))
+                                    .font(.system(size: 16))
                                     .foregroundColor(Color.white.opacity(0.25))
                                     .padding(.horizontal, 16)
                                     .padding(.top, 14)
                                     .allowsHitTesting(false)
                             }
                             TextEditor(text: $prompt)
-                                .font(.system(size: 14))
+                                .font(.system(size: 16))
                                 .foregroundColor(Color.white.opacity(0.85))
                                 .scrollContentBackground(.hidden)
                                 .background(.clear)
@@ -599,7 +592,7 @@ private struct BrandCard: View {
         GlassCard {
             HStack(spacing: 12) {
                 Text("Brand Voice")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 18, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.85))
 
                 Spacer()
@@ -619,10 +612,10 @@ private struct BrandCard: View {
                 } label: {
                     HStack(spacing: 5) {
                         Text(selectedBrand)
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.system(size: 15, weight: .medium))
                             .foregroundColor(Color.white.opacity(0.70))
                         Image(systemName: "chevron.up.chevron.down")
-                            .font(.system(size: 9, weight: .semibold))
+                            .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(Color.white.opacity(0.35))
                     }
                     .padding(.horizontal, 12)
@@ -665,10 +658,9 @@ struct HomeView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    // Page header
                     HStack {
                         Text("Create")
-                            .font(.system(size: 26, weight: .bold))
+                            .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.white)
                         Spacer()
                     }
@@ -676,7 +668,6 @@ struct HomeView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 16)
 
-                    // Cards
                     VStack(spacing: 12) {
                         SourceCard(
                             text: $sourceText,
@@ -688,7 +679,6 @@ struct HomeView: View {
                     }
                     .padding(.horizontal, 16)
 
-                    // Page-level CTA
                     AnimatedLightsButton(title: "Build Workflow", icon: "sparkles") {
                         let hap = UIImpactFeedbackGenerator(style: .medium)
                         hap.impactOccurred()
