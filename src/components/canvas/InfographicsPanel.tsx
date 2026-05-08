@@ -504,13 +504,6 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
                 )}
                 {messages.length === 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '4px 0' }}>
-                    {SUGGESTION_CHIPS.map(chip => (
-                      <button key={chip} onClick={() => send(chip)}
-                        style={{ textAlign: 'left', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-border-default)', background: 'transparent', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', cursor: 'pointer' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                      >→ {chip}</button>
-                    ))}
                   </div>
                 )}
                 {messages.map((msg, i) => (
