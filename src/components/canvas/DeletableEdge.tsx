@@ -3,10 +3,10 @@ import { EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react'
 import { useGraphStore } from '../../store/graphStore';
 
 const APPROACH_MS = 200;
-const CIRCLE_END_MS = 620;
-const TOTAL_MS = 750;
-const CIRCLE_R = 7;        // px — how far apart the tips start before spiralling in
-const CIRCLE_CYCLES = 1.5; // loops while converging — they cross 3× before merging
+const CIRCLE_END_MS = 720;
+const TOTAL_MS = 900;
+const CIRCLE_R = 14;        // figure-8 weave radius — tips cross this far from center
+const CIRCLE_CYCLES = 1.25; // 1.25 full figure-8 loops — one clear crossing + fade
 
 function easeOut(t: number) { return 1 - (1 - t) * (1 - t); }
 function easeIn(t: number) { return t * t; }
@@ -74,15 +74,16 @@ function DeletableEdge({
         pA.removeAttribute('display');
         pB.removeAttribute('display');
       } else if (elapsed < CIRCLE_END_MS) {
-        // Phase 2: inward spiral — tips orbit in mirrored directions while the radius
-        // shrinks linearly to zero, so they wind tighter and tighter until they merge.
-        // tipA (clockwise from left) and tipB (counterclockwise from right) cross each
-        // other at the top and bottom on every half-loop — the "hug" crossing.
+        // Phase 2: figure-8 (Lissajous 1:2) weave — tips trace mirrored figure-8 paths
+        // while converging. The X component (cos) crosses tips to each other's side at
+        // angle=π, the Y component (sin 2x) adds the perpendicular dip that makes it
+        // look like fingers interlacing. Both tips genuinely swap sides and come back,
+        // creating the "tied together" visual before merging.
         const t = (elapsed - APPROACH_MS) / (CIRCLE_END_MS - APPROACH_MS);
-        const r = CIRCLE_R * (1 - t);           // CIRCLE_R → 0
+        const r = CIRCLE_R * (1 - t);
         const angle = t * Math.PI * 2 * CIRCLE_CYCLES;
-        pA.setAttribute('d', `M ${sourceX},${sourceY} L ${midX - r * Math.cos(angle)},${midY - r * Math.sin(angle)}`);
-        pB.setAttribute('d', `M ${targetX},${targetY} L ${midX + r * Math.cos(angle)},${midY - r * Math.sin(angle)}`);
+        pA.setAttribute('d', `M ${sourceX},${sourceY} L ${midX - r * Math.cos(angle)},${midY - r * 0.55 * Math.sin(2 * angle)}`);
+        pB.setAttribute('d', `M ${targetX},${targetY} L ${midX + r * Math.cos(angle)},${midY + r * 0.55 * Math.sin(2 * angle)}`);
       } else if (elapsed < TOTAL_MS) {
         // Phase 3: morph into the final bezier by interpolating control points.
         // At t=0 both cps land on midpoint; at t=1 they reach natural bezier positions.
@@ -109,7 +110,7 @@ function DeletableEdge({
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [isAnimating]); // captured coords are stable for the 750ms lifetime of this flag
+  }, [isAnimating]); // captured coords are stable for the 900ms lifetime of this flag
 
   return (
     <>
@@ -123,7 +124,7 @@ function DeletableEdge({
         </defs>
       )}
 
-      {/* Handshake animation — two arms driven by rAF, visible for 750ms on new connections */}
+      {/* Handshake animation — two arms driven by rAF, visible for 900ms on new connections */}
       {isAnimating && (
         <>
           <path ref={pathARef} fill="none" stroke="var(--color-edge)" strokeWidth={2} strokeLinecap="round" />
