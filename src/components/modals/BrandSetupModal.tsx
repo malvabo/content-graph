@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useBrandsStore } from '../../store/brandsStore';
+import { Dialog, DialogContent } from '../ui/dialog';
 import { EMPTY_BRAND, FONT_PRESETS, type CustomFont } from '../../store/settingsStore';
 import { summarizeBrandType } from '../../utils/summarizeBrandType';
 
@@ -70,11 +70,9 @@ export default function BrandSetupModal({ brandId, onClose }: { brandId: string;
     </div>
   );
 
-  return createPortal(
-    <div onClick={handleClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)' }}>
-      <div onClick={e => e.stopPropagation()}
-        style={{ width: '92%', maxWidth: 720, height: 'min(720px, 92vh)', display: 'flex', flexDirection: 'column', background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-default)', boxShadow: 'var(--shadow-lg)', fontFamily: 'var(--font-sans)' }}>
+  return (
+    <Dialog open onOpenChange={open => { if (!open) handleClose(); }}>
+      <DialogContent maxWidth={720} hideClose style={{ height: 'min(720px, 92vh)', fontFamily: 'var(--font-sans)' }}>
         {/* Header */}
         <div style={{ padding: 'var(--space-4) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <input value={brand.kitName} onChange={e => updateBrand(brand.id, { kitName: e.target.value })}
@@ -232,8 +230,7 @@ export default function BrandSetupModal({ brandId, onClose }: { brandId: string;
           </span>
           <button className="btn btn-primary btn-sm" onClick={handleClose}>Done</button>
         </div>
-      </div>
-    </div>,
-    document.body
+      </DialogContent>
+    </Dialog>
   );
 }
