@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useGraphLayout } from '../../hooks/useGraphLayout';
 import { NODE_DEFS_BY_SUBTYPE } from '../../utils/nodeDefs';
 
-import TemplateCard from '../ui/TemplateCard';
+import TemplatePickerModal from '../modals/TemplatePickerModal';
 
 function makeSourceNode(content: string): ContentNode {
   const def = NODE_DEFS_BY_SUBTYPE['text-source'];
@@ -79,6 +79,7 @@ export default function EmptyCanvasOverlay() {
   const [dismissed, setDismissed] = useState(false);
   const [text, setText] = useState('');
   const [pasting, setPasting] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { if (pasting) setTimeout(() => taRef.current?.focus(), 100); }, [pasting]);
@@ -121,11 +122,13 @@ export default function EmptyCanvasOverlay() {
           <HeroBanner onNew={handleNew} />
         </div>
 
-        {/* Section header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
-          <span className="text-label">Start from a template</span>
+        {/* Actions row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', paddingBottom: 'var(--space-8)' }}>
+          <button onClick={() => setPickerOpen(true)} className="btn btn-primary">
+            Start with a template
+          </button>
           <button onClick={() => setPasting(!pasting)}
-            style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)', color: 'var(--color-accent-subtle)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
             {pasting ? '← Back' : 'Paste content instead'}
           </button>
         </div>
@@ -146,18 +149,13 @@ export default function EmptyCanvasOverlay() {
           </div>
         )}
 
-        {/* Template grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3)', paddingBottom: 'var(--space-8)' }}>
-          <TemplateCard title="+ Empty Workflow" meta="Start from scratch" pills={[]} onClick={handleNew} />
-          {TEMPLATES.map((t, i) => {
-            const { nodes: n } = t.build();
-            const outputNodes = n.filter(nd => nd.data.category === 'generate' || nd.data.category === 'output');
-            const MAX_PILLS = 3;
-            const nodeLabels = outputNodes.slice(0, MAX_PILLS).map(nd => nd.data.label);
-            const extra = Math.max(0, outputNodes.length - MAX_PILLS);
-            return <TemplateCard key={t.name} title={t.name} meta={`${n.length} nodes`} pills={nodeLabels} extraCount={extra > 0 ? extra : undefined} icon={t.icon} onClick={() => loadTemplate(i)} />;
-          })}
-        </div>
+        {pickerOpen && (
+          <TemplatePickerModal
+            onClose={() => setPickerOpen(false)}
+            onStartScratch={() => { setPickerOpen(false); handleNew(); }}
+            onPickTemplate={(idx) => { setPickerOpen(false); loadTemplate(idx); }}
+          />
+        )}
       </div>
     </div>
   );

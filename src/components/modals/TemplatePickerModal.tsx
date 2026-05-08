@@ -4,7 +4,7 @@ import TemplateCard from '../ui/TemplateCard';
 import { Dialog, DialogContent } from '../ui/dialog';
 
 type Filter = 'All' | TemplateCategory;
-const FILTERS: Filter[] = ['All', 'Repurposing', 'Transcript', 'Research'];
+const FILTERS: Filter[] = ['All', 'Social', 'Long-form', 'Analysis', 'Visual'];
 
 interface Props {
   onClose: () => void;

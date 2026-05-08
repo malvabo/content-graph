@@ -17,21 +17,64 @@ function makeEdge(source: string, target: string): Edge {
   return { id: `e-${source}-${target}`, source, target };
 }
 
-export type TemplateCategory = 'Repurposing' | 'Research' | 'Transcript';
+export type TemplateCategory = 'Social' | 'Long-form' | 'Analysis' | 'Visual';
 export interface Template { name: string; description: string; category: TemplateCategory; icon?: string; build: () => { nodes: ContentNode[]; edges: Edge[] } }
 
 export const TEMPLATES: Template[] = [
   {
-    name: 'Article → Everywhere',
-    icon: 'pen',
-    description: 'One article repurposed to LinkedIn, newsletter, and Twitter',
-    category: 'Repurposing',
+    name: 'Slack Announcement',
+    description: 'Turn any update into a punchy Slack-ready announcement and a quote card for sharing',
+    category: 'Social',
+    build: () => {
+      const src = makeNode('text-source', 0, 0);
+      const ts = makeNode('twitter-single', 300, -60);
+      const qc = makeNode('quote-card', 300, 80);
+      const ex = makeNode('export', 580, 0);
+      return {
+        nodes: [src, ts, qc, ex],
+        edges: [makeEdge(src.id, ts.id), makeEdge(src.id, qc.id), makeEdge(ts.id, ex.id), makeEdge(qc.id, ex.id)],
+      };
+    },
+  },
+  {
+    name: 'Slack Review',
+    description: 'Summarise a document or meeting into a short Slack thread and a key-message post',
+    category: 'Social',
+    build: () => {
+      const src = makeNode('text-source', 0, 0, { prepare: 'Extract the key decisions and action items' });
+      const ts = makeNode('twitter-single', 300, -60);
+      const li = makeNode('linkedin-post', 300, 80);
+      const ex = makeNode('export', 580, 0);
+      return {
+        nodes: [src, ts, li, ex],
+        edges: [makeEdge(src.id, ts.id), makeEdge(src.id, li.id), makeEdge(ts.id, ex.id), makeEdge(li.id, ex.id)],
+      };
+    },
+  },
+  {
+    name: 'Newsletter',
+    description: 'Convert your content into a polished newsletter digest ready to send',
+    category: 'Long-form',
+    build: () => {
+      const src = makeNode('text-source', 0, 0, { prepare: 'Organise into sections with a clear intro and takeaways' });
+      const nl = makeNode('newsletter', 300, 0);
+      const ex = makeNode('export', 580, 0);
+      return {
+        nodes: [src, nl, ex],
+        edges: [makeEdge(src.id, nl.id), makeEdge(nl.id, ex.id)],
+      };
+    },
+  },
+  {
+    name: 'Article',
+    description: 'Repurpose any source into a LinkedIn post, newsletter, and Twitter thread',
+    category: 'Long-form',
     build: () => {
       const src = makeNode('text-source', 0, 0, { prepare: 'Extract the 5 strongest arguments' });
-      const li = makeNode('linkedin-post', 300, -120, { quantity: 2 });
+      const li = makeNode('linkedin-post', 300, -120);
       const nl = makeNode('newsletter', 300, 0);
       const tw = makeNode('twitter-thread', 300, 120);
-      const ex = makeNode('export', 600, 60);
+      const ex = makeNode('export', 580, 0);
       return {
         nodes: [src, li, nl, tw, ex],
         edges: [
@@ -42,33 +85,33 @@ export const TEMPLATES: Template[] = [
     },
   },
   {
-    name: 'Transcript → Social Pack',
-    description: 'Transcript simplified then split into thread, post, and quote',
-    category: 'Transcript',
+    name: 'Market Review',
+    description: 'Transform research or data into a newsletter, LinkedIn post, and an infographic',
+    category: 'Analysis',
     build: () => {
-      const src = makeNode('text-source', 0, 0, { prepare: 'Simplify to plain English, remove all jargon' });
-      const qc = makeNode('quote-card', 300, -80);
-      const tw = makeNode('twitter-thread', 300, 40, { quantity: 2 });
-      const li = makeNode('linkedin-post', 300, 160);
-      const ex = makeNode('export', 600, 0);
+      const src = makeNode('text-source', 0, 0, { prepare: 'Extract all statistics, trends, and key findings' });
+      const nl = makeNode('newsletter', 300, -100);
+      const li = makeNode('linkedin-post', 300, 40);
+      const inf = makeNode('infographic', 300, 180);
+      const ex = makeNode('export', 580, -30);
       return {
-        nodes: [src, qc, tw, li, ex],
+        nodes: [src, nl, li, inf, ex],
         edges: [
-          makeEdge(src.id, qc.id), makeEdge(src.id, tw.id), makeEdge(src.id, li.id),
-          makeEdge(qc.id, ex.id),
+          makeEdge(src.id, nl.id), makeEdge(src.id, li.id), makeEdge(src.id, inf.id),
+          makeEdge(nl.id, ex.id), makeEdge(li.id, ex.id),
         ],
       };
     },
   },
   {
-    name: 'Research → Visual',
-    description: 'Extract data points, generate infographic and AI image',
-    category: 'Research',
+    name: 'Slide',
+    description: 'Extract key points and generate a structured infographic and a supporting image prompt',
+    category: 'Visual',
     build: () => {
-      const src = makeNode('text-source', 0, 0, { prepare: 'Extract all statistics and data points' });
-      const inf = makeNode('infographic', 300, -40);
-      const ip = makeNode('image-prompt', 300, 80);
-      const ex = makeNode('export', 600, -40);
+      const src = makeNode('text-source', 0, 0, { prepare: 'Extract all key points as a structured list' });
+      const inf = makeNode('infographic', 300, -60);
+      const ip = makeNode('image-prompt', 300, 100);
+      const ex = makeNode('export', 580, -60);
       return {
         nodes: [src, inf, ip, ex],
         edges: [makeEdge(src.id, inf.id), makeEdge(src.id, ip.id), makeEdge(inf.id, ex.id)],
