@@ -223,7 +223,7 @@ function AppInner() {
                 scriptId={activeScriptId}
                 initialText={voiceTranscript}
                 onBack={() => setActiveView('scriptlist')}
-                onOpenInCards={() => setActiveView('cardslibrary')}
+                onOpenInCards={(id) => setActiveView(id ? 'cards:' + id : 'cardslibrary')}
                 onSendToWorkflow={() => setActiveView('workflow')}
                 onDelete={() => { if (activeScriptId) useScriptStore.getState().removeScript(activeScriptId); setActiveScriptId(undefined); setActiveView('scriptlist'); }}
               />

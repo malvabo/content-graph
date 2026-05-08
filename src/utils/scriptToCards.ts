@@ -62,14 +62,11 @@ export function parseScriptCards(raw: string) {
   }));
 }
 
-export async function generateAndSaveCards(text: string, name: string, signal?: AbortSignal): Promise<void> {
+export async function generateAndSaveCards(text: string, name: string, signal?: AbortSignal): Promise<string> {
   const raw = await fetchScriptCards(text, signal);
   const cards = parseScriptCards(raw);
-  if (cards.length === 0) return;
-  useCardsStore.getState().add({
-    id: `cards-${Date.now()}`,
-    name,
-    cards,
-    createdAt: new Date().toISOString(),
-  });
+  if (cards.length === 0) return '';
+  const id = `cards-${Date.now()}`;
+  useCardsStore.getState().add({ id, name, cards, createdAt: new Date().toISOString() });
+  return id;
 }

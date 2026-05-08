@@ -5,7 +5,7 @@ import { useGraphStore } from '../../store/graphStore';
 import { useScriptStore } from '../../store/scriptStore';
 import { generateAndSaveCards } from '../../utils/scriptToCards';
 
-interface Props { scriptId?: string; initialText?: string; onBack?: () => void; onOpenInCards?: () => void; onSendToWorkflow?: () => void; onDelete?: () => void }
+interface Props { scriptId?: string; initialText?: string; onBack?: () => void; onOpenInCards?: (id?: string) => void; onSendToWorkflow?: () => void; onDelete?: () => void }
 
 export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpenInCards, onSendToWorkflow, onDelete }: Props) {
   const title = useScriptStore(s => s.scripts.find(sc => sc.id === scriptId)?.title ?? '');
@@ -38,7 +38,6 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
   useSettingsStore(s => s.brand);
   useBrandsStore(s => s.activeBrandId);
   useBrandsStore(s => s.brands);
-  useGraphStore(s => s.brandId);
   const brand = getActiveBrand();
 
   // Buffer the last non-empty initialText seen, so a parent-side clear on the
@@ -106,8 +105,9 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
       } else if (d?.type === 'script-content' && typeof d.text === 'string') {
         const text = d.text.trim();
         if (!text) return;
-        generateAndSaveCards(text, title || 'Script').catch(() => {});
-        onOpenInCards?.();
+        generateAndSaveCards(text, title || 'Script')
+          .then(id => onOpenInCards?.(id || undefined))
+          .catch(err => { console.error('Card generation failed:', err); onOpenInCards?.(); });
       }
     };
     window.addEventListener('message', h);
