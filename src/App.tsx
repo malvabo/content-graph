@@ -236,7 +236,7 @@ function AppInner() {
 
         {activeView === 'cardslibrary' && <CardsLibrary onOpen={(id: string) => { setActiveView('cards:' + id); }} />}
 
-        {activeView === 'cards' && <CardsPanel key={hashParam} setId={hashParam} />}
+        {activeView === 'cards' && <CardsPanel key={hashParam} setId={hashParam} onBack={() => setActiveView('cardslibrary')} />}
 
         {activeView === 'infographics' && (
           <InfographicsPanel

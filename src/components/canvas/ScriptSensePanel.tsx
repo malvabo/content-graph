@@ -142,74 +142,79 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
   }, [iframeLoading]);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg-card)', position: 'relative' }}>
-      {/* Hairline separator between the floating title bar and the iframe */}
-      <div aria-hidden style={{ position: 'absolute', top: 48, left: 0, right: 0, height: 1, background: 'var(--color-border-subtle)', zIndex: 5, pointerEvents: 'none' }} />
-      {/* Top-left: back + inline name — vertically centered in the 48px title bar */}
-      <div className="absolute left-2 md:left-3 z-10 flex items-center gap-2" style={{ top: 8, height: 32 }}>
-        {onBack && (
-          <button onClick={onBack} className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 150ms, color 150ms' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
-            aria-label="Back to scripts">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg-card)' }}>
+      {/* Toolbar — three-column, matches CanvasToolbar */}
+      <div style={{ height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 var(--space-3)', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+        {/* Left: back */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+          {onBack && (
+            <button
+              onClick={() => { if (readyRef.current) { pendingActionRef.current = 'back'; post({ type: 'request-content' }); } else { onBack(); } }}
+              style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 100ms, border-color 100ms' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+              aria-label="Back to scripts">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+          )}
+        </div>
+        {/* Center: title */}
+        <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', maxWidth: 420, minWidth: 120 }}>
+          {scriptId && (
+            <input
+              aria-label="Script name"
+              className="outline-none"
+              style={{ fontWeight: 500, fontSize: 15, lineHeight: '22px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 4px', width: 220, maxWidth: '30vw', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              value={title}
+              placeholder="Untitled"
+              onChange={e => updateScript(scriptId, { title: e.target.value })}
+              onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
+              onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
+            />
+          )}
+        </div>
+        {/* Right: actions */}
+        <div ref={menuWrapRef} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--space-1)', position: 'relative' }}>
+          <button
+            type="button"
+            disabled={iframeLoading}
+            onClick={() => post({ type: 'run-analysis' })}
+            aria-label="Re-run analysis"
+            title="Re-run analysis"
+            style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', cursor: iframeLoading ? 'default' : 'pointer', color: 'var(--color-text-tertiary)', transition: 'background 100ms, border-color 100ms' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
           </button>
-        )}
-        {scriptId && (
-          <input
-            aria-label="Script name"
-            className="outline-none"
-            style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-fixed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 0', width: 420, maxWidth: '50vw', overflow: 'hidden', textOverflow: 'ellipsis' }}
-            value={title}
-            placeholder="Untitled"
-            onChange={e => updateScript(scriptId, { title: e.target.value })}
-            onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
-            onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
-          />
-        )}
-      </div>
-      <div ref={menuWrapRef} style={{ position: 'absolute', top: 8, right: 'var(--space-4)', height: 32, zIndex: 10, display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
-        <button
-          type="button"
-          disabled={iframeLoading}
-          onClick={() => post({ type: 'run-analysis' })}
-          aria-label="Re-run analysis"
-          title="Re-run analysis"
-          style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', cursor: iframeLoading ? 'default' : 'pointer', color: 'var(--color-text-tertiary)', transition: 'background 150ms, color 150ms' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-        </button>
-        <button
-          type="button"
-          disabled={iframeLoading}
-          onClick={() => setMenuOpen(o => !o)}
-          aria-label="Script actions"
-          aria-expanded={menuOpen}
-          style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', cursor: iframeLoading ? 'default' : 'pointer', color: 'var(--color-text-tertiary)', transition: 'background 150ms, color 150ms' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-        </button>
-        {menuOpen && (
-          <div style={{ position: 'absolute', top: 'calc(100% + var(--space-1))', right: 0, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 170 }}>
-            {[
-              onOpenInCards && { label: 'Open in Cards', action: () => { setMenuOpen(false); onOpenInCards(); } },
-              { label: 'Open in Flows', action: () => { setMenuOpen(false); post({ type: 'request-content' }); } },
-              onDelete && { label: 'Delete', danger: true, action: () => { setMenuOpen(false); post({ type: 'set-content', text: '' }); onDelete(); } },
-            ].filter(Boolean).map(opt => (
-              <button key={(opt as { label: string }).label} onClick={(opt as { action: () => void }).action}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as { danger?: boolean }).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
-                onMouseEnter={e => { e.currentTarget.style.background = (opt as { danger?: boolean }).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                {(opt as { label: string }).label}
-              </button>
-            ))}
-          </div>
-        )}
+          <button
+            type="button"
+            disabled={iframeLoading}
+            onClick={() => setMenuOpen(o => !o)}
+            aria-label="Script actions"
+            aria-expanded={menuOpen}
+            style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', cursor: iframeLoading ? 'default' : 'pointer', color: 'var(--color-text-tertiary)', transition: 'background 100ms, border-color 100ms' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+          </button>
+          {menuOpen && (
+            <div style={{ position: 'absolute', top: 'calc(100% + var(--space-1))', right: 0, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 170, zIndex: 50 }}>
+              {[
+                onOpenInCards && { label: 'Open in Cards', action: () => { setMenuOpen(false); pendingActionRef.current = 'workflow'; post({ type: 'request-content' }); } },
+                onDelete && { label: 'Delete', danger: true, action: () => { setMenuOpen(false); post({ type: 'set-content', text: '' }); onDelete(); } },
+              ].filter(Boolean).map(opt => (
+                <button key={(opt as { label: string }).label} onClick={(opt as { action: () => void }).action}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: 'var(--space-2) var(--space-3)', background: 'none', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: (opt as { danger?: boolean }).danger ? 'var(--color-danger-text)' : 'var(--color-text-primary)', transition: 'background 100ms' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = (opt as { danger?: boolean }).danger ? 'var(--color-danger-bg)' : 'var(--color-bg-surface)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                  {(opt as { label: string }).label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       {iframeLoading && !iframeFailed && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>

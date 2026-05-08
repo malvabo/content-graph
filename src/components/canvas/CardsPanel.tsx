@@ -2,6 +2,12 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useCardsStore, type Card } from '../../store/cardsStore';
 import { useSettingsStore } from '../../store/settingsStore';
 
+const BackIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="m15 18-6-6 6-6"/>
+  </svg>
+);
+
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
 
@@ -49,8 +55,8 @@ Rules:
   throw new Error('No API key configured. Add one in Settings.');
 }
 
-export default function CardsPanel({ setId }: { setId?: string }) {
-  const { sets, updateCards } = useCardsStore();
+export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?: () => void }) {
+  const { sets, updateCards, rename } = useCardsStore();
   const currentSet = sets.find(s => s.id === setId) || sets[0];
   const cards = currentSet?.cards || [];
 
@@ -146,15 +152,46 @@ export default function CardsPanel({ setId }: { setId?: string }) {
   if (!currentSet) return null;
 
   return (
-    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'linear-gradient(155deg, #edf1f7 0%, #e5eaf2 40%, #eae8f0 100%)' }}>
-      {/* Left — Cards */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
-          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>
-            {currentSet.name}
-          </h1>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'linear-gradient(155deg, #edf1f7 0%, #e5eaf2 40%, #eae8f0 100%)' }}>
+      {/* Toolbar — three-column, matches CanvasToolbar */}
+      <div style={{ height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 var(--space-3)', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+        {/* Left: back */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 100ms, border-color 100ms' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+              aria-label="Back to cards library"
+            >
+              <BackIcon />
+            </button>
+          )}
+        </div>
+        {/* Center: title */}
+        <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', maxWidth: 420, minWidth: 120 }}>
+          <input
+            aria-label="Card set name"
+            className="outline-none"
+            style={{ fontWeight: 500, fontSize: 15, lineHeight: '22px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 4px', width: 220, maxWidth: '30vw', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}
+            value={currentSet.name}
+            placeholder="Untitled"
+            onChange={e => rename(currentSet.id, e.target.value)}
+            onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
+            onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
+          />
+        </div>
+        {/* Right: card count */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{cards.length} cards</span>
         </div>
+      </div>
+
+      {/* Content row: cards + sidebar */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      {/* Cards area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)', display: 'flex', flexDirection: 'column' }}>
 
         {/* Selection toolbar */}
         {selected.size > 0 && (
@@ -329,6 +366,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
           </div>
         </div>
       </div>
+      </div>{/* end content row */}
       {toast && (
         <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3) var(--space-4)', boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>
           <span style={{ color: 'var(--color-text-primary)' }}>{toast.msg}</span>
