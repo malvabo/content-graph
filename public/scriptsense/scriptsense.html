@@ -65,8 +65,8 @@ const RotateCcw = ({size,...p}) => <I size={size} {...p}><path d="M3 12a9 9 0 1 
 window.__scriptsenseBooted = true;
 
 const themeListeners = new Set();
-let _isDark = false;
-try { _isDark = localStorage.getItem('dark-mode') === 'true'; } catch {}
+const _urlDark = new URLSearchParams(location.search).get('dark');
+let _isDark = _urlDark !== null ? _urlDark === '1' : (() => { try { return localStorage.getItem('dark-mode') === 'true'; } catch { return false; } })();
 function setDark(v) {
   if (_isDark === v) return;
   _isDark = v;

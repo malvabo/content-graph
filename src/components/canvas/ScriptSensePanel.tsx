@@ -16,6 +16,11 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
   const [iframeFailed, setIframeFailed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuWrapRef = useRef<HTMLDivElement>(null);
+  // Bake the current dark-mode state into the src at mount so the iframe renders
+  // with the correct theme on its very first paint, before any postMessage round-trip.
+  const iframeSrc = useRef(
+    `/scriptsense/scriptsense.html?dark=${document.documentElement.classList.contains('dark') ? '1' : '0'}`
+  ).current;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
 
@@ -231,7 +236,7 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
       )}
       <iframe
         ref={iframeRef}
-        src="/scriptsense/scriptsense.html"
+        src={iframeSrc}
         className="flex-1 w-full border-none"
         style={{ opacity: iframeLoading ? 0 : 1, transition: 'opacity var(--duration-slow) var(--ease-default)' }}
         title="ScriptSense"
