@@ -712,7 +712,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             />
           )}
-          {phase==='prompt' && (
+          {phase==='prompt' && !isPosted && (
             <ParticleHeadline
               key="h-prompt"
               text="What's on your mind?"
