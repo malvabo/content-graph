@@ -675,20 +675,20 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 text="Saved to library."
                 style={{position:'absolute',top:'52%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.6)',letterSpacing:'0.01em',pointerEvents:'none',zIndex:20}}
               />
-              {/* Lights scattered randomly around the text block */}
+              {/* Lights scattered across the full page */}
               {[
-                { left:'6%',  top:'38%', r:38, delay:0.06 },
-                { left:'82%', top:'40%', r:18, delay:0.14 },
-                { left:'2%',  top:'48%', r:24, delay:0.22 },
-                { left:'93%', top:'46%', r:32, delay:0.08 },
-                { left:'14%', top:'57%', r:20, delay:0.18 },
-                { left:'87%', top:'54%', r:42, delay:0.28 },
-                { left:'30%', top:'35%', r:14, delay:0.32 },
-                { left:'70%', top:'58%', r:16, delay:0.10 },
-                { left:'54%', top:'33%', r:26, delay:0.20 },
-                { left:'10%', top:'51%', r:12, delay:0.36 },
-                { left:'74%', top:'34%', r:10, delay:0.04 },
-                { left:'96%', top:'51%', r:15, delay:0.26 },
+                { left:'7%',  top:'8%',  r:42, delay:0.08 },
+                { left:'88%', top:'14%', r:16, delay:0.20 },
+                { left:'23%', top:'19%', r:11, delay:0.04 },
+                { left:'61%', top:'6%',  r:28, delay:0.30 },
+                { left:'94%', top:'33%', r:20, delay:0.12 },
+                { left:'4%',  top:'67%', r:36, delay:0.24 },
+                { left:'78%', top:'72%', r:14, delay:0.06 },
+                { left:'38%', top:'82%', r:22, delay:0.34 },
+                { left:'16%', top:'88%', r:10, delay:0.16 },
+                { left:'85%', top:'88%', r:32, delay:0.10 },
+                { left:'52%', top:'91%', r:18, delay:0.28 },
+                { left:'96%', top:'58%', r:12, delay:0.18 },
               ].map((l, i) => {
                 const RGB = '255,225,130';
                 const D = l.r * 3;
