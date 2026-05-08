@@ -8,6 +8,15 @@
 /* ── Base ── */
 html, body, #root { height: 100%; }
 
+/* ChipSelect dropdown option rows */
+.chip-select-option {
+  display: block; width: 100%; text-align: left;
+  padding: 5px 12px; font-size: 12px; line-height: 16px;
+  font-family: var(--font-sans); background: transparent;
+  border: none; cursor: pointer;
+}
+.chip-select-option:hover { background: var(--color-bg-surface); }
+
 /* Suppress ReactFlow's built-in selection outline on the wrapper — BaseNode handles all selection visuals */
 .react-flow__node.selected,
 .react-flow__node.selected:hover,

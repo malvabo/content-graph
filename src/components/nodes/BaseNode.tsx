@@ -51,10 +51,11 @@ const CHIP_DEFS: Record<string, ChipDef[]> = {
 const MODEL_NODES = new Set(['linkedin-post','twitter-thread','twitter-single','newsletter','infographic','quote-card','brand-voice','refine']);
 
 const chipStyle: React.CSSProperties = {
-  fontSize: 11, lineHeight: '16px', padding: '2px 8px',
+  fontSize: 11, lineHeight: '16px', padding: '2px 7px 2px 8px',
   borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)',
   background: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)',
   cursor: 'pointer', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
+  display: 'inline-flex', alignItems: 'center', gap: 3,
   transition: 'border-color 100ms',
 };
 
@@ -68,39 +69,38 @@ function ChipSelect({ value, opts, fmt, dimmed, onChange }: {
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
+    const handler = (e: PointerEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('pointerdown', handler, { capture: true });
+    return () => document.removeEventListener('pointerdown', handler, { capture: true });
   }, [open]);
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       <button
-        style={{ ...chipStyle, color: dimmed ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)' }}
-        onMouseDown={e => e.stopPropagation()}
+        type="button"
+        style={{ ...chipStyle, color: dimmed ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)', borderColor: open ? 'var(--color-border-strong)' : undefined }}
+        onPointerDown={e => e.stopPropagation()}
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
-      >{label} ▾</button>
+      >
+        <span>{label}</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ opacity: 0.5, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 120ms', flexShrink: 0 }}><path d="m6 9 6 6 6-6"/></svg>
+      </button>
       {open && (
-        <div
-          onMouseDown={e => e.stopPropagation()}
-          style={{
-            position: 'absolute', bottom: 'calc(100% + 4px)', left: 0,
-            background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)',
-            borderRadius: 'var(--radius-md)', padding: '4px 0', zIndex: 1000,
-            minWidth: 140, boxShadow: 'var(--shadow-md)',
-          }}
-        >
+        <div style={{
+          position: 'absolute', bottom: 'calc(100% + 4px)', left: 0,
+          background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: '3px 0', zIndex: 1000,
+          minWidth: 150, boxShadow: 'var(--shadow-lg)',
+        }}>
           {opts.map(o => (
-            <button key={o} style={{
-              display: 'block', width: '100%', textAlign: 'left',
-              padding: '5px 12px', fontSize: 12, lineHeight: '16px',
-              fontFamily: 'var(--font-sans)', background: 'none', border: 'none', cursor: 'pointer',
-              color: o === value ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-              fontWeight: o === value ? 500 : 400,
-            }}
-              onMouseDown={e => e.stopPropagation()}
+            <button key={o} type="button"
+              className="chip-select-option"
+              style={{
+                fontWeight: o === value ? 500 : 400,
+                color: o === value ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+              }}
               onClick={e => { e.stopPropagation(); onChange(o); setOpen(false); }}
             >{o}</button>
           ))}
