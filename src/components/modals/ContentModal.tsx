@@ -418,8 +418,8 @@ function VoiceModal({ title, text, onClose, onSave, onTitleChange, extraActions 
           ref={ref}
           value={content}
           onChange={e => setContent(e.target.value)}
-          className="w-full resize-none border-none bg-transparent outline-none"
-          style={{ minHeight: 360, overflow: 'hidden', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', color: 'var(--color-text-primary)', padding: 0 }}
+          className="form-textarea"
+          style={{ minHeight: 360, resize: 'none', overflow: 'hidden', lineHeight: 'var(--leading-normal)' }}
         />
       </div>
 
