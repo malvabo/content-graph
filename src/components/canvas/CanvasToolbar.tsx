@@ -31,7 +31,15 @@ const LayoutIcon = () => (
   </svg>
 );
 
-export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: () => void }) {
+export default function CanvasToolbar({
+  onBackToLibrary,
+  mode = 'canvas',
+  onModeChange,
+}: {
+  onBackToLibrary: () => void;
+  mode?: 'canvas' | 'quick';
+  onModeChange?: (m: 'canvas' | 'quick') => void;
+}) {
   const { graphName, setGraphName, clearGraph, nodes, edges } = useGraphStore();
   const brandId = useGraphStore(s => s.brandId);
   const setBrandId = useGraphStore(s => s.setBrandId);
@@ -110,7 +118,7 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
           borderBottom: '1px solid var(--color-border-subtle)',
         }}
       >
-        {/* Left: back */}
+        {/* Left: back + mode toggle */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <button
             onClick={onBackToLibrary}
@@ -127,6 +135,38 @@ export default function CanvasToolbar({ onBackToLibrary }: { onBackToLibrary: ()
           >
             <BackIcon />
           </button>
+
+          {/* Mode toggle — Canvas / Quick */}
+          {onModeChange && (
+            <div style={{
+              display: 'flex', gap: 0,
+              background: 'var(--color-bg-surface)',
+              borderRadius: 'var(--radius-full)',
+              padding: 2,
+            }}>
+              {(['canvas', 'quick'] as const).map(m => (
+                <button
+                  key={m}
+                  onClick={() => onModeChange(m)}
+                  style={{
+                    padding: '4px 14px',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    fontFamily: 'var(--font-sans)',
+                    border: 'none',
+                    background: mode === m ? 'var(--color-accent)' : 'transparent',
+                    color: mode === m ? '#fff' : '#526858',
+                    cursor: 'pointer',
+                    transition: 'background 120ms, color 120ms',
+                    lineHeight: '20px',
+                  }}
+                >
+                  {m === 'canvas' ? 'Canvas' : 'Quick'}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Center: graph name */}

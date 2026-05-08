@@ -57,6 +57,7 @@ import MobileHome from './components/mobile/MobileHome';
 import MobileOnboarding from './components/mobile/MobileOnboarding';
 import { useIsMobile } from './hooks/useIsMobile';
 import TypewriterLogo from './components/TypewriterLogo';
+import QuickMode from './components/canvas/QuickMode';
 
 export default function App() {
   return <ErrorBoundary><ReactFlowProvider><AppInner /></ReactFlowProvider></ErrorBoundary>;
@@ -86,6 +87,7 @@ function AppInner() {
   // the rest of the session (otherwise unmounting on nav blows away draft state,
   // accepted insights, undo stack, etc.).
   const [scriptSenseEverOpened, setScriptSenseEverOpened] = useState(false);
+  const [canvasMode, setCanvasMode] = useState<'canvas' | 'quick'>('canvas');
   useEffect(() => { if (activeView === 'scriptsense') setScriptSenseEverOpened(true); }, [activeView]);
   useKeyboardShortcuts();
 
@@ -183,10 +185,20 @@ function AppInner() {
         {activeView === 'workflow' && (
           <>
             <div className="hidden md:flex flex-1 relative flex-col">
-              <CanvasToolbar onBackToLibrary={() => setActiveView('library')} />
+              <CanvasToolbar
+                onBackToLibrary={() => setActiveView('library')}
+                mode={canvasMode}
+                onModeChange={setCanvasMode}
+              />
               <div className="flex-1 relative" style={{ marginTop: 48 }}>
-                <EmptyCanvasOverlay />
-                <GraphCanvas />
+                {canvasMode === 'quick' ? (
+                  <QuickMode />
+                ) : (
+                  <>
+                    <EmptyCanvasOverlay />
+                    <GraphCanvas />
+                  </>
+                )}
               </div>
             </div>
             <div className="flex md:hidden flex-1 min-h-0">
