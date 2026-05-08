@@ -52,7 +52,7 @@ const MODEL_NODES = new Set(['linkedin-post','twitter-thread','twitter-single','
 
 const chipStyle: React.CSSProperties = {
   fontSize: 11, lineHeight: '16px', padding: '3px 7px 3px 9px',
-  borderRadius: 'var(--radius-full)', border: 'none',
+  borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-subtle)',
   background: 'var(--color-bg-subtle)', color: 'var(--color-text-secondary)',
   cursor: 'pointer', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
   display: 'inline-flex', alignItems: 'center', gap: 3,
