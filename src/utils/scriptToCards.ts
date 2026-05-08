@@ -57,7 +57,7 @@ export function parseScriptCards(raw: string) {
     headline: item.title ?? `Card ${i + 1}`,
     body: [
       item.anchor,
-      item.keywords ? `<span style="opacity:0.6;font-size:0.9em">${item.keywords}</span>` : '',
+      item.keywords ? `<span class="card-keywords">${item.keywords}</span>` : '',
     ].filter(Boolean).join('<br>'),
   }));
 }

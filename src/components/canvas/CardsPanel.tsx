@@ -62,6 +62,11 @@ export default function CardsPanel({ setId }: { setId?: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
+  // DnD
+  const dragIdRef = useRef<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
   const toggleSelect = (id: string) => {
     setSelected(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   };
@@ -177,18 +182,58 @@ export default function CardsPanel({ setId }: { setId?: string }) {
             if (c.group) { const g = groups.get(c.group) || []; g.push(c); groups.set(c.group, g); }
             else ungrouped.push(c);
           });
+          // Upgrade old inline-style keyword spans from pre-class era
+          const fixBody = (html: string) =>
+            html.replace(/<span style="opacity:0\.6;font-size:0\.9em">/g, '<span class="card-keywords">');
+
           const renderCard = (card: typeof cards[0]) => {
             const isSel = selected.has(card.id);
+            const isDragging = draggingId === card.id;
+            const isDropOver = dragOverId === card.id;
             return (
-            <div key={card.id} onClick={e => { if (e.target instanceof HTMLElement && (e.target.contentEditable === 'true' || e.target.tagName === 'INPUT')) return; toggleSelect(card.id); }} style={{
-              background: 'var(--color-bg-card)', border: isSel ? '2px solid var(--color-accent)' : '1px solid var(--color-border-default)',
-              borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
-              display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
-              transition: 'border-color 150ms, box-shadow 150ms', textAlign: 'left', minHeight: 120,
-              cursor: 'pointer',
-            }}
-              onMouseEnter={e => { if (!isSel) { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; } }}
-              onMouseLeave={e => { if (!isSel) { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; } }}
+            <div key={card.id}
+              draggable
+              onDragStart={e => {
+                dragIdRef.current = card.id;
+                setDraggingId(card.id);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragEnd={() => {
+                dragIdRef.current = null;
+                setDraggingId(null);
+                setDragOverId(null);
+              }}
+              onDragOver={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (dragIdRef.current && dragIdRef.current !== card.id) setDragOverId(card.id);
+              }}
+              onDrop={e => {
+                e.preventDefault();
+                const fromId = dragIdRef.current;
+                if (!fromId || fromId === card.id) { setDragOverId(null); return; }
+                const from = cards.find(c => c.id === fromId);
+                if (!from) { setDragOverId(null); return; }
+                const rest = cards.filter(c => c.id !== fromId);
+                const toIdx = rest.findIndex(c => c.id === card.id);
+                setCards([...rest.slice(0, toIdx), { ...from, group: card.group }, ...rest.slice(toIdx)]);
+                dragIdRef.current = null;
+                setDraggingId(null);
+                setDragOverId(null);
+              }}
+              onClick={e => { if (e.target instanceof HTMLElement && (e.target.contentEditable === 'true' || e.target.tagName === 'INPUT')) return; toggleSelect(card.id); }}
+              style={{
+                background: 'var(--color-bg-card)',
+                border: isSel ? '2px solid var(--color-accent)' : isDropOver ? '2px solid var(--color-accent)' : '1px solid var(--color-border-default)',
+                borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+                display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
+                transition: 'border-color 100ms, box-shadow 100ms, opacity 100ms', textAlign: 'left', minHeight: 120,
+                cursor: isDragging ? 'grabbing' : 'grab',
+                opacity: isDragging ? 0.4 : 1,
+                boxShadow: isDropOver ? 'var(--shadow-md)' : undefined,
+              }}
+              onMouseEnter={e => { if (!isSel && !isDropOver) { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; } }}
+              onMouseLeave={e => { if (!isSel && !isDropOver) { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; } }}
             >
               {/* Remove button */}
               <button onClick={() => removeCard(card.id)}
@@ -214,7 +259,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
               {/* Body */}
               <div contentEditable suppressContentEditableWarning
                 onBlur={e => updateCard(card.id, 'body', e.currentTarget.innerHTML)}
-                dangerouslySetInnerHTML={{ __html: card.body }}
+                dangerouslySetInnerHTML={{ __html: fixBody(card.body) }}
                 data-placeholder="Write something…"
                 style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', outline: 'none', minHeight: 'var(--space-10)', cursor: 'text' }} />
             </div>
@@ -230,7 +275,22 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 ];
                 const c = colors[gi % colors.length];
                 return (
-                <div key={name} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 'var(--radius-xl)', padding: 'var(--space-4)' }}>
+                <div key={name}
+                  onDragOver={e => { e.preventDefault(); }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    const fromId = dragIdRef.current;
+                    if (!fromId) return;
+                    const from = cards.find(c => c.id === fromId);
+                    if (!from || from.group === name) return;
+                    // Append to end of this group
+                    const rest = cards.filter(c => c.id !== fromId);
+                    setCards([...rest, { ...from, group: name }]);
+                    dragIdRef.current = null;
+                    setDraggingId(null);
+                    setDragOverId(null);
+                  }}
+                  style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 'var(--radius-xl)', padding: 'var(--space-4)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
                     <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: c.label }}>{name}</span>
                     <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{groupCards.length}</span>
@@ -245,7 +305,21 @@ export default function CardsPanel({ setId }: { setId?: string }) {
               ); })}
               {/* Ungrouped */}
               {ungrouped.length > 0 && (
-                <div>
+                <div
+                  onDragOver={e => { e.preventDefault(); }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    const fromId = dragIdRef.current;
+                    if (!fromId) return;
+                    const from = cards.find(c => c.id === fromId);
+                    if (!from || from.group === undefined) return;
+                    const rest = cards.filter(c => c.id !== fromId);
+                    setCards([...rest, { ...from, group: undefined }]);
+                    dragIdRef.current = null;
+                    setDraggingId(null);
+                    setDragOverId(null);
+                  }}
+                >
                   {groups.size > 0 && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginBottom: 'var(--space-3)' }}>Ungrouped</div>}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
                     {ungrouped.map(renderCard)}
