@@ -22,6 +22,7 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
   ).current;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
+  const pendingActionRef = useRef<'back' | 'workflow' | null>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -92,8 +93,8 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
     }
   }, [post, anthropicKey, groqKey, brand]);
 
-  // Handles the 'scriptsense-ready' handshake and the 'script-content' reply
-  // used by Send to Workflow (the iframe posts this in response to request-content).
+  // Handles the 'scriptsense-ready' handshake and all 'script-content' replies.
+  // script-content always persists to store; pendingActionRef controls navigation.
   useEffect(() => {
     const h = (e: MessageEvent) => {
       if (e.source !== iframeRef.current?.contentWindow) return;
@@ -103,16 +104,34 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
         setIframeLoading(false);
         flush();
       } else if (d?.type === 'script-content' && typeof d.text === 'string') {
-        const text = d.text.trim();
-        if (!text) return;
-        generateAndSaveCards(text, title || 'Script')
-          .then(id => onOpenInCards?.(id || undefined))
-          .catch(err => { console.error('Card generation failed:', err); onOpenInCards?.(); });
+        const text = d.text;
+        if (scriptId) updateScript(scriptId, { content: text });
+        const action = pendingActionRef.current;
+        pendingActionRef.current = null;
+        if (action === 'back') {
+          onBack?.();
+        } else if (action === 'workflow') {
+          const trimmed = text.trim();
+          if (trimmed) {
+            generateAndSaveCards(trimmed, title || 'Script')
+              .then(id => onOpenInCards?.(id || undefined))
+              .catch(() => { onOpenInCards?.(); });
+          }
+        }
       }
     };
     window.addEventListener('message', h);
     return () => window.removeEventListener('message', h);
-  }, [flush, onOpenInCards, title]);
+  }, [flush, onBack, onOpenInCards, scriptId, title, updateScript]);
+
+  // Periodic save: pull content from iframe every 10s and persist to store.
+  useEffect(() => {
+    if (!scriptId) return;
+    const id = setInterval(() => {
+      if (readyRef.current) post({ type: 'request-content' });
+    }, 10000);
+    return () => clearInterval(id);
+  }, [scriptId, post]);
 
   // Re-flush whenever keys, theme, or initial text change after the iframe has booted.
   useEffect(() => { if (readyRef.current) flush(); }, [flush]);
@@ -150,7 +169,14 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
       {/* Top-left: back + inline name — vertically centered in the 48px title bar */}
       <div className="absolute left-2 md:left-3 z-10 flex items-center gap-2" style={{ top: 8, height: 32 }}>
         {onBack && (
-          <button onClick={onBack} className="w-8 h-8 rounded-lg flex items-center justify-center"
+          <button onClick={() => {
+            if (readyRef.current) {
+              pendingActionRef.current = 'back';
+              post({ type: 'request-content' });
+            } else {
+              onBack();
+            }
+          }} className="w-8 h-8 rounded-lg flex items-center justify-center"
             style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 150ms, color 150ms' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
@@ -200,7 +226,7 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
           <div style={{ position: 'absolute', top: 'calc(100% + var(--space-1))', right: 0, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 170 }}>
             {[
               onOpenInCards && { label: 'Open in Cards', action: () => { setMenuOpen(false); onOpenInCards(); } },
-              { label: 'Open in Flows', action: () => { setMenuOpen(false); post({ type: 'request-content' }); } },
+              { label: 'Open in Flows', action: () => { setMenuOpen(false); pendingActionRef.current = 'workflow'; post({ type: 'request-content' }); } },
               onDelete && { label: 'Delete', danger: true, action: () => { setMenuOpen(false); post({ type: 'set-content', text: '' }); onDelete(); } },
             ].filter(Boolean).map(opt => (
               <button key={(opt as { label: string }).label} onClick={(opt as { action: () => void }).action}
