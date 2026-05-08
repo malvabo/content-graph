@@ -114,13 +114,13 @@ const CHIP_BASE: React.CSSProperties = {
   padding: '6px 14px', borderRadius: 'var(--radius-full)',
   fontSize: 13, lineHeight: '18px', fontFamily: 'var(--font-sans)',
   cursor: 'pointer', border: '1.5px solid var(--color-border-subtle)',
-  background: 'transparent', color: '#526858',
+  background: 'transparent', color: 'var(--color-text-secondary)',
   transition: 'border-color 120ms, background 120ms, color 120ms',
   whiteSpace: 'nowrap', userSelect: 'none',
 };
 const CHIP_ACTIVE: React.CSSProperties = {
   border: '1.5px solid var(--color-accent)',
-  background: '#F0F7F1',
+  background: 'var(--color-bg-surface)',
   color: 'var(--color-accent)',
 };
 const FIELD_LABEL: React.CSSProperties = {
@@ -143,10 +143,10 @@ const INPUT_LINE: React.CSSProperties = {
   padding: '8px 12px', outline: 'none', transition: 'border-color 120ms',
 };
 const SECTION_DIVIDER: React.CSSProperties = {
-  width: '100%', height: 1, background: '#E8EDE9', margin: '0',
+  width: '100%', height: 1, background: 'var(--color-border-subtle)', margin: '0',
 };
 const ERR_TEXT: React.CSSProperties = {
-  fontSize: 13, color: '#C93030', fontFamily: 'var(--font-sans)', marginTop: 6,
+  fontSize: 13, color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 6,
 };
 
 // ─── Source inputs ────────────────────────────────────────────────────────────
@@ -327,11 +327,11 @@ function FileInput() {
         onDrop={onDrop}
         style={{
           height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: `1.5px dashed ${dragging ? 'var(--color-accent)' : '#B8C9BB'}`,
+          border: `1.5px dashed ${dragging ? 'var(--color-accent)' : 'var(--color-border-default)'}`,
           borderRadius: 'var(--radius-md)', cursor: 'pointer',
-          background: dragging ? '#F0F7F1' : 'transparent',
+          background: dragging ? 'var(--color-bg-surface)' : 'transparent',
           transition: 'border-color 120ms, background 120ms',
-          color: '#8A9E90', fontSize: 13, fontFamily: 'var(--font-sans)',
+          color: 'var(--color-text-tertiary)', fontSize: 13, fontFamily: 'var(--font-sans)',
         }}
       >
         Drop a file here, or click to browse
@@ -435,7 +435,7 @@ function VoiceInput() {
           />
           <button
             onClick={() => { setVoice(''); setRecState('idle'); }}
-            style={{ marginTop: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-sans)', color: '#526858', padding: 0, textDecoration: 'underline' }}
+            style={{ marginTop: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', padding: 0, textDecoration: 'underline' }}
           >
             Re-record
           </button>
@@ -478,7 +478,7 @@ const ResultCard = memo(function ResultCard({ label, content }: { label: string;
             style={{
               padding: '4px 10px', borderRadius: 'var(--radius-md)', fontSize: 12,
               fontFamily: 'var(--font-sans)', fontWeight: 500,
-              background: copied ? '#F0F7F1' : 'var(--color-bg-surface)',
+              background: 'var(--color-bg-surface)',
               border: `1px solid ${copied ? 'var(--color-accent)' : 'var(--color-border-default)'}`,
               color: copied ? 'var(--color-accent)' : 'var(--color-text-secondary)',
               cursor: 'pointer', transition: 'all 120ms',
@@ -621,20 +621,7 @@ export default function QuickMode() {
       .map(k => QUICK_OUTPUTS.find(o => o.key === k)?.label ?? k)
       .join(', ');
 
-    const fullPrompt = `You are a content generation assistant.
-
-SOURCES:
-${context}
-
-INSTRUCTION:
-${store.promptValue.trim()}
-
-Generate the following outputs. For each output, use the format label as a header, then produce the content below it.
-
-OUTPUTS REQUESTED:
-${outputList}
-
-Format each output clearly. Separate outputs with ---`;
+    const fullPrompt = `You are a content generation assistant.\n\nSOURCES:\n${context}\n\nINSTRUCTION:\n${store.promptValue.trim()}\n\nGenerate the following outputs. For each output, use the format label as a header, then produce the content below it.\n\nOUTPUTS REQUESTED:\n${outputList}\n\nFormat each output clearly. Separate outputs with ---`;
 
     setRunState('running');
     setStreamingText('');
@@ -742,7 +729,7 @@ Format each output clearly. Separate outputs with ---`;
         <div style={{ padding: '28px 40px', maxWidth: 720 }}>
           <button
             onClick={backToSetup}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#526858', fontFamily: 'var(--font-sans)', padding: 0, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 28 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--color-text-secondary)', fontFamily: 'var(--font-sans)', padding: 0, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 28 }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
             Back to setup
