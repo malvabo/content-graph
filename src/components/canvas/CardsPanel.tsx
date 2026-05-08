@@ -171,7 +171,6 @@ export default function CardsPanel({ setId }: { setId?: string }) {
           <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>
             {currentSet.name}
           </h1>
-          <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{cards.length} cards</span>
         </div>
 
 
