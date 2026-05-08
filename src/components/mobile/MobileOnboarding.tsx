@@ -432,7 +432,14 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           animate={{...orbTarget,...(orbAbsorb?{scale:[1,1.18,1]}:{})}}
           transition={
             phase === 'posting'   ? {duration:0.7,ease:[0.4,0,0.8,1]} :
-            phase === 'recording' ? {duration:1.3,ease:[0.32,0,0.18,1]} :
+            phase === 'recording' ? {
+              opacity:      {duration:0.22, ease:'easeOut'},
+              width:        {duration:0, delay:0.22},
+              height:       {duration:0, delay:0.22},
+              borderRadius: {duration:0, delay:0.22},
+              scale:        {duration:0, delay:0.22},
+              top:          {duration:0, delay:0.22},
+            } :
             isTravelingDown       ? {type:'spring',stiffness:55,damping:18,mass:1} :
             SPRING
           }
