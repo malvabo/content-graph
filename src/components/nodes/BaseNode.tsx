@@ -51,12 +51,12 @@ const CHIP_DEFS: Record<string, ChipDef[]> = {
 const MODEL_NODES = new Set(['linkedin-post','twitter-thread','twitter-single','newsletter','infographic','quote-card','brand-voice','refine']);
 
 const chipStyle: React.CSSProperties = {
-  fontSize: 11, lineHeight: '16px', padding: '2px 7px 2px 8px',
-  borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)',
-  background: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)',
+  fontSize: 11, lineHeight: '16px', padding: '3px 7px 3px 9px',
+  borderRadius: 'var(--radius-full)', border: 'none',
+  background: 'var(--color-bg-subtle)', color: 'var(--color-text-secondary)',
   cursor: 'pointer', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
   display: 'inline-flex', alignItems: 'center', gap: 3,
-  transition: 'border-color 100ms',
+  transition: 'background 100ms',
 };
 
 function ChipSelect({ value, opts, fmt, dimmed, onChange }: {
@@ -80,7 +80,7 @@ function ChipSelect({ value, opts, fmt, dimmed, onChange }: {
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       <button
         type="button"
-        style={{ ...chipStyle, color: dimmed ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)', borderColor: open ? 'var(--color-border-strong)' : undefined }}
+        style={{ ...chipStyle, color: dimmed ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)', background: open ? 'var(--color-bg-muted, var(--color-bg-subtle))' : 'var(--color-bg-subtle)' }}
         onPointerDown={e => e.stopPropagation()}
         onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
       >
