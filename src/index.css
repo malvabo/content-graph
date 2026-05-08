@@ -492,33 +492,28 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 
 /* ── Handshake connection animation ── */
 /*
-  hs-left:  left hand slides right from off-screen, arrives at centre, shakes, holds
-  hs-right: right hand slides left from off-screen, mirrors the same choreography
-  hs-fade:  wrapper fades in then out over the full 1.7 s duration
-
-  Both palms start fully outside the viewbox so the "slide-in" reads cleanly.
-  They meet at x≈28 (the SVG centre), shake twice, then the wrapper fades to 0.
-
-  left  palm rest x: 5→18  | after +10 → 15→28  (right edge touches centre)
-  right palm rest x: 38→51 | after -10 → 28→41  (left  edge touches centre)
+  Two organic bezier paths slide in from off-screen.  At rest (translateX 0)
+  they naturally cross once in the centre — one arm dips below, the other
+  rises above, forming the grip.  After arriving both shake together (Y)
+  then the wrapper fades.
 */
 @keyframes hs-left {
-  0%   { transform: translateX(-24px) translateY(0); }   /* off-screen left  */
-  32%  { transform: translateX(10px)  translateY(0); }   /* arrived & gripped */
-  42%  { transform: translateX(10px)  translateY(-2.5px); }
-  54%  { transform: translateX(10px)  translateY(2px); }
-  64%  { transform: translateX(10px)  translateY(-1px); }
-  74%  { transform: translateX(10px)  translateY(0); }
-  100% { transform: translateX(10px)  translateY(0); }
+  0%   { transform: translateX(-52px) translateY(0); }
+  32%  { transform: translateX(0)     translateY(0); }
+  42%  { transform: translateX(0)     translateY(-2.5px); }
+  54%  { transform: translateX(0)     translateY(2px); }
+  63%  { transform: translateX(0)     translateY(-1px); }
+  72%  { transform: translateX(0)     translateY(0); }
+  100% { transform: translateX(0)     translateY(0); }
 }
 @keyframes hs-right {
-  0%   { transform: translateX(24px)  translateY(0); }
-  32%  { transform: translateX(-10px) translateY(0); }
-  42%  { transform: translateX(-10px) translateY(-2.5px); }
-  54%  { transform: translateX(-10px) translateY(2px); }
-  64%  { transform: translateX(-10px) translateY(-1px); }
-  74%  { transform: translateX(-10px) translateY(0); }
-  100% { transform: translateX(-10px) translateY(0); }
+  0%   { transform: translateX(52px)  translateY(0); }
+  32%  { transform: translateX(0)     translateY(0); }
+  42%  { transform: translateX(0)     translateY(-2.5px); }
+  54%  { transform: translateX(0)     translateY(2px); }
+  63%  { transform: translateX(0)     translateY(-1px); }
+  72%  { transform: translateX(0)     translateY(0); }
+  100% { transform: translateX(0)     translateY(0); }
 }
 @keyframes hs-fade {
   0%   { opacity: 0; }
