@@ -555,15 +555,16 @@ private struct TagPill: View {
                 .foregroundColor(isSelected ? accent : Color.white.opacity(0.55))
                 .lineLimit(1)
                 .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.vertical, 7)
                 .background(
-                    Capsule()
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(isSelected ? accent.opacity(0.12) : Color.white.opacity(0.07))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(isSelected ? accent.opacity(0.45) : Color.white.opacity(0.08), lineWidth: 0.5)
+                        )
                 )
-                .overlay(
-                    Capsule()
-                        .stroke(isSelected ? accent.opacity(0.45) : Color.white.opacity(0.12), lineWidth: 0.5)
-                )
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
         .animation(.easeOut(duration: 0.15), value: isSelected)
@@ -610,18 +611,19 @@ private struct TagPickerSheet: View {
                         } label: {
                             Text(tag)
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(isSelected ? accent : Color.white.opacity(0.7))
+                                .foregroundColor(isSelected ? accent : Color.white.opacity(0.65))
                                 .multilineTextAlignment(.center)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
+                                .padding(.vertical, 14)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                                         .fill(isSelected ? accent.opacity(0.12) : Color.white.opacity(0.07))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                                .stroke(isSelected ? accent.opacity(0.45) : Color.white.opacity(0.08), lineWidth: 0.5)
+                                        )
                                 )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .stroke(isSelected ? accent.opacity(0.45) : Color.white.opacity(0.1), lineWidth: 0.5)
-                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                         }
                         .buttonStyle(.plain)
                         .animation(.easeOut(duration: 0.15), value: isSelected)
