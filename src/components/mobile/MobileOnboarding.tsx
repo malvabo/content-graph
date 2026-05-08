@@ -668,16 +668,20 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 text="Saved to library."
                 style={{position:'absolute',top:'52%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.6)',letterSpacing:'0.01em',pointerEvents:'none',zIndex:20}}
               />
-              {/* Lights distributed around the text block (42–52%) */}
+              {/* Lights scattered randomly around the text block */}
               {[
-                { left:'14%', top:'37%', r:30, delay:0.10 },
-                { left:'86%', top:'37%', r:30, delay:0.14 },
-                { left:'6%',  top:'47%', r:22, delay:0.22 },
-                { left:'94%', top:'47%', r:22, delay:0.08 },
-                { left:'14%', top:'58%', r:28, delay:0.18 },
-                { left:'86%', top:'58%', r:28, delay:0.26 },
-                { left:'40%', top:'31%', r:16, delay:0.30 },
-                { left:'60%', top:'31%', r:16, delay:0.06 },
+                { left:'8%',  top:'29%', r:38, delay:0.06 },
+                { left:'79%', top:'34%', r:18, delay:0.14 },
+                { left:'3%',  top:'43%', r:24, delay:0.22 },
+                { left:'91%', top:'41%', r:32, delay:0.08 },
+                { left:'18%', top:'62%', r:20, delay:0.18 },
+                { left:'88%', top:'57%', r:42, delay:0.28 },
+                { left:'33%', top:'26%', r:14, delay:0.32 },
+                { left:'67%', top:'65%', r:16, delay:0.10 },
+                { left:'55%', top:'23%', r:26, delay:0.20 },
+                { left:'11%', top:'52%', r:12, delay:0.36 },
+                { left:'72%', top:'22%', r:10, delay:0.04 },
+                { left:'96%', top:'52%', r:15, delay:0.26 },
               ].map((l, i) => {
                 const RGB = '255,225,130';
                 const D = l.r * 3;
