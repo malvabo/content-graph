@@ -27,9 +27,9 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
 
   return (
     <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
-      <DialogContent maxWidth={860} hideClose style={{ height: 560, maxHeight: 'calc(100vh - 48px)', fontFamily: 'var(--font-sans)' }}>
+      <DialogContent maxWidth={860} hideClose style={{ maxHeight: 'calc(100vh - 48px)', fontFamily: 'var(--font-sans)' }}>
         {/* Header */}
-        <div style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)' }}>
+        <div style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)', flexShrink: 0 }}>
           <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Start with a template</h2>
           <button onClick={onClose} aria-label="Close"
             style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', cursor: 'pointer' }}
@@ -40,12 +40,12 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
         </div>
 
         {/* Body */}
-        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {/* Filter sidebar */}
           <aside style={{ width: 160, flexShrink: 0, padding: 'var(--space-4)', borderRight: '1px solid var(--color-border-subtle)', display: 'flex', flexDirection: 'column', gap: 2 }}>
             {FILTERS.map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                style={{ width: '100%', display: 'block', textAlign: 'left', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: filter === f ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: filter === f ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)' }}
+                style={{ width: '100%', display: 'block', textAlign: 'left', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: filter === f ? 'var(--color-bg-surface)' : 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: filter === f ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', whiteSpace: 'nowrap' }}
                 onMouseEnter={e => { if (filter !== f) e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
                 onMouseLeave={e => { if (filter !== f) e.currentTarget.style.background = 'transparent'; }}>
                 {f}
@@ -55,14 +55,14 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
 
           {/* Template grid */}
           <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 'var(--space-5) var(--space-6)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-3)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-3)', alignContent: 'start' }}>
               {visible.map(t => (
                 <button key={t.label} onClick={() => onPick(t.text)}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: 'var(--space-4)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', cursor: 'pointer', textAlign: 'left', transition: 'border-color 120ms, box-shadow 120ms' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: 'var(--space-4)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', cursor: 'pointer', textAlign: 'left', transition: 'border-color 120ms, box-shadow 120ms', overflow: 'visible', whiteSpace: 'normal', width: '100%' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>{t.label}</span>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>{t.description}</span>
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: 1.3, display: 'block', width: '100%' }}>{t.label}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', lineHeight: 1.5, display: 'block', width: '100%' }}>{t.description}</span>
                 </button>
               ))}
             </div>
@@ -70,7 +70,7 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
         </div>
 
         {/* Footer */}
-        <div style={{ padding: 'var(--space-3) var(--space-6)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+        <div style={{ padding: 'var(--space-3) var(--space-6)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
           <button onClick={onScratch}
             style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-normal)', color: 'var(--color-text-tertiary)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)' }}
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
