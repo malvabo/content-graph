@@ -1,22 +1,28 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useBrandsStore, getActiveBrand } from '../../store/brandsStore';
-import { useGraphStore, type ContentNode } from '../../store/graphStore';
-import { useOutputStore } from '../../store/outputStore';
+import { useGraphStore } from '../../store/graphStore';
 import { useScriptStore } from '../../store/scriptStore';
-import { computeSafePosition } from '../../utils/nodePlacement';
+import { generateAndSaveCards } from '../../utils/scriptToCards';
 
-interface Props { scriptId?: string; initialText?: string; onBack?: () => void; onOpenInCards?: () => void; onSendToWorkflow?: () => void; onDelete?: () => void }
+interface Props { scriptId?: string; initialText?: string; onBack?: () => void; onOpenInCards?: (id?: string) => void; onSendToWorkflow?: () => void; onDelete?: () => void }
 
 export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpenInCards, onSendToWorkflow, onDelete }: Props) {
   const title = useScriptStore(s => s.scripts.find(sc => sc.id === scriptId)?.title ?? '');
+  const scriptContent = useScriptStore(s => s.scripts.find(sc => sc.id === scriptId)?.content ?? '');
   const updateScript = useScriptStore(s => s.updateScript);
   const [iframeLoading, setIframeLoading] = useState(true);
   const [iframeFailed, setIframeFailed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuWrapRef = useRef<HTMLDivElement>(null);
+  // Bake the current dark-mode state into the src at mount so the iframe renders
+  // with the correct theme on its very first paint, before any postMessage round-trip.
+  const iframeSrc = useRef(
+    `/scriptsense/scriptsense.html?dark=${document.documentElement.classList.contains('dark') ? '1' : '0'}`
+  ).current;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
+  const pendingActionRef = useRef<'back' | 'workflow' | null>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -33,7 +39,6 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
   useSettingsStore(s => s.brand);
   useBrandsStore(s => s.activeBrandId);
   useBrandsStore(s => s.brands);
-  useGraphStore(s => s.brandId);
   const brand = getActiveBrand();
 
   // Buffer the last non-empty initialText seen, so a parent-side clear on the
@@ -54,6 +59,19 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
     }
   }, [initialText]);
 
+  // When switching scripts, explicitly load the stored content into the iframe
+  // (including empty string for new scripts, which clears any previous content).
+  const prevScriptIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!scriptId || scriptId === prevScriptIdRef.current) return;
+    prevScriptIdRef.current = scriptId;
+    if (!readyRef.current) return;
+    iframeRef.current?.contentWindow?.postMessage({ type: 'set-content', text: scriptContent }, '*');
+    pendingContentRef.current = '';
+  // scriptContent intentionally excluded: we only want to trigger on scriptId change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scriptId]);
+
   const post = useCallback((msg: Record<string, unknown>) => {
     const w = iframeRef.current?.contentWindow;
     if (!w) return;
@@ -67,15 +85,16 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
     if (brand?.voice?.personality || brand?.name) post({ type: 'set-brand', brand });
     // Prefer the buffered value, but fall back to the live prop ref so a
     // 'ready' that races ahead of the initialText useEffect still delivers.
+    // Always send set-content when switching scripts (including empty string to clear).
     const pending = pendingContentRef.current || initialTextRef.current;
-    if (pending) {
+    if (pending || prevScriptIdRef.current) {
       post({ type: 'set-content', text: pending });
       pendingContentRef.current = '';
     }
   }, [post, anthropicKey, groqKey, brand]);
 
-  // Handles the 'scriptsense-ready' handshake and the 'script-content' reply
-  // used by Send to Workflow (the iframe posts this in response to request-content).
+  // Handles the 'scriptsense-ready' handshake and all 'script-content' replies.
+  // script-content always persists to store; pendingActionRef controls navigation.
   useEffect(() => {
     const h = (e: MessageEvent) => {
       if (e.source !== iframeRef.current?.contentWindow) return;
@@ -85,32 +104,34 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
         setIframeLoading(false);
         flush();
       } else if (d?.type === 'script-content' && typeof d.text === 'string') {
-        const text = d.text.trim();
-        if (!text) return;
-        const id = `text-source-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        const node: ContentNode = {
-          id,
-          type: 'contentNode',
-          position: computeSafePosition(),
-          deletable: true,
-          data: {
-            subtype: 'text-source',
-            label: 'From ScriptSense',
-            badge: 'Ss',
-            category: 'source',
-            description: 'Script from ScriptSense',
-            config: { text },
-          },
-        };
-        useGraphStore.getState().addNode(node);
-        useOutputStore.getState().setOutput(id, { text });
-        useGraphStore.getState().setSelectedNodeId(id);
-        onSendToWorkflow?.();
+        const text = d.text;
+        if (scriptId) updateScript(scriptId, { content: text });
+        const action = pendingActionRef.current;
+        pendingActionRef.current = null;
+        if (action === 'back') {
+          onBack?.();
+        } else if (action === 'workflow') {
+          const trimmed = text.trim();
+          if (trimmed) {
+            generateAndSaveCards(trimmed, title || 'Script')
+              .then(id => onOpenInCards?.(id || undefined))
+              .catch(() => { onOpenInCards?.(); });
+          }
+        }
       }
     };
     window.addEventListener('message', h);
     return () => window.removeEventListener('message', h);
-  }, [flush, onSendToWorkflow]);
+  }, [flush, onBack, onOpenInCards, scriptId, title, updateScript]);
+
+  // Periodic save: pull content from iframe every 10s and persist to store.
+  useEffect(() => {
+    if (!scriptId) return;
+    const id = setInterval(() => {
+      if (readyRef.current) post({ type: 'request-content' });
+    }, 10000);
+    return () => clearInterval(id);
+  }, [scriptId, post]);
 
   // Re-flush whenever keys, theme, or initial text change after the iframe has booted.
   useEffect(() => { if (readyRef.current) flush(); }, [flush]);
@@ -234,7 +255,7 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
       )}
       <iframe
         ref={iframeRef}
-        src="/scriptsense/scriptsense.html"
+        src={iframeSrc}
         className="flex-1 w-full border-none"
         style={{ opacity: iframeLoading ? 0 : 1, transition: 'opacity var(--duration-slow) var(--ease-default)' }}
         title="ScriptSense"

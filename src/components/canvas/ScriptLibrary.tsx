@@ -90,9 +90,7 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (id: str
             <thead>
               <tr style={{ textAlign: 'left', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
                 <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Name</th>
-                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>State</th>
                 <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Created</th>
-                <th style={{ padding: '10px 12px', fontWeight: 'var(--weight-medium)' }}>Preview</th>
                 <th style={{ width: 40 }} />
               </tr>
             </thead>
@@ -102,13 +100,7 @@ export default function ScriptLibrary({ onOpenScript }: { onOpenScript: (id: str
                   onMouseEnter={() => setHoverId(s.id)} onMouseLeave={() => setHoverId(null)}
                   style={{ borderTop: '1px solid var(--color-border-subtle)', cursor: 'pointer', background: hoverId === s.id ? 'var(--color-bg-surface)' : 'transparent', transition: 'background 100ms' }}>
                   <td style={{ padding: '14px 12px', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>{s.title || 'Untitled'}</td>
-                  <td style={{ padding: '14px 12px' }}>
-                    <span style={{ display: 'inline-flex', padding: '2px 10px', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>{s.analysed ? 'Analysed' : 'Draft'}</span>
-                  </td>
                   <td style={{ padding: '14px 12px', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>{fmt(s.createdAt)}</td>
-                  <td style={{ padding: '14px 12px', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 320 }}>
-                    {s.content ? s.content.slice(0, 120) : '—'}
-                  </td>
                   <td style={{ padding: '14px 12px', width: 40, position: 'relative' }} onClick={e => e.stopPropagation()}>
                     <div role="button" tabIndex={0} aria-label="More options"
                       style={{ width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)', cursor: 'pointer' }}

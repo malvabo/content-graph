@@ -108,6 +108,42 @@ const fmtDuration = (ms: number) => {
   return m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
 };
 
+const fmtDate = (iso: string) => {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  if (diff < 172800000) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+async function generateSmartTitle(transcript: string): Promise<string> {
+  const { anthropicKey, groqKey } = useSettingsStore.getState();
+  const prompt = `Give this spoken transcript a concise 3–6 word title that captures the main topic. Return ONLY the title — no quotes, no punctuation, no explanation.\n\nTranscript: ${transcript.slice(0, 600)}`;
+  if (anthropicKey) {
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 20, messages: [{ role: 'user', content: prompt }] }),
+      });
+      if (res.ok) { const t = (await res.json()).content?.[0]?.text?.trim(); if (t) return t; }
+    } catch { /* fall through */ }
+  }
+  if (groqKey) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey.trim()}` },
+        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 20, messages: [{ role: 'user', content: prompt }] }),
+      });
+      if (res.ok) { const t = (await res.json()).choices?.[0]?.message?.content?.trim(); if (t) return t; }
+    } catch { /* fall through */ }
+  }
+  return '';
+}
+
 
 /** Deterministic ~32-bar waveform derived from the note id.
  *  Decorative: no real FFT — just gives each row a unique-looking sparkline. */
@@ -246,6 +282,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
   const [query, setQuery] = useState('');
   const groqKey = useSettingsStore(s => s.groqKey);
+  const [showFeatureBanner, setShowFeatureBanner] = useState(true);
   const [recording, setRecording] = useState(false);
   const [micError, setMicError] = useState(false);
   const [viewId, setViewId] = useState<string | null>(null);
@@ -445,9 +482,14 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       return;
     }
 
-    const title = transcript ? transcript.split(/\s+/).slice(0, 5).join(' ') : 'Untitled note';
-    updateNote(noteId, { title, durationMs: duration, transcript, status: 'ready', errorReason: undefined });
+    const fallbackTitle = transcript ? transcript.split(/\s+/).slice(0, 5).join(' ') : 'Untitled note';
+    updateNote(noteId, { title: fallbackTitle, durationMs: duration, transcript, status: 'ready', errorReason: undefined });
     syncVoiceSourceOutputs(noteId, transcript);
+    if (transcript) {
+      generateSmartTitle(transcript).then(smart => {
+        if (smart) useVoiceStore.getState().updateNote(noteId, { title: smart });
+      }).catch(() => {});
+    }
   }, [updateNote]);
 
   // Discard the in-progress recording entirely. Only used when a fatal permission
@@ -534,7 +576,13 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
         </div>
 
         {/* Feature / video block */}
-        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+        {showFeatureBanner && <div style={{ position: 'relative', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+          <button onClick={() => setShowFeatureBanner(false)} style={{ position: 'absolute', top: 12, right: 12, width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-card)'; e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
+            aria-label="Dismiss">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
           <div>
             <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Capture ideas with voice</h2>
             <p style={{ margin: 'var(--space-2) 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: 460 }}>
@@ -550,7 +598,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
               <rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><path d="M12 17v4" /><path d="M8 21h8" />
             </svg>
           </div>
-        </div>
+        </div>}
 
         {/* Recording overlay — floating blobs */}
         {recording && (
@@ -633,46 +681,38 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                             </svg>
                           </span>
 
-                          {/* Title + preview */}
-                          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          {/* Title */}
+                          <div style={{ minWidth: 0 }}>
                             <span style={{
                               fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, lineHeight: '20px',
                               color: isError ? 'var(--color-danger-text, #A83030)' : 'var(--color-text-primary)',
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
                             }}>
                               {displayTitle}
                             </span>
-                            {isError ? (
-                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-danger-text, #A83030)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {isError && (
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-danger-text, #A83030)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                                 {note.errorReason || 'Transcription failed.'}
                               </span>
-                            ) : isTranscribing ? (
-                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px', color: 'var(--color-warning-text, #6A4A10)' }}>
+                            )}
+                            {isTranscribing && (
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px', color: 'var(--color-warning-text, #6A4A10)', display: 'block' }}>
                                 Transcribing…
                               </span>
-                            ) : (
-                              <div style={{ position: 'relative', overflow: 'hidden' }}>
-                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-text-tertiary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                  {note.transcript || SAMPLE_CONTENT}
-                                </span>
-                                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 16, background: `linear-gradient(to bottom, transparent, ${isError ? 'var(--color-danger-bg, #FEF4F4)' : 'var(--color-bg-card))'})`, pointerEvents: 'none' }} />
-                              </div>
                             )}
                           </div>
 
-                          {/* Waveform (decorative) */}
-                          {!isError && <Waveform seed={note.id} durationMs={note.durationMs} />}
-
-                          {/* Duration */}
-                          <span style={{
-                            fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px',
-                            color: 'var(--color-text-tertiary)', fontVariantNumeric: 'tabular-nums',
-                            minWidth: 36, textAlign: 'right',
-                          }}>
-                            {fmtDuration(note.durationMs)}
+                          {/* Time column */}
+                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--color-text-disabled)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                            {!isError && !isTranscribing ? fmtDate(note.createdAt) : ''}
                           </span>
 
-                          {/* Menu dots — separate click target inside the grid cell */}
+                          {/* Duration column */}
+                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--color-text-disabled)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', minWidth: 40, textAlign: 'right' }}>
+                            {!isError && note.durationMs > 0 ? fmtDuration(note.durationMs) : ''}
+                          </span>
+
+                          {/* Spacer for menu dots */}
                           <span aria-hidden style={{ width: 24 }} />
                         </button>
 

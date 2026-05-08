@@ -456,22 +456,25 @@ const NOTE_TINT: Record<string, string> = {
   'twitter-single': '29,155,240',
 };
 
-function NoteCard({ note, onOpen }: { note: VoiceNote; onOpen: () => void }) {
+function NoteCard({ note, onOpen, showTranscript }: { note: VoiceNote; onOpen: () => void; showTranscript?: boolean }) {
   const isTranscribing = note.status === 'transcribing';
   const isAudioOnly = note.status === 'ready' && !note.transcript;
   const isError = note.status === 'error';
-  const tintRgb = note.lastGeneration?.kind ? NOTE_TINT[note.lastGeneration.kind] : null;
+  const tintRgb = showTranscript ? null : (note.lastGeneration?.kind ? NOTE_TINT[note.lastGeneration.kind] : null);
 
   const displayTitle = isAudioOnly && note.title === 'Untitled note' ? 'Audio recording' : note.title;
 
-  // Preview = first non-empty line of the generated post. Falls back to a quiet
-  // state hint when there's no generation yet (transcribing / error / audio only).
+  // Preview = first non-empty line of the generated post (or transcript when showTranscript=true).
   const genFirstLine = note.lastGeneration?.text
     ? (note.lastGeneration.text.split('\n').find(l => l.trim()) ?? '').trim()
+    : '';
+  const transcriptFirstLine = note.transcript
+    ? (note.transcript.split('\n').find(l => l.trim()) ?? '').trim()
     : '';
   const previewText = isTranscribing ? 'Transcribing…'
     : isError ? (note.errorReason || 'Transcription failed')
     : isAudioOnly ? 'Audio only'
+    : showTranscript ? transcriptFirstLine
     : genFirstLine;
 
   const meta = fmtDate(note.createdAt);
@@ -2114,7 +2117,7 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
               : 'none',
             transition: 'box-shadow 600ms ease',
           }}>
-            <NoteCard note={n} onOpen={() => onOpenNote(n.id)} />
+            <NoteCard note={n} onOpen={() => onOpenNote(n.id)} showTranscript={kind === 'scripts'} />
           </div>
         ))}
       </div>
@@ -2349,14 +2352,6 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
               UP150
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <a
-                href="/hand-tracking"
-                aria-label="Open Spacial"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', fontSize: 'var(--text-body)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', textDecoration: 'none' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11V5.5a1.5 1.5 0 1 1 3 0V10"/><path d="M12 10V4.5a1.5 1.5 0 1 1 3 0V11"/><path d="M15 11V6.5a1.5 1.5 0 1 1 3 0V14"/><path d="M9 11V8.5a1.5 1.5 0 0 0-3 0V15c0 3.5 2.5 6 6 6s6-2.5 6-6"/></svg>
-                Spacial
-              </a>
               <button
                 onClick={() => setEditMode(m => !m)}
                 aria-label={editMode ? 'Done editing' : 'Edit widgets'}

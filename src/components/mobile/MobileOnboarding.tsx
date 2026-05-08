@@ -106,7 +106,7 @@ const PLATFORMS = [
   { id: 'linkedin',  label: 'LinkedIn',  left: '16.5%', xOffset: '33.5vw', mergeRgb: '10,102,194',  glowRgb: '10,102,194'  },
   { id: 'x',         label: 'X',         left: '39%',   xOffset: '11vw',   mergeRgb: '240,235,230', glowRgb: '90,90,90'    },
   { id: 'instagram', label: 'Instagram', left: '61%',   xOffset: '-11vw',  mergeRgb: '225,48,108',  glowRgb: '201,48,102'  },
-  { id: 'threads',   label: 'Threads',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '74,58,94'    },
+  { id: 'threads',   label: 'Scripts',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '74,58,94'    },
 ] as const;
 
 // Cloud click-target 64px; halo extends to ~140px around it. Label sits 8px below
@@ -134,8 +134,8 @@ const BREATH = [
 
 const ORB: Record<Phase, object> = {
   idle:      { width: 200, height: 200, borderRadius: 100, top: '60%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
-  prompt:    { width: 300, height: 76,  borderRadius: 38,  top: '76%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
-  recording: { width: 160, height: 160, borderRadius: 80,  top: '52%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 2.8 },
+  prompt:    { width: 300, height: 76,  borderRadius: 38,  top: '60%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
+  recording: { width: 160, height: 160, borderRadius: 80,  top: '52%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 1.8 },
   platform:  { width: 160, height: 44,  borderRadius: 22,  top: '11%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
   draft:     { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
   posting:   { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 0 },
@@ -432,7 +432,14 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           animate={{...orbTarget,...(orbAbsorb?{scale:[1,1.18,1]}:{})}}
           transition={
             phase === 'posting'   ? {duration:0.7,ease:[0.4,0,0.8,1]} :
-            phase === 'recording' ? {duration:0.85,ease:[0.16,1,0.3,1]} :
+            phase === 'recording' ? {
+              opacity:      {duration:0.22, ease:'easeOut'},
+              width:        {duration:0, delay:0.22},
+              height:       {duration:0, delay:0.22},
+              borderRadius: {duration:0, delay:0.22},
+              scale:        {duration:0, delay:0.22},
+              top:          {duration:0, delay:0.22},
+            } :
             isTravelingDown       ? {type:'spring',stiffness:55,damping:18,mass:1} :
             SPRING
           }
@@ -470,7 +477,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
         {/* ── Recording canvas ── */}
         <AnimatePresence>
           {phase==='recording' && (
-            <motion.div key="rec" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:0.55}} style={{position:'absolute',inset:0,zIndex:20}}>
+            <motion.div key="rec" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:0.7,delay:0.25}} style={{position:'absolute',inset:0,zIndex:20}}>
               <RecordingCanvas onStop={goToPlatform} />
             </motion.div>
           )}
@@ -668,15 +675,20 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 text="Saved to library."
                 style={{position:'absolute',top:'52%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.6)',letterSpacing:'0.01em',pointerEvents:'none',zIndex:20}}
               />
-              {/* Tighter, smaller cluster of lights around the draft orb (50%, 88%) —
-                  symmetric arc, gently varied sizes. */}
+              {/* Lights scattered across the full page */}
               {[
-                { left:'28%', top:'83%', r:42, delay:0.10 },
-                { left:'72%', top:'83%', r:42, delay:0.16 },
-                { left:'40%', top:'89%', r:30, delay:0.22 },
-                { left:'60%', top:'89%', r:30, delay:0.08 },
-                { left:'32%', top:'93%', r:22, delay:0.30 },
-                { left:'68%', top:'93%', r:22, delay:0.18 },
+                { left:'7%',  top:'8%',  r:42, delay:0.08 },
+                { left:'88%', top:'14%', r:16, delay:0.20 },
+                { left:'23%', top:'19%', r:11, delay:0.04 },
+                { left:'61%', top:'6%',  r:28, delay:0.30 },
+                { left:'94%', top:'33%', r:20, delay:0.12 },
+                { left:'4%',  top:'67%', r:36, delay:0.24 },
+                { left:'78%', top:'72%', r:14, delay:0.06 },
+                { left:'38%', top:'82%', r:22, delay:0.34 },
+                { left:'16%', top:'88%', r:10, delay:0.16 },
+                { left:'85%', top:'88%', r:32, delay:0.10 },
+                { left:'52%', top:'91%', r:18, delay:0.28 },
+                { left:'96%', top:'58%', r:12, delay:0.18 },
               ].map((l, i) => {
                 const RGB = '255,225,130';
                 const D = l.r * 3;
@@ -711,7 +723,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               style={{position:'absolute',top:'28%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:'var(--text-display-lg)',fontWeight:600,color:'rgba(255,255,255,0.92)',letterSpacing:'-0.02em',textShadow:'0 0 40px rgba(0,0,0,0.3)',pointerEvents:'none',zIndex:5}}
             />
           )}
-          {phase==='prompt' && (
+          {phase==='prompt' && !isPosted && (
             <ParticleHeadline
               key="h-prompt"
               text="What's on your mind?"

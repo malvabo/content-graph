@@ -27,23 +27,43 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { maxWidth?: number; hideClose?: boolean }
->(({ className, children, maxWidth = 560, hideClose, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+    maxWidth?: number;
+    hideClose?: boolean;
+    sheet?: boolean;
+  }
+>(({ className, children, maxWidth = 560, hideClose, sheet = false, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
-      style={{ maxWidth }}
+      style={{ '--dlg-max-w': `${maxWidth}px` } as React.CSSProperties}
       className={cn(
-        'fixed left-1/2 top-1/2 z-[1001] -translate-x-1/2 -translate-y-1/2',
-        'w-[calc(100%-32px)] rounded-xl',
+        'fixed z-[1001]',
+        'flex flex-col overflow-hidden',
         'bg-[var(--color-bg-card)] shadow-[0_16px_48px_rgba(0,0,0,0.14),0_0_0_1px_var(--color-border-default)]',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
-        'data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
-        'data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
         'duration-150',
+        sheet ? [
+          // Mobile: full-width bottom sheet
+          'bottom-0 left-0 right-0 w-full rounded-t-xl max-h-[95vh]',
+          // Desktop: centered panel
+          'md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2',
+          'md:w-[calc(100%-32px)] md:max-w-[var(--dlg-max-w)] md:rounded-xl md:max-h-[90vh]',
+          // Desktop slide animations only
+          'md:data-[state=closed]:slide-out-to-left-1/2 md:data-[state=closed]:slide-out-to-top-[48%]',
+          'md:data-[state=open]:slide-in-from-left-1/2 md:data-[state=open]:slide-in-from-top-[48%]',
+        ] : [
+          // Centered panel (default)
+          'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
+          'w-[calc(100%-32px)] rounded-xl',
+          'max-w-[var(--dlg-max-w)] max-h-[90vh]',
+          // Slide animations
+          'data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
+          'data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+        ],
         className
       )}
       {...props}

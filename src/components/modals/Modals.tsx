@@ -4,6 +4,7 @@ import { getDims, RATIO_DIMS, PURPOSE_RATIO } from '../../utils/imageDims';
 import { IMAGE_MODEL_OPTIONS } from '../../utils/nodeDefs';
 import { useGraphStore } from '../../store/graphStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { Dialog, DialogContent } from '../ui/dialog';
 
 /* ── AI Selection Popover ── */
 const AI_ACTIONS = [
@@ -70,30 +71,13 @@ function AiPopover({ x, y, selectedText, onApply, onClose }: { x: number; y: num
 }
 
 /* ── Shared Modal Shell ── */
-/* #1/#2: consistent padding on shell backdrop */
 function ModalShell({ children, onClose, maxWidth = 780 }: { children: React.ReactNode; onClose: () => void; maxWidth?: number }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
-  useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return createPortal(
-    <div className="fixed inset-0 z-[1000] flex items-end md:items-center justify-center" style={{ padding: 0, background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms ease' }} onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label="Image Prompt" className="flex flex-col w-full overflow-hidden rounded-t-[var(--radius-xl)] md:rounded-[var(--radius-xl)]"
-        style={{ maxWidth: isMobile ? '100%' : maxWidth, maxHeight: isMobile ? '95vh' : `min(92vh, calc(100vh - 48px))`, background: 'var(--color-bg-modal, var(--color-bg-card))', boxShadow: '0 16px 48px rgba(0,0,0,0.24), 0 0 0 1px var(--color-border-default)', transform: visible ? 'translateY(0)' : 'translateY(16px)', opacity: visible ? 1 : 0, transition: 'transform 150ms ease, opacity 150ms ease', position: 'relative' }}
-        onClick={(e) => e.stopPropagation()}>
+  return (
+    <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
+      <DialogContent sheet maxWidth={maxWidth}>
         {children}
-      </div>
-    </div>,
-    document.body
+      </DialogContent>
+    </Dialog>
   );
 }
 

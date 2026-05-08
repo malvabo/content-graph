@@ -165,8 +165,8 @@ function AppInner() {
         </div>
       )}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
-        {/* Hide the left nav only in full-screen modes (intro, infographic edit). */}
-        {activeView !== 'intro' && !(activeView === 'infographics' && hashParam) && (
+        {/* Hide the left nav in full-screen / detail modes; those views carry their own top back bar. */}
+        {activeView !== 'intro' && activeView !== 'workflow' && activeView !== 'cards' && !(activeView === 'infographics' && hashParam) && (
           <IconNav activeView={activeView} onViewChange={setActiveView} />
         )}
 
@@ -223,7 +223,7 @@ function AppInner() {
                 scriptId={activeScriptId}
                 initialText={voiceTranscript}
                 onBack={() => setActiveView('scriptlist')}
-                onOpenInCards={() => setActiveView('cardslibrary')}
+                onOpenInCards={(id) => setActiveView(id ? 'cards:' + id : 'cardslibrary')}
                 onSendToWorkflow={() => setActiveView('workflow')}
                 onDelete={() => { if (activeScriptId) useScriptStore.getState().removeScript(activeScriptId); setActiveScriptId(undefined); setActiveView('scriptlist'); }}
               />

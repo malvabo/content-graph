@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useCardsStore, type Card } from '../../store/cardsStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import FloatingChat from '../ui/FloatingChat';
 
 const BackIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <path d="m15 18-6-6 6-6"/>
   </svg>
 );
@@ -63,8 +64,14 @@ export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?:
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // DnD
+  const dragIdRef = useRef<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ id: string; pos: 'before' | 'after' } | null>(null);
 
   const toggleSelect = (id: string) => {
     setSelected(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -72,6 +79,8 @@ export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?:
 
   const [groupInput, setGroupInput] = useState('');
   const [showGroupInput, setShowGroupInput] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [groupRenameInput, setGroupRenameInput] = useState('');
 
   const groupSelected = () => {
     if (selected.size < 2) return;
@@ -83,22 +92,20 @@ export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?:
     setShowGroupInput(false);
   };
 
-  const renameGroup = (oldName: string) => {
-    const name = window.prompt('Rename group', oldName);
-    if (!name?.trim()) return;
-    const updated = cards.map(c => c.group === oldName ? { ...c, group: name.trim() } : c);
-    updateCards(currentSet!.id, updated);
-  };
-
-  const ungroupAll = (groupName: string) => {
-    const updated = cards.map(c => c.group === groupName ? { ...c, group: undefined } : c);
-    updateCards(currentSet!.id, updated);
+  const commitGroupRename = (oldName: string) => {
+    const name = groupRenameInput.trim();
+    if (name && name !== oldName) {
+      const updated = cards.map(c => c.group === oldName ? { ...c, group: name } : c);
+      updateCards(currentSet!.id, updated);
+    }
+    setEditingGroup(null);
   };
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => { if (messages.length > 0) setChatOpen(true); }, [messages.length]);
 
   const setCards = useCallback((newCards: Card[]) => {
     if (currentSet) updateCards(currentSet.id, newCards);
@@ -121,29 +128,10 @@ export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?:
   };
 
 
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [insertAt, setInsertAt] = useState<number | null>(null); // index in ungrouped array
-
-  const glassShadow = [
-    '0 4px 24px rgba(0,0,0,0.07)', '0 1px 6px rgba(0,0,0,0.04)',
-    'inset 0 1px 0 rgba(255,255,255,1)', 'inset 0 -1px 0 rgba(255,255,255,0.45)',
-    'inset 1px 0 0 rgba(255,255,255,0.65)', 'inset -1px 0 0 rgba(255,255,255,0.65)',
-  ].join(', ');
-  const glassShadowHover = [
-    '0 8px 36px rgba(0,0,0,0.1)', '0 2px 10px rgba(0,0,0,0.05)',
-    'inset 0 1px 0 rgba(255,255,255,1)', 'inset 0 -1px 0 rgba(255,255,255,0.6)',
-    'inset 1px 0 0 rgba(255,255,255,0.8)', 'inset -1px 0 0 rgba(255,255,255,0.8)',
-  ].join(', ');
-  const glassShadowSel = [
-    '0 6px 28px rgba(29,114,66,0.12)', '0 1px 6px rgba(29,114,66,0.08)',
-    'inset 0 1px 0 rgba(255,255,255,1)', 'inset 0 -1px 0 rgba(255,255,255,0.5)',
-    'inset 1px 0 0 rgba(255,255,255,0.7)', 'inset -1px 0 0 rgba(255,255,255,0.7)',
-  ].join(', ');
-
-  const send = useCallback(async () => {
-    if (!input.trim() || loading || !currentSet) return;
-    const msg = input.trim();
-    setInput('');
+  const send = useCallback(async (overrideText?: string) => {
+    const msg = (overrideText || input).trim();
+    if (!msg || loading || !currentSet) return;
+    if (!overrideText) setInput('');
     const next: ChatMsg[] = [...messages, { role: 'user', text: msg }];
     setMessages(next);
     setLoading(true);
@@ -170,59 +158,55 @@ export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?:
 
   if (!currentSet) return null;
 
+  const glassShadow = ['0 4px 24px rgba(0,0,0,0.07)','0 1px 6px rgba(0,0,0,0.04)','inset 0 1px 0 rgba(255,255,255,1)','inset 0 -1px 0 rgba(255,255,255,0.45)','inset 1px 0 0 rgba(255,255,255,0.65)','inset -1px 0 0 rgba(255,255,255,0.65)'].join(', ');
+  const glassShadowHover = ['0 8px 36px rgba(0,0,0,0.1)','0 2px 10px rgba(0,0,0,0.05)','inset 0 1px 0 rgba(255,255,255,1)','inset 0 -1px 0 rgba(255,255,255,0.6)','inset 1px 0 0 rgba(255,255,255,0.8)','inset -1px 0 0 rgba(255,255,255,0.8)'].join(', ');
+  const glassShadowSel = ['0 6px 28px rgba(29,114,66,0.12)','0 1px 6px rgba(29,114,66,0.08)','inset 0 1px 0 rgba(255,255,255,1)','inset 0 -1px 0 rgba(255,255,255,0.5)','inset 1px 0 0 rgba(255,255,255,0.7)','inset -1px 0 0 rgba(255,255,255,0.7)'].join(', ');
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'linear-gradient(155deg, #edf1f7 0%, #e5eaf2 40%, #eae8f0 100%)' }}>
       {/* Toolbar — three-column, matches CanvasToolbar */}
       <div style={{ height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 var(--space-3)', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border-subtle)' }}>
-        {/* Left: back */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
           {onBack && (
-            <button
-              onClick={onBack}
+            <button onClick={onBack}
               style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 100ms, border-color 100ms' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
-              aria-label="Back to cards library"
-            >
-              <BackIcon />
-            </button>
+              aria-label="Back to cards library"><BackIcon /></button>
           )}
         </div>
-        {/* Center: title */}
         <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', maxWidth: 420, minWidth: 120 }}>
-          <input
-            aria-label="Card set name"
-            className="outline-none"
+          <input aria-label="Card set name" className="outline-none"
             style={{ fontWeight: 500, fontSize: 15, lineHeight: '22px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 4px', width: 220, maxWidth: '30vw', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}
-            value={currentSet.name}
-            placeholder="Untitled"
+            value={currentSet.name} placeholder="Untitled"
             onChange={e => rename(currentSet.id, e.target.value)}
             onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
-            onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
-          />
+            onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }} />
         </div>
-        {/* Right: card count */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{cards.length} cards</span>
         </div>
       </div>
 
-      {/* Content row: cards + sidebar */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-      {/* Cards area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)', display: 'flex', flexDirection: 'column' }}>
+      {/* Cards — full width */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)', paddingBottom: 120, position: 'relative' }}>
+      {/* Selection popover — floats above content, centered at top */}
+      {selected.size > 0 && (
+        <div style={{ position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '6px 10px 6px 14px', background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', fontWeight: 500 }}>{selected.size} selected</span>
+          {showGroupInput
+            ? <input autoFocus className="form-input" value={groupInput} onChange={e => setGroupInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') groupSelected(); if (e.key === 'Escape') setShowGroupInput(false); }} style={{ width: 140 }} />
+            : null}
+          <button className="btn btn-sm btn-primary" onClick={groupSelected} disabled={selected.size < 2}>{showGroupInput ? 'Create group' : 'Group'}</button>
+          <button className="btn btn-sm btn-ghost" onClick={() => { setSelected(new Set()); setShowGroupInput(false); }}>Cancel</button>
+        </div>
+      )}
+      {/* Cards — full width */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)', paddingBottom: 120 }}>
 
-        {/* Selection toolbar */}
-        {selected.size > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)', padding: 'var(--space-2) var(--space-4)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)' }}>
-            <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', fontWeight: 500 }}>{selected.size} selected</span>
-            {showGroupInput && <input autoFocus className="form-input" value={groupInput} onChange={e => setGroupInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') groupSelected(); if (e.key === 'Escape') { setShowGroupInput(false); } }} style={{ width: 160 }} />}
-            <button className="btn btn-sm btn-primary" onClick={groupSelected} disabled={selected.size < 2}>{showGroupInput ? 'Create group' : 'Group'}</button>
-            <button className="btn btn-sm btn-ghost" onClick={() => { setSelected(new Set()); setShowGroupInput(false); }}>Cancel</button>
-          </div>
-        )}
 
-        {/* Cards grid */}
+
+        {/* Grouped cards */}
         {(() => {
           const groups = new Map<string, typeof cards>();
           const ungrouped: typeof cards = [];
@@ -230,15 +214,85 @@ export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?:
             if (c.group) { const g = groups.get(c.group) || []; g.push(c); groups.set(c.group, g); }
             else ungrouped.push(c);
           });
+          // Upgrade legacy keyword HTML to individual pill tags
+          const fixBody = (html: string) =>
+            html
+              .replace(/<span style="opacity:0\.6;font-size:0\.9em">([^<]*)<\/span>/g, (_: string, content: string) => {
+                const tags = content.split(/\s*·\s*|\s*•\s*/).filter(Boolean);
+                return `<span class="card-tags">${tags.map((t: string) => `<span class="card-tag">${t.trim()}</span>`).join('')}</span>`;
+              })
+              .replace(/<span class="card-keywords">([^<]*)<\/span>/g, (_: string, content: string) => {
+                const tags = content.split(/\s*·\s*|\s*•\s*/).filter(Boolean);
+                return `<span class="card-tags">${tags.map((t: string) => `<span class="card-tag">${t.trim()}</span>`).join('')}</span>`;
+              });
 
-          const cardInner = (card: typeof cards[0]) => (
-            <>
+          const renderCard = (card: typeof cards[0]) => {
+            const isSel = selected.has(card.id);
+            const isDragging = draggingId === card.id;
+            const dropPos = dropTarget?.id === card.id ? dropTarget.pos : null;
+            return (
+            <div key={card.id}
+              draggable
+              onDragStart={e => {
+                dragIdRef.current = card.id;
+                setDraggingId(card.id);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragEnd={() => {
+                dragIdRef.current = null;
+                setDraggingId(null);
+                setDropTarget(null);
+              }}
+              onDragOver={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!dragIdRef.current || dragIdRef.current === card.id) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const pos = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after';
+                setDropTarget(prev => prev?.id === card.id && prev.pos === pos ? prev : { id: card.id, pos });
+              }}
+              onDrop={e => {
+                e.preventDefault();
+                const fromId = dragIdRef.current;
+                if (!fromId || fromId === card.id) { setDropTarget(null); return; }
+                const from = cards.find(c => c.id === fromId);
+                if (!from) { setDropTarget(null); return; }
+                const rest = cards.filter(c => c.id !== fromId);
+                const toIdx = rest.findIndex(c => c.id === card.id);
+                const insertIdx = dropTarget?.pos === 'after' ? toIdx + 1 : toIdx;
+                setCards([...rest.slice(0, insertIdx), { ...from, group: card.group }, ...rest.slice(insertIdx)]);
+                dragIdRef.current = null;
+                setDraggingId(null);
+                setDropTarget(null);
+              }}
+              onClick={e => { if (e.target instanceof HTMLElement && (e.target.tagName === 'INPUT' || e.target.closest('[contenteditable="true"]'))) return; toggleSelect(card.id); }}
+              style={{
+                background: 'rgba(255,255,255,0.68)',
+                backdropFilter: 'blur(20px) saturate(160%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+                border: isSel ? '1.5px solid rgba(29,114,66,0.45)' : '1px solid rgba(255,255,255,0.72)',
+                borderRadius: 16, padding: 'var(--space-4)',
+                display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
+                transition: 'box-shadow 200ms, border-color 200ms, opacity 150ms', textAlign: 'left', minHeight: 120,
+                cursor: isDragging ? 'grabbing' : 'grab',
+                opacity: isDragging ? 0.35 : 1,
+                userSelect: 'none',
+                boxShadow: isSel ? glassShadowSel : glassShadow,
+              }}
+              onMouseEnter={e => { if (!isSel && !isDragging) { e.currentTarget.style.boxShadow = glassShadowHover; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.9)'; } }}
+              onMouseLeave={e => { if (!isSel && !isDragging) { e.currentTarget.style.boxShadow = glassShadow; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.72)'; } }}
+            >
+              {dropPos === 'before' && <div style={{ position: 'absolute', left: -9, top: -4, bottom: -4, width: 2, background: 'var(--color-accent)', borderRadius: 2, zIndex: 30, pointerEvents: 'none' }} />}
+              {dropPos === 'after' && <div style={{ position: 'absolute', right: -9, top: -4, bottom: -4, width: 2, background: 'var(--color-accent)', borderRadius: 2, zIndex: 30, pointerEvents: 'none' }} />}
+              {/* Remove button */}
               <button onClick={e => { e.stopPropagation(); removeCard(card.id); }}
                 style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', background: 'var(--color-overlay-light)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 150ms', backdropFilter: 'blur(4px)' }}
                 onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
                 onMouseLeave={e => { e.currentTarget.style.opacity = '0'; }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               </button>
+
+              {/* Headline */}
               {editingId === card.id ? (
                 <input value={card.headline} onChange={e => updateCard(card.id, 'headline', e.target.value)}
                   onBlur={() => setEditingId(null)} onKeyDown={e => { if (e.key === 'Enter') setEditingId(null); }}
@@ -250,47 +304,31 @@ export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?:
                   {card.headline}
                 </div>
               )}
+
+              {/* Body */}
               <div contentEditable suppressContentEditableWarning
                 onBlur={e => updateCard(card.id, 'body', e.currentTarget.innerHTML)}
-                dangerouslySetInnerHTML={{ __html: card.body }}
+                dangerouslySetInnerHTML={{ __html: fixBody(card.body) }}
                 data-placeholder="Write something…"
                 style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', outline: 'none', minHeight: 'var(--space-10)', cursor: 'text' }} />
-            </>
+            </div>
+          ); };
+          const dropLine = (
+            <div aria-hidden key="drop-line" style={{ gridColumn: '1 / -1', height: 2, background: 'var(--color-accent)', borderRadius: 2, pointerEvents: 'none', margin: '-4px 0' }} />
           );
-
-          const renderGroupedCard = (card: typeof cards[0]) => {
-            const isSel = selected.has(card.id);
-            return (
-              <div key={card.id}
-                onClick={e => { if (e.target instanceof HTMLElement && (e.target.contentEditable === 'true' || e.target.tagName === 'INPUT')) return; toggleSelect(card.id); }}
-                style={{ background: 'rgba(255,255,255,0.68)', backdropFilter: 'blur(20px) saturate(160%)', WebkitBackdropFilter: 'blur(20px) saturate(160%)', border: isSel ? '1.5px solid rgba(29,114,66,0.45)' : '1px solid rgba(255,255,255,0.72)', borderRadius: 16, padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative', transition: 'box-shadow 200ms, border-color 200ms', textAlign: 'left', minHeight: 120, cursor: 'pointer', boxShadow: isSel ? glassShadowSel : glassShadow }}
-                onMouseEnter={e => { if (!isSel) { e.currentTarget.style.boxShadow = glassShadowHover; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.9)'; } }}
-                onMouseLeave={e => { if (!isSel) { e.currentTarget.style.boxShadow = glassShadow; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.72)'; } }}
-              >
-                {cardInner(card)}
-              </div>
-            );
-          };
-
-          const handleUngroupedDrop = (e: React.DragEvent, toLocal: number) => {
-            e.preventDefault();
-            if (!draggingId) return;
-            const fromLocal = ungrouped.findIndex(c => c.id === draggingId);
-            if (fromLocal === -1) return;
-            let to = toLocal;
-            if (fromLocal < to) to--;
-            if (fromLocal === to) { setDraggingId(null); setInsertAt(null); return; }
-            const reordered = [...ungrouped];
-            const [moved] = reordered.splice(fromLocal, 1);
-            reordered.splice(Math.max(0, Math.min(to, reordered.length)), 0, moved);
-            let ui = 0;
-            setCards(cards.map(c => c.group ? c : reordered[ui++]));
-            setDraggingId(null);
-            setInsertAt(null);
+          const withDropLine = (list: typeof cards) => {
+            const out: React.ReactNode[] = [];
+            list.forEach(card => {
+              if (dropTarget?.id === card.id && dropTarget.pos === 'before') out.push(dropLine);
+              out.push(renderCard(card));
+              if (dropTarget?.id === card.id && dropTarget.pos === 'after') out.push(dropLine);
+            });
+            return out;
           };
 
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+              {/* Named groups */}
               {[...groups.entries()].map(([name, groupCards], gi) => {
                 const colors = [
                   { bg: 'rgba(13,191,90,0.08)', border: 'rgba(13,191,90,0.2)', label: 'var(--color-accent-subtle)' },
@@ -299,56 +337,65 @@ export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?:
                 ];
                 const c = colors[gi % colors.length];
                 return (
-                  <div key={name} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 'var(--radius-xl)', padding: 'var(--space-4)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                      <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: c.label }}>{name}</span>
-                      <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{groupCards.length}</span>
-                      <span style={{ flex: 1 }} />
-                      <button onClick={() => renameGroup(name)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Rename</button>
-                      <button onClick={() => ungroupAll(name)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Ungroup</button>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
-                      {groupCards.map(renderGroupedCard)}
-                    </div>
+                <div key={name}
+                  onDragOver={e => { e.preventDefault(); }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    const fromId = dragIdRef.current;
+                    if (!fromId) return;
+                    const from = cards.find(c => c.id === fromId);
+                    if (!from || from.group === name) return;
+                    // Append to end of this group
+                    const rest = cards.filter(c => c.id !== fromId);
+                    setCards([...rest, { ...from, group: name }]);
+                    dragIdRef.current = null;
+                    setDraggingId(null);
+                    setDropTarget(null);
+                  }}
+                  style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 'var(--radius-xl)', padding: 'var(--space-4)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                    {editingGroup === name ? (
+                      <input
+                        autoFocus
+                        value={groupRenameInput}
+                        onChange={e => setGroupRenameInput(e.target.value)}
+                        onBlur={() => commitGroupRename(name)}
+                        onKeyDown={e => { if (e.key === 'Enter') commitGroupRename(name); if (e.key === 'Escape') setEditingGroup(null); }}
+                        style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: c.label, background: 'none', border: 'none', borderBottom: `1px solid ${c.border}`, outline: 'none', padding: '0 2px', width: 160 }}
+                      />
+                    ) : (
+                      <span
+                        onClick={() => { setEditingGroup(name); setGroupRenameInput(name); }}
+                        title="Click to rename"
+                        style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: c.label, cursor: 'text' }}
+                      >{name}</span>
+                    )}
                   </div>
-                );
-              })}
-
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
+                    {withDropLine(groupCards)}
+                  </div>
+                </div>
+              ); })}
+              {/* Ungrouped */}
               {ungrouped.length > 0 && (
-                <div>
+                <div
+                  onDragOver={e => { e.preventDefault(); }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    const fromId = dragIdRef.current;
+                    if (!fromId) return;
+                    const from = cards.find(c => c.id === fromId);
+                    if (!from || from.group === undefined) return;
+                    const rest = cards.filter(c => c.id !== fromId);
+                    setCards([...rest, { ...from, group: undefined }]);
+                    dragIdRef.current = null;
+                    setDraggingId(null);
+                    setDropTarget(null);
+                  }}
+                >
                   {groups.size > 0 && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginBottom: 'var(--space-3)' }}>Ungrouped</div>}
-                  <div
-                    style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}
-                    onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setInsertAt(null); }}
-                  >
-                    {ungrouped.map((card, localIdx) => {
-                      const isSel = selected.has(card.id);
-                      const isDragging = draggingId === card.id;
-                      const showLeft = insertAt === localIdx && !isDragging;
-                      const showRight = insertAt === ungrouped.length && localIdx === ungrouped.length - 1 && !isDragging;
-                      return (
-                        <div key={card.id}
-                          draggable
-                          onDragStart={e => { setDraggingId(card.id); e.dataTransfer.effectAllowed = 'move'; }}
-                          onDragOver={e => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = 'move';
-                            const r = e.currentTarget.getBoundingClientRect();
-                            setInsertAt(e.clientX < r.left + r.width / 2 ? localIdx : localIdx + 1);
-                          }}
-                          onDrop={e => handleUngroupedDrop(e, insertAt ?? localIdx)}
-                          onDragEnd={() => { setDraggingId(null); setInsertAt(null); }}
-                          onClick={e => { if (e.target instanceof HTMLElement && (e.target.contentEditable === 'true' || e.target.tagName === 'INPUT')) return; toggleSelect(card.id); }}
-                          style={{ background: 'rgba(255,255,255,0.68)', backdropFilter: 'blur(20px) saturate(160%)', WebkitBackdropFilter: 'blur(20px) saturate(160%)', border: isSel ? '1.5px solid rgba(29,114,66,0.45)' : '1px solid rgba(255,255,255,0.72)', borderRadius: 16, padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative', textAlign: 'left', minHeight: 120, cursor: isDragging ? 'grabbing' : 'grab', userSelect: 'none', opacity: isDragging ? 0.35 : 1, boxShadow: isSel ? glassShadowSel : glassShadow, transition: 'box-shadow 200ms, border-color 200ms, opacity 150ms' }}
-                          onMouseEnter={e => { if (!isSel && !isDragging) { e.currentTarget.style.boxShadow = glassShadowHover; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.9)'; } }}
-                          onMouseLeave={e => { if (!isSel && !isDragging) { e.currentTarget.style.boxShadow = glassShadow; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.72)'; } }}
-                        >
-                          {showLeft && <div style={{ ...{ position: 'absolute', top: -4, bottom: -4, width: 2, background: 'var(--color-accent)', borderRadius: 2, zIndex: 30, pointerEvents: 'none' }, left: -9 }} />}
-                          {showRight && <div style={{ ...{ position: 'absolute', top: -4, bottom: -4, width: 2, background: 'var(--color-accent)', borderRadius: 2, zIndex: 30, pointerEvents: 'none' }, right: -9 }} />}
-                          {cardInner(card)}
-                        </div>
-                      );
-                    })}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
+                    {withDropLine(ungrouped)}
                   </div>
                 </div>
               )}
@@ -357,56 +404,20 @@ export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?:
         })()}
       </div>
 
-      {/* Right — Chat */}
-      <div className="hidden md:flex" style={{ width: 320, flexShrink: 0, borderLeft: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', flexDirection: 'column' }}>
-        <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
-          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>Chat</div>
-          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>Add, edit, or reorganize cards</div>
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {messages.length === 0 && (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-6)' }}>
-              <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', lineHeight: 'var(--leading-snug)' }}>
-                "Add 3 cards about AI safety" · "Make the first card shorter" · "Remove the last card" · "Rewrite all cards as questions"
-              </div>
-            </div>
-          )}
-          {messages.map((msg, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-              <div style={{
-                maxWidth: '85%', padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)',
-                background: msg.role === 'user' ? 'var(--color-bg-surface)' : 'var(--color-bg-card)',
-                border: msg.role === 'assistant' ? '1px solid var(--color-border-subtle)' : 'none',
-                fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)',
-                lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap',
-              }}>{msg.text}</div>
-            </div>
-          ))}
-          {loading && (
-            <div style={{ display: 'flex', gap: 'var(--space-1)', padding: 'var(--space-3)' }}>
-              {[0, 1, 2].map(i => <div key={i} style={{ width: 'var(--size-status-dot)', height: 'var(--size-status-dot)', borderRadius: 'var(--radius-full)', background: 'var(--color-text-disabled)', animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />)}
-            </div>
-          )}
-          <div ref={chatEndRef} />
-        </div>
-
-        <div style={{ padding: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end' }}>
-            <textarea value={input} onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-              placeholder="Ask to add or edit cards…" rows={1}
-              style={{ flex: 1, resize: 'none', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', outline: 'none', lineHeight: 'var(--leading-relaxed)' }} />
-            <button onClick={send} disabled={loading || !input.trim()}
-              style={{ width: 'var(--size-control-md)', height: 'var(--size-control-md)', borderRadius: 'var(--radius-md)', border: 'none', background: input.trim() ? 'var(--color-accent)' : 'var(--color-bg-surface)', color: input.trim() ? 'var(--color-text-inverse)' : 'var(--color-text-disabled)', cursor: input.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background var(--duration-base) var(--ease-default)' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="m22 2-11 11"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-      </div>{/* end content row */}
+      <FloatingChat
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+        title={currentSet?.name ?? 'Cards'}
+        messages={messages}
+        input={input}
+        loading={loading}
+        onInputChange={setInput}
+        onSend={send}
+        chatEndRef={chatEndRef}
+        suggestions={['Rewrite all as questions', 'Add a summary card', 'Make tone more casual', 'Split the longest card', 'Add 2 more cards', 'Remove the last card']}
+      />
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3) var(--space-4)', boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 300, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3) var(--space-4)', boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>
           <span style={{ color: 'var(--color-text-primary)' }}>{toast.msg}</span>
           <button onClick={toast.undo} style={{ background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, padding: 0 }}>Undo</button>
         </div>

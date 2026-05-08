@@ -151,8 +151,10 @@ export default function EmptyCanvasOverlay() {
           <TemplateCard title="+ Empty Workflow" meta="Start from scratch" pills={[]} onClick={handleNew} />
           {TEMPLATES.map((t, i) => {
             const { nodes: n } = t.build();
-            const nodeLabels = n.slice(0, 2).map(nd => nd.data.label);
-            const extra = n.length - 2;
+            const outputNodes = n.filter(nd => nd.data.category === 'generate' || nd.data.category === 'output');
+            const MAX_PILLS = 3;
+            const nodeLabels = outputNodes.slice(0, MAX_PILLS).map(nd => nd.data.label);
+            const extra = Math.max(0, outputNodes.length - MAX_PILLS);
             return <TemplateCard key={t.name} title={t.name} meta={`${n.length} nodes`} pills={nodeLabels} extraCount={extra > 0 ? extra : undefined} icon={t.icon} onClick={() => loadTemplate(i)} />;
           })}
         </div>

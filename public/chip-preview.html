@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Node Chip Preview</title>
+<style>
+  :root {
+    --color-bg-card: #1a1a1e;
+    --color-bg-surface: #222228;
+    --color-border-default: #2e2e38;
+    --color-border-strong: #44444f;
+    --color-text-primary: #e8e8f0;
+    --color-text-secondary: #9898aa;
+    --color-text-tertiary: #5a5a6e;
+    --color-accent: #1a9e52;
+    --radius-full: 9999px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  }
+  body { background: #111115; display: flex; gap: 24px; padding: 40px; font-family: var(--font-sans); flex-wrap: wrap; }
+
+  .card {
+    width: 240px; background: var(--color-bg-card);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-lg); padding: 14px;
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .badge { width: 26px; height: 26px; border-radius: 6px; background: #1a3a2a; color: #3ecf7a; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .label { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .content { flex: 1; background: var(--color-bg-surface); border-radius: 6px; height: 100px; margin-bottom: 4px; }
+
+  /* ── OPTION A: Cycling pill buttons (5678bfd original) ── */
+  .chips-a { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 8px; margin-top: auto; }
+  .chip-btn {
+    font-size: 11px; line-height: 16px; padding: 2px 8px;
+    border-radius: var(--radius-full); border: 1px solid var(--color-border-default);
+    background: var(--color-bg-surface); color: var(--color-text-secondary);
+    cursor: pointer; font-family: var(--font-sans); white-space: nowrap;
+    transition: border-color 100ms;
+  }
+  .chip-btn:hover { border-color: var(--color-border-strong); }
+  .chip-btn.dim { color: var(--color-text-tertiary); }
+
+  /* ── OPTION B: Pill-shaped native <select> (7876a0f) ── */
+  .chips-b { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 8px; }
+  .chip-sel {
+    font-size: 11px; padding: 2px 6px;
+    border-radius: var(--radius-full); border: 1px solid var(--color-border-default);
+    background: var(--color-bg-surface); color: var(--color-text-secondary);
+    font-family: var(--font-sans); cursor: pointer; max-width: 120px;
+    -webkit-appearance: auto; appearance: auto;
+  }
+
+  /* ── OPTION C: Custom pill + dropdown panel (40438ed current) ── */
+  .chips-c { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 8px; margin-top: auto; flex-shrink: 0; position: relative; }
+  .chip-c {
+    font-size: 11px; line-height: 16px; padding: 2px 8px;
+    border-radius: var(--radius-full); border: 1px solid var(--color-border-default);
+    background: var(--color-bg-surface); color: var(--color-text-secondary);
+    cursor: pointer; font-family: var(--font-sans); white-space: nowrap;
+    transition: border-color 100ms; position: relative;
+  }
+  .chip-c:hover { border-color: var(--color-border-strong); }
+  .dropdown {
+    position: absolute; bottom: calc(100% + 4px); left: 0;
+    background: var(--color-bg-card); border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md); padding: 4px 0; z-index: 100;
+    min-width: 140px; box-shadow: var(--shadow-md);
+  }
+  .dropdown button {
+    display: block; width: 100%; text-align: left; padding: 5px 12px;
+    font-size: 12px; font-family: var(--font-sans); background: none; border: none;
+    cursor: pointer; color: var(--color-text-secondary);
+  }
+  .dropdown button.active { color: var(--color-accent); font-weight: 500; }
+  .dropdown button:hover { background: var(--color-bg-surface); }
+
+  .section-label { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<!-- A: Original cycling pills -->
+<div>
+  <div class="section-label">A — Original cycling pills (5678bfd)<br><small style="text-transform:none;letter-spacing:0">Click cycles through values</small></div>
+  <div class="card">
+    <div class="card-header">
+      <div class="badge">Li</div>
+      <div class="label">LinkedIn Post</div>
+    </div>
+    <div class="content"></div>
+    <div class="chips-a">
+      <button class="chip-btn" onclick="cycleChip(this, ['Authoritative','Conversational','Vulnerable','Data-driven','Contrarian'])">Authoritative</button>
+      <button class="chip-btn" onclick="cycleChip(this, ['Short','Medium','Long'])">Short</button>
+      <button class="chip-btn dim" onclick="cycleChip(this, ['Haiku','Sonnet','Opus','4o mini','4o','Flash'])">Haiku</button>
+    </div>
+  </div>
+</div>
+
+<!-- B: Pill-shaped native select -->
+<div>
+  <div class="section-label">B — Pill native &lt;select&gt; (7876a0f)<br><small style="text-transform:none;letter-spacing:0">Opens browser dropdown</small></div>
+  <div class="card">
+    <div class="card-header">
+      <div class="badge">Li</div>
+      <div class="label">LinkedIn Post</div>
+    </div>
+    <div class="content"></div>
+    <div class="chips-b">
+      <select class="chip-sel">
+        <option>Authoritative</option><option>Conversational</option><option>Vulnerable</option><option>Data-driven</option><option>Contrarian</option>
+      </select>
+      <select class="chip-sel">
+        <option>Short</option><option>Medium</option><option>Long</option>
+      </select>
+      <select class="chip-sel" style="color:var(--color-text-tertiary)">
+        <option>Haiku</option><option>Sonnet</option><option>Opus</option><option>4o mini</option><option>Flash</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- C: Current custom dropdown -->
+<div>
+  <div class="section-label">C — Custom pill + dropdown (current)<br><small style="text-transform:none;letter-spacing:0">Click opens custom list above</small></div>
+  <div class="card" style="overflow:visible">
+    <div class="card-header">
+      <div class="badge">Li</div>
+      <div class="label">LinkedIn Post</div>
+    </div>
+    <div class="content"></div>
+    <div class="chips-c">
+      <div style="position:relative;display:inline-block">
+        <button class="chip-c" onclick="toggleDrop('drop1')">Authoritative ▾</button>
+        <div class="dropdown" id="drop1" style="display:none">
+          <button class="active">Authoritative</button>
+          <button onclick="pick('drop1',this)">Conversational</button>
+          <button onclick="pick('drop1',this)">Vulnerable</button>
+          <button onclick="pick('drop1',this)">Data-driven</button>
+          <button onclick="pick('drop1',this)">Contrarian</button>
+        </div>
+      </div>
+      <div style="position:relative;display:inline-block">
+        <button class="chip-c" onclick="toggleDrop('drop2')">Short ▾</button>
+        <div class="dropdown" id="drop2" style="display:none">
+          <button class="active">Short</button>
+          <button onclick="pick('drop2',this)">Medium</button>
+          <button onclick="pick('drop2',this)">Long</button>
+        </div>
+      </div>
+      <div style="position:relative;display:inline-block">
+        <button class="chip-c dim" style="color:var(--color-text-tertiary)" onclick="toggleDrop('drop3')">Haiku ▾</button>
+        <div class="dropdown" id="drop3" style="display:none">
+          <button class="active">Haiku</button>
+          <button onclick="pick('drop3',this)">Sonnet</button>
+          <button onclick="pick('drop3',this)">Opus</button>
+          <button onclick="pick('drop3',this)">4o mini</button>
+          <button onclick="pick('drop3',this)">Flash</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function cycleChip(btn, opts) {
+  const i = opts.indexOf(btn.textContent);
+  btn.textContent = opts[(i + 1) % opts.length];
+}
+function toggleDrop(id) {
+  const d = document.getElementById(id);
+  document.querySelectorAll('.dropdown').forEach(x => { if (x.id !== id) x.style.display = 'none'; });
+  d.style.display = d.style.display === 'none' ? 'block' : 'none';
+}
+function pick(dropId, btn) {
+  const drop = document.getElementById(dropId);
+  const trigger = drop.previousElementSibling;
+  const label = btn.textContent;
+  trigger.textContent = label + ' ▾';
+  drop.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  drop.style.display = 'none';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.chip-c') && !e.target.closest('.dropdown')) {
+    document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
+  }
+});
+</script>
+</body>
+</html>

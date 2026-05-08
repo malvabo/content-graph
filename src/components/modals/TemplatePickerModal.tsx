@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { TEMPLATES, type TemplateCategory } from '../../utils/templates';
 import TemplateCard from '../ui/TemplateCard';
+import { Dialog, DialogContent } from '../ui/dialog';
 
 type Filter = 'All' | TemplateCategory;
 const FILTERS: Filter[] = ['All', 'Repurposing', 'Transcript', 'Research'];
@@ -14,20 +15,11 @@ interface Props {
 export default function TemplatePickerModal({ onClose, onStartScratch, onPickTemplate }: Props) {
   const [filter, setFilter] = useState<Filter>('All');
 
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [onClose]);
-
   const visible = filter === 'All' ? TEMPLATES : TEMPLATES.filter(t => t.category === filter);
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Choose a template"
-      onClick={onClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)', animation: 'fadeIn 150ms ease-out' }}>
-      <div onClick={e => e.stopPropagation()}
-        style={{ background: 'var(--color-bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: 1100, height: 640, maxHeight: 'calc(100vh - 48px)', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-sans)', animation: 'modalEnter 150ms ease-out' }}>
+    <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
+      <DialogContent maxWidth={1100} hideClose style={{ height: 640, maxHeight: 'calc(100vh - 48px)', fontFamily: 'var(--font-sans)' }}>
         {/* Header */}
         <div style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)' }}>
           <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Start with a template</h2>
@@ -90,7 +82,7 @@ export default function TemplatePickerModal({ onClose, onStartScratch, onPickTem
             Or start from a blank canvas →
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

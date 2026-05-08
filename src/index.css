@@ -8,6 +8,50 @@
 /* ── Base ── */
 html, body, #root { height: 100%; }
 
+/* ChipSelect dropdown option rows */
+.chip-select-option {
+  display: block; width: 100%; text-align: left;
+  padding: 5px 12px; font-size: 12px; line-height: 16px;
+  font-family: var(--font-sans); background: transparent;
+  border: none; cursor: pointer;
+}
+.chip-select-option:hover { background: var(--color-bg-surface); }
+
+/* Card gradient background — explicit colors so dark mode has a visible gradient
+   (bg-card and bg-surface are nearly identical in dark mode) */
+.card-bg-gradient {
+  background: linear-gradient(145deg, #ffffff 0%, #eef0ec 100%);
+}
+.dark .card-bg-gradient {
+  background: linear-gradient(145deg, #242428 0%, #1a1a1e 100%);
+}
+
+/* Card keyword tags */
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 10px;
+}
+.card-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* Suppress ReactFlow's built-in selection outline on the wrapper — BaseNode handles all selection visuals */
+.react-flow__node.selected,
+.react-flow__node.selected:hover,
+.react-flow__node:focus,
+.react-flow__node:focus-visible { outline: none !important; box-shadow: none !important; }
+
 /* iOS PWA safe area */
 html {
   height: -webkit-fill-available;

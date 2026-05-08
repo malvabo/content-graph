@@ -6,18 +6,60 @@ import { topologicalSort } from '../utils/topologicalSort';
 
 export interface ExecutorMeta {
   inputCount: number;
+  promptFilters?: string[];
 }
 
-export function getUpstreamText(nodeId: string): { text: string; inputCount: number } {
+// Resolves the text for a node: checks output store, falls back to source config,
+// and for Prompt nodes traces upstream recursively so single-node runs work without
+// a prior runAll having populated the Prompt's output.
+function resolveText(
+  nodeId: string,
+  outputs: Record<string, { text?: string }>,
+  nodes: ReturnType<typeof useGraphStore.getState>['nodes'],
+  edges: ReturnType<typeof useGraphStore.getState>['edges']
+): string {
+  const cached = outputs[nodeId]?.text;
+  if (cached) return cached;
+
+  const node = nodes.find((n) => n.id === nodeId);
+  if (!node) return '';
+
+  if (node.data.category === 'source') return (node.data.config.text as string) || '';
+
+  if (node.data.subtype === 'prompt') {
+    const upIds = edges.filter((e) => e.target === nodeId).map((e) => e.source);
+    for (const uid of upIds) {
+      const t = resolveText(uid, outputs, nodes, edges);
+      if (t) return t;
+    }
+  }
+
+  return '';
+}
+
+export function getUpstreamText(nodeId: string): { text: string; inputCount: number; promptFilters: string[] } {
   const { nodes, edges } = useGraphStore.getState();
   const outputs = useOutputStore.getState().outputs;
   const upstreamIds = edges.filter((e) => e.target === nodeId).map((e) => e.source);
 
-  const chunks = upstreamIds.map((id) => {
+  // Collect prompt filters; exclude Prompt nodes from content chunks
+  const promptFilters: string[] = [];
+  const contentIds: string[] = [];
+  for (const id of upstreamIds) {
     const node = nodes.find((n) => n.id === id);
-    const text = outputs[id]?.text
-      || (node?.data.category === 'source' ? (node.data.config.text as string) : '')
-      || '';
+    if (node?.data.subtype === 'prompt') {
+      const f = (node.data.config.prompt as string)?.trim();
+      if (f) promptFilters.push(f);
+      // Still include Prompt in content so its pass-through reaches Generate
+      contentIds.push(id);
+    } else {
+      contentIds.push(id);
+    }
+  }
+
+  const chunks = contentIds.map((id) => {
+    const node = nodes.find((n) => n.id === id);
+    const text = resolveText(id, outputs, nodes, edges);
     return node && text ? { node, text } : null;
   }).filter((c): c is { node: NonNullable<typeof c>['node']; text: string } => c !== null);
 
@@ -25,13 +67,13 @@ export function getUpstreamText(nodeId: string): { text: string; inputCount: num
   chunks.sort((a, b) => (a.node.position.y - b.node.position.y) || (a.node.position.x - b.node.position.x));
 
   if (chunks.length <= 1) {
-    return { text: chunks[0]?.text ?? '', inputCount: chunks.length };
+    return { text: chunks[0]?.text ?? '', inputCount: chunks.length, promptFilters };
   }
 
   const labeled = chunks
     .map((c, i) => `## Input ${i + 1} — ${c.node.data.label} (${c.node.data.subtype})\n${c.text}`)
     .join('\n\n');
-  return { text: labeled, inputCount: chunks.length };
+  return { text: labeled, inputCount: chunks.length, promptFilters };
 }
 
 export function useNodeExecution() {
@@ -50,6 +92,7 @@ export function useNodeExecution() {
       const isSource = node.data.category === 'source';
       let input: string;
       let inputCount: number;
+      let promptFilters: string[] | undefined;
       if (isSource) {
         input = useOutputStore.getState().outputs[nodeId]?.text || (node.data.config.text as string) || '';
         inputCount = input ? 1 : 0;
@@ -57,6 +100,7 @@ export function useNodeExecution() {
         const upstream = getUpstreamText(nodeId);
         input = upstream.text;
         inputCount = upstream.inputCount;
+        promptFilters = upstream.promptFilters.length > 0 ? upstream.promptFilters : undefined;
       }
 
       if (!isSource && !input) {
@@ -70,7 +114,7 @@ export function useNodeExecution() {
       setStatus(nodeId, 'running');
       try {
         if (signal?.aborted) { setStatus(nodeId, 'idle'); return; }
-        const result = await executor(input, node.data.config as Record<string, unknown>, { inputCount });
+        const result = await executor(input, node.data.config as Record<string, unknown>, { inputCount, promptFilters });
         if (signal?.aborted) { setStatus(nodeId, 'idle'); return; }
         setOutput(nodeId, { text: result });
         setStatus(nodeId, 'complete');
@@ -108,6 +152,14 @@ export function useNodeExecution() {
           // Read fresh node state each iteration
           const node = useGraphStore.getState().nodes.find((n) => n.id === id);
           if (!node) continue;
+
+          // Prompt nodes are pass-through — copy upstream content, inject filter downstream, no AI call
+          if (node.data.subtype === 'prompt') {
+            const { text } = getUpstreamText(id);
+            if (text) useOutputStore.getState().setOutput(id, { text });
+            useExecutionStore.getState().setStatus(id, 'complete');
+            continue;
+          }
 
           if (node.data.category === 'source') {
             const prepare = node.data.config.prepare as string | undefined;

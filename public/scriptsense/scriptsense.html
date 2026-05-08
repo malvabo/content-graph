@@ -65,8 +65,8 @@ const RotateCcw = ({size,...p}) => <I size={size} {...p}><path d="M3 12a9 9 0 1 
 window.__scriptsenseBooted = true;
 
 const themeListeners = new Set();
-let _isDark = false;
-try { _isDark = localStorage.getItem('dark-mode') === 'true'; } catch {}
+const _urlDark = new URLSearchParams(location.search).get('dark');
+let _isDark = _urlDark !== null ? _urlDark === '1' : (() => { try { return localStorage.getItem('dark-mode') === 'true'; } catch { return false; } })();
 function setDark(v) {
   if (_isDark === v) return;
   _isDark = v;
@@ -391,8 +391,9 @@ function Card({ children, elRef, highlighted }) {
       background: C.white,
       borderRadius:12,
       padding:"20px",
+      textAlign:"left",
       boxShadow: highlighted
-        ? "0 0 0 1.5px #0DBF5A, 0 4px 16px rgba(13,191,90,0.12)"
+        ? "0 0 0 1.5px #1D7242, 0 4px 16px rgba(29,114,66,0.12)"
         : `0 2px 8px ${C.border}, 0 0 0 1px transparent`,
       transition:"box-shadow 0.25s ease",
     }}>
@@ -457,7 +458,7 @@ function RephraseBlock({ rephrase, onApply }) {
       <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em", color:C.sub, marginBottom:6 }}>Rephrase to</p>
       <p style={{ fontSize:13, color:C.text, lineHeight:1.6, marginBottom:10 }}>"{rephrase}"</p>
       <button onClick={onApply} style={{
-        background:"#0DBF5A", color:C.white, border:"none", borderRadius:8,
+        background:"#1D7242", color:C.white, border:"none", borderRadius:8,
         fontSize:12, fontWeight:600, padding:"6px 16px", cursor:"pointer", transition:"opacity 100ms",
       }}
         onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
@@ -598,7 +599,7 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
     return draft?.text ?? '';
   });
   useEffect(() => {
-    const fn = t => { if (typeof t === 'string' && t.length) setText(t); };
+    const fn = t => { if (typeof t === 'string') setText(t); };
     initialTextListeners.add(fn);
     return () => initialTextListeners.delete(fn);
   }, []);
@@ -887,30 +888,13 @@ ${text}`
           </div>
         </div>
 
-        {/* ── Status bar ── */}
-        {(() => {
-          const total = accepted.size + dismissed.size;
-          const rate  = total > 0 ? Math.round(accepted.size / total * 100) : null;
-          return (
-            <div style={{ background:C.white, borderTop:`1px solid ${C.border}`, padding:"8px 24px", display:"flex", alignItems:"center", gap:10, fontSize:12, color:C.mute, fontWeight:500, flexShrink:0 }}>
-              <span>{wc} words</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span>{paras.length} paragraphs</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: allInsights.filter(i=>i.data.type==="science").length > 0 ? TAG.science.text : C.mute }}>{allInsights.filter(i=>i.data.type==="science").length} science</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: allInsights.filter(i=>i.data.type==="metaphor").length > 0 ? TAG.metaphor.text : C.mute }}>{allInsights.filter(i=>i.data.type==="metaphor").length} metaphors</span>
-              <span style={{ opacity:0.3 }}>·</span>
-              <span style={{ color: allInsights.filter(i=>i.data.type==="logic").length > 0 ? TAG.logic.text : C.mute }}>{allInsights.filter(i=>i.data.type==="logic").length} logic gaps</span>
-              {rate !== null && <>
-                <span style={{ opacity:0.3 }}>·</span>
-                <span style={{ color: rate >= 60 ? TAG.metaphor.text : rate >= 30 ? TAG.logic.text : C.mute }}>
-                  AI acceptance {rate}%
-                </span>
-              </>}
-            </div>
-          );
-        })()}
+        {/* ── Word count bar ── */}
+        <div style={{ background:C.white, borderTop:`1px solid ${C.border}`, padding:"6px 24px", display:"flex", alignItems:"center", gap:10, fontSize:12, color:C.mute, fontWeight:500, flexShrink:0 }}>
+          <span>{wc} words</span>
+          <span style={{ opacity:0.3 }}>·</span>
+          <span>{Math.max(1, Math.ceil(wc / 130))} min read</span>
+        </div>
+
       </div>
     </>
   );
