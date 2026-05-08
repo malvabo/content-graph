@@ -660,7 +660,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                             borderRadius: 'var(--radius-xl)',
                             padding: '12px 16px',
                             display: 'grid',
-                            gridTemplateColumns: 'auto 1fr auto',
+                            gridTemplateColumns: 'auto 1fr auto auto auto',
                             alignItems: 'center',
                             columnGap: 'var(--space-4)',
                             minHeight: 64,
@@ -681,36 +681,36 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                             </svg>
                           </span>
 
-                          {/* Title + meta + preview */}
-                          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          {/* Title */}
+                          <div style={{ minWidth: 0 }}>
                             <span style={{
                               fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, lineHeight: '20px',
                               color: isError ? 'var(--color-danger-text, #A83030)' : 'var(--color-text-primary)',
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
                             }}>
                               {displayTitle}
                             </span>
-                            {isError ? (
-                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-danger-text, #A83030)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {isError && (
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-danger-text, #A83030)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                                 {note.errorReason || 'Transcription failed.'}
                               </span>
-                            ) : isTranscribing ? (
-                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px', color: 'var(--color-warning-text, #6A4A10)' }}>
+                            )}
+                            {isTranscribing && (
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px', color: 'var(--color-warning-text, #6A4A10)', display: 'block' }}>
                                 Transcribing…
                               </span>
-                            ) : (
-                              <>
-                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-text-disabled)', fontVariantNumeric: 'tabular-nums' }}>
-                                  {fmtDate(note.createdAt)}{note.durationMs > 0 ? ` · ${fmtDuration(note.durationMs)}` : ''}
-                                </span>
-                                {note.transcript && (
-                                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-text-tertiary)', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                    {note.transcript}
-                                  </span>
-                                )}
-                              </>
                             )}
                           </div>
+
+                          {/* Time column */}
+                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--color-text-disabled)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                            {!isError && !isTranscribing ? fmtDate(note.createdAt) : ''}
+                          </span>
+
+                          {/* Duration column */}
+                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--color-text-disabled)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', minWidth: 40, textAlign: 'right' }}>
+                            {!isError && note.durationMs > 0 ? fmtDuration(note.durationMs) : ''}
+                          </span>
 
                           {/* Spacer for menu dots */}
                           <span aria-hidden style={{ width: 24 }} />
