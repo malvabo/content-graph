@@ -142,7 +142,7 @@ function UpstreamInputsList({ id }: { id: string }) {
     .filter(e => e.target === id)
     .map(e => {
       const n = nodes.find(x => x.id === e.source);
-      if (!n) return null;
+      if (!n || n.data.subtype === 'prompt') return null;
       return {
         id: n.id,
         label: n.data.label,
