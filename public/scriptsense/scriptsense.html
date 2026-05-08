@@ -889,8 +889,10 @@ ${text}`
         </div>
 
         {/* ── Word count bar ── */}
-        <div style={{ background:C.white, borderTop:`1px solid ${C.border}`, padding:"6px 24px", display:"flex", alignItems:"center", fontSize:12, color:C.mute, fontWeight:500, flexShrink:0 }}>
+        <div style={{ background:C.white, borderTop:`1px solid ${C.border}`, padding:"6px 24px", display:"flex", alignItems:"center", gap:10, fontSize:12, color:C.mute, fontWeight:500, flexShrink:0 }}>
           <span>{wc} words</span>
+          <span style={{ opacity:0.3 }}>·</span>
+          <span>{Math.max(1, Math.ceil(wc / 130))} min read</span>
         </div>
 
       </div>
