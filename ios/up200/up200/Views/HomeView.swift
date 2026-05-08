@@ -39,6 +39,57 @@ struct SourceItem: Identifiable {
     }
 }
 
+// MARK: - Animated Lights Button
+
+struct AnimatedLightsButton: View {
+    let title: String
+    var icon: String? = nil
+    var action: () -> Void
+    @State private var phase = false
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
+
+                Ellipse()
+                    .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.55))
+                    .frame(width: 140, height: 70)
+                    .blur(radius: 32)
+                    .offset(x: phase ? -70 : 70)
+
+                Ellipse()
+                    .fill(Color(red: 0.05, green: 0.75, blue: 0.35).opacity(0.55))
+                    .frame(width: 140, height: 70)
+                    .blur(radius: 32)
+                    .offset(x: phase ? 70 : -70)
+
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.13), lineWidth: 0.5)
+
+                HStack(spacing: 8) {
+                    if let icon {
+                        Image(systemName: icon)
+                            .font(.system(size: 15, weight: .semibold))
+                    }
+                    Text(title)
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .foregroundColor(.white)
+            }
+            .frame(height: 52)
+            .clipped()
+        }
+        .buttonStyle(.plain)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
+                phase = true
+            }
+        }
+    }
+}
+
 // MARK: - Import Sheet
 
 private struct ImportSheetView: View {
@@ -46,16 +97,16 @@ private struct ImportSheetView: View {
     @Environment(\.dismiss) private var dismiss
 
     private let gridItems: [(icon: String, label: String, type: SourceType)] = [
-        ("square.and.arrow.up",  "Upload a file",  .file),
-        ("character.cursor.ibeam", "Write text",   .text),
-        ("mic",                  "Voice note",     .voice),
-        ("photo",                "Image",          .image),
+        ("square.and.arrow.up", "Upload a file", .file),
+        ("text.cursor",         "Write text",    .text),
+        ("mic",                 "Voice note",    .voice),
+        ("photo",               "Image",         .image),
     ]
 
     var body: some View {
         VStack(spacing: 14) {
             Capsule()
-                .fill(Color.white.opacity(0.2))
+                .fill(Color.white.opacity(0.18))
                 .frame(width: 36, height: 4)
                 .padding(.top, 10)
 
@@ -89,7 +140,7 @@ private struct ImportSheetView: View {
                     } label: {
                         VStack(spacing: 10) {
                             Image(systemName: item.icon)
-                                .font(.system(size: 26, weight: .medium))
+                                .font(.system(size: 26, weight: .regular))
                             Text(item.label)
                                 .font(.system(size: 15, weight: .medium))
                                 .multilineTextAlignment(.center)
@@ -130,6 +181,8 @@ private struct SourceChip: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundColor(Color.white.opacity(0.4))
+                    .frame(width: 22, height: 22)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
@@ -167,7 +220,7 @@ private struct SectionHeader: View {
 
     var body: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
+            withAnimation(.easeInOut(duration: 0.22)) { expanded.toggle() }
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: expanded ? "chevron.down" : "chevron.right")
@@ -205,6 +258,8 @@ private struct LinkInputRow: View {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 15))
                     .foregroundColor(Color.white.opacity(0.25))
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
@@ -217,6 +272,95 @@ private struct LinkInputRow: View {
     }
 }
 
+// MARK: - Voice Record Row
+
+private struct VoiceRecordRow: View {
+    var onFinish: (String) -> Void
+    var onCancel: () -> Void
+
+    @State private var isRecording = false
+    @State private var seconds = 0
+    @State private var lightPhase = false
+    @State private var pulse = false
+
+    private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private var timeLabel: String {
+        String(format: "%d:%02d", seconds / 60, seconds % 60)
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(isRecording ? Color.red : Color.white.opacity(0.25))
+                .frame(width: 8, height: 8)
+                .scaleEffect(isRecording ? (pulse ? 1.4 : 1.0) : 1.0)
+                .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: pulse)
+
+            Text(isRecording ? timeLabel : "Tap to record")
+                .font(.system(size: 14, design: isRecording ? .monospaced : .default))
+                .foregroundColor(Color.white.opacity(isRecording ? 0.85 : 0.4))
+
+            Spacer()
+
+            // Record / Stop — animated lights capsule
+            Button {
+                let hap = UIImpactFeedbackGenerator(style: .medium)
+                hap.impactOccurred()
+                if isRecording {
+                    isRecording = false
+                    onFinish("Voice \(timeLabel)")
+                } else {
+                    seconds = 0
+                    isRecording = true
+                    pulse = true
+                }
+            } label: {
+                ZStack {
+                    Capsule()
+                        .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
+
+                    Ellipse()
+                        .fill(
+                            (isRecording ? Color.red : Color(red: 0.05, green: 0.75, blue: 0.35))
+                                .opacity(0.6)
+                        )
+                        .frame(width: 72, height: 36)
+                        .blur(radius: 14)
+                        .offset(x: lightPhase ? 14 : -14)
+
+                    Capsule()
+                        .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+
+                    Image(systemName: isRecording ? "stop.fill" : "mic.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                .frame(width: 68, height: 36)
+                .clipped()
+            }
+            .buttonStyle(.plain)
+
+            Button(action: onCancel) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color.white.opacity(0.4))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .onReceive(clock) { _ in if isRecording { seconds += 1 } }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
+                lightPhase = true
+            }
+        }
+    }
+}
+
 // MARK: - Source Card
 
 private struct SourceCard: View {
@@ -226,18 +370,19 @@ private struct SourceCard: View {
     @State private var expanded = true
     @State private var showImport = false
     @State private var showWriteText = false
+    @State private var showVoiceRecord = false
     @State private var showFilePicker = false
     @State private var showPhotoPicker = false
     @State private var photoPickerItem: PhotosPickerItem? = nil
     @FocusState private var textFocused: Bool
-    var onBuild: () -> Void
 
     var body: some View {
         GlassCard {
             VStack(spacing: 0) {
+                // Header row
                 HStack {
                     Button {
-                        withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
+                        withAnimation(.easeInOut(duration: 0.22)) { expanded.toggle() }
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: expanded ? "chevron.down" : "chevron.right")
@@ -255,97 +400,114 @@ private struct SourceCard: View {
                     Button {
                         showImport = true
                     } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.6))
-                            .frame(width: 30, height: 30)
-                            .background(Color.white.opacity(0.08))
-                            .clipShape(Circle())
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.08))
+                                .frame(width: 30, height: 30)
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color.white.opacity(0.6))
+                        }
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 14)
+                .padding(.vertical, 10)
 
+                // Expanded content
                 if expanded {
-                    Divider().background(Color.white.opacity(0.07))
+                    VStack(spacing: 0) {
+                        Divider().background(Color.white.opacity(0.07))
 
-                    if !sources.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(sources) { item in
-                                    SourceChip(item: item) {
-                                        sources.removeAll { $0.id == item.id }
-                                        if item.type == .text { showWriteText = false }
+                        // Chips
+                        if !sources.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(sources) { item in
+                                        SourceChip(item: item) {
+                                            withAnimation(.spring(duration: 0.25)) {
+                                                sources.removeAll { $0.id == item.id }
+                                            }
+                                            if item.type == .text { showWriteText = false }
+                                        }
                                     }
                                 }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                            }
+                            Divider().background(Color.white.opacity(0.07))
+                        }
+
+                        // Link input
+                        if sources.contains(where: { $0.type == .link }) {
+                            LinkInputRow(link: $linkText) {
+                                sources.removeAll { $0.type == .link }
+                                linkText = ""
+                            }
+                        }
+
+                        // Text input
+                        if showWriteText || sources.contains(where: { $0.type == .text }) {
+                            ZStack(alignment: .topLeading) {
+                                if text.isEmpty {
+                                    Text("Paste your text, transcript or notes…")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Color.white.opacity(0.25))
+                                        .padding(.horizontal, 16)
+                                        .padding(.top, 14)
+                                        .allowsHitTesting(false)
+                                }
+                                TextEditor(text: $text)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Color.white.opacity(0.85))
+                                    .scrollContentBackground(.hidden)
+                                    .background(.clear)
+                                    .frame(minHeight: 100, maxHeight: 200)
+                                    .padding(.horizontal, 12)
+                                    .padding(.top, 8)
+                                    .padding(.bottom, 10)
+                                    .focused($textFocused)
+                            }
+                        }
+
+                        // Voice record row
+                        if showVoiceRecord {
+                            if !sources.isEmpty || showWriteText {
+                                Divider().background(Color.white.opacity(0.07))
+                            }
+                            VoiceRecordRow {
+                                label in
+                                withAnimation(.spring(duration: 0.25)) {
+                                    sources.append(SourceItem(type: .voice, label: label))
+                                    showVoiceRecord = false
+                                }
+                            } onCancel: {
+                                withAnimation { showVoiceRecord = false }
+                            }
+                        }
+
+                        // Empty hint
+                        if sources.isEmpty && !showWriteText && !showVoiceRecord {
+                            HStack {
+                                Text("Tap + to add source content")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color.white.opacity(0.22))
+                                Spacer()
                             }
                             .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                        }
-                        Divider().background(Color.white.opacity(0.07))
-                    }
-
-                    if sources.contains(where: { $0.type == .link }) {
-                        LinkInputRow(link: $linkText) {
-                            sources.removeAll { $0.type == .link }
-                            linkText = ""
+                            .padding(.vertical, 16)
                         }
                     }
-
-                    if showWriteText || sources.contains(where: { $0.type == .text }) {
-                        ZStack(alignment: .topLeading) {
-                            if text.isEmpty {
-                                Text("Paste your text, transcript or notes…")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Color.white.opacity(0.25))
-                                    .padding(.horizontal, 16)
-                                    .padding(.top, 14)
-                                    .allowsHitTesting(false)
-                            }
-                            TextEditor(text: $text)
-                                .font(.system(size: 14))
-                                .foregroundColor(Color.white.opacity(0.85))
-                                .scrollContentBackground(.hidden)
-                                .background(.clear)
-                                .frame(minHeight: 100, maxHeight: 200)
-                                .padding(.horizontal, 12)
-                                .padding(.top, 8)
-                                .focused($textFocused)
-                        }
-                    }
-
-                    if sources.isEmpty && !showWriteText {
-                        HStack {
-                            Text("Tap + to add source content")
-                                .font(.system(size: 13))
-                                .foregroundColor(Color.white.opacity(0.22))
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 16)
-                    }
-
-                    Button(action: onBuild) {
-                        Text("Build Workflow")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.85))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(Color.white.opacity(0.09))
-                            .overlay(
-                                Rectangle().fill(Color.white.opacity(0.07)).frame(height: 0.5),
-                                alignment: .top
-                            )
-                    }
-                    .buttonStyle(.plain)
+                    .transition(.opacity)
                 }
             }
         }
         .sheet(isPresented: $showImport) {
             ImportSheetView { type in
-                let feedback = UIImpactFeedbackGenerator(style: .light)
-                feedback.impactOccurred()
+                let hap = UIImpactFeedbackGenerator(style: .light)
+                hap.impactOccurred()
                 switch type {
                 case .text:
                     if !sources.contains(where: { $0.type == .text }) {
@@ -360,7 +522,7 @@ private struct SourceCard: View {
                 case .file:
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { showFilePicker = true }
                 case .voice:
-                    sources.append(SourceItem(type: .voice, label: "Voice note"))
+                    showVoiceRecord = true
                 case .image:
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { showPhotoPicker = true }
                 }
@@ -375,8 +537,7 @@ private struct SourceCard: View {
             allowsMultipleSelection: false
         ) { result in
             if case .success(let urls) = result, let url = urls.first {
-                let name = url.lastPathComponent
-                sources.append(SourceItem(type: .file, label: name))
+                sources.append(SourceItem(type: .file, label: url.lastPathComponent))
             }
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $photoPickerItem, matching: .images)
@@ -399,26 +560,29 @@ private struct GenerateCard: View {
             VStack(spacing: 0) {
                 SectionHeader(title: "Generate", expanded: $expanded)
                 if expanded {
-                    Divider().background(Color.white.opacity(0.07))
-                    ZStack(alignment: .topLeading) {
-                        if prompt.isEmpty {
-                            Text("Describe what you want to create…")
+                    VStack(spacing: 0) {
+                        Divider().background(Color.white.opacity(0.07))
+                        ZStack(alignment: .topLeading) {
+                            if prompt.isEmpty {
+                                Text("Describe what you want to create…")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Color.white.opacity(0.25))
+                                    .padding(.horizontal, 16)
+                                    .padding(.top, 14)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $prompt)
                                 .font(.system(size: 14))
-                                .foregroundColor(Color.white.opacity(0.25))
-                                .padding(.horizontal, 16)
-                                .padding(.top, 14)
-                                .allowsHitTesting(false)
+                                .foregroundColor(Color.white.opacity(0.85))
+                                .scrollContentBackground(.hidden)
+                                .background(.clear)
+                                .frame(minHeight: 80, maxHeight: 140)
+                                .padding(.horizontal, 12)
+                                .padding(.top, 8)
+                                .padding(.bottom, 12)
                         }
-                        TextEditor(text: $prompt)
-                            .font(.system(size: 14))
-                            .foregroundColor(Color.white.opacity(0.85))
-                            .scrollContentBackground(.hidden)
-                            .background(.clear)
-                            .frame(minHeight: 80, maxHeight: 140)
-                            .padding(.horizontal, 12)
-                            .padding(.top, 8)
-                            .padding(.bottom, 12)
                     }
+                    .transition(.opacity)
                 }
             }
         }
@@ -429,7 +593,7 @@ private struct GenerateCard: View {
 
 private struct BrandCard: View {
     @Binding var selectedBrand: String
-    let brands = ["None", "Personal", "Company", "Startup", "Agency"]
+    let brands = ["Default", "Personal", "Company", "Startup", "Agency"]
 
     var body: some View {
         GlassCard {
@@ -483,7 +647,7 @@ struct HomeView: View {
     @State private var sources: [SourceItem] = []
     @State private var linkText  = ""
     @State private var genPrompt = ""
-    @State private var brand     = "None"
+    @State private var brand     = "Default"
 
     var body: some View {
         ZStack {
@@ -500,19 +664,40 @@ struct HomeView: View {
             ).ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
-                    SourceCard(
-                        text: $sourceText,
-                        sources: $sources,
-                        linkText: $linkText,
-                        onBuild: { onNewWorkflow?() }
-                    )
-                    GenerateCard(prompt: $genPrompt)
-                    BrandCard(selectedBrand: $brand)
+                VStack(spacing: 0) {
+                    // Page header
+                    HStack {
+                        Text("Create")
+                            .font(.system(size: 26, weight: .bold))
+                            .foregroundColor(.white)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 16)
+
+                    // Cards
+                    VStack(spacing: 12) {
+                        SourceCard(
+                            text: $sourceText,
+                            sources: $sources,
+                            linkText: $linkText
+                        )
+                        GenerateCard(prompt: $genPrompt)
+                        BrandCard(selectedBrand: $brand)
+                    }
+                    .padding(.horizontal, 16)
+
+                    // Page-level CTA
+                    AnimatedLightsButton(title: "Build Workflow", icon: "sparkles") {
+                        let hap = UIImpactFeedbackGenerator(style: .medium)
+                        hap.impactOccurred()
+                        onNewWorkflow?()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 40)
             }
             .scrollDismissesKeyboard(.immediately)
         }
