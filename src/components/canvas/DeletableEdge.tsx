@@ -5,8 +5,8 @@ import { useGraphStore } from '../../store/graphStore';
 const APPROACH_MS = 200;
 const CIRCLE_END_MS = 620;
 const TOTAL_MS = 750;
-const CIRCLE_R = 9;       // px radius of the knot loop
-const CIRCLE_CYCLES = 1.5; // full orbits before settling
+const CIRCLE_R = 7;        // px — how far apart the tips start before spiralling in
+const CIRCLE_CYCLES = 1.5; // loops while converging — they cross 3× before merging
 
 function easeOut(t: number) { return 1 - (1 - t) * (1 - t); }
 function easeIn(t: number) { return t * t; }
@@ -48,7 +48,7 @@ function DeletableEdge({
     const midX = (sourceX + targetX) / 2;
     const midY = (sourceY + targetY) / 2;
 
-    // Phase 1 brings both tips exactly to midpoint so Phase 2 orbits start from there
+    // Phase 1 ends with tips slightly apart (±CIRCLE_R) so Phase 2 starts seamlessly
 
     // Extract bezier control points from the precomputed edgePath for Phase 3 morph.
     // Format produced by getBezierPath: "M sx,sy C cp1x,cp1y cp2x,cp2y tx,ty"
@@ -67,25 +67,22 @@ function DeletableEdge({
       if (!pA || !pB) return;
 
       if (elapsed < APPROACH_MS) {
-        // Phase 1: both segments extend from their handle positions to the midpoint
+        // Phase 1: extend toward midpoint, stopping CIRCLE_R apart so Phase 2 starts flush
         const t = easeOut(elapsed / APPROACH_MS);
-        const ax = sourceX + (midX - sourceX) * t;
-        const ay = sourceY + (midY - sourceY) * t;
-        const bx = targetX + (midX - targetX) * t;
-        const by = targetY + (midY - targetY) * t;
-        pA.setAttribute('d', `M ${sourceX},${sourceY} L ${ax},${ay}`);
-        pB.setAttribute('d', `M ${targetX},${targetY} L ${bx},${by}`);
+        pA.setAttribute('d', `M ${sourceX},${sourceY} L ${sourceX + (midX - CIRCLE_R - sourceX) * t},${sourceY + (midY - sourceY) * t}`);
+        pB.setAttribute('d', `M ${targetX},${targetY} L ${targetX + (midX + CIRCLE_R - targetX) * t},${targetY + (midY - targetY) * t}`);
         pA.removeAttribute('display');
         pB.removeAttribute('display');
       } else if (elapsed < CIRCLE_END_MS) {
-        // Phase 2: tips orbit the midpoint in the same direction (knot motion).
-        // Tip A starts at angle π (left side), tip B at 0 (right side); both go clockwise.
-        // A half-sine envelope swells the radius in and back to zero for a smooth loop.
+        // Phase 2: inward spiral — tips orbit in mirrored directions while the radius
+        // shrinks linearly to zero, so they wind tighter and tighter until they merge.
+        // tipA (clockwise from left) and tipB (counterclockwise from right) cross each
+        // other at the top and bottom on every half-loop — the "hug" crossing.
         const t = (elapsed - APPROACH_MS) / (CIRCLE_END_MS - APPROACH_MS);
-        const r = CIRCLE_R * Math.sin(t * Math.PI); // 0 → peak → 0
+        const r = CIRCLE_R * (1 - t);           // CIRCLE_R → 0
         const angle = t * Math.PI * 2 * CIRCLE_CYCLES;
-        pA.setAttribute('d', `M ${sourceX},${sourceY} L ${midX + r * Math.cos(Math.PI + angle)},${midY + r * Math.sin(Math.PI + angle)}`);
-        pB.setAttribute('d', `M ${targetX},${targetY} L ${midX + r * Math.cos(angle)},${midY + r * Math.sin(angle)}`);
+        pA.setAttribute('d', `M ${sourceX},${sourceY} L ${midX - r * Math.cos(angle)},${midY - r * Math.sin(angle)}`);
+        pB.setAttribute('d', `M ${targetX},${targetY} L ${midX + r * Math.cos(angle)},${midY - r * Math.sin(angle)}`);
       } else if (elapsed < TOTAL_MS) {
         // Phase 3: morph into the final bezier by interpolating control points.
         // At t=0 both cps land on midpoint; at t=1 they reach natural bezier positions.
