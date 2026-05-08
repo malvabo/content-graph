@@ -843,13 +843,15 @@ Format each output clearly. Separate outputs with ---`;
           /* Output selector grid + Run button */
           <>
             {isRunning ? (
-              <div style={{ marginTop: 20 }}>
-                <OutputSkeleton />
-                <div style={{ marginTop: 16, fontSize: 13, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
+              <div style={{ marginTop: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite', flexShrink: 0 }}>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+                <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
                   {streamingText
                     ? `Generating… (${streamingText.length.toLocaleString()} chars)`
                     : 'Connecting…'}
-                </div>
+                </span>
               </div>
             ) : (
               <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
