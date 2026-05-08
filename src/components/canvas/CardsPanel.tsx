@@ -3,6 +3,12 @@ import { useCardsStore, type Card } from '../../store/cardsStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import FloatingChat from '../ui/FloatingChat';
 
+const BackIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="m15 18-6-6 6-6"/>
+  </svg>
+);
+
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
 
@@ -50,8 +56,8 @@ Rules:
   throw new Error('No API key configured. Add one in Settings.');
 }
 
-export default function CardsPanel({ setId }: { setId?: string }) {
-  const { sets, updateCards } = useCardsStore();
+export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?: () => void }) {
+  const { sets, updateCards, rename } = useCardsStore();
   const currentSet = sets.find(s => s.id === setId) || sets[0];
   const cards = currentSet?.cards || [];
 
@@ -152,8 +158,38 @@ export default function CardsPanel({ setId }: { setId?: string }) {
 
   if (!currentSet) return null;
 
+  const glassShadow = ['0 4px 24px rgba(0,0,0,0.07)','0 1px 6px rgba(0,0,0,0.04)','inset 0 1px 0 rgba(255,255,255,1)','inset 0 -1px 0 rgba(255,255,255,0.45)','inset 1px 0 0 rgba(255,255,255,0.65)','inset -1px 0 0 rgba(255,255,255,0.65)'].join(', ');
+  const glassShadowHover = ['0 8px 36px rgba(0,0,0,0.1)','0 2px 10px rgba(0,0,0,0.05)','inset 0 1px 0 rgba(255,255,255,1)','inset 0 -1px 0 rgba(255,255,255,0.6)','inset 1px 0 0 rgba(255,255,255,0.8)','inset -1px 0 0 rgba(255,255,255,0.8)'].join(', ');
+  const glassShadowSel = ['0 6px 28px rgba(29,114,66,0.12)','0 1px 6px rgba(29,114,66,0.08)','inset 0 1px 0 rgba(255,255,255,1)','inset 0 -1px 0 rgba(255,255,255,0.5)','inset 1px 0 0 rgba(255,255,255,0.7)','inset -1px 0 0 rgba(255,255,255,0.7)'].join(', ');
+
   return (
-    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)', position: 'relative' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'linear-gradient(155deg, #edf1f7 0%, #e5eaf2 40%, #eae8f0 100%)' }}>
+      {/* Toolbar — three-column, matches CanvasToolbar */}
+      <div style={{ height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 var(--space-3)', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+          {onBack && (
+            <button onClick={onBack}
+              style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 100ms, border-color 100ms' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+              aria-label="Back to cards library"><BackIcon /></button>
+          )}
+        </div>
+        <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', maxWidth: 420, minWidth: 120 }}>
+          <input aria-label="Card set name" className="outline-none"
+            style={{ fontWeight: 500, fontSize: 15, lineHeight: '22px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 4px', width: 220, maxWidth: '30vw', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}
+            value={currentSet.name} placeholder="Untitled"
+            onChange={e => rename(currentSet.id, e.target.value)}
+            onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
+            onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }} />
+        </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{cards.length} cards</span>
+        </div>
+      </div>
+
+      {/* Cards — full width */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)', paddingBottom: 120, position: 'relative' }}>
       {/* Selection popover — floats above content, centered at top */}
       {selected.size > 0 && (
         <div style={{ position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '6px 10px 6px 14px', background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', whiteSpace: 'nowrap' }}>
@@ -212,7 +248,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 e.stopPropagation();
                 if (!dragIdRef.current || dragIdRef.current === card.id) return;
                 const rect = e.currentTarget.getBoundingClientRect();
-                const pos = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+                const pos = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after';
                 setDropTarget(prev => prev?.id === card.id && prev.pos === pos ? prev : { id: card.id, pos });
               }}
               onDrop={e => {
@@ -230,22 +266,26 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 setDropTarget(null);
               }}
               onClick={e => { if (e.target instanceof HTMLElement && (e.target.tagName === 'INPUT' || e.target.closest('[contenteditable="true"]'))) return; toggleSelect(card.id); }}
-              className=""
               style={{
-                background: 'rgba(255,255,255,0.72)',
-                backdropFilter: 'blur(12px)',
-                border: isSel ? '2px solid var(--color-accent)' : '1px solid rgba(255,255,255,0.55)',
-                borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+                background: 'rgba(255,255,255,0.68)',
+                backdropFilter: 'blur(20px) saturate(160%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+                border: isSel ? '1.5px solid rgba(29,114,66,0.45)' : '1px solid rgba(255,255,255,0.72)',
+                borderRadius: 16, padding: 'var(--space-4)',
                 display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
-                transition: 'border-color 100ms, box-shadow 100ms, opacity 100ms', textAlign: 'left', minHeight: 120,
+                transition: 'box-shadow 200ms, border-color 200ms, opacity 150ms', textAlign: 'left', minHeight: 120,
                 cursor: isDragging ? 'grabbing' : 'grab',
-                opacity: isDragging ? 0.4 : 1,
+                opacity: isDragging ? 0.35 : 1,
+                userSelect: 'none',
+                boxShadow: isSel ? glassShadowSel : glassShadow,
               }}
-              onMouseEnter={e => { if (!isSel) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.85)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; } }}
-              onMouseLeave={e => { if (!isSel) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.55)'; e.currentTarget.style.boxShadow = 'none'; } }}
+              onMouseEnter={e => { if (!isSel && !isDragging) { e.currentTarget.style.boxShadow = glassShadowHover; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.9)'; } }}
+              onMouseLeave={e => { if (!isSel && !isDragging) { e.currentTarget.style.boxShadow = glassShadow; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.72)'; } }}
             >
+              {dropPos === 'before' && <div style={{ position: 'absolute', left: -9, top: -4, bottom: -4, width: 2, background: 'var(--color-accent)', borderRadius: 2, zIndex: 30, pointerEvents: 'none' }} />}
+              {dropPos === 'after' && <div style={{ position: 'absolute', right: -9, top: -4, bottom: -4, width: 2, background: 'var(--color-accent)', borderRadius: 2, zIndex: 30, pointerEvents: 'none' }} />}
               {/* Remove button */}
-              <button onClick={() => removeCard(card.id)}
+              <button onClick={e => { e.stopPropagation(); removeCard(card.id); }}
                 style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', background: 'var(--color-overlay-light)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 150ms', backdropFilter: 'blur(4px)' }}
                 onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
                 onMouseLeave={e => { e.currentTarget.style.opacity = '0'; }}>

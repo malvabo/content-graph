@@ -163,9 +163,9 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
   }, [iframeLoading]);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg-card)', position: 'relative' }}>
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--color-bg-card)' }}>
       {/* Toolbar — three-column, matches CanvasToolbar */}
-      <div className="absolute z-10" style={{ top: 0, left: 0, right: 0, height: 48, display: 'flex', alignItems: 'center', padding: '0 var(--space-3)', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+      <div style={{ height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 var(--space-3)', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border-subtle)' }}>
         {/* Left: back */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
           {onBack && (
@@ -185,12 +185,12 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
             <input
               aria-label="Script name"
               className="outline-none"
-              style={{ fontWeight: 500, fontSize: 15, lineHeight: '22px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em', background: 'none', border: 'none', borderBottom: '1px solid var(--color-border-subtle)', borderRadius: 0, padding: '2px 4px', width: 220, maxWidth: '30vw', textAlign: 'center' }}
+              style={{ fontWeight: 500, fontSize: 15, lineHeight: '22px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 4px', width: 220, maxWidth: '30vw', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}
               value={title}
               placeholder="Untitled"
               onChange={e => updateScript(scriptId, { title: e.target.value })}
               onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
-              onBlur={e => { e.currentTarget.style.borderBottomColor = 'var(--color-border-subtle)'; }}
+              onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
             />
           )}
         </div>
@@ -202,11 +202,11 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
             onClick={() => post({ type: 'run-analysis' })}
             aria-label="Re-run analysis"
             title="Re-run analysis"
-            style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', cursor: iframeLoading ? 'default' : 'pointer', color: 'var(--color-text-tertiary)', transition: 'background 150ms, color 150ms' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
+            style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', cursor: iframeLoading ? 'default' : 'pointer', color: 'var(--color-text-tertiary)', transition: 'background 100ms, border-color 100ms' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
           </button>
           <button
             type="button"
@@ -214,14 +214,14 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
             onClick={() => setMenuOpen(o => !o)}
             aria-label="Script actions"
             aria-expanded={menuOpen}
-            style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', cursor: iframeLoading ? 'default' : 'pointer', color: 'var(--color-text-tertiary)', transition: 'background 150ms, color 150ms' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
+            style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', cursor: iframeLoading ? 'default' : 'pointer', color: 'var(--color-text-tertiary)', transition: 'background 100ms, border-color 100ms' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
           </button>
           {menuOpen && (
-            <div style={{ position: 'absolute', top: 'calc(100% + var(--space-1))', right: 0, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 170 }}>
+            <div style={{ position: 'absolute', top: 'calc(100% + var(--space-1))', right: 0, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 170, zIndex: 50 }}>
               {[
                 onOpenInCards && { label: 'Open in Cards', action: () => { setMenuOpen(false); pendingActionRef.current = 'workflow'; post({ type: 'request-content' }); } },
                 onDelete && { label: 'Delete', danger: true, action: () => { setMenuOpen(false); post({ type: 'set-content', text: '' }); onDelete(); } },

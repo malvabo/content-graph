@@ -236,23 +236,7 @@ function AppInner() {
 
         {activeView === 'cardslibrary' && <CardsLibrary onOpen={(id: string) => { setActiveView('cards:' + id); }} />}
 
-        {activeView === 'cards' && (
-          <div className="flex-1 flex flex-col min-h-0" style={{ overflow: 'hidden' }}>
-            {/* Back bar — matches CanvasToolbar style */}
-            <div style={{ height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 var(--space-3)', gap: 'var(--space-2)', borderBottom: '1px solid var(--color-border-subtle)', background: 'var(--color-bg)' }}>
-              <button
-                onClick={() => setActiveView('cardslibrary')}
-                style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 100ms, border-color 100ms', flexShrink: 0 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
-                aria-label="Back to cards library"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
-              </button>
-            </div>
-            <CardsPanel key={hashParam} setId={hashParam} />
-          </div>
-        )}
+        {activeView === 'cards' && <CardsPanel key={hashParam} setId={hashParam} onBack={() => setActiveView('cardslibrary')} />}
 
         {activeView === 'infographics' && (
           <InfographicsPanel

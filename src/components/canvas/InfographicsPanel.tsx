@@ -456,21 +456,56 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)' }}>
       {/* Left — preview + structured editor */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: 'var(--space-3) var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
-          <button onClick={() => { setEditingId(null); onExitEditor?.(); }} className="btn btn-ghost" style={{ padding: 'var(--space-1) var(--space-2)' }} aria-label="Back to infographics">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
-          </button>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>Infographics</span>
-
-          <span style={{ flex: 1 }} />
-          {hasHistory && <button onClick={undo} className="btn btn-sm btn-ghost">↩ Undo</button>}
-          <button onClick={async () => {
-            const el = document.getElementById('ig-editor-preview');
-            if (!el) return;
-            const { toPng } = await import('html-to-image');
-            const url = await toPng(el, { pixelRatio: 3 });
-            const a = document.createElement('a'); a.href = url; a.download = 'infographic.png'; a.click();
-          }} className="btn btn-sm btn-ghost">Export PNG</button>
+        {/* Toolbar — three-column, matches CanvasToolbar */}
+        <div style={{ height: 48, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 var(--space-3)', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+          {/* Left: back */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+            <button
+              onClick={() => { setEditingId(null); onExitEditor?.(); }}
+              style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 100ms, border-color 100ms' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+              aria-label="Back to infographics">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+          </div>
+          {/* Center: title */}
+          <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', maxWidth: 420, minWidth: 120 }}>
+            <input
+              aria-label="Infographic name"
+              className="outline-none"
+              style={{ fontWeight: 500, fontSize: 15, lineHeight: '22px', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em', background: 'none', border: 'none', borderBottom: '1px solid transparent', borderRadius: 0, padding: '2px 4px', width: 220, maxWidth: '30vw', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              value={currentData?.title ?? ''}
+              placeholder="Untitled"
+              onChange={e => scheduleTextEdit('title', e.target.value)}
+              onFocus={e => { e.currentTarget.style.borderBottomColor = 'var(--color-accent)'; }}
+              onBlur={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
+            />
+          </div>
+          {/* Right: actions */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--space-1)' }}>
+            {hasHistory && (
+              <button onClick={undo}
+                style={{ height: 30, padding: '0 var(--space-3)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', transition: 'background 100ms, border-color 100ms' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
+                ↩ Undo
+              </button>
+            )}
+            <button
+              style={{ height: 30, padding: '0 var(--space-3)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', transition: 'background 100ms, border-color 100ms' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+              onClick={async () => {
+                const el = document.getElementById('ig-editor-preview');
+                if (!el) return;
+                const { toPng } = await import('html-to-image');
+                const url = await toPng(el, { pixelRatio: 3 });
+                const a = document.createElement('a'); a.href = url; a.download = 'infographic.png'; a.click();
+              }}>
+              Export PNG
+            </button>
+          </div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6)', paddingBottom: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)' }}>
