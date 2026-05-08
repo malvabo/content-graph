@@ -108,6 +108,42 @@ const fmtDuration = (ms: number) => {
   return m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
 };
 
+const fmtDate = (iso: string) => {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  if (diff < 172800000) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+async function generateSmartTitle(transcript: string): Promise<string> {
+  const { anthropicKey, groqKey } = useSettingsStore.getState();
+  const prompt = `Give this spoken transcript a concise 3–6 word title that captures the main topic. Return ONLY the title — no quotes, no punctuation, no explanation.\n\nTranscript: ${transcript.slice(0, 600)}`;
+  if (anthropicKey) {
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 20, messages: [{ role: 'user', content: prompt }] }),
+      });
+      if (res.ok) { const t = (await res.json()).content?.[0]?.text?.trim(); if (t) return t; }
+    } catch { /* fall through */ }
+  }
+  if (groqKey) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey.trim()}` },
+        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 20, messages: [{ role: 'user', content: prompt }] }),
+      });
+      if (res.ok) { const t = (await res.json()).choices?.[0]?.message?.content?.trim(); if (t) return t; }
+    } catch { /* fall through */ }
+  }
+  return '';
+}
+
 
 /** Deterministic ~32-bar waveform derived from the note id.
  *  Decorative: no real FFT — just gives each row a unique-looking sparkline. */
@@ -446,9 +482,14 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       return;
     }
 
-    const title = transcript ? transcript.split(/\s+/).slice(0, 5).join(' ') : 'Untitled note';
-    updateNote(noteId, { title, durationMs: duration, transcript, status: 'ready', errorReason: undefined });
+    const fallbackTitle = transcript ? transcript.split(/\s+/).slice(0, 5).join(' ') : 'Untitled note';
+    updateNote(noteId, { title: fallbackTitle, durationMs: duration, transcript, status: 'ready', errorReason: undefined });
     syncVoiceSourceOutputs(noteId, transcript);
+    if (transcript) {
+      generateSmartTitle(transcript).then(smart => {
+        if (smart) useVoiceStore.getState().updateNote(noteId, { title: smart });
+      }).catch(() => {});
+    }
   }, [updateNote]);
 
   // Discard the in-progress recording entirely. Only used when a fatal permission
@@ -619,7 +660,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                             borderRadius: 'var(--radius-xl)',
                             padding: '12px 16px',
                             display: 'grid',
-                            gridTemplateColumns: 'auto 1fr auto auto auto',
+                            gridTemplateColumns: 'auto 1fr auto',
                             alignItems: 'center',
                             columnGap: 'var(--space-4)',
                             minHeight: 64,
@@ -640,8 +681,8 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                             </svg>
                           </span>
 
-                          {/* Title + preview */}
-                          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          {/* Title + meta + preview */}
+                          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
                             <span style={{
                               fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, lineHeight: '20px',
                               color: isError ? 'var(--color-danger-text, #A83030)' : 'var(--color-text-primary)',
@@ -658,28 +699,20 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
                                 Transcribing…
                               </span>
                             ) : (
-                              <div style={{ position: 'relative', overflow: 'hidden' }}>
-                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-text-tertiary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                  {note.transcript || SAMPLE_CONTENT}
+                              <>
+                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-text-disabled)', fontVariantNumeric: 'tabular-nums' }}>
+                                  {fmtDate(note.createdAt)}{note.durationMs > 0 ? ` · ${fmtDuration(note.durationMs)}` : ''}
                                 </span>
-                                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 16, background: `linear-gradient(to bottom, transparent, ${isError ? 'var(--color-danger-bg, #FEF4F4)' : 'var(--color-bg-card))'})`, pointerEvents: 'none' }} />
-                              </div>
+                                {note.transcript && (
+                                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-text-tertiary)', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                    {note.transcript}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
 
-                          {/* Waveform (decorative) */}
-                          {!isError && <Waveform seed={note.id} durationMs={note.durationMs} />}
-
-                          {/* Duration */}
-                          <span style={{
-                            fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px',
-                            color: 'var(--color-text-tertiary)', fontVariantNumeric: 'tabular-nums',
-                            minWidth: 36, textAlign: 'right',
-                          }}>
-                            {fmtDuration(note.durationMs)}
-                          </span>
-
-                          {/* Menu dots — separate click target inside the grid cell */}
+                          {/* Spacer for menu dots */}
                           <span aria-hidden style={{ width: 24 }} />
                         </button>
 
