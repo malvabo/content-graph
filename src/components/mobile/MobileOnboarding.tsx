@@ -135,7 +135,7 @@ const BREATH = [
 const ORB: Record<Phase, object> = {
   idle:      { width: 200, height: 200, borderRadius: 100, top: '60%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
   prompt:    { width: 300, height: 76,  borderRadius: 38,  top: '60%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
-  recording: { width: 160, height: 160, borderRadius: 80,  top: '52%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 2.8 },
+  recording: { width: 160, height: 160, borderRadius: 80,  top: '52%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 1.8 },
   platform:  { width: 160, height: 44,  borderRadius: 22,  top: '11%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
   draft:     { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 1, scale: 1 },
   posting:   { width: 56,  height: 56,  borderRadius: 28,  top: '88%',  left: '50%', x: '-50%', y: '-50%', opacity: 0, scale: 0 },
@@ -432,7 +432,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
           animate={{...orbTarget,...(orbAbsorb?{scale:[1,1.18,1]}:{})}}
           transition={
             phase === 'posting'   ? {duration:0.7,ease:[0.4,0,0.8,1]} :
-            phase === 'recording' ? {duration:0.85,ease:[0.16,1,0.3,1]} :
+            phase === 'recording' ? {duration:1.3,ease:[0.32,0,0.18,1]} :
             isTravelingDown       ? {type:'spring',stiffness:55,damping:18,mass:1} :
             SPRING
           }
@@ -470,7 +470,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
         {/* ── Recording canvas ── */}
         <AnimatePresence>
           {phase==='recording' && (
-            <motion.div key="rec" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:0.55}} style={{position:'absolute',inset:0,zIndex:20}}>
+            <motion.div key="rec" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:0.7,delay:0.25}} style={{position:'absolute',inset:0,zIndex:20}}>
               <RecordingCanvas onStop={goToPlatform} />
             </motion.div>
           )}
