@@ -104,7 +104,7 @@ struct NativeTabBar: View {
                         Text(tab.label)
                             .font(.system(size: 10, weight: .medium))
                     }
-                    .foregroundColor(selected == tab ? accent : Color.gray.opacity(0.6))
+                    .foregroundColor(selected == tab ? accent : Color.white.opacity(0.45))
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
                 }
@@ -114,10 +114,19 @@ struct NativeTabBar: View {
         .padding(.bottom, 2)
         .background {
             Rectangle()
-                .fill(Color(red: 28/255, green: 28/255, blue: 31/255))
+                .fill(.ultraThinMaterial)
                 .overlay(alignment: .top) {
-                    Rectangle().fill(Color.white.opacity(0.08)).frame(height: 0.5)
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.18), Color.white.opacity(0.06)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(height: 0.5)
                 }
+                .ignoresSafeArea(edges: .bottom)
         }
     }
 }
