@@ -19,16 +19,13 @@ html, body, #root { height: 100%; }
 
 /* Card keyword tags */
 .card-keywords {
-  display: inline-block;
+  display: block;
+  margin-top: 10px;
   font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--color-text-secondary);
-  background: var(--color-bg-surface);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-sm);
-  padding: 1px 6px;
-  line-height: 1.6;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
 }
 
 /* Suppress ReactFlow's built-in selection outline on the wrapper — BaseNode handles all selection visuals */

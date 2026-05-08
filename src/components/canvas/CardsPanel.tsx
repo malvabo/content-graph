@@ -222,7 +222,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 setDraggingId(null);
                 setDragOverId(null);
               }}
-              onClick={e => { if (e.target instanceof HTMLElement && (e.target.contentEditable === 'true' || e.target.tagName === 'INPUT')) return; toggleSelect(card.id); }}
+              onClick={e => { if (e.target instanceof HTMLElement && (e.target.tagName === 'INPUT' || e.target.closest('[contenteditable="true"]'))) return; toggleSelect(card.id); }}
               style={{
                 background: 'var(--color-bg-card)',
                 border: isSel ? '2px solid var(--color-accent)' : isDropOver ? '2px solid var(--color-accent)' : '1px solid var(--color-border-default)',
