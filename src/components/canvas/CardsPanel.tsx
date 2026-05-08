@@ -73,6 +73,8 @@ export default function CardsPanel({ setId }: { setId?: string }) {
 
   const [groupInput, setGroupInput] = useState('');
   const [showGroupInput, setShowGroupInput] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [groupRenameInput, setGroupRenameInput] = useState('');
 
   const groupSelected = () => {
     if (selected.size < 2) return;
@@ -84,16 +86,13 @@ export default function CardsPanel({ setId }: { setId?: string }) {
     setShowGroupInput(false);
   };
 
-  const renameGroup = (oldName: string) => {
-    const name = window.prompt('Rename group', oldName);
-    if (!name?.trim()) return;
-    const updated = cards.map(c => c.group === oldName ? { ...c, group: name.trim() } : c);
-    updateCards(currentSet!.id, updated);
-  };
-
-  const ungroupAll = (groupName: string) => {
-    const updated = cards.map(c => c.group === groupName ? { ...c, group: undefined } : c);
-    updateCards(currentSet!.id, updated);
+  const commitGroupRename = (oldName: string) => {
+    const name = groupRenameInput.trim();
+    if (name && name !== oldName) {
+      const updated = cards.map(c => c.group === oldName ? { ...c, group: name } : c);
+      updateCards(currentSet!.id, updated);
+    }
+    setEditingGroup(null);
   };
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -154,7 +153,18 @@ export default function CardsPanel({ setId }: { setId?: string }) {
   if (!currentSet) return null;
 
   return (
-    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)' }}>
+    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)', position: 'relative' }}>
+      {/* Selection popover — floats above content, centered at top */}
+      {selected.size > 0 && (
+        <div style={{ position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 50, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '6px 10px 6px 14px', background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', fontWeight: 500 }}>{selected.size} selected</span>
+          {showGroupInput
+            ? <input autoFocus className="form-input" value={groupInput} onChange={e => setGroupInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') groupSelected(); if (e.key === 'Escape') setShowGroupInput(false); }} style={{ width: 140 }} />
+            : null}
+          <button className="btn btn-sm btn-primary" onClick={groupSelected} disabled={selected.size < 2}>{showGroupInput ? 'Create group' : 'Group'}</button>
+          <button className="btn btn-sm btn-ghost" onClick={() => { setSelected(new Set()); setShowGroupInput(false); }}>Cancel</button>
+        </div>
+      )}
       {/* Cards — full width */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)', paddingBottom: 120 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
@@ -164,15 +174,6 @@ export default function CardsPanel({ setId }: { setId?: string }) {
           <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{cards.length} cards</span>
         </div>
 
-        {/* Selection toolbar */}
-        {selected.size > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)', padding: 'var(--space-2) var(--space-4)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)' }}>
-            <span style={{ fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', fontWeight: 500 }}>{selected.size} selected</span>
-            {showGroupInput && <input autoFocus className="form-input" value={groupInput} onChange={e => setGroupInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') groupSelected(); if (e.key === 'Escape') { setShowGroupInput(false); } }} style={{ width: 160 }} />}
-            <button className="btn btn-sm btn-primary" onClick={groupSelected} disabled={selected.size < 2}>{showGroupInput ? 'Create group' : 'Group'}</button>
-            <button className="btn btn-sm btn-ghost" onClick={() => { setSelected(new Set()); setShowGroupInput(false); }}>Cancel</button>
-          </div>
-        )}
 
         {/* Grouped cards */}
         {(() => {
@@ -292,11 +293,23 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                   }}
                   style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 'var(--radius-xl)', padding: 'var(--space-4)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: c.label }}>{name}</span>
+                    {editingGroup === name ? (
+                      <input
+                        autoFocus
+                        value={groupRenameInput}
+                        onChange={e => setGroupRenameInput(e.target.value)}
+                        onBlur={() => commitGroupRename(name)}
+                        onKeyDown={e => { if (e.key === 'Enter') commitGroupRename(name); if (e.key === 'Escape') setEditingGroup(null); }}
+                        style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: c.label, background: 'none', border: 'none', borderBottom: `1px solid ${c.border}`, outline: 'none', padding: '0 2px', width: 160 }}
+                      />
+                    ) : (
+                      <span
+                        onClick={() => { setEditingGroup(name); setGroupRenameInput(name); }}
+                        title="Click to rename"
+                        style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: c.label, cursor: 'text' }}
+                      >{name}</span>
+                    )}
                     <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{groupCards.length}</span>
-                    <span style={{ flex: 1 }} />
-                    <button onClick={() => renameGroup(name)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Rename</button>
-                    <button onClick={() => ungroupAll(name)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>Ungroup</button>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
                     {groupCards.map(renderCard)}
