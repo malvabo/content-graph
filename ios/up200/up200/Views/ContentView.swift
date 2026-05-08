@@ -48,9 +48,7 @@ struct ContentView: View {
                     .transition(.opacity)
             } else {
                 VStack(spacing: 0) {
-                    // Content area: native HomeView for library, WebView for others
                     ZStack {
-                        // WebView — always kept alive so state isn't lost on tab switch
                         WebView(url: baseURL, isLoading: $isLoading) { view in
                             if let tab = AppTab.allCases.first(where: { $0.hash.contains(view) }) {
                                 selectedTab = tab
@@ -60,24 +58,20 @@ struct ContentView: View {
                         .opacity(selectedTab == .library ? 0 : 1)
                         .allowsHitTesting(selectedTab != .library)
 
-                        // Native home page
                         if selectedTab == .library {
                             HomeView(onNewWorkflow: {
                                 selectedTab = .workflow
                             })
-                            .ignoresSafeArea(edges: .top)
                             .transition(.opacity)
                         }
                     }
 
-                    // Loading bar (only shown for web tabs)
                     if isLoading && selectedTab != .library {
                         ProgressView()
                             .progressViewStyle(.linear)
                             .tint(Color(red: 13/255, green: 191/255, blue: 90/255))
                     }
 
-                    // Native tab bar
                     NativeTabBar(selected: $selectedTab)
                 }
             }

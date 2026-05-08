@@ -53,16 +53,15 @@ private struct ImportSheetView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             Capsule()
                 .fill(Color.white.opacity(0.2))
                 .frame(width: 36, height: 4)
-                .padding(.top, 12)
+                .padding(.top, 10)
 
             Text("Import content")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.white)
-                .padding(.top, 4)
 
             Button {
                 onSelect(.link)
@@ -491,7 +490,7 @@ struct HomeView: View {
                     BrandCard(selectedBrand: $brand)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .padding(.top, 12)
                 .padding(.bottom, 40)
             }
         }
