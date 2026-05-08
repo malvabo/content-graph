@@ -149,20 +149,6 @@ const ERR_TEXT: React.CSSProperties = {
   fontSize: 13, color: '#C93030', fontFamily: 'var(--font-sans)', marginTop: 6,
 };
 
-// ─── Small UI pieces ──────────────────────────────────────────────────────────
-
-function StepLabel({ num, title, sub }: { num: string; title: string; sub: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-      <span style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', letterSpacing: '0.06em', width: 20, flexShrink: 0 }}>{num}</span>
-      <div>
-        <span style={{ fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: '22px' }}>{title}</span>
-        <span style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', marginLeft: 8 }}>— {sub}</span>
-      </div>
-    </div>
-  );
-}
-
 // ─── Source inputs ────────────────────────────────────────────────────────────
 
 function TextInput() {
@@ -522,26 +508,33 @@ const ResultCard = memo(function ResultCard({ label, content }: { label: string;
   );
 });
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
+// ─── Accordion section ────────────────────────────────────────────────────────
 
-function SkeletonBar({ w = '100%', h = 14 }: { w?: string | number; h?: number }) {
+function AccordionSection({ title, sub, open, onToggle, children }: {
+  title: string; sub: string; open: boolean; onToggle: () => void; children: React.ReactNode;
+}) {
   return (
-    <div style={{
-      width: w, height: h, borderRadius: 4,
-      background: 'linear-gradient(90deg, var(--color-bg-surface) 25%, var(--color-bg-subtle) 50%, var(--color-bg-surface) 75%)',
-      backgroundSize: '200% 100%', animation: 'qm-shimmer 1.4s ease infinite',
-    }} />
-  );
-}
-
-function OutputSkeleton() {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-      {Array.from({ length: 9 }).map((_, i) => (
-        <div key={i} style={{ border: '1.5px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
-          <SkeletonBar w="70%" h={13} />
+    <div>
+      <div
+        onClick={onToggle}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '20px 40px', cursor: 'pointer', userSelect: 'none',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+          <span style={{ fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: '22px' }}>{title}</span>
+          <span style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>— {sub}</span>
         </div>
-      ))}
+        <svg
+          width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"
+          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms', flexShrink: 0 }}
+        >
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
+      </div>
+      {open && <div style={{ padding: '0 40px 24px' }}>{children}</div>}
     </div>
   );
 }
@@ -549,9 +542,15 @@ function OutputSkeleton() {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 type RunState = 'idle' | 'running' | 'done' | 'error';
+type View = 'setup' | 'results';
 
 export default function QuickMode() {
   const store = useQuickModeStore();
+
+  const [view, setView] = useState<View>('setup');
+  const [sectionsOpen, setSectionsOpen] = useState({ sources: true, prompt: true, outputs: true });
+  const toggleSection = (k: keyof typeof sectionsOpen) =>
+    setSectionsOpen(s => ({ ...s, [k]: !s[k] }));
 
   // Run state lives locally — resets on mode switch, which is fine
   const [runState, setRunState] = useState<RunState>('idle');
@@ -577,7 +576,7 @@ export default function QuickMode() {
   const toggleSource = useCallback((type: SourceType) => {
     const cur = store.selectedSources;
     if (cur.includes(type)) {
-      if (cur.length === 1) return; // keep at least one
+      if (cur.length === 1) return;
       store.setSources(cur.filter(t => t !== type));
     } else {
       store.setSources([...cur, type]);
@@ -597,10 +596,7 @@ export default function QuickMode() {
 
   // ── Template select ──
   const selectTemplate = useCallback((key: string) => {
-    if (store.templateKey === key) {
-      store.setTemplate(null);
-      return;
-    }
+    if (store.templateKey === key) { store.setTemplate(null); return; }
     const tpl = QUICK_TEMPLATES.find(t => t.key === key);
     if (tpl) { store.setTemplate(key); store.setPrompt(tpl.text); }
   }, [store]);
@@ -612,6 +608,7 @@ export default function QuickMode() {
     if (!apiKey) {
       setRunError('No API key — add one in Settings');
       setRunState('error');
+      setView('results');
       return;
     }
 
@@ -643,6 +640,7 @@ Format each output clearly. Separate outputs with ---`;
     setStreamingText('');
     setResults({});
     setRunError('');
+    setView('results');
 
     let accumulated = '';
     let lineBuffer = '';
@@ -706,62 +704,108 @@ Format each output clearly. Separate outputs with ---`;
     }
   }, [canRun, store]);
 
-  const resetToInputs = useCallback(() => {
+  const doRunRef = useRef(doRun);
+  useEffect(() => { doRunRef.current = doRun; }, [doRun]);
+
+  const backToSetup = useCallback(() => {
+    abortRef.current?.abort();
+    setView('setup');
     setRunState('idle');
     setResults({});
     setStreamingText('');
     setRunError('');
   }, []);
 
-  const doRunRef = useRef(doRun);
-  useEffect(() => { doRunRef.current = doRun; }, [doRun]);
-
   const runAgain = useCallback(() => {
-    resetToInputs();
+    setRunState('idle');
+    setResults({});
+    setStreamingText('');
+    setRunError('');
     setTimeout(() => doRunRef.current(), 50);
-  }, [resetToInputs]);
+  }, []);
 
   useEffect(() => {
     return () => abortRef.current?.abort();
   }, []);
 
-  // ── Layout ──
-  const sectionPad: React.CSSProperties = { padding: '28px 40px' };
+  const STYLES = `
+    @keyframes qm-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(201,48,48,0.4); } 50% { box-shadow: 0 0 0 8px rgba(201,48,48,0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .qm-source-input { transition: opacity 200ms; }
+  `;
 
+  // ── Results page ──
+  if (view === 'results') {
+    return (
+      <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', background: 'var(--color-bg)', fontFamily: 'var(--font-sans)' }}>
+        <style>{STYLES}</style>
+        <div style={{ padding: '28px 40px', maxWidth: 720 }}>
+          <button
+            onClick={backToSetup}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#526858', fontFamily: 'var(--font-sans)', padding: 0, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 28 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
+            Back to setup
+          </button>
+
+          {isRunning && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '40px 0' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite', flexShrink: 0 }}>
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              </svg>
+              <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
+                {streamingText ? `Generating… (${streamingText.length.toLocaleString()} chars)` : 'Connecting…'}
+              </span>
+            </div>
+          )}
+
+          {runState === 'error' && (
+            <p style={{ ...ERR_TEXT, marginBottom: 20 }}>
+              {runError || 'Something went wrong. Check your connection and try again.'}
+            </p>
+          )}
+
+          {isDone && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {store.selectedOutputs.map(key => {
+                  const def = QUICK_OUTPUTS.find(o => o.key === key);
+                  const label = def?.label ?? key;
+                  const content = results[label] ?? Object.entries(results).find(([k]) => k.toLowerCase().includes(label.toLowerCase()))?.[1] ?? '';
+                  return <ResultCard key={key} label={label} content={content || '(No content generated for this output)'} />;
+                })}
+              </div>
+              <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={runAgain} className="btn btn-run btn-sm">Run again →</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Setup page ──
   return (
-    <div style={{
-      position: 'absolute', inset: 0, overflowY: 'auto',
-      background: 'var(--color-bg)',
-      fontFamily: 'var(--font-sans)',
-    }}>
-      <style>{`
-        @keyframes qm-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(201,48,48,0.4); } 50% { box-shadow: 0 0 0 8px rgba(201,48,48,0); } }
-        @keyframes qm-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .qm-source-input { transition: opacity 200ms; }
-      `}</style>
+    <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', background: 'var(--color-bg)', fontFamily: 'var(--font-sans)' }}>
+      <style>{STYLES}</style>
 
-      {/* ── STEP 1: SOURCES ── */}
-      <div style={{ ...sectionPad, opacity: isRunning ? 0.5 : 1, transition: 'opacity 200ms', pointerEvents: isRunning ? 'none' : undefined }}>
-        <StepLabel num="01" title="Sources" sub="Choose what you're working with" />
-        <div style={{ marginTop: 20, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <AccordionSection
+        title="Sources" sub="Choose what you're working with"
+        open={sectionsOpen.sources} onToggle={() => toggleSection('sources')}
+      >
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: store.selectedSources.length > 0 ? 20 : 0 }}>
           {SOURCE_DEFS.map(({ key, label, icon }) => {
             const active = store.selectedSources.includes(key);
             return (
-              <button
-                key={key}
-                onClick={() => toggleSource(key)}
-                style={{ ...CHIP_BASE, ...(active ? CHIP_ACTIVE : {}) }}
-              >
+              <button key={key} onClick={() => toggleSource(key)} style={{ ...CHIP_BASE, ...(active ? CHIP_ACTIVE : {}) }}>
                 {icon}{label}
               </button>
             );
           })}
         </div>
-
-        {/* Input areas per selected source */}
         {store.selectedSources.length > 0 && (
-          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {store.selectedSources.map(type => (
               <div key={type} className="qm-source-input">
                 {type === 'text'  && <TextInput />}
@@ -772,16 +816,15 @@ Format each output clearly. Separate outputs with ---`;
             ))}
           </div>
         )}
-      </div>
+      </AccordionSection>
 
       <div style={SECTION_DIVIDER} />
 
-      {/* ── STEP 2: PROMPT ── */}
-      <div style={{ ...sectionPad, opacity: isRunning ? 0.5 : 1, transition: 'opacity 200ms', pointerEvents: isRunning ? 'none' : undefined }}>
-        <StepLabel num="02" title="Prompt" sub="Tell it what to do" />
-
-        {/* Template chips row */}
-        <div style={{ marginTop: 20, overflowX: 'auto', display: 'flex', gap: 8, paddingBottom: 4, scrollbarWidth: 'none' }}>
+      <AccordionSection
+        title="Prompt" sub="Tell it what to do"
+        open={sectionsOpen.prompt} onToggle={() => toggleSection('prompt')}
+      >
+        <div style={{ overflowX: 'auto', display: 'flex', gap: 8, paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 12 }}>
           {QUICK_TEMPLATES.map(tpl => {
             const active = store.templateKey === tpl.key;
             return (
@@ -795,121 +838,52 @@ Format each output clearly. Separate outputs with ---`;
             );
           })}
         </div>
-
-        <div style={{ marginTop: 12 }}>
-          <textarea
-            style={{ ...TEXTAREA, minHeight: 100 }}
-            placeholder="Write your instruction here, or pick a template above"
-            value={store.promptValue}
-            onChange={e => { store.setPrompt(e.target.value); if (store.templateKey) store.setTemplate(null); }}
-            onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
-            onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
-          />
-        </div>
-      </div>
+        <textarea
+          style={{ ...TEXTAREA, minHeight: 100 }}
+          placeholder="Write your instruction here, or pick a template above"
+          value={store.promptValue}
+          onChange={e => { store.setPrompt(e.target.value); if (store.templateKey) store.setTemplate(null); }}
+          onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+        />
+      </AccordionSection>
 
       <div style={SECTION_DIVIDER} />
 
-      {/* ── STEP 3: OUTPUTS / RESULTS ── */}
-      <div style={sectionPad}>
-        <StepLabel num="03" title="Outputs" sub="Pick your formats" />
-
-        {isDone ? (
-          /* Results panel */
-          <div style={{ marginTop: 20 }}>
-            <button
-              onClick={resetToInputs}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#526858', fontFamily: 'var(--font-sans)', padding: 0, textDecoration: 'underline', marginBottom: 16 }}
-            >
-              ← Back to inputs
-            </button>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {store.selectedOutputs.map(key => {
-                const def = QUICK_OUTPUTS.find(o => o.key === key);
-                const label = def?.label ?? key;
-                const content = results[label] ?? Object.entries(results).find(([k]) => k.toLowerCase().includes(label.toLowerCase()))?.[1] ?? '';
-                return <ResultCard key={key} label={label} content={content || '(No content generated for this output)'} />;
-              })}
-            </div>
-
-            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={runAgain} className="btn btn-run btn-sm">
-                Run again →
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Output selector grid + Run button */
-          <>
-            {isRunning ? (
-              <div style={{ marginTop: 32, display: 'flex', alignItems: 'center', gap: 12 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite', flexShrink: 0 }}>
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                </svg>
-                <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
-                  {streamingText
-                    ? `Generating… (${streamingText.length.toLocaleString()} chars)`
-                    : 'Connecting…'}
-                </span>
-              </div>
-            ) : (
-              <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                {QUICK_OUTPUTS.map(({ key, label }) => {
-                  const active = store.selectedOutputs.includes(key);
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => toggleOutput(key)}
-                      style={{
-                        ...CHIP_BASE,
-                        ...(active ? CHIP_ACTIVE : {}),
-                        borderRadius: 'var(--radius-md)',
-                        padding: '10px 14px',
-                        justifyContent: 'flex-start',
-                        fontSize: 13,
-                      }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {runState === 'error' && (
-              <p style={{ ...ERR_TEXT, marginTop: 12 }}>
-                {runError || 'Something went wrong. Check your connection and try again.'}
-              </p>
-            )}
-
-            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
+      <AccordionSection
+        title="Outputs" sub="Pick your formats"
+        open={sectionsOpen.outputs} onToggle={() => toggleSection('outputs')}
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          {QUICK_OUTPUTS.map(({ key, label }) => {
+            const active = store.selectedOutputs.includes(key);
+            return (
               <button
-                onClick={doRun}
-                disabled={!canRun || isRunning}
-                className="btn btn-run"
-                style={{
-                  opacity: (!canRun || isRunning) ? 0.45 : 1,
-                  cursor: (!canRun || isRunning) ? 'default' : 'pointer',
-                  gap: 6,
-                }}
+                key={key}
+                onClick={() => toggleOutput(key)}
+                style={{ ...CHIP_BASE, ...(active ? CHIP_ACTIVE : {}), borderRadius: 'var(--radius-md)', padding: '10px 14px', justifyContent: 'flex-start' }}
               >
-                {isRunning ? (
-                  <>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite' }}>
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                    </svg>
-                    Running…
-                  </>
-                ) : 'Run →'}
+                {label}
               </button>
-            </div>
-          </>
-        )}
+            );
+          })}
+        </div>
+      </AccordionSection>
+
+      <div style={SECTION_DIVIDER} />
+
+      <div style={{ padding: '20px 40px', display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={doRun}
+          disabled={!canRun}
+          className="btn btn-run"
+          style={{ opacity: !canRun ? 0.45 : 1, cursor: !canRun ? 'default' : 'pointer' }}
+        >
+          Run →
+        </button>
       </div>
 
-      {/* bottom breathing room */}
-      <div style={{ height: 40 }} />
+      <div style={{ height: 24 }} />
     </div>
   );
 }
