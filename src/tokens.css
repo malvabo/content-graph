@@ -366,12 +366,12 @@
   --color-schematic-transform-stroke: #7048b8;
   --color-schematic-output-bg: #0e1a34;
   --color-schematic-output-stroke: #3868b8;
-  --color-badge-source-bg: #201e1a;
-  --color-badge-source-text: #b0a898;
-  --color-badge-generate-bg: #1e1c1a;
-  --color-badge-generate-text: #a0a090;
-  --color-badge-output-bg: #20201a;
-  --color-badge-output-text: #a0a080;
-  --color-badge-transform-bg: #201a1e;
-  --color-badge-transform-text: #b090a8;
+  --color-badge-source-bg: rgba(255,255,255,0.07);
+  --color-badge-source-text: rgba(255,255,255,0.55);
+  --color-badge-generate-bg: rgba(255,255,255,0.07);
+  --color-badge-generate-text: rgba(255,255,255,0.55);
+  --color-badge-output-bg: rgba(255,255,255,0.07);
+  --color-badge-output-text: rgba(255,255,255,0.55);
+  --color-badge-transform-bg: rgba(255,255,255,0.07);
+  --color-badge-transform-text: rgba(255,255,255,0.55);
 }
