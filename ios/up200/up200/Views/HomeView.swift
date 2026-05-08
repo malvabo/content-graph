@@ -289,17 +289,20 @@ private struct VoiceRecordRow: View {
         String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let green = Color(red: 0.05, green: 0.75, blue: 0.35)
+
     var body: some View {
         HStack(spacing: 12) {
             Circle()
-                .fill(isRecording ? Color.red : Color.white.opacity(0.25))
-                .frame(width: 8, height: 8)
-                .scaleEffect(isRecording ? (pulse ? 1.4 : 1.0) : 1.0)
-                .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: pulse)
+                .fill(isRecording ? amber.opacity(0.85) : Color.white.opacity(0.18))
+                .frame(width: 7, height: 7)
+                .scaleEffect(isRecording ? (pulse ? 1.35 : 1.0) : 1.0)
+                .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulse)
 
             Text(isRecording ? timeLabel : "Tap to record")
                 .font(.system(size: 16, design: isRecording ? .monospaced : .default))
-                .foregroundColor(Color.white.opacity(isRecording ? 0.85 : 0.4))
+                .foregroundColor(Color.white.opacity(isRecording ? 0.75 : 0.35))
 
             Spacer()
 
@@ -317,23 +320,23 @@ private struct VoiceRecordRow: View {
             } label: {
                 ZStack {
                     Capsule()
-                        .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
+                        .fill(Color(red: 0.10, green: 0.08, blue: 0.07))
 
                     Ellipse()
                         .fill(
-                            (isRecording ? Color.red : Color(red: 0.05, green: 0.75, blue: 0.35))
-                                .opacity(0.6)
+                            (isRecording ? amber : green)
+                                .opacity(isRecording ? 0.45 : 0.40)
                         )
                         .frame(width: 72, height: 36)
-                        .blur(radius: 14)
+                        .blur(radius: 16)
                         .offset(x: lightPhase ? 14 : -14)
 
                     Capsule()
-                        .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                        .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
 
                     Image(systemName: isRecording ? "stop.fill" : "mic.fill")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.white)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.8))
                 }
                 .frame(width: 68, height: 36)
                 .clipped()
@@ -342,8 +345,8 @@ private struct VoiceRecordRow: View {
 
             Button(action: onCancel) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(Color.white.opacity(0.4))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.3))
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
@@ -353,7 +356,7 @@ private struct VoiceRecordRow: View {
         .padding(.vertical, 10)
         .onReceive(clock) { _ in if isRecording { seconds += 1 } }
         .onAppear {
-            withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
                 lightPhase = true
             }
         }
