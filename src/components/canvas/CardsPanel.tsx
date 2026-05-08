@@ -230,17 +230,19 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 setDropTarget(null);
               }}
               onClick={e => { if (e.target instanceof HTMLElement && (e.target.tagName === 'INPUT' || e.target.closest('[contenteditable="true"]'))) return; toggleSelect(card.id); }}
-              className="card-bg-gradient"
+              className=""
               style={{
-                border: isSel ? '2px solid var(--color-accent)' : '1px solid var(--color-border-default)',
+                background: 'rgba(255,255,255,0.72)',
+                backdropFilter: 'blur(12px)',
+                border: isSel ? '2px solid var(--color-accent)' : '1px solid rgba(255,255,255,0.55)',
                 borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
                 display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
                 transition: 'border-color 100ms, box-shadow 100ms, opacity 100ms', textAlign: 'left', minHeight: 120,
                 cursor: isDragging ? 'grabbing' : 'grab',
                 opacity: isDragging ? 0.4 : 1,
               }}
-              onMouseEnter={e => { if (!isSel) { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; } }}
-              onMouseLeave={e => { if (!isSel) { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; } }}
+              onMouseEnter={e => { if (!isSel) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.85)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; } }}
+              onMouseLeave={e => { if (!isSel) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.55)'; e.currentTarget.style.boxShadow = 'none'; } }}
             >
               {/* Remove button */}
               <button onClick={() => removeCard(card.id)}
