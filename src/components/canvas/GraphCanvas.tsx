@@ -143,7 +143,7 @@ export default function GraphCanvas() {
         deleteKeyCode={['Backspace', 'Delete']}
         fitView={false} panOnScroll selectionOnDrag selectionKeyCode="Shift"
         proOptions={{ hideAttribution: true }}
-        style={{ background: 'var(--color-bg)' }}>
+        style={{ background: 'var(--color-bg-canvas)' }}>
         <DotSpotlight />
         <RunWaveOverlay />
         <Controls showInteractive={false} position="bottom-right" />
