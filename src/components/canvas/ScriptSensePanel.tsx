@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useBrandsStore, getActiveBrand } from '../../store/brandsStore';
+import { useGraphStore } from '../../store/graphStore';
 import { useScriptStore } from '../../store/scriptStore';
 import { generateAndSaveCards } from '../../utils/scriptToCards';
 
