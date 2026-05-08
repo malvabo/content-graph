@@ -4,7 +4,6 @@ import {
   applyNodeChanges, applyEdgeChanges, addEdge, type Connection, useReactFlow,
 } from '@xyflow/react';
 import { useCallback, useRef, useEffect, useState, useMemo } from 'react';
-import HandshakeAnimation from './HandshakeAnimation';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
@@ -27,7 +26,7 @@ const defaultEdgeOptions = { type: 'deletable', style: { stroke: 'var(--color-ed
 
 export default function GraphCanvas() {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId, setConnectingNodeId, addNode } = useGraphStore();
-  const { screenToFlowPosition, flowToScreenPosition } = useReactFlow();
+  const { screenToFlowPosition } = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const { isValidConnection, tooltip } = useConnectionValidation(nodes, edges);
   const { menu, onNodeContextMenu, close: closeMenu } = useContextMenu();
@@ -76,22 +75,13 @@ export default function GraphCanvas() {
     (conn: Connection) => {
       if (!isValidConnection(conn)) return;
       const current = useGraphStore.getState().edges;
-      setEdges(addEdge({ ...conn, id: `e-${conn.source}-${conn.target}-${Date.now()}-${Math.random().toString(36).slice(2,7)}` }, current));
-
-      // Trigger handshake animation at the source handle (right edge of source node)
-      const srcNode = useGraphStore.getState().nodes.find(n => n.id === conn.source);
-      if (srcNode && wrapperRef.current) {
-        const NODE_W = 480;
-        const NODE_H = srcNode.data.subtype === 'prompt' ? 240 : 310;
-        const screenPos = flowToScreenPosition({
-          x: srcNode.position.x + NODE_W,
-          y: srcNode.position.y + NODE_H / 2,
-        });
-        const rect = wrapperRef.current.getBoundingClientRect();
-        setHandshake({ x: screenPos.x - rect.left, y: screenPos.y - rect.top, key: Date.now() });
-      }
+      setEdges(addEdge({
+        ...conn,
+        id: `e-${conn.source}-${conn.target}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+        data: { animating: true },
+      }, current));
     },
-    [setEdges, isValidConnection, flowToScreenPosition]
+    [setEdges, isValidConnection]
   );
   const onNodesDelete = useCallback(
     (deleted: Node[]) => { deleted.forEach((n) => { useExecutionStore.getState().resetNode(n.id); useOutputStore.getState().clearNode(n.id); }); },
@@ -130,7 +120,6 @@ export default function GraphCanvas() {
   }, [addNode, screenToFlowPosition]);
 
   const [spotlight, setSpotlight] = useState<{ x: number; y: number; flowX: number; flowY: number } | null>(null);
-  const [handshake, setHandshake] = useState<{ x: number; y: number; key: number } | null>(null);
 
   const selectedNodes = useMemo(() => nodes.filter(n => n.selected), [nodes]);
   const { runAll } = useNodeExecution();
@@ -197,15 +186,6 @@ export default function GraphCanvas() {
       )}
 
       <NodePalette onAddNode={handleAddNode} />
-
-      {handshake && (
-        <HandshakeAnimation
-          key={handshake.key}
-          x={handshake.x}
-          y={handshake.y}
-          onDone={() => setHandshake(null)}
-        />
-      )}
 
       {selectedNodes.length > 1 && (
         <div style={{
