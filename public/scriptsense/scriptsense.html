@@ -599,7 +599,7 @@ function ContentGraphEditor({ draft, onSave, onBack }) {
     return draft?.text ?? '';
   });
   useEffect(() => {
-    const fn = t => { if (typeof t === 'string' && t.length) setText(t); };
+    const fn = t => { if (typeof t === 'string') setText(t); };
     initialTextListeners.add(fn);
     return () => initialTextListeners.delete(fn);
   }, []);
