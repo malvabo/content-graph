@@ -113,26 +113,20 @@ struct NativeTabBar: View {
         .padding(.top, 8)
         .padding(.bottom, 2)
         .background {
-            if #available(iOS 26, *) {
-                Rectangle()
-                    .glassEffect()
-                    .ignoresSafeArea(edges: .bottom)
-            } else {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .overlay(alignment: .top) {
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.18), Color.white.opacity(0.06)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.18), Color.white.opacity(0.06)],
+                                startPoint: .leading,
+                                endPoint: .trailing
                             )
-                            .frame(height: 0.5)
-                    }
-                    .ignoresSafeArea(edges: .bottom)
-            }
+                        )
+                        .frame(height: 0.5)
+                }
+                .ignoresSafeArea(edges: .bottom)
         }
     }
 }
