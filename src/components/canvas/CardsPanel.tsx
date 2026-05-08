@@ -146,7 +146,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
   if (!currentSet) return null;
 
   return (
-    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)' }}>
+    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'linear-gradient(155deg, #edf1f7 0%, #e5eaf2 40%, #eae8f0 100%)' }}>
       {/* Left — Cards */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
@@ -174,18 +174,46 @@ export default function CardsPanel({ setId }: { setId?: string }) {
             if (c.group) { const g = groups.get(c.group) || []; g.push(c); groups.set(c.group, g); }
             else ungrouped.push(c);
           });
+          const glassShadow = [
+            '0 4px 24px rgba(0,0,0,0.07)',
+            '0 1px 6px rgba(0,0,0,0.04)',
+            'inset 0 1px 0 rgba(255,255,255,1)',
+            'inset 0 -1px 0 rgba(255,255,255,0.45)',
+            'inset 1px 0 0 rgba(255,255,255,0.65)',
+            'inset -1px 0 0 rgba(255,255,255,0.65)',
+          ].join(', ');
+          const glassShadowHover = [
+            '0 8px 36px rgba(0,0,0,0.1)',
+            '0 2px 10px rgba(0,0,0,0.05)',
+            'inset 0 1px 0 rgba(255,255,255,1)',
+            'inset 0 -1px 0 rgba(255,255,255,0.6)',
+            'inset 1px 0 0 rgba(255,255,255,0.8)',
+            'inset -1px 0 0 rgba(255,255,255,0.8)',
+          ].join(', ');
+          const glassShadowSel = [
+            '0 6px 28px rgba(29,114,66,0.12)',
+            '0 1px 6px rgba(29,114,66,0.08)',
+            'inset 0 1px 0 rgba(255,255,255,1)',
+            'inset 0 -1px 0 rgba(255,255,255,0.5)',
+            'inset 1px 0 0 rgba(255,255,255,0.7)',
+            'inset -1px 0 0 rgba(255,255,255,0.7)',
+          ].join(', ');
           const renderCard = (card: typeof cards[0]) => {
             const isSel = selected.has(card.id);
             return (
             <div key={card.id} onClick={e => { if (e.target instanceof HTMLElement && (e.target.contentEditable === 'true' || e.target.tagName === 'INPUT')) return; toggleSelect(card.id); }} style={{
-              background: '#ffffff', border: isSel ? '2px solid var(--color-accent)' : '1px solid var(--color-border-default)',
-              borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+              background: 'rgba(255,255,255,0.68)',
+              backdropFilter: 'blur(20px) saturate(160%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+              border: isSel ? '1.5px solid rgba(29,114,66,0.45)' : '1px solid rgba(255,255,255,0.72)',
+              borderRadius: 16, padding: 'var(--space-4)',
               display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
-              transition: 'border-color 150ms, box-shadow 150ms', textAlign: 'left', minHeight: 120,
+              transition: 'box-shadow 200ms, border-color 200ms', textAlign: 'left', minHeight: 120,
               cursor: 'pointer',
+              boxShadow: isSel ? glassShadowSel : glassShadow,
             }}
-              onMouseEnter={e => { if (!isSel) { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; } }}
-              onMouseLeave={e => { if (!isSel) { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; } }}
+              onMouseEnter={e => { if (!isSel) { e.currentTarget.style.boxShadow = glassShadowHover; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.9)'; } }}
+              onMouseLeave={e => { if (!isSel) { e.currentTarget.style.boxShadow = glassShadow; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.72)'; } }}
             >
               {/* Remove button */}
               <button onClick={() => removeCard(card.id)}
