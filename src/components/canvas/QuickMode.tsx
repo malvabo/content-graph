@@ -725,7 +725,7 @@ Format each output clearly. Separate outputs with ---`;
 
   return (
     <div style={{
-      height: '100%', overflowY: 'auto',
+      position: 'absolute', inset: 0, overflowY: 'auto',
       background: 'var(--color-bg)',
       fontFamily: 'var(--font-sans)',
     }}>
