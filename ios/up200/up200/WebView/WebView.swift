@@ -4,6 +4,8 @@ import WebKit
 struct WebView: UIViewRepresentable {
     let url: URL
     @Binding var isLoading: Bool
+    var selectedTab: AppTab
+    var scrollToTopSignal: Int = 0
     var onNavigate: ((String) -> Void)?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -13,11 +15,9 @@ struct WebView: UIViewRepresentable {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
 
-        // JS bridge for native communication
         let controller = WKUserContentController()
         controller.add(context.coordinator, name: "nativeBridge")
 
-        // Inject viewport + safe area CSS
         let script = WKUserScript(source: """
             const meta = document.createElement('meta');
             meta.name = 'viewport';
@@ -42,7 +42,6 @@ struct WebView: UIViewRepresentable {
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
 
-        // Pull to refresh
         let refresh = UIRefreshControl()
         refresh.addTarget(context.coordinator, action: #selector(Coordinator.handleRefresh(_:)), for: .valueChanged)
         refresh.tintColor = UIColor(red: 13/255, green: 191/255, blue: 90/255, alpha: 1)
@@ -53,11 +52,26 @@ struct WebView: UIViewRepresentable {
         return webView
     }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {}
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        // Navigate to the correct section when the native tab changes.
+        // Library tab is handled by showing HomeView natively — no JS needed.
+        if selectedTab != .library, selectedTab != context.coordinator.lastNavigatedTab {
+            context.coordinator.lastNavigatedTab = selectedTab
+            webView.evaluateJavaScript("location.hash = '\(selectedTab.urlFragment)'") { _, _ in }
+        }
+
+        // Scroll to top when the user retaps the current tab.
+        if scrollToTopSignal != context.coordinator.lastScrollToTopSignal {
+            context.coordinator.lastScrollToTopSignal = scrollToTopSignal
+            webView.evaluateJavaScript("window.scrollTo({top: 0, behavior: 'smooth'})") { _, _ in }
+        }
+    }
 
     class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var parent: WebView
         weak var webView: WKWebView?
+        var lastNavigatedTab: AppTab? = nil
+        var lastScrollToTopSignal: Int = 0
 
         init(_ parent: WebView) { self.parent = parent }
 
@@ -67,6 +81,17 @@ struct WebView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             parent.isLoading = false
+            webView.scrollView.refreshControl?.endRefreshing()
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            parent.isLoading = false
+            webView.scrollView.refreshControl?.endRefreshing()
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            parent.isLoading = false
+            webView.scrollView.refreshControl?.endRefreshing()
         }
 
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -87,20 +112,21 @@ struct WebView: UIViewRepresentable {
             switch action {
             case "navigate":
                 if let view = body["view"] as? String {
+                    // Pre-mark lastNavigatedTab so updateUIView doesn't echo the navigation back.
+                    if let tab = AppTab.allCases.first(where: { $0 != .library && $0.urlFragment.contains(view) }) {
+                        lastNavigatedTab = tab
+                    }
                     parent.onNavigate?(view)
                 }
             case "haptic":
-                let feedback = UIImpactFeedbackGenerator(style: .light)
-                feedback.impactOccurred()
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
             default: break
             }
         }
 
         @objc func handleRefresh(_ sender: UIRefreshControl) {
             webView?.reload()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                sender.endRefreshing()
-            }
+            // endRefreshing is called from didFinish / didFail
         }
     }
 }

@@ -776,6 +776,7 @@ private struct BrandCard: View {
 
 struct HomeView: View {
     var onNewWorkflow: (() -> Void)?
+    var scrollToTopSignal: Int = 0
 
     @State private var sourceText = ""
     @State private var sources: [SourceItem] = []
@@ -797,40 +798,48 @@ struct HomeView: View {
                 startRadius: 0, endRadius: 320
             ).ignoresSafeArea()
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    HStack {
-                        Text("Create")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.white)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 16)
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        HStack {
+                            Text("Create")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.white)
+                            Spacer()
+                        }
+                        .id("top")
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 16)
 
-                    VStack(spacing: 12) {
-                        SourceCard(
-                            text: $sourceText,
-                            sources: $sources,
-                            linkText: $linkText
-                        )
-                        GenerateCard(prompt: $genPrompt)
-                        BrandCard(selectedBrand: $brand)
-                    }
-                    .padding(.horizontal, 16)
+                        VStack(spacing: 12) {
+                            SourceCard(
+                                text: $sourceText,
+                                sources: $sources,
+                                linkText: $linkText
+                            )
+                            GenerateCard(prompt: $genPrompt)
+                            BrandCard(selectedBrand: $brand)
+                        }
+                        .padding(.horizontal, 16)
 
-                    AnimatedLightsButton(title: "Build Workflow", icon: "sparkles") {
-                        let hap = UIImpactFeedbackGenerator(style: .medium)
-                        hap.impactOccurred()
-                        onNewWorkflow?()
+                        AnimatedLightsButton(title: "Build Workflow", icon: "sparkles") {
+                            let hap = UIImpactFeedbackGenerator(style: .medium)
+                            hap.impactOccurred()
+                            onNewWorkflow?()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 20)
+                        .padding(.bottom, 40)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 20)
-                    .padding(.bottom, 40)
+                }
+                .scrollDismissesKeyboard(.immediately)
+                .onChange(of: scrollToTopSignal) { _ in
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        proxy.scrollTo("top", anchor: .top)
+                    }
                 }
             }
-            .scrollDismissesKeyboard(.immediately)
         }
         .onTapGesture {
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
