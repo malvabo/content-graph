@@ -658,7 +658,7 @@ Format each output clearly. Separate outputs with ---`;
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4',
+          model: 'claude-sonnet-4-6',
           max_tokens: 8192,
           stream: true,
           messages: [{ role: 'user', content: fullPrompt }],
