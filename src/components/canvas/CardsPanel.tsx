@@ -57,6 +57,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -93,6 +94,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => { if (messages.length > 0) setChatOpen(true); }, [messages.length]);
 
   const setCards = useCallback((newCards: Card[]) => {
     if (currentSet) updateCards(currentSet.id, newCards);
@@ -147,8 +149,8 @@ export default function CardsPanel({ setId }: { setId?: string }) {
 
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: 'var(--color-bg)' }}>
-      {/* Left — Cards */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)' }}>
+      {/* Cards — full width */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)', paddingBottom: 120 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
           <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>
             {currentSet.name}
@@ -254,49 +256,44 @@ export default function CardsPanel({ setId }: { setId?: string }) {
         })()}
       </div>
 
-      {/* Right — Chat */}
-      <div className="hidden md:flex" style={{ width: 320, flexShrink: 0, borderLeft: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', flexDirection: 'column' }}>
-        <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
-          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)' }}>Chat</div>
-          <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>Add, edit, or reorganize cards</div>
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {messages.length === 0 && (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-6)' }}>
-              <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', lineHeight: 'var(--leading-snug)' }}>
-                "Add 3 cards about AI safety" · "Make the first card shorter" · "Remove the last card" · "Rewrite all cards as questions"
+      {/* Floating chat bar */}
+      <div style={{ position: 'fixed', bottom: 24, left: 0, right: 0, margin: '0 auto', width: 480, maxWidth: 'calc(100vw - 96px)', zIndex: 200 }}>
+        <div style={{ borderRadius: 20, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)', border: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)' }}>
+          {chatOpen && (
+            <>
+              <div style={{ padding: '13px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)' }}>{currentSet?.name ?? 'Cards'}</span>
+                <button onClick={() => setChatOpen(false)} aria-label="Minimize chat" style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-surface)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', borderRadius: 6, fontSize: 16, lineHeight: 1 }}>−</button>
               </div>
-            </div>
+              <div style={{ maxHeight: 280, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {messages.length === 0 && (
+                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', lineHeight: 'var(--leading-snug)', textAlign: 'center', padding: '12px 0' }}>
+                    "Add 3 cards" · "Make the first card shorter" · "Rewrite all as questions"
+                  </div>
+                )}
+                {messages.map((msg, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                    <div style={{ maxWidth: '85%', padding: '8px 12px', borderRadius: 12, background: msg.role === 'user' ? 'var(--color-bg-surface)' : 'transparent', border: msg.role === 'assistant' ? '1px solid var(--color-border-subtle)' : 'none', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap' }}>{msg.text}</div>
+                  </div>
+                ))}
+                {loading && (
+                  <div style={{ display: 'flex', gap: 4, padding: '4px 0' }}>
+                    {[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-text-disabled)', animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />)}
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+            </>
           )}
-          {messages.map((msg, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-              <div style={{
-                maxWidth: '85%', padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)',
-                background: msg.role === 'user' ? 'var(--color-bg-surface)' : 'var(--color-bg-card)',
-                border: msg.role === 'assistant' ? '1px solid var(--color-border-subtle)' : 'none',
-                fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)',
-                lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap',
-              }}>{msg.text}</div>
-            </div>
-          ))}
-          {loading && (
-            <div style={{ display: 'flex', gap: 'var(--space-1)', padding: 'var(--space-3)' }}>
-              {[0, 1, 2].map(i => <div key={i} style={{ width: 'var(--size-status-dot)', height: 'var(--size-status-dot)', borderRadius: 'var(--radius-full)', background: 'var(--color-text-disabled)', animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />)}
-            </div>
-          )}
-          <div ref={chatEndRef} />
-        </div>
-
-        <div style={{ padding: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end' }}>
-            <textarea value={input} onChange={e => setInput(e.target.value)}
+          <div style={{ padding: '10px 10px 10px 18px', display: 'flex', alignItems: 'center', gap: 8, borderTop: chatOpen ? '1px solid var(--color-border-subtle)' : 'none' }}>
+            <input value={input} onChange={e => setInput(e.target.value)}
+              onFocus={() => setChatOpen(true)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-              placeholder="Ask to add or edit cards…" rows={1}
-              style={{ flex: 1, resize: 'none', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', outline: 'none', lineHeight: 'var(--leading-relaxed)' }} />
+              placeholder="What do you want to do?"
+              style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-relaxed)' }} />
             <button onClick={send} disabled={loading || !input.trim()}
-              style={{ width: 'var(--size-control-md)', height: 'var(--size-control-md)', borderRadius: 'var(--radius-md)', border: 'none', background: input.trim() ? 'var(--color-accent)' : 'var(--color-bg-surface)', color: input.trim() ? 'var(--color-text-inverse)' : 'var(--color-text-disabled)', cursor: input.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background var(--duration-base) var(--ease-default)' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="m22 2-11 11"/></svg>
+              style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: input.trim() ? 'var(--color-accent)' : 'var(--color-bg-surface)', color: input.trim() ? 'white' : 'var(--color-text-disabled)', cursor: input.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 150ms', flexShrink: 0 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
             </button>
           </div>
         </div>

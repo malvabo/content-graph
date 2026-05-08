@@ -205,6 +205,7 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -232,7 +233,8 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
   useEffect(() => { if (editingId && !editing) setEditingId(null); }, [editingId, editing]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-  useEffect(() => { setMessages([]); }, [editingId]);
+  useEffect(() => { setMessages([]); setChatOpen(false); }, [editingId]);
+  useEffect(() => { if (messages.length > 0) setChatOpen(true); }, [messages.length]);
   useEffect(() => { return () => { abortRef.current?.abort(); }; }, []);
   useEffect(() => {
     if (!menuId) return;
@@ -470,7 +472,7 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
           }} className="btn btn-sm btn-ghost">Export PNG</button>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6)', paddingBottom: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-6)' }}>
           {currentData && (
             <InlineInfographic
               data={currentData}
@@ -480,92 +482,72 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
               onFontLoad={fontRerender}
             />
           )}
-
         </div>
       </div>
 
-      {/* Right — Chat */}
-      <div style={{ width: 360, flexShrink: 0, borderLeft: '1px solid var(--color-border-subtle)', background: 'var(--color-bg-card)', display: 'flex', flexDirection: 'column' }}>
-        {/* Header with mini preview */}
-        <div style={{ padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-          {svg && <div key={editVersion} dangerouslySetInnerHTML={{ __html: svg }} style={{ width: 48, height: 28, borderRadius: 4, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--color-border-subtle)' }} />}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(() => { const d = editing ? parseInfographicData(editing.json) : null; return d?.title || 'Untitled'; })()}</div>
-            <div style={{ fontSize: 10, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{(() => { const d = editing ? parseInfographicData(editing.json) : null; return d?.points?.length || 0; })()} data points</div>
-          </div>
-          <div style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: 'var(--color-success-text, #22c55e)', flexShrink: 0 }} />
-        </div>
-
-        {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {/* API key warning */}
-          {!hasApiKey && (
-            <div style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', lineHeight: 'var(--leading-relaxed)' }}>
-              Add an API key in <button onClick={() => { window.location.hash = 'settings'; }} style={{ background: 'none', border: 'none', textDecoration: 'underline', color: 'inherit', cursor: 'pointer', font: 'inherit', padding: 0 }}>Settings</button> to enable AI editing.
-            </div>
-          )}
-
-          {/* Empty state */}
-          {messages.length === 0 && (
+      {/* Floating chat bar */}
+      <div style={{ position: 'fixed', bottom: 24, left: 0, right: 0, margin: '0 auto', width: 480, maxWidth: 'calc(100vw - 96px)', zIndex: 200 }}>
+        <div style={{ borderRadius: 20, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)', border: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)' }}>
+          {chatOpen && (
             <>
-              <div style={{ padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-relaxed)' }}>
-                Describe any change — I'll update the infographic instantly.
+              <div style={{ padding: '13px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  {(() => { const d = editing ? parseInfographicData(editing.json) : null; return d?.title || 'Infographic'; })()}
+                </span>
+                <button onClick={() => setChatOpen(false)} aria-label="Minimize chat" style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-surface)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', borderRadius: 6, fontSize: 16, lineHeight: 1 }}>−</button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
-                {SUGGESTION_CHIPS.map(chip => (
-                  <button key={chip} onClick={() => send(chip)}
-                    style={{ textAlign: 'left', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', cursor: 'pointer', transition: 'border-color 120ms, background 120ms', width: '100%' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-bg-card)'; }}
-                  >→ {chip}</button>
+              <div style={{ maxHeight: 280, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {!hasApiKey && (
+                  <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)' }}>
+                    Add an API key in <button onClick={() => { window.location.hash = 'settings'; }} style={{ background: 'none', border: 'none', textDecoration: 'underline', color: 'inherit', cursor: 'pointer', font: 'inherit', padding: 0 }}>Settings</button> to enable AI editing.
+                  </div>
+                )}
+                {messages.length === 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '4px 0' }}>
+                    {SUGGESTION_CHIPS.map(chip => (
+                      <button key={chip} onClick={() => send(chip)}
+                        style={{ textAlign: 'left', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--color-border-default)', background: 'transparent', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', cursor: 'pointer' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                      >→ {chip}</button>
+                    ))}
+                  </div>
+                )}
+                {messages.map((msg, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                    <div style={{ maxWidth: '85%', padding: '8px 12px', borderRadius: 12, background: msg.role === 'user' ? 'var(--color-bg-surface)' : 'transparent', border: msg.role === 'assistant' ? '1px solid var(--color-border-subtle)' : 'none', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap' }}>{msg.text}</div>
+                  </div>
                 ))}
+                {loading && (
+                  <div style={{ display: 'flex', gap: 4, padding: '4px 0', alignItems: 'center' }}>
+                    {[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-text-disabled)', animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />)}
+                  </div>
+                )}
+                {!loading && messages.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingTop: 4 }}>
+                    {['Add point', 'Change colors', 'Edit title'].map(chip => (
+                      <button key={chip} onClick={() => send(chip)}
+                        style={{ padding: '3px 10px', borderRadius: 20, border: '1px solid var(--color-border-default)', background: 'transparent', fontSize: 11, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', cursor: 'pointer' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                      >{chip}</button>
+                    ))}
+                  </div>
+                )}
+                <div ref={chatEndRef} />
               </div>
             </>
           )}
-
-          {/* Conversation — no differentiation, no avatars */}
-          {messages.map((msg, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-              <div style={{ maxWidth: '85%', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap' }}>{msg.text}</div>
-            </div>
-          ))}
-
-          {/* Loading */}
-          {loading && (
-            <div style={{ padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-surface)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}><path d="M12 2v4"/><path d="M22 12h-4"/><path d="M12 18v4"/><path d="M2 12h4"/></svg>
-              Updating infographic…
-            </div>
-          )}
-
-          {/* Quick actions after conversation starts */}
-          {!loading && messages.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {['Add point', 'Change colors', 'Edit title'].map(chip => (
-                <button key={chip} onClick={() => send(chip)}
-                  style={{ padding: '4px 12px', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-default)', background: 'transparent', fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'border-color 120ms' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                >{chip}</button>
-              ))}
-            </div>
-          )}
-
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* Input */}
-        <div style={{ padding: 'var(--space-3) var(--space-4)', borderTop: '1px solid var(--color-border-subtle)' }}>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', background: 'var(--color-bg-card)', border: `1px solid ${input.trim() ? 'var(--color-accent)' : 'var(--color-border-default)'}`, borderRadius: 'var(--radius-lg)', padding: '2px 2px 2px var(--space-3)', transition: 'border-color 150ms' }}
->
+          <div style={{ padding: '10px 10px 10px 18px', display: 'flex', alignItems: 'center', gap: 8, borderTop: chatOpen ? '1px solid var(--color-border-subtle)' : 'none' }}>
             <input value={input} onChange={e => setInput(e.target.value)}
+              onFocus={() => setChatOpen(true)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); send(); } }}
-              placeholder={messages.length === 0 ? 'Try "Change the title to…"' : 'What else to change?'}
+              placeholder="What do you want to do?"
               disabled={loading}
               style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-relaxed)' }} />
             <button onClick={() => send()} disabled={loading || !input.trim()}
-              style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', border: 'none', background: input.trim() ? 'var(--color-accent)' : 'transparent', color: input.trim() ? 'var(--color-text-inverse)' : 'var(--color-text-disabled)', cursor: input.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 120ms', flexShrink: 0 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: input.trim() ? 'var(--color-accent)' : 'var(--color-bg-surface)', color: input.trim() ? 'white' : 'var(--color-text-disabled)', cursor: input.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 150ms', flexShrink: 0 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
             </button>
           </div>
         </div>
