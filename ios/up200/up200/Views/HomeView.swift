@@ -93,12 +93,10 @@ private struct SectionCard: View {
     let category: NodeCategory
     let nodes: [NodeType]
     @State private var expanded = true
-    private let accent = Color(red: 13/255, green: 191/255, blue: 90/255)
 
     var body: some View {
         GlassCard {
             VStack(spacing: 0) {
-                // Header row
                 Button {
                     withAnimation(.easeInOut(duration: 0.22)) { expanded.toggle() }
                 } label: {
@@ -114,7 +112,6 @@ private struct SectionCard: View {
 
                         Spacer()
 
-                        // White circle action button
                         ZStack {
                             Circle()
                                 .fill(Color.white)
@@ -137,7 +134,6 @@ private struct SectionCard: View {
                     VStack(spacing: 0) {
                         ForEach(Array(nodes.enumerated()), id: \.element.id) { idx, node in
                             NodeRow(node: node)
-
                             if idx < nodes.count - 1 {
                                 Divider()
                                     .background(Color.white.opacity(0.06))
@@ -198,8 +194,6 @@ private struct NodeRow: View {
 struct HomeView: View {
     var onNewWorkflow: (() -> Void)?
 
-    private let accent = Color(red: 13/255, green: 191/255, blue: 90/255)
-
     private var sections: [(NodeCategory, [NodeType])] {
         NodeCategory.allCases.compactMap { cat in
             let nodes = allNodeTypes.filter { $0.category == cat }
@@ -209,7 +203,6 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            // Warm dark background
             LinearGradient(
                 colors: [
                     Color(red: 0.11, green: 0.09, blue: 0.08),
@@ -222,8 +215,6 @@ struct HomeView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-
-                    // New Workflow button
                     Button(action: { onNewWorkflow?() }) {
                         HStack(spacing: 8) {
                             Image(systemName: "plus")
@@ -245,7 +236,6 @@ struct HomeView: View {
                     }
                     .buttonStyle(.plain)
 
-                    // Section cards
                     ForEach(sections, id: \.0) { (category, nodes) in
                         SectionCard(category: category, nodes: nodes)
                     }
