@@ -1,10 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useBrandsStore, getActiveBrand } from '../../store/brandsStore';
-import { useGraphStore, type ContentNode } from '../../store/graphStore';
-import { useOutputStore } from '../../store/outputStore';
 import { useScriptStore } from '../../store/scriptStore';
-import { computeSafePosition } from '../../utils/nodePlacement';
 import { generateAndSaveCards } from '../../utils/scriptToCards';
 
 interface Props { scriptId?: string; initialText?: string; onBack?: () => void; onOpenInCards?: () => void; onSendToWorkflow?: () => void; onDelete?: () => void }
@@ -93,31 +90,13 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
       } else if (d?.type === 'script-content' && typeof d.text === 'string') {
         const text = d.text.trim();
         if (!text) return;
-        const id = `text-source-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        const node: ContentNode = {
-          id,
-          type: 'contentNode',
-          position: computeSafePosition(),
-          deletable: true,
-          data: {
-            subtype: 'text-source',
-            label: 'From ScriptSense',
-            badge: 'Ss',
-            category: 'source',
-            description: 'Script from ScriptSense',
-            config: { text },
-          },
-        };
-        useGraphStore.getState().addNode(node);
-        useOutputStore.getState().setOutput(id, { text });
-        useGraphStore.getState().setSelectedNodeId(id);
-        onSendToWorkflow?.();
         generateAndSaveCards(text, title || 'Script').catch(() => {});
+        onOpenInCards?.();
       }
     };
     window.addEventListener('message', h);
     return () => window.removeEventListener('message', h);
-  }, [flush, onSendToWorkflow]);
+  }, [flush, onOpenInCards, title]);
 
   // Re-flush whenever keys, theme, or initial text change after the iframe has booted.
   useEffect(() => { if (readyRef.current) flush(); }, [flush]);
