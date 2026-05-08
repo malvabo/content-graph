@@ -235,7 +235,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
               }}
               onClick={e => { if (e.target instanceof HTMLElement && (e.target.tagName === 'INPUT' || e.target.closest('[contenteditable="true"]'))) return; toggleSelect(card.id); }}
               style={{
-                background: 'var(--color-bg-card)',
+                background: 'linear-gradient(150deg, var(--color-bg-card) 0%, var(--color-bg-surface) 100%)',
                 border: isSel ? '2px solid var(--color-accent)' : '1px solid var(--color-border-default)',
                 borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
                 display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
@@ -246,10 +246,6 @@ export default function CardsPanel({ setId }: { setId?: string }) {
               onMouseEnter={e => { if (!isSel) { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; } }}
               onMouseLeave={e => { if (!isSel) { e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.boxShadow = 'none'; } }}
             >
-              {/* Drop line indicator */}
-              {dropPos && (
-                <div aria-hidden style={{ position: 'absolute', left: -2, right: -2, height: 2, background: 'var(--color-accent)', borderRadius: 2, zIndex: 10, pointerEvents: 'none', ...(dropPos === 'before' ? { top: -9 } : { bottom: -9 }) }} />
-              )}
               {/* Remove button */}
               <button onClick={() => removeCard(card.id)}
                 style={{ position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)', background: 'var(--color-overlay-light)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', width: 24, height: 24, borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 150ms', backdropFilter: 'blur(4px)' }}
@@ -279,6 +275,19 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-relaxed)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-secondary)', outline: 'none', minHeight: 'var(--space-10)', cursor: 'text' }} />
             </div>
           ); };
+          const dropLine = (
+            <div aria-hidden key="drop-line" style={{ gridColumn: '1 / -1', height: 2, background: 'var(--color-accent)', borderRadius: 2, pointerEvents: 'none', margin: '-4px 0' }} />
+          );
+          const withDropLine = (list: typeof cards) => {
+            const out: React.ReactNode[] = [];
+            list.forEach(card => {
+              if (dropTarget?.id === card.id && dropTarget.pos === 'before') out.push(dropLine);
+              out.push(renderCard(card));
+              if (dropTarget?.id === card.id && dropTarget.pos === 'after') out.push(dropLine);
+            });
+            return out;
+          };
+
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               {/* Named groups */}
@@ -326,7 +335,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                     <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{groupCards.length}</span>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
-                    {groupCards.map(renderCard)}
+                    {withDropLine(groupCards)}
                   </div>
                 </div>
               ); })}
@@ -349,7 +358,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 >
                   {groups.size > 0 && <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', marginBottom: 'var(--space-3)' }}>Ungrouped</div>}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
-                    {ungrouped.map(renderCard)}
+                    {withDropLine(ungrouped)}
                   </div>
                 </div>
               )}
