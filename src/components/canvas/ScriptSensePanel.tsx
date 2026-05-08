@@ -5,6 +5,7 @@ import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useScriptStore } from '../../store/scriptStore';
 import { computeSafePosition } from '../../utils/nodePlacement';
+import { generateAndSaveCards } from '../../utils/scriptToCards';
 
 interface Props { scriptId?: string; initialText?: string; onBack?: () => void; onOpenInCards?: () => void; onSendToWorkflow?: () => void; onDelete?: () => void }
 
@@ -106,6 +107,7 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
         useOutputStore.getState().setOutput(id, { text });
         useGraphStore.getState().setSelectedNodeId(id);
         onSendToWorkflow?.();
+        generateAndSaveCards(text, title || 'Script').catch(() => {});
       }
     };
     window.addEventListener('message', h);
