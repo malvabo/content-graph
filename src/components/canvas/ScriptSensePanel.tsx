@@ -225,8 +225,7 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
         {menuOpen && (
           <div style={{ position: 'absolute', top: 'calc(100% + var(--space-1))', right: 0, background: 'var(--color-bg-popover)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-2)', minWidth: 170 }}>
             {[
-              onOpenInCards && { label: 'Open in Cards', action: () => { setMenuOpen(false); onOpenInCards(); } },
-              { label: 'Open in Flows', action: () => { setMenuOpen(false); pendingActionRef.current = 'workflow'; post({ type: 'request-content' }); } },
+              onOpenInCards && { label: 'Open in Cards', action: () => { setMenuOpen(false); pendingActionRef.current = 'workflow'; post({ type: 'request-content' }); } },
               onDelete && { label: 'Delete', danger: true, action: () => { setMenuOpen(false); post({ type: 'set-content', text: '' }); onDelete(); } },
             ].filter(Boolean).map(opt => (
               <button key={(opt as { label: string }).label} onClick={(opt as { action: () => void }).action}
