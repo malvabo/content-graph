@@ -3,11 +3,10 @@ import { EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react'
 import { useGraphStore } from '../../store/graphStore';
 
 const APPROACH_MS = 200;
-const SHAKE_END_MS = 550;
-const TOTAL_MS = 700;
-const SHAKE_AMP = 4;
-const SHAKE_CYCLES = 3;
-const TIP_GAP = 6;
+const CIRCLE_END_MS = 620;
+const TOTAL_MS = 750;
+const CIRCLE_R = 9;       // px radius of the knot loop
+const CIRCLE_CYCLES = 1.5; // full orbits before settling
 
 function easeOut(t: number) { return 1 - (1 - t) * (1 - t); }
 function easeIn(t: number) { return t * t; }
@@ -49,19 +48,7 @@ function DeletableEdge({
     const midX = (sourceX + targetX) / 2;
     const midY = (sourceY + targetY) / 2;
 
-    const dxA = midX - sourceX;
-    const dyA = midY - sourceY;
-    const lenA = Math.sqrt(dxA * dxA + dyA * dyA) || 1;
-
-    const dxB = midX - targetX;
-    const dyB = midY - targetY;
-    const lenB = Math.sqrt(dxB * dxB + dyB * dyB) || 1;
-
-    // Tips stop TIP_GAP px short of midpoint (the "gap before clasp")
-    const tipAFinalX = midX - (dxA / lenA) * TIP_GAP;
-    const tipAFinalY = midY - (dyA / lenA) * TIP_GAP;
-    const tipBFinalX = midX - (dxB / lenB) * TIP_GAP;
-    const tipBFinalY = midY - (dyB / lenB) * TIP_GAP;
+    // Phase 1 brings both tips exactly to midpoint so Phase 2 orbits start from there
 
     // Extract bezier control points from the precomputed edgePath for Phase 3 morph.
     // Format produced by getBezierPath: "M sx,sy C cp1x,cp1y cp2x,cp2y tx,ty"
@@ -80,27 +67,29 @@ function DeletableEdge({
       if (!pA || !pB) return;
 
       if (elapsed < APPROACH_MS) {
-        // Phase 1: both segments extend from their handle positions toward the midpoint
+        // Phase 1: both segments extend from their handle positions to the midpoint
         const t = easeOut(elapsed / APPROACH_MS);
-        const ax = sourceX + (tipAFinalX - sourceX) * t;
-        const ay = sourceY + (tipAFinalY - sourceY) * t;
-        const bx = targetX + (tipBFinalX - targetX) * t;
-        const by = targetY + (tipBFinalY - targetY) * t;
+        const ax = sourceX + (midX - sourceX) * t;
+        const ay = sourceY + (midY - sourceY) * t;
+        const bx = targetX + (midX - targetX) * t;
+        const by = targetY + (midY - targetY) * t;
         pA.setAttribute('d', `M ${sourceX},${sourceY} L ${ax},${ay}`);
         pB.setAttribute('d', `M ${targetX},${targetY} L ${bx},${by}`);
         pA.removeAttribute('display');
         pB.removeAttribute('display');
-      } else if (elapsed < SHAKE_END_MS) {
-        // Phase 2: handle-ends fixed, free tips oscillate vertically (simulates handshake grip)
-        const t = (elapsed - APPROACH_MS) / (SHAKE_END_MS - APPROACH_MS);
-        const offsetY = Math.sin(t * Math.PI * 2 * SHAKE_CYCLES) * SHAKE_AMP;
-        pA.setAttribute('d', `M ${sourceX},${sourceY} L ${tipAFinalX},${tipAFinalY + offsetY}`);
-        pB.setAttribute('d', `M ${targetX},${targetY} L ${tipBFinalX},${tipBFinalY + offsetY}`);
+      } else if (elapsed < CIRCLE_END_MS) {
+        // Phase 2: tips orbit the midpoint in the same direction (knot motion).
+        // Tip A starts at angle π (left side), tip B at 0 (right side); both go clockwise.
+        // A half-sine envelope swells the radius in and back to zero for a smooth loop.
+        const t = (elapsed - APPROACH_MS) / (CIRCLE_END_MS - APPROACH_MS);
+        const r = CIRCLE_R * Math.sin(t * Math.PI); // 0 → peak → 0
+        const angle = t * Math.PI * 2 * CIRCLE_CYCLES;
+        pA.setAttribute('d', `M ${sourceX},${sourceY} L ${midX + r * Math.cos(Math.PI + angle)},${midY + r * Math.sin(Math.PI + angle)}`);
+        pB.setAttribute('d', `M ${targetX},${targetY} L ${midX + r * Math.cos(angle)},${midY + r * Math.sin(angle)}`);
       } else if (elapsed < TOTAL_MS) {
         // Phase 3: morph into the final bezier by interpolating control points.
-        // At t=0 both cps land on midpoint (approximates two straight lines meeting there);
-        // at t=1 they reach their natural bezier positions.
-        const t = easeIn((elapsed - SHAKE_END_MS) / (TOTAL_MS - SHAKE_END_MS));
+        // At t=0 both cps land on midpoint; at t=1 they reach natural bezier positions.
+        const t = easeIn((elapsed - CIRCLE_END_MS) / (TOTAL_MS - CIRCLE_END_MS));
         const icp1x = midX + (cp1x - midX) * t;
         const icp1y = midY + (cp1y - midY) * t;
         const icp2x = midX + (cp2x - midX) * t;
@@ -123,7 +112,7 @@ function DeletableEdge({
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [isAnimating]); // captured coords are stable for the 700ms lifetime of this flag
+  }, [isAnimating]); // captured coords are stable for the 750ms lifetime of this flag
 
   return (
     <>
@@ -137,7 +126,7 @@ function DeletableEdge({
         </defs>
       )}
 
-      {/* Handshake animation — two arms driven by rAF, visible for 700ms on new connections */}
+      {/* Handshake animation — two arms driven by rAF, visible for 750ms on new connections */}
       {isAnimating && (
         <>
           <path ref={pathARef} fill="none" stroke="var(--color-edge)" strokeWidth={2} strokeLinecap="round" />
