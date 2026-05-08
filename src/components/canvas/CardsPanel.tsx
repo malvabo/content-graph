@@ -230,8 +230,8 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 setDropTarget(null);
               }}
               onClick={e => { if (e.target instanceof HTMLElement && (e.target.tagName === 'INPUT' || e.target.closest('[contenteditable="true"]'))) return; toggleSelect(card.id); }}
+              className="card-bg-gradient"
               style={{
-                background: 'linear-gradient(150deg, var(--color-bg-card) 0%, var(--color-bg-surface) 100%)',
                 border: isSel ? '2px solid var(--color-accent)' : '1px solid var(--color-border-default)',
                 borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
                 display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
