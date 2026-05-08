@@ -27,7 +27,7 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
 
   return (
     <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
-      <DialogContent maxWidth={860} hideClose style={{ maxHeight: 'calc(100vh - 48px)', fontFamily: 'var(--font-sans)' }}>
+      <DialogContent maxWidth={600} hideClose style={{ maxHeight: 'calc(100vh - 48px)', fontFamily: 'var(--font-sans)' }}>
         {/* Header */}
         <div style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)', flexShrink: 0 }}>
           <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Start with a template</h2>
@@ -54,15 +54,15 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
           </aside>
 
           {/* Template grid */}
-          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 'var(--space-5) var(--space-6)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-3)', alignContent: 'start' }}>
+          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 'var(--space-4)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)', alignContent: 'start' }}>
               {visible.map(t => (
                 <button key={t.label} onClick={() => onPick(t.text)}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: 'var(--space-4)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', cursor: 'pointer', textAlign: 'left', transition: 'border-color 120ms, box-shadow 120ms', overflow: 'visible', whiteSpace: 'normal', width: '100%' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, padding: 'var(--space-3)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', textAlign: 'left', transition: 'border-color 120ms, box-shadow 120ms', overflow: 'visible', whiteSpace: 'normal', width: '100%' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: 1.3, display: 'block', width: '100%' }}>{t.label}</span>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', lineHeight: 1.5, display: 'block', width: '100%' }}>{t.description}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: 1.3, display: 'block', width: '100%' }}>{t.label}</span>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.4, display: 'block', width: '100%' }}>{t.description}</span>
                 </button>
               ))}
             </div>
