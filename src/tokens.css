@@ -368,10 +368,10 @@
   --color-schematic-output-stroke: #3868b8;
   --color-badge-source-bg: #201e1a;
   --color-badge-source-text: #b0a898;
-  --color-badge-generate-bg: #1a201a;
-  --color-badge-generate-text: #90b080;
+  --color-badge-generate-bg: #1e1c1a;
+  --color-badge-generate-text: #a0a090;
   --color-badge-output-bg: #20201a;
-  --color-badge-output-text: #a0a480;
+  --color-badge-output-text: #a0a080;
   --color-badge-transform-bg: #201a1e;
   --color-badge-transform-text: #b090a8;
 }
