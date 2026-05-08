@@ -54,8 +54,8 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
           </aside>
 
           {/* Template grid */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-5) var(--space-6)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-3)' }}>
+          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 'var(--space-5) var(--space-6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-3)' }}>
               {visible.map(t => (
                 <button key={t.label} onClick={() => onPick(t.text)}
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: 'var(--space-4)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', cursor: 'pointer', textAlign: 'left', transition: 'border-color 120ms, box-shadow 120ms' }}
