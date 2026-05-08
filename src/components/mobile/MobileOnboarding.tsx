@@ -668,15 +668,16 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 text="Saved to library."
                 style={{position:'absolute',top:'52%',left:0,right:0,textAlign:'center',fontFamily:'var(--font-sans)',fontSize:18,fontWeight:400,color:'rgba(255,255,255,0.6)',letterSpacing:'0.01em',pointerEvents:'none',zIndex:20}}
               />
-              {/* Tighter, smaller cluster of lights around the draft orb (50%, 88%) —
-                  symmetric arc, gently varied sizes. */}
+              {/* Lights distributed around the text block (42–52%) */}
               {[
-                { left:'28%', top:'83%', r:42, delay:0.10 },
-                { left:'72%', top:'83%', r:42, delay:0.16 },
-                { left:'40%', top:'89%', r:30, delay:0.22 },
-                { left:'60%', top:'89%', r:30, delay:0.08 },
-                { left:'32%', top:'93%', r:22, delay:0.30 },
-                { left:'68%', top:'93%', r:22, delay:0.18 },
+                { left:'14%', top:'37%', r:30, delay:0.10 },
+                { left:'86%', top:'37%', r:30, delay:0.14 },
+                { left:'6%',  top:'47%', r:22, delay:0.22 },
+                { left:'94%', top:'47%', r:22, delay:0.08 },
+                { left:'14%', top:'58%', r:28, delay:0.18 },
+                { left:'86%', top:'58%', r:28, delay:0.26 },
+                { left:'40%', top:'31%', r:16, delay:0.30 },
+                { left:'60%', top:'31%', r:16, delay:0.06 },
               ].map((l, i) => {
                 const RGB = '255,225,130';
                 const D = l.r * 3;
