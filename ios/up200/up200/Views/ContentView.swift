@@ -21,7 +21,9 @@ enum AppTab: String, CaseIterable {
         }
     }
 
-    var hash: String {
+    // URL fragment used both for web→native onNavigate matching and native→web JS navigation.
+    // .library is matched by onNavigate but never sent via JS (HomeView is native-only).
+    var urlFragment: String {
         switch self {
         case .library:  return "#library"
         case .workflow: return "#workflow"
@@ -35,6 +37,9 @@ struct ContentView: View {
     @State private var selectedTab: AppTab = .library
     @State private var isLoading = true
     @State private var showSplash = true
+    // Incrementing these signals retap scroll-to-top for Library and web tabs respectively.
+    @State private var homeScrollToTop = 0
+    @State private var webScrollToTop = 0
 
     private let baseURL = URL(string: "https://content-graph-five.vercel.app/")!
 
@@ -47,32 +52,49 @@ struct ContentView: View {
                 LaunchView()
                     .transition(.opacity)
             } else {
-                VStack(spacing: 0) {
-                    ZStack {
-                        WebView(url: baseURL, isLoading: $isLoading) { view in
-                            if let tab = AppTab.allCases.first(where: { $0.hash.contains(view) }) {
-                                selectedTab = tab
-                            }
-                        }
-                        .ignoresSafeArea(edges: .top)
-                        .opacity(selectedTab == .library ? 0 : 1)
-                        .allowsHitTesting(selectedTab != .library)
-
-                        if selectedTab == .library {
-                            HomeView(onNewWorkflow: {
-                                selectedTab = .workflow
-                            })
-                            .transition(.opacity)
+                ZStack {
+                    WebView(
+                        url: baseURL,
+                        isLoading: $isLoading,
+                        selectedTab: selectedTab,
+                        scrollToTopSignal: webScrollToTop
+                    ) { view in
+                        if let tab = AppTab.allCases.first(where: { $0.urlFragment.contains(view) }) {
+                            selectedTab = tab
                         }
                     }
+                    .ignoresSafeArea(edges: .top)
+                    .opacity(selectedTab == .library ? 0 : 1)
+                    .allowsHitTesting(selectedTab != .library)
 
+                    if selectedTab == .library {
+                        HomeView(
+                            onNewWorkflow: { selectedTab = .workflow },
+                            scrollToTopSignal: homeScrollToTop
+                        )
+                        .transition(.opacity)
+                    }
+
+                    // Loading bar overlaid at the top edge — no layout shift
                     if isLoading && selectedTab != .library {
-                        ProgressView()
-                            .progressViewStyle(.linear)
-                            .tint(Color(red: 13/255, green: 191/255, blue: 90/255))
+                        VStack {
+                            ProgressView()
+                                .progressViewStyle(.linear)
+                                .tint(Color(red: 13/255, green: 191/255, blue: 90/255))
+                            Spacer()
+                        }
                     }
-
-                    NativeTabBar(selected: $selectedTab)
+                }
+                // safeAreaInset overlays the tab bar above the content and adjusts the
+                // SwiftUI safe area so ScrollViews scroll correctly without manual padding.
+                .safeAreaInset(edge: .bottom) {
+                    NativeTabBar(selected: $selectedTab) { retappedTab in
+                        if retappedTab == .library {
+                            homeScrollToTop += 1
+                        } else {
+                            webScrollToTop += 1
+                        }
+                    }
                 }
             }
         }
@@ -88,15 +110,19 @@ struct ContentView: View {
 
 struct NativeTabBar: View {
     @Binding var selected: AppTab
+    var onSameTabTap: ((AppTab) -> Void)?
     let accent = Color(red: 13/255, green: 191/255, blue: 90/255)
 
     var body: some View {
         HStack(spacing: 0) {
             ForEach(AppTab.allCases, id: \.self) { tab in
                 Button {
-                    let feedback = UIImpactFeedbackGenerator(style: .light)
-                    feedback.impactOccurred()
-                    selected = tab
+                    if tab == selected {
+                        onSameTabTap?(tab)
+                    } else {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        selected = tab
+                    }
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: tab.icon)
