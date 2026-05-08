@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useCardsStore, type Card } from '../../store/cardsStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import FloatingChat from '../ui/FloatingChat';
 
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
@@ -117,10 +118,10 @@ export default function CardsPanel({ setId }: { setId?: string }) {
   };
 
 
-  const send = useCallback(async () => {
-    if (!input.trim() || loading || !currentSet) return;
-    const msg = input.trim();
-    setInput('');
+  const send = useCallback(async (overrideText?: string) => {
+    const msg = (overrideText || input).trim();
+    if (!msg || loading || !currentSet) return;
+    if (!overrideText) setInput('');
     const next: ChatMsg[] = [...messages, { role: 'user', text: msg }];
     setMessages(next);
     setLoading(true);
@@ -256,45 +257,20 @@ export default function CardsPanel({ setId }: { setId?: string }) {
         })()}
       </div>
 
-      {/* Floating chat bar */}
-      <div style={{ position: 'fixed', bottom: 24, left: 0, right: 0, margin: '0 auto', width: 480, maxWidth: 'calc(100vw - 96px)', zIndex: 200 }}>
-        <div style={{ borderRadius: 20, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)', border: '1px solid var(--color-border-default)', background: 'var(--color-bg-card)' }}>
-          {chatOpen && (
-            <>
-              <div style={{ padding: '13px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)' }}>
-                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)' }}>{currentSet?.name ?? 'Cards'}</span>
-                <button onClick={() => setChatOpen(false)} aria-label="Minimize chat" style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-surface)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', borderRadius: 6, fontSize: 16, lineHeight: 1 }}>−</button>
-              </div>
-              <div style={{ maxHeight: 280, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {messages.map((msg, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                    <div style={{ maxWidth: '85%', padding: '8px 12px', borderRadius: 12, background: msg.role === 'user' ? 'var(--color-bg-surface)' : 'transparent', border: msg.role === 'assistant' ? '1px solid var(--color-border-subtle)' : 'none', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap' }}>{msg.text}</div>
-                  </div>
-                ))}
-                {loading && (
-                  <div style={{ display: 'flex', gap: 4, padding: '4px 0' }}>
-                    {[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-text-disabled)', animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />)}
-                  </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-            </>
-          )}
-          <div style={{ padding: '10px 10px 10px 18px', display: 'flex', alignItems: 'center', gap: 8, borderTop: chatOpen ? '1px solid var(--color-border-subtle)' : 'none' }}>
-            <input value={input} onChange={e => setInput(e.target.value)}
-              onFocus={() => setChatOpen(true)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-              placeholder="What do you want to do?"
-              style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-relaxed)' }} />
-            <button onClick={send} disabled={loading || !input.trim()}
-              style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: input.trim() ? 'var(--color-accent)' : 'var(--color-bg-surface)', color: input.trim() ? 'white' : 'var(--color-text-disabled)', cursor: input.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 150ms', flexShrink: 0 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>
+      <FloatingChat
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+        title={currentSet?.name ?? 'Cards'}
+        messages={messages}
+        input={input}
+        loading={loading}
+        onInputChange={setInput}
+        onSend={send}
+        chatEndRef={chatEndRef}
+        suggestions={['Rewrite all as questions', 'Add a summary card', 'Make tone more casual', 'Split the longest card', 'Add 2 more cards', 'Remove the last card']}
+      />
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3) var(--space-4)', boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 300, background: 'var(--color-bg-card)', border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3) var(--space-4)', boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>
           <span style={{ color: 'var(--color-text-primary)' }}>{toast.msg}</span>
           <button onClick={toast.undo} style={{ background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500, padding: 0 }}>Undo</button>
         </div>
