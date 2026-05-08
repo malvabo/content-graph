@@ -226,6 +226,9 @@ private struct SourceCard: View {
     @State private var expanded = true
     @State private var showImport = false
     @State private var showWriteText = false
+    @State private var showFilePicker = false
+    @State private var showPhotoPicker = false
+    @State private var photoPickerItem: PhotosPickerItem? = nil
     @FocusState private var textFocused: Bool
     var onBuild: () -> Void
 
@@ -355,16 +358,32 @@ private struct SourceCard: View {
                         sources.append(SourceItem(type: .link, label: "Link"))
                     }
                 case .file:
-                    sources.append(SourceItem(type: .file, label: "File"))
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { showFilePicker = true }
                 case .voice:
                     sources.append(SourceItem(type: .voice, label: "Voice note"))
                 case .image:
-                    sources.append(SourceItem(type: .image, label: "Image"))
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { showPhotoPicker = true }
                 }
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.hidden)
             .presentationBackground(Color(red: 0.13, green: 0.11, blue: 0.10))
+        }
+        .fileImporter(
+            isPresented: $showFilePicker,
+            allowedContentTypes: [.text, .plainText, .pdf, .data],
+            allowsMultipleSelection: false
+        ) { result in
+            if case .success(let urls) = result, let url = urls.first {
+                let name = url.lastPathComponent
+                sources.append(SourceItem(type: .file, label: name))
+            }
+        }
+        .photosPicker(isPresented: $showPhotoPicker, selection: $photoPickerItem, matching: .images)
+        .onChange(of: photoPickerItem) { _, item in
+            guard item != nil else { return }
+            sources.append(SourceItem(type: .image, label: "Image"))
+            photoPickerItem = nil
         }
     }
 }
@@ -410,45 +429,47 @@ private struct GenerateCard: View {
 
 private struct BrandCard: View {
     @Binding var selectedBrand: String
-    @State private var expanded = true
     let brands = ["None", "Personal", "Company", "Startup", "Agency"]
-    private let accent = Color(red: 13/255, green: 191/255, blue: 90/255)
 
     var body: some View {
         GlassCard {
-            VStack(spacing: 0) {
-                SectionHeader(title: "Brand Voice", expanded: $expanded)
-                if expanded {
-                    Divider().background(Color.white.opacity(0.07))
-                    VStack(spacing: 0) {
-                        ForEach(Array(brands.enumerated()), id: \.element) { idx, brand in
-                            Button {
-                                withAnimation(.easeOut(duration: 0.15)) { selectedBrand = brand }
-                            } label: {
-                                HStack {
-                                    Text(brand)
-                                        .font(.system(size: 14, weight: selectedBrand == brand ? .medium : .regular))
-                                        .foregroundColor(selectedBrand == brand ? accent : Color.white.opacity(0.75))
-                                    Spacer()
-                                    if selectedBrand == brand {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(accent)
-                                    }
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 13)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            if idx < brands.count - 1 {
-                                Divider().background(Color.white.opacity(0.06)).padding(.leading, 16)
+            HStack(spacing: 12) {
+                Text("Brand Voice")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.85))
+
+                Spacer()
+
+                Menu {
+                    ForEach(brands, id: \.self) { brand in
+                        Button {
+                            selectedBrand = brand
+                        } label: {
+                            if selectedBrand == brand {
+                                Label(brand, systemImage: "checkmark")
+                            } else {
+                                Text(brand)
                             }
                         }
                     }
-                    .padding(.vertical, 4)
+                } label: {
+                    HStack(spacing: 5) {
+                        Text(selectedBrand)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color.white.opacity(0.70))
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.35))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Color.white.opacity(0.09))
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.5))
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
         }
     }
 }
