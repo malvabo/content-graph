@@ -417,8 +417,6 @@ private struct SourceCard: View {
 
                 if expanded {
                     VStack(spacing: 0) {
-                        Divider().background(Color.white.opacity(0.07))
-
                         if !sources.isEmpty {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 8) {
@@ -434,7 +432,6 @@ private struct SourceCard: View {
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 10)
                             }
-                            Divider().background(Color.white.opacity(0.07))
                         }
 
                         if sources.contains(where: { $0.type == .link }) {
@@ -468,9 +465,6 @@ private struct SourceCard: View {
                         }
 
                         if showVoiceRecord {
-                            if !sources.isEmpty || showWriteText {
-                                Divider().background(Color.white.opacity(0.07))
-                            }
                             VoiceRecordRow {
                                 label in
                                 withAnimation(.spring(duration: 0.25)) {
@@ -603,8 +597,6 @@ private struct TagPickerSheet: View {
             .padding(.top, 14)
             .padding(.bottom, 12)
 
-            Divider().background(Color.white.opacity(0.07))
-
             ScrollView(showsIndicators: false) {
                 LazyVGrid(columns: columns, spacing: 10) {
                     ForEach(allTags, id: \.self) { tag in
@@ -660,8 +652,6 @@ private struct GenerateCard: View {
                 SectionHeader(title: "Generate", expanded: $expanded)
                 if expanded {
                     VStack(spacing: 0) {
-                        Divider().background(Color.white.opacity(0.07))
-
                         ZStack(alignment: .topLeading) {
                             if prompt.isEmpty {
                                 Text("Describe what you want to create…")
@@ -682,8 +672,6 @@ private struct GenerateCard: View {
                                 .padding(.bottom, 12)
                         }
 
-                        Divider().background(Color.white.opacity(0.07))
-
                         // Tag row
                         HStack(spacing: 0) {
                             ScrollView(.horizontal, showsIndicators: false) {
@@ -699,11 +687,6 @@ private struct GenerateCard: View {
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 10)
                             }
-
-                            Rectangle()
-                                .fill(Color.white.opacity(0.07))
-                                .frame(width: 0.5)
-                                .padding(.vertical, 8)
 
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
