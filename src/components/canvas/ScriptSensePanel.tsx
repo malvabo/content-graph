@@ -8,6 +8,7 @@ interface Props { scriptId?: string; initialText?: string; onBack?: () => void; 
 
 export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpenInCards, onSendToWorkflow, onDelete }: Props) {
   const title = useScriptStore(s => s.scripts.find(sc => sc.id === scriptId)?.title ?? '');
+  const scriptContent = useScriptStore(s => s.scripts.find(sc => sc.id === scriptId)?.content ?? '');
   const updateScript = useScriptStore(s => s.updateScript);
   const [iframeLoading, setIframeLoading] = useState(true);
   const [iframeFailed, setIframeFailed] = useState(false);
@@ -57,6 +58,19 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
     }
   }, [initialText]);
 
+  // When switching scripts, explicitly load the stored content into the iframe
+  // (including empty string for new scripts, which clears any previous content).
+  const prevScriptIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!scriptId || scriptId === prevScriptIdRef.current) return;
+    prevScriptIdRef.current = scriptId;
+    if (!readyRef.current) return;
+    iframeRef.current?.contentWindow?.postMessage({ type: 'set-content', text: scriptContent }, '*');
+    pendingContentRef.current = '';
+  // scriptContent intentionally excluded: we only want to trigger on scriptId change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scriptId]);
+
   const post = useCallback((msg: Record<string, unknown>) => {
     const w = iframeRef.current?.contentWindow;
     if (!w) return;
@@ -70,8 +84,9 @@ export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpen
     if (brand?.voice?.personality || brand?.name) post({ type: 'set-brand', brand });
     // Prefer the buffered value, but fall back to the live prop ref so a
     // 'ready' that races ahead of the initialText useEffect still delivers.
+    // Always send set-content when switching scripts (including empty string to clear).
     const pending = pendingContentRef.current || initialTextRef.current;
-    if (pending) {
+    if (pending || prevScriptIdRef.current) {
       post({ type: 'set-content', text: pending });
       pendingContentRef.current = '';
     }

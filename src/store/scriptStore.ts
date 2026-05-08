@@ -22,9 +22,7 @@ export const useScriptStore = create<ScriptStore>()(
       scripts: [],
       addScript: (content) => {
         const id = `sc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        const words = content.trim().split(/\s+/).filter(Boolean);
-        const title = words.length > 0 ? words.slice(0, 5).join(' ') : 'Untitled';
-        const script: Script = { id, title, content, createdAt: new Date().toISOString(), analysed: false };
+        const script: Script = { id, title: '', content, createdAt: new Date().toISOString(), analysed: false };
         set(s => ({ scripts: [script, ...s.scripts] }));
         return id;
       },
