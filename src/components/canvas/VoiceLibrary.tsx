@@ -246,6 +246,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
   const [query, setQuery] = useState('');
   const groqKey = useSettingsStore(s => s.groqKey);
+  const [showFeatureBanner, setShowFeatureBanner] = useState(true);
   const [recording, setRecording] = useState(false);
   const [micError, setMicError] = useState(false);
   const [viewId, setViewId] = useState<string | null>(null);
@@ -534,7 +535,13 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
         </div>
 
         {/* Feature / video block */}
-        <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+        {showFeatureBanner && <div style={{ position: 'relative', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+          <button onClick={() => setShowFeatureBanner(false)} style={{ position: 'absolute', top: 12, right: 12, width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-card)'; e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
+            aria-label="Dismiss">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
           <div>
             <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Capture ideas with voice</h2>
             <p style={{ margin: 'var(--space-2) 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: 460 }}>
@@ -550,7 +557,7 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
               <rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><path d="M12 17v4" /><path d="M8 21h8" />
             </svg>
           </div>
-        </div>
+        </div>}
 
         {/* Recording overlay — floating blobs */}
         {recording && (
