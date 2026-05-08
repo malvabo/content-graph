@@ -178,7 +178,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
             const isSel = selected.has(card.id);
             return (
             <div key={card.id} onClick={e => { if (e.target instanceof HTMLElement && (e.target.contentEditable === 'true' || e.target.tagName === 'INPUT')) return; toggleSelect(card.id); }} style={{
-              background: 'var(--color-bg-card)', border: isSel ? '2px solid var(--color-accent)' : '1px solid var(--color-border-default)',
+              background: '#ffffff', border: isSel ? '2px solid var(--color-accent)' : '1px solid var(--color-border-default)',
               borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
               display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', position: 'relative',
               transition: 'border-color 150ms, box-shadow 150ms', textAlign: 'left', minHeight: 120,
