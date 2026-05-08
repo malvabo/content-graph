@@ -259,10 +259,14 @@
   --color-edge: var(--p-neutral-400);
   --dot-gap: 24px;
   --dot-size: 0.8px;
+  --dot-color-bright: #b0b0b8;
   --color-edge-source: #8BA8C0;
   --color-edge-generate: #3A9462;
   --color-edge-transform: #9E84B0;
   --color-edge-output: #B8A854;
+
+  /* ── Canvas background (gradient in dark mode) ── */
+  --color-bg-canvas: var(--color-bg);
 
   /* ── Legacy aliases (backward compat) ── */
   --cg-green: var(--color-accent);
@@ -292,18 +296,19 @@
 
 /* ── Dark Mode (manual toggle) ── */
 :root.dark {
-  --color-nav-bg: var(--color-bg);    /* match the main section background */
+  --color-nav-bg: var(--color-bg);
   --color-nav-text: #a4a4ad;
-  --color-nav-item-active: #26262a;   /* raised pill on the nav */
+  --color-nav-item-active: #252220;
   --color-nav-item-hover: rgba(230, 230, 230, 0.06);
-  --color-bg: #0f0f0f;
-  --color-bg-surface: #161619;
-  --color-bg-card: #1a1a1e;
-  --color-bg-modal: #111114;
-  --color-bg-popover: #1a1a1e;
-  --color-bg-subtle: #131316;
-  --color-bg-dark: #0a0a0c;
-  --color-bg-hover: #222228;
+  --color-bg: #0d0d0f;
+  --color-bg-canvas: radial-gradient(ellipse 80% 60% at 90% 95%, rgba(12,65,30,0.6) 0%, rgba(8,32,16,0.25) 38%, transparent 62%), #0d0d0f;
+  --color-bg-surface: #161412;
+  --color-bg-card: #201e1c;
+  --color-bg-modal: #141210;
+  --color-bg-popover: #201e1c;
+  --color-bg-subtle: #141210;
+  --color-bg-dark: #080808;
+  --color-bg-hover: #1e1c1a;
   --color-bg-tooltip: #e8e6e3;
   --color-text-primary: #e8e6e3;
   --color-text-secondary: #a8a6a2;
@@ -312,9 +317,9 @@
   --color-text-placeholder: #8c8a80;
   --color-text-on-dark: #a8a6a2;
   --color-text-inverse: #111114;
-  --color-border-default: #2a2a30;
-  --color-border-subtle: #242428;
-  --color-border-strong: #4a4a54;
+  --color-border-default: rgba(255,255,255,0.07);
+  --color-border-subtle: rgba(255,255,255,0.05);
+  --color-border-strong: rgba(255,255,255,0.13);
   --color-border-handle: #4a4a54;
   --color-interactive-default: #1e1e24;
   --color-interactive-hover: #262630;
@@ -339,8 +344,9 @@
   --color-overlay-light: rgba(18,18,22,0.90);
   --color-overlay-dark: rgba(255,255,255,0.03);
   --color-overlay-backdrop: rgba(0,0,0,0.70);
-  --color-dot: #3a3a42;
-  --color-edge: #4a4a54;
+  --color-dot: #2e2e36;
+  --dot-color-bright: #555560;
+  --color-edge: #3a3a44;
   --color-edge-source: #4A6878;
   --color-edge-generate: #1D5234;
   --color-edge-transform: #624878;
