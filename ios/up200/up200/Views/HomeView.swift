@@ -54,16 +54,16 @@ struct AnimatedLightsButton: View {
                     .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
 
                 Ellipse()
-                    .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.55))
-                    .frame(width: 140, height: 70)
-                    .blur(radius: 32)
-                    .offset(x: phase ? -70 : 70)
+                    .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.60))
+                    .frame(width: 220, height: 100)
+                    .blur(radius: 44)
+                    .offset(x: phase ? -80 : 80)
 
                 Ellipse()
-                    .fill(Color(red: 0.05, green: 0.75, blue: 0.35).opacity(0.55))
-                    .frame(width: 140, height: 70)
-                    .blur(radius: 32)
-                    .offset(x: phase ? 70 : -70)
+                    .fill(Color(red: 0.05, green: 0.75, blue: 0.35).opacity(0.60))
+                    .frame(width: 220, height: 100)
+                    .blur(radius: 44)
+                    .offset(x: phase ? 80 : -80)
 
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(Color.white.opacity(0.13), lineWidth: 0.5)
@@ -83,7 +83,7 @@ struct AnimatedLightsButton: View {
         }
         .buttonStyle(.plain)
         .onAppear {
-            withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 5).repeatForever(autoreverses: true)) {
                 phase = true
             }
         }
