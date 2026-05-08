@@ -8,6 +8,12 @@
 /* ── Base ── */
 html, body, #root { height: 100%; }
 
+/* Suppress ReactFlow's built-in selection outline on the wrapper — BaseNode handles all selection visuals */
+.react-flow__node.selected,
+.react-flow__node.selected:hover,
+.react-flow__node:focus,
+.react-flow__node:focus-visible { outline: none !important; box-shadow: none !important; }
+
 /* iOS PWA safe area */
 html {
   height: -webkit-fill-available;
