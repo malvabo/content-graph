@@ -63,7 +63,6 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; e.currentTarget.style.boxShadow = 'none'; }}>
                   <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>{t.label}</span>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', lineHeight: 1.5 }}>{t.description}</span>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, fontStyle: 'italic', borderTop: '1px solid var(--color-border-subtle)', paddingTop: 6, width: '100%' }}>{t.text}</span>
                 </button>
               ))}
             </div>
