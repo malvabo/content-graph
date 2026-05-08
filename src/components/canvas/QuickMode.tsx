@@ -119,7 +119,7 @@ const CHIP_BASE: React.CSSProperties = {
   whiteSpace: 'nowrap', userSelect: 'none',
 };
 const CHIP_ACTIVE: React.CSSProperties = {
-  borderColor: 'var(--color-accent)',
+  border: '1.5px solid var(--color-accent)',
   background: '#F0F7F1',
   color: 'var(--color-accent)',
 };
@@ -263,7 +263,7 @@ function UrlInput() {
           background: 'var(--color-bg-subtle)', position: 'relative',
         }}>
           <button
-            onClick={() => { setPreview(null); clearUrl(); }}
+            onClick={() => { setPreview(null); setFetched(''); }}
             style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', padding: 2, fontSize: 16, lineHeight: 1 }}
             aria-label="Dismiss preview"
           >×</button>
@@ -366,6 +366,8 @@ function VoiceInput() {
   const transcript = useQuickModeStore(s => s.voiceTranscript);
   const setVoice = useQuickModeStore(s => s.setVoice);
   const recRef = useRef<SpeechRecognition | null>(null);
+  const transcriptRef = useRef(transcript);
+  useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
   const [recState, setRecState] = useState<'idle' | 'recording' | 'processing' | 'done'>(
     transcript ? 'done' : 'idle'
   );
@@ -384,17 +386,17 @@ function VoiceInput() {
       const text = Array.from(e.results).map(r => r[0].transcript).join(' ');
       setVoice(text);
     };
-    rec.onend = () => { setRecState(transcript ? 'done' : 'idle'); };
+    rec.onend = () => { setRecState(transcriptRef.current ? 'done' : 'idle'); };
     rec.onerror = () => setRecState('idle');
     rec.start();
     recRef.current = rec;
-  }, [SR, transcript, setVoice]);
+  }, [SR, setVoice]);
 
   const stopRecording = useCallback(() => {
     recRef.current?.stop();
     setRecState('processing');
-    setTimeout(() => setRecState(transcript ? 'done' : 'idle'), 400);
-  }, [transcript]);
+    setTimeout(() => setRecState(transcriptRef.current ? 'done' : 'idle'), 400);
+  }, []);
 
   if (!SR) {
     return (
@@ -562,7 +564,7 @@ export default function QuickMode() {
   const isDone = runState === 'done';
 
   // ── Validation ──
-  const hasSourceContent = store.selectedSources.length > 0 && store.selectedSources.every(t => {
+  const hasSourceContent = store.selectedSources.length > 0 && store.selectedSources.some(t => {
     if (t === 'text') return store.textValue.trim().length > 0;
     if (t === 'url') return store.urlFetchedText.trim().length > 0;
     if (t === 'file') return store.fileText.trim().length > 0;
@@ -711,10 +713,13 @@ Format each output clearly. Separate outputs with ---`;
     setRunError('');
   }, []);
 
+  const doRunRef = useRef(doRun);
+  useEffect(() => { doRunRef.current = doRun; }, [doRun]);
+
   const runAgain = useCallback(() => {
     resetToInputs();
-    setTimeout(doRun, 50);
-  }, [resetToInputs, doRun]);
+    setTimeout(() => doRunRef.current(), 50);
+  }, [resetToInputs]);
 
   useEffect(() => {
     return () => abortRef.current?.abort();
