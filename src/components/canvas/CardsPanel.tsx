@@ -167,11 +167,7 @@ export default function CardsPanel({ setId }: { setId?: string }) {
       )}
       {/* Cards — full width */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6) var(--space-8)', paddingBottom: 120 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
-          <h1 style={{ fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-lg)', color: 'var(--color-text-primary)', fontFamily: 'var(--font-sans)', margin: 0 }}>
-            {currentSet.name}
-          </h1>
-        </div>
+
 
 
         {/* Grouped cards */}
@@ -332,7 +328,6 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                         style={{ fontSize: 'var(--text-sm)', fontWeight: 500, fontFamily: 'var(--font-sans)', color: c.label, cursor: 'text' }}
                       >{name}</span>
                     )}
-                    <span style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)' }}>{groupCards.length}</span>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
                     {withDropLine(groupCards)}
