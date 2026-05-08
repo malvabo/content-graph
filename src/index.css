@@ -23,7 +23,7 @@ html, body, #root { height: 100%; }
   background: linear-gradient(145deg, #ffffff 0%, #eef0ec 100%);
 }
 .dark .card-bg-gradient {
-  background: linear-gradient(145deg, #242428 0%, #1a1a1e 100%);
+  background: linear-gradient(145deg, #252220 0%, #1c1a18 100%);
 }
 
 /* Card keyword tags */

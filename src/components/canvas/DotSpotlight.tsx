@@ -42,7 +42,7 @@ export default function DotSpotlight() {
     const updateColors = () => {
       const s = getComputedStyle(document.documentElement);
       baseColor = hexToRgb(s.getPropertyValue('--color-dot').trim() || '#42424c');
-      brightColor = hexToRgb(s.getPropertyValue('--color-border-strong').trim() || '#3a3a42');
+      brightColor = hexToRgb(s.getPropertyValue('--dot-color-bright').trim() || '#3a3a42');
     };
     updateColors();
     const observer = new MutationObserver(updateColors);

@@ -48,9 +48,7 @@ struct ContentView: View {
                     .transition(.opacity)
             } else {
                 VStack(spacing: 0) {
-                    // Content area: native HomeView for library, WebView for others
                     ZStack {
-                        // WebView — always kept alive so state isn't lost on tab switch
                         WebView(url: baseURL, isLoading: $isLoading) { view in
                             if let tab = AppTab.allCases.first(where: { $0.hash.contains(view) }) {
                                 selectedTab = tab
@@ -60,24 +58,20 @@ struct ContentView: View {
                         .opacity(selectedTab == .library ? 0 : 1)
                         .allowsHitTesting(selectedTab != .library)
 
-                        // Native home page
                         if selectedTab == .library {
                             HomeView(onNewWorkflow: {
                                 selectedTab = .workflow
                             })
-                            .ignoresSafeArea(edges: .top)
                             .transition(.opacity)
                         }
                     }
 
-                    // Loading bar (only shown for web tabs)
                     if isLoading && selectedTab != .library {
                         ProgressView()
                             .progressViewStyle(.linear)
                             .tint(Color(red: 13/255, green: 191/255, blue: 90/255))
                     }
 
-                    // Native tab bar
                     NativeTabBar(selected: $selectedTab)
                 }
             }
@@ -110,7 +104,7 @@ struct NativeTabBar: View {
                         Text(tab.label)
                             .font(.system(size: 10, weight: .medium))
                     }
-                    .foregroundColor(selected == tab ? accent : Color.gray.opacity(0.6))
+                    .foregroundColor(selected == tab ? accent : Color.white.opacity(0.45))
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
                 }
@@ -119,11 +113,20 @@ struct NativeTabBar: View {
         .padding(.top, 8)
         .padding(.bottom, 2)
         .background {
-            Rectangle()
-                .fill(Color(red: 28/255, green: 28/255, blue: 31/255))
-                .overlay(alignment: .top) {
-                    Rectangle().fill(Color.white.opacity(0.08)).frame(height: 0.5)
-                }
+            if #available(iOS 26, *) {
+                Rectangle()
+                    .glassEffect()
+                    .ignoresSafeArea(edges: .bottom)
+            } else {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .overlay(alignment: .top) {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.10))
+                            .frame(height: 0.5)
+                    }
+                    .ignoresSafeArea(edges: .bottom)
+            }
         }
     }
 }
