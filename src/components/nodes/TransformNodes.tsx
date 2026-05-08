@@ -50,9 +50,6 @@ export function PromptInline({ id }: { id: string }) {
         onChange={(e) => updateConfig(id, { prompt: e.target.value })}
         aria-label="Prompt filter"
       />
-      <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)', lineHeight: 1.4 }}>
-        Injected as a focus filter into all connected downstream nodes.
-      </p>
     </div>
   );
 }
