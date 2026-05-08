@@ -183,9 +183,17 @@ export default function CardsPanel({ setId }: { setId?: string }) {
             if (c.group) { const g = groups.get(c.group) || []; g.push(c); groups.set(c.group, g); }
             else ungrouped.push(c);
           });
-          // Upgrade old inline-style keyword spans from pre-class era
+          // Upgrade legacy keyword HTML to individual pill tags
           const fixBody = (html: string) =>
-            html.replace(/<span style="opacity:0\.6;font-size:0\.9em">/g, '<span class="card-keywords">');
+            html
+              .replace(/<span style="opacity:0\.6;font-size:0\.9em">([^<]*)<\/span>/g, (_: string, content: string) => {
+                const tags = content.split(/\s*·\s*|\s*•\s*/).filter(Boolean);
+                return `<span class="card-tags">${tags.map((t: string) => `<span class="card-tag">${t.trim()}</span>`).join('')}</span>`;
+              })
+              .replace(/<span class="card-keywords">([^<]*)<\/span>/g, (_: string, content: string) => {
+                const tags = content.split(/\s*·\s*|\s*•\s*/).filter(Boolean);
+                return `<span class="card-tags">${tags.map((t: string) => `<span class="card-tag">${t.trim()}</span>`).join('')}</span>`;
+              });
 
           const renderCard = (card: typeof cards[0]) => {
             const isSel = selected.has(card.id);

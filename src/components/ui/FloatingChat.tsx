@@ -52,8 +52,8 @@ export default function FloatingChat({
 
   return (
     <div style={{
-      position: 'fixed', bottom: 24, left: 0, right: 0, margin: '0 auto',
-      width: 520, maxWidth: 'calc(100vw - 80px)', zIndex: 200,
+      position: 'fixed', bottom: 24, right: 24,
+      width: 400, maxWidth: 'calc(100vw - 48px)', zIndex: 200,
       fontFamily: 'var(--font-sans)',
     }}>
       <div style={{

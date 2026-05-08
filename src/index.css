@@ -18,14 +18,23 @@ html, body, #root { height: 100%; }
 .chip-select-option:hover { background: var(--color-bg-surface); }
 
 /* Card keyword tags */
-.card-keywords {
-  display: block;
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   margin-top: 10px;
-  font-size: var(--text-xs);
+}
+.card-tag {
+  display: inline-block;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text-tertiary);
+  line-height: 1;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 /* Suppress ReactFlow's built-in selection outline on the wrapper — BaseNode handles all selection visuals */
