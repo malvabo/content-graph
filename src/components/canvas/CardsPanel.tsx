@@ -403,6 +403,7 @@ export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?:
           );
         })()}
       </div>
+      </div>
 
       <FloatingChat
         open={chatOpen}
