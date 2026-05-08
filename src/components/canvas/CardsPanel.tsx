@@ -266,11 +266,6 @@ export default function CardsPanel({ setId }: { setId?: string }) {
                 <button onClick={() => setChatOpen(false)} aria-label="Minimize chat" style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-surface)', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', borderRadius: 6, fontSize: 16, lineHeight: 1 }}>−</button>
               </div>
               <div style={{ maxHeight: 280, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {messages.length === 0 && (
-                  <div style={{ fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-disabled)', lineHeight: 'var(--leading-snug)', textAlign: 'center', padding: '12px 0' }}>
-                    "Add 3 cards" · "Make the first card shorter" · "Rewrite all as questions"
-                  </div>
-                )}
                 {messages.map((msg, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                     <div style={{ maxWidth: '85%', padding: '8px 12px', borderRadius: 12, background: msg.role === 'user' ? 'var(--color-bg-surface)' : 'transparent', border: msg.role === 'assistant' ? '1px solid var(--color-border-subtle)' : 'none', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: 'var(--leading-relaxed)', whiteSpace: 'pre-wrap' }}>{msg.text}</div>
