@@ -677,18 +677,18 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
               />
               {/* Lights scattered randomly around the text block */}
               {[
-                { left:'8%',  top:'29%', r:38, delay:0.06 },
-                { left:'79%', top:'34%', r:18, delay:0.14 },
-                { left:'3%',  top:'43%', r:24, delay:0.22 },
-                { left:'91%', top:'41%', r:32, delay:0.08 },
-                { left:'18%', top:'62%', r:20, delay:0.18 },
-                { left:'88%', top:'57%', r:42, delay:0.28 },
-                { left:'33%', top:'26%', r:14, delay:0.32 },
-                { left:'67%', top:'65%', r:16, delay:0.10 },
-                { left:'55%', top:'23%', r:26, delay:0.20 },
-                { left:'11%', top:'52%', r:12, delay:0.36 },
-                { left:'72%', top:'22%', r:10, delay:0.04 },
-                { left:'96%', top:'52%', r:15, delay:0.26 },
+                { left:'6%',  top:'38%', r:38, delay:0.06 },
+                { left:'82%', top:'40%', r:18, delay:0.14 },
+                { left:'2%',  top:'48%', r:24, delay:0.22 },
+                { left:'93%', top:'46%', r:32, delay:0.08 },
+                { left:'14%', top:'57%', r:20, delay:0.18 },
+                { left:'87%', top:'54%', r:42, delay:0.28 },
+                { left:'30%', top:'35%', r:14, delay:0.32 },
+                { left:'70%', top:'58%', r:16, delay:0.10 },
+                { left:'54%', top:'33%', r:26, delay:0.20 },
+                { left:'10%', top:'51%', r:12, delay:0.36 },
+                { left:'74%', top:'34%', r:10, delay:0.04 },
+                { left:'96%', top:'51%', r:15, delay:0.26 },
               ].map((l, i) => {
                 const RGB = '255,225,130';
                 const D = l.r * 3;
