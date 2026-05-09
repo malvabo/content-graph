@@ -36,25 +36,42 @@ function PaletteItem({ def, onClick }: { def: NodeDef; onClick: () => void }) {
   );
 }
 
-function PillItem({ def, onClick }: { def: NodeDef; onClick: () => void }) {
+function FileIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.55 }}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+    </svg>
+  );
+}
+
+function GenerateFileBlock({ def, onClick }: { def: NodeDef; onClick: () => void }) {
   const onDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('application/content-graph-node', JSON.stringify(def));
     e.dataTransfer.effectAllowed = 'move';
   };
   return (
-    <div draggable onDragStart={onDragStart} onClick={onClick}
-      className="palette-item cursor-pointer active:opacity-80"
+    <div
+      draggable onDragStart={onDragStart} onClick={onClick}
+      className="palette-item cursor-pointer active:opacity-70"
       style={{
-        display: 'inline-flex', alignItems: 'center',
-        padding: '5px 12px', borderRadius: 'var(--radius-full)',
+        borderRadius: 10,
+        background: 'var(--color-bg-surface)',
         border: '1px solid var(--color-border-subtle)',
-        background: 'var(--color-bg-subtle)',
-        fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)',
-        fontWeight: 500, color: 'var(--color-text-primary)',
-        whiteSpace: 'nowrap',
+        padding: '8px 10px',
+        display: 'flex', flexDirection: 'column', gap: 5,
+        transition: 'background 120ms, border-color 120ms',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
       }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-muted, var(--color-bg-subtle))'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}
     >
-      {def.label}
+      <div style={{ fontWeight: 600, fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: '16px' }}>{def.label}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--color-text-tertiary)' }}>
+        <FileIcon />
+        <span style={{ fontSize: 11, fontFamily: 'var(--font-sans)', lineHeight: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{def.description}</span>
+      </div>
     </div>
   );
 }
@@ -247,9 +264,9 @@ export default function NodePalette({ onAddNode }: Props) {
                   )}
                   {(!isAdvanced || advancedOpen) && (
                     cat === 'generate' ? (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '4px var(--space-2) var(--space-1)' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, padding: '4px var(--space-2) var(--space-1)' }}>
                         {nodes.map(def => (
-                          <PillItem key={def.subtype} def={def} onClick={() => { onAddNode(def); setOpen(false); }} />
+                          <GenerateFileBlock key={def.subtype} def={def} onClick={() => { onAddNode(def); setOpen(false); }} />
                         ))}
                       </div>
                     ) : (
