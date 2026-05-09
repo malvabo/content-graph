@@ -686,6 +686,100 @@ private struct GenerateCard: View {
     }
 }
 
+// MARK: - Templates Card
+
+private struct WorkflowTemplate {
+    let id: String
+    let name: String
+    let icon: String
+    let subtitle: String
+    let tags: [String]
+}
+
+private struct TemplateCell: View {
+    let template: WorkflowTemplate
+    let isActive: Bool
+    var onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 6) {
+                Image(systemName: template.icon)
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundColor(isActive ? .white : Color.white.opacity(0.60))
+                Text(template.name)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(isActive ? .white : Color.white.opacity(0.75))
+                    .lineLimit(1)
+                Text(template.subtitle)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundColor(Color.white.opacity(isActive ? 0.55 : 0.35))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 13)
+            .padding(.vertical, 12)
+            .frame(width: 120, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(isActive ? Color.white.opacity(0.11) : Color.white.opacity(0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(isActive ? Color.white.opacity(0.38) : Color.white.opacity(0.08), lineWidth: 0.5)
+                    )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .animation(.easeOut(duration: 0.15), value: isActive)
+    }
+}
+
+private struct TemplatesCard: View {
+    @Binding var selectedTags: Set<String>
+
+    private let templates: [WorkflowTemplate] = [
+        WorkflowTemplate(id: "newsletter",   name: "Newsletter",    icon: "envelope.open.fill",          subtitle: "Digest with key takeaways",    tags: ["Newsletter"]),
+        WorkflowTemplate(id: "social-pack",  name: "Social Pack",   icon: "person.2.fill",               subtitle: "LinkedIn + Twitter thread",    tags: ["LinkedIn Post", "Twitter Thread", "Twitter Single"]),
+        WorkflowTemplate(id: "blog",         name: "Blog Post",     icon: "doc.richtext",                subtitle: "Long-form SEO article",        tags: ["Blog Post"]),
+        WorkflowTemplate(id: "video-script", name: "Video Script",  icon: "play.rectangle.fill",         subtitle: "Hook, body & CTA",             tags: ["Video", "YouTube Script"]),
+        WorkflowTemplate(id: "email",        name: "Email",         icon: "mail.fill",                   subtitle: "Concise campaign email",       tags: ["Email"]),
+        WorkflowTemplate(id: "podcast",      name: "Podcast",       icon: "waveform",                    subtitle: "Episode outline & talking pts", tags: ["Podcast Script"]),
+        WorkflowTemplate(id: "press",        name: "Press Release", icon: "newspaper.fill",              subtitle: "Formal media announcement",    tags: ["Press Release"]),
+        WorkflowTemplate(id: "landing",      name: "Landing Page",  icon: "cursorarrow.rays",            subtitle: "Headline + sections + CTA",    tags: ["Landing Page"]),
+        WorkflowTemplate(id: "repurpose",    name: "Repurpose All", icon: "arrow.triangle.2.circlepath", subtitle: "Every major format at once",   tags: ["Newsletter", "LinkedIn Post", "Twitter Thread", "Blog Post", "Email"]),
+    ]
+
+    var body: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Templates")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.85))
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
+                    .padding(.bottom, 10)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(templates, id: \.id) { template in
+                            TemplateCell(
+                                template: template,
+                                isActive: selectedTags == Set(template.tags)
+                            ) {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                selectedTags = Set(template.tags)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 14)
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Brand Card
 
 private struct BrandCard: View {
@@ -783,6 +877,7 @@ struct HomeView: View {
                                 linkText: $linkText
                             )
                             GenerateCard(prompt: $genPrompt, selectedTags: $selectedTags)
+                            TemplatesCard(selectedTags: $selectedTags)
                             BrandCard(selectedBrand: $brand)
                         }
                         .padding(.horizontal, 16)
