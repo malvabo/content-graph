@@ -640,7 +640,6 @@ private struct GenerateCard: View {
                                 .padding(.bottom, 12)
                         }
 
-                        // Tag row
                         HStack(spacing: 0) {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 8) {
@@ -832,7 +831,6 @@ private struct BrandCard: View {
 // MARK: - Home View
 
 struct HomeView: View {
-    var onNewWorkflow: ((String, String, [String], String) -> Void)?
     var scrollToTopSignal: Int = 0
 
     @State private var sourceText = ""
@@ -881,15 +879,7 @@ struct HomeView: View {
                             BrandCard(selectedBrand: $brand)
                         }
                         .padding(.horizontal, 16)
-
-                        AnimatedLightsButton(title: "Build Workflow", icon: "sparkles") {
-                            let hap = UIImpactFeedbackGenerator(style: .medium)
-                            hap.impactOccurred()
-                            onNewWorkflow?(sourceText, genPrompt, Array(selectedTags), brand)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 20)
-                        .padding(.bottom, 40)
+                        .padding(.bottom, 24)
                     }
                 }
                 .scrollDismissesKeyboard(.immediately)
