@@ -88,8 +88,8 @@ export default function NodePalette({ onAddNode }: Props) {
 
       {/* Popover */}
       {open && (
-        <div className="palette-popover absolute left-0 w-[280px] max-h-[420px] flex flex-col"
-          style={{ bottom: 52, background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)', animation: 'paletteIn 150ms ease' }}
+        <div className="palette-popover absolute left-0 w-[280px] flex flex-col"
+          style={{ bottom: 52, maxHeight: 'calc(100vh - 84px)', background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)', animation: 'paletteIn 150ms ease' }}
           onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}>
           {/* Search */}
           <div style={{ padding: 'var(--space-3) var(--space-3) var(--space-2)' }}>
