@@ -4,6 +4,7 @@ import { useVoiceStore, type VoiceNote } from '../../store/voiceStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useAuthStore } from '../../store/authStore';
 import { aiExecute } from '../../utils/aiExecutor';
+import TypewriterLogo from '../TypewriterLogo';
 
 type AssetKind = 'linkedin-post' | 'twitter-thread' | 'twitter-single';
 
@@ -2674,9 +2675,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         <>
           {/* Header */}
           <header style={{ padding: '28px 20px 8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 500, fontSize: 22, fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', userSelect: 'none', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-              UP150
-            </span>
+            <TypewriterLogo fontSize={22} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <button
                 onClick={() => setEditMode(m => !m)}
