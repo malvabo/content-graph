@@ -46,7 +46,7 @@ struct AnimatedLightsButton: View {
                     .offset(x: phase ? -80 : 80)
 
                 Ellipse()
-                    .fill(Color(red: 0.05, green: 0.75, blue: 0.35).opacity(0.60))
+                    .fill(Color(red: 0.75, green: 0.30, blue: 0.05).opacity(0.45))
                     .frame(width: 220, height: 100)
                     .blur(radius: 44)
                     .offset(x: phase ? 80 : -80)
@@ -277,7 +277,7 @@ private struct VoiceRecordRow: View {
     }
 
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
-    private let green = Color(red: 0.05, green: 0.75, blue: 0.35)
+    private let idle  = Color.white
 
     var body: some View {
         HStack(spacing: 12) {
@@ -312,8 +312,8 @@ private struct VoiceRecordRow: View {
 
                     Ellipse()
                         .fill(
-                            (isRecording ? amber : green)
-                                .opacity(isRecording ? 0.45 : 0.40)
+                            (isRecording ? amber : idle)
+                                .opacity(isRecording ? 0.45 : 0.18)
                         )
                         .frame(width: 72, height: 36)
                         .blur(radius: 16)
@@ -504,7 +504,7 @@ private struct TagPill: View {
     let isSelected: Bool
     var onTap: () -> Void
 
-    private let accent = Color(red: 0.05, green: 0.75, blue: 0.35)
+    private let accent = Color.white
 
     var body: some View {
         Button(action: onTap) {
@@ -536,7 +536,7 @@ private struct TagPickerSheet: View {
     @Binding var selectedTags: Set<String>
     @Environment(\.dismiss) private var dismiss
 
-    private let accent = Color(red: 0.05, green: 0.75, blue: 0.35)
+    private let accent = Color.white
     private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {
@@ -660,7 +660,7 @@ private struct GenerateCard: View {
                                     .foregroundColor(
                                         selectedTags.isEmpty
                                             ? Color.white.opacity(0.4)
-                                            : Color(red: 0.05, green: 0.75, blue: 0.35).opacity(0.8)
+                                            : Color.white
                                     )
                                     .frame(width: 48, height: 44)
                                     .contentShape(Rectangle())
@@ -752,7 +752,7 @@ struct HomeView: View {
                 startRadius: 0, endRadius: 380
             ).ignoresSafeArea()
             RadialGradient(
-                colors: [Color(red: 0.05, green: 0.35, blue: 0.15).opacity(0.28), .clear],
+                colors: [Color(red: 0.30, green: 0.20, blue: 0.08).opacity(0.22), .clear],
                 center: .init(x: 1.0, y: 0.85),
                 startRadius: 0, endRadius: 320
             ).ignoresSafeArea()
