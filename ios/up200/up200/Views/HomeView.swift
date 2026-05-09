@@ -166,6 +166,8 @@ private struct SourceChip: View {
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(Color.white.opacity(0.75))
                 .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: 140, alignment: .leading)
             Button(action: onRemove) {
                 Image(systemName: "xmark")
                     .font(.system(size: 11, weight: .bold))
