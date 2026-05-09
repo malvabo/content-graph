@@ -2306,9 +2306,9 @@ function CreateSheet({ onClose, onVoice, onText }: { onClose: () => void; onVoic
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
               </button>
               {sourceMeta && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, color: `rgb(${sourceMeta.color})`, background: `rgba(${sourceMeta.color},0.12)`, borderRadius: 999, padding: '3px 10px 3px 6px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: `rgb(${sourceMeta.color})`, width: 16, height: 16 }}><SourceIcon k={sourceMeta.key} /></span>
-                  {sourceMeta.label}
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, maxWidth: 'calc(100% - 84px)', overflow: 'hidden', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, color: `rgb(${sourceMeta.color})`, background: `rgba(${sourceMeta.color},0.12)`, borderRadius: 999, padding: '3px 10px 3px 6px', flexShrink: 1 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: `rgb(${sourceMeta.color})`, width: 16, height: 16, flexShrink: 0 }}><SourceIcon k={sourceMeta.key} /></span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sourceMeta.label}</span>
                 </span>
               )}
               <span style={{ flex: 1 }} />
