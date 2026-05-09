@@ -823,7 +823,7 @@ struct HomeView: View {
                         }
                         .padding(.horizontal, 16)
 
-                        AnimatedLightsButton(title: "Build Workflow", icon: "sparkles") {
+                        AnimatedLightsButton(title: "Generate") {
                             let hap = UIImpactFeedbackGenerator(style: .medium)
                             hap.impactOccurred()
                             onNewWorkflow?()
