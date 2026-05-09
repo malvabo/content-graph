@@ -16,7 +16,8 @@ export const NODE_DEFS: NodeDef[] = [
   { subtype: 'text-source', label: 'Text', badge: 'Tx', category: 'source', description: 'Paste text, transcript, notes', hasInput: false, hasOutput: true },
   { subtype: 'file-source', label: 'File', badge: 'Fl', category: 'source', description: 'Upload .txt .md .docx', hasInput: false, hasOutput: true },
   { subtype: 'image-source', label: 'Image', badge: 'Im', category: 'source', description: 'Product photo, diagram', hasInput: false, hasOutput: true },
-  { subtype: 'voice-source', label: 'Voice Note', badge: 'Vc', category: 'source', description: 'Select a saved voice note', hasInput: false, hasOutput: true },
+  { subtype: 'voice-source', label: 'Voice Note', badge: 'Vc', category: 'source', description: 'Record a voice note', hasInput: false, hasOutput: true },
+  { subtype: 'link-source', label: 'Link', badge: 'Lk', category: 'source', description: 'Paste a URL to use as source', hasInput: false, hasOutput: true },
   // Generate
   { subtype: 'linkedin-post', label: 'LinkedIn Post', badge: 'Li', category: 'generate', description: '150–300 word hook post', hasInput: true, hasOutput: true, maxInputs: 8 },
   { subtype: 'twitter-thread', label: 'Twitter Thread', badge: 'Tw', category: 'generate', description: '5–10 tweet thread', hasInput: true, hasOutput: true, maxInputs: 8 },
