@@ -28,6 +28,29 @@ function PaletteItem({ def, onClick }: { def: NodeDef; onClick: () => void }) {
   );
 }
 
+function PillItem({ def, onClick }: { def: NodeDef; onClick: () => void }) {
+  const onDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('application/content-graph-node', JSON.stringify(def));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  return (
+    <div draggable onDragStart={onDragStart} onClick={onClick}
+      className="palette-item cursor-pointer active:opacity-80"
+      style={{
+        display: 'inline-flex', alignItems: 'center',
+        padding: '5px 12px', borderRadius: 'var(--radius-full)',
+        border: '1px solid var(--color-border-subtle)',
+        background: 'var(--color-bg-subtle)',
+        fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)',
+        fontWeight: 500, color: 'var(--color-text-primary)',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {def.label}
+    </div>
+  );
+}
+
 interface Props { onAddNode: (def: NodeDef) => void }
 
 export default function NodePalette({ onAddNode }: Props) {
@@ -104,9 +127,17 @@ export default function NodePalette({ onAddNode }: Props) {
                     <div className="px-3 mb-1 mt-1" style={{ fontWeight: 500, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{CATEGORY_LABELS[cat]}</div>
                   )}
                   {(!isAdvanced || advancedOpen) && (
-                    <div className="flex flex-col gap-0.5">{nodes.map(def => (
-                      <PaletteItem key={def.subtype} def={def} onClick={() => { onAddNode(def); setOpen(false); }} />
-                    ))}</div>
+                    cat === 'generate' ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '4px var(--space-2) var(--space-1)' }}>
+                        {nodes.map(def => (
+                          <PillItem key={def.subtype} def={def} onClick={() => { onAddNode(def); setOpen(false); }} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-0.5">{nodes.map(def => (
+                        <PaletteItem key={def.subtype} def={def} onClick={() => { onAddNode(def); setOpen(false); }} />
+                      ))}</div>
+                    )
                   )}
                 </div>
               );
