@@ -1,44 +1,98 @@
 import SwiftUI
 
+// MARK: - App Tab
+
 enum AppTab: String, CaseIterable {
-    case library, voice, script
+    case home, library, templates
 
     var label: String {
         switch self {
-        case .library: return "Library"
-        case .voice:   return "Voice"
-        case .script:  return "Script"
+        case .home:      return "Home"
+        case .library:   return "Library"
+        case .templates: return "Templates"
         }
     }
 
     var icon: String {
         switch self {
-        case .library: return "square.grid.2x2"
-        case .voice:   return "mic"
-        case .script:  return "doc.text"
-        }
-    }
-
-    var urlFragment: String {
-        switch self {
-        case .library: return "#library"
-        case .voice:   return "#voice"
-        case .script:  return "#scriptsense"
+        case .home:      return "house"
+        case .library:   return "tray.2"
+        case .templates: return "rectangle.stack"
         }
     }
 }
 
+// MARK: - Templates View
+
+struct TemplatesView: View {
+    private let templates: [(title: String, subtitle: String, icon: String)] = [
+        ("Landing page",      "Structured hero + sections copy",   "doc.richtext"),
+        ("Short note",        "Concise single-topic summary",       "note.text"),
+        ("Newsletter",        "300–500 word scannable digest",      "envelope"),
+        ("LinkedIn post",     "150–300 word hook post",             "person.crop.rectangle"),
+        ("Twitter thread",    "5–10 tweet thread",                  "text.bubble"),
+        ("Brand story",       "Rewrite with consistent voice",      "sparkles"),
+        ("Marketing pack",    "Social, email and ad copy",          "megaphone"),
+        ("Review document",   "Key decisions and action items",     "checkmark.circle"),
+    ]
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Templates")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.88))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 28)
+                    .padding(.bottom, 20)
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    ForEach(templates, id: \.title) { tpl in
+                        Button {} label: {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Image(systemName: tpl.icon)
+                                    .font(.system(size: 18, weight: .light))
+                                    .foregroundColor(Color.white.opacity(0.70))
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(tpl.title)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(Color.white.opacity(0.86))
+                                        .multilineTextAlignment(.leading)
+                                    Text(tpl.subtitle)
+                                        .font(.system(size: 12, weight: .regular))
+                                        .foregroundColor(Color.white.opacity(0.42))
+                                        .multilineTextAlignment(.leading)
+                                        .lineLimit(2)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(14)
+                            .background(Color.white.opacity(0.05))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 32)
+            }
+        }
+        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+    }
+}
+
+// MARK: - Content View
+
 struct ContentView: View {
-    @State private var selectedTab: AppTab = .library
-    @State private var isLoading = true
+    @State private var selectedTab: AppTab = .home
     @State private var showSplash = true
     @State private var homeScrollToTop = 0
-    @State private var webScrollToTop = 0
     @State private var voiceNotes: [VoiceNote] = []
-    @State private var showNewNote = false
-    @State private var draftNote = VoiceNote(title: "", body: "", date: Date())
-
-    private let baseURL = URL(string: "https://content-graph-five.vercel.app/")!
+    @State private var showImport = false
 
     var body: some View {
         ZStack {
@@ -50,100 +104,71 @@ struct ContentView: View {
                     .transition(.opacity)
             } else {
                 ZStack {
-                    WebView(
-                        url: baseURL,
-                        isLoading: $isLoading,
-                        selectedTab: selectedTab,
-                        scrollToTopSignal: webScrollToTop
-                    ) { view in
-                        if let tab = AppTab.allCases.first(where: { $0.urlFragment.contains(view) }) {
-                            selectedTab = tab
-                        }
-                    }
-                    .ignoresSafeArea(edges: .top)
-                    .opacity(selectedTab == .script ? 1 : 0)
-                    .allowsHitTesting(selectedTab == .script)
-
-                    if selectedTab == .library {
+                    switch selectedTab {
+                    case .home:
                         HomeView(scrollToTopSignal: homeScrollToTop)
-                            .transition(.opacity)
-                    }
-
-                    if selectedTab == .voice {
+                    case .library:
                         VoiceNotesView(notes: $voiceNotes)
-                            .transition(.opacity)
-                    }
-
-                    if isLoading && selectedTab == .script {
-                        VStack {
-                            ProgressView()
-                                .progressViewStyle(.linear)
-                                .tint(Color.white.opacity(0.6))
-                            Spacer()
-                        }
+                    case .templates:
+                        TemplatesView()
                     }
                 }
                 .safeAreaInset(edge: .bottom) {
-                    NativeTabBar(selected: $selectedTab, onSameTabTap: { tab in
-                        if tab == .library {
-                            homeScrollToTop += 1
-                        } else {
-                            webScrollToTop += 1
+                    NativeTabBar(
+                        selected: $selectedTab,
+                        onSameTabTap: { tab in
+                            if tab == .home { homeScrollToTop += 1 }
+                        },
+                        onAdd: {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            showImport = true
                         }
-                    }, onAdd: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        draftNote = VoiceNote(title: "", body: "", date: Date())
-                        showNewNote = true
-                    })
+                    )
                 }
             }
         }
-        .sheet(isPresented: $showNewNote) {
-            NoteEditorView(note: $draftNote) {
-                if !draftNote.title.isEmpty || !draftNote.body.isEmpty {
-                    voiceNotes.insert(draftNote, at: 0)
-                    selectedTab = .voice
-                }
-                showNewNote = false
-            }
+        .sheet(isPresented: $showImport) {
+            ImportSheetView { _ in }
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    showSplash = false
-                }
+                withAnimation(.easeOut(duration: 0.3)) { showSplash = false }
             }
         }
     }
 }
 
+// MARK: - Native Tab Bar
+
 struct NativeTabBar: View {
     @Binding var selected: AppTab
     var onSameTabTap: ((AppTab) -> Void)?
     var onAdd: () -> Void
-    let accent = Color.white
 
     var body: some View {
-        HStack(spacing: 0) {
-            tabItem(.library)
+        HStack(alignment: .center, spacing: 0) {
+            ForEach(AppTab.allCases, id: \.self) { tab in
+                tabItem(tab)
+            }
 
+            // Plus button — right side
             Button(action: onAdd) {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.10))
-                        .overlay(Circle().stroke(Color.white.opacity(0.16), lineWidth: 0.5))
-                        .frame(width: 46, height: 46)
+                        .fill(Color.white.opacity(0.09))
+                        .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 0.5))
+                        .frame(width: 38, height: 38)
                     Image(systemName: "plus")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.white)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.80))
                 }
             }
             .buttonStyle(.plain)
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-
-            tabItem(.voice)
-            tabItem(.script)
+            .padding(.trailing, 20)
+            .padding(.leading, 4)
         }
         .padding(.top, 8)
         .padding(.bottom, 2)
@@ -154,7 +179,7 @@ struct NativeTabBar: View {
                     .overlay(Color(red: 0.10, green: 0.08, blue: 0.07).opacity(0.55))
                     .ignoresSafeArea(edges: .bottom)
                 Rectangle()
-                    .fill(Color.white.opacity(0.12))
+                    .fill(Color.white.opacity(0.10))
                     .frame(height: 0.5)
             }
         }
@@ -172,16 +197,19 @@ struct NativeTabBar: View {
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: tab.icon)
-                    .font(.system(size: 20, weight: .medium))
+                    .font(.system(size: 18, weight: selected == tab ? .medium : .regular))
                 Text(tab.label)
                     .font(.system(size: 10, weight: .medium))
             }
-            .foregroundColor(selected == tab ? accent : Color.white.opacity(0.45))
+            .foregroundColor(selected == tab ? .white : Color.white.opacity(0.38))
             .frame(maxWidth: .infinity)
             .frame(height: 50)
         }
+        .buttonStyle(.plain)
     }
 }
+
+// MARK: - Launch View
 
 struct LaunchView: View {
     var body: some View {

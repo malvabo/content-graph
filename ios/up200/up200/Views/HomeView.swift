@@ -78,7 +78,7 @@ struct AnimatedLightsButton: View {
 
 // MARK: - Import Sheet
 
-private struct ImportSheetView: View {
+struct ImportSheetView: View {
     var onSelect: (SourceType) -> Void
     @Environment(\.dismiss) private var dismiss
 
