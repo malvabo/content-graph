@@ -7,7 +7,7 @@ import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, DEFAULT_MODELS, MODEL_OPTIONS } fro
 import { aiExecute } from '../../utils/aiExecutor';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import type { ContentNode } from '../../store/graphStore';
-import { TextSourceInline, ImageSourceInline, FileSourceInline } from './SourceNodes';
+import { TextSourceInline, ImageSourceInline, FileSourceInline, LinkSourceInline } from './SourceNodes';
 import { GenerateNodeInline } from './GenerateNodes';
 import { RefineInline, PromptInline } from './TransformNodes';
 import { ExportInline } from './OutputNodes';
@@ -339,7 +339,8 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         {data.subtype === 'text-source' && <TextSourceInline id={id} />}
         {data.subtype === 'file-source' && <FileSourceInline id={id} />}
         {data.subtype === 'image-source' && <ImageSourceInline id={id} />}
-        {data.subtype === 'voice-source' && <VoiceSourceInline id={id} onExpand={() => setExpandOpen(true)} />}
+        {data.subtype === 'voice-source' && <VoiceSourceInline id={id} />}
+        {data.subtype === 'link-source' && <LinkSourceInline id={id} />}
         {data.subtype === 'refine' && <RefineInline id={id} />}
         {data.subtype === 'prompt' && <PromptInline id={id} />}
         {(data.subtype === 'image-prompt' || data.subtype === 'video') && <ImagePromptInline id={id} expandOpen={expandOpen} onExpandClose={() => setExpandOpen(false)} />}
@@ -353,7 +354,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       <NodeConfigChips id={id} subtype={data.subtype} />
 
       {/* Expand modal for source/transform nodes */}
-      {expandOpen && ["text-source", "file-source", "refine", "voice-source"].includes(data.subtype) && (() => {
+      {expandOpen && ["text-source", "file-source", "refine", "voice-source", "link-source"].includes(data.subtype) && (() => {
         const output = useOutputStore.getState().outputs[id]?.text;
         const configText = (data.config?.text as string) || "";
         let modalText = output || configText || "";
@@ -361,6 +362,11 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
           const voiceNoteId = data.config?.voiceNoteId as string | undefined;
           const note = voiceNoteId ? useVoiceStore.getState().notes.find((n: { id: string }) => n.id === voiceNoteId) : null;
           modalText = note?.transcript || SAMPLE_VOICE_CONTENT;
+        }
+        if (data.subtype === 'link-source') {
+          const url = data.config?.url as string | undefined;
+          const title = data.config?.title as string | undefined;
+          modalText = url ? `Title: ${title || ''}\nURL: ${url}` : '';
         }
         return <ContentModal subtype={data.subtype} title={data.label} text={modalText} onClose={() => setExpandOpen(false)} onSave={(t: string) => { useOutputStore.getState().setOutput(id, { text: t }); if (data.subtype === 'text-source') useGraphStore.getState().updateNodeConfig(id, { text: t }); }} />;
       })()}
