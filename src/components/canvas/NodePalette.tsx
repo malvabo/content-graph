@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { NODE_DEFS, CATEGORY_LABELS, BADGE_COLORS, type NodeDef } from '../../utils/nodeDefs';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import type { NodeCategory } from '../../store/graphStore';
-import SearchBar from '../ui/SearchBar';
 
 import { motion } from 'motion/react';
 
@@ -34,9 +33,7 @@ interface Props { onAddNode: (def: NodeDef) => void }
 export default function NodePalette({ onAddNode }: Props) {
   const [open, setOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(true);
-  const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const toggle = () => setOpen(o => !o);
@@ -46,27 +43,21 @@ export default function NodePalette({ onAddNode }: Props) {
 
   useEffect(() => {
     if (!open) return;
-    setSearch('');
-    setTimeout(() => searchRef.current?.focus(), 50);
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener('pointerdown', handler, true);
     return () => document.removeEventListener('pointerdown', handler, true);
   }, [open]);
 
-  const q = search.toLowerCase().trim();
-  const allFiltered = PALETTE_ORDER.flatMap(cat => NODE_DEFS.filter(n => n.category === cat && (!q || n.label.toLowerCase().includes(q) || n.description.toLowerCase().includes(q))));
-  const hasResults = allFiltered.length > 0;
-
   return (
-    <div ref={ref} className="absolute bottom-4 left-4 z-20">
+    <div ref={ref} className="absolute bottom-4 left-4 right-4 z-20">
       <style>{`@keyframes paletteIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-      {/* Fluid + button */}
+      {/* Full-width + button */}
       <motion.button
         onClick={() => setOpen(!open)}
         aria-label="Add node" aria-expanded={open}
-        whileHover={{ scale: 1.04 }}
+        whileHover={{ scale: 1.01 }}
         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-        className="relative w-12 h-12 rounded-full flex items-center justify-center overflow-hidden"
+        className="relative w-full h-10 rounded-xl flex items-center justify-center gap-2 overflow-hidden"
         style={{
           background: 'var(--color-bg-card)',
           border: '1px solid var(--color-border-subtle)',
@@ -78,44 +69,30 @@ export default function NodePalette({ onAddNode }: Props) {
         onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}
       >
         <motion.svg
-          width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+          width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
           animate={{ rotate: open ? 45 : 0 }}
           transition={{ type: 'spring', stiffness: 400, damping: 28 }}
         >
           <path d="M12 5v14"/><path d="M5 12h14"/>
         </motion.svg>
+        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500 }}>Add node</span>
       </motion.button>
 
       {/* Popover */}
       {open && (
-        <div className="palette-popover absolute left-0 w-[280px] max-h-[420px] flex flex-col"
-          style={{ bottom: 52, background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)', animation: 'paletteIn 150ms ease' }}
+        <div className="palette-popover absolute left-0 right-0 max-h-[420px] flex flex-col"
+          style={{ bottom: 44, background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)', animation: 'paletteIn 150ms ease' }}
           onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}>
-          {/* Search */}
-          <div style={{ padding: 'var(--space-3) var(--space-3) var(--space-2)' }}>
-            <SearchBar
-              ref={searchRef}
-              value={search}
-              onValueChange={setSearch}
-              placeholder="Search nodes…"
-              aria-label="Search nodes"
-            />
-          </div>
 
           {/* List */}
-          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', padding: '0 var(--space-2) var(--space-3)' }}>
-            {!hasResults && (
-              <div style={{ padding: 'var(--space-6) var(--space-3)', textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
-                No nodes found
-              </div>
-            )}
+          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', padding: 'var(--space-2) var(--space-2) var(--space-3)' }}>
             {PALETTE_ORDER.map((cat, catIdx) => {
-              const nodes = NODE_DEFS.filter(n => n.category === cat && (!q || n.label.toLowerCase().includes(q) || n.description.toLowerCase().includes(q)));
+              const nodes = NODE_DEFS.filter(n => n.category === cat);
               if (!nodes.length) return null;
               const isAdvanced = cat === 'transform';
               return (
                 <div key={cat}>
-                  {catIdx > 0 && hasResults && <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: 'var(--space-2) var(--space-3)' }} />}
+                  {catIdx > 0 && <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: 'var(--space-2) var(--space-3)' }} />}
                   {isAdvanced ? (
                     <button className="palette-cat-btn flex items-center gap-1.5 px-3 py-1.5 mb-1 rounded-md text-left"
                       style={{ fontWeight: 500, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}
