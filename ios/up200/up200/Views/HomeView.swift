@@ -872,7 +872,13 @@ struct HomeView: View {
                             BrandCard(selectedBrand: $brand)
                         }
                         .padding(.horizontal, 16)
-                        .padding(.bottom, 24)
+                        .padding(.bottom, 16)
+
+                        AnimatedLightsButton(title: "Generate", icon: "sparkles") {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 40)
                     }
                 }
                 .scrollDismissesKeyboard(.immediately)
