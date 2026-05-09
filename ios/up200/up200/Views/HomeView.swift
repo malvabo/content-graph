@@ -369,6 +369,7 @@ private struct SourceCard: View {
     @State private var showPhotoPicker = false
     @State private var photoPickerItem: PhotosPickerItem? = nil
     @FocusState private var textFocused: Bool
+    @State private var showTextInput = false
 
     var body: some View {
         GlassCard {
@@ -400,7 +401,7 @@ private struct SourceCard: View {
                             }
                         }
 
-                        if sources.contains(where: { $0.type == .text }) {
+                        if showTextInput {
                             ZStack(alignment: .topLeading) {
                                 if text.isEmpty {
                                     Text("Paste your text, transcript or notes…")
@@ -464,9 +465,7 @@ private struct SourceCard: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 switch type {
                 case .text:
-                    if !sources.contains(where: { $0.type == .text }) {
-                        sources.append(SourceItem(type: .text, label: "Write text"))
-                    }
+                    showTextInput = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { textFocused = true }
                 case .link:
                     if !sources.contains(where: { $0.type == .link }) {
