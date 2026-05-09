@@ -16,6 +16,7 @@ struct WebView: UIViewRepresentable {
     @Binding var isLoading: Bool
     var selectedTab: AppTab
     var scrollToTopSignal: Int = 0
+    var workflowBuildPayload: String? = nil
     var onNavigate: ((String) -> Void)?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -75,6 +76,12 @@ struct WebView: UIViewRepresentable {
             context.coordinator.lastScrollToTopSignal = scrollToTopSignal
             webView.evaluateJavaScript("window.scrollTo({top: 0, behavior: 'smooth'})") { _, _ in }
         }
+
+        // Forward native workflow build payload into the web app via postMessage.
+        if let payload = workflowBuildPayload, payload != context.coordinator.lastWorkflowPayload {
+            context.coordinator.lastWorkflowPayload = payload
+            webView.evaluateJavaScript("window.postMessage(\(payload), '*')") { _, _ in }
+        }
     }
 
     class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
@@ -82,6 +89,7 @@ struct WebView: UIViewRepresentable {
         weak var webView: WKWebView?
         var lastNavigatedTab: AppTab? = nil
         var lastScrollToTopSignal: Int = 0
+        var lastWorkflowPayload: String? = nil
 
         init(_ parent: WebView) { self.parent = parent }
 

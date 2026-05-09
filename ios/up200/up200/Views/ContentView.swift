@@ -40,6 +40,8 @@ struct ContentView: View {
     // Incrementing these signals retap scroll-to-top for Library and web tabs respectively.
     @State private var homeScrollToTop = 0
     @State private var webScrollToTop = 0
+    // JSON payload sent to the WebView to build a workflow from native inputs.
+    @State private var workflowBuildPayload: String? = nil
 
     private let baseURL = URL(string: "https://content-graph-five.vercel.app/")!
 
@@ -57,7 +59,8 @@ struct ContentView: View {
                         url: baseURL,
                         isLoading: $isLoading,
                         selectedTab: selectedTab,
-                        scrollToTopSignal: webScrollToTop
+                        scrollToTopSignal: webScrollToTop,
+                        workflowBuildPayload: workflowBuildPayload
                     ) { view in
                         if let tab = AppTab.allCases.first(where: { $0.urlFragment.contains(view) }) {
                             selectedTab = tab
@@ -69,7 +72,21 @@ struct ContentView: View {
 
                     if selectedTab == .library {
                         HomeView(
-                            onNewWorkflow: { selectedTab = .workflow },
+                            onNewWorkflow: { sourceText, prompt, tags, brand in
+                                let dict: [String: Any] = [
+                                    "type": "buildWorkflow",
+                                    "sourceText": sourceText,
+                                    "prompt": prompt,
+                                    "tags": tags,
+                                    "brand": brand,
+                                    "ts": Date().timeIntervalSince1970
+                                ]
+                                if let data = try? JSONSerialization.data(withJSONObject: dict),
+                                   let json = String(data: data, encoding: .utf8) {
+                                    workflowBuildPayload = json
+                                }
+                                selectedTab = .workflow
+                            },
                             scrollToTopSignal: homeScrollToTop
                         )
                         .transition(.opacity)

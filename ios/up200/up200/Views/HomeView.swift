@@ -598,8 +598,8 @@ private struct TagPickerSheet: View {
 
 private struct GenerateCard: View {
     @Binding var prompt: String
+    @Binding var selectedTags: Set<String>
     @State private var expanded = true
-    @State private var selectedTags: Set<String> = []
     @State private var showTagPicker = false
 
     private let allTags = [
@@ -733,7 +733,7 @@ private struct BrandCard: View {
 // MARK: - Home View
 
 struct HomeView: View {
-    var onNewWorkflow: (() -> Void)?
+    var onNewWorkflow: ((String, String, [String], String) -> Void)?
     var scrollToTopSignal: Int = 0
 
     @State private var sourceText = ""
@@ -741,6 +741,7 @@ struct HomeView: View {
     @State private var linkText  = ""
     @State private var genPrompt = ""
     @State private var brand     = "Default"
+    @State private var selectedTags: Set<String> = []
 
     var body: some View {
         ZStack {
@@ -776,7 +777,7 @@ struct HomeView: View {
                                 sources: $sources,
                                 linkText: $linkText
                             )
-                            GenerateCard(prompt: $genPrompt)
+                            GenerateCard(prompt: $genPrompt, selectedTags: $selectedTags)
                             BrandCard(selectedBrand: $brand)
                         }
                         .padding(.horizontal, 16)
@@ -784,7 +785,7 @@ struct HomeView: View {
                         AnimatedLightsButton(title: "Build Workflow", icon: "sparkles") {
                             let hap = UIImpactFeedbackGenerator(style: .medium)
                             hap.impactOccurred()
-                            onNewWorkflow?()
+                            onNewWorkflow?(sourceText, genPrompt, Array(selectedTags), brand)
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 20)
@@ -792,15 +793,12 @@ struct HomeView: View {
                     }
                 }
                 .scrollDismissesKeyboard(.immediately)
-                .onChange(of: scrollToTopSignal) { _, _ in
+                .onChange(of: scrollToTopSignal) { _ in
                     withAnimation(.easeOut(duration: 0.3)) {
                         proxy.scrollTo("top", anchor: .top)
                     }
                 }
             }
-        }
-        .onTapGesture {
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
     }
 }

@@ -13,6 +13,7 @@ import MobileWorkflow from './components/canvas/MobileWorkflow';
 import { useAuthStore } from './store/authStore';
 import { useSettingsStore } from './store/settingsStore';
 import { useBrandsStore } from './store/brandsStore';
+import { useGraphStore, type ContentNode } from './store/graphStore';
 import { supabase } from './lib/supabase';
 import { injectCustomFonts } from './utils/customFonts';
 import AuthGate from './components/auth/AuthGate';
@@ -130,6 +131,73 @@ function AppInner() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const TAG_MAP: Record<string, { subtype: string; label: string; badge: string; description: string }> = {
+      'Newsletter':     { subtype: 'newsletter',    label: 'Newsletter',    badge: 'Nl', description: '300–500 word digest' },
+      'LinkedIn Post':  { subtype: 'linkedin-post', label: 'LinkedIn Post', badge: 'Li', description: '150–300 word hook post' },
+      'Twitter Thread': { subtype: 'twitter-thread',label: 'Twitter Thread',badge: 'Tw', description: '5–10 tweet thread' },
+      'Twitter Single': { subtype: 'twitter-single',label: 'Twitter Single',badge: 'Ts', description: 'Most quotable insight' },
+      'Quote Card':     { subtype: 'quote-card',    label: 'Quote Card',   badge: 'Qc', description: 'Strongest quote' },
+      'Infographic':    { subtype: 'infographic',   label: 'Infographic',  badge: 'If', description: 'Structured visual spec' },
+      'Video':          { subtype: 'video',         label: 'Video',        badge: 'Vd', description: 'AI video generation' },
+    };
+
+    function handleBuildWorkflow(e: MessageEvent) {
+      if (!e.data || e.data.type !== 'buildWorkflow') return;
+      const { sourceText, prompt, tags } = e.data as { sourceText: string; prompt: string; tags: string[] };
+      if (!sourceText && !prompt && (!tags || tags.length === 0)) return;
+
+      const store = useGraphStore.getState();
+      store.clearGraph();
+
+      const makeId = (s: string) => `${s}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const nodes: ContentNode[] = [];
+      let y = 100;
+
+      if (sourceText) {
+        nodes.push({
+          id: makeId('text-source'), type: 'contentNode',
+          position: { x: 200, y }, deletable: true,
+          data: { subtype: 'text-source', label: 'Text', badge: 'Tx', category: 'source',
+                  description: 'Paste text, transcript, notes', config: { text: sourceText } },
+        });
+        y += 320;
+      }
+
+      if (prompt) {
+        nodes.push({
+          id: makeId('prompt'), type: 'contentNode',
+          position: { x: 200, y }, deletable: true,
+          data: { subtype: 'prompt', label: 'Prompt', badge: 'Pm', category: 'transform',
+                  description: 'Topic or focus filter', config: { text: prompt } },
+        });
+        y += 320;
+      }
+
+      const matched = (tags || []).filter(t => TAG_MAP[t]);
+      const generateTags = matched.length > 0 ? matched : ['LinkedIn Post'];
+      for (const tag of generateTags) {
+        const def = TAG_MAP[tag];
+        nodes.push({
+          id: makeId(def.subtype), type: 'contentNode',
+          position: { x: 200, y }, deletable: true,
+          data: { subtype: def.subtype, label: def.label, badge: def.badge,
+                  category: 'generate', description: def.description, config: {} },
+        });
+        y += 320;
+      }
+
+      store.setNodes(nodes);
+      store.setEdges(nodes.slice(1).map((n, i) => ({
+        id: `e-${nodes[i].id}-${n.id}`, source: nodes[i].id, target: n.id, type: 'deletable',
+      })));
+      window.location.hash = 'workflow';
+    }
+
+    window.addEventListener('message', handleBuildWorkflow);
+    return () => window.removeEventListener('message', handleBuildWorkflow);
+  }, []);
+
 
   if (authLoading) return (
     <div role="status" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
@@ -163,7 +231,7 @@ function AppInner() {
     <div className="flex flex-col" style={{ height: '100dvh' }}>
       {guest && !user && (
         <div style={{ background: 'var(--color-warning-bg)', borderBottom: '1px solid var(--color-warning-border)', padding: '6px 16px', fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', textAlign: 'center' }}>
-          Guest mode — your work won't be saved. <button style={{ background: 'none', border: 'none', textDecoration: 'underline', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', padding: 0 }} onClick={() => { useAuthStore.setState({ guest: false }); }}>Sign up to save</button>
+          Guest mode &mdash; your work won't be saved. <button style={{ background: 'none', border: 'none', textDecoration: 'underline', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', padding: 0 }} onClick={() => { useAuthStore.setState({ guest: false }); }}>Sign up to save</button>
         </div>
       )}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
