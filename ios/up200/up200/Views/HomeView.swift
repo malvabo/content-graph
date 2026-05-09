@@ -144,9 +144,9 @@ private struct ImportSheetView: View {
                 }
             }
 
-            Spacer(minLength: 16)
         }
         .padding(.horizontal, 16)
+        .padding(.bottom, 32)
         .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
     }
 }
