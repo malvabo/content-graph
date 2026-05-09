@@ -207,7 +207,9 @@ function AppInner() {
 
   if (!user && !guest) return <AuthGate />;
 
-  if (isMobile) {
+  const isNativeWrapper = !!(window as any).webkit?.messageHandlers?.nativeBridge;
+
+  if (isMobile && !isNativeWrapper) {
     if (!mobileOnboardingDone) {
       return (
         <div className="flex flex-col" style={{ height: '100dvh' }}>
@@ -231,7 +233,7 @@ function AppInner() {
     <div className="flex flex-col" style={{ height: '100dvh' }}>
       {guest && !user && (
         <div style={{ background: 'var(--color-warning-bg)', borderBottom: '1px solid var(--color-warning-border)', padding: '6px 16px', fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', textAlign: 'center' }}>
-          Guest mode &mdash; your work won't be saved. <button style={{ background: 'none', border: 'none', textDecoration: 'underline', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', padding: 0 }} onClick={() => { useAuthStore.setState({ guest: false }); }}>Sign up to save</button>
+          Guest mode — your work won't be saved. <button style={{ background: 'none', border: 'none', textDecoration: 'underline', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', padding: 0 }} onClick={() => { useAuthStore.setState({ guest: false }); }}>Sign up to save</button>
         </div>
       )}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
