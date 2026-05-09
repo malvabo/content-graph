@@ -122,7 +122,7 @@ private struct NoteEditorSheet: View {
 // MARK: - Voice Notes View
 
 struct VoiceNotesView: View {
-    @Binding var notes: [VoiceNote]
+    @State private var notes: [VoiceNote] = []
     @State private var editing: VoiceNote? = nil
 
     var body: some View {
