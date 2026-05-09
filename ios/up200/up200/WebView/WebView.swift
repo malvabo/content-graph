@@ -14,7 +14,6 @@ private class WeakMessageHandler: NSObject, WKScriptMessageHandler {
 struct WebView: UIViewRepresentable {
     let url: URL
     @Binding var isLoading: Bool
-    var selectedTab: AppTab
     var scrollToTopSignal: Int = 0
     var workflowBuildPayload: String? = nil
     var onNavigate: ((String) -> Void)?
@@ -64,13 +63,6 @@ struct WebView: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        // Navigate to the correct section when the native tab changes.
-        // Library tab is handled by showing HomeView natively — no JS needed.
-        if selectedTab != .library, selectedTab != context.coordinator.lastNavigatedTab {
-            context.coordinator.lastNavigatedTab = selectedTab
-            webView.evaluateJavaScript("location.hash = '\(selectedTab.urlFragment)'") { _, _ in }
-        }
-
         // Scroll to top when the user retaps the current tab.
         if scrollToTopSignal != context.coordinator.lastScrollToTopSignal {
             context.coordinator.lastScrollToTopSignal = scrollToTopSignal
@@ -87,7 +79,6 @@ struct WebView: UIViewRepresentable {
     class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var parent: WebView
         weak var webView: WKWebView?
-        var lastNavigatedTab: AppTab? = nil
         var lastScrollToTopSignal: Int = 0
         var lastWorkflowPayload: String? = nil
 
@@ -130,10 +121,6 @@ struct WebView: UIViewRepresentable {
             switch action {
             case "navigate":
                 if let view = body["view"] as? String {
-                    // Pre-mark lastNavigatedTab so updateUIView doesn't echo the navigation back.
-                    if let tab = AppTab.allCases.first(where: { $0 != .library && $0.urlFragment.contains(view) }) {
-                        lastNavigatedTab = tab
-                    }
                     parent.onNavigate?(view)
                 }
             case "haptic":
