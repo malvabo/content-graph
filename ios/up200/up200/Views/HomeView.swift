@@ -834,7 +834,7 @@ struct HomeView: View {
                     }
                 }
                 .scrollDismissesKeyboard(.immediately)
-                .onChange(of: scrollToTopSignal) { _ in
+                .onChange(of: scrollToTopSignal) { _, _ in
                     withAnimation(.easeOut(duration: 0.3)) {
                         proxy.scrollTo("top", anchor: .top)
                     }
