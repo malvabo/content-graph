@@ -326,11 +326,11 @@
   --color-interactive-default: #1e1e24;
   --color-interactive-hover: #262630;
   --color-interactive-active: #2e2e36;
-  --color-accent-subtle: #0a4a25;
-  --color-accent: #0DBF5A;
-  --color-accent-hover: #0aaa50;
-  --color-accent-active: #089040;
-  --color-interactive-focus: #0DBF5A;
+  --color-accent-subtle: rgba(255,255,255,0.50);
+  --color-accent: rgba(255,255,255,0.85);
+  --color-accent-hover: rgba(255,255,255,0.95);
+  --color-accent-active: rgba(255,255,255,0.70);
+  --color-interactive-focus: rgba(255,255,255,0.85);
   --color-danger: #f06060;
   --color-danger-hover: #e04040;
   --color-danger-active: #d03030;
@@ -356,7 +356,7 @@
   --shadow-sm: 0 2px 12px rgba(0,0,0,0.4);
   --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-  --shadow-glow: 0 0 16px rgba(29,114,66,0.3);
+  --shadow-glow: 0 0 16px rgba(255,255,255,0.10);
   --shadow-panel: 0 2px 10px rgba(0,0,0,0.55);
   --color-schematic-source-bg: #2e230e;
   --color-schematic-source-stroke: #b07820;
