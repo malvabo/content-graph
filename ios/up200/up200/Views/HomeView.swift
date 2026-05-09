@@ -2,20 +2,6 @@ import SwiftUI
 import PhotosUI
 import UniformTypeIdentifiers
 
-// MARK: - Color Helper
-
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let r = Double((int >> 16) & 0xFF) / 255
-        let g = Double((int >> 8)  & 0xFF) / 255
-        let b = Double(int         & 0xFF) / 255
-        self.init(red: r, green: g, blue: b)
-    }
-}
-
 // MARK: - Source Item Model
 
 enum SourceType: String, Identifiable {
@@ -158,7 +144,7 @@ private struct ImportSheetView: View {
             Spacer(minLength: 20)
         }
         .padding(.horizontal, 16)
-        .background(Color(red: 0.13, green: 0.11, blue: 0.10).ignoresSafeArea())
+        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
     }
 }
 
@@ -185,6 +171,7 @@ private struct SourceChip: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Remove \(item.label)")
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
@@ -311,6 +298,7 @@ private struct VoiceRecordRow: View {
                 hap.impactOccurred()
                 if isRecording {
                     isRecording = false
+                    pulse = false
                     onFinish("Voice \(timeLabel)")
                 } else {
                     seconds = 0
@@ -371,7 +359,6 @@ private struct SourceCard: View {
     @Binding var linkText: String
     @State private var expanded = true
     @State private var showImport = false
-    @State private var showWriteText = false
     @State private var showVoiceRecord = false
     @State private var showFilePicker = false
     @State private var showPhotoPicker = false
@@ -381,42 +368,7 @@ private struct SourceCard: View {
     var body: some View {
         GlassCard {
             VStack(spacing: 0) {
-                HStack {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.22)) { expanded.toggle() }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: expanded ? "chevron.down" : "chevron.right")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(Color.white.opacity(0.35))
-                            Text("Source")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(Color.white.opacity(0.85))
-                        }
-                    }
-                    .buttonStyle(.plain)
-
-                    Spacer()
-
-                    Button {
-                        showImport = true
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.08))
-                                .frame(width: 30, height: 30)
-                            Image(systemName: "plus")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(Color.white.opacity(0.6))
-                        }
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                SectionHeader(title: "Source", expanded: $expanded)
 
                 if expanded {
                     VStack(spacing: 0) {
@@ -428,7 +380,6 @@ private struct SourceCard: View {
                                             withAnimation(.spring(duration: 0.25)) {
                                                 sources.removeAll { $0.id == item.id }
                                             }
-                                            if item.type == .text { showWriteText = false }
                                         }
                                     }
                                 }
@@ -444,7 +395,7 @@ private struct SourceCard: View {
                             }
                         }
 
-                        if showWriteText || sources.contains(where: { $0.type == .text }) {
+                        if sources.contains(where: { $0.type == .text }) {
                             ZStack(alignment: .topLeading) {
                                 if text.isEmpty {
                                     Text("Paste your text, transcript or notes…")
@@ -479,16 +430,25 @@ private struct SourceCard: View {
                             }
                         }
 
-                        if sources.isEmpty && !showWriteText && !showVoiceRecord {
-                            HStack {
-                                Text("Tap + to add source content")
-                                    .font(.system(size: 15))
-                                    .foregroundColor(Color.white.opacity(0.22))
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 16)
+                        Button {
+                            showImport = true
+                        } label: {
+                            Label("Add source", systemImage: "plus")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(Color.white.opacity(0.40))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(Color.white.opacity(0.05))
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                                )
                         }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 16)
+                        .padding(.top, sources.isEmpty && !showVoiceRecord ? 4 : 8)
+                        .padding(.bottom, 12)
                     }
                     .transition(.opacity)
                 }
@@ -496,13 +456,11 @@ private struct SourceCard: View {
         }
         .sheet(isPresented: $showImport) {
             ImportSheetView { type in
-                let hap = UIImpactFeedbackGenerator(style: .light)
-                hap.impactOccurred()
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 switch type {
                 case .text:
                     if !sources.contains(where: { $0.type == .text }) {
                         sources.append(SourceItem(type: .text, label: "Write text"))
-                        showWriteText = true
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { textFocused = true }
                 case .link:
@@ -519,11 +477,11 @@ private struct SourceCard: View {
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.hidden)
-            .presentationBackground(Color(red: 0.13, green: 0.11, blue: 0.10))
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .fileImporter(
             isPresented: $showFilePicker,
-            allowedContentTypes: [.text, .plainText, .pdf, .data],
+            allowedContentTypes: [.text, .plainText, .pdf],
             allowsMultipleSelection: false
         ) { result in
             if case .success(let urls) = result, let url = urls.first {
@@ -840,9 +798,6 @@ struct HomeView: View {
                     }
                 }
             }
-        }
-        .onTapGesture {
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
     }
 }

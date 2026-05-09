@@ -1,6 +1,16 @@
 import SwiftUI
 import WebKit
 
+// WKUserContentController retains its message handler strongly, creating a cycle.
+// This proxy holds a weak reference to break it.
+private class WeakMessageHandler: NSObject, WKScriptMessageHandler {
+    weak var target: (NSObject & WKScriptMessageHandler)?
+    init(_ target: NSObject & WKScriptMessageHandler) { self.target = target }
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        target?.userContentController(controller, didReceive: message)
+    }
+}
+
 struct WebView: UIViewRepresentable {
     let url: URL
     @Binding var isLoading: Bool
@@ -16,7 +26,7 @@ struct WebView: UIViewRepresentable {
         config.mediaTypesRequiringUserActionForPlayback = []
 
         let controller = WKUserContentController()
-        controller.add(context.coordinator, name: "nativeBridge")
+        controller.add(WeakMessageHandler(context.coordinator), name: "nativeBridge")
 
         let script = WKUserScript(source: """
             const meta = document.createElement('meta');
