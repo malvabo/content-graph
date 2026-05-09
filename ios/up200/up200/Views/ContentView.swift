@@ -97,7 +97,7 @@ struct ContentView: View {
                         VStack {
                             ProgressView()
                                 .progressViewStyle(.linear)
-                                .tint(Color(red: 13/255, green: 191/255, blue: 90/255))
+                                .tint(Color.white.opacity(0.6))
                             Spacer()
                         }
                     }
@@ -128,7 +128,7 @@ struct ContentView: View {
 struct NativeTabBar: View {
     @Binding var selected: AppTab
     var onSameTabTap: ((AppTab) -> Void)?
-    let accent = Color(red: 13/255, green: 191/255, blue: 90/255)
+    let accent = Color.white
 
     var body: some View {
         HStack(spacing: 0) {
@@ -176,7 +176,7 @@ struct LaunchView: View {
                 .font(.system(size: 32, weight: .semibold, design: .rounded))
                 .foregroundColor(.white)
             ProgressView()
-                .tint(Color(red: 13/255, green: 191/255, blue: 90/255))
+                .tint(Color.white.opacity(0.6))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(red: 17/255, green: 17/255, blue: 20/255))

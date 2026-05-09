@@ -55,7 +55,7 @@ struct WebView: UIViewRepresentable {
 
         let refresh = UIRefreshControl()
         refresh.addTarget(context.coordinator, action: #selector(Coordinator.handleRefresh(_:)), for: .valueChanged)
-        refresh.tintColor = UIColor(red: 13/255, green: 191/255, blue: 90/255, alpha: 1)
+        refresh.tintColor = UIColor.white.withAlphaComponent(0.6)
         webView.scrollView.refreshControl = refresh
 
         context.coordinator.webView = webView
