@@ -3,15 +3,11 @@ import { createPortal } from 'react-dom';
 import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { Menu, MenuItem } from '../ui/Menu';
 import { useVoiceStore } from '../../store/voiceStore';
-import SearchBar from '../ui/SearchBar';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { computeSafePosition } from '../../utils/nodePlacement';
-import ContentModal from '../modals/ContentModal';
 import RecordButton from './RecordButton';
-
-const SAMPLE_CONTENT = "Movement in Gemini is not merely decorative; it's an essential guiding element. Each animation has a defined start and end point, creating a sense of directional flow that mirrors user actions. This sense of responsiveness helps users intuitively understand that the system is working with them. Inner activity within the motion conveys thinking, analysis, and intelligence, making Gemini's processing feel more transparent. Motion allows users to see information coming together, visualizing Gemini's conversations and listening abilities.";
 
 /** Sync every voice-source node's output to match the note's latest transcript.
  *  Called after transcription succeeds (initial stop or retry) so workflow nodes
@@ -145,37 +141,6 @@ async function generateSmartTitle(transcript: string): Promise<string> {
 }
 
 
-/** Deterministic ~32-bar waveform derived from the note id.
- *  Decorative: no real FFT — just gives each row a unique-looking sparkline. */
-function Waveform({ seed, durationMs, width = 104, height = 20 }: { seed: string; durationMs: number; width?: number; height?: number }) {
-  const bars = 32;
-  const step = width / bars;
-  // Cheap deterministic hash — fine for decoration.
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
-  const rnd = (i: number) => {
-    const x = Math.sin((h + i * 9301) * 0.0001) * 10000;
-    return Math.abs(x - Math.floor(x));
-  };
-  // Envelope ramps up then tails down so the waveform feels like speech.
-  const envelope = (i: number) => {
-    const t = i / (bars - 1);
-    return Math.min(1, 1.1 * Math.sin(Math.PI * t) + 0.15);
-  };
-  const minLen = Math.max(1, Math.log10(durationMs / 1000 + 1) * 2);
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden style={{ flexShrink: 0, display: 'block' }}>
-      {Array.from({ length: bars }).map((_, i) => {
-        const amp = envelope(i) * (0.35 + rnd(i) * 0.65);
-        const barH = Math.max(minLen, amp * height * 0.9);
-        const x = i * step + step * 0.25;
-        const y = (height - barH) / 2;
-        return <rect key={i} x={x} y={y} width={step * 0.5} height={barH} rx={0.5} fill="var(--color-text-disabled, #a8a29e)" />;
-      })}
-    </svg>
-  );
-}
-
 interface OverlayProps {
   onStop: () => void;
   onDiscard: () => void;
@@ -280,19 +245,19 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, trans
 
 export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUseInWorkflow?: () => void; onSendToScript?: (text: string) => void }) {
   const { notes, addNote, updateNote, removeNote } = useVoiceStore();
-  const [query, setQuery] = useState('');
   const groqKey = useSettingsStore(s => s.groqKey);
-  const [showFeatureBanner, setShowFeatureBanner] = useState(true);
   const [recording, setRecording] = useState(false);
   const [micError, setMicError] = useState(false);
   const [viewId, setViewId] = useState<string | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
-  const [renameId, setRenameId] = useState<string | null>(null);
-  const [renameName, setRenameName] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [liveOffline, setLiveOffline] = useState(false);
   const [fatal, setFatal] = useState(false);
+  // Editor state
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const editorTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const mediaRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -307,6 +272,30 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
   const groqKeyRef = useRef(groqKey);
   useEffect(() => { groqKeyRef.current = groqKey; }, [groqKey]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const openEditor = (noteId: string) => {
+    const n = useVoiceStore.getState().notes.find(x => x.id === noteId);
+    if (!n) return;
+    setEditTitle(n.title);
+    setEditContent(n.transcript || '');
+    setViewId(noteId);
+  };
+
+  const closeEditor = () => {
+    if (!viewId) return;
+    const n = useVoiceStore.getState().notes.find(x => x.id === viewId);
+    if (n) {
+      if (editTitle.trim() && editTitle.trim() !== n.title) updateNote(viewId, { title: editTitle.trim() });
+      if (editContent !== n.transcript) {
+        updateNote(viewId, { transcript: editContent });
+        const matches = useGraphStore.getState().nodes.filter(
+          node => node.data?.subtype === 'voice-source' && (node.data as any)?.config?.voiceNoteId === viewId,
+        );
+        for (const node of matches) useOutputStore.getState().setOutput(node.id, { text: editContent });
+      }
+    }
+    setViewId(null);
+  };
 
   // Close menu on outside click
   useEffect(() => {
@@ -521,294 +510,171 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
     if (after > before) removeNote(noteId);
   }, [removeNote, startRecording]);
 
-  const handleRename = () => {
-    if (!renameId || !renameName.trim()) return;
-    updateNote(renameId, { title: renameName.trim() });
-    setRenameId(null);
-  };
-
   const confirmDelete = () => {
     if (!deleteId) return;
     removeNote(deleteId);
     setDeleteId(null);
   };
 
+  // ── Editor view ──────────────────────────────────────────────────────────
+  if (viewId) {
+    return (
+      <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)', minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Editor header */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 10, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border-subtle)', flexShrink: 0 }}>
+          <button
+            onClick={closeEditor}
+            aria-label="Back to notes"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', padding: 4, borderRadius: 'var(--radius-sm)', flexShrink: 0 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          </button>
+          <input
+            aria-label="Note title"
+            value={editTitle}
+            onChange={e => setEditTitle(e.target.value)}
+            style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', background: 'none', border: 'none', outline: 'none', padding: 0, letterSpacing: '-0.01em' }}
+          />
+          <button
+            onClick={() => { setDeleteId(viewId); }}
+            aria-label="Delete note"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-tertiary)', display: 'flex', alignItems: 'center', padding: 4, borderRadius: 'var(--radius-sm)', flexShrink: 0 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+
+        {/* Editable transcript */}
+        <textarea
+          ref={editorTextareaRef}
+          value={editContent}
+          onChange={e => setEditContent(e.target.value)}
+          placeholder="No transcript yet…"
+          style={{ flex: 1, width: '100%', padding: '20px', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', lineHeight: 'var(--leading-normal)', color: 'var(--color-text-primary)', background: 'transparent', border: 'none', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
+        />
+
+        {/* Delete confirmation */}
+        <Dialog open={!!deleteId} onOpenChange={open => { if (!open) setDeleteId(null); }}>
+          <DialogContent maxWidth={340} hideClose className="p-5" style={{ fontFamily: 'var(--font-sans)' }}>
+            <DialogTitle style={{ marginBottom: 'var(--space-2)' }}>Delete voice note?</DialogTitle>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginBottom: 'var(--space-4)' }}>
+              This will permanently remove "{notes.find(n => n.id === deleteId)?.title}" from your library.
+            </div>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setDeleteId(null)}>Cancel</button>
+              <button className="btn btn-destructive" onClick={() => { confirmDelete(); setViewId(null); }}>Delete</button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // ── List view ─────────────────────────────────────────────────────────────
   return (
     <div className="mobile-safe-scroll" style={{ flex: 1, overflow: 'auto', background: 'var(--color-bg)', minWidth: 0, maxWidth: '100%' }}>
-      {/* Top toolbar — matches Workflows */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 10, padding: '14px 24px', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: 'var(--color-bg)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-          <h1 style={{ margin: 0, fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Voice Notes</h1>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          <button className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 'var(--radius-full)', padding: '6px 12px', border: '1px solid var(--color-border-default)' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            Learn
+      {/* Header */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, padding: '14px 20px', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: 'var(--color-bg)' }}>
+        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Voice Notes</span>
+        {!recording && (
+          <button onClick={startRecording} className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            New
           </button>
-          {!recording && (
-            <button onClick={startRecording} className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-              New recording
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        {/* Search */}
-        <div style={{ marginBottom: 'var(--space-5)', width: 200 }}>
-          <SearchBar value={query} onValueChange={setQuery} placeholder="Search…" aria-label="Search voice notes" />
-        </div>
-
-        {/* Count + transcribing */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)' }}>
-            {notes.length} note{notes.length !== 1 ? 's' : ''}
-          </div>
-          {notes.some(n => n.status === 'transcribing') && (
-            <span title="A previous recording is still being transcribed in the background"
-              style={{ height: 20, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 8px', borderRadius: 'var(--radius-full)', background: 'var(--color-warning-bg, #FEF8E8)', border: '1px solid var(--color-warning-border, #F0D8A0)', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--color-warning-text, #6A4A10)' }}>
-              <span aria-hidden style={{ width: 6, height: 6, borderRadius: 'var(--radius-full)', background: '#F0D8A0' }} />
-              Transcribing previous note
-            </span>
-          )}
-        </div>
-
-        {/* Feature / video block */}
-        {showFeatureBanner && <div style={{ position: 'relative', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
-          <button onClick={() => setShowFeatureBanner(false)} style={{ position: 'absolute', top: 12, right: 12, width: 24, height: 24, borderRadius: 'var(--radius-sm)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-card)'; e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
-            aria-label="Dismiss">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-          </button>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Capture ideas with voice</h2>
-            <p style={{ margin: 'var(--space-2) 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: 460 }}>
-              Record a thought, feedback, or narration. Voice Notes transcribe automatically and feed directly into your workflows.
-            </p>
-            <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', padding: 0 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-              Learn about Voice Notes
-            </button>
-          </div>
-          <div style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 160 }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><path d="M12 17v4" /><path d="M8 21h8" />
-            </svg>
-          </div>
-        </div>}
-
-        {/* Recording overlay — floating blobs */}
-        {recording && (
-          <RecordingOverlay
-            onStop={stopRecording}
-            onDiscard={discardRecording}
-            startTime={startTimeRef.current}
-            errorMsg={errorMsg}
-            fatal={fatal}
-            transcriptSoFar={liveTranscript}
-            liveOffline={liveOffline}
-          />
-        )}
-
-        {/* Empty state */}
-        {notes.length === 0 && !recording ? (
-          <div style={{
-            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            textAlign: 'center', padding: 'var(--space-8)',
-          }}>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md, 16px)', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>
-              No voice notes yet
-            </div>
-            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 300, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>
-              Capture ideas, feedback, or narration with a quick voice recording.
-            </div>
-            <RecordButton size={128} onClick={startRecording} state="idle" label="Tap to record your first note" />
-            {micError && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)' }}>Microphone access denied. Check browser permissions.</div>}
-            {errorMsg && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)' }}>{errorMsg}</div>}
-          </div>
-        ) : (
-          // Flat reverse-chrono list — no date group headers.
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {[...notes]
-              .filter(n => n.status !== 'recording')
-              .filter(n => {
-                const q = query.trim().toLowerCase();
-                if (!q) return true;
-                return (n.title || '').toLowerCase().includes(q) || (n.transcript || '').toLowerCase().includes(q);
-              })
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-              .map(note => {
-                    const isError = note.status === 'error';
-                    const isTranscribing = note.status === 'transcribing';
-                    const isAudioOnly = note.status === 'ready' && !note.transcript;
-                    const displayTitle = isAudioOnly && note.title === 'Untitled note' ? 'Audio recording' : note.title;
-                    const ariaLabel = `${displayTitle}, ${fmtDuration(note.durationMs)}${isError ? ', failed' : isTranscribing ? ', transcribing' : ''}. Open.`;
-                    return (
-                      <div key={note.id} style={{ position: 'relative', zIndex: menuId === note.id ? 60 : 'auto' }}>
-                        <button
-                          onClick={() => { if (!isError && !isTranscribing) setViewId(note.id); }}
-                          disabled={isTranscribing}
-                          aria-label={ariaLabel}
-                          className="voice-note-row"
-                          style={{
-                            width: '100%', textAlign: 'left',
-                            background: isError ? 'var(--color-danger-bg, #FEF4F4)' : 'var(--color-bg-card)',
-                            border: `1px solid ${isError ? '#ECC0C0' : 'var(--color-border-default)'}`,
-                            borderRadius: 'var(--radius-xl)',
-                            padding: '12px 16px',
-                            display: 'grid',
-                            gridTemplateColumns: 'auto 1fr auto auto auto',
-                            alignItems: 'center',
-                            columnGap: 'var(--space-4)',
-                            minHeight: 64,
-                            cursor: isError || isTranscribing ? 'default' : 'pointer',
-                            opacity: isTranscribing ? 0.5 : 1,
-                          }}
-                        >
-                          {/* Leading play button (visual affordance; opens sheet) */}
-                          <span aria-hidden style={{
-                            width: 32, height: 32, borderRadius: 'var(--radius-full)',
-                            background: isError ? 'rgba(197,48,48,0.12)' : 'var(--color-bg-surface)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: isError ? 'var(--color-danger-text, #A83030)' : 'var(--color-text-secondary, #57534e)',
-                            flexShrink: 0,
-                          }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                          </span>
-
-                          {/* Title */}
-                          <div style={{ minWidth: 0 }}>
-                            <span style={{
-                              fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, lineHeight: '20px',
-                              color: isError ? 'var(--color-danger-text, #A83030)' : 'var(--color-text-primary)',
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
-                            }}>
-                              {displayTitle}
-                            </span>
-                            {isError && (
-                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: '16px', color: 'var(--color-danger-text, #A83030)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                                {note.errorReason || 'Transcription failed.'}
-                              </span>
-                            )}
-                            {isTranscribing && (
-                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, lineHeight: '16px', color: 'var(--color-warning-text, #6A4A10)', display: 'block' }}>
-                                Transcribing…
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Time column */}
-                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--color-text-disabled)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
-                            {!isError && !isTranscribing ? fmtDate(note.createdAt) : ''}
-                          </span>
-
-                          {/* Duration column */}
-                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--color-text-disabled)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', minWidth: 40, textAlign: 'right' }}>
-                            {!isError && note.durationMs > 0 ? fmtDuration(note.durationMs) : ''}
-                          </span>
-
-                          {/* Spacer for menu dots */}
-                          <span aria-hidden style={{ width: 24 }} />
-                        </button>
-
-                        {/* Menu dots are absolutely-positioned to capture their own click */}
-                        {!isTranscribing && (
-                          <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }}>
-                            <button
-                              aria-label="More options"
-                              className="btn-icon-xs"
-                              style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)' }}
-                              onClick={e => { e.stopPropagation(); setMenuId(menuId === note.id ? null : note.id); }}
-                            >
-                              <DotsIcon />
-                            </button>
-                            {menuId === note.id && (
-                              <Menu ref={menuRef} onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, minWidth: 180 }}>
-                                {isError && <MenuItem onClick={() => { reRecord(note.id); setMenuId(null); }}>Re-record</MenuItem>}
-                                {!isError && <MenuItem onClick={() => { setRenameName(note.title); setRenameId(note.id); setMenuId(null); }}>Rename</MenuItem>}
-                                {!isError && (
-                                  <MenuItem onClick={() => {
-                                    const result = pushVoiceNoteToWorkflow(note.id, note.title);
-                                    setMenuId(null);
-                                    if (result === 'ok') onUseInWorkflow?.();
-                                    else if (result === 'no-workflow') { setErrorMsg('Open a workflow first — voice notes are pushed into the active graph.'); setTimeout(() => setErrorMsg(null), 4000); }
-                                    else if (result === 'empty-transcript') { setErrorMsg('This note has no transcript yet. Wait for transcription to finish or retry it.'); setTimeout(() => setErrorMsg(null), 4000); }
-                                  }}>Use in workflow</MenuItem>
-                                )}
-                                {!isError && <MenuItem onClick={() => { if (note.transcript) onSendToScript?.(note.transcript); setMenuId(null); }}>Analyze in ScriptSense</MenuItem>}
-                                <MenuItem danger onClick={() => { setDeleteId(note.id); setMenuId(null); }}>Delete</MenuItem>
-                              </Menu>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Inline rename overlays the title */}
-                        {renameId === note.id && (
-                          <div style={{ position: 'absolute', inset: 12, display: 'flex', alignItems: 'center', gap: 'var(--space-4)', pointerEvents: 'none' }}>
-                            <span style={{ width: 32, height: 32, flexShrink: 0 }} aria-hidden />
-                            <input
-                              autoFocus
-                              value={renameName}
-                              onChange={e => setRenameName(e.target.value)}
-                              onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') setRenameId(null); }}
-                              onBlur={handleRename}
-                              onClick={e => e.stopPropagation()}
-                              style={{ pointerEvents: 'auto', flex: 1, minWidth: 0, fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-md)', padding: '4px 8px', outline: 'none' }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-          </div>
         )}
       </div>
 
-      {/* Voice note modal */}
-      {viewId && (() => {
-        const note = notes.find(n => n.id === viewId);
-        if (!note || !note.transcript) return null;
-        // Transcript edits in the library should flow through to workflow nodes that
-        // reference this note. Voice-source nodes read text from outputStore on render,
-        // so we sync every matching node's output alongside the note update.
-        const persistTranscript = (t: string) => {
-          if (t === note.transcript) return;
-          updateNote(note.id, { transcript: t });
-          const matches = useGraphStore.getState().nodes.filter(
-            n => n.data?.subtype === 'voice-source' && (n.data as any)?.config?.voiceNoteId === note.id,
-          );
-          for (const n of matches) useOutputStore.getState().setOutput(n.id, { text: t });
-        };
-        return (
-          <ContentModal
-            subtype="voice-source"
-            title={note.title}
-            text={note.transcript || SAMPLE_CONTENT}
-            onClose={() => setViewId(null)}
-            onSave={persistTranscript}
-            onTitleChange={(t: string) => updateNote(note.id, { title: t })}
-            extraActions={[
-              { label: 'Send to Script Writing', onClick: (t: string) => { persistTranscript(t); setViewId(null); onSendToScript?.(t); } },
-              { label: 'Push to Workflow', onClick: (t: string) => {
-                // ContentModal may have edits the user hasn't saved yet; persist them
-                // first so the voice-source node references the same text the user sees.
-                persistTranscript(t);
-                const result = pushVoiceNoteToWorkflow(note.id, note.title);
-                if (result === 'ok') onUseInWorkflow?.();
-                else if (result === 'no-workflow') {
-                  setErrorMsg('Open a workflow first — voice notes are pushed into the active graph.');
-                  setTimeout(() => setErrorMsg(null), 4000);
-                }
-              }},
-            ]}
-          />
-        );
-      })()}
+      {/* Recording overlay */}
+      {recording && (
+        <RecordingOverlay
+          onStop={stopRecording}
+          onDiscard={discardRecording}
+          startTime={startTimeRef.current}
+          errorMsg={errorMsg}
+          fatal={fatal}
+          transcriptSoFar={liveTranscript}
+          liveOffline={liveOffline}
+        />
+      )}
+
+      {errorMsg && (
+        <div style={{ margin: '8px 20px', fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)' }}>{errorMsg}</div>
+      )}
+
+      {/* Empty state */}
+      {notes.length === 0 && !recording ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'var(--space-8)', minHeight: 300 }}>
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>No notes yet</div>
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', maxWidth: 260, lineHeight: 1.5, marginBottom: 'var(--space-6)' }}>Tap New to record your first voice note.</div>
+          <RecordButton size={96} onClick={startRecording} state="idle" label="Tap to record" />
+          {micError && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger-text)', fontFamily: 'var(--font-sans)', marginTop: 'var(--space-2)' }}>Microphone access denied.</div>}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {[...notes]
+            .filter(n => n.status !== 'recording')
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .map(note => {
+              const isError = note.status === 'error';
+              const isTranscribing = note.status === 'transcribing';
+              const displayTitle = (note.status === 'ready' && !note.transcript && note.title === 'Untitled note') ? 'Audio recording' : note.title;
+              return (
+                <div key={note.id} style={{ position: 'relative', zIndex: menuId === note.id ? 60 : 'auto' }}>
+                  <button
+                    onClick={() => { if (!isError && !isTranscribing) openEditor(note.id); }}
+                    disabled={isTranscribing}
+                    aria-label={displayTitle}
+                    style={{
+                      width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                      borderBottom: '1px solid var(--color-border-subtle)',
+                      padding: '13px 48px 13px 20px',
+                      cursor: isError || isTranscribing ? 'default' : 'pointer',
+                      opacity: isTranscribing ? 0.5 : 1,
+                      display: 'flex', flexDirection: 'column', gap: 2,
+                    }}
+                  >
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, color: isError ? 'var(--color-danger-text)' : 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                      {displayTitle}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: isError ? 'var(--color-danger-text)' : isTranscribing ? 'var(--color-warning-text)' : 'var(--color-text-disabled)' }}>
+                      {isError ? (note.errorReason || 'Transcription failed') : isTranscribing ? 'Transcribing…' : fmtDate(note.createdAt)}
+                    </span>
+                  </button>
+
+                  {/* Dots menu */}
+                  {!isTranscribing && (
+                    <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }}>
+                      <button
+                        aria-label="More options"
+                        className="btn-icon-xs"
+                        style={{ background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)' }}
+                        onClick={e => { e.stopPropagation(); setMenuId(menuId === note.id ? null : note.id); }}
+                      >
+                        <DotsIcon />
+                      </button>
+                      {menuId === note.id && (
+                        <Menu ref={menuRef} onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: 28, right: 0, zIndex: 50, minWidth: 160 }}>
+                          {isError && <MenuItem onClick={() => { reRecord(note.id); setMenuId(null); }}>Re-record</MenuItem>}
+                          {!isError && (
+                            <MenuItem onClick={() => {
+                              const result = pushVoiceNoteToWorkflow(note.id, note.title);
+                              setMenuId(null);
+                              if (result === 'ok') onUseInWorkflow?.();
+                              else if (result === 'no-workflow') { setErrorMsg('Open a workflow first.'); setTimeout(() => setErrorMsg(null), 3000); }
+                              else if (result === 'empty-transcript') { setErrorMsg('No transcript yet.'); setTimeout(() => setErrorMsg(null), 3000); }
+                            }}>Use in workflow</MenuItem>
+                          )}
+                          {!isError && <MenuItem onClick={() => { if (note.transcript) onSendToScript?.(note.transcript); setMenuId(null); }}>Analyze in ScriptSense</MenuItem>}
+                          <MenuItem danger onClick={() => { setDeleteId(note.id); setMenuId(null); }}>Delete</MenuItem>
+                        </Menu>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+        </div>
+      )}
 
       {/* Delete confirmation */}
       <Dialog open={!!deleteId} onOpenChange={open => { if (!open) setDeleteId(null); }}>
@@ -823,13 +689,6 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
           </div>
         </DialogContent>
       </Dialog>
-
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.4; } 100% { transform: scale(1.4); opacity: 0; } }
-      `}</style>
     </div>
   );
 }
