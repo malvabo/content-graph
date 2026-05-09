@@ -107,7 +107,7 @@ private struct ImportSheetView: View {
             } label: {
                 VStack(spacing: 12) {
                     Image(systemName: "link")
-                        .font(.system(size: 22, weight: .light))
+                        .font(.system(size: 16, weight: .light))
                         .foregroundColor(Color.white.opacity(0.82))
                     Text("Paste a link")
                         .font(.system(size: 14, weight: .regular))
@@ -128,7 +128,7 @@ private struct ImportSheetView: View {
                     } label: {
                         VStack(spacing: 12) {
                             Image(systemName: item.icon)
-                                .font(.system(size: 22, weight: .light))
+                                .font(.system(size: 16, weight: .light))
                                 .foregroundColor(Color.white.opacity(0.82))
                             Text(item.label)
                                 .font(.system(size: 14, weight: .regular))
