@@ -1,14 +1,5 @@
 import SwiftUI
 
-// MARK: - Model
-
-struct VoiceNote: Identifiable {
-    var id = UUID()
-    var title: String
-    var body: String
-    var date: Date
-}
-
 // MARK: - Note Row
 
 private struct NoteRow: View {
