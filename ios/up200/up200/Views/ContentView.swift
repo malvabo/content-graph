@@ -91,7 +91,6 @@ struct ContentView: View {
     @State private var selectedTab: AppTab = .home
     @State private var showSplash = true
     @State private var homeScrollToTop = 0
-    @State private var voiceNotes: [VoiceNote] = []
     @State private var showImport = false
 
     var body: some View {
@@ -108,7 +107,7 @@ struct ContentView: View {
                     case .home:
                         HomeView(scrollToTopSignal: homeScrollToTop)
                     case .library:
-                        VoiceNotesView(notes: $voiceNotes)
+                        VoiceNotesView()
                     case .templates:
                         TemplatesView()
                     }
