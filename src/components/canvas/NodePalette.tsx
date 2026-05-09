@@ -5,6 +5,14 @@ import type { NodeCategory } from '../../store/graphStore';
 
 import { motion } from 'motion/react';
 
+const PALETTE_TEMPLATES = [
+  { key: 'review',    title: 'Quick review document',  description: 'Summarise key decisions and action items from any doc' },
+  { key: 'marketing', title: 'Marketing launch pack',  description: 'Social posts, email and ad copy from a single brief' },
+  { key: 'repurpose', title: 'Content repurpose',      description: 'Adapt one piece of content across multiple formats' },
+  { key: 'newsletter',title: 'Newsletter digest',      description: 'Turn a source into a scannable email newsletter' },
+  { key: 'brand',     title: 'Brand story refresh',    description: 'Rewrite with a consistent voice and narrative arc' },
+];
+
 const PALETTE_ORDER: NodeCategory[] = ['source', 'generate', 'output', 'transform'];
 
 function PaletteItem({ def, onClick }: { def: NodeDef; onClick: () => void }) {
@@ -56,6 +64,9 @@ interface Props { onAddNode: (def: NodeDef) => void }
 export default function NodePalette({ onAddNode }: Props) {
   const [open, setOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(true);
+  const [promptText, setPromptText] = useState('');
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,9 +82,32 @@ export default function NodePalette({ onAddNode }: Props) {
     return () => document.removeEventListener('pointerdown', handler, true);
   }, [open]);
 
+  useEffect(() => {
+    if (!templatePickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const picker = ref.current?.querySelector('[data-template-picker]');
+      const pill = ref.current?.querySelector('[data-template-pill]');
+      if (!picker?.contains(target) && !pill?.contains(target)) setTemplatePickerOpen(false);
+    };
+    document.addEventListener('pointerdown', handler, true);
+    return () => document.removeEventListener('pointerdown', handler, true);
+  }, [templatePickerOpen]);
+
+  const selectTemplate = (key: string) => {
+    const tpl = PALETTE_TEMPLATES.find(t => t.key === key);
+    if (!tpl) return;
+    setActiveTemplate(key);
+    setPromptText(tpl.description);
+    setTemplatePickerOpen(false);
+  };
+
   return (
     <div ref={ref} className="absolute bottom-4 left-4 right-4 z-20">
-      <style>{`@keyframes paletteIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+      <style>{`
+        @keyframes paletteIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes tplPickerIn { from { opacity: 0; transform: scale(0.97) translateY(4px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+      `}</style>
       {/* Full-width + button */}
       <motion.button
         onClick={() => setOpen(!open)}
@@ -103,12 +137,97 @@ export default function NodePalette({ onAddNode }: Props) {
 
       {/* Popover */}
       {open && (
-        <div className="palette-popover absolute left-0 right-0 max-h-[420px] flex flex-col"
+        <div className="palette-popover absolute left-0 right-0 flex flex-col"
           style={{ bottom: 44, background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)', animation: 'paletteIn 150ms ease' }}
-          onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}>
+          onKeyDown={(e) => { if (e.key === 'Escape') { setTemplatePickerOpen(false); setOpen(false); } }}>
 
-          {/* List */}
-          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', padding: 'var(--space-2) var(--space-2) var(--space-3)' }}>
+          {/* Prompt section — outside scroll area so template picker isn't clipped */}
+          <div style={{ padding: 'var(--space-3) var(--space-3) 0', flexShrink: 0, position: 'relative' }}>
+            <div style={{ fontWeight: 500, fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 6 }}>Prompt</div>
+            <textarea
+              className="nowheel"
+              value={promptText}
+              onChange={e => { setPromptText(e.target.value); if (activeTemplate) setActiveTemplate(null); }}
+              placeholder="Describe what you want to generate…"
+              rows={3}
+              style={{
+                width: '100%', boxSizing: 'border-box', resize: 'none',
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', lineHeight: '20px',
+                color: 'var(--color-text-primary)', background: 'var(--color-bg-surface)',
+                border: '1px solid var(--color-border-default)', borderRadius: 'var(--radius-md)',
+                padding: '8px 10px', outline: 'none', transition: 'border-color 120ms',
+              }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+            />
+
+            {/* Templates pill */}
+            <div style={{ marginTop: 6, marginBottom: 10, position: 'relative' }}>
+              <button
+                data-template-pill
+                onClick={() => setTemplatePickerOpen(o => !o)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '4px 10px 4px 10px', borderRadius: 'var(--radius-full)',
+                  border: `1px solid ${activeTemplate ? 'var(--color-accent)' : 'var(--color-border-subtle)'}`,
+                  background: activeTemplate ? 'var(--color-bg-surface)' : 'var(--color-bg-subtle)',
+                  color: activeTemplate ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                  fontSize: 12, fontFamily: 'var(--font-sans)', fontWeight: 500, cursor: 'pointer',
+                  transition: 'all 120ms',
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="5" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="3" y="13" width="7" height="8" rx="1"/><rect x="14" y="13" width="7" height="8" rx="1"/></svg>
+                {activeTemplate ? PALETTE_TEMPLATES.find(t => t.key === activeTemplate)?.title : 'Templates'}
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ opacity: 0.6, transform: templatePickerOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+
+              {/* iOS-style template picker */}
+              {templatePickerOpen && (
+                <div
+                  data-template-picker
+                  style={{
+                    position: 'absolute', bottom: 'calc(100% + 8px)', left: 0,
+                    width: '100%', zIndex: 200,
+                    background: 'var(--color-bg-card)',
+                    borderRadius: 16,
+                    boxShadow: '0 8px 40px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08)',
+                    border: '1px solid var(--color-border-subtle)',
+                    overflow: 'hidden',
+                    animation: 'tplPickerIn 160ms cubic-bezier(0.32,0.72,0,1)',
+                  }}
+                >
+                  {PALETTE_TEMPLATES.map((tpl, i) => (
+                    <button
+                      key={tpl.key}
+                      onClick={() => selectTemplate(tpl.key)}
+                      style={{
+                        width: '100%', textAlign: 'left', padding: '13px 16px',
+                        background: activeTemplate === tpl.key ? 'var(--color-bg-surface)' : 'transparent',
+                        border: 'none', borderTop: i > 0 ? '1px solid var(--color-border-subtle)' : 'none',
+                        cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                        transition: 'background 80ms',
+                      }}
+                      onMouseEnter={e => { if (activeTemplate !== tpl.key) e.currentTarget.style.background = 'var(--color-bg-subtle)'; }}
+                      onMouseLeave={e => { if (activeTemplate !== tpl.key) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: '20px' }}>{tpl.title}</span>
+                        {activeTemplate === tpl.key && (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 2, lineHeight: '16px' }}>{tpl.description}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: '0 calc(-1 * var(--space-3))' }} />
+          </div>
+
+          {/* Node list — scrollable */}
+          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', padding: 'var(--space-2) var(--space-2) var(--space-3)', maxHeight: 280 }}>
             {PALETTE_ORDER.map((cat, catIdx) => {
               const nodes = NODE_DEFS.filter(n => n.category === cat);
               if (!nodes.length) return null;
