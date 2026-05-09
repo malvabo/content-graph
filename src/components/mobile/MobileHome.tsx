@@ -4,6 +4,7 @@ import { useVoiceStore, type VoiceNote } from '../../store/voiceStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useAuthStore } from '../../store/authStore';
 import { aiExecute } from '../../utils/aiExecutor';
+import TypewriterLogo from '../TypewriterLogo';
 
 type AssetKind = 'linkedin-post' | 'twitter-thread' | 'twitter-single';
 
@@ -2125,6 +2126,331 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
   );
 }
 
+// ─── CreateSheet ────────────────────────────────────────────────────────────
+
+type CreateSource = 'text' | 'file' | 'photo' | 'voice';
+
+const CREATE_SOURCES: { key: CreateSource; label: string; color: string }[] = [
+  { key: 'text',  label: 'Text',  color: '79,142,247' },
+  { key: 'file',  label: 'File',  color: '155,111,245' },
+  { key: 'photo', label: 'Photo', color: '245,136,111' },
+  { key: 'voice', label: 'Voice', color: '79,201,142' },
+];
+
+const CREATE_OUTPUTS = [
+  { key: 'linkedin-post',  label: 'LinkedIn Post',  desc: '150–300 word hook post' },
+  { key: 'twitter-thread', label: 'Twitter Thread', desc: '5–10 tweet thread' },
+  { key: 'newsletter',     label: 'Newsletter',      desc: '300–500 word digest' },
+  { key: 'infographic',    label: 'Infographic',     desc: 'Structured visual spec' },
+  { key: 'quote-card',     label: 'Quote Card',      desc: 'Strongest quote' },
+  { key: 'twitter-single', label: 'Twitter Single',  desc: 'Most quotable insight' },
+];
+
+const MOBILE_TEMPLATES = [
+  { key: 'review',     title: 'Quick review document', description: 'Summarise key decisions and action items from any doc' },
+  { key: 'marketing',  title: 'Marketing launch pack',  description: 'Social posts, email and ad copy from a single brief' },
+  { key: 'repurpose',  title: 'Content repurpose',      description: 'Adapt one piece of content across multiple formats' },
+  { key: 'newsletter', title: 'Newsletter digest',      description: 'Turn a source into a scannable email newsletter' },
+  { key: 'brand',      title: 'Brand story refresh',    description: 'Rewrite with a consistent voice and narrative arc' },
+];
+
+function SourceIcon({ k }: { k: CreateSource }) {
+  if (k === 'text') return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 6h16M4 10h16M4 14h10"/>
+    </svg>
+  );
+  if (k === 'file') return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14,2 14,8 20,8"/>
+    </svg>
+  );
+  if (k === 'photo') return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="3"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <polyline points="21,15 16,10 5,21"/>
+    </svg>
+  );
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+      <line x1="12" y1="19" x2="12" y2="23"/>
+      <line x1="8" y1="23" x2="16" y2="23"/>
+    </svg>
+  );
+}
+
+function OutputFileIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ opacity: 0.55, flexShrink: 0 }}>
+      <rect x="1" y="0.5" width="8" height="10" rx="1.5" stroke="currentColor" strokeWidth="1"/>
+      <path d="M8.5 0.5 L11.5 3.5 L11.5 10.5 Q11.5 12 10 12 L3 12" stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="round"/>
+      <path d="M8 0.5 L8 3.5 L11.5 3.5" stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function CreateSheet({ onClose, onVoice, onText }: { onClose: () => void; onVoice?: () => void; onText?: () => void }) {
+  const [step, setStep] = useState<1 | 2>(1);
+  const [source, setSource] = useState<CreateSource | null>(null);
+  const [prompt, setPrompt] = useState('');
+  const [selectedOutputs, setSelectedOutputs] = useState<string[]>([]);
+  const [tplOpen, setTplOpen] = useState(false);
+  const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 300);
+  };
+
+  const handleSourceSelect = (key: CreateSource) => {
+    if (key === 'voice') {
+      handleClose();
+      setTimeout(() => onVoice?.(), 320);
+      return;
+    }
+    if (key === 'text') {
+      handleClose();
+      setTimeout(() => onText?.(), 320);
+      return;
+    }
+    setSource(key);
+    setStep(2);
+  };
+
+  const toggleOutput = (key: string) => {
+    setSelectedOutputs(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  };
+
+  const sourceMeta = CREATE_SOURCES.find(s => s.key === source);
+
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.6)',
+        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'flex-end',
+        opacity: visible ? 1 : 0,
+        transition: 'opacity 0.28s ease',
+      }}
+      onClick={e => { if (e.target === e.currentTarget) handleClose(); }}
+    >
+      <div
+        style={{
+          width: '100%', maxHeight: '84vh',
+          background: 'linear-gradient(180deg, rgba(14,15,26,0.98) 0%, rgba(8,9,16,0.99) 100%)',
+          backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+          borderRadius: '24px 24px 0 0',
+          border: '1px solid rgba(255,255,255,0.07)', borderBottom: 'none',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          transform: visible ? 'translateY(0)' : 'translateY(100%)',
+          transition: 'transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
+        </div>
+
+        {step === 1 ? (
+          <div style={{ padding: '16px 20px 32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.92)', letterSpacing: '-0.02em' }}>
+                Add content
+              </h3>
+              <button
+                onClick={handleClose}
+                style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, lineHeight: 1 }}
+              >×</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {CREATE_SOURCES.map(src => (
+                <button
+                  key={src.key}
+                  onClick={() => handleSourceSelect(src.key)}
+                  style={{
+                    borderRadius: 18,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    padding: '18px 16px 16px',
+                    display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10,
+                    cursor: 'pointer', textAlign: 'left',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: `rgba(${src.color},0.14)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: `rgb(${src.color})` }}>
+                    <SourceIcon k={src.key} />
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.88)', letterSpacing: '-0.01em' }}>{src.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
+            {/* Step 2 header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <button
+                onClick={() => setStep(1)}
+                style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              {sourceMeta && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, maxWidth: 'calc(100% - 84px)', overflow: 'hidden', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, color: `rgb(${sourceMeta.color})`, background: `rgba(${sourceMeta.color},0.12)`, borderRadius: 999, padding: '3px 10px 3px 6px', flexShrink: 1 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: `rgb(${sourceMeta.color})`, width: 16, height: 16, flexShrink: 0 }}><SourceIcon k={sourceMeta.key} /></span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sourceMeta.label}</span>
+                </span>
+              )}
+              <span style={{ flex: 1 }} />
+              <button
+                onClick={handleClose}
+                style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, lineHeight: 1 }}
+              >×</button>
+            </div>
+
+            {/* Scrollable content */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 24px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+              {/* Prompt section */}
+              <div style={{ position: 'relative' }}>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Prompt</div>
+                <textarea
+                  value={prompt}
+                  onChange={e => setPrompt(e.target.value)}
+                  placeholder="Describe what you want to generate…"
+                  rows={3}
+                  style={{
+                    width: '100%', resize: 'none',
+                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 14, padding: '12px 14px', boxSizing: 'border-box',
+                    fontFamily: 'var(--font-sans)', fontSize: 15, color: 'rgba(255,255,255,0.85)',
+                    lineHeight: 1.5, outline: 'none',
+                    caretColor: 'rgba(255,255,255,0.7)',
+                  }}
+                />
+                {/* Templates pill */}
+                <div style={{ marginTop: 8, position: 'relative', display: 'inline-block' }}>
+                  <button
+                    data-tpl-pill="1"
+                    onClick={() => setTplOpen(o => !o)}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      background: tplOpen ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.10)',
+                      borderRadius: 999, padding: '5px 12px 5px 10px',
+                      fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 500,
+                      color: 'rgba(255,255,255,0.65)', cursor: 'pointer',
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}><path d="M2 4h12M2 8h8M2 12h5"/></svg>
+                    Templates
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5, transform: tplOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}><path d="M6 9l6 6 6-6"/></svg>
+                  </button>
+                  {/* Template picker */}
+                  {tplOpen && (
+                    <div
+                      data-tpl-picker="1"
+                      style={{
+                        position: 'absolute', bottom: 'calc(100% + 8px)', left: 0,
+                        minWidth: 260, zIndex: 50,
+                        background: 'rgba(18,19,30,0.98)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        borderRadius: 16, overflow: 'hidden',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                      }}
+                    >
+                      {MOBILE_TEMPLATES.map((tpl, i) => (
+                        <div key={tpl.key}>
+                          {i > 0 && <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '0 12px' }} />}
+                          <button
+                            onClick={() => { setPrompt(tpl.description); setActiveTemplate(tpl.key); setTplOpen(false); }}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                              width: '100%', padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.88)', lineHeight: '18px' }}>{tpl.title}</div>
+                              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: '16px', marginTop: 2 }}>{tpl.description}</div>
+                            </div>
+                            {activeTemplate === tpl.key && (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(79,142,247,0.9)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 6L9 17l-5-5"/></svg>
+                            )}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Outputs section */}
+              <div>
+                <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Outputs</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {CREATE_OUTPUTS.map(out => {
+                    const selected = selectedOutputs.includes(out.key);
+                    return (
+                      <button
+                        key={out.key}
+                        onClick={() => toggleOutput(out.key)}
+                        style={{
+                          borderRadius: 10, textAlign: 'left', cursor: 'pointer',
+                          background: selected ? 'rgba(79,142,247,0.10)' : 'rgba(255,255,255,0.04)',
+                          border: selected ? '1px solid rgba(79,142,247,0.35)' : '1px solid rgba(255,255,255,0.07)',
+                          backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                          padding: '10px 10px 8px',
+                          display: 'flex', flexDirection: 'column', gap: 6,
+                          transition: 'background 0.15s, border-color 0.15s',
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, fontSize: 12, fontFamily: 'var(--font-sans)', color: selected ? 'rgba(79,142,247,0.95)' : 'rgba(255,255,255,0.85)', lineHeight: '16px' }}>{out.label}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(255,255,255,0.45)' }}>
+                          <OutputFileIcon />
+                          <span style={{ fontSize: 11, fontFamily: 'var(--font-sans)', lineHeight: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{out.desc}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Generate button */}
+            <div style={{ padding: '10px 20px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              <button
+                style={{
+                  width: '100%', height: 50, borderRadius: 14,
+                  background: selectedOutputs.length > 0 ? 'linear-gradient(135deg, #2c5af5 0%, #6b3cdd 100%)' : 'rgba(255,255,255,0.06)',
+                  border: selectedOutputs.length > 0 ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                  color: selectedOutputs.length > 0 ? '#fff' : 'rgba(255,255,255,0.3)',
+                  fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em',
+                  cursor: selectedOutputs.length > 0 ? 'pointer' : 'default',
+                  transition: 'background 0.2s, color 0.2s',
+                }}
+              >
+                Generate{selectedOutputs.length > 0 ? ` ${selectedOutputs.length} output${selectedOutputs.length > 1 ? 's' : ''}` : ''}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// ─── MobileHome ──────────────────────────────────────────────────────────────
+
 interface MobileHomeProps {
   onAddPost?: () => void;
 }
@@ -2155,6 +2481,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
   const [editMode, setEditMode] = useState(false);
   const [detailKind, setDetailKind] = useState<WidgetKind | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
 
   const removeWidget = (kind: WidgetKind) => {
     const next = activeWidgets.filter(k => k !== kind);
@@ -2348,9 +2675,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         <>
           {/* Header */}
           <header style={{ padding: '28px 20px 8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 500, fontSize: 22, fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', userSelect: 'none', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-              UP150
-            </span>
+            <TypewriterLogo fontSize={22} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <button
                 onClick={() => setEditMode(m => !m)}
@@ -2410,72 +2735,31 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         </>
       )}
 
-      {/* Add a post — hidden during edit mode and on the list/detail page */}
-      {!editMode && !detailKind && onAddPost && (
+      {/* Centered plus button — hidden during edit mode and detail view */}
+      {!editMode && !detailKind && (
         <div style={{
           position: 'absolute',
           bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))',
-          left: 16, right: 16,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+          left: 0, right: 0,
+          display: 'flex', justifyContent: 'center',
           pointerEvents: 'none',
         }}>
           <button
-            onClick={onAddPost}
-            aria-label="Capture your thought"
+            onClick={() => setShowCreateSheet(true)}
+            aria-label="Add content"
             style={{
               pointerEvents: 'auto',
-              position: 'relative', overflow: 'hidden', isolation: 'isolate',
-              width: '100%', maxWidth: 480, minHeight: 58,
-              padding: '0 28px',
-              borderRadius: 999,
-              background: 'linear-gradient(135deg, #1a1c26 0%, #0d0e16 100%)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.78)',
-              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-lg)', fontWeight: 500, letterSpacing: '-0.01em',
-              cursor: 'pointer', textAlign: 'center',
+              width: 56, height: 56, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #2c5af5 0%, #6b3cdd 100%)',
+              border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 18px 48px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.06)',
+              boxShadow: '0 4px 20px rgba(44,90,245,0.45), 0 2px 8px rgba(0,0,0,0.4)',
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
-            {/* Floating colored blobs — drifting and morphing organically */}
-            {[
-              { left: '0%',  top: '10%', size: 110, color: '144,97,249',  dur: 11.5, delay: -1.4,  morph: 'a', morphDur: 7.3,  morphDelay: -2.1 },
-              { left: '25%', top: '55%', size: 92,  color: '29,155,240',  dur: 9.2,  delay: -4.1,  morph: 'b', morphDur: 9.1,  morphDelay: -5.3 },
-              { left: '50%', top: '5%',  size: 84,  color: '13,191,90',   dur: 13.0, delay: -2.6,  morph: 'c', morphDur: 6.2,  morphDelay: -1.8 },
-              { left: '70%', top: '60%', size: 100, color: '255,150,18',  dur: 10.4, delay: -6.0,  morph: 'a', morphDur: 8.8,  morphDelay: -4.7 },
-              { left: '90%', top: '20%', size: 76,  color: '225,48,108',  dur: 12.2, delay: -8.5,  morph: 'b', morphDur: 5.7,  morphDelay: -3.2 },
-            ].map((o, i) => (
-              <span key={i} aria-hidden className="widget-glow" style={{
-                position: 'absolute', left: o.left, top: o.top, width: o.size, height: o.size,
-                marginLeft: -o.size / 2, marginTop: -o.size / 2,
-                background: `radial-gradient(circle, rgba(${o.color},0.55) 0%, rgba(${o.color},0.18) 38%, rgba(${o.color},0) 70%)`,
-                filter: 'blur(4px)',
-                animationName: `add-post-orb-drift, add-post-blob-morph-${o.morph}`,
-                animationDuration: `${o.dur}s, ${o.morphDur}s`,
-                animationDelay: `${o.delay}s, ${o.morphDelay}s`,
-                animationTimingFunction: 'ease-in-out, ease-in-out',
-                animationIterationCount: 'infinite, infinite',
-                willChange: 'transform, border-radius, opacity',
-                pointerEvents: 'none',
-              }} />
-            ))}
-
-            <span style={{ position: 'relative', zIndex: 1 }}>Capture your thought</span>
-          </button>
-
-          <button
-            onClick={() => setShowTypeNote(true)}
-            aria-label="Type a note instead"
-            style={{
-              pointerEvents: 'auto',
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
-              color: 'rgba(255,255,255,0.40)',
-              padding: '6px 16px', minHeight: 36,
-              letterSpacing: '-0.01em',
-            }}
-          >
-            or type a note
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
           </button>
         </div>
       )}
@@ -2499,6 +2783,14 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
       )}
 
       {showAddSheet && <AddWidgetSheet activeWidgets={activeWidgets} onAdd={addWidget} onClose={() => setShowAddSheet(false)} />}
+
+      {showCreateSheet && (
+        <CreateSheet
+          onClose={() => setShowCreateSheet(false)}
+          onVoice={() => { setShowCreateSheet(false); onAddPost?.(); }}
+          onText={() => { setShowCreateSheet(false); setShowTypeNote(true); }}
+        />
+      )}
     </div>
   );
 }
