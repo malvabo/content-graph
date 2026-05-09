@@ -2125,6 +2125,102 @@ function DetailView({ kind, notes, onBack, onOpenNote, justRecordedId }: {
   );
 }
 
+function CreateSheet({ onClose, onVoice, onText, onFile, onLink }: {
+  onClose: () => void; onVoice: () => void; onText: () => void; onFile: () => void; onLink: () => void;
+}) {
+  const options = [
+    {
+      label: 'Voice',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>,
+      color: '13,191,90', action: onVoice,
+    },
+    {
+      label: 'Text',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>,
+      color: '29,155,240', action: onText,
+    },
+    {
+      label: 'File',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+      color: '255,150,18', action: onFile,
+    },
+    {
+      label: 'Link',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
+      color: '144,97,249', action: onLink,
+    },
+  ];
+
+  return createPortal(
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end' }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ width: '100%', background: '#0d0f18', borderRadius: '20px 20px 0 0', padding: '20px 16px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', boxShadow: '0 -8px 40px rgba(0,0,0,0.5)' }}
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {options.map(opt => (
+            <button
+              key={opt.label}
+              onClick={opt.action}
+              style={{
+                background: `rgba(${opt.color},0.08)`,
+                border: `1px solid rgba(${opt.color},0.18)`,
+                borderRadius: 18, cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 10, padding: '22px 12px',
+                color: `rgb(${opt.color})`,
+              }}
+            >
+              {opt.icon}
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function LinkSheet({ onSave, onClose }: { onSave: (url: string) => void; onClose: () => void }) {
+  const [url, setUrl] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+  return createPortal(
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end' }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ width: '100%', background: '#0d0f18', borderRadius: '20px 20px 0 0', padding: '20px 16px', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', boxShadow: '0 -8px 40px rgba(0,0,0,0.5)' }}
+      >
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 600, color: '#fff', marginBottom: 14 }}>Add a link</div>
+        <input
+          ref={inputRef}
+          type="url"
+          placeholder="https://…"
+          value={url}
+          onChange={e => setUrl(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && url.trim()) onSave(url.trim()); if (e.key === 'Escape') onClose(); }}
+          style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '12px 14px', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', color: '#fff', outline: 'none', boxSizing: 'border-box', marginBottom: 12 }}
+        />
+        <button
+          onClick={() => { if (url.trim()) onSave(url.trim()); }}
+          disabled={!url.trim()}
+          style={{ width: '100%', padding: '13px', borderRadius: 999, background: url.trim() ? 'rgba(144,97,249,0.85)' : 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 600, cursor: url.trim() ? 'pointer' : 'default', opacity: url.trim() ? 1 : 0.5, transition: 'background 200ms, opacity 200ms' }}
+        >
+          Save
+        </button>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 interface MobileHomeProps {
   onAddPost?: () => void;
 }
@@ -2136,10 +2232,13 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
 
   const [recording, setRecording] = useState(false);
   const [showTypeNote, setShowTypeNote] = useState(false);
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
+  const [showLinkSheet, setShowLinkSheet] = useState(false);
   const [liveText, setLiveText] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);
   const [justRecordedId, setJustRecordedId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Widget dashboard state
   const [activeWidgets, setActiveWidgets] = useState<WidgetKind[]>(() => {
@@ -2329,6 +2428,31 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     setRecording(false);
   }, [removeNote]);
 
+  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const text = (ev.target?.result as string || '').trim();
+      if (!text) return;
+      const id = `vn-${Date.now()}`;
+      const title = file.name.replace(/\.[^.]+$/, '') || 'File note';
+      addNote({ id, title, durationMs: 0, transcript: text, status: 'ready', createdAt: new Date().toISOString() });
+      setJustRecordedId(id);
+      setTimeout(() => setJustRecordedId(curr => curr === id ? null : curr), 3000);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleLinkSave = (url: string) => {
+    if (!url.trim()) return;
+    const id = `vn-${Date.now()}`;
+    addNote({ id, title: url.trim().replace(/^https?:\/\//, '').split('/')[0], durationMs: 0, transcript: url.trim(), status: 'ready', createdAt: new Date().toISOString() });
+    setJustRecordedId(id);
+    setTimeout(() => setJustRecordedId(curr => curr === id ? null : curr), 3000);
+  };
+
   const openNote = openNoteId ? notes.find(n => n.id === openNoteId) : null;
 
   return (
@@ -2410,79 +2534,45 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         </>
       )}
 
-      {/* Add a post — hidden during edit mode and on the list/detail page */}
-      {!editMode && !detailKind && onAddPost && (
-        <div style={{
-          position: 'absolute',
-          bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))',
-          left: 16, right: 16,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
-          pointerEvents: 'none',
-        }}>
+      {/* Create FAB — hidden during edit mode and detail view */}
+      {!editMode && !detailKind && (
+        <div style={{ position: 'absolute', bottom: 'calc(var(--space-5) + env(safe-area-inset-bottom, 0px))', right: 20, pointerEvents: 'none' }}>
           <button
-            onClick={onAddPost}
-            aria-label="Capture your thought"
+            onClick={() => setShowCreateSheet(true)}
+            aria-label="Create new"
             style={{
               pointerEvents: 'auto',
-              position: 'relative', overflow: 'hidden', isolation: 'isolate',
-              width: '100%', maxWidth: 480, minHeight: 58,
-              padding: '0 28px',
-              borderRadius: 999,
-              background: 'linear-gradient(135deg, #1a1c26 0%, #0d0e16 100%)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.78)',
-              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-lg)', fontWeight: 500, letterSpacing: '-0.01em',
-              cursor: 'pointer', textAlign: 'center',
+              width: 56, height: 56, borderRadius: '50%',
+              background: 'rgba(13,191,90,0.90)',
+              border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 18px 48px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.06)',
+              boxShadow: '0 8px 28px rgba(13,191,90,0.38), 0 2px 8px rgba(0,0,0,0.35)',
+              color: '#fff',
             }}
           >
-            {/* Floating colored blobs — drifting and morphing organically */}
-            {[
-              { left: '0%',  top: '10%', size: 110, color: '144,97,249',  dur: 11.5, delay: -1.4,  morph: 'a', morphDur: 7.3,  morphDelay: -2.1 },
-              { left: '25%', top: '55%', size: 92,  color: '29,155,240',  dur: 9.2,  delay: -4.1,  morph: 'b', morphDur: 9.1,  morphDelay: -5.3 },
-              { left: '50%', top: '5%',  size: 84,  color: '13,191,90',   dur: 13.0, delay: -2.6,  morph: 'c', morphDur: 6.2,  morphDelay: -1.8 },
-              { left: '70%', top: '60%', size: 100, color: '255,150,18',  dur: 10.4, delay: -6.0,  morph: 'a', morphDur: 8.8,  morphDelay: -4.7 },
-              { left: '90%', top: '20%', size: 76,  color: '225,48,108',  dur: 12.2, delay: -8.5,  morph: 'b', morphDur: 5.7,  morphDelay: -3.2 },
-            ].map((o, i) => (
-              <span key={i} aria-hidden className="widget-glow" style={{
-                position: 'absolute', left: o.left, top: o.top, width: o.size, height: o.size,
-                marginLeft: -o.size / 2, marginTop: -o.size / 2,
-                background: `radial-gradient(circle, rgba(${o.color},0.55) 0%, rgba(${o.color},0.18) 38%, rgba(${o.color},0) 70%)`,
-                filter: 'blur(4px)',
-                animationName: `add-post-orb-drift, add-post-blob-morph-${o.morph}`,
-                animationDuration: `${o.dur}s, ${o.morphDur}s`,
-                animationDelay: `${o.delay}s, ${o.morphDelay}s`,
-                animationTimingFunction: 'ease-in-out, ease-in-out',
-                animationIterationCount: 'infinite, infinite',
-                willChange: 'transform, border-radius, opacity',
-                pointerEvents: 'none',
-              }} />
-            ))}
-
-            <span style={{ position: 'relative', zIndex: 1 }}>Capture your thought</span>
-          </button>
-
-          <button
-            onClick={() => setShowTypeNote(true)}
-            aria-label="Type a note instead"
-            style={{
-              pointerEvents: 'auto',
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
-              color: 'rgba(255,255,255,0.40)',
-              padding: '6px 16px', minHeight: 36,
-              letterSpacing: '-0.01em',
-            }}
-          >
-            or type a note
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
           </button>
         </div>
       )}
 
+      {/* Hidden file input */}
+      <input ref={fileInputRef} type="file" accept="text/*,.txt,.md,.csv" style={{ display: 'none' }} onChange={handleFilePick} />
+
       {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} />}
 
       {showTypeNote && <TypeNoteSheet onSave={handleSaveTypedNote} onClose={() => setShowTypeNote(false)} />}
+
+      {showLinkSheet && <LinkSheet onSave={url => { handleLinkSave(url); setShowLinkSheet(false); }} onClose={() => setShowLinkSheet(false)} />}
+
+      {showCreateSheet && (
+        <CreateSheet
+          onClose={() => setShowCreateSheet(false)}
+          onVoice={() => { setShowCreateSheet(false); startRecording(); }}
+          onText={() => { setShowCreateSheet(false); setShowTypeNote(true); }}
+          onFile={() => { setShowCreateSheet(false); fileInputRef.current?.click(); }}
+          onLink={() => { setShowCreateSheet(false); setShowLinkSheet(true); }}
+        />
+      )}
 
       {openNote && (
         <NoteSheet
