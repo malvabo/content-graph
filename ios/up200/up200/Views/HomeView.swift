@@ -83,65 +83,68 @@ private struct ImportSheetView: View {
     @Environment(\.dismiss) private var dismiss
 
     private let gridItems: [(icon: String, label: String, type: SourceType)] = [
-        ("square.and.arrow.up", "Upload a file", .file),
-        ("text.cursor",         "Write text",    .text),
-        ("mic",                 "Voice note",    .voice),
-        ("photo",               "Image",         .image),
+        ("arrow.up.doc",  "Upload a file", .file),
+        ("pencil",        "Write text",    .text),
+        ("waveform",      "Voice note",    .voice),
+        ("photo",         "Image",         .image),
     ]
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 16) {
             Capsule()
-                .fill(Color.white.opacity(0.18))
-                .frame(width: 36, height: 4)
+                .fill(Color.white.opacity(0.12))
+                .frame(width: 32, height: 4)
                 .padding(.top, 10)
 
             Text("Import content")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundColor(.white)
+                .font(.system(size: 19, weight: .semibold))
+                .foregroundColor(Color.white.opacity(0.88))
+                .padding(.bottom, 2)
 
             Button {
                 onSelect(.link)
                 dismiss()
             } label: {
-                VStack(spacing: 10) {
-                    Image(systemName: "globe")
-                        .font(.system(size: 28, weight: .medium))
+                VStack(spacing: 12) {
+                    Image(systemName: "link")
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundColor(Color.white.opacity(0.82))
                     Text("Paste a link")
-                        .font(.system(size: 17, weight: .medium))
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(Color.white.opacity(0.52))
                 }
-                .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 100)
-                .background(Color.white.opacity(0.08))
+                .frame(height: 88)
+                .background(Color.white.opacity(0.06))
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .buttonStyle(.plain)
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 ForEach(gridItems, id: \.type) { item in
                     Button {
                         onSelect(item.type)
                         dismiss()
                     } label: {
-                        VStack(spacing: 10) {
+                        VStack(spacing: 12) {
                             Image(systemName: item.icon)
-                                .font(.system(size: 28, weight: .regular))
+                                .font(.system(size: 22, weight: .light))
+                                .foregroundColor(Color.white.opacity(0.82))
                             Text(item.label)
-                                .font(.system(size: 17, weight: .medium))
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(Color.white.opacity(0.52))
                                 .multilineTextAlignment(.center)
                         }
-                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 100)
-                        .background(Color.white.opacity(0.08))
+                        .frame(height: 88)
+                        .background(Color.white.opacity(0.06))
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                     .buttonStyle(.plain)
                 }
             }
 
-            Spacer(minLength: 20)
+            Spacer(minLength: 16)
         }
         .padding(.horizontal, 16)
         .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
