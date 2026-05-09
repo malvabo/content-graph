@@ -428,7 +428,6 @@ private struct SourceCard: View {
                             VoiceRecordRow {
                                 label in
                                 withAnimation(.spring(duration: 0.25)) {
-                                    sources.append(SourceItem(type: .voice, label: label))
                                     showVoiceRecord = false
                                 }
                             } onCancel: {
