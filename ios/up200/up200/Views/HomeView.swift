@@ -272,17 +272,14 @@ private struct VoiceRecordRow: View {
 
     @State private var isRecording = false
     @State private var seconds = 0
-    @State private var lightPhase = false
     @State private var pulse = false
 
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     private var timeLabel: String {
         String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
-
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
-    private let idle  = Color.white
 
     var body: some View {
         HStack(spacing: 12) {
@@ -299,8 +296,7 @@ private struct VoiceRecordRow: View {
             Spacer()
 
             Button {
-                let hap = UIImpactFeedbackGenerator(style: .medium)
-                hap.impactOccurred()
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 if isRecording {
                     isRecording = false
                     pulse = false
@@ -311,28 +307,9 @@ private struct VoiceRecordRow: View {
                     pulse = true
                 }
             } label: {
-                ZStack {
-                    Capsule()
-                        .fill(Color(red: 0.10, green: 0.08, blue: 0.07))
-
-                    Ellipse()
-                        .fill(
-                            (isRecording ? amber : idle)
-                                .opacity(isRecording ? 0.45 : 0.18)
-                        )
-                        .frame(width: 72, height: 36)
-                        .blur(radius: 16)
-                        .offset(x: lightPhase ? 14 : -14)
-
-                    Capsule()
-                        .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
-
-                    Image(systemName: isRecording ? "stop.fill" : "mic.fill")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.8))
-                }
-                .frame(width: 68, height: 36)
-                .clipped()
+                Image(systemName: isRecording ? "stop.circle" : "mic")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundColor(isRecording ? amber : Color.white.opacity(0.55))
             }
             .buttonStyle(.plain)
 
@@ -348,11 +325,6 @@ private struct VoiceRecordRow: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .onReceive(clock) { _ in if isRecording { seconds += 1 } }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
-                lightPhase = true
-            }
-        }
     }
 }
 
@@ -370,6 +342,7 @@ private struct SourceCard: View {
     @State private var photoPickerItem: PhotosPickerItem? = nil
     @FocusState private var textFocused: Bool
     @State private var showTextInput = false
+    @State private var voiceTranscript = ""
 
     var body: some View {
         GlassCard {
@@ -425,13 +398,35 @@ private struct SourceCard: View {
                         }
 
                         if showVoiceRecord {
-                            VoiceRecordRow {
-                                label in
+                            VoiceRecordRow { label in
                                 withAnimation(.spring(duration: 0.25)) {
+                                    voiceTranscript = label
                                     showVoiceRecord = false
                                 }
                             } onCancel: {
                                 withAnimation { showVoiceRecord = false }
+                            }
+                        }
+
+                        if !voiceTranscript.isEmpty {
+                            ZStack(alignment: .topLeading) {
+                                if voiceTranscript.isEmpty {
+                                    Text("Voice transcript…")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(Color.white.opacity(0.25))
+                                        .padding(.horizontal, 16)
+                                        .padding(.top, 14)
+                                        .allowsHitTesting(false)
+                                }
+                                TextEditor(text: $voiceTranscript)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(Color.white.opacity(0.85))
+                                    .scrollContentBackground(.hidden)
+                                    .background(.clear)
+                                    .frame(minHeight: 80, maxHeight: 180)
+                                    .padding(.horizontal, 12)
+                                    .padding(.top, 8)
+                                    .padding(.bottom, 10)
                             }
                         }
 
