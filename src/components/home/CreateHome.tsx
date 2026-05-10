@@ -518,22 +518,28 @@ function VoiceRecordSheet({ isOpen, onClose, onSave }: {
 function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
   isOpen: boolean; onClose: () => void; selected: Set<string>; onChange: (s: Set<string>) => void;
 }) {
+  const [pending, setPending] = useState<Set<string>>(new Set(selected));
+  useEffect(() => { if (isOpen) setPending(new Set(selected)); }, [isOpen, selected]);
   const toggle = (id: string) => {
-    const n = new Set(selected);
-    if (n.has(id)) n.delete(id); else n.add(id);
-    onChange(n);
+    setPending(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
   };
+  const addLabel = pending.size === 0 ? 'Add' : `Add ${pending.size} format${pending.size > 1 ? 's' : ''}`;
+  const commit = () => { onChange(pending); onClose(); };
   return (
     <Sheet isOpen={isOpen} onClose={onClose} height="86vh">
       <div style={{ padding: '8px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 16, cursor: 'pointer', padding: 0 }}>Close</button>
+        <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 16, cursor: 'pointer', padding: 0 }}>Cancel</button>
         <div style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>Choose formats</div>
-        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, minWidth: 40, textAlign: 'right' }}>{selected.size}</div>
+        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, minWidth: 40, textAlign: 'right' }}>{pending.size || ''}</div>
       </div>
       <Divider />
-      <div style={{ padding: '8px 14px 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ padding: '8px 14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {allFormats.map(f => {
-          const on = selected.has(f.id);
+          const on = pending.has(f.id);
           return (
             <button
               key={f.id}
@@ -561,6 +567,13 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
             </button>
           );
         })}
+      </div>
+      <div style={{
+        position: 'sticky', bottom: 0, left: 0, right: 0,
+        padding: '12px 16px 24px',
+        background: `linear-gradient(to top, ${BG} 70%, transparent)`,
+      }}>
+        <AnimatedLightsButton title={addLabel} isEnabled={pending.size > 0} onClick={commit} />
       </div>
     </Sheet>
   );
