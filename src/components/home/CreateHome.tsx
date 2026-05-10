@@ -104,7 +104,7 @@ function ChevronRight() {
 function ExpandIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 10V4h6M20 10V4h-6M4 14v6h6M20 14v6h-6"/>
+      <path d="M20 8V4h-4M14 10l6-6M4 16v4h4M10 14l-6 6"/>
     </svg>
   );
 }
@@ -739,19 +739,19 @@ export default function CreateHome() {
               placeholder="Leave empty to generate from sources and format."
               rows={3}
               style={{
-                width: '100%', padding: '4px 16px 8px', border: 'none', background: 'transparent', outline: 'none',
+                width: '100%', padding: '4px 16px 4px', border: 'none', background: 'transparent', outline: 'none',
                 resize: 'none', color: 'rgba(255,255,255,0.88)', fontSize: 15, fontFamily: 'var(--font-sans)',
-                boxSizing: 'border-box', height: 84, lineHeight: 1.45,
+                boxSizing: 'border-box', height: 66, lineHeight: 1.35, display: 'block',
               }}
             />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 8px 8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 6px 6px' }}>
               <button
                 type="button"
                 onClick={() => setShowPromptFull(true)}
                 aria-label="Expand"
                 style={{
                   border: 'none', background: 'rgba(255,255,255,0.05)', cursor: 'pointer',
-                  width: 30, height: 30, borderRadius: 8,
+                  width: 28, height: 28, borderRadius: 8,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'rgba(255,255,255,0.50)',
                 }}
