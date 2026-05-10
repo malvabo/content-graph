@@ -3,6 +3,8 @@ import PhotosUI
 import UniformTypeIdentifiers
 import Speech
 import AVFoundation
+import PDFKit
+import Vision
 
 // MARK: - Source Item Model
 
@@ -398,7 +400,6 @@ private final class VoiceRecorder: ObservableObject {
     @Published var transcript = ""
     @Published var isRecording = false
     @Published var permissionDenied = false
-    @Published var level: Float = 0
 
     private let audioEngine = AVAudioEngine()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
@@ -426,7 +427,6 @@ private final class VoiceRecorder: ObservableObject {
             audioEngine.inputNode.removeTap(onBus: 0)
         }
         isRecording = false
-        level = 0
     }
 
     private func startEngine() {
@@ -454,16 +454,8 @@ private final class VoiceRecorder: ObservableObject {
 
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
             request.append(buffer)
-            guard let channelData = buffer.floatChannelData?[0] else { return }
-            let frameLength = Int(buffer.frameLength)
-            guard frameLength > 0 else { return }
-            var sum: Float = 0
-            for i in 0..<frameLength { sum += abs(channelData[i]) }
-            let avg = sum / Float(frameLength)
-            let normalized = min(1, avg * 8)
-            DispatchQueue.main.async { self?.level = normalized }
         }
 
         audioEngine.prepare()
@@ -788,7 +780,7 @@ private struct LinkInputSheet: View {
                 HStack(spacing: 6) {
                     Image(systemName: "globe")
                         .font(.system(size: 12))
-                    Text("Fetching page title\u{2026}")
+                    Text("Fetching page content\u{2026}")
                         .font(.system(size: 13))
                 }
                 .foregroundColor(Color.white.opacity(0.35))
@@ -808,27 +800,56 @@ private struct LinkInputSheet: View {
         guard let url = URL(string: trimmed) else { return }
         isFetching = true
         Task {
-            let label = await fetchPageTitle(from: url) ?? domainLabel(from: url)
+            let (label, content) = await fetchPageContent(from: url)
             await MainActor.run {
                 isFetching = false
-                onSave(label, trimmed)
+                onSave(label, content)
                 dismiss()
             }
         }
     }
 
-    private func fetchPageTitle(from url: URL) async -> String? {
+    private func fetchPageContent(from url: URL) async -> (label: String, content: String) {
         guard let (data, _) = try? await URLSession.shared.data(from: url),
               let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1)
+        else { return (domainLabel(from: url), "") }
+        let label = extractTitle(from: html) ?? domainLabel(from: url)
+        let content = extractBodyText(from: html)
+        return (label, content)
+    }
+
+    private func extractTitle(from html: String) -> String? {
+        guard let start = html.range(of: "<title", options: .caseInsensitive),
+              let tagEnd = html[start.upperBound...].range(of: ">"),
+              let titleEnd = html[tagEnd.upperBound...].range(of: "</title>", options: .caseInsensitive)
         else { return nil }
-        if let start = html.range(of: "<title", options: .caseInsensitive),
-           let tagEnd = html[start.upperBound...].range(of: ">"),
-           let titleEnd = html[tagEnd.upperBound...].range(of: "</title>", options: .caseInsensitive) {
-            let title = String(html[tagEnd.upperBound..<titleEnd.lowerBound])
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            return title.isEmpty ? nil : title
+        let title = String(html[tagEnd.upperBound..<titleEnd.lowerBound])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return title.isEmpty ? nil : title
+    }
+
+    private func extractBodyText(from html: String) -> String {
+        var text = html
+        for tag in ["script", "style", "nav", "header", "footer", "noscript"] {
+            let pattern = "<\(tag)[^>]*>[\\s\\S]*?</\(tag)>"
+            if let re = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+                text = re.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text), withTemplate: " ")
+            }
         }
-        return nil
+        if let re = try? NSRegularExpression(pattern: "<[^>]+>") {
+            text = re.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text), withTemplate: " ")
+        }
+        text = text
+            .replacingOccurrences(of: "&amp;", with: "&")
+            .replacingOccurrences(of: "&lt;", with: "<")
+            .replacingOccurrences(of: "&gt;", with: ">")
+            .replacingOccurrences(of: "&nbsp;", with: " ")
+            .replacingOccurrences(of: "&#39;", with: "'")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+        let lines = text.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        return String(lines.joined(separator: "\n").prefix(8000))
     }
 
     private func domainLabel(from url: URL) -> String {
@@ -838,113 +859,16 @@ private struct LinkInputSheet: View {
 
 // MARK: - Voice Record Sheet
 
-private struct RecordingOrbView: View {
-    var isRecording: Bool
-    var level: Float
-    @State private var birthStart: Date?
-    @State private var smoothedSpread: Double = 60
-    @State private var smoothedLevel: Double = 0
-
-    private let green = Color(red: 0.12, green: 0.78, blue: 0.42)
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { tl in
-            let t = tl.date.timeIntervalSinceReferenceDate
-            Canvas { ctx, size in
-                let cx = size.width / 2
-                let cy = size.height * 0.5
-
-                if isRecording {
-                    let birthFrac: Double = {
-                        guard let start = birthStart else { return 0 }
-                        return min(1, Date().timeIntervalSince(start) / 0.95)
-                    }()
-                    let birth = pow(birthFrac, 0.45)
-                    let lv = smoothedLevel
-                    let spread = smoothedSpread
-
-                    for i in 0..<4 {
-                        let ang = t * 0.65 + Double(i) * (.pi * 0.5)
-                        let r = (spread + sin(t * 0.45 + Double(i) * 1.1) * 14) * birth
-                        let px = cx + cos(ang) * r * 0.88
-                        let py = cy + sin(ang) * r * 0.72
-                        let sz = (95 + sin(t * 0.9 + Double(i) * 0.8) * 22) * (1 + lv * 0.5)
-                        let al = (0.34 + lv * 0.34) * birth
-
-                        let stops: [Gradient.Stop] = [
-                            .init(color: Color(red: 0.12, green: 0.78, blue: 0.42).opacity(al), location: 0),
-                            .init(color: Color(red: 0.10, green: 0.66, blue: 0.36).opacity(al * 0.28), location: 0.5),
-                            .init(color: .clear, location: 1),
-                        ]
-                        let center = CGPoint(x: px, y: py)
-                        let rect = CGRect(x: px - sz, y: py - sz, width: sz * 2, height: sz * 2)
-                        ctx.fill(
-                            Path(ellipseIn: rect),
-                            with: .radialGradient(Gradient(stops: stops), center: center, startRadius: 0, endRadius: sz)
-                        )
-                    }
-
-                    if lv > 0.05 {
-                        let glow: Double = 75 + lv * 50
-                        let center = CGPoint(x: cx, y: cy)
-                        let stops: [Gradient.Stop] = [
-                            .init(color: green.opacity(lv * 0.32), location: 0),
-                            .init(color: .clear, location: 1),
-                        ]
-                        let rect = CGRect(x: cx - glow, y: cy - glow, width: glow * 2, height: glow * 2)
-                        ctx.fill(
-                            Path(ellipseIn: rect),
-                            with: .radialGradient(Gradient(stops: stops), center: center, startRadius: 0, endRadius: glow)
-                        )
-                    }
-                } else {
-                    let breath = 1 + sin(t * 2 * .pi / 4.5) * 0.04
-                    let orbR: Double = 100 * breath
-                    let center = CGPoint(x: cx, y: cy)
-                    let stops: [Gradient.Stop] = [
-                        .init(color: Color(red: 1.0, green: 0.92, blue: 0.82).opacity(0.95), location: 0.0),
-                        .init(color: Color(red: 1.0, green: 0.92, blue: 0.82).opacity(0.70), location: 0.18),
-                        .init(color: Color(red: 1.0, green: 0.92, blue: 0.82).opacity(0.20), location: 0.50),
-                        .init(color: .clear, location: 1.0),
-                    ]
-                    let rect = CGRect(x: cx - orbR, y: cy - orbR, width: orbR * 2, height: orbR * 2)
-                    ctx.fill(
-                        Path(ellipseIn: rect),
-                        with: .radialGradient(Gradient(stops: stops), center: center, startRadius: 0, endRadius: orbR)
-                    )
-                }
-            }
-            .blendMode(.screen)
-            .onChange(of: tl.date) { _, _ in
-                let lv = Double(level)
-                smoothedLevel += (lv - smoothedLevel) * 0.25
-                let target: Double = lv > 0.12 ? 10 : 60
-                smoothedSpread += (target - smoothedSpread) * 0.04
-            }
-        }
-        .onChange(of: isRecording) { _, recording in
-            if recording {
-                birthStart = Date()
-                smoothedSpread = 60
-                smoothedLevel = 0
-            } else {
-                birthStart = nil
-            }
-        }
-        .allowsHitTesting(false)
-    }
-}
-
 private struct VoiceRecordSheet: View {
     var onSave: (String, String) -> Void
     @Environment(\.dismiss) private var dismiss
     @StateObject private var recorder = VoiceRecorder()
     @State private var seconds = 0
+    @State private var pulse = false
     @State private var isGenerating = false
 
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
-    private let green = Color(red: 0.12, green: 0.78, blue: 0.42)
 
     private var timeLabel: String {
         String(format: "%d:%02d", seconds / 60, seconds % 60)
@@ -954,14 +878,11 @@ private struct VoiceRecordSheet: View {
         ZStack {
             Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
             RadialGradient(
-                colors: [
-                    (recorder.isRecording ? green : amber).opacity(recorder.isRecording ? 0.20 : 0.0),
-                    .clear,
-                ],
-                center: .center, startRadius: 0, endRadius: 320
+                colors: [amber.opacity(recorder.isRecording ? 0.16 : 0.0), .clear],
+                center: .center, startRadius: 0, endRadius: 300
             )
             .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.7), value: recorder.isRecording)
+            .animation(.easeInOut(duration: 0.6), value: recorder.isRecording)
 
             VStack(spacing: 0) {
                 HStack {
@@ -987,15 +908,32 @@ private struct VoiceRecordSheet: View {
 
                 Spacer()
 
-                VStack(spacing: 24) {
-                    RecordingOrbView(
-                        isRecording: recorder.isRecording,
-                        level: recorder.level
-                    )
-                    .frame(height: 280)
-                    .contentShape(Rectangle())
-                    .onTapGesture { handleOrbTap() }
-                    .disabled(isGenerating)
+                VStack(spacing: 28) {
+                    ZStack {
+                        if recorder.isRecording {
+                            Circle()
+                                .fill(amber.opacity(0.10))
+                                .frame(width: 150, height: 150)
+                                .scaleEffect(pulse ? 1.3 : 1.0)
+                                .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: pulse)
+                            Circle()
+                                .fill(amber.opacity(0.20))
+                                .frame(width: 108, height: 108)
+                        }
+                        Button(action: handleMicTap) {
+                            Circle()
+                                .fill(recorder.isRecording ? amber : Color.white.opacity(0.12))
+                                .frame(width: 76, height: 76)
+                                .overlay(
+                                    Image(systemName: recorder.isRecording ? "stop.fill" : "mic.fill")
+                                        .font(.system(size: 28, weight: .medium))
+                                        .foregroundColor(.white)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isGenerating)
+                    }
+                    .animation(.spring(duration: 0.4), value: recorder.isRecording)
 
                     if isGenerating {
                         Label("Generating title\u{2026}", systemImage: "sparkles")
@@ -1003,7 +941,7 @@ private struct VoiceRecordSheet: View {
                             .foregroundColor(Color.white.opacity(0.50))
                             .transition(.opacity)
                     } else {
-                        Text(recorder.isRecording ? timeLabel : "Tap orb to record")
+                        Text(recorder.isRecording ? timeLabel : "Tap to record")
                             .font(.system(size: 17, design: recorder.isRecording ? .monospaced : .default))
                             .foregroundColor(Color.white.opacity(recorder.isRecording ? 0.80 : 0.40))
                             .transition(.opacity)
@@ -1070,7 +1008,12 @@ private struct VoiceRecordSheet: View {
             if recorder.isRecording { seconds += 1 }
         }
         .onChange(of: recorder.isRecording) { _, recording in
-            if recording { seconds = 0 }
+            if recording {
+                seconds = 0
+                withAnimation { pulse = true }
+            } else {
+                pulse = false
+            }
         }
         .alert("Microphone Access", isPresented: $recorder.permissionDenied) {
             Button("Open Settings") {
@@ -1084,8 +1027,7 @@ private struct VoiceRecordSheet: View {
         }
     }
 
-    private func handleOrbTap() {
-        guard !isGenerating else { return }
+    private func handleMicTap() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         if recorder.isRecording {
             recorder.stop()
@@ -1239,19 +1181,55 @@ private struct SourcesBlock: View {
             allowedContentTypes: [.text, .plainText, .pdf],
             allowsMultipleSelection: false
         ) { result in
-            if case .success(let urls) = result, let url = urls.first {
-                withAnimation(.spring(duration: 0.25)) {
-                    sources.append(SourceItem(type: .file, label: url.lastPathComponent, content: ""))
+            guard case .success(let urls) = result, let url = urls.first else { return }
+            let name = url.lastPathComponent
+            Task {
+                let content = readFileContent(from: url)
+                await MainActor.run {
+                    withAnimation(.spring(duration: 0.25)) {
+                        sources.append(SourceItem(type: .file, label: name, content: content))
+                    }
                 }
             }
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $photoPickerItem, matching: .images)
         .onChange(of: photoPickerItem) { _, item in
-            guard item != nil else { return }
-            withAnimation(.spring(duration: 0.25)) {
-                sources.append(SourceItem(type: .image, label: "Image", content: ""))
+            guard let item else { return }
+            Task {
+                let content = await extractTextFromPhoto(item: item)
+                await MainActor.run {
+                    withAnimation(.spring(duration: 0.25)) {
+                        sources.append(SourceItem(type: .image, label: "Image", content: content))
+                    }
+                    photoPickerItem = nil
+                }
             }
-            photoPickerItem = nil
+        }
+    }
+
+    private func readFileContent(from url: URL) -> String {
+        guard url.startAccessingSecurityScopedResource() else { return "" }
+        defer { url.stopAccessingSecurityScopedResource() }
+        if url.pathExtension.lowercased() == "pdf" {
+            return String((PDFDocument(url: url)?.string ?? "").prefix(8000))
+        }
+        if let text = try? String(contentsOf: url, encoding: .utf8) { return String(text.prefix(8000)) }
+        if let text = try? String(contentsOf: url, encoding: .isoLatin1) { return String(text.prefix(8000)) }
+        return ""
+    }
+
+    private func extractTextFromPhoto(item: PhotosPickerItem) async -> String {
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let cgImage = UIImage(data: data)?.cgImage else { return "" }
+        return await withCheckedContinuation { continuation in
+            let request = VNRecognizeTextRequest { req, _ in
+                let text = (req.results as? [VNRecognizedTextObservation])?
+                    .compactMap { $0.topCandidates(1).first?.string }
+                    .joined(separator: "\n") ?? ""
+                continuation.resume(returning: text)
+            }
+            request.recognitionLevel = .accurate
+            try? VNImageRequestHandler(cgImage: cgImage).perform([request])
         }
     }
 }
