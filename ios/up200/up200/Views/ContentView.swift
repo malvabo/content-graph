@@ -26,11 +26,7 @@ enum AppTab: String, CaseIterable {
 
 struct LibraryView: View {
     @AppStorage("library_projects") private var projectsData: Data = Data()
-    @State private var openedProject: GenerationProject?
-
-    private var projects: [GenerationProject] {
-        (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
-    }
+    @State private var projects: [GenerationProject] = []
 
     var body: some View {
         ZStack {
@@ -63,13 +59,7 @@ struct LibraryView: View {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: 10) {
                             ForEach(projects) { project in
-                                Button {
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    openedProject = project
-                                } label: {
-                                    ProjectRow(project: project)
-                                }
-                                .buttonStyle(.plain)
+                                ProjectRow(project: project)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -78,48 +68,119 @@ struct LibraryView: View {
                 }
             }
         }
-        .fullScreenCover(item: $openedProject) { project in
-            GenerationResultsSheet(projects: [project], title: project.outputType)
-        }
+        .onAppear { projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? [] }
     }
 }
 
 private struct ProjectRow: View {
     let project: GenerationProject
+    @State private var showDetail = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(project.outputType)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.45))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color.white.opacity(0.07))
-                    .clipShape(Capsule())
-                Spacer()
-                Text(project.date, style: .date)
-                    .font(.system(size: 11))
-                    .foregroundColor(Color.white.opacity(0.30))
+        Button { showDetail = true } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(project.outputType)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.45))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.white.opacity(0.07))
+                        .clipShape(Capsule())
+                    Spacer()
+                    Text(project.date, style: .date)
+                        .font(.system(size: 11))
+                        .foregroundColor(Color.white.opacity(0.30))
+                }
+                Text(project.title)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.85))
+                    .lineLimit(1)
+                if !project.preview.isEmpty {
+                    Text(project.preview)
+                        .font(.system(size: 13))
+                        .foregroundColor(Color.white.opacity(0.40))
+                        .lineLimit(2)
+                }
             }
-            Text(project.title)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color.white.opacity(0.85))
-                .lineLimit(2)
-            if !project.preview.isEmpty {
-                Text(project.preview)
-                    .font(.system(size: 13))
-                    .foregroundColor(Color.white.opacity(0.40))
-                    .lineLimit(2)
+            .padding(14)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .fullScreenCover(isPresented: $showDetail) {
+            ProjectDetailView(project: project)
+        }
+    }
+}
+
+private struct ProjectDetailView: View {
+    let project: GenerationProject
+    @Environment(\.dismiss) private var dismiss
+    @State private var copied = false
+
+    private let green = Color(red: 0.27, green: 0.70, blue: 0.42)
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.60))
+                        .frame(width: 28, height: 28)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(Circle())
+                }
+                Spacer()
+                Text(project.outputType)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                Spacer()
+                Button {
+                    UIPasteboard.general.string = project.content.isEmpty ? project.preview : project.content
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.easeOut(duration: 0.15)) { copied = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        withAnimation { copied = false }
+                    }
+                } label: {
+                    Label(copied ? "Copied" : "Copy",
+                          systemImage: copied ? "checkmark" : "doc.on.doc")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(copied ? green : Color.white.opacity(0.60))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 18)
+            .padding(.bottom, 14)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.07))
+                .frame(height: 0.5)
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(project.title)
+                        .font(.system(size: 13))
+                        .foregroundColor(Color.white.opacity(0.32))
+                    Text(project.content.isEmpty ? project.preview : project.content)
+                        .font(.system(size: 15))
+                        .foregroundColor(Color.white.opacity(0.85))
+                        .lineSpacing(5)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 20)
             }
         }
-        .padding(14)
-        .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
-        )
+        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
     }
 }
 
@@ -129,9 +190,9 @@ struct TemplatesView: View {
     private let builtIn: [(title: String, subtitle: String, icon: String)] = [
         ("Landing page",     "Structured hero + sections copy",  "doc.richtext"),
         ("Short note",       "Concise single-topic summary",      "note.text"),
-        ("Newsletter",       "300–500 word scannable digest",     "envelope"),
-        ("LinkedIn post",    "150–300 word hook post",            "person.crop.rectangle"),
-        ("Twitter thread",   "5–10 tweet thread",                 "text.bubble"),
+        ("Newsletter",       "300\u{2013}500 word scannable digest",     "envelope"),
+        ("LinkedIn post",    "150\u{2013}300 word hook post",            "person.crop.rectangle"),
+        ("Twitter thread",   "5\u{2013}10 tweet thread",                 "text.bubble"),
         ("Brand story",      "Rewrite with consistent voice",     "sparkles"),
         ("Marketing pack",   "Social, email and ad copy",         "megaphone"),
         ("Review document",  "Key decisions and action items",    "checkmark.circle"),

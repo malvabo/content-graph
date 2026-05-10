@@ -3,8 +3,6 @@ import PhotosUI
 import UniformTypeIdentifiers
 import Speech
 import AVFoundation
-import PDFKit
-import Vision
 
 // MARK: - Source Item Model
 
@@ -18,8 +16,6 @@ struct SourceItem: Identifiable {
     let type: SourceType
     var label: String
     var content: String = ""
-    var isProcessing: Bool = false
-    var extractionFailed: Bool = false
 
     var icon: String {
         switch type {
@@ -29,47 +25,6 @@ struct SourceItem: Identifiable {
         case .voice: return "mic"
         case .image: return "photo"
         }
-    }
-}
-
-// MARK: - Source Extractor
-
-private enum SourceExtractor {
-    static func extractFile(from url: URL) async -> String {
-        await Task.detached(priority: .userInitiated) {
-            let didStart = url.startAccessingSecurityScopedResource()
-            defer { if didStart { url.stopAccessingSecurityScopedResource() } }
-
-            let ext = url.pathExtension.lowercased()
-            if ext == "pdf" {
-                guard let pdf = PDFDocument(url: url) else { return "" }
-                var pages: [String] = []
-                for i in 0..<pdf.pageCount {
-                    if let s = pdf.page(at: i)?.string { pages.append(s) }
-                }
-                return pages.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-            if let utf8 = try? String(contentsOf: url, encoding: .utf8) { return utf8 }
-            if let latin = try? String(contentsOf: url, encoding: .isoLatin1) { return latin }
-            return ""
-        }.value
-    }
-
-    static func extractImage(data: Data) async -> String {
-        await Task.detached(priority: .userInitiated) {
-            guard let cgImage = UIImage(data: data)?.cgImage else { return "" }
-            var output = ""
-            let request = VNRecognizeTextRequest { req, _ in
-                let strings = (req.results as? [VNRecognizedTextObservation])?
-                    .compactMap { $0.topCandidates(1).first?.string } ?? []
-                output = strings.joined(separator: "\n")
-            }
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = true
-            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-            try? handler.perform([request])
-            return output
-        }.value
     }
 }
 
@@ -117,20 +72,6 @@ private let allTemplates: [ContentTemplate] = [
 
 // MARK: - AI Title Service
 
-enum GenerationFailure: Error {
-    case missingAPIKey
-    case network
-    case api(String)
-
-    var userMessage: String {
-        switch self {
-        case .missingAPIKey: return "ANTHROPIC_API_KEY not configured"
-        case .network:       return "Network error"
-        case .api(let m):    return m
-        }
-    }
-}
-
 private struct AIService {
     private static var apiKey: String {
         Bundle.main.object(forInfoDictionaryKey: "ANTHROPIC_API_KEY") as? String ?? ""
@@ -173,83 +114,6 @@ private struct AIService {
         return title.isEmpty ? nil : title
     }
 
-    static func generateContent(
-        sources: [SourceItem],
-        formatLabel: String,
-        formatDescription: String,
-        prompt: String,
-        brand: String
-    ) async -> Result<String, GenerationFailure> {
-        guard !apiKey.isEmpty else { return .failure(.missingAPIKey) }
-        guard let url = URL(string: "https://api.anthropic.com/v1/messages") else {
-            return .failure(.network)
-        }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        req.timeoutInterval = 60
-
-        let sourceBlock = sources.map { item -> String in
-            let body = item.content.trimmingCharacters(in: .whitespacesAndNewlines)
-            if body.isEmpty {
-                return "- [\(item.type.rawValue)] \(item.label)"
-            }
-            return "- [\(item.type.rawValue)] \(item.label):\n\(body.prefix(4000))"
-        }.joined(separator: "\n\n")
-
-        let extras = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        let extraLine = extras.isEmpty ? "" : "\nAdditional instructions: \(extras)\n"
-
-        let userPrompt = """
-        Generate content in the following format from the supplied sources.
-
-        Format: \(formatLabel) — \(formatDescription)
-        Brand voice: \(brand)
-        \(extraLine)
-        Sources:
-        \(sourceBlock)
-
-        Reply with only the finished \(formatLabel). No preamble, no explanation.
-        """
-
-        let body: [String: Any] = [
-            "model": "claude-sonnet-4-6",
-            "max_tokens": 1500,
-            "messages": [["role": "user", "content": userPrompt]]
-        ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
-            return .failure(.api("Failed to encode request"))
-        }
-        req.httpBody = httpBody
-
-        let data: Data
-        let response: URLResponse
-        do {
-            (data, response) = try await URLSession.shared.data(for: req)
-        } catch {
-            return .failure(.network)
-        }
-
-        if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let err = json["error"] as? [String: Any],
-               let message = err["message"] as? String {
-                return .failure(.api(message))
-            }
-            return .failure(.api("HTTP \(http.statusCode)"))
-        }
-
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let content = (json["content"] as? [[String: Any]])?.first,
-              let text = content["text"] as? String
-        else { return .failure(.api("Unexpected response")) }
-
-        let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return result.isEmpty ? .failure(.api("Empty response")) : .success(result)
-    }
-
     static func fallback(from text: String) -> String {
         let stop = Set(["the","a","an","is","it","in","on","at","to","for","of","and","or","but",
                         "i","you","we","they","this","that","with","from","by","as","be","are",
@@ -259,6 +123,271 @@ private struct AIService {
             .filter { $0.count > 2 && !stop.contains($0.lowercased()) }
         let title = Array(words.prefix(5)).joined(separator: " ")
         return title.isEmpty ? "Note" : title
+    }
+}
+
+// MARK: - Content Generator
+
+private struct GeneratedResult: Identifiable {
+    let id = UUID()
+    let formatID: String
+    let formatLabel: String
+    let content: String
+}
+
+private struct ContentGenerator {
+    static func generate(
+        sources: [SourceItem],
+        formatID: String,
+        formatLabel: String,
+        customPrompt: String,
+        brand: String
+    ) async -> String? {
+        let apiKey = Bundle.main.object(forInfoDictionaryKey: "ANTHROPIC_API_KEY") as? String ?? ""
+        guard !apiKey.isEmpty, let url = URL(string: "https://api.anthropic.com/v1/messages") else { return nil }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        req.timeoutInterval = 60
+
+        let sourceText = sources
+            .filter { !$0.content.isEmpty }
+            .enumerated()
+            .map { idx, s in "Source \(idx + 1) \u{2014} \(s.label):\n\(s.content)" }
+            .joined(separator: "\n\n---\n\n")
+
+        var userParts: [String] = []
+        if !sourceText.isEmpty { userParts.append(sourceText) }
+        let trimmedPrompt = customPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedPrompt.isEmpty { userParts.append("Additional instructions: \(trimmedPrompt)") }
+        if brand != "Default" { userParts.append("Brand voice / tone: \(brand)") }
+        userParts.append("Write the \(formatLabel) now. Output only the content, no preamble.")
+
+        let body: [String: Any] = [
+            "model": "claude-sonnet-4-6",
+            "max_tokens": maxTokens(for: formatID),
+            "system": systemPrompt(for: formatID),
+            "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]]
+        ]
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else { return nil }
+        req.httpBody = httpBody
+
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let content = (json["content"] as? [[String: Any]])?.first,
+              let text = content["text"] as? String
+        else { return nil }
+
+        let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.isEmpty ? nil : result
+    }
+
+    private static func systemPrompt(for formatID: String) -> String {
+        switch formatID {
+        case "newsletter":
+            return "You are an expert newsletter writer. Write a 300\u{2013}500 word digest. First line is the subject (prefix 'Subject: '). Then 2\u{2013}3 short sections with bold headers and a clear takeaway. Plain prose, no bullet soup."
+        case "linkedin":
+            return "You are a LinkedIn content strategist. Write a 150\u{2013}300 word hook post. Open with a bold or surprising first line \u{2014} never 'I am excited to share'. Tell a story or insight. End with an open question. Line breaks between paragraphs. No hashtag spam."
+        case "twitter":
+            return "You are a Twitter thread writer. Write 5\u{2013}10 numbered tweets (1/, 2/, \u{2026}). Tweet 1 is the hook. Final tweet is a summary or CTA. Each tweet under 280 characters. Output each tweet on its own line with a blank line between."
+        case "twitter-single":
+            return "You are a Twitter copywriter. Write one punchy tweet under 280 characters that captures the sharpest insight. No hashtags unless they add genuine meaning."
+        case "blog":
+            return "You are an SEO content writer. Write a 600\u{2013}1000 word blog post with a compelling intro, 3\u{2013}5 ## sections, and a short conclusion. Conversational but authoritative."
+        case "email":
+            return "You are an email copywriter. First line is the subject (prefix 'Subject: '). Then: short greeting, 2\u{2013}3 tight paragraphs, a clear CTA, and a sign-off placeholder. Under 300 words total."
+        case "instagram":
+            return "You are an Instagram content creator. Write a caption: hook opening line, 3\u{2013}5 short paragraphs, end with a question. Blank line then 5\u{2013}8 relevant hashtags."
+        case "youtube":
+            return "You are a YouTube script writer. Structure: HOOK (0\u{2013}15s), INTRO (what we cover), BODY (3\u{2013}5 sections with [B-ROLL] notes), OUTRO (recap + subscribe CTA). Include [PAUSE] markers."
+        case "podcast":
+            return "You are a podcast producer. Write an episode outline: Title, 3-sentence Teaser, Cold Open quote, 5\u{2013}7 talking points each with 2\u{2013}3 sub-bullets, 3 guest questions if applicable, Outro."
+        case "press":
+            return "You are a PR professional. Write a press release: HEADLINE in caps, Subheadline, City/Date dateline, Lead paragraph (5 Ws), 2 body paragraphs, executive quote, About boilerplate placeholder, ### end marker."
+        case "landing":
+            return "You are a conversion copywriter. Write landing page copy: Hero headline + subheadline, 3 benefit blocks (bold title + 1-sentence description), social proof placeholder, CTA button text + supporting micro-copy."
+        case "video":
+            return "You are a short-form video script writer. Write a 60\u{2013}90 second script: HOOK (5s bold statement), PROBLEM (10s), SOLUTION (30s with 3 points), CTA (15s). Include [VISUAL] direction notes."
+        default:
+            return "You are a professional content writer. Write clear, high-quality content based on the provided source material."
+        }
+    }
+
+    private static func maxTokens(for formatID: String) -> Int {
+        switch formatID {
+        case "blog":               return 2000
+        case "youtube", "podcast": return 1500
+        case "landing", "press":   return 1200
+        case "twitter":            return 700
+        case "twitter-single":     return 120
+        default:                   return 900
+        }
+    }
+}
+
+// MARK: - Generating Sheet
+
+private struct GeneratingSheet: View {
+    let formatLabels: [String]
+    var onCancel: () -> Void
+
+    @State private var pulse = false
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+            RadialGradient(
+                colors: [amber.opacity(0.15), .clear],
+                center: .center, startRadius: 0, endRadius: 340
+            ).ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack {
+                    Button("Cancel", action: onCancel)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.45))
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+
+                Spacer()
+
+                VStack(spacing: 28) {
+                    ZStack {
+                        Circle()
+                            .fill(amber.opacity(0.10))
+                            .frame(width: 130, height: 130)
+                            .scaleEffect(pulse ? 1.28 : 1.0)
+                            .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: pulse)
+                        Circle()
+                            .fill(amber.opacity(0.18))
+                            .frame(width: 88, height: 88)
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundColor(amber)
+                    }
+                    .onAppear { pulse = true }
+
+                    VStack(spacing: 10) {
+                        Text("Creating your content")
+                            .font(.system(size: 19, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.88))
+                        Text(formatLabels.joined(separator: " \u{00B7} "))
+                            .font(.system(size: 13))
+                            .foregroundColor(Color.white.opacity(0.38))
+                    }
+                }
+
+                Spacer()
+            }
+        }
+    }
+}
+
+// MARK: - Generation Result Sheet
+
+private struct GenerationResultSheet: View {
+    let results: [GeneratedResult]
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedIndex = 0
+    @State private var copied = false
+
+    private let green = Color(red: 0.27, green: 0.70, blue: 0.42)
+    private var current: GeneratedResult { results[min(selectedIndex, results.count - 1)] }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.60))
+                        .frame(width: 28, height: 28)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(Circle())
+                }
+
+                if results.count > 1 {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(results.indices, id: \.self) { i in
+                                Button {
+                                    withAnimation(.easeOut(duration: 0.15)) {
+                                        selectedIndex = i
+                                        copied = false
+                                    }
+                                } label: {
+                                    Text(results[i].formatLabel)
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(selectedIndex == i ? .white : Color.white.opacity(0.40))
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(selectedIndex == i ? Color.white.opacity(0.14) : Color.white.opacity(0.05))
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 2)
+                    }
+                } else {
+                    Text(current.formatLabel)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+
+                Spacer()
+
+                Button {
+                    UIPasteboard.general.string = current.content
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.easeOut(duration: 0.15)) { copied = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        withAnimation { copied = false }
+                    }
+                } label: {
+                    Label(copied ? "Copied" : "Copy",
+                          systemImage: copied ? "checkmark" : "doc.on.doc")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(copied ? green : Color.white.opacity(0.60))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 18)
+            .padding(.bottom, 14)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.07))
+                .frame(height: 0.5)
+
+            ScrollView(showsIndicators: false) {
+                Text(current.content)
+                    .font(.system(size: 15))
+                    .foregroundColor(Color.white.opacity(0.85))
+                    .lineSpacing(5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 20)
+            }
+
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(green)
+                Text("Saved to Library")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color.white.opacity(0.32))
+            }
+            .padding(.vertical, 12)
+        }
+        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
     }
 }
 
@@ -929,37 +1058,14 @@ private struct SourcesBlock: View {
                 ForEach(sources) { item in
                     VStack(spacing: 0) {
                         HStack(spacing: 12) {
-                            if item.isProcessing {
-                                ProgressView()
-                                    .scaleEffect(0.65)
-                                    .tint(Color.white.opacity(0.55))
-                                    .frame(width: 20)
-                            } else if item.extractionFailed {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Color.orange.opacity(0.70))
-                                    .frame(width: 20)
-                            } else {
-                                Image(systemName: item.icon)
-                                    .font(.system(size: 15))
-                                    .foregroundColor(Color.white.opacity(0.45))
-                                    .frame(width: 20)
-                            }
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(item.label)
-                                    .font(.system(size: 15))
-                                    .foregroundColor(Color.white.opacity(0.80))
-                                    .lineLimit(1)
-                                if item.isProcessing {
-                                    Text("Extracting\u{2026}")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(Color.white.opacity(0.35))
-                                } else if item.extractionFailed {
-                                    Text("No readable text")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(Color.orange.opacity(0.70))
-                                }
-                            }
+                            Image(systemName: item.icon)
+                                .font(.system(size: 15))
+                                .foregroundColor(Color.white.opacity(0.45))
+                                .frame(width: 20)
+                            Text(item.label)
+                                .font(.system(size: 15))
+                                .foregroundColor(Color.white.opacity(0.80))
+                                .lineLimit(1)
                             Spacer()
                             Button {
                                 withAnimation(.spring(duration: 0.25)) {
@@ -1045,51 +1151,18 @@ private struct SourcesBlock: View {
             allowsMultipleSelection: false
         ) { result in
             if case .success(let urls) = result, let url = urls.first {
-                let item = SourceItem(
-                    type: .file,
-                    label: url.lastPathComponent,
-                    content: "",
-                    isProcessing: true
-                )
-                let id = item.id
                 withAnimation(.spring(duration: 0.25)) {
-                    sources.append(item)
-                }
-                Task {
-                    let extracted = await SourceExtractor.extractFile(from: url)
-                    await MainActor.run {
-                        guard let idx = sources.firstIndex(where: { $0.id == id }) else { return }
-                        sources[idx].content = extracted
-                        sources[idx].isProcessing = false
-                        sources[idx].extractionFailed = extracted.isEmpty
-                    }
+                    sources.append(SourceItem(type: .file, label: url.lastPathComponent, content: ""))
                 }
             }
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $photoPickerItem, matching: .images)
         .onChange(of: photoPickerItem) { _, item in
-            guard let item else { return }
-            let placeholder = SourceItem(
-                type: .image,
-                label: "Image",
-                content: "",
-                isProcessing: true
-            )
-            let id = placeholder.id
+            guard item != nil else { return }
             withAnimation(.spring(duration: 0.25)) {
-                sources.append(placeholder)
+                sources.append(SourceItem(type: .image, label: "Image", content: ""))
             }
             photoPickerItem = nil
-            Task {
-                let data = (try? await item.loadTransferable(type: Data.self)) ?? Data()
-                let extracted = data.isEmpty ? "" : await SourceExtractor.extractImage(data: data)
-                await MainActor.run {
-                    guard let idx = sources.firstIndex(where: { $0.id == id }) else { return }
-                    sources[idx].content = extracted
-                    sources[idx].isProcessing = false
-                    sources[idx].extractionFailed = extracted.isEmpty
-                }
-            }
         }
     }
 }
@@ -1130,7 +1203,6 @@ private struct FormatPickerSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             HStack {
                 Spacer()
                 Text("Format")
@@ -1150,7 +1222,6 @@ private struct FormatPickerSheet: View {
             .padding(.top, 18)
             .padding(.bottom, 14)
 
-            // Search
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14))
@@ -1175,7 +1246,6 @@ private struct FormatPickerSheet: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 2)
 
-            // Content
             if filteredTemplates.isEmpty && filteredFormats.isEmpty {
                 Spacer()
                 Text("No matches.")
@@ -1186,7 +1256,6 @@ private struct FormatPickerSheet: View {
                 ScrollView(showsIndicators: false) {
                     LazyVStack(alignment: .leading, spacing: 0) {
 
-                        // Quick picks section
                         if !filteredTemplates.isEmpty {
                             sectionHeader("Quick picks")
 
@@ -1216,7 +1285,6 @@ private struct FormatPickerSheet: View {
                             }
                         }
 
-                        // All formats section
                         if !filteredFormats.isEmpty {
                             sectionHeader("All formats")
                                 .padding(.top, filteredTemplates.isEmpty ? 0 : 8)
@@ -1231,7 +1299,6 @@ private struct FormatPickerSheet: View {
                 }
             }
 
-            // Footer
             VStack(spacing: 0) {
                 Rectangle()
                     .fill(Color.white.opacity(0.07))
@@ -1528,29 +1595,20 @@ struct HomeView: View {
     @State private var selectedFormatIDs: Set<String> = []
     @State private var prompt = ""
     @State private var brand = "Default"
+
     @State private var isGenerating = false
-    @State private var generationProgress: (current: Int, total: Int)?
-    @State private var generatedProjects: [GenerationProject] = []
-    @State private var generatedFailures: [(format: String, message: String)] = []
+    @State private var showGenerating = false
     @State private var showResults = false
-    @State private var generationError: String?
+    @State private var generationResults: [GeneratedResult] = []
+    @State private var generationFailed = false
+    @State private var generationTask: Task<Void, Never>? = nil
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
-    private var sourcesProcessing: Bool {
-        sources.contains(where: \.isProcessing)
-    }
-
-    private var canGenerate: Bool {
-        !sources.isEmpty && !selectedFormatIDs.isEmpty && !isGenerating && !sourcesProcessing
-    }
+    private var canGenerate: Bool { !sources.isEmpty && !selectedFormatIDs.isEmpty && !isGenerating }
 
     private var generateLabel: String {
-        if let p = generationProgress {
-            return "Generating \(p.current)/\(p.total)\u{2026}"
-        }
         if isGenerating { return "Generating\u{2026}" }
-        if sourcesProcessing { return "Processing sources\u{2026}" }
         return selectedFormatIDs.isEmpty ? "Generate" : "Generate \(selectedFormatIDs.count)"
     }
 
@@ -1593,11 +1651,10 @@ struct HomeView: View {
 
                         AnimatedLightsButton(
                             title: generateLabel,
-                            icon: (isGenerating || sourcesProcessing) ? nil : "sparkles",
+                            icon: isGenerating ? nil : "sparkles",
                             isEnabled: canGenerate
                         ) {
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            Task { await runGeneration() }
+                            startGeneration()
                         }
                         .padding(.horizontal, 16)
                         .padding(.bottom, 40)
@@ -1611,226 +1668,82 @@ struct HomeView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showGenerating) {
+            GeneratingSheet(
+                formatLabels: selectedFormatIDs.compactMap { id in allFormats.first { $0.id == id }?.label }
+            ) {
+                generationTask?.cancel()
+                generationTask = nil
+                showGenerating = false
+                isGenerating = false
+            }
+        }
         .fullScreenCover(isPresented: $showResults) {
-            GenerationResultsSheet(
-                projects: generatedProjects,
-                failures: generatedFailures
-            )
+            GenerationResultSheet(results: generationResults)
         }
-        .alert("Generation failed", isPresented: Binding(
-            get: { generationError != nil },
-            set: { if !$0 { generationError = nil } }
-        )) {
-            Button("OK", role: .cancel) { generationError = nil }
+        .alert("Generation failed", isPresented: $generationFailed) {
+            Button("OK", role: .cancel) {}
         } message: {
-            Text(generationError ?? "")
+            Text("Could not connect to the AI. Check your API key in build settings and try again.")
         }
     }
 
-    private func runGeneration() async {
-        let chosen = allFormats.filter { selectedFormatIDs.contains($0.id) }
-        guard !chosen.isEmpty, !sources.isEmpty else { return }
+    private func startGeneration() {
+        guard canGenerate else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        isGenerating = true
+        showGenerating = true
 
-        await MainActor.run {
-            isGenerating = true
-            generationProgress = (0, chosen.count)
-        }
+        let capturedSources = sources
+        let capturedIDs = Array(selectedFormatIDs)
+        let capturedPrompt = prompt
+        let capturedBrand = brand
 
-        var produced: [GenerationProject] = []
-        var failures: [(format: String, message: String)] = []
-        var keyMissing = false
-
-        for (idx, fmt) in chosen.enumerated() {
-            await MainActor.run { generationProgress = (idx + 1, chosen.count) }
-
-            let outcome = await AIService.generateContent(
-                sources: sources,
-                formatLabel: fmt.label,
-                formatDescription: fmt.description,
-                prompt: prompt,
-                brand: brand
-            )
-
-            switch outcome {
-            case .success(let content):
-                let title = await AIService.generateTitle(from: content)
-                let preview = String(content.prefix(140)).replacingOccurrences(of: "\n", with: " ")
-                produced.append(GenerationProject(
-                    title: title,
-                    outputType: fmt.label,
-                    preview: preview,
-                    date: Date(),
-                    content: content
-                ))
-            case .failure(let err):
-                failures.append((fmt.label, err.userMessage))
-                if case .missingAPIKey = err {
-                    keyMissing = true
+        generationTask = Task {
+            var results: [GeneratedResult] = []
+            for formatID in capturedIDs {
+                guard !Task.isCancelled else { break }
+                let label = allFormats.first { $0.id == formatID }?.label ?? formatID
+                if let text = await ContentGenerator.generate(
+                    sources: capturedSources,
+                    formatID: formatID,
+                    formatLabel: label,
+                    customPrompt: capturedPrompt,
+                    brand: capturedBrand
+                ) {
+                    results.append(GeneratedResult(formatID: formatID, formatLabel: label, content: text))
                 }
             }
-
-            if keyMissing { break }
-        }
-
-        await MainActor.run {
-            isGenerating = false
-            generationProgress = nil
-
-            if produced.isEmpty {
-                let firstMessage = failures.first?.message ?? "Unknown error"
-                generationError = keyMissing
-                    ? "Add ANTHROPIC_API_KEY to Info.plist to enable generation."
-                    : "Generation failed: \(firstMessage)"
-                generatedFailures = []
-                return
-            }
-
-            saveToLibrary(produced)
-            generatedProjects = produced
-            generatedFailures = failures
-            showResults = true
-        }
-    }
-
-    private func saveToLibrary(_ new: [GenerationProject]) {
-        var existing = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
-        existing.insert(contentsOf: new, at: 0)
-        projectsData = (try? JSONEncoder().encode(existing)) ?? projectsData
-    }
-}
-
-// MARK: - Generation Results Sheet
-
-struct GenerationResultsSheet: View {
-    let projects: [GenerationProject]
-    var failures: [(format: String, message: String)] = []
-    var title: String = "Output"
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                HStack {
-                    Text(title)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
-                    Spacer()
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.60))
-                            .frame(width: 30, height: 30)
-                            .background(Color.white.opacity(0.10))
-                            .clipShape(Circle())
+            await MainActor.run {
+                isGenerating = false
+                showGenerating = false
+                generationTask = nil
+                if results.isEmpty {
+                    generationFailed = true
+                } else {
+                    generationResults = results
+                    saveToLibrary(results, sources: capturedSources)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        showResults = true
                     }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 18)
-                .padding(.bottom, 12)
-
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 14) {
-                        if !failures.isEmpty {
-                            FailuresBanner(failures: failures)
-                        }
-                        ForEach(projects) { project in
-                            ResultCard(project: project)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 32)
                 }
             }
         }
     }
-}
 
-private struct FailuresBanner: View {
-    let failures: [(format: String, message: String)]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color.orange.opacity(0.85))
-                Text("\(failures.count) format\(failures.count == 1 ? "" : "s") failed")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.85))
-            }
-            ForEach(failures, id: \.format) { f in
-                Text("• \(f.format) — \(f.message)")
-                    .font(.system(size: 12))
-                    .foregroundColor(Color.white.opacity(0.55))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(Color.orange.opacity(0.10))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.orange.opacity(0.30), lineWidth: 0.5)
+    private func saveToLibrary(_ results: [GeneratedResult], sources: [SourceItem]) {
+        var projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+        let sourceTitle = sources.first?.label ?? "Untitled"
+        let formatLabel = results.map(\.formatLabel).joined(separator: ", ")
+        let preview = String(results.first?.content.prefix(160) ?? "")
+        let allContent = results.count == 1
+            ? results[0].content
+            : results.map { "## \($0.formatLabel)\n\n\($0.content)" }.joined(separator: "\n\n---\n\n")
+        projects.insert(
+            GenerationProject(title: sourceTitle, outputType: formatLabel, preview: preview, content: allContent, date: Date()),
+            at: 0
         )
-    }
-}
-
-struct ResultCard: View {
-    let project: GenerationProject
-    @State private var copied = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(project.outputType)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.55))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color.white.opacity(0.07))
-                    .clipShape(Capsule())
-                Spacer()
-                Button {
-                    UIPasteboard.general.string = project.content
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    copied = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { copied = false }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                            .font(.system(size: 11, weight: .medium))
-                        Text(copied ? "Copied" : "Copy")
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundColor(Color.white.opacity(0.70))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-            }
-
-            Text(project.title)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(Color.white.opacity(0.90))
-
-            Text(project.content)
-                .font(.system(size: 14))
-                .foregroundColor(Color.white.opacity(0.78))
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(16)
-        .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
-        )
+        projectsData = (try? JSONEncoder().encode(projects)) ?? Data()
     }
 }
 

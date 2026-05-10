@@ -12,8 +12,8 @@ struct GenerationProject: Identifiable, Codable {
     var title: String
     var outputType: String
     var preview: String
-    var date: Date
     var content: String = ""
+    var date: Date
 }
 
 struct CustomTemplate: Identifiable, Codable {
