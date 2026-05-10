@@ -492,7 +492,7 @@ struct AnimatedLightsButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
 
                 if isEnabled {
@@ -508,7 +508,7 @@ struct AnimatedLightsButton: View {
                         .offset(x: phase ? 80 : -80)
                 }
 
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(Color.white.opacity(isEnabled ? 0.13 : 0.06), lineWidth: 0.5)
 
                 HStack(spacing: 8) {
@@ -522,7 +522,7 @@ struct AnimatedLightsButton: View {
                 .foregroundColor(isEnabled ? .white : Color.white.opacity(0.25))
             }
             .frame(height: 54)
-            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
