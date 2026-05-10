@@ -21,14 +21,3 @@ struct CustomTemplate: Identifiable, Codable {
     var title: String
     var subtitle: String
 }
-
-enum BrandVoice: String, CaseIterable, Identifiable {
-    case `default` = "Default"
-    case personal = "Personal"
-    case company = "Company"
-    case startup = "Startup"
-    case agency = "Agency"
-
-    var id: String { rawValue }
-    var label: String { rawValue }
-}

@@ -40,8 +40,8 @@ private struct ContentFormat: Identifiable {
 
 private let allFormats: [ContentFormat] = [
     ContentFormat(id: "newsletter",     label: "Newsletter",         description: "Digest with key takeaways from your source"),
-    ContentFormat(id: "linkedin",       label: "LinkedIn Post",      description: "Professional hook post, 150\u{2013}300 words"),
-    ContentFormat(id: "twitter",        label: "Twitter Thread",     description: "5\u{2013}10 tweet thread from your source"),
+    ContentFormat(id: "linkedin",       label: "LinkedIn Post",      description: "Professional hook post, 150–300 words"),
+    ContentFormat(id: "twitter",        label: "Twitter Thread",     description: "5–10 tweet thread from your source"),
     ContentFormat(id: "blog",           label: "Blog Post",          description: "Long-form SEO-friendly article"),
     ContentFormat(id: "email",          label: "Email",              description: "Concise campaign or outreach email"),
     ContentFormat(id: "instagram",      label: "Instagram Caption",  description: "Short engaging caption with hashtags"),
@@ -158,14 +158,14 @@ private struct ContentGenerator {
         let sourceText = sources
             .filter { !$0.content.isEmpty }
             .enumerated()
-            .map { idx, s in "Source \(idx + 1) \u{2014} \(s.label):\n\(s.content)" }
+            .map { idx, s in "Source \(idx + 1) — \(s.label):\n\(s.content)" }
             .joined(separator: "\n\n---\n\n")
 
         var userParts: [String] = []
         if !sourceText.isEmpty { userParts.append(sourceText) }
         let trimmedPrompt = customPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedPrompt.isEmpty { userParts.append("Additional instructions: \(trimmedPrompt)") }
-        if brand != "Default" { userParts.append("Brand voice / tone: \(brand)") }
+        if brand != "Default" { userParts.append("Brand voice: \(brandDescription(for: brand))") }
         userParts.append("Write the \(formatLabel) now. Output only the content, no preamble.")
 
         let body: [String: Any] = [
@@ -191,31 +191,41 @@ private struct ContentGenerator {
     private static func systemPrompt(for formatID: String) -> String {
         switch formatID {
         case "newsletter":
-            return "You are an expert newsletter writer. Write a 300\u{2013}500 word digest. First line is the subject (prefix 'Subject: '). Then 2\u{2013}3 short sections with bold headers and a clear takeaway. Plain prose, no bullet soup."
+            return "You are an expert newsletter writer. Write a 300–500 word digest. First line is the subject (prefix 'Subject: '). Then 2–3 short sections with bold headers and a clear takeaway. Plain prose, no bullet soup."
         case "linkedin":
-            return "You are a LinkedIn content strategist. Write a 150\u{2013}300 word hook post. Open with a bold or surprising first line \u{2014} never 'I am excited to share'. Tell a story or insight. End with an open question. Line breaks between paragraphs. No hashtag spam."
+            return "You are a LinkedIn content strategist. Write a 150–300 word hook post. Open with a bold or surprising first line — never 'I am excited to share'. Tell a story or insight. End with an open question. Line breaks between paragraphs. No hashtag spam."
         case "twitter":
-            return "You are a Twitter thread writer. Write 5\u{2013}10 numbered tweets (1/, 2/, \u{2026}). Tweet 1 is the hook. Final tweet is a summary or CTA. Each tweet under 280 characters. Output each tweet on its own line with a blank line between."
+            return "You are a Twitter thread writer. Write 5–10 numbered tweets (1/, 2/, …). Tweet 1 is the hook. Final tweet is a summary or CTA. Each tweet under 280 characters. Output each tweet on its own line with a blank line between."
         case "twitter-single":
             return "You are a Twitter copywriter. Write one punchy tweet under 280 characters that captures the sharpest insight. No hashtags unless they add genuine meaning."
         case "blog":
-            return "You are an SEO content writer. Write a 600\u{2013}1000 word blog post with a compelling intro, 3\u{2013}5 ## sections, and a short conclusion. Conversational but authoritative."
+            return "You are an SEO content writer. Write a 600–1000 word blog post with a compelling intro, 3–5 ## sections, and a short conclusion. Conversational but authoritative."
         case "email":
-            return "You are an email copywriter. First line is the subject (prefix 'Subject: '). Then: short greeting, 2\u{2013}3 tight paragraphs, a clear CTA, and a sign-off placeholder. Under 300 words total."
+            return "You are an email copywriter. First line is the subject (prefix 'Subject: '). Then: short greeting, 2–3 tight paragraphs, a clear CTA, and a sign-off placeholder. Under 300 words total."
         case "instagram":
-            return "You are an Instagram content creator. Write a caption: hook opening line, 3\u{2013}5 short paragraphs, end with a question. Blank line then 5\u{2013}8 relevant hashtags."
+            return "You are an Instagram content creator. Write a caption: hook opening line, 3–5 short paragraphs, end with a question. Blank line then 5–8 relevant hashtags."
         case "youtube":
-            return "You are a YouTube script writer. Structure: HOOK (0\u{2013}15s), INTRO (what we cover), BODY (3\u{2013}5 sections with [B-ROLL] notes), OUTRO (recap + subscribe CTA). Include [PAUSE] markers."
+            return "You are a YouTube script writer. Structure: HOOK (0–15s), INTRO (what we cover), BODY (3–5 sections with [B-ROLL] notes), OUTRO (recap + subscribe CTA). Include [PAUSE] markers."
         case "podcast":
-            return "You are a podcast producer. Write an episode outline: Title, 3-sentence Teaser, Cold Open quote, 5\u{2013}7 talking points each with 2\u{2013}3 sub-bullets, 3 guest questions if applicable, Outro."
+            return "You are a podcast producer. Write an episode outline: Title, 3-sentence Teaser, Cold Open quote, 5–7 talking points each with 2–3 sub-bullets, 3 guest questions if applicable, Outro."
         case "press":
             return "You are a PR professional. Write a press release: HEADLINE in caps, Subheadline, City/Date dateline, Lead paragraph (5 Ws), 2 body paragraphs, executive quote, About boilerplate placeholder, ### end marker."
         case "landing":
             return "You are a conversion copywriter. Write landing page copy: Hero headline + subheadline, 3 benefit blocks (bold title + 1-sentence description), social proof placeholder, CTA button text + supporting micro-copy."
         case "video":
-            return "You are a short-form video script writer. Write a 60\u{2013}90 second script: HOOK (5s bold statement), PROBLEM (10s), SOLUTION (30s with 3 points), CTA (15s). Include [VISUAL] direction notes."
+            return "You are a short-form video script writer. Write a 60–90 second script: HOOK (5s bold statement), PROBLEM (10s), SOLUTION (30s with 3 points), CTA (15s). Include [VISUAL] direction notes."
         default:
             return "You are a professional content writer. Write clear, high-quality content based on the provided source material."
+        }
+    }
+
+    private static func brandDescription(for brand: String) -> String {
+        switch brand {
+        case "Personal":  return "Conversational and first-person. Write like a thoughtful individual sharing genuine experience, not a brand. Use 'I', be direct, show personality."
+        case "Company":   return "Professional and authoritative. Represent an established organisation. Confident, polished, third-person where appropriate. No slang."
+        case "Startup":   return "Energetic and mission-driven. Bold language, active voice, optimistic. Speak to builders and early adopters. Avoid corporate stiffness."
+        case "Agency":    return "Creative and results-focused. Demonstrate expertise and strategic thinking. Balance creativity with measurable outcomes. Speak to marketing decision-makers."
+        default:          return brand
         }
     }
 
@@ -280,7 +290,7 @@ private struct GeneratingSheet: View {
                         Text("Creating your content")
                             .font(.system(size: 19, weight: .semibold))
                             .foregroundColor(Color.white.opacity(0.88))
-                        Text(formatLabels.joined(separator: " \u{00B7} "))
+                        Text(formatLabels.joined(separator: " · "))
                             .font(.system(size: 13))
                             .foregroundColor(Color.white.opacity(0.38))
                     }
@@ -632,8 +642,7 @@ private struct TextInputSheet: View {
                             .frame(width: 40)
                     } else {
                         Text("Save")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(canSave ? Color(red: 0.95, green: 0.62, blue: 0.30) : Color.white.opacity(0.25))
+                            .foregroundColor(canSave ? Color.white.opacity(0.88) : Color.white.opacity(0.25))
                     }
                 }
                 .disabled(!canSave || isGenerating)
@@ -740,8 +749,7 @@ private struct LinkInputSheet: View {
                             .frame(width: 40)
                     } else {
                         Text("Save")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(isValidURL ? Color(red: 0.95, green: 0.62, blue: 0.30) : Color.white.opacity(0.25))
+                            .foregroundColor(isValidURL ? Color.white.opacity(0.88) : Color.white.opacity(0.25))
                     }
                 }
                 .disabled(!isValidURL || isFetching)
@@ -970,15 +978,37 @@ private struct VoiceRecordSheet: View {
                 Spacer()
 
                 if recorder.isRecording && !recorder.transcript.isEmpty {
-                    AnimatedLightsButton(title: "Done") { handleDone() }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 40)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    Button {
+                        handleDone()
+                    } label: {
+                        Text("Done")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(amber)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 40)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else if !recorder.isRecording && !recorder.transcript.isEmpty && !isGenerating {
-                    AnimatedLightsButton(title: "Use this") { handleDone() }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 40)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    Button {
+                        handleDone()
+                    } label: {
+                        Text("Use this")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(amber)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 40)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else {
                     Color.clear.frame(height: 92)
                 }
@@ -1054,6 +1084,7 @@ private struct GlassCard<Content: View>: View {
 
 private struct SourcesBlock: View {
     @Binding var sources: [SourceItem]
+    var pendingSourceType: Binding<SourceType?> = .constant(nil)
 
     @State private var showImport = false
     @State private var showTextInput = false
@@ -1135,23 +1166,19 @@ private struct SourcesBlock: View {
             .presentationDragIndicator(.hidden)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
-        .sheet(isPresented: $showTextInput) {
+        .fullScreenCover(isPresented: $showTextInput) {
             TextInputSheet { label, content in
                 withAnimation(.spring(duration: 0.25)) {
                     sources.append(SourceItem(type: .text, label: label, content: content))
                 }
             }
-            .presentationDragIndicator(.visible)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
-        .sheet(isPresented: $showLinkInput) {
+        .fullScreenCover(isPresented: $showLinkInput) {
             LinkInputSheet { label, url in
                 withAnimation(.spring(duration: 0.25)) {
                     sources.append(SourceItem(type: .link, label: label, content: url))
                 }
             }
-            .presentationDragIndicator(.visible)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .sheet(isPresented: $showVoiceRecord) {
             VoiceRecordSheet { label, transcript in
@@ -1159,8 +1186,6 @@ private struct SourcesBlock: View {
                     sources.append(SourceItem(type: .voice, label: label, content: transcript))
                 }
             }
-            .presentationDragIndicator(.visible)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .fileImporter(
             isPresented: $showFilePicker,
@@ -1189,6 +1214,17 @@ private struct SourcesBlock: View {
                     }
                     photoPickerItem = nil
                 }
+            }
+        }
+        .onChange(of: pendingSourceType.wrappedValue) { _, type in
+            guard let type else { return }
+            pendingSourceType.wrappedValue = nil
+            switch type {
+            case .text:  DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showTextInput = true }
+            case .link:  DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showLinkInput = true }
+            case .voice: DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showVoiceRecord = true }
+            case .file:  DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showFilePicker = true }
+            case .image: DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showPhotoPicker = true }
             }
         }
     }
@@ -1251,7 +1287,7 @@ private struct FormatPickerSheet: View {
     }
 
     private var doneLabel: String {
-        selectedFormatIDs.isEmpty ? "Done" : "Done \u{00B7} \(selectedFormatIDs.count) selected"
+        selectedFormatIDs.isEmpty ? "Done" : "Done · \(selectedFormatIDs.count) selected"
     }
 
     var body: some View {
@@ -1648,6 +1684,7 @@ private enum GenerationSheet: String, Identifiable {
 
 struct HomeView: View {
     var scrollToTopSignal: Int = 0
+    var pendingSourceType: Binding<SourceType?> = .constant(nil)
 
     @State private var sources: [SourceItem] = []
     @State private var selectedFormatIDs: Set<String> = []
@@ -1700,7 +1737,7 @@ struct HomeView: View {
                         .padding(.bottom, 16)
 
                         VStack(spacing: 12) {
-                            SourcesBlock(sources: $sources)
+                            SourcesBlock(sources: $sources, pendingSourceType: pendingSourceType)
                             FormatsBlock(selectedFormatIDs: $selectedFormatIDs)
                             PromptField(prompt: $prompt)
                             BrandCard(selectedBrand: $brand)
@@ -1720,7 +1757,7 @@ struct HomeView: View {
                     }
                 }
                 .scrollDismissesKeyboard(.immediately)
-                .onChange(of: scrollToTopSignal) { _ in
+                .onChange(of: scrollToTopSignal) { _, _ in
                     withAnimation(.easeOut(duration: 0.3)) {
                         proxy.scrollTo("top", anchor: .top)
                     }

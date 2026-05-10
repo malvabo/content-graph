@@ -26,7 +26,10 @@ enum AppTab: String, CaseIterable {
 
 struct LibraryView: View {
     @AppStorage("library_projects") private var projectsData: Data = Data()
-    @State private var projects: [GenerationProject] = []
+
+    private var projects: [GenerationProject] {
+        (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+    }
 
     var body: some View {
         ZStack {
@@ -68,7 +71,6 @@ struct LibraryView: View {
                 }
             }
         }
-        .onAppear { projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? [] }
     }
 }
 
@@ -190,9 +192,9 @@ struct TemplatesView: View {
     private let builtIn: [(title: String, subtitle: String, icon: String)] = [
         ("Landing page",     "Structured hero + sections copy",  "doc.richtext"),
         ("Short note",       "Concise single-topic summary",      "note.text"),
-        ("Newsletter",       "300\u{2013}500 word scannable digest",     "envelope"),
-        ("LinkedIn post",    "150\u{2013}300 word hook post",            "person.crop.rectangle"),
-        ("Twitter thread",   "5\u{2013}10 tweet thread",                 "text.bubble"),
+        ("Newsletter",       "300–500 word scannable digest",     "envelope"),
+        ("LinkedIn post",    "150–300 word hook post",            "person.crop.rectangle"),
+        ("Twitter thread",   "5–10 tweet thread",                 "text.bubble"),
         ("Brand story",      "Rewrite with consistent voice",     "sparkles"),
         ("Marketing pack",   "Social, email and ad copy",         "megaphone"),
         ("Review document",  "Key decisions and action items",    "checkmark.circle"),
@@ -373,6 +375,7 @@ struct ContentView: View {
     @State private var showSplash = true
     @State private var homeScrollToTop = 0
     @State private var showImport = false
+    @State private var pendingSourceType: SourceType? = nil
 
     var body: some View {
         ZStack {
@@ -386,7 +389,7 @@ struct ContentView: View {
                 ZStack {
                     switch selectedTab {
                     case .home:
-                        HomeView(scrollToTopSignal: homeScrollToTop)
+                        HomeView(scrollToTopSignal: homeScrollToTop, pendingSourceType: $pendingSourceType)
                     case .library:
                         LibraryView()
                     case .templates:
@@ -408,10 +411,15 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showImport) {
-            ImportSheetView { _ in }
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.hidden)
-                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+            ImportSheetView { type in
+                selectedTab = .home
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    pendingSourceType = type
+                }
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
