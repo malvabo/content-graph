@@ -571,85 +571,13 @@ private struct TagPill: View {
     }
 }
 
-// MARK: - Tag Picker Sheet
-
-private struct TagPickerSheet: View {
-    let allTags: [String]
-    @Binding var selectedTags: Set<String>
-    @Environment(\.dismiss) private var dismiss
-
-    private let accent = Color(red: 0.05, green: 0.75, blue: 0.35)
-    private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Capsule()
-                .fill(Color.white.opacity(0.18))
-                .frame(width: 36, height: 4)
-                .padding(.top, 10)
-
-            HStack {
-                Text("Content type")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
-                Spacer()
-                Button("Done") { dismiss() }
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(accent)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
-            .padding(.bottom, 12)
-
-            ScrollView(showsIndicators: false) {
-                LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(allTags, id: \.self) { tag in
-                        let isSelected = selectedTags.contains(tag)
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            if isSelected { selectedTags.remove(tag) } else { selectedTags.insert(tag) }
-                        } label: {
-                            Text(tag)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(isSelected ? accent : Color.white.opacity(0.65))
-                                .multilineTextAlignment(.center)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                        .fill(isSelected ? accent.opacity(0.12) : Color.white.opacity(0.07))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                                .stroke(isSelected ? accent.opacity(0.45) : Color.white.opacity(0.08), lineWidth: 0.5)
-                                        )
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                        .animation(.easeOut(duration: 0.15), value: isSelected)
-                    }
-                }
-                .padding(16)
-            }
-        }
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
-    }
-}
-
 // MARK: - Generate Card
 
 private struct GenerateCard: View {
     @Binding var prompt: String
     @State private var expanded = true
-    @State private var selectedTags: Set<String> = []
-    @State private var showTagPicker = false
-
-    private let allTags = [
-        "Newsletter", "LinkedIn Post", "Twitter Thread", "Twitter Single",
-        "Slack Message", "Quote Card", "Infographic", "Video",
-        "Blog Post", "Email", "Instagram Caption", "YouTube Script",
-        "Press Release", "Summary", "Podcast Script", "Landing Page",
-    ]
+    @State private var selectedFormats: Set<OutputFormat> = []
+    @State private var showFormatSheet = false
 
     var body: some View {
         GlassCard {
@@ -681,11 +609,17 @@ private struct GenerateCard: View {
                         HStack(spacing: 0) {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 8) {
-                                    ForEach(allTags, id: \.self) { tag in
-                                        TagPill(tag: tag, isSelected: selectedTags.contains(tag)) {
+                                    ForEach(OutputFormat.allCases) { format in
+                                        TagPill(
+                                            tag: format.rawValue,
+                                            isSelected: selectedFormats.contains(format)
+                                        ) {
                                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                            if selectedTags.contains(tag) { selectedTags.remove(tag) }
-                                            else { selectedTags.insert(tag) }
+                                            if selectedFormats.contains(format) {
+                                                selectedFormats.remove(format)
+                                            } else {
+                                                selectedFormats.insert(format)
+                                            }
                                         }
                                     }
                                 }
@@ -695,12 +629,12 @@ private struct GenerateCard: View {
 
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                showTagPicker = true
+                                showFormatSheet = true
                             } label: {
                                 Image(systemName: "square.grid.2x2")
                                     .font(.system(size: 15, weight: .medium))
                                     .foregroundColor(
-                                        selectedTags.isEmpty
+                                        selectedFormats.isEmpty
                                             ? Color.white.opacity(0.4)
                                             : Color(red: 0.05, green: 0.75, blue: 0.35).opacity(0.8)
                                     )
@@ -714,9 +648,9 @@ private struct GenerateCard: View {
                 }
             }
         }
-        .sheet(isPresented: $showTagPicker) {
-            TagPickerSheet(allTags: allTags, selectedTags: $selectedTags)
-                .presentationDetents([.medium, .large])
+        .sheet(isPresented: $showFormatSheet) {
+            FormatSheet(selected: $selectedFormats)
+                .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
                 .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
