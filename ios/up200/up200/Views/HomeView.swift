@@ -1135,19 +1135,23 @@ private struct SourcesBlock: View {
             .presentationDragIndicator(.hidden)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
-        .fullScreenCover(isPresented: $showTextInput) {
+        .sheet(isPresented: $showTextInput) {
             TextInputSheet { label, content in
                 withAnimation(.spring(duration: 0.25)) {
                     sources.append(SourceItem(type: .text, label: label, content: content))
                 }
             }
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
-        .fullScreenCover(isPresented: $showLinkInput) {
+        .sheet(isPresented: $showLinkInput) {
             LinkInputSheet { label, url in
                 withAnimation(.spring(duration: 0.25)) {
                     sources.append(SourceItem(type: .link, label: label, content: url))
                 }
             }
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .sheet(isPresented: $showVoiceRecord) {
             VoiceRecordSheet { label, transcript in
@@ -1155,6 +1159,8 @@ private struct SourcesBlock: View {
                     sources.append(SourceItem(type: .voice, label: label, content: transcript))
                 }
             }
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .fileImporter(
             isPresented: $showFilePicker,
