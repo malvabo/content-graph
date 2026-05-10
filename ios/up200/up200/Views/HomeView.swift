@@ -33,21 +33,22 @@ struct SourceItem: Identifiable {
 private struct ContentFormat: Identifiable {
     let id: String
     let label: String
+    let description: String
 }
 
 private let allFormats: [ContentFormat] = [
-    ContentFormat(id: "newsletter",     label: "Newsletter"),
-    ContentFormat(id: "linkedin",       label: "LinkedIn Post"),
-    ContentFormat(id: "twitter",        label: "Twitter Thread"),
-    ContentFormat(id: "blog",           label: "Blog Post"),
-    ContentFormat(id: "email",          label: "Email"),
-    ContentFormat(id: "instagram",      label: "Instagram Caption"),
-    ContentFormat(id: "youtube",        label: "YouTube Script"),
-    ContentFormat(id: "podcast",        label: "Podcast Script"),
-    ContentFormat(id: "press",          label: "Press Release"),
-    ContentFormat(id: "landing",        label: "Landing Page"),
-    ContentFormat(id: "twitter-single", label: "Twitter Single"),
-    ContentFormat(id: "video",          label: "Video Script"),
+    ContentFormat(id: "newsletter",     label: "Newsletter",         description: "Digest with key takeaways from your source"),
+    ContentFormat(id: "linkedin",       label: "LinkedIn Post",      description: "Professional hook post, 150\u{2013}300 words"),
+    ContentFormat(id: "twitter",        label: "Twitter Thread",     description: "5\u{2013}10 tweet thread from your source"),
+    ContentFormat(id: "blog",           label: "Blog Post",          description: "Long-form SEO-friendly article"),
+    ContentFormat(id: "email",          label: "Email",              description: "Concise campaign or outreach email"),
+    ContentFormat(id: "instagram",      label: "Instagram Caption",  description: "Short engaging caption with hashtags"),
+    ContentFormat(id: "youtube",        label: "YouTube Script",     description: "Hook, body & CTA for video"),
+    ContentFormat(id: "podcast",        label: "Podcast Script",     description: "Episode outline and talking points"),
+    ContentFormat(id: "press",          label: "Press Release",      description: "Formal media announcement"),
+    ContentFormat(id: "landing",        label: "Landing Page",       description: "Headline, sections and CTA copy"),
+    ContentFormat(id: "twitter-single", label: "Twitter Single",     description: "Most quotable insight, one tweet"),
+    ContentFormat(id: "video",          label: "Video Script",       description: "AI video generation script"),
 ]
 
 private struct ContentTemplate: Identifiable {
@@ -901,49 +902,71 @@ private struct SourcesBlock: View {
     }
 }
 
-// MARK: - Templates Sheet
+// MARK: - Format Picker Sheet
 
-private struct TemplatesSheet: View {
+private struct FormatPickerSheet: View {
     @Binding var selectedFormatIDs: Set<String>
     @Environment(\.dismiss) private var dismiss
     @State private var search = ""
+    @State private var showAllTemplates = false
 
-    private var filtered: [ContentTemplate] {
+    private let green = Color(red: 0.27, green: 0.70, blue: 0.42)
+
+    private var filteredTemplates: [ContentTemplate] {
         guard !search.isEmpty else { return allTemplates }
         let q = search.lowercased()
         return allTemplates.filter {
-            $0.name.lowercased().contains(q) || $0.description.lowercased().contains(q)
+            $0.name.lowercased().contains(q) || $0.description.lowercased().contains(q) ||
+            $0.formatIDs.compactMap { fid in allFormats.first { $0.id == fid }?.label }.joined(separator: " ").lowercased().contains(q)
         }
+    }
+
+    private var filteredFormats: [ContentFormat] {
+        guard !search.isEmpty else { return allFormats }
+        let q = search.lowercased()
+        return allFormats.filter { $0.label.lowercased().contains(q) || $0.description.lowercased().contains(q) }
+    }
+
+    private var displayedTemplates: [ContentTemplate] {
+        if !search.isEmpty || showAllTemplates { return filteredTemplates }
+        return Array(filteredTemplates.prefix(5))
+    }
+
+    private var doneLabel: String {
+        selectedFormatIDs.isEmpty ? "Done" : "Done \u{00B7} \(selectedFormatIDs.count) selected"
     }
 
     var body: some View {
         VStack(spacing: 0) {
+            // Header
             HStack {
-                Button("Cancel") { dismiss() }
-                    .foregroundColor(Color.white.opacity(0.55))
                 Spacer()
-                Text("Templates")
+                Text("Format")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                 Spacer()
-                Button("Cancel").foregroundColor(.clear)
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.60))
+                        .frame(width: 28, height: 28)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(Circle())
+                }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 16)
+            .padding(.top, 18)
             .padding(.bottom, 14)
 
-            Rectangle()
-                .fill(Color.white.opacity(0.07))
-                .frame(height: 0.5)
-                .padding(.bottom, 12)
-
+            // Search
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14))
                     .foregroundColor(Color.white.opacity(0.35))
-                TextField("Search templates", text: $search)
+                TextField("Search formats and templates", text: $search)
                     .font(.system(size: 15))
                     .foregroundColor(.white)
+                    .autocorrectionDisabled()
                 if !search.isEmpty {
                     Button { search = "" } label: {
                         Image(systemName: "xmark.circle.fill")
@@ -958,58 +981,189 @@ private struct TemplatesSheet: View {
             .background(Color.white.opacity(0.07))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .padding(.horizontal, 16)
-            .padding(.bottom, 4)
+            .padding(.bottom, 2)
 
-            ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: 0) {
-                    ForEach(filtered) { template in
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            selectedFormatIDs = Set(template.formatIDs)
-                            dismiss()
-                        } label: {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(template.name)
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(Color.white.opacity(0.88))
+            // Content
+            if filteredTemplates.isEmpty && filteredFormats.isEmpty {
+                Spacer()
+                Text("No matches.")
+                    .font(.system(size: 15))
+                    .foregroundColor(Color.white.opacity(0.30))
+                Spacer()
+            } else {
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(alignment: .leading, spacing: 0) {
 
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 6) {
-                                        ForEach(template.formatIDs, id: \.self) { fid in
-                                            if let fmt = allFormats.first(where: { $0.id == fid }) {
-                                                Text(fmt.label)
-                                                    .font(.system(size: 11, weight: .medium))
-                                                    .foregroundColor(Color.white.opacity(0.55))
-                                                    .padding(.horizontal, 8)
-                                                    .padding(.vertical, 3)
-                                                    .background(Color.white.opacity(0.08))
-                                                    .clipShape(Capsule())
-                                            }
-                                        }
-                                    }
-                                }
+                        // Quick picks section
+                        if !filteredTemplates.isEmpty {
+                            sectionHeader("Quick picks")
 
-                                Text(template.description)
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Color.white.opacity(0.38))
-                                    .multilineTextAlignment(.leading)
+                            ForEach(displayedTemplates) { template in
+                                templateRow(template)
+                                divider()
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                        }
-                        .buttonStyle(.plain)
 
-                        Rectangle()
-                            .fill(Color.white.opacity(0.06))
-                            .frame(height: 0.5)
-                            .padding(.horizontal, 16)
+                            if search.isEmpty && !showAllTemplates && allTemplates.count > 5 {
+                                Button {
+                                    withAnimation(.easeOut(duration: 0.2)) { showAllTemplates = true }
+                                } label: {
+                                    HStack {
+                                        Text("See all templates")
+                                            .font(.system(size: 15))
+                                            .foregroundColor(Color.white.opacity(0.50))
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(Color.white.opacity(0.30))
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 14)
+                                }
+                                .buttonStyle(.plain)
+                                divider()
+                            }
+                        }
+
+                        // All formats section
+                        if !filteredFormats.isEmpty {
+                            sectionHeader("All formats")
+                                .padding(.top, filteredTemplates.isEmpty ? 0 : 8)
+
+                            ForEach(filteredFormats) { format in
+                                formatRow(format)
+                                if format.id != filteredFormats.last?.id { divider() }
+                            }
+                        }
                     }
+                    .padding(.bottom, 16)
                 }
-                .padding(.top, 4)
+            }
+
+            // Footer
+            VStack(spacing: 0) {
+                Rectangle()
+                    .fill(Color.white.opacity(0.07))
+                    .frame(height: 0.5)
+
+                Button { dismiss() } label: {
+                    Text(doneLabel)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(selectedFormatIDs.isEmpty ? Color.white.opacity(0.12) : green)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 32)
+                .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
             }
         }
         .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+    }
+
+    @ViewBuilder
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title.uppercased())
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(Color.white.opacity(0.28))
+            .tracking(0.6)
+            .padding(.horizontal, 16)
+            .padding(.top, 18)
+            .padding(.bottom, 8)
+    }
+
+    @ViewBuilder
+    private func divider() -> some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.06))
+            .frame(height: 0.5)
+            .padding(.horizontal, 16)
+    }
+
+    @ViewBuilder
+    private func templateRow(_ template: ContentTemplate) -> some View {
+        let isActive = Set(template.formatIDs).isSubset(of: selectedFormatIDs)
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.easeOut(duration: 0.15)) {
+                selectedFormatIDs.formUnion(template.formatIDs)
+            }
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(template.name)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.88))
+
+                    HStack(spacing: 5) {
+                        ForEach(template.formatIDs.prefix(4), id: \.self) { fid in
+                            if let fmt = allFormats.first(where: { $0.id == fid }) {
+                                Text(fmt.label)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(Color.white.opacity(0.55))
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .background(Color.white.opacity(isActive ? 0.14 : 0.07))
+                                    .clipShape(Capsule())
+                            }
+                        }
+                        if template.formatIDs.count > 4 {
+                            Text("+\(template.formatIDs.count - 4)")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(Color.white.opacity(0.35))
+                        }
+                    }
+
+                    Text(template.description)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.white.opacity(0.35))
+                }
+                Spacer()
+                if isActive {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(green)
+                        .padding(.top, 2)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func formatRow(_ format: ContentFormat) -> some View {
+        let selected = selectedFormatIDs.contains(format.id)
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.easeOut(duration: 0.12)) {
+                if selected { selectedFormatIDs.remove(format.id) }
+                else { selectedFormatIDs.insert(format.id) }
+            }
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: selected ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 18))
+                    .foregroundColor(selected ? green : Color.white.opacity(0.22))
+                    .frame(width: 22)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(format.label)
+                        .font(.system(size: 15))
+                        .foregroundColor(selected ? Color.white.opacity(0.92) : Color.white.opacity(0.70))
+                    Text(format.description)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.white.opacity(0.30))
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 13)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -1017,72 +1171,69 @@ private struct TemplatesSheet: View {
 
 private struct FormatsBlock: View {
     @Binding var selectedFormatIDs: Set<String>
-    @State private var showTemplates = false
+    @State private var showPicker = false
+
+    private let green = Color(red: 0.27, green: 0.70, blue: 0.42)
+
+    private var summaryText: String {
+        let labels = allFormats.filter { selectedFormatIDs.contains($0.id) }.map(\.label)
+        switch labels.count {
+        case 0: return ""
+        case 1: return labels[0]
+        case 2: return "\(labels[0]), \(labels[1])"
+        default: return "\(labels[0]), \(labels[1]) +\(labels.count - 2)"
+        }
+    }
 
     var body: some View {
         GlassCard {
-            VStack(spacing: 0) {
-                HStack {
-                    Text("Format")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.85))
-                    Spacer()
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        showTemplates = true
-                    } label: {
-                        Text("Use templates")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.45))
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                showPicker = true
+            } label: {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Format")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(Color.white.opacity(0.85))
+                        if !selectedFormatIDs.isEmpty {
+                            Text(summaryText)
+                                .font(.system(size: 13))
+                                .foregroundColor(Color.white.opacity(0.45))
+                                .lineLimit(1)
+                                .transition(.opacity)
+                        }
                     }
-                    .buttonStyle(.plain)
+                    Spacer()
+                    if selectedFormatIDs.isEmpty {
+                        Text("None")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color.white.opacity(0.25))
+                    } else {
+                        Text("\(selectedFormatIDs.count)")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(minWidth: 24, minHeight: 24)
+                            .background(green)
+                            .clipShape(Circle())
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.20))
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 14)
-                .padding(.bottom, 10)
-
-                Rectangle()
-                    .fill(Color.white.opacity(0.07))
-                    .frame(height: 0.5)
-
-                ForEach(allFormats) { format in
-                    let selected = selectedFormatIDs.contains(format.id)
-                    VStack(spacing: 0) {
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            if selected {
-                                selectedFormatIDs.remove(format.id)
-                            } else {
-                                selectedFormatIDs.insert(format.id)
-                            }
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: selected ? "checkmark.square.fill" : "square")
-                                    .font(.system(size: 17))
-                                    .foregroundColor(selected ? .white : Color.white.opacity(0.22))
-                                Text(format.label)
-                                    .font(.system(size: 15))
-                                    .foregroundColor(selected ? Color.white.opacity(0.88) : Color.white.opacity(0.52))
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 13)
-                        }
-                        .buttonStyle(.plain)
-                        .animation(.easeOut(duration: 0.12), value: selected)
-
-                        if format.id != allFormats.last?.id {
-                            Rectangle()
-                                .fill(Color.white.opacity(0.05))
-                                .frame(height: 0.5)
-                                .padding(.horizontal, 16)
-                        }
-                    }
-                }
+                .padding(.vertical, 16)
+                .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
             }
+            .buttonStyle(.plain)
         }
-        .fullScreenCover(isPresented: $showTemplates) {
-            TemplatesSheet(selectedFormatIDs: $selectedFormatIDs)
+        .sheet(isPresented: $showPicker) {
+            FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+                .presentationCornerRadius(20)
+                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }
