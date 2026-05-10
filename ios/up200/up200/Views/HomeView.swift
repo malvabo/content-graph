@@ -3,6 +3,8 @@ import PhotosUI
 import UniformTypeIdentifiers
 import Speech
 import AVFoundation
+import PDFKit
+import Vision
 
 // MARK: - Source Item Model
 
@@ -16,6 +18,8 @@ struct SourceItem: Identifiable {
     let type: SourceType
     var label: String
     var content: String = ""
+    var isProcessing: Bool = false
+    var extractionFailed: Bool = false
 
     var icon: String {
         switch type {
@@ -25,6 +29,47 @@ struct SourceItem: Identifiable {
         case .voice: return "mic"
         case .image: return "photo"
         }
+    }
+}
+
+// MARK: - Source Extractor
+
+private enum SourceExtractor {
+    static func extractFile(from url: URL) async -> String {
+        await Task.detached(priority: .userInitiated) {
+            let didStart = url.startAccessingSecurityScopedResource()
+            defer { if didStart { url.stopAccessingSecurityScopedResource() } }
+
+            let ext = url.pathExtension.lowercased()
+            if ext == "pdf" {
+                guard let pdf = PDFDocument(url: url) else { return "" }
+                var pages: [String] = []
+                for i in 0..<pdf.pageCount {
+                    if let s = pdf.page(at: i)?.string { pages.append(s) }
+                }
+                return pages.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            if let utf8 = try? String(contentsOf: url, encoding: .utf8) { return utf8 }
+            if let latin = try? String(contentsOf: url, encoding: .isoLatin1) { return latin }
+            return ""
+        }.value
+    }
+
+    static func extractImage(data: Data) async -> String {
+        await Task.detached(priority: .userInitiated) {
+            guard let cgImage = UIImage(data: data)?.cgImage else { return "" }
+            var output = ""
+            let request = VNRecognizeTextRequest { req, _ in
+                let strings = (req.results as? [VNRecognizedTextObservation])?
+                    .compactMap { $0.topCandidates(1).first?.string } ?? []
+                output = strings.joined(separator: "\n")
+            }
+            request.recognitionLevel = .accurate
+            request.usesLanguageCorrection = true
+            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+            try? handler.perform([request])
+            return output
+        }.value
     }
 }
 
@@ -71,6 +116,20 @@ private let allTemplates: [ContentTemplate] = [
 ]
 
 // MARK: - AI Title Service
+
+enum GenerationFailure: Error {
+    case missingAPIKey
+    case network
+    case api(String)
+
+    var userMessage: String {
+        switch self {
+        case .missingAPIKey: return "ANTHROPIC_API_KEY not configured"
+        case .network:       return "Network error"
+        case .api(let m):    return m
+        }
+    }
+}
 
 private struct AIService {
     private static var apiKey: String {
@@ -120,9 +179,11 @@ private struct AIService {
         formatDescription: String,
         prompt: String,
         brand: String
-    ) async -> String? {
-        guard !apiKey.isEmpty else { return nil }
-        guard let url = URL(string: "https://api.anthropic.com/v1/messages") else { return nil }
+    ) async -> Result<String, GenerationFailure> {
+        guard !apiKey.isEmpty else { return .failure(.missingAPIKey) }
+        guard let url = URL(string: "https://api.anthropic.com/v1/messages") else {
+            return .failure(.network)
+        }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -158,17 +219,35 @@ private struct AIService {
             "max_tokens": 1500,
             "messages": [["role": "user", "content": userPrompt]]
         ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else { return nil }
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
+            return .failure(.api("Failed to encode request"))
+        }
         req.httpBody = httpBody
 
-        guard let (data, _) = try? await URLSession.shared.data(for: req),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: req)
+        } catch {
+            return .failure(.network)
+        }
+
+        if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let err = json["error"] as? [String: Any],
+               let message = err["message"] as? String {
+                return .failure(.api(message))
+            }
+            return .failure(.api("HTTP \(http.statusCode)"))
+        }
+
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let content = (json["content"] as? [[String: Any]])?.first,
               let text = content["text"] as? String
-        else { return nil }
+        else { return .failure(.api("Unexpected response")) }
 
         let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return result.isEmpty ? nil : result
+        return result.isEmpty ? .failure(.api("Empty response")) : .success(result)
     }
 
     static func fallback(from text: String) -> String {
@@ -850,14 +929,37 @@ private struct SourcesBlock: View {
                 ForEach(sources) { item in
                     VStack(spacing: 0) {
                         HStack(spacing: 12) {
-                            Image(systemName: item.icon)
-                                .font(.system(size: 15))
-                                .foregroundColor(Color.white.opacity(0.45))
-                                .frame(width: 20)
-                            Text(item.label)
-                                .font(.system(size: 15))
-                                .foregroundColor(Color.white.opacity(0.80))
-                                .lineLimit(1)
+                            if item.isProcessing {
+                                ProgressView()
+                                    .scaleEffect(0.65)
+                                    .tint(Color.white.opacity(0.55))
+                                    .frame(width: 20)
+                            } else if item.extractionFailed {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color.orange.opacity(0.70))
+                                    .frame(width: 20)
+                            } else {
+                                Image(systemName: item.icon)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(Color.white.opacity(0.45))
+                                    .frame(width: 20)
+                            }
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(item.label)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(Color.white.opacity(0.80))
+                                    .lineLimit(1)
+                                if item.isProcessing {
+                                    Text("Extracting\u{2026}")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(Color.white.opacity(0.35))
+                                } else if item.extractionFailed {
+                                    Text("No readable text")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(Color.orange.opacity(0.70))
+                                }
+                            }
                             Spacer()
                             Button {
                                 withAnimation(.spring(duration: 0.25)) {
@@ -943,18 +1045,51 @@ private struct SourcesBlock: View {
             allowsMultipleSelection: false
         ) { result in
             if case .success(let urls) = result, let url = urls.first {
+                let item = SourceItem(
+                    type: .file,
+                    label: url.lastPathComponent,
+                    content: "",
+                    isProcessing: true
+                )
+                let id = item.id
                 withAnimation(.spring(duration: 0.25)) {
-                    sources.append(SourceItem(type: .file, label: url.lastPathComponent, content: ""))
+                    sources.append(item)
+                }
+                Task {
+                    let extracted = await SourceExtractor.extractFile(from: url)
+                    await MainActor.run {
+                        guard let idx = sources.firstIndex(where: { $0.id == id }) else { return }
+                        sources[idx].content = extracted
+                        sources[idx].isProcessing = false
+                        sources[idx].extractionFailed = extracted.isEmpty
+                    }
                 }
             }
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $photoPickerItem, matching: .images)
         .onChange(of: photoPickerItem) { _, item in
-            guard item != nil else { return }
+            guard let item else { return }
+            let placeholder = SourceItem(
+                type: .image,
+                label: "Image",
+                content: "",
+                isProcessing: true
+            )
+            let id = placeholder.id
             withAnimation(.spring(duration: 0.25)) {
-                sources.append(SourceItem(type: .image, label: "Image", content: ""))
+                sources.append(placeholder)
             }
             photoPickerItem = nil
+            Task {
+                let data = (try? await item.loadTransferable(type: Data.self)) ?? Data()
+                let extracted = data.isEmpty ? "" : await SourceExtractor.extractImage(data: data)
+                await MainActor.run {
+                    guard let idx = sources.firstIndex(where: { $0.id == id }) else { return }
+                    sources[idx].content = extracted
+                    sources[idx].isProcessing = false
+                    sources[idx].extractionFailed = extracted.isEmpty
+                }
+            }
         }
     }
 }
@@ -1394,18 +1529,28 @@ struct HomeView: View {
     @State private var prompt = ""
     @State private var brand = "Default"
     @State private var isGenerating = false
+    @State private var generationProgress: (current: Int, total: Int)?
     @State private var generatedProjects: [GenerationProject] = []
+    @State private var generatedFailures: [(format: String, message: String)] = []
     @State private var showResults = false
     @State private var generationError: String?
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
+    private var sourcesProcessing: Bool {
+        sources.contains(where: \.isProcessing)
+    }
+
     private var canGenerate: Bool {
-        !sources.isEmpty && !selectedFormatIDs.isEmpty && !isGenerating
+        !sources.isEmpty && !selectedFormatIDs.isEmpty && !isGenerating && !sourcesProcessing
     }
 
     private var generateLabel: String {
+        if let p = generationProgress {
+            return "Generating \(p.current)/\(p.total)\u{2026}"
+        }
         if isGenerating { return "Generating\u{2026}" }
+        if sourcesProcessing { return "Processing sources\u{2026}" }
         return selectedFormatIDs.isEmpty ? "Generate" : "Generate \(selectedFormatIDs.count)"
     }
 
@@ -1448,7 +1593,7 @@ struct HomeView: View {
 
                         AnimatedLightsButton(
                             title: generateLabel,
-                            icon: isGenerating ? nil : "sparkles",
+                            icon: (isGenerating || sourcesProcessing) ? nil : "sparkles",
                             isEnabled: canGenerate
                         ) {
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -1467,7 +1612,10 @@ struct HomeView: View {
             }
         }
         .fullScreenCover(isPresented: $showResults) {
-            GenerationResultsSheet(projects: generatedProjects)
+            GenerationResultsSheet(
+                projects: generatedProjects,
+                failures: generatedFailures
+            )
         }
         .alert("Generation failed", isPresented: Binding(
             get: { generationError != nil },
@@ -1483,37 +1631,63 @@ struct HomeView: View {
         let chosen = allFormats.filter { selectedFormatIDs.contains($0.id) }
         guard !chosen.isEmpty, !sources.isEmpty else { return }
 
-        await MainActor.run { isGenerating = true }
+        await MainActor.run {
+            isGenerating = true
+            generationProgress = (0, chosen.count)
+        }
 
         var produced: [GenerationProject] = []
-        for fmt in chosen {
-            let text = await AIService.generateContent(
+        var failures: [(format: String, message: String)] = []
+        var keyMissing = false
+
+        for (idx, fmt) in chosen.enumerated() {
+            await MainActor.run { generationProgress = (idx + 1, chosen.count) }
+
+            let outcome = await AIService.generateContent(
                 sources: sources,
                 formatLabel: fmt.label,
                 formatDescription: fmt.description,
                 prompt: prompt,
                 brand: brand
             )
-            guard let content = text else { continue }
-            let title = await AIService.generateTitle(from: content)
-            let preview = String(content.prefix(140)).replacingOccurrences(of: "\n", with: " ")
-            produced.append(GenerationProject(
-                title: title,
-                outputType: fmt.label,
-                preview: preview,
-                date: Date(),
-                content: content
-            ))
+
+            switch outcome {
+            case .success(let content):
+                let title = await AIService.generateTitle(from: content)
+                let preview = String(content.prefix(140)).replacingOccurrences(of: "\n", with: " ")
+                produced.append(GenerationProject(
+                    title: title,
+                    outputType: fmt.label,
+                    preview: preview,
+                    date: Date(),
+                    content: content
+                ))
+            case .failure(let err):
+                failures.append((fmt.label, err.userMessage))
+                if case .missingAPIKey = err {
+                    keyMissing = true
+                }
+            }
+
+            if keyMissing { break }
         }
 
         await MainActor.run {
             isGenerating = false
+            generationProgress = nil
+
             if produced.isEmpty {
-                generationError = "Couldn't reach the AI service. Check your network and try again."
+                let firstMessage = failures.first?.message ?? "Unknown error"
+                generationError = keyMissing
+                    ? "Add ANTHROPIC_API_KEY to Info.plist to enable generation."
+                    : "Generation failed: \(firstMessage)"
+                generatedFailures = []
                 return
             }
+
             saveToLibrary(produced)
             generatedProjects = produced
+            generatedFailures = failures
             showResults = true
         }
     }
@@ -1527,8 +1701,10 @@ struct HomeView: View {
 
 // MARK: - Generation Results Sheet
 
-private struct GenerationResultsSheet: View {
+struct GenerationResultsSheet: View {
     let projects: [GenerationProject]
+    var failures: [(format: String, message: String)] = []
+    var title: String = "Output"
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -1537,7 +1713,7 @@ private struct GenerationResultsSheet: View {
 
             VStack(spacing: 0) {
                 HStack {
-                    Text("Output")
+                    Text(title)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                     Spacer()
@@ -1557,6 +1733,9 @@ private struct GenerationResultsSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     LazyVStack(spacing: 14) {
+                        if !failures.isEmpty {
+                            FailuresBanner(failures: failures)
+                        }
                         ForEach(projects) { project in
                             ResultCard(project: project)
                         }
@@ -1569,7 +1748,37 @@ private struct GenerationResultsSheet: View {
     }
 }
 
-private struct ResultCard: View {
+private struct FailuresBanner: View {
+    let failures: [(format: String, message: String)]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color.orange.opacity(0.85))
+                Text("\(failures.count) format\(failures.count == 1 ? "" : "s") failed")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.85))
+            }
+            ForEach(failures, id: \.format) { f in
+                Text("• \(f.format) — \(f.message)")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color.white.opacity(0.55))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.orange.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.orange.opacity(0.30), lineWidth: 0.5)
+        )
+    }
+}
+
+struct ResultCard: View {
     let project: GenerationProject
     @State private var copied = false
 
