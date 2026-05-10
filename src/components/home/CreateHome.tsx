@@ -831,19 +831,21 @@ export default function CreateHome() {
       <LinkInputSheet isOpen={showLink} onClose={() => setShowLink(false)} onSave={(label, content) => addSource({ type: 'link', label, content })} />
       <VoiceRecordSheet isOpen={showVoice} onClose={() => setShowVoice(false)} onSave={(label, content) => addSource({ type: 'voice', label, content })} />
       <FormatPickerSheet isOpen={showFormats} onClose={() => setShowFormats(false)} selected={selectedFormats} onChange={setSelectedFormats} />
-      <Sheet isOpen={showPromptFull} onClose={() => setShowPromptFull(false)} height="92vh">
+      <Sheet isOpen={showPromptFull} onClose={() => setShowPromptFull(false)} height="80vh">
         <SheetHeader title="Extra details" onCancel={() => setShowPromptFull(false)}
           action={<button onClick={() => setShowPromptFull(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#F29E4D', fontSize: 16, fontWeight: 600, padding: 0, fontFamily: 'var(--font-sans)' }}>Done</button>} />
         <Divider />
-        <div style={{ flex: 1, overflow: 'hidden', padding: '14px 16px', minHeight: 0 }}>
+        <div style={{ padding: '14px 16px' }}>
           <textarea
             autoFocus
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
             placeholder="Leave empty to generate from sources and format."
+            rows={16}
             style={{
-              width: '100%', height: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none',
+              width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none',
               color: 'rgba(255,255,255,0.88)', fontSize: 16, fontFamily: 'var(--font-sans)', lineHeight: 1.55,
+              boxSizing: 'border-box',
             }}
           />
         </div>
