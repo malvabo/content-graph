@@ -26,7 +26,11 @@ enum AppTab: String, CaseIterable {
 
 struct LibraryView: View {
     @AppStorage("library_projects") private var projectsData: Data = Data()
-    @State private var projects: [GenerationProject] = []
+    @State private var openedProject: GenerationProject?
+
+    private var projects: [GenerationProject] {
+        (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+    }
 
     var body: some View {
         ZStack {
@@ -59,7 +63,13 @@ struct LibraryView: View {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: 10) {
                             ForEach(projects) { project in
-                                ProjectRow(project: project)
+                                Button {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    openedProject = project
+                                } label: {
+                                    ProjectRow(project: project)
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -68,7 +78,9 @@ struct LibraryView: View {
                 }
             }
         }
-        .onAppear { projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? [] }
+        .fullScreenCover(item: $openedProject) { project in
+            GenerationResultsSheet(projects: [project], title: project.outputType)
+        }
     }
 }
 
