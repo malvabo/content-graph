@@ -13,6 +13,7 @@ struct GenerationProject: Identifiable, Codable {
     var outputType: String
     var preview: String
     var date: Date
+    var content: String = ""
 }
 
 struct CustomTemplate: Identifiable, Codable {

@@ -114,6 +114,63 @@ private struct AIService {
         return title.isEmpty ? nil : title
     }
 
+    static func generateContent(
+        sources: [SourceItem],
+        formatLabel: String,
+        formatDescription: String,
+        prompt: String,
+        brand: String
+    ) async -> String? {
+        guard !apiKey.isEmpty else { return nil }
+        guard let url = URL(string: "https://api.anthropic.com/v1/messages") else { return nil }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        req.timeoutInterval = 60
+
+        let sourceBlock = sources.map { item -> String in
+            let body = item.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            if body.isEmpty {
+                return "- [\(item.type.rawValue)] \(item.label)"
+            }
+            return "- [\(item.type.rawValue)] \(item.label):\n\(body.prefix(4000))"
+        }.joined(separator: "\n\n")
+
+        let extras = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        let extraLine = extras.isEmpty ? "" : "\nAdditional instructions: \(extras)\n"
+
+        let userPrompt = """
+        Generate content in the following format from the supplied sources.
+
+        Format: \(formatLabel) — \(formatDescription)
+        Brand voice: \(brand)
+        \(extraLine)
+        Sources:
+        \(sourceBlock)
+
+        Reply with only the finished \(formatLabel). No preamble, no explanation.
+        """
+
+        let body: [String: Any] = [
+            "model": "claude-sonnet-4-6",
+            "max_tokens": 1500,
+            "messages": [["role": "user", "content": userPrompt]]
+        ]
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else { return nil }
+        req.httpBody = httpBody
+
+        guard let (data, _) = try? await URLSession.shared.data(for: req),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let content = (json["content"] as? [[String: Any]])?.first,
+              let text = content["text"] as? String
+        else { return nil }
+
+        let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.isEmpty ? nil : result
+    }
+
     static func fallback(from text: String) -> String {
         let stop = Set(["the","a","an","is","it","in","on","at","to","for","of","and","or","but",
                         "i","you","we","they","this","that","with","from","by","as","be","are",
@@ -1336,13 +1393,20 @@ struct HomeView: View {
     @State private var selectedFormatIDs: Set<String> = []
     @State private var prompt = ""
     @State private var brand = "Default"
+    @State private var isGenerating = false
+    @State private var generatedProjects: [GenerationProject] = []
+    @State private var showResults = false
+    @State private var generationError: String?
+
+    @AppStorage("library_projects") private var projectsData: Data = Data()
 
     private var canGenerate: Bool {
-        !sources.isEmpty && !selectedFormatIDs.isEmpty
+        !sources.isEmpty && !selectedFormatIDs.isEmpty && !isGenerating
     }
 
     private var generateLabel: String {
-        selectedFormatIDs.isEmpty ? "Generate" : "Generate \(selectedFormatIDs.count)"
+        if isGenerating { return "Generating\u{2026}" }
+        return selectedFormatIDs.isEmpty ? "Generate" : "Generate \(selectedFormatIDs.count)"
     }
 
     var body: some View {
@@ -1384,10 +1448,11 @@ struct HomeView: View {
 
                         AnimatedLightsButton(
                             title: generateLabel,
-                            icon: "sparkles",
+                            icon: isGenerating ? nil : "sparkles",
                             isEnabled: canGenerate
                         ) {
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            Task { await runGeneration() }
                         }
                         .padding(.horizontal, 16)
                         .padding(.bottom, 40)
@@ -1401,6 +1466,162 @@ struct HomeView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showResults) {
+            GenerationResultsSheet(projects: generatedProjects)
+        }
+        .alert("Generation failed", isPresented: Binding(
+            get: { generationError != nil },
+            set: { if !$0 { generationError = nil } }
+        )) {
+            Button("OK", role: .cancel) { generationError = nil }
+        } message: {
+            Text(generationError ?? "")
+        }
+    }
+
+    private func runGeneration() async {
+        let chosen = allFormats.filter { selectedFormatIDs.contains($0.id) }
+        guard !chosen.isEmpty, !sources.isEmpty else { return }
+
+        await MainActor.run { isGenerating = true }
+
+        var produced: [GenerationProject] = []
+        for fmt in chosen {
+            let text = await AIService.generateContent(
+                sources: sources,
+                formatLabel: fmt.label,
+                formatDescription: fmt.description,
+                prompt: prompt,
+                brand: brand
+            )
+            guard let content = text else { continue }
+            let title = await AIService.generateTitle(from: content)
+            let preview = String(content.prefix(140)).replacingOccurrences(of: "\n", with: " ")
+            produced.append(GenerationProject(
+                title: title,
+                outputType: fmt.label,
+                preview: preview,
+                date: Date(),
+                content: content
+            ))
+        }
+
+        await MainActor.run {
+            isGenerating = false
+            if produced.isEmpty {
+                generationError = "Couldn't reach the AI service. Check your network and try again."
+                return
+            }
+            saveToLibrary(produced)
+            generatedProjects = produced
+            showResults = true
+        }
+    }
+
+    private func saveToLibrary(_ new: [GenerationProject]) {
+        var existing = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+        existing.insert(contentsOf: new, at: 0)
+        projectsData = (try? JSONEncoder().encode(existing)) ?? projectsData
+    }
+}
+
+// MARK: - Generation Results Sheet
+
+private struct GenerationResultsSheet: View {
+    let projects: [GenerationProject]
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Output")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.60))
+                            .frame(width: 30, height: 30)
+                            .background(Color.white.opacity(0.10))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 18)
+                .padding(.bottom, 12)
+
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: 14) {
+                        ForEach(projects) { project in
+                            ResultCard(project: project)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 32)
+                }
+            }
+        }
+    }
+}
+
+private struct ResultCard: View {
+    let project: GenerationProject
+    @State private var copied = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(project.outputType)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.55))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.white.opacity(0.07))
+                    .clipShape(Capsule())
+                Spacer()
+                Button {
+                    UIPasteboard.general.string = project.content
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    copied = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { copied = false }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 11, weight: .medium))
+                        Text(copied ? "Copied" : "Copy")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(Color.white.opacity(0.70))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+
+            Text(project.title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(Color.white.opacity(0.90))
+
+            Text(project.content)
+                .font(.system(size: 14))
+                .foregroundColor(Color.white.opacity(0.78))
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+        )
     }
 }
 
