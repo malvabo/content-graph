@@ -101,6 +101,14 @@ function ChevronRight() {
   return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>;
 }
 
+function ExpandIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 10V4h6M20 10V4h-6M4 14v6h6M20 14v6h-6"/>
+    </svg>
+  );
+}
+
 function SourceIcon({ type }: { type: SourceType }) {
   const stroke = 'rgba(255,255,255,0.45)';
   const common = { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke, strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
@@ -601,6 +609,7 @@ export default function CreateHome() {
   const [showLink, setShowLink] = useState(false);
   const [showVoice, setShowVoice] = useState(false);
   const [showFormats, setShowFormats] = useState(false);
+  const [showPromptFull, setShowPromptFull] = useState(false);
   const [brandMenu, setBrandMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -709,11 +718,26 @@ export default function CreateHome() {
               placeholder="Leave empty to generate from sources and format."
               rows={3}
               style={{
-                width: '100%', padding: '4px 16px 14px', border: 'none', background: 'transparent', outline: 'none',
+                width: '100%', padding: '4px 16px 8px', border: 'none', background: 'transparent', outline: 'none',
                 resize: 'none', color: 'rgba(255,255,255,0.88)', fontSize: 15, fontFamily: 'var(--font-sans)',
-                boxSizing: 'border-box',
+                boxSizing: 'border-box', height: 84, lineHeight: 1.45,
               }}
             />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 8px 8px' }}>
+              <button
+                type="button"
+                onClick={() => setShowPromptFull(true)}
+                aria-label="Expand"
+                style={{
+                  border: 'none', background: 'rgba(255,255,255,0.05)', cursor: 'pointer',
+                  width: 30, height: 30, borderRadius: 8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'rgba(255,255,255,0.50)',
+                }}
+              >
+                <ExpandIcon />
+              </button>
+            </div>
           </GlassCard>
 
           {/* Brand */}
@@ -786,6 +810,23 @@ export default function CreateHome() {
       <LinkInputSheet isOpen={showLink} onClose={() => setShowLink(false)} onSave={(label, content) => addSource({ type: 'link', label, content })} />
       <VoiceRecordSheet isOpen={showVoice} onClose={() => setShowVoice(false)} onSave={(label, content) => addSource({ type: 'voice', label, content })} />
       <FormatPickerSheet isOpen={showFormats} onClose={() => setShowFormats(false)} selected={selectedFormats} onChange={setSelectedFormats} />
+      <Sheet isOpen={showPromptFull} onClose={() => setShowPromptFull(false)} height="92vh">
+        <SheetHeader title="Add details" onCancel={() => setShowPromptFull(false)}
+          action={<button onClick={() => setShowPromptFull(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#F29E4D', fontSize: 16, fontWeight: 600, padding: 0, fontFamily: 'var(--font-sans)' }}>Done</button>} />
+        <Divider />
+        <div style={{ flex: 1, overflow: 'hidden', padding: '14px 16px', minHeight: 0 }}>
+          <textarea
+            autoFocus
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            placeholder="Leave empty to generate from sources and format."
+            style={{
+              width: '100%', height: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none',
+              color: 'rgba(255,255,255,0.88)', fontSize: 16, fontFamily: 'var(--font-sans)', lineHeight: 1.55,
+            }}
+          />
+        </div>
+      </Sheet>
 
       {/* Hidden file pickers */}
       <input ref={fileInputRef} type="file" accept=".txt,.md,.pdf"
