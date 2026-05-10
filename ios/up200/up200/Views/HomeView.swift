@@ -918,11 +918,24 @@ private struct TemplatesSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Capsule()
-                .fill(Color.white.opacity(0.12))
-                .frame(width: 36, height: 4)
-                .padding(.top, 10)
-                .padding(.bottom, 16)
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .foregroundColor(Color.white.opacity(0.55))
+                Spacer()
+                Text("Templates")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer()
+                Button("Cancel").foregroundColor(.clear)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 14)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.07))
+                .frame(height: 0.5)
+                .padding(.bottom, 12)
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
@@ -1068,11 +1081,8 @@ private struct FormatsBlock: View {
                 }
             }
         }
-        .sheet(isPresented: $showTemplates) {
+        .fullScreenCover(isPresented: $showTemplates) {
             TemplatesSheet(selectedFormatIDs: $selectedFormatIDs)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.hidden)
-                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }
