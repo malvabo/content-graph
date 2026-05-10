@@ -1541,7 +1541,6 @@ private struct PromptField: View {
 
 private struct BrandCard: View {
     @Binding var selectedBrand: String
-    let brands = ["Default", "Personal", "Company", "Startup", "Agency"]
 
     var body: some View {
         GlassCard {
@@ -1553,15 +1552,9 @@ private struct BrandCard: View {
                 Spacer()
 
                 Menu {
-                    ForEach(brands, id: \.self) { brand in
-                        Button {
-                            selectedBrand = brand
-                        } label: {
-                            if selectedBrand == brand {
-                                Label(brand, systemImage: "checkmark")
-                            } else {
-                                Text(brand)
-                            }
+                    Picker("Brand Voice", selection: $selectedBrand) {
+                        ForEach(BrandVoice.allCases) { brand in
+                            Text(brand.label).tag(brand.rawValue)
                         }
                     }
                 } label: {
@@ -1578,7 +1571,10 @@ private struct BrandCard: View {
                     .background(Color.white.opacity(0.09))
                     .clipShape(Capsule())
                     .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.5))
+                    .contentShape(Capsule())
                 }
+                .menuStyle(.borderlessButton)
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -1594,7 +1590,7 @@ struct HomeView: View {
     @State private var sources: [SourceItem] = []
     @State private var selectedFormatIDs: Set<String> = []
     @State private var prompt = ""
-    @State private var brand = "Default"
+    @AppStorage("brandVoice") private var brand: String = BrandVoice.default.rawValue
 
     @State private var isGenerating = false
     @State private var showGenerating = false
