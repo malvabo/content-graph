@@ -671,9 +671,13 @@ export default function CreateHome() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Sources */}
           <GlassCard>
-            <div style={{ padding: '12px 16px 8px', fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.40)' }}>SOURCES</div>
+            <div style={{ padding: '14px 16px 10px' }}>
+              <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>Sources</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 3 }}>What the output should be based on</div>
+            </div>
             {sources.map(item => (
               <div key={item.id}>
+                <div style={{ height: 0.5, background: 'rgba(255,255,255,0.06)' }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px' }}>
                   <SourceIcon type={item.type} />
                   <div style={{ flex: 1, fontSize: 15, color: 'rgba(255,255,255,0.80)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</div>
@@ -682,14 +686,14 @@ export default function CreateHome() {
                     style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'rgba(255,255,255,0.28)', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   ><XIcon /></button>
                 </div>
-                <div style={{ height: 0.5, background: 'rgba(255,255,255,0.06)' }} />
               </div>
             ))}
+            <div style={{ height: 0.5, background: 'rgba(255,255,255,0.06)' }} />
             <button
               onClick={() => setShowImport(true)}
               style={{
                 width: '100%', border: 'none', background: 'transparent', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6, padding: '14px 16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '14px 16px',
                 color: 'rgba(255,255,255,0.38)', fontSize: 15, fontWeight: 500, fontFamily: 'var(--font-sans)',
               }}
             >
