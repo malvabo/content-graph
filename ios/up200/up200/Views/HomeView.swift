@@ -13,6 +13,7 @@ struct SourceItem: Identifiable {
     let id = UUID()
     let type: SourceType
     var label: String
+    var content: String = ""
 
     var icon: String {
         switch type {
@@ -194,6 +195,320 @@ struct ImportSheetView: View {
     }
 }
 
+// MARK: - Text Input Sheet
+
+private struct TextInputSheet: View {
+    var onSave: (String, String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @FocusState private var focused: Bool
+
+    private var words: [Substring] { text.split { $0.isWhitespace } }
+
+    private var titleLabel: String {
+        guard !words.isEmpty else { return "Text" }
+        let preview = words.prefix(5).joined(separator: " ")
+        let suffix = words.count > 5 ? "\u{2026}" : ""
+        return "\(preview)\(suffix) \u{00b7} \(words.count) words"
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .foregroundColor(Color.white.opacity(0.55))
+                Spacer()
+                Text("Text source")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer()
+                Button("Save") {
+                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return }
+                    onSave(titleLabel, trimmed)
+                    dismiss()
+                }
+                .foregroundColor(
+                    text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? Color.white.opacity(0.25) : Color.white.opacity(0.88)
+                )
+                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 14)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.07))
+                .frame(height: 0.5)
+
+            ZStack(alignment: .topLeading) {
+                if text.isEmpty {
+                    Text("Paste your text, transcript or notes\u{2026}")
+                        .font(.system(size: 16))
+                        .foregroundColor(Color.white.opacity(0.22))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 18)
+                        .allowsHitTesting(false)
+                }
+                TextEditor(text: $text)
+                    .font(.system(size: 16))
+                    .foregroundColor(Color.white.opacity(0.88))
+                    .scrollContentBackground(.hidden)
+                    .background(.clear)
+                    .padding(.horizontal, 16)
+                    .focused($focused)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if !words.isEmpty {
+                HStack {
+                    Spacer()
+                    Text("\(words.count) words")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.white.opacity(0.28))
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
+            }
+        }
+        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { focused = true }
+        }
+    }
+}
+
+// MARK: - Link Input Sheet
+
+private struct LinkInputSheet: View {
+    var onSave: (String, String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var urlText = ""
+    @State private var isFetching = false
+    @FocusState private var focused: Bool
+
+    private var isValidURL: Bool {
+        let t = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (t.hasPrefix("http://") || t.hasPrefix("https://")) && t.count > 11
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .foregroundColor(Color.white.opacity(0.55))
+                Spacer()
+                Text("Link source")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer()
+                Button {
+                    guard !isFetching else { return }
+                    saveLink()
+                } label: {
+                    if isFetching {
+                        ProgressView()
+                            .scaleEffect(0.75)
+                            .tint(Color.white.opacity(0.55))
+                            .frame(width: 40)
+                    } else {
+                        Text("Save")
+                            .foregroundColor(isValidURL ? Color.white.opacity(0.88) : Color.white.opacity(0.25))
+                    }
+                }
+                .disabled(!isValidURL || isFetching)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 14)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.07))
+                .frame(height: 0.5)
+
+            HStack(spacing: 10) {
+                Image(systemName: "link")
+                    .font(.system(size: 15))
+                    .foregroundColor(Color.white.opacity(0.35))
+                TextField("https://", text: $urlText)
+                    .font(.system(size: 16))
+                    .foregroundColor(Color.white.opacity(0.88))
+                    .autocapitalization(.none)
+                    .keyboardType(.URL)
+                    .autocorrectionDisabled()
+                    .focused($focused)
+                    .submitLabel(.done)
+                    .onSubmit { if isValidURL { saveLink() } }
+                if !urlText.isEmpty {
+                    Button { urlText = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(Color.white.opacity(0.30))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 18)
+
+            Spacer()
+        }
+        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { focused = true }
+        }
+    }
+
+    private func saveLink() {
+        let trimmed = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed) else { return }
+        isFetching = true
+        Task {
+            let label = await fetchPageTitle(from: url) ?? domainLabel(from: url)
+            await MainActor.run {
+                isFetching = false
+                onSave(label, trimmed)
+                dismiss()
+            }
+        }
+    }
+
+    private func fetchPageTitle(from url: URL) async -> String? {
+        guard let (data, _) = try? await URLSession.shared.data(from: url),
+              let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1)
+        else { return nil }
+        if let start = html.range(of: "<title", options: .caseInsensitive),
+           let tagEnd = html[start.upperBound...].range(of: ">"),
+           let titleEnd = html[tagEnd.upperBound...].range(of: "</title>", options: .caseInsensitive) {
+            let title = String(html[tagEnd.upperBound..<titleEnd.lowerBound])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return title.isEmpty ? nil : title
+        }
+        return nil
+    }
+
+    private func domainLabel(from url: URL) -> String {
+        url.host ?? url.absoluteString
+    }
+}
+
+// MARK: - Voice Record Sheet
+
+private struct VoiceRecordSheet: View {
+    var onSave: (String, String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var isRecording = false
+    @State private var seconds = 0
+    @State private var pulse = false
+
+    private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    private var timeLabel: String {
+        String(format: "%d:%02d", seconds / 60, seconds % 60)
+    }
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+            RadialGradient(
+                colors: [amber.opacity(isRecording ? 0.18 : 0.0), .clear],
+                center: .center, startRadius: 0, endRadius: 280
+            )
+            .ignoresSafeArea()
+            .animation(.easeInOut(duration: 0.6), value: isRecording)
+
+            VStack(spacing: 0) {
+                HStack {
+                    Button("Cancel") { dismiss() }
+                        .foregroundColor(Color.white.opacity(0.55))
+                    Spacer()
+                    Text("Voice Note")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                    Spacer()
+                    Text("Cancel").foregroundColor(.clear)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+
+                Spacer()
+
+                VStack(spacing: 36) {
+                    ZStack {
+                        if isRecording {
+                            Circle()
+                                .fill(amber.opacity(0.12))
+                                .frame(width: 140, height: 140)
+                                .scaleEffect(pulse ? 1.25 : 1.0)
+                                .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: pulse)
+                            Circle()
+                                .fill(amber.opacity(0.22))
+                                .frame(width: 100, height: 100)
+                        }
+                        Button(action: handleTap) {
+                            Circle()
+                                .fill(isRecording ? amber : Color.white.opacity(0.12))
+                                .frame(width: 76, height: 76)
+                                .overlay(
+                                    Image(systemName: isRecording ? "stop.fill" : "mic.fill")
+                                        .font(.system(size: 28, weight: .medium))
+                                        .foregroundColor(.white)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .animation(.spring(duration: 0.4), value: isRecording)
+
+                    Text(isRecording ? timeLabel : "Tap to record")
+                        .font(.system(size: 17, design: isRecording ? .monospaced : .default))
+                        .foregroundColor(Color.white.opacity(isRecording ? 0.80 : 0.40))
+                        .animation(.easeOut(duration: 0.2), value: isRecording)
+                }
+
+                Spacer()
+
+                if isRecording {
+                    Button {
+                        finishRecording()
+                    } label: {
+                        Text("Done")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(amber)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 40)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+        }
+        .onReceive(clock) { _ in if isRecording { seconds += 1 } }
+    }
+
+    private func handleTap() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        if isRecording {
+            finishRecording()
+        } else {
+            seconds = 0
+            isRecording = true
+            withAnimation { pulse = true }
+        }
+    }
+
+    private func finishRecording() {
+        isRecording = false
+        pulse = false
+        onSave("Voice Note \u{00b7} \(timeLabel)", "")
+        dismiss()
+    }
+}
+
 // MARK: - Glass Card
 
 private struct GlassCard<Content: View>: View {
@@ -212,85 +527,18 @@ private struct GlassCard<Content: View>: View {
     }
 }
 
-// MARK: - Voice Record Row
-
-private struct VoiceRecordRow: View {
-    var onFinish: (String) -> Void
-    var onCancel: () -> Void
-
-    @State private var isRecording = false
-    @State private var seconds = 0
-    @State private var pulse = false
-
-    private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
-
-    private var timeLabel: String {
-        String(format: "%d:%02d", seconds / 60, seconds % 60)
-    }
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(isRecording ? amber.opacity(0.85) : Color.white.opacity(0.18))
-                .frame(width: 7, height: 7)
-                .scaleEffect(isRecording ? (pulse ? 1.35 : 1.0) : 1.0)
-                .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulse)
-
-            Text(isRecording ? timeLabel : "Tap to record")
-                .font(.system(size: 15, design: isRecording ? .monospaced : .default))
-                .foregroundColor(Color.white.opacity(isRecording ? 0.75 : 0.35))
-
-            Spacer()
-
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                if isRecording {
-                    isRecording = false
-                    pulse = false
-                    onFinish("Voice \(timeLabel)")
-                } else {
-                    seconds = 0
-                    isRecording = true
-                    pulse = true
-                }
-            } label: {
-                Image(systemName: isRecording ? "stop.circle" : "mic")
-                    .font(.system(size: 22, weight: .light))
-                    .foregroundColor(isRecording ? amber : Color.white.opacity(0.55))
-            }
-            .buttonStyle(.plain)
-
-            Button(action: onCancel) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.3))
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .onReceive(clock) { _ in if isRecording { seconds += 1 } }
-    }
-}
-
 // MARK: - Sources Block
 
 private struct SourcesBlock: View {
     @Binding var sources: [SourceItem]
-    @Binding var linkText: String
-    @Binding var sourceText: String
-    @Binding var voiceTranscript: String
 
     @State private var showImport = false
+    @State private var showTextInput = false
+    @State private var showLinkInput = false
     @State private var showVoiceRecord = false
     @State private var showFilePicker = false
     @State private var showPhotoPicker = false
     @State private var photoPickerItem: PhotosPickerItem? = nil
-    @FocusState private var textFocused: Bool
-    @State private var showTextInput = false
 
     var body: some View {
         GlassCard {
@@ -310,7 +558,6 @@ private struct SourcesBlock: View {
                             Button {
                                 withAnimation(.spring(duration: 0.25)) {
                                     sources.removeAll { $0.id == item.id }
-                                    if item.type == .link { linkText = "" }
                                 }
                             } label: {
                                 Image(systemName: "xmark")
@@ -324,80 +571,6 @@ private struct SourcesBlock: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 13)
 
-                        if item.type == .link {
-                            HStack(spacing: 8) {
-                                Image(systemName: "link")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Color.white.opacity(0.30))
-                                TextField("https://\u{2026}", text: $linkText)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Color.white.opacity(0.75))
-                                    .autocapitalization(.none)
-                                    .keyboardType(.URL)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 10)
-                        }
-
-                        Rectangle()
-                            .fill(Color.white.opacity(0.06))
-                            .frame(height: 0.5)
-                    }
-                }
-
-                if showTextInput {
-                    VStack(spacing: 0) {
-                        ZStack(alignment: .topLeading) {
-                            if sourceText.isEmpty {
-                                Text("Paste your text, transcript or notes\u{2026}")
-                                    .font(.system(size: 15))
-                                    .foregroundColor(Color.white.opacity(0.25))
-                                    .padding(.horizontal, 16)
-                                    .padding(.top, 14)
-                                    .allowsHitTesting(false)
-                            }
-                            TextEditor(text: $sourceText)
-                                .font(.system(size: 15))
-                                .foregroundColor(Color.white.opacity(0.85))
-                                .scrollContentBackground(.hidden)
-                                .background(.clear)
-                                .frame(minHeight: 90, maxHeight: 180)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .focused($textFocused)
-                        }
-                        Rectangle()
-                            .fill(Color.white.opacity(0.06))
-                            .frame(height: 0.5)
-                    }
-                }
-
-                if showVoiceRecord {
-                    VStack(spacing: 0) {
-                        VoiceRecordRow { label in
-                            withAnimation(.spring(duration: 0.25)) {
-                                voiceTranscript = label
-                                showVoiceRecord = false
-                            }
-                        } onCancel: {
-                            withAnimation { showVoiceRecord = false }
-                        }
-                        Rectangle()
-                            .fill(Color.white.opacity(0.06))
-                            .frame(height: 0.5)
-                    }
-                }
-
-                if !voiceTranscript.isEmpty {
-                    VStack(spacing: 0) {
-                        TextEditor(text: $voiceTranscript)
-                            .font(.system(size: 15))
-                            .foregroundColor(Color.white.opacity(0.85))
-                            .scrollContentBackground(.hidden)
-                            .background(.clear)
-                            .frame(minHeight: 80, maxHeight: 160)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
                         Rectangle()
                             .fill(Color.white.opacity(0.06))
                             .frame(height: 0.5)
@@ -424,23 +597,47 @@ private struct SourcesBlock: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 switch type {
                 case .text:
-                    showTextInput = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { textFocused = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showTextInput = true }
                 case .link:
-                    if !sources.contains(where: { $0.type == .link }) {
-                        sources.append(SourceItem(type: .link, label: "Link"))
-                    }
-                case .file:
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { showFilePicker = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showLinkInput = true }
                 case .voice:
-                    showVoiceRecord = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showVoiceRecord = true }
+                case .file:
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) { showFilePicker = true }
                 case .image:
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { showPhotoPicker = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) { showPhotoPicker = true }
                 }
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.hidden)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        }
+        .sheet(isPresented: $showTextInput) {
+            TextInputSheet { label, content in
+                withAnimation(.spring(duration: 0.25)) {
+                    sources.append(SourceItem(type: .text, label: label, content: content))
+                }
+            }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        }
+        .sheet(isPresented: $showLinkInput) {
+            LinkInputSheet { label, url in
+                withAnimation(.spring(duration: 0.25)) {
+                    sources.append(SourceItem(type: .link, label: label, content: url))
+                }
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        }
+        .fullScreenCover(isPresented: $showVoiceRecord) {
+            VoiceRecordSheet { label, transcript in
+                withAnimation(.spring(duration: 0.25)) {
+                    sources.append(SourceItem(type: .voice, label: label, content: transcript))
+                }
+            }
         }
         .fileImporter(
             isPresented: $showFilePicker,
@@ -448,13 +645,17 @@ private struct SourcesBlock: View {
             allowsMultipleSelection: false
         ) { result in
             if case .success(let urls) = result, let url = urls.first {
-                sources.append(SourceItem(type: .file, label: url.lastPathComponent))
+                withAnimation(.spring(duration: 0.25)) {
+                    sources.append(SourceItem(type: .file, label: url.lastPathComponent, content: ""))
+                }
             }
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $photoPickerItem, matching: .images)
         .onChange(of: photoPickerItem) { _, item in
             guard item != nil else { return }
-            sources.append(SourceItem(type: .image, label: "Image"))
+            withAnimation(.spring(duration: 0.25)) {
+                sources.append(SourceItem(type: .image, label: "Image", content: ""))
+            }
             photoPickerItem = nil
         }
     }
@@ -731,19 +932,12 @@ struct HomeView: View {
     var scrollToTopSignal: Int = 0
 
     @State private var sources: [SourceItem] = []
-    @State private var sourceText = ""
-    @State private var linkText = ""
-    @State private var voiceTranscript = ""
     @State private var selectedFormatIDs: Set<String> = []
     @State private var prompt = ""
     @State private var brand = "Default"
 
-    private var hasSources: Bool {
-        !sources.isEmpty || !sourceText.isEmpty || !voiceTranscript.isEmpty
-    }
-
     private var canGenerate: Bool {
-        hasSources && !selectedFormatIDs.isEmpty
+        !sources.isEmpty && !selectedFormatIDs.isEmpty
     }
 
     private var generateLabel: String {
@@ -779,12 +973,7 @@ struct HomeView: View {
                         .padding(.bottom, 16)
 
                         VStack(spacing: 12) {
-                            SourcesBlock(
-                                sources: $sources,
-                                linkText: $linkText,
-                                sourceText: $sourceText,
-                                voiceTranscript: $voiceTranscript
-                            )
+                            SourcesBlock(sources: $sources)
                             FormatsBlock(selectedFormatIDs: $selectedFormatIDs)
                             PromptField(prompt: $prompt)
                             BrandCard(selectedBrand: $brand)
