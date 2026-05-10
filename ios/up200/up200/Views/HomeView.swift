@@ -1,6 +1,8 @@
 import SwiftUI
 import PhotosUI
 import UniformTypeIdentifiers
+import Speech
+import AVFoundation
 
 // MARK: - Source Item Model
 
@@ -66,6 +68,134 @@ private let allTemplates: [ContentTemplate] = [
     ContentTemplate(id: "landing",      name: "Landing Page",  description: "Headline, sections and CTA copy",               formatIDs: ["landing"]),
     ContentTemplate(id: "repurpose",    name: "Repurpose All", description: "Every major format from a single source",        formatIDs: ["newsletter", "linkedin", "twitter", "blog", "email"]),
 ]
+
+// MARK: - AI Title Service
+
+private struct AIService {
+    private static var apiKey: String {
+        Bundle.main.object(forInfoDictionaryKey: "ANTHROPIC_API_KEY") as? String ?? ""
+    }
+
+    static func generateTitle(from text: String) async -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "Note" }
+        if !apiKey.isEmpty, let title = await callAnthropic(text: trimmed) {
+            return title
+        }
+        return fallback(from: trimmed)
+    }
+
+    private static func callAnthropic(text: String) async -> String? {
+        guard let url = URL(string: "https://api.anthropic.com/v1/messages") else { return nil }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        req.timeoutInterval = 8
+
+        let prompt = "Give a concise 3-6 word title for this content. Reply with only the title, no quotes, no punctuation at the end:\n\n\(text.prefix(800))"
+        let body: [String: Any] = [
+            "model": "claude-haiku-4-5-20251001",
+            "max_tokens": 25,
+            "messages": [["role": "user", "content": prompt]]
+        ]
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else { return nil }
+        req.httpBody = httpBody
+
+        guard let (data, _) = try? await URLSession.shared.data(for: req),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let content = (json["content"] as? [[String: Any]])?.first,
+              let text = content["text"] as? String
+        else { return nil }
+
+        let title = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return title.isEmpty ? nil : title
+    }
+
+    static func fallback(from text: String) -> String {
+        let stop = Set(["the","a","an","is","it","in","on","at","to","for","of","and","or","but",
+                        "i","you","we","they","this","that","with","from","by","as","be","are",
+                        "was","were","have","has","had","do","did","will","would","could","should"])
+        let words = text.split { !$0.isLetter }
+            .map(String.init)
+            .filter { $0.count > 2 && !stop.contains($0.lowercased()) }
+        let title = Array(words.prefix(5)).joined(separator: " ")
+        return title.isEmpty ? "Note" : title
+    }
+}
+
+// MARK: - Voice Recorder
+
+@MainActor
+private final class VoiceRecorder: ObservableObject {
+    @Published var transcript = ""
+    @Published var isRecording = false
+    @Published var permissionDenied = false
+
+    private let audioEngine = AVAudioEngine()
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+    private let recognizer = SFSpeechRecognizer(locale: Locale.current)
+        ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+
+    func start() {
+        SFSpeechRecognizer.requestAuthorization { [weak self] status in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if status == .authorized {
+                    self.startEngine()
+                } else {
+                    self.permissionDenied = true
+                }
+            }
+        }
+    }
+
+    func stop() {
+        audioEngine.stop()
+        recognitionRequest?.endAudio()
+        if audioEngine.inputNode.numberOfInputs > 0 {
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
+        isRecording = false
+    }
+
+    private func startEngine() {
+        recognitionTask?.cancel()
+        recognitionTask = nil
+
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try? session.setActive(true, options: .notifyOthersOnDeactivation)
+
+        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+        guard let request = recognitionRequest, let rec = recognizer else { return }
+        request.shouldReportPartialResults = true
+
+        recognitionTask = rec.recognitionTask(with: request) { [weak self] result, error in
+            DispatchQueue.main.async {
+                if let result {
+                    self?.transcript = result.bestTranscription.formattedString
+                }
+                if error != nil || (result?.isFinal ?? false) {
+                    self?.isRecording = false
+                }
+            }
+        }
+
+        let inputNode = audioEngine.inputNode
+        let format = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+            request.append(buffer)
+        }
+
+        audioEngine.prepare()
+        if (try? audioEngine.start()) != nil {
+            isRecording = true
+        }
+    }
+}
 
 // MARK: - Animated Lights Button
 
@@ -201,38 +331,43 @@ private struct TextInputSheet: View {
     var onSave: (String, String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
+    @State private var isGenerating = false
     @FocusState private var focused: Bool
 
-    private var words: [Substring] { text.split { $0.isWhitespace } }
-
-    private var titleLabel: String {
-        guard !words.isEmpty else { return "Text" }
-        let preview = words.prefix(5).joined(separator: " ")
-        let suffix = words.count > 5 ? "\u{2026}" : ""
-        return "\(preview)\(suffix) \u{00b7} \(words.count) words"
-    }
+    private var wordCount: Int { text.split { $0.isWhitespace }.count }
+    private var canSave: Bool { !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button("Cancel") { dismiss() }
-                    .foregroundColor(Color.white.opacity(0.55))
+                Button("Cancel") {
+                    guard !isGenerating else { return }
+                    dismiss()
+                }
+                .foregroundColor(Color.white.opacity(0.55))
+
                 Spacer()
+
                 Text("Text source")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
+
                 Spacer()
-                Button("Save") {
-                    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmed.isEmpty else { return }
-                    onSave(titleLabel, trimmed)
-                    dismiss()
+
+                Button {
+                    handleSave()
+                } label: {
+                    if isGenerating {
+                        ProgressView()
+                            .scaleEffect(0.75)
+                            .tint(Color.white.opacity(0.55))
+                            .frame(width: 40)
+                    } else {
+                        Text("Save")
+                            .foregroundColor(canSave ? Color.white.opacity(0.88) : Color.white.opacity(0.25))
+                    }
                 }
-                .foregroundColor(
-                    text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        ? Color.white.opacity(0.25) : Color.white.opacity(0.88)
-                )
-                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(!canSave || isGenerating)
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)
@@ -258,23 +393,45 @@ private struct TextInputSheet: View {
                     .background(.clear)
                     .padding(.horizontal, 16)
                     .focused($focused)
+                    .disabled(isGenerating)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            if !words.isEmpty {
+            if wordCount > 0 {
                 HStack {
+                    if isGenerating {
+                        Label("Generating title\u{2026}", systemImage: "sparkles")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color.white.opacity(0.40))
+                    }
                     Spacer()
-                    Text("\(words.count) words")
+                    Text("\(wordCount) words")
                         .font(.system(size: 12))
                         .foregroundColor(Color.white.opacity(0.28))
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 12)
+                .animation(.easeOut(duration: 0.2), value: isGenerating)
             }
         }
         .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { focused = true }
+        }
+    }
+
+    private func handleSave() {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        focused = false
+        isGenerating = true
+        Task {
+            let title = await AIService.generateTitle(from: trimmed)
+            await MainActor.run {
+                isGenerating = false
+                onSave(title, trimmed)
+                dismiss()
+            }
         }
     }
 }
@@ -351,6 +508,17 @@ private struct LinkInputSheet: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 18)
 
+            if isFetching {
+                HStack(spacing: 6) {
+                    Image(systemName: "globe")
+                        .font(.system(size: 12))
+                    Text("Fetching page title\u{2026}")
+                        .font(.system(size: 13))
+                }
+                .foregroundColor(Color.white.opacity(0.35))
+                .padding(.top, 4)
+            }
+
             Spacer()
         }
         .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
@@ -397,9 +565,10 @@ private struct LinkInputSheet: View {
 private struct VoiceRecordSheet: View {
     var onSave: (String, String) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var isRecording = false
+    @StateObject private var recorder = VoiceRecorder()
     @State private var seconds = 0
     @State private var pulse = false
+    @State private var isGenerating = false
 
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
@@ -412,20 +581,28 @@ private struct VoiceRecordSheet: View {
         ZStack {
             Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
             RadialGradient(
-                colors: [amber.opacity(isRecording ? 0.18 : 0.0), .clear],
-                center: .center, startRadius: 0, endRadius: 280
+                colors: [amber.opacity(recorder.isRecording ? 0.16 : 0.0), .clear],
+                center: .center, startRadius: 0, endRadius: 300
             )
             .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.6), value: isRecording)
+            .animation(.easeInOut(duration: 0.6), value: recorder.isRecording)
 
             VStack(spacing: 0) {
                 HStack {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(Color.white.opacity(0.55))
+                    Button("Cancel") {
+                        guard !isGenerating else { return }
+                        recorder.stop()
+                        dismiss()
+                    }
+                    .foregroundColor(Color.white.opacity(0.55))
+                    .disabled(isGenerating)
+
                     Spacer()
+
                     Text("Voice Note")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
+
                     Spacer()
                     Text("Cancel").foregroundColor(.clear)
                 }
@@ -434,43 +611,68 @@ private struct VoiceRecordSheet: View {
 
                 Spacer()
 
-                VStack(spacing: 36) {
+                VStack(spacing: 28) {
                     ZStack {
-                        if isRecording {
+                        if recorder.isRecording {
                             Circle()
-                                .fill(amber.opacity(0.12))
-                                .frame(width: 140, height: 140)
-                                .scaleEffect(pulse ? 1.25 : 1.0)
-                                .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: pulse)
+                                .fill(amber.opacity(0.10))
+                                .frame(width: 150, height: 150)
+                                .scaleEffect(pulse ? 1.3 : 1.0)
+                                .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: pulse)
                             Circle()
-                                .fill(amber.opacity(0.22))
-                                .frame(width: 100, height: 100)
+                                .fill(amber.opacity(0.20))
+                                .frame(width: 108, height: 108)
                         }
-                        Button(action: handleTap) {
+                        Button(action: handleMicTap) {
                             Circle()
-                                .fill(isRecording ? amber : Color.white.opacity(0.12))
+                                .fill(recorder.isRecording ? amber : Color.white.opacity(0.12))
                                 .frame(width: 76, height: 76)
                                 .overlay(
-                                    Image(systemName: isRecording ? "stop.fill" : "mic.fill")
+                                    Image(systemName: recorder.isRecording ? "stop.fill" : "mic.fill")
                                         .font(.system(size: 28, weight: .medium))
                                         .foregroundColor(.white)
                                 )
                         }
                         .buttonStyle(.plain)
+                        .disabled(isGenerating)
                     }
-                    .animation(.spring(duration: 0.4), value: isRecording)
+                    .animation(.spring(duration: 0.4), value: recorder.isRecording)
 
-                    Text(isRecording ? timeLabel : "Tap to record")
-                        .font(.system(size: 17, design: isRecording ? .monospaced : .default))
-                        .foregroundColor(Color.white.opacity(isRecording ? 0.80 : 0.40))
-                        .animation(.easeOut(duration: 0.2), value: isRecording)
+                    if isGenerating {
+                        Label("Generating title\u{2026}", systemImage: "sparkles")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color.white.opacity(0.50))
+                            .transition(.opacity)
+                    } else {
+                        Text(recorder.isRecording ? timeLabel : "Tap to record")
+                            .font(.system(size: 17, design: recorder.isRecording ? .monospaced : .default))
+                            .foregroundColor(Color.white.opacity(recorder.isRecording ? 0.80 : 0.40))
+                            .transition(.opacity)
+                    }
+                }
+                .animation(.easeOut(duration: 0.2), value: isGenerating)
+
+                if !recorder.transcript.isEmpty {
+                    ScrollView(showsIndicators: false) {
+                        Text(recorder.transcript)
+                            .font(.system(size: 14))
+                            .foregroundColor(Color.white.opacity(0.50))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                            .padding(.top, 24)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .frame(maxHeight: 120)
+                    .transition(.opacity)
+                } else {
+                    Spacer()
                 }
 
                 Spacer()
 
-                if isRecording {
+                if recorder.isRecording && !recorder.transcript.isEmpty {
                     Button {
-                        finishRecording()
+                        handleDone()
                     } label: {
                         Text("Done")
                             .font(.system(size: 16, weight: .semibold))
@@ -484,28 +686,72 @@ private struct VoiceRecordSheet: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 40)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if !recorder.isRecording && !recorder.transcript.isEmpty && !isGenerating {
+                    Button {
+                        handleDone()
+                    } label: {
+                        Text("Use this")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(amber)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 40)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else {
+                    Color.clear.frame(height: 92)
                 }
             }
         }
-        .onReceive(clock) { _ in if isRecording { seconds += 1 } }
-    }
-
-    private func handleTap() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        if isRecording {
-            finishRecording()
-        } else {
-            seconds = 0
-            isRecording = true
-            withAnimation { pulse = true }
+        .onReceive(clock) { _ in
+            if recorder.isRecording { seconds += 1 }
+        }
+        .onChange(of: recorder.isRecording) { _, recording in
+            if recording {
+                seconds = 0
+                withAnimation { pulse = true }
+            } else {
+                pulse = false
+            }
+        }
+        .alert("Microphone Access", isPresented: $recorder.permissionDenied) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) { dismiss() }
+        } message: {
+            Text("Microphone and speech recognition access is required to record a voice note.")
         }
     }
 
-    private func finishRecording() {
-        isRecording = false
-        pulse = false
-        onSave("Voice Note \u{00b7} \(timeLabel)", "")
-        dismiss()
+    private func handleMicTap() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        if recorder.isRecording {
+            recorder.stop()
+        } else {
+            recorder.start()
+        }
+    }
+
+    private func handleDone() {
+        recorder.stop()
+        let transcript = recorder.transcript
+        guard !transcript.isEmpty else { dismiss(); return }
+        isGenerating = true
+        Task {
+            let title = await AIService.generateTitle(from: transcript)
+            await MainActor.run {
+                isGenerating = false
+                onSave(title, transcript)
+                dismiss()
+            }
+        }
     }
 }
 
