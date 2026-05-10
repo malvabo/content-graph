@@ -11,6 +11,7 @@
 		A1000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000004; };
 		A1000005 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000006; };
 		A1000006 /* BundleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000007; };
+		A1000007 /* OutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +22,7 @@
 		A2000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000006 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A2000007 /* BundleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundleView.swift; sourceTree = "<group>"; };
+		A2000008 /* OutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutputView.swift; sourceTree = "<group>"; };
 		A2000010 /* up200.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = up200.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -38,7 +40,7 @@
 		};
 		A3000003 /* Views */ = {
 			isa = PBXGroup;
-			children = (A2000002, A2000006, A2000007);
+			children = (A2000002, A2000006, A2000007, A2000008);
 			path = Views;
 			sourceTree = "<group>";
 		};
@@ -91,7 +93,7 @@
 		A5000001 = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = (A1000001, A1000002, A1000003, A1000005, A1000006);
+			files = (A1000001, A1000002, A1000003, A1000005, A1000006, A1000007);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
