@@ -129,7 +129,8 @@ export default function IconNav({ activeView, onViewChange }: Props) {
     <>
       <style>{`
         @media (max-width: 767px) {
-          .icon-nav { width: 100% !important; height: 52px !important; flex-direction: row !important; padding: 0 8px !important; margin: 0 !important; gap: 0 !important; order: 99 !important; border-radius: 0 !important; box-shadow: none !important; border-top: 1px solid var(--color-border-subtle) !important; }
+          .icon-nav { width: 100% !important; height: 52px !important; flex-direction: row !important; padding: 0 8px env(safe-area-inset-bottom, 0px) !important; margin: 0 !important; gap: 0 !important; order: 99 !important; border-radius: 0 !important; box-shadow: 0 -1px 0 rgba(0,0,0,0.08), 0 -4px 16px rgba(0,0,0,0.06) !important; border-top: none !important; background: rgba(250,250,248,0.78) !important; -webkit-backdrop-filter: blur(20px) saturate(1.8) !important; backdrop-filter: blur(20px) saturate(1.8) !important; border-top: 0.5px solid rgba(0,0,0,0.12) !important; }
+          :root.dark .icon-nav { background: rgba(18,17,16,0.82) !important; box-shadow: 0 -1px 0 rgba(255,255,255,0.06), 0 -4px 16px rgba(0,0,0,0.32) !important; border-top: 0.5px solid rgba(255,255,255,0.08) !important; }
           .icon-nav .nav-item { width: auto !important; padding: 6px 10px !important; flex-direction: column !important; gap: 2px !important; flex: 1; justify-content: center !important; }
           .icon-nav .nav-label { font-size: 9px !important; opacity: 1 !important; }
           .icon-nav .nav-spacer, .icon-nav .nav-logo, .icon-nav .nav-bottom-utils { display: none !important; }
