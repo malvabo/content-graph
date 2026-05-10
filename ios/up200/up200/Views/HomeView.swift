@@ -632,7 +632,8 @@ private struct TextInputSheet: View {
                             .frame(width: 40)
                     } else {
                         Text("Save")
-                            .foregroundColor(canSave ? Color.white.opacity(0.88) : Color.white.opacity(0.25))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(canSave ? Color(red: 0.95, green: 0.62, blue: 0.30) : Color.white.opacity(0.25))
                     }
                 }
                 .disabled(!canSave || isGenerating)
@@ -739,7 +740,8 @@ private struct LinkInputSheet: View {
                             .frame(width: 40)
                     } else {
                         Text("Save")
-                            .foregroundColor(isValidURL ? Color.white.opacity(0.88) : Color.white.opacity(0.25))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(isValidURL ? Color(red: 0.95, green: 0.62, blue: 0.30) : Color.white.opacity(0.25))
                     }
                 }
                 .disabled(!isValidURL || isFetching)
@@ -968,37 +970,15 @@ private struct VoiceRecordSheet: View {
                 Spacer()
 
                 if recorder.isRecording && !recorder.transcript.isEmpty {
-                    Button {
-                        handleDone()
-                    } label: {
-                        Text("Done")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(amber)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 40)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    AnimatedLightsButton(title: "Done") { handleDone() }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 40)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else if !recorder.isRecording && !recorder.transcript.isEmpty && !isGenerating {
-                    Button {
-                        handleDone()
-                    } label: {
-                        Text("Use this")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(amber)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 40)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    AnimatedLightsButton(title: "Use this") { handleDone() }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 40)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else {
                     Color.clear.frame(height: 92)
                 }
