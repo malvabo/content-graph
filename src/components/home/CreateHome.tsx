@@ -295,12 +295,13 @@ function LinkInputSheet({ isOpen, onClose, onSave }: {
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (isOpen) { setUrl(''); setTimeout(() => inputRef.current?.focus(), 120); } }, [isOpen]);
   const trimmed = url.trim();
-  const isValid = /^https?:\/\/.+\..+/i.test(trimmed);
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : (trimmed ? `https://${trimmed}` : '');
+  const isValid = /^https?:\/\/[^\s.]+\.[^\s]+/i.test(withScheme);
   const handleSave = () => {
     if (!isValid) return;
-    let label = trimmed;
-    try { label = new URL(trimmed).hostname.replace(/^www\./, ''); } catch { /* keep raw */ }
-    onSave(label, trimmed);
+    let label = withScheme;
+    try { label = new URL(withScheme).hostname.replace(/^www\./, ''); } catch { /* keep raw */ }
+    onSave(label, withScheme);
     onClose();
   };
   return (
@@ -317,7 +318,7 @@ function LinkInputSheet({ isOpen, onClose, onSave }: {
           value={url}
           onChange={e => setUrl(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && isValid) handleSave(); }}
-          placeholder="https://"
+          placeholder="example.com"
           type="url"
           autoCapitalize="none"
           autoCorrect="off"
@@ -728,7 +729,10 @@ export default function CreateHome() {
 
           {/* Prompt */}
           <GlassCard>
-            <div style={{ padding: '14px 16px 6px', fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.40)' }}>Add details (optional)</div>
+            <div style={{ padding: '14px 16px 6px' }}>
+              <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>Extra details</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 3 }}>Optional notes or instructions</div>
+            </div>
             <textarea
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
@@ -828,7 +832,7 @@ export default function CreateHome() {
       <VoiceRecordSheet isOpen={showVoice} onClose={() => setShowVoice(false)} onSave={(label, content) => addSource({ type: 'voice', label, content })} />
       <FormatPickerSheet isOpen={showFormats} onClose={() => setShowFormats(false)} selected={selectedFormats} onChange={setSelectedFormats} />
       <Sheet isOpen={showPromptFull} onClose={() => setShowPromptFull(false)} height="92vh">
-        <SheetHeader title="Add details" onCancel={() => setShowPromptFull(false)}
+        <SheetHeader title="Extra details" onCancel={() => setShowPromptFull(false)}
           action={<button onClick={() => setShowPromptFull(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#F29E4D', fontSize: 16, fontWeight: 600, padding: 0, fontFamily: 'var(--font-sans)' }}>Done</button>} />
         <Divider />
         <div style={{ flex: 1, overflow: 'hidden', padding: '14px 16px', minHeight: 0 }}>
