@@ -1169,7 +1169,7 @@ private struct SourcesBlock: View {
                 }
             }
         }
-        .fullScreenCover(isPresented: $showVoiceRecord) {
+        .sheet(isPresented: $showVoiceRecord) {
             VoiceRecordSheet { label, transcript in
                 withAnimation(.spring(duration: 0.25)) {
                     sources.append(SourceItem(type: .voice, label: label, content: transcript))
