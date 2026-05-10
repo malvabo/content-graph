@@ -115,13 +115,25 @@ function SourceIcon({ type }: { type: SourceType }) {
 
 // ─── GlassCard ─────────────────────────────────────────────────────────────
 
-function GlassCard({ children }: { children: React.ReactNode }) {
+function GlassCard({ children, allowOverflow = false }: { children: React.ReactNode; allowOverflow?: boolean }) {
   return (
     <div style={{
       background: CARD_BG, border: `1px solid ${CARD_BORDER}`, borderRadius: 18,
-      overflow: 'hidden', backdropFilter: 'blur(8px)',
+      overflow: allowOverflow ? 'visible' : 'hidden', backdropFilter: 'blur(8px)',
+      position: 'relative',
     }}>{children}</div>
   );
+}
+
+function truncateLabel(raw: string, max = 32): string {
+  const t = raw.trim();
+  if (!t) return '';
+  const oneLine = t.split(/\n/)[0].replace(/\s+/g, ' ');
+  if (oneLine.length <= max) return oneLine;
+  const cut = oneLine.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  const trimmedCut = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return trimmedCut.trimEnd() + '…';
 }
 
 // ─── Sheet wrapper (bottom modal with drag-to-close) ───────────────────────
@@ -236,7 +248,7 @@ function TextInputSheet({ isOpen, onClose, onSave }: {
   const wordCount = trimmed ? trimmed.split(/\s+/).length : 0;
   const handleSave = () => {
     if (!canSave) return;
-    const label = trimmed.split(/\s+/).slice(0, 4).join(' ').slice(0, 32) || 'Text';
+    const label = truncateLabel(trimmed, 32) || 'Text';
     onSave(label, trimmed);
     onClose();
   };
@@ -457,7 +469,7 @@ function VoiceRecordSheet({ isOpen, onClose, onSave }: {
   const handleDone = () => {
     const t = transcript.trim();
     if (!t) { onClose(); return; }
-    const label = t.split(/\s+/).slice(0, 5).join(' ').slice(0, 40) || 'Voice note';
+    const label = truncateLabel(t, 40) || 'Voice note';
     onSave(label, t);
     onClose();
   };
@@ -705,7 +717,7 @@ export default function CreateHome() {
           </GlassCard>
 
           {/* Brand */}
-          <GlassCard>
+          <GlassCard allowOverflow>
             <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>Brand voice</div>
@@ -728,7 +740,7 @@ export default function CreateHome() {
                   <>
                     <div onClick={() => setBrandMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 50 }} />
                     <div style={{
-                      position: 'absolute', top: 'calc(100% + 6px)', right: 0, minWidth: 160,
+                      position: 'absolute', bottom: 'calc(100% + 6px)', right: 0, minWidth: 160,
                       background: '#23201E', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 12,
                       padding: 4, zIndex: 51, boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
                     }}>
