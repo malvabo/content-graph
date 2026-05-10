@@ -55,6 +55,7 @@ import CardsPanel from './components/canvas/CardsPanel';
 import CardsLibrary from './components/canvas/CardsLibrary';
 import InfographicsPanel from './components/canvas/InfographicsPanel';
 import MobileHome from './components/mobile/MobileHome';
+import CreateHome from './components/home/CreateHome';
 import MobileOnboarding from './components/mobile/MobileOnboarding';
 import { useIsMobile } from './hooks/useIsMobile';
 import TypewriterLogo from './components/TypewriterLogo';
@@ -70,7 +71,7 @@ function AppInner() {
   const [mobileOnboardingDone, setMobileOnboardingDone] = useState(false);
   const [mobileOnboardingPhase, setMobileOnboardingPhase] = useState<'idle' | 'recording' | undefined>(undefined);
   
-  const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro'];
+  const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'create'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'library'; };
   const getHashParam = () => { const h = window.location.hash.slice(1); const i = h.indexOf(':'); return i === -1 ? undefined : h.slice(i + 1) || undefined; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
@@ -222,9 +223,13 @@ function AppInner() {
     }
     return (
       <div className="flex flex-col" style={{ height: '100dvh' }}>
-        <MobileHome
-          onAddPost={() => { setMobileOnboardingPhase('recording'); setMobileOnboardingDone(false); }}
-        />
+        {activeView === 'create' ? (
+          <CreateHome />
+        ) : (
+          <MobileHome
+            onAddPost={() => { setMobileOnboardingPhase('recording'); setMobileOnboardingDone(false); }}
+          />
+        )}
       </div>
     );
   }
@@ -276,6 +281,8 @@ function AppInner() {
             </div>
           </>
         )}
+
+        {activeView === 'create' && <CreateHome />}
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
