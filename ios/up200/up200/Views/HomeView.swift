@@ -858,25 +858,19 @@ private struct SourcesBlock: View {
             .presentationDragIndicator(.hidden)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
-        .sheet(isPresented: $showTextInput) {
+        .fullScreenCover(isPresented: $showTextInput) {
             TextInputSheet { label, content in
                 withAnimation(.spring(duration: 0.25)) {
                     sources.append(SourceItem(type: .text, label: label, content: content))
                 }
             }
-            .presentationDetents([.large])
-            .presentationDragIndicator(.hidden)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
-        .sheet(isPresented: $showLinkInput) {
+        .fullScreenCover(isPresented: $showLinkInput) {
             LinkInputSheet { label, url in
                 withAnimation(.spring(duration: 0.25)) {
                     sources.append(SourceItem(type: .link, label: label, content: url))
                 }
             }
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.hidden)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .fullScreenCover(isPresented: $showVoiceRecord) {
             VoiceRecordSheet { label, transcript in
