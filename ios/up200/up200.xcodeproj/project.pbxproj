@@ -12,6 +12,7 @@
 		A1000005 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000006; };
 		A1000006 /* VoiceNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000007; };
 		A1000007 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008; };
+		A1000008 /* APIKeySetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000009; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +24,7 @@
 		A2000006 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A2000007 /* VoiceNotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNotesView.swift; sourceTree = "<group>"; };
 		A2000008 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A2000009 /* APIKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeySetupView.swift; sourceTree = "<group>"; };
 		A2000010 /* up200.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = up200.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -40,7 +42,7 @@
 		};
 		A3000003 /* Views */ = {
 			isa = PBXGroup;
-			children = (A2000002, A2000006, A2000007, A2000008);
+			children = (A2000002, A2000006, A2000007, A2000008, A2000009);
 			path = Views;
 			sourceTree = "<group>";
 		};
@@ -93,7 +95,7 @@
 		A5000001 = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = (A1000001, A1000002, A1000003, A1000005, A1000006, A1000007);
+			files = (A1000001, A1000002, A1000003, A1000005, A1000006, A1000007, A1000008);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
