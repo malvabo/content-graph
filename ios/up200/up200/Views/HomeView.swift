@@ -75,9 +75,7 @@ private let allTemplates: [ContentTemplate] = [
 // MARK: - AI Title Service
 
 private struct AIService {
-    private static var apiKey: String {
-        Bundle.main.object(forInfoDictionaryKey: "ANTHROPIC_API_KEY") as? String ?? ""
-    }
+    private static var apiKey: String { KeychainService.load() ?? "" }
 
     static func generateTitle(from text: String) async -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -139,7 +137,7 @@ private struct GeneratedResult: Identifiable {
 
 private struct ContentGenerator {
     static var isKeyConfigured: Bool {
-        let key = Bundle.main.object(forInfoDictionaryKey: "ANTHROPIC_API_KEY") as? String ?? ""
+        guard let key = KeychainService.load() else { return false }
         return !key.isEmpty && !key.hasPrefix("$(")
     }
 
@@ -150,7 +148,7 @@ private struct ContentGenerator {
         customPrompt: String,
         brand: String
     ) async -> String? {
-        let apiKey = Bundle.main.object(forInfoDictionaryKey: "ANTHROPIC_API_KEY") as? String ?? ""
+        let apiKey = KeychainService.load() ?? ""
         guard !apiKey.isEmpty, let url = URL(string: "https://api.anthropic.com/v1/messages") else { return nil }
 
         var req = URLRequest(url: url)
@@ -1702,6 +1700,7 @@ struct HomeView: View {
     @State private var generationFailed = false
     @State private var generationFailReason = ""
     @State private var generationTask: Task<Void, Never>? = nil
+    @State private var showKeyUpdate = false
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
@@ -1736,6 +1735,15 @@ struct HomeView: View {
                                 .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(.white)
                             Spacer()
+                            Button { showKeyUpdate = true } label: {
+                                Image(systemName: "key.horizontal")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color.white.opacity(0.30))
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.white.opacity(0.07))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
                         }
                         .id("top")
                         .padding(.horizontal, 16)
@@ -1792,13 +1800,18 @@ struct HomeView: View {
                  ? "Could not reach the API. Check your network connection and try again."
                  : generationFailReason)
         }
+        .fullScreenCover(isPresented: $showKeyUpdate) {
+            APIKeySetupView {
+                showKeyUpdate = false
+            }
+        }
     }
 
     private func startGeneration() {
         guard canGenerate else { return }
 
         guard ContentGenerator.isKeyConfigured else {
-            generationFailReason = "No API key found. Set ANTHROPIC_API_KEY in Xcode → Target → Build Settings → User-Defined."
+            generationFailReason = "No API key found. Tap the key icon in the top-right to add your Anthropic API key."
             generationFailed = true
             return
         }
