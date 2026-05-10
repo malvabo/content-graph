@@ -138,6 +138,11 @@ private struct GeneratedResult: Identifiable {
 }
 
 private struct ContentGenerator {
+    static var isKeyConfigured: Bool {
+        let key = Bundle.main.object(forInfoDictionaryKey: "ANTHROPIC_API_KEY") as? String ?? ""
+        return !key.isEmpty && !key.hasPrefix("$(")
+    }
+
     static func generate(
         sources: [SourceItem],
         formatID: String,
@@ -1695,12 +1700,13 @@ struct HomeView: View {
     @State private var activeSheet: GenerationSheet? = nil
     @State private var generationResults: [GeneratedResult] = []
     @State private var generationFailed = false
+    @State private var generationFailReason = ""
     @State private var generationTask: Task<Void, Never>? = nil
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
     private var canGenerate: Bool {
-        sources.contains { !$0.content.isEmpty } && !selectedFormatIDs.isEmpty && !isGenerating
+        !sources.isEmpty && !selectedFormatIDs.isEmpty && !isGenerating
     }
 
     private var generateLabel: String {
@@ -1782,17 +1788,33 @@ struct HomeView: View {
         .alert("Generation failed", isPresented: $generationFailed) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Could not connect to the AI. Check your API key in build settings and try again.")
+            Text(generationFailReason.isEmpty
+                 ? "Could not reach the API. Check your network connection and try again."
+                 : generationFailReason)
         }
     }
 
     private func startGeneration() {
         guard canGenerate else { return }
+
+        guard ContentGenerator.isKeyConfigured else {
+            generationFailReason = "No API key found. Set ANTHROPIC_API_KEY in Xcode → Target → Build Settings → User-Defined."
+            generationFailed = true
+            return
+        }
+
+        let effectiveSources = sources.filter { !$0.content.isEmpty }
+        guard !effectiveSources.isEmpty else {
+            generationFailReason = "Your sources have no content — the fetch or read may have failed. Try adding a text source manually."
+            generationFailed = true
+            return
+        }
+
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         isGenerating = true
         activeSheet = .generating
 
-        let capturedSources = sources
+        let capturedSources = effectiveSources
         let capturedIDs = Array(selectedFormatIDs)
         let capturedPrompt = prompt
         let capturedBrand = brand
