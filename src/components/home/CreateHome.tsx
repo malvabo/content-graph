@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSettingsStore } from '../../store/settingsStore';
 
 // ─── Models ────────────────────────────────────────────────────────────────
 
@@ -131,6 +132,35 @@ function GlassCard({ children, allowOverflow = false }: { children: React.ReactN
       position: 'relative',
     }}>{children}</div>
   );
+}
+
+function buildSourceContext(items: SourceItem[]): string {
+  return items.map(s => {
+    let head: string;
+    switch (s.type) {
+      case 'link':  head = `LINK — ${s.label}`; break;
+      case 'voice': head = 'VOICE NOTE TRANSCRIPT'; break;
+      case 'text':  head = 'TEXT SOURCE'; break;
+      case 'file':  head = `FILE — ${s.label}`; break;
+      case 'image': head = `IMAGE — ${s.label}`; break;
+    }
+    return `[${head}]\n${s.content || s.label}`;
+  }).join('\n\n');
+}
+
+function parseGenerationResults(raw: string): { header: string; content: string }[] {
+  const out: { header: string; content: string }[] = [];
+  const sections = raw.split(/\n{0,2}-{3,}\n{0,2}/);
+  for (const section of sections) {
+    const trimmed = section.trim();
+    if (!trimmed) continue;
+    const nl = trimmed.indexOf('\n');
+    if (nl === -1) continue;
+    const header = trimmed.slice(0, nl).replace(/^#+\s*|\*\*/g, '').trim();
+    const content = trimmed.slice(nl + 1).trim();
+    if (header && content) out.push({ header, content });
+  }
+  return out;
 }
 
 function truncateLabel(raw: string, max = 32): string {
@@ -628,8 +658,104 @@ export default function CreateHome() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const canGenerate = sources.length > 0 && selectedFormats.size > 0;
-  const generateLabel = selectedFormats.size === 0 ? 'Generate' : `Generate ${selectedFormats.size}`;
+  const [showGenSheet, setShowGenSheet] = useState(false);
+  const [genRunning, setGenRunning] = useState(false);
+  const [genStreaming, setGenStreaming] = useState('');
+  const [genResults, setGenResults] = useState<{ header: string; content: string }[]>([]);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [activeResultIdx, setActiveResultIdx] = useState(0);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  const canGenerate = sources.length > 0 && selectedFormats.size > 0 && !genRunning;
+  const generateLabel = genRunning ? 'Generating…' : (selectedFormats.size === 0 ? 'Generate' : `Generate ${selectedFormats.size}`);
+
+  const doGenerate = async () => {
+    if (!canGenerate) return;
+    const apiKey = useSettingsStore.getState().anthropicKey;
+    if (!apiKey) {
+      setGenError('No Anthropic API key — add one in Settings.');
+      setShowGenSheet(true);
+      return;
+    }
+
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    const context = buildSourceContext(sources);
+    const outputList = Array.from(selectedFormats)
+      .map(id => allFormats.find(f => f.id === id)?.label ?? id)
+      .join(', ');
+    const brandLine = brand && brand !== 'Default' ? `\n\nBRAND VOICE: ${brand}` : '';
+    const promptLine = prompt.trim() ? `\n\nADDITIONAL INSTRUCTIONS:\n${prompt.trim()}` : '';
+    const fullPrompt = `You are a content generation assistant.\n\nSOURCES:\n${context}${brandLine}${promptLine}\n\nGenerate the following outputs. For each output, use the format label as a header, then produce the content below it.\n\nOUTPUTS REQUESTED:\n${outputList}\n\nFormat each output clearly. Separate outputs with ---`;
+
+    setGenRunning(true);
+    setGenStreaming('');
+    setGenResults([]);
+    setGenError(null);
+    setShowGenSheet(true);
+
+    let accumulated = '';
+    let lineBuffer = '';
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        signal: ctrl.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8192,
+          stream: true,
+          messages: [{ role: 'user', content: fullPrompt }],
+        }),
+      });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) throw new Error('No response stream');
+      let done = false;
+      while (!done) {
+        const chunk = await reader.read();
+        if (chunk.done) {
+          const tail = decoder.decode();
+          if (tail) lineBuffer += tail;
+          done = true;
+        } else {
+          lineBuffer += decoder.decode(chunk.value, { stream: true });
+        }
+        const lines = lineBuffer.split('\n');
+        lineBuffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') { done = true; break; }
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+              accumulated += parsed.delta.text;
+              setGenStreaming(accumulated);
+            }
+          } catch { /* skip */ }
+        }
+      }
+      const parsedResults = parseGenerationResults(accumulated);
+      setGenResults(parsedResults);
+      setActiveResultIdx(0);
+    } catch (err) {
+      if (ctrl.signal.aborted) return;
+      setGenError(err instanceof Error ? err.message : 'Generation failed.');
+    } finally {
+      setGenRunning(false);
+    }
+  };
 
   const onPickSource = (t: SourceType) => {
     setShowImport(false);
@@ -817,10 +943,7 @@ export default function CreateHome() {
             title={generateLabel}
             icon="sparkles"
             isEnabled={canGenerate}
-            onClick={() => {
-              // eslint-disable-next-line no-console
-              console.log('[CreateHome] generate', { sources, selectedFormats: Array.from(selectedFormats), prompt, brand });
-            }}
+            onClick={doGenerate}
           />
         </div>
       </div>
@@ -848,6 +971,108 @@ export default function CreateHome() {
               boxSizing: 'border-box',
             }}
           />
+        </div>
+      </Sheet>
+
+      <Sheet
+        isOpen={showGenSheet}
+        onClose={() => { abortRef.current?.abort(); setShowGenSheet(false); }}
+        height="92vh"
+      >
+        <SheetHeader
+          title={genRunning ? 'Generating…' : genError ? 'Generation failed' : 'Results'}
+          onCancel={() => { abortRef.current?.abort(); setShowGenSheet(false); }}
+          action={null}
+        />
+        <Divider />
+        <div style={{ padding: '16px 16px 32px' }}>
+          {genError && (
+            <div style={{
+              padding: '14px 16px', borderRadius: 12,
+              background: 'rgba(220,80,60,0.12)', border: '1px solid rgba(220,80,60,0.30)',
+              color: 'rgba(255,200,190,0.95)', fontSize: 14, lineHeight: 1.5,
+            }}>{genError}</div>
+          )}
+
+          {!genError && genRunning && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'rgba(255,255,255,0.55)', fontSize: 14 }}>
+                <div style={{
+                  width: 18, height: 18, border: '2px solid rgba(255,255,255,0.20)',
+                  borderTopColor: '#F29E4D', borderRadius: '50%',
+                  animation: 'create-spin 1s linear infinite',
+                }} />
+                <span>Streaming from Claude…</span>
+              </div>
+              <style>{`@keyframes create-spin { to { transform: rotate(360deg); } }`}</style>
+              {genStreaming && (
+                <pre style={{
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 14, padding: '14px 16px',
+                  color: 'rgba(255,255,255,0.82)', fontSize: 14, lineHeight: 1.55,
+                  fontFamily: 'var(--font-sans)', margin: 0,
+                }}>{genStreaming}</pre>
+              )}
+            </div>
+          )}
+
+          {!genError && !genRunning && genResults.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {genResults.length > 1 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {genResults.map((r, i) => {
+                    const on = activeResultIdx === i;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => setActiveResultIdx(i)}
+                        style={{
+                          border: '1px solid ' + (on ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.08)'),
+                          background: on ? 'rgba(255,255,255,0.10)' : 'transparent',
+                          color: on ? '#fff' : 'rgba(255,255,255,0.55)',
+                          borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 500,
+                          cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                        }}
+                      >{r.header}</button>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{ fontSize: 17, fontWeight: 600, color: '#fff' }}>
+                {genResults[activeResultIdx]?.header}
+              </div>
+              <pre style={{
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 14, padding: '14px 16px',
+                color: 'rgba(255,255,255,0.88)', fontSize: 15, lineHeight: 1.6,
+                fontFamily: 'var(--font-sans)', margin: 0,
+              }}>{genResults[activeResultIdx]?.content}</pre>
+              <button
+                onClick={() => {
+                  const text = genResults[activeResultIdx]?.content ?? '';
+                  navigator.clipboard?.writeText(text).catch(() => { /* noop */ });
+                }}
+                style={{
+                  alignSelf: 'flex-start',
+                  border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)',
+                  borderRadius: 10, padding: '8px 12px', fontSize: 13, color: 'rgba(255,255,255,0.75)',
+                  cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                }}
+              >Copy</button>
+            </div>
+          )}
+
+          {!genError && !genRunning && genResults.length === 0 && genStreaming && (
+            <pre style={{
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 14, padding: '14px 16px',
+              color: 'rgba(255,255,255,0.82)', fontSize: 14, lineHeight: 1.55,
+              fontFamily: 'var(--font-sans)', margin: 0,
+            }}>{genStreaming}</pre>
+          )}
         </div>
       </Sheet>
 
