@@ -1,10 +1,11 @@
 import SwiftUI
 
 enum AppTab: String, CaseIterable {
-    case library, workflow, voice, script
+    case create, library, workflow, voice, script
 
     var label: String {
         switch self {
+        case .create:   return "Create"
         case .library:  return "Library"
         case .workflow: return "Workflow"
         case .voice:    return "Voice"
@@ -14,17 +15,26 @@ enum AppTab: String, CaseIterable {
 
     var icon: String {
         switch self {
-        case .library:  return "square.grid.2x2"
+        case .create:   return "sparkles"
+        case .library:  return "books.vertical"
         case .workflow: return "arrow.triangle.branch"
         case .voice:    return "mic"
         case .script:   return "doc.text"
         }
     }
 
+    var isNative: Bool {
+        switch self {
+        case .create, .library: return true
+        case .workflow, .voice, .script: return false
+        }
+    }
+
     // URL fragment used both for web→native onNavigate matching and native→web JS navigation.
-    // .library is matched by onNavigate but never sent via JS (HomeView is native-only).
+    // .create and .library are matched by onNavigate but never sent via JS (both native-only).
     var urlFragment: String {
         switch self {
+        case .create:   return "#create"
         case .library:  return "#library"
         case .workflow: return "#workflow"
         case .voice:    return "#voice"
@@ -34,11 +44,12 @@ enum AppTab: String, CaseIterable {
 }
 
 struct ContentView: View {
-    @State private var selectedTab: AppTab = .library
+    @State private var selectedTab: AppTab = .create
     @State private var isLoading = true
     @State private var showSplash = true
-    // Incrementing these signals retap scroll-to-top for Library and web tabs respectively.
+    // Incrementing these signals retap scroll-to-top for Create, Library, and web tabs respectively.
     @State private var homeScrollToTop = 0
+    @State private var libraryScrollToTop = 0
     @State private var webScrollToTop = 0
 
     private let baseURL = URL(string: "https://content-graph-five.vercel.app/")!
@@ -64,10 +75,10 @@ struct ContentView: View {
                         }
                     }
                     .ignoresSafeArea(edges: .top)
-                    .opacity(selectedTab == .library ? 0 : 1)
-                    .allowsHitTesting(selectedTab != .library)
+                    .opacity(selectedTab.isNative ? 0 : 1)
+                    .allowsHitTesting(!selectedTab.isNative)
 
-                    if selectedTab == .library {
+                    if selectedTab == .create {
                         HomeView(
                             onNewWorkflow: { selectedTab = .workflow },
                             scrollToTopSignal: homeScrollToTop
@@ -75,8 +86,18 @@ struct ContentView: View {
                         .transition(.opacity)
                     }
 
+                    if selectedTab == .library {
+                        LibraryView(
+                            bundles: [],
+                            templates: [],
+                            onOpenBundle: { _ in /* navigate to BundleView */ },
+                            onUseTemplate: { _ in selectedTab = .create }
+                        )
+                        .transition(.opacity)
+                    }
+
                     // Loading bar overlaid at the top edge — no layout shift
-                    if isLoading && selectedTab != .library {
+                    if isLoading && !selectedTab.isNative {
                         VStack {
                             ProgressView()
                                 .progressViewStyle(.linear)
@@ -89,10 +110,10 @@ struct ContentView: View {
                 // SwiftUI safe area so ScrollViews scroll correctly without manual padding.
                 .safeAreaInset(edge: .bottom) {
                     NativeTabBar(selected: $selectedTab) { retappedTab in
-                        if retappedTab == .library {
-                            homeScrollToTop += 1
-                        } else {
-                            webScrollToTop += 1
+                        switch retappedTab {
+                        case .create:  homeScrollToTop += 1
+                        case .library: libraryScrollToTop += 1
+                        default:       webScrollToTop += 1
                         }
                     }
                 }

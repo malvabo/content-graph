@@ -54,8 +54,8 @@ struct WebView: UIViewRepresentable {
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         // Navigate to the correct section when the native tab changes.
-        // Library tab is handled by showing HomeView natively — no JS needed.
-        if selectedTab != .library, selectedTab != context.coordinator.lastNavigatedTab {
+        // Native tabs (Create, Library) are rendered in SwiftUI — no JS needed.
+        if !selectedTab.isNative, selectedTab != context.coordinator.lastNavigatedTab {
             context.coordinator.lastNavigatedTab = selectedTab
             webView.evaluateJavaScript("location.hash = '\(selectedTab.urlFragment)'") { _, _ in }
         }
@@ -113,7 +113,7 @@ struct WebView: UIViewRepresentable {
             case "navigate":
                 if let view = body["view"] as? String {
                     // Pre-mark lastNavigatedTab so updateUIView doesn't echo the navigation back.
-                    if let tab = AppTab.allCases.first(where: { $0 != .library && $0.urlFragment.contains(view) }) {
+                    if let tab = AppTab.allCases.first(where: { !$0.isNative && $0.urlFragment.contains(view) }) {
                         lastNavigatedTab = tab
                     }
                     parent.onNavigate?(view)
