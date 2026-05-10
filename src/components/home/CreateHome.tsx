@@ -547,8 +547,8 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
                 padding: '14px 14px', borderRadius: 14,
-                background: on ? 'rgba(43,179,98,0.10)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${on ? 'rgba(43,179,98,0.40)' : 'rgba(255,255,255,0.06)'}`,
+                background: on ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${on ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.06)'}`,
                 cursor: 'pointer', color: '#fff', textAlign: 'left', fontFamily: 'var(--font-sans)',
               }}
             >
@@ -558,11 +558,11 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
               </div>
               <div style={{
                 width: 22, height: 22, borderRadius: 11, flexShrink: 0,
-                background: on ? 'rgb(43,179,98)' : 'transparent',
-                border: `1.5px solid ${on ? 'rgb(43,179,98)' : 'rgba(255,255,255,0.20)'}`,
+                background: on ? '#fff' : 'transparent',
+                border: `1.5px solid ${on ? '#fff' : 'rgba(255,255,255,0.20)'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                {on && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7"/></svg>}
+                {on && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1A1513" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7"/></svg>}
               </div>
             </button>
           );
@@ -718,7 +718,7 @@ export default function CreateHome() {
               ) : (
                 <div style={{
                   minWidth: 24, height: 24, borderRadius: 12, padding: '0 8px',
-                  background: 'rgb(69,179,107)', color: '#fff', fontSize: 12, fontWeight: 700,
+                  background: '#fff', color: BG, fontSize: 12, fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>{selectedFormats.size}</div>
               )}
