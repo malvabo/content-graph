@@ -71,8 +71,8 @@ function AppInner() {
   const [mobileOnboardingDone, setMobileOnboardingDone] = useState(false);
   const [mobileOnboardingPhase, setMobileOnboardingPhase] = useState<'idle' | 'recording' | undefined>(undefined);
   
-  const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'create'];
-  const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'library'; };
+  const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'create', 'capture'];
+  const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'create'; };
   const getHashParam = () => { const h = window.location.hash.slice(1); const i = h.indexOf(':'); return i === -1 ? undefined : h.slice(i + 1) || undefined; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
   const [hashParam, setHashParam] = useState(getHashParam);
@@ -223,12 +223,12 @@ function AppInner() {
     }
     return (
       <div className="flex flex-col" style={{ height: '100dvh' }}>
-        {activeView === 'create' ? (
-          <CreateHome />
-        ) : (
+        {activeView === 'capture' ? (
           <MobileHome
             onAddPost={() => { setMobileOnboardingPhase('recording'); setMobileOnboardingDone(false); }}
           />
+        ) : (
+          <CreateHome />
         )}
       </div>
     );
@@ -283,6 +283,12 @@ function AppInner() {
         )}
 
         {activeView === 'create' && <CreateHome />}
+
+        {activeView === 'capture' && (
+          <MobileHome
+            onAddPost={() => { setMobileOnboardingPhase('recording'); setMobileOnboardingDone(false); }}
+          />
+        )}
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
