@@ -903,7 +903,7 @@ export default function CreateHome() {
               <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>Extra details</div>
             </div>
             <textarea
-              className="create-prompt"
+              className="create-prompt create-prompt-mini"
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
               placeholder="Leave empty to generate from sources and format."
