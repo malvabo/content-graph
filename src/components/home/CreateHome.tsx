@@ -185,8 +185,8 @@ function truncateLabel(raw: string, max = 32): string {
 
 // ─── Sheet wrapper (bottom modal with drag-to-close) ───────────────────────
 
-function Sheet({ isOpen, onClose, children, height = 'auto' }: {
-  isOpen: boolean; onClose: () => void; children: React.ReactNode; height?: number | 'auto' | string;
+function Sheet({ isOpen, onClose, children, height = 'auto', scrollable = true }: {
+  isOpen: boolean; onClose: () => void; children: React.ReactNode; height?: number | 'auto' | string; scrollable?: boolean;
 }) {
   return (
     <AnimatePresence>
@@ -214,7 +214,7 @@ function Sheet({ isOpen, onClose, children, height = 'auto' }: {
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, paddingBottom: 4, flexShrink: 0 }}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} />
             </div>
-            <div style={{ flex: 1, overflowY: 'auto' }}>{children}</div>
+            <div style={{ flex: 1, overflowY: scrollable ? 'auto' : 'hidden', minHeight: 0 }}>{children}</div>
           </motion.div>
         </>
       )}
@@ -1002,14 +1002,13 @@ export default function CreateHome() {
       <LinkInputSheet isOpen={showLink} onClose={() => setShowLink(false)} onSave={(label, content) => addSource({ type: 'link', label, content })} />
       <VoiceRecordSheet isOpen={showVoice} onClose={() => setShowVoice(false)} onSave={(label, content) => addSource({ type: 'voice', label, content })} />
       <FormatPickerSheet isOpen={showFormats} onClose={() => setShowFormats(false)} selected={selectedFormats} onChange={setSelectedFormats} />
-      <Sheet isOpen={showPromptFull} onClose={() => setShowPromptFull(false)} height="80vh">
+      <Sheet isOpen={showPromptFull} onClose={() => setShowPromptFull(false)} height="80vh" scrollable={false}>
         <SheetHeader title="Extra details" onCancel={() => setShowPromptFull(false)}
           action={<button onClick={() => setShowPromptFull(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#F29E4D', fontSize: 16, fontWeight: 600, padding: 0, fontFamily: 'var(--font-sans)' }}>Done</button>} />
         <Divider />
         <div style={{ padding: '14px 16px', height: 'calc(100% - 56px)', boxSizing: 'border-box' }}>
           <textarea
             className="create-prompt"
-            autoFocus
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
             placeholder="Leave empty to generate from sources and format."
