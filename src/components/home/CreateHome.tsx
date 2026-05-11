@@ -201,6 +201,19 @@ function truncateLabel(raw: string, max = 32): string {
 function Sheet({ isOpen, onClose, children, height = 'auto', scrollable = true }: {
   isOpen: boolean; onClose: () => void; children: React.ReactNode; height?: number | 'auto' | string; scrollable?: boolean;
 }) {
+  const [kbOffset, setKbOffset] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKbOffset(offset);
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update); };
+  }, []);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -216,12 +229,13 @@ function Sheet({ isOpen, onClose, children, height = 'auto', scrollable = true }
             drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.4 }}
             onDragEnd={(_, info) => { if (info.offset.y > 120 || info.velocity.y > 500) onClose(); }}
             style={{
-              position: 'fixed', left: 0, right: 0, bottom: 0,
+              position: 'fixed', left: 0, right: 0, bottom: kbOffset,
               background: BG, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-              zIndex: 1000, maxHeight: '92vh',
+              zIndex: 1000, maxHeight: `calc(92vh - ${kbOffset}px)`,
               height: typeof height === 'number' ? `${height}px` : height,
               overflow: 'hidden', display: 'flex', flexDirection: 'column',
               boxShadow: '0 -8px 32px rgba(0,0,0,0.6)',
+              transition: kbOffset > 0 ? 'bottom 0.25s ease, max-height 0.25s ease' : undefined,
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, paddingBottom: 4, flexShrink: 0 }}>
