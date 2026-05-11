@@ -957,18 +957,26 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
           {onShowOnboarding && (
             <button
               onClick={onShowOnboarding}
-              aria-label="Show intro"
+              aria-label="Replay intro animation"
               style={{
-                width: 34, height: 34, borderRadius: '50%',
-                border: '1px solid rgba(255,255,255,0.22)',
-                background: 'rgba(255,255,255,0.12)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'rgba(255,255,255,0.80)',
+                height: 32,
+                padding: '0 12px',
+                borderRadius: 16,
+                border: '1px solid rgba(217, 115, 26, 0.45)',
+                background: 'rgba(217, 115, 26, 0.18)',
+                display: 'flex', alignItems: 'center', gap: 6,
+                cursor: 'pointer',
+                color: 'rgba(255, 224, 184, 0.96)',
+                fontFamily: 'var(--font-sans, system-ui)',
+                fontSize: 12,
+                fontWeight: 500,
+                letterSpacing: '0.02em',
               }}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
               </svg>
+              Intro
             </button>
           )}
         </div>
