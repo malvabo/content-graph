@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useGenerationsStore } from '../../store/generationsStore';
 
 // ─── Models ────────────────────────────────────────────────────────────────
 
@@ -765,6 +766,24 @@ export default function CreateHome() {
       const parsedResults = parseGenerationResults(accumulated);
       setGenResults(parsedResults);
       setActiveResultIdx(0);
+      if (parsedResults.length > 0) {
+        const firstSource = sources[0];
+        const titleSeed = firstSource?.content || firstSource?.label || parsedResults[0].header;
+        const title = truncateLabel(titleSeed, 60) || 'Untitled generation';
+        const firstLabel = parsedResults[0].header;
+        const outputType = parsedResults.length > 1
+          ? `${firstLabel} +${parsedResults.length - 1}`
+          : firstLabel;
+        const preview = parsedResults[0].content.slice(0, 160).replace(/\s+/g, ' ').trim();
+        useGenerationsStore.getState().addProject({
+          id: `gen-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          title,
+          outputType,
+          preview,
+          results: parsedResults,
+          createdAt: new Date().toISOString(),
+        });
+      }
     } catch (err) {
       if (ctrl.signal.aborted) return;
       setGenError(err instanceof Error ? err.message : 'Generation failed.');
