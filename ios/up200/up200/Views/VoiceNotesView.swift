@@ -82,7 +82,6 @@ struct NoteEditorView: View {
 
             Spacer(minLength: 0)
         }
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 bodyFocused = true
@@ -181,6 +180,10 @@ struct VoiceNotesView: View {
             } onDelete: {
                 notes.removeAll { $0.id == note.id }
             }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(22)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }

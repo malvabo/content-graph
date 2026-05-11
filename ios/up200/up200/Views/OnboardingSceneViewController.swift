@@ -39,19 +39,47 @@ class OnboardingSceneViewController: UIViewController {
         sceneView.isPlaying = true
         view.addSubview(sceneView)
 
-        // Background gradient
+        // Warm-dark page background matching the rest of the app (#1A1513
+        // with deeper warm stops). 160° angle, similar to the mobile-web
+        // CreateHome.
         let gradient = CAGradientLayer()
         gradient.frame = view.bounds
         gradient.colors = [
-            UIColor(red: 0.49, green: 0.83, blue: 0.92, alpha: 1).cgColor,
-            UIColor(red: 0.66, green: 0.89, blue: 0.81, alpha: 1).cgColor,
-            UIColor(red: 0.36, green: 0.77, blue: 0.78, alpha: 1).cgColor,
-            UIColor(red: 0.17, green: 0.56, blue: 0.50, alpha: 1).cgColor,
+            UIColor(red: 0.13, green: 0.10, blue: 0.08, alpha: 1).cgColor,
+            UIColor(red: 0.10, green: 0.08, blue: 0.07, alpha: 1).cgColor,
+            UIColor(red: 0.08, green: 0.06, blue: 0.05, alpha: 1).cgColor,
+            UIColor(red: 0.06, green: 0.05, blue: 0.04, alpha: 1).cgColor,
         ]
         gradient.locations = [0, 0.35, 0.65, 1]
         gradient.startPoint = CGPoint(x: 0.2, y: 0)
         gradient.endPoint   = CGPoint(x: 0.8, y: 1)
         view.layer.insertSublayer(gradient, at: 0)
+
+        // Amber radial glows (top-left + bottom-right) — mirrors the
+        // HomeView's corner blobs so the surfaces feel cohesive.
+        let glowTL = CAGradientLayer()
+        glowTL.type = .radial
+        glowTL.frame = view.bounds
+        glowTL.colors = [
+            UIColor(red: 0.55, green: 0.30, blue: 0.08, alpha: 0.35).cgColor,
+            UIColor(red: 0.55, green: 0.30, blue: 0.08, alpha: 0).cgColor,
+        ]
+        glowTL.locations = [0, 1]
+        glowTL.startPoint = CGPoint(x: 0.05, y: 0.05)
+        glowTL.endPoint   = CGPoint(x: 0.60, y: 0.55)
+        view.layer.insertSublayer(glowTL, at: 1)
+
+        let glowBR = CAGradientLayer()
+        glowBR.type = .radial
+        glowBR.frame = view.bounds
+        glowBR.colors = [
+            UIColor(red: 0.30, green: 0.20, blue: 0.08, alpha: 0.22).cgColor,
+            UIColor(red: 0.30, green: 0.20, blue: 0.08, alpha: 0).cgColor,
+        ]
+        glowBR.locations = [0, 1]
+        glowBR.startPoint = CGPoint(x: 1.0, y: 0.85)
+        glowBR.endPoint   = CGPoint(x: 0.45, y: 0.40)
+        view.layer.insertSublayer(glowBR, at: 2)
     }
 
     private func setupBackground() {
@@ -225,20 +253,21 @@ class OnboardingSceneViewController: UIViewController {
             let cy = rng(i * 3 + 1) * size
             let r  = rng(i * 3 + 2) * 130 + 50
             let a  = rng(i * 3 + 2) * 0.11 + 0.03
-            let isTeal = i % 3 == 0
+            let isAmber = i % 3 == 0
 
             let colors: [CGColor]
-            if isTeal {
-                colors = [UIColor(red: 0.71, green: 0.94, blue: 0.90, alpha: a * 1.4).cgColor,
-                          UIColor(red: 0.71, green: 0.94, blue: 0.90, alpha: 0).cgColor]
+            if isAmber {
+                // Warm amber highlight, matches the app's accent palette.
+                colors = [UIColor(red: 0.85, green: 0.45, blue: 0.10, alpha: a * 1.2).cgColor,
+                          UIColor(red: 0.85, green: 0.45, blue: 0.10, alpha: 0).cgColor]
             } else {
-                colors = [UIColor(white: 1, alpha: a * 2).cgColor,
-                          UIColor(white: 0.9, alpha: a).cgColor,
+                colors = [UIColor(white: 1, alpha: a * 1.3).cgColor,
+                          UIColor(white: 0.92, alpha: a * 0.7).cgColor,
                           UIColor(white: 1, alpha: 0).cgColor]
             }
             let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
                                       colors: colors as CFArray,
-                                      locations: isTeal ? [0, 1] : [0, 0.5, 1])!
+                                      locations: isAmber ? [0, 1] : [0, 0.5, 1])!
             ctx.drawRadialGradient(gradient,
                                    startCenter: CGPoint(x: cx, y: cy), startRadius: 0,
                                    endCenter:   CGPoint(x: cx, y: cy), endRadius: r,
@@ -268,10 +297,11 @@ class OnboardingSceneViewController: UIViewController {
             let label = UILabel()
             label.text = def.text
             label.font = UIFont.monospacedSystemFont(ofSize: 10, weight: .medium)
-            label.textColor = .white
+            label.textColor = UIColor(white: 1, alpha: 0.92)
+            // Warm-dark pill: solid for non-ghost, glassy translucent for ghost.
             label.backgroundColor = def.ghost
-                ? UIColor(red: 0.08, green: 0.20, blue: 0.16, alpha: 0.45)
-                : UIColor(red: 0.02, green: 0.06, blue: 0.05, alpha: 0.78)
+                ? UIColor(red: 0.10, green: 0.08, blue: 0.07, alpha: 0.55)
+                : UIColor(red: 0.06, green: 0.05, blue: 0.04, alpha: 0.82)
             label.layer.cornerRadius = 2
             label.layer.masksToBounds = true
             label.textAlignment = .center
@@ -279,10 +309,8 @@ class OnboardingSceneViewController: UIViewController {
             label.frame = CGRect(x: 0, y: 0,
                                  width: label.frame.width + 22,
                                  height: label.frame.height + 10)
-            if def.ghost {
-                label.layer.borderWidth = 0.5
-                label.layer.borderColor = UIColor(white: 1, alpha: 0.25).cgColor
-            }
+            label.layer.borderWidth = 0.5
+            label.layer.borderColor = UIColor(white: 1, alpha: def.ghost ? 0.18 : 0.10).cgColor
             view.addSubview(label)
             labelAnchors.append((node: anchor, label: label))
         }
