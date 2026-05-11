@@ -227,7 +227,7 @@ function Sheet({ isOpen, onClose, children, height = 'auto', scrollable = true }
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, paddingBottom: 4, flexShrink: 0 }}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} />
             </div>
-            <div style={{ flex: 1, overflowY: scrollable ? 'auto' : 'hidden', minHeight: 0 }}>{children}</div>
+            <div style={{ flex: 1, overflowY: scrollable ? 'auto' : 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>{children}</div>
           </motion.div>
         </>
       )}
