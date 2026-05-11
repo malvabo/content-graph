@@ -181,6 +181,10 @@ struct VoiceNotesView: View {
             } onDelete: {
                 notes.removeAll { $0.id == note.id }
             }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(22)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }

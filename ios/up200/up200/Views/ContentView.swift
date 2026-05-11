@@ -114,8 +114,12 @@ private struct ProjectRow: View {
             )
         }
         .buttonStyle(.plain)
-        .fullScreenCover(isPresented: $showDetail) {
+        .sheet(isPresented: $showDetail) {
             ProjectDetailView(project: project)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+                .presentationCornerRadius(22)
+                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }
@@ -362,9 +366,10 @@ private struct AddTemplateSheet: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
         }
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
         .presentationDetents([.medium])
         .presentationDragIndicator(.hidden)
+        .presentationCornerRadius(22)
+        .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
     }
 }
 
@@ -419,6 +424,7 @@ struct ContentView: View {
             }
             .presentationDetents([.medium])
             .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .onAppear {

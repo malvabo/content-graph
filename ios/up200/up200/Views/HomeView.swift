@@ -1173,21 +1173,30 @@ private struct SourcesBlock: View {
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
-        .fullScreenCover(isPresented: $showTextInput) {
+        .sheet(isPresented: $showTextInput) {
             TextInputSheet { label, content in
                 withAnimation(.spring(duration: 0.25)) {
                     sources.append(SourceItem(type: .text, label: label, content: content))
                 }
             }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(22)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
-        .fullScreenCover(isPresented: $showLinkInput) {
+        .sheet(isPresented: $showLinkInput) {
             LinkInputSheet { label, url in
                 withAnimation(.spring(duration: 0.25)) {
                     sources.append(SourceItem(type: .link, label: label, content: url))
                 }
             }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(22)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .sheet(isPresented: $showVoiceRecord) {
             VoiceRecordSheet { label, transcript in
@@ -1195,6 +1204,10 @@ private struct SourcesBlock: View {
                     sources.append(SourceItem(type: .voice, label: label, content: transcript))
                 }
             }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(22)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .fileImporter(
             isPresented: $showFilePicker,
@@ -1637,7 +1650,7 @@ private struct FormatsBlock: View {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
-                .presentationCornerRadius(20)
+                .presentationCornerRadius(22)
                 .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
@@ -1832,20 +1845,27 @@ struct HomeView: View {
                 }
             }
         }
-        .fullScreenCover(item: $activeSheet) { sheet in
-            switch sheet {
-            case .generating:
-                GeneratingSheet(
-                    formatLabels: selectedFormatIDs.compactMap { id in allFormats.first { $0.id == id }?.label }
-                ) {
-                    generationTask?.cancel()
-                    generationTask = nil
-                    activeSheet = nil
-                    isGenerating = false
+        .sheet(item: $activeSheet) { sheet in
+            Group {
+                switch sheet {
+                case .generating:
+                    GeneratingSheet(
+                        formatLabels: selectedFormatIDs.compactMap { id in allFormats.first { $0.id == id }?.label }
+                    ) {
+                        generationTask?.cancel()
+                        generationTask = nil
+                        activeSheet = nil
+                        isGenerating = false
+                    }
+                    .interactiveDismissDisabled()
+                case .results:
+                    GenerationResultSheet(results: generationResults)
                 }
-            case .results:
-                GenerationResultSheet(results: generationResults)
             }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(22)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .alert("Generation failed", isPresented: $generationFailed) {
             Button("OK", role: .cancel) {}
@@ -1854,10 +1874,14 @@ struct HomeView: View {
                  ? "Could not reach the API. Check your network connection and try again."
                  : generationFailReason)
         }
-        .fullScreenCover(isPresented: $showKeyUpdate) {
+        .sheet(isPresented: $showKeyUpdate) {
             APIKeySetupView {
                 showKeyUpdate = false
             }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(22)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 
