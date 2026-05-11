@@ -1426,7 +1426,7 @@ private struct FormatPickerSheet: View {
                                             .font(.app(size: 11, weight: .medium))
                                             .foregroundColor(Color.white.opacity(0.30))
                                     }
-                                    .frame(maxWidth: .infinity)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.vertical, 10)
                                 }
                                 .buttonStyle(.plain)
