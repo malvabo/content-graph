@@ -785,6 +785,10 @@ export default function CreateHome() {
       height: '100%', overflowY: 'auto', background: BG, color: '#fff',
       fontFamily: 'var(--font-sans)', position: 'relative',
     }}>
+      <style>{`
+        .create-prompt::placeholder { color: rgba(255,255,255,0.18); }
+        .create-prompt::-webkit-input-placeholder { color: rgba(255,255,255,0.18); }
+      `}</style>
       {/* Background tints */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
@@ -860,6 +864,7 @@ export default function CreateHome() {
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 3 }}>Optional notes or instructions</div>
             </div>
             <textarea
+              className="create-prompt"
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
               placeholder="Leave empty to generate from sources and format."
@@ -960,6 +965,7 @@ export default function CreateHome() {
         <Divider />
         <div style={{ padding: '14px 16px' }}>
           <textarea
+            className="create-prompt"
             autoFocus
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
