@@ -45,11 +45,11 @@ struct OnboardingView: View {
                     onFinish()
                 }) {
                     Text("Get started")
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
-                        .foregroundColor(Color(red: 0.10, green: 0.30, blue: 0.26))
+                        .font(.app(size: 17, weight: .semibold))
+                        .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
-                        .background(Color.white.opacity(0.92))
+                        .background(Color.white.opacity(0.94))
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)

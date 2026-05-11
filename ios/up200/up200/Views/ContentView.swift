@@ -47,7 +47,7 @@ struct LibraryView: View {
                     Spacer()
                     VStack(spacing: 12) {
                         Image(systemName: "tray")
-                            .font(.app(size: 36, weight: .regular))
+                            .font(.app(size: 36, weight: .light))
                             .foregroundColor(Color.white.opacity(0.20))
                         Text("No generations yet")
                             .font(.app(size: 16, weight: .regular))
@@ -80,42 +80,47 @@ private struct ProjectRow: View {
 
     var body: some View {
         Button { showDetail = true } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text(project.outputType)
-                        .font(.app(size: 11, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.45))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color.white.opacity(0.07))
-                        .clipShape(Capsule())
-                    Spacer()
-                    Text(project.date, style: .date)
-                        .font(.app(size: 11))
-                        .foregroundColor(Color.white.opacity(0.30))
-                }
-                Text(project.title)
-                    .font(.app(size: 15, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.85))
+            VStack(alignment: .leading, spacing: 6) {
+                Text(project.outputType)
+                    .font(.app(size: 15, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.88))
                     .lineLimit(1)
                 if !project.preview.isEmpty {
                     Text(project.preview)
                         .font(.app(size: 13))
-                        .foregroundColor(Color.white.opacity(0.40))
+                        .foregroundColor(Color.white.opacity(0.45))
                         .lineLimit(2)
                 }
+                HStack(spacing: 8) {
+                    Text(project.title)
+                        .font(.app(size: 11))
+                        .foregroundColor(Color.white.opacity(0.30))
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    Text(project.date, style: .date)
+                        .font(.app(size: 11))
+                        .foregroundColor(Color.white.opacity(0.30))
+                }
+                .padding(.top, 2)
             }
-            .padding(14)
-            .background(Color.white.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.white.opacity(0.04))
+            )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
             )
         }
         .buttonStyle(.plain)
-        .fullScreenCover(isPresented: $showDetail) {
+        .sheet(isPresented: $showDetail) {
             ProjectDetailView(project: project)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(22)
+                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }
@@ -125,11 +130,10 @@ private struct ProjectDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var copied = false
 
-    private let green = Color(red: 0.27, green: 0.70, blue: 0.42)
-
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 10) {
+            // Header: close · title · count(=1)
+            HStack(spacing: 12) {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
                         .font(.app(size: 13, weight: .semibold))
@@ -138,51 +142,69 @@ private struct ProjectDetailView: View {
                         .background(Color.white.opacity(0.10))
                         .clipShape(Circle())
                 }
-                Spacer()
-                Text(project.outputType)
-                    .font(.app(size: 15, weight: .semibold))
+                Spacer(minLength: 0)
+                Text("Output")
+                    .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(.white)
-                    .lineLimit(1)
-                Spacer()
-                Button {
-                    UIPasteboard.general.string = project.content.isEmpty ? project.preview : project.content
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.easeOut(duration: 0.15)) { copied = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        withAnimation { copied = false }
-                    }
-                } label: {
-                    Label(copied ? "Copied" : "Copy",
-                          systemImage: copied ? "checkmark" : "doc.on.doc")
-                        .font(.app(size: 13, weight: .medium))
-                        .foregroundColor(copied ? green : Color.white.opacity(0.60))
-                }
-                .buttonStyle(.plain)
+                Spacer(minLength: 0)
+                // Right slot kept for symmetry with the result sheet's count chip.
+                Color.clear.frame(width: 28, height: 28)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 18)
+            .padding(.top, 14)
             .padding(.bottom, 14)
 
-            Rectangle()
-                .fill(Color.white.opacity(0.07))
-                .frame(height: 0.5)
-
+            // Block
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(project.title)
-                        .font(.app(size: 13))
-                        .foregroundColor(Color.white.opacity(0.32))
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(project.outputType)
+                            .font(.app(size: 15, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.88))
+                            .lineLimit(1)
+                        Spacer(minLength: 8)
+                        Button {
+                            UIPasteboard.general.string = project.content.isEmpty ? project.preview : project.content
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            withAnimation(.easeOut(duration: 0.15)) { copied = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                withAnimation { copied = false }
+                            }
+                        } label: {
+                            Label(copied ? "Copied" : "Copy",
+                                  systemImage: copied ? "checkmark" : "doc.on.doc")
+                                .font(.app(size: 12, weight: .medium))
+                                .foregroundColor(copied ? .white : Color.white.opacity(0.55))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if !project.title.isEmpty {
+                        Text(project.title)
+                            .font(.app(size: 12))
+                            .foregroundColor(Color.white.opacity(0.32))
+                    }
+
                     Text(project.content.isEmpty ? project.preview : project.content)
-                        .font(.app(size: 15))
-                        .foregroundColor(Color.white.opacity(0.85))
-                        .lineSpacing(5)
+                        .font(.app(size: 14))
+                        .foregroundColor(Color.white.opacity(0.82))
+                        .lineSpacing(4)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 20)
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.white.opacity(0.04))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 20)
             }
         }
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
     }
 }
 
@@ -273,7 +295,7 @@ private struct TemplateCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
                 Image(systemName: icon)
-                    .font(.app(size: 18, weight: .regular))
+                    .font(.app(size: 18, weight: .light))
                     .foregroundColor(Color.white.opacity(0.70))
                 Spacer()
                 if isCustom {
@@ -299,11 +321,11 @@ private struct TemplateCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
         )
     }
 }
@@ -316,12 +338,6 @@ private struct AddTemplateSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Capsule()
-                .fill(Color.white.opacity(0.12))
-                .frame(width: 32, height: 4)
-                .padding(.top, 12)
-                .padding(.bottom, 20)
-
             Text("New template")
                 .font(.app(size: 18, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
@@ -362,9 +378,10 @@ private struct AddTemplateSheet: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
         }
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
         .presentationDetents([.medium])
-        .presentationDragIndicator(.hidden)
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(22)
+        .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
     }
 }
 
@@ -379,7 +396,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 17/255, green: 17/255, blue: 20/255)
+            Color(red: 0.10, green: 0.08, blue: 0.07)
                 .ignoresSafeArea()
 
             if showSplash {
@@ -418,7 +435,8 @@ struct ContentView: View {
                 }
             }
             .presentationDetents([.medium])
-            .presentationDragIndicator(.hidden)
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .onAppear {
@@ -463,7 +481,7 @@ struct NativeTabBar: View {
             ZStack(alignment: .top) {
                 Rectangle()
                     .fill(.ultraThinMaterial)
-                    .overlay(Color(red: 0.10, green: 0.08, blue: 0.07).opacity(0.55))
+                    .overlay(Color(red: 0.10, green: 0.08, blue: 0.07).opacity(0.78))
                     .ignoresSafeArea(edges: .bottom)
                 Rectangle()
                     .fill(Color.white.opacity(0.10))
@@ -484,7 +502,7 @@ struct NativeTabBar: View {
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: tab.icon)
-                    .font(.system(size: 18, weight: selected == tab ? .medium : .regular))
+                    .font(.app(size: 18, weight: selected == tab ? .medium : .regular))
                 Text(tab.label)
                     .font(.app(size: 12, weight: .medium))
             }
@@ -508,7 +526,7 @@ struct LaunchView: View {
                 .tint(Color.white.opacity(0.6))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 17/255, green: 17/255, blue: 20/255))
+        .background(Color(red: 0.10, green: 0.08, blue: 0.07))
     }
 }
 
