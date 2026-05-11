@@ -1729,9 +1729,14 @@ private struct BrandCard: View {
     var body: some View {
         GlassCard {
             HStack(spacing: 12) {
-                Text("Brand Voice")
-                    .font(.app(size: 18, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.85))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Brand voice")
+                        .font(.app(size: 15, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.85))
+                    Text("How the output should sound")
+                        .font(.app(size: 14))
+                        .foregroundColor(Color.white.opacity(0.55))
+                }
 
                 Spacer()
 
