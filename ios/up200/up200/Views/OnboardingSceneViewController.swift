@@ -222,18 +222,19 @@ class OnboardingSceneViewController: UIViewController {
             var x, y, z: Float
             var w, h: CGFloat
             var opacity: CGFloat
-            var driftRadius: Float
-            var driftDuration: Double
+            var breathDuration: Double   // full inhale+exhale cycle, seconds
             var seed: Int
         }
 
+        // Per-blob breath periods deliberately staggered (4.7–7.1s) so the
+        // field never pulses in unison.
         let defs: [CloudDef] = [
-            CloudDef(x: -7,  y:  6,  z: -6,  w: 30, h: 20, opacity: 0.80, driftRadius: 4.5, driftDuration: 22, seed: 1),
-            CloudDef(x:  6,  y: -4,  z: -10, w: 26, h: 16, opacity: 0.65, driftRadius: 3.5, driftDuration: 28, seed: 2),
-            CloudDef(x: -3,  y: -9,  z:  1,  w: 34, h: 22, opacity: 0.60, driftRadius: 5.0, driftDuration: 19, seed: 3),
-            CloudDef(x: 11,  y:  3,  z: -14, w: 22, h: 18, opacity: 0.50, driftRadius: 3.0, driftDuration: 32, seed: 4),
-            CloudDef(x: -13, y:  0,  z: -18, w: 28, h: 24, opacity: 0.45, driftRadius: 4.0, driftDuration: 25, seed: 5),
-            CloudDef(x:  2,  y: 10,  z: -4,  w: 24, h: 14, opacity: 0.55, driftRadius: 3.8, driftDuration: 21, seed: 6),
+            CloudDef(x: -7,  y:  6,  z: -6,  w: 30, h: 20, opacity: 0.80, breathDuration: 5.2, seed: 1),
+            CloudDef(x:  6,  y: -4,  z: -10, w: 26, h: 16, opacity: 0.65, breathDuration: 6.4, seed: 2),
+            CloudDef(x: -3,  y: -9,  z:  1,  w: 34, h: 22, opacity: 0.60, breathDuration: 4.7, seed: 3),
+            CloudDef(x: 11,  y:  3,  z: -14, w: 22, h: 18, opacity: 0.50, breathDuration: 7.1, seed: 4),
+            CloudDef(x: -13, y:  0,  z: -18, w: 28, h: 24, opacity: 0.45, breathDuration: 5.8, seed: 5),
+            CloudDef(x:  2,  y: 10,  z: -4,  w: 24, h: 14, opacity: 0.55, breathDuration: 6.0, seed: 6),
         ]
 
         for def in defs {
@@ -250,28 +251,36 @@ class OnboardingSceneViewController: UIViewController {
             node.opacity  = def.opacity
             scene.rootNode.addChildNode(node)
 
-            // Elliptical drift using two sequential moves, repeated forever
-            let r = def.driftRadius
-            let half = def.driftDuration / 2
-            let moveA = SCNAction.move(
-                by: SCNVector3(r, r * 0.4, r * 0.3),
-                duration: half
-            )
-            let moveB = SCNAction.move(
-                by: SCNVector3(-r, -r * 0.4, -r * 0.3),
-                duration: half
-            )
-            moveA.timingMode = .easeInEaseOut
-            moveB.timingMode = .easeInEaseOut
+            // Breathing: gentle scale pulse (0.97 ↔ 1.04) in place. No
+            // translation — blobs hold their anchor positions so the dot
+            // cloud remains the only large-amplitude motion in the scene.
+            let halfBreath = def.breathDuration / 2
+            let inhale = SCNAction.scale(to: 1.04, duration: halfBreath)
+            let exhale = SCNAction.scale(to: 0.97, duration: halfBreath)
+            inhale.timingMode = .easeInEaseOut
+            exhale.timingMode = .easeInEaseOut
+            let breath = SCNAction.repeatForever(SCNAction.sequence([inhale, exhale]))
 
-            let drift = SCNAction.repeatForever(SCNAction.sequence([moveA, moveB]))
-            node.runAction(drift)
+            // Soft opacity pulse on a slightly different period so scale and
+            // opacity slowly drift against each other — feels organic, not mechanical.
+            let halfPulse = (def.breathDuration * 0.85) / 2
+            let dim  = SCNAction.fadeOpacity(to: def.opacity - 0.05, duration: halfPulse)
+            let glow = SCNAction.fadeOpacity(to: def.opacity + 0.04, duration: halfPulse)
+            dim.timingMode  = .easeInEaseOut
+            glow.timingMode = .easeInEaseOut
+            let pulse = SCNAction.repeatForever(SCNAction.sequence([dim, glow]))
 
-            // Subtle slow rotation
+            // Per-seed phase offset so blobs aren't synchronized at t=0.
+            let phase = Double(def.seed) * 0.7
+            node.runAction(SCNAction.sequence([SCNAction.wait(duration: phase), breath]))
+            node.runAction(SCNAction.sequence([SCNAction.wait(duration: phase * 1.3), pulse]))
+
+            // Very slow z-axis wobble — kept from the original; reads as
+            // "alive in place" rather than translating.
             let wobble = SCNAction.repeatForever(
                 SCNAction.rotateBy(x: 0, y: 0,
                                    z: CGFloat(0.03 * (def.seed % 2 == 0 ? 1 : -1)),
-                                   duration: def.driftDuration * 1.5)
+                                   duration: def.breathDuration * 3.0)
             )
             node.runAction(wobble)
         }
