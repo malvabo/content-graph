@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useGenerationsStore } from '../../store/generationsStore';
 
@@ -34,6 +34,18 @@ const popularTemplates: FormatTemplate[] = [
   { id: 'blog',        label: 'Blog post',    formatIDs: ['blog'] },
   { id: 'video',       label: 'Video script', formatIDs: ['youtube', 'video'] },
   { id: 'research',    label: 'Research pack', formatIDs: ['newsletter', 'blog', 'twitter'] },
+];
+
+interface FormatTemplate2 { id: string; name: string; description: string; formatIDs: string[] }
+const allTemplates: FormatTemplate2[] = [
+  { id: 'newsletter',   name: 'Newsletter',    description: 'Digest with key takeaways from your source',     formatIDs: ['newsletter'] },
+  { id: 'social-pack',  name: 'Social Pack',   description: 'LinkedIn post + Twitter thread from one source', formatIDs: ['linkedin', 'twitter'] },
+  { id: 'blog',         name: 'Blog Post',     description: 'Long-form SEO-friendly article',                 formatIDs: ['blog'] },
+  { id: 'video-script', name: 'Video Script',  description: 'Hook, body & CTA for YouTube or Reels',          formatIDs: ['youtube', 'video'] },
+  { id: 'email',        name: 'Email',         description: 'Concise campaign or outreach email',             formatIDs: ['email'] },
+  { id: 'podcast',      name: 'Podcast',       description: 'Episode outline and talking points',             formatIDs: ['podcast'] },
+  { id: 'press',        name: 'Press Release', description: 'Formal media announcement',                     formatIDs: ['press'] },
+  { id: 'landing',      name: 'Landing Page',  description: 'Headline, sections and CTA copy',               formatIDs: ['landing'] },
 ];
 
 const BG = '#1A1513';
@@ -556,65 +568,168 @@ function VoiceRecordSheet({ isOpen, onClose, onSave }: {
 
 // ─── Format picker sheet ───────────────────────────────────────────────────
 
+const GREEN = 'rgb(69,179,107)';
+
 function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
   isOpen: boolean; onClose: () => void; selected: Set<string>; onChange: (s: Set<string>) => void;
 }) {
   const [pending, setPending] = useState<Set<string>>(new Set(selected));
-  useEffect(() => { if (isOpen) setPending(new Set(selected)); }, [isOpen, selected]);
-  const toggle = (id: string) => {
-    setPending(prev => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-  };
-  const addLabel = pending.size === 0 ? 'Add' : `Add ${pending.size} format${pending.size > 1 ? 's' : ''}`;
+  const [search, setSearch] = useState('');
+  const [showAllTemplates, setShowAllTemplates] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) { setPending(new Set(selected)); setSearch(''); setShowAllTemplates(false); }
+  }, [isOpen]);
+
+  const q = search.toLowerCase();
+  const filteredTemplates = allTemplates.filter(t =>
+    !q || t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q) ||
+    t.formatIDs.some(id => allFormats.find(f => f.id === id)?.label.toLowerCase().includes(q))
+  );
+  const filteredFormats = allFormats.filter(f =>
+    !q || f.label.toLowerCase().includes(q) || f.description.toLowerCase().includes(q)
+  );
+  const displayedTemplates = (!q && !showAllTemplates) ? filteredTemplates.slice(0, 5) : filteredTemplates;
+
+  const toggleFormat = (id: string) =>
+    setPending(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const addTemplate = (formatIDs: string[]) =>
+    setPending(prev => { const n = new Set(prev); formatIDs.forEach(id => n.add(id)); return n; });
+
+  const doneLabel = pending.size === 0 ? 'Done' : `Done · ${pending.size} selected`;
   const commit = () => { onChange(pending); onClose(); };
+
+  const SectionHeader = ({ title }: { title: string }) => (
+    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.06em', padding: '18px 16px 8px', textTransform: 'uppercase' }}>{title}</div>
+  );
+  const RowDivider = () => <div style={{ height: 0.5, background: 'rgba(255,255,255,0.06)', margin: '0 16px' }} />;
+  const noResults = filteredTemplates.length === 0 && filteredFormats.length === 0;
+
   return (
-    <Sheet isOpen={isOpen} onClose={onClose} height="86vh">
-      <div style={{ padding: '8px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 16, cursor: 'pointer', padding: 0 }}>Cancel</button>
-        <div style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>Choose formats</div>
-        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, minWidth: 40, textAlign: 'right' }}>{pending.size || ''}</div>
+    <Sheet isOpen={isOpen} onClose={onClose} height="86vh" scrollable={false}>
+      {/* Header */}
+      <div style={{ padding: '8px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 16, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-sans)' }}>Cancel</button>
+        <div style={{ color: '#fff', fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Format</div>
+        <div style={{ minWidth: 56, textAlign: 'right' }} />
       </div>
-      <Divider />
-      <div style={{ padding: '8px 14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {allFormats.map(f => {
-          const on = pending.has(f.id);
-          return (
-            <button
-              key={f.id}
-              onClick={() => toggle(f.id)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                padding: '14px 14px', borderRadius: 14,
-                background: on ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${on ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.06)'}`,
-                cursor: 'pointer', color: '#fff', textAlign: 'left', fontFamily: 'var(--font-sans)',
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 500 }}>{f.label}</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{f.description}</div>
-              </div>
-              <div style={{
-                width: 22, height: 22, borderRadius: 11, flexShrink: 0,
-                background: on ? '#fff' : 'transparent',
-                border: `1.5px solid ${on ? '#fff' : 'rgba(255,255,255,0.20)'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {on && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1A1513" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7"/></svg>}
-              </div>
+
+      {/* Search */}
+      <div style={{ padding: '0 16px 8px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.07)', borderRadius: 10, padding: '10px 12px' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search formats and templates"
+            style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: '#fff', fontSize: 15, fontFamily: 'var(--font-sans)' }}
+          />
+          {search && (
+            <button onClick={() => setSearch('')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, color: 'rgba(255,255,255,0.30)', display: 'flex' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
             </button>
-          );
-        })}
+          )}
+        </div>
       </div>
-      <div style={{
-        position: 'sticky', bottom: 0, left: 0, right: 0,
-        padding: '12px 16px 24px',
-        background: `linear-gradient(to top, ${BG} 70%, transparent)`,
-      }}>
-        <AnimatedLightsButton title={addLabel} isEnabled={pending.size > 0} onClick={commit} />
+
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        {noResults ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.30)', fontSize: 15, fontFamily: 'var(--font-sans)' }}>No matches.</div>
+        ) : (
+          <>
+            {filteredTemplates.length > 0 && (
+              <>
+                <SectionHeader title="Quick picks" />
+                {displayedTemplates.map((tpl, i) => {
+                  const active = tpl.formatIDs.every(id => pending.has(id));
+                  return (
+                    <div key={tpl.id}>
+                      <button
+                        onClick={() => addTemplate(tpl.formatIDs)}
+                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12, fontFamily: 'var(--font-sans)' }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.88)', marginBottom: 6 }}>{tpl.name}</div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 5 }}>
+                            {tpl.formatIDs.slice(0, 4).map(id => {
+                              const fmt = allFormats.find(f => f.id === id);
+                              return fmt ? (
+                                <span key={id} style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.55)', background: active ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)', borderRadius: 999, padding: '3px 7px' }}>{fmt.label}</span>
+                              ) : null;
+                            })}
+                            {tpl.formatIDs.length > 4 && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>+{tpl.formatIDs.length - 4}</span>}
+                          </div>
+                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{tpl.description}</div>
+                        </div>
+                        {active && (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 2, flexShrink: 0 }}><path d="M20 6L9 17l-5-5"/></svg>
+                        )}
+                      </button>
+                      {i < displayedTemplates.length - 1 && <RowDivider />}
+                    </div>
+                  );
+                })}
+                {!q && !showAllTemplates && allTemplates.length > 5 && (
+                  <>
+                    <RowDivider />
+                    <button
+                      onClick={() => setShowAllTemplates(true)}
+                      style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.50)', fontSize: 15 }}
+                    >
+                      See all templates
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.30)" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+
+            {filteredFormats.length > 0 && (
+              <>
+                <SectionHeader title="All formats" />
+                {filteredFormats.map((f, i) => {
+                  const on = pending.has(f.id);
+                  return (
+                    <div key={f.id}>
+                      <button
+                        onClick={() => toggleFormat(f.id)}
+                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 14, fontFamily: 'var(--font-sans)' }}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill={on ? GREEN : 'none'} stroke={on ? GREEN : 'rgba(255,255,255,0.22)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                          {on
+                            ? <><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none"/></>
+                            : <rect x="3" y="3" width="18" height="18" rx="3"/>
+                          }
+                        </svg>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, color: on ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.70)' }}>{f.label}</div>
+                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)', marginTop: 3 }}>{f.description}</div>
+                        </div>
+                      </button>
+                      {i < filteredFormats.length - 1 && <RowDivider />}
+                    </div>
+                  );
+                })}
+              </>
+            )}
+            <div style={{ height: 16 }} />
+          </>
+        )}
+      </div>
+
+      {/* Done button */}
+      <div style={{ flexShrink: 0, padding: '12px 16px 28px', borderTop: '0.5px solid rgba(255,255,255,0.07)' }}>
+        <button
+          onClick={commit}
+          style={{
+            width: '100%', height: 52, border: 'none', borderRadius: 14, cursor: 'pointer',
+            background: pending.size === 0 ? 'rgba(255,255,255,0.12)' : GREEN,
+            color: '#fff', fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-sans)',
+            transition: 'background 0.15s',
+          }}
+        >{doneLabel}</button>
       </div>
     </Sheet>
   );
@@ -847,7 +962,7 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
               }}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
               </svg>
             </button>
           )}
