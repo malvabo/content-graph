@@ -172,15 +172,27 @@ function buildSourceContext(items: SourceItem[]): string {
 
 function parseGenerationResults(raw: string): { header: string; content: string }[] {
   const out: { header: string; content: string }[] = [];
-  const sections = raw.split(/\n{0,2}-{3,}\n{0,2}/);
+  // Match --- on its own line (allowing surrounding spaces/tabs, any number of surrounding newlines)
+  const sections = raw.split(/\n[ \t]*-{3,}[ \t]*\n/);
   for (const section of sections) {
     const trimmed = section.trim();
     if (!trimmed) continue;
     const nl = trimmed.indexOf('\n');
     if (nl === -1) continue;
-    const header = trimmed.slice(0, nl).replace(/^#+\s*|\*\*/g, '').trim();
+    const header = trimmed.slice(0, nl).replace(/^#+\s*|\*{1,3}/g, '').trim();
     const content = trimmed.slice(nl + 1).trim();
     if (header && content) out.push({ header, content });
+  }
+  // Fallback: if no splits found, treat entire response as one result
+  if (out.length === 0 && raw.trim()) {
+    const trimmed = raw.trim();
+    const nl = trimmed.indexOf('\n');
+    if (nl !== -1) {
+      const header = trimmed.slice(0, nl).replace(/^#+\s*|\*{1,3}/g, '').trim();
+      const content = trimmed.slice(nl + 1).trim();
+      if (header && content) return [{ header, content }];
+    }
+    return [{ header: 'Result', content: trimmed }];
   }
   return out;
 }
@@ -831,7 +843,7 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
       .join(', ');
     const brandLine = brand && brand !== 'Default' ? `\n\nBRAND VOICE: ${brand}` : '';
     const promptLine = prompt.trim() ? `\n\nADDITIONAL INSTRUCTIONS:\n${prompt.trim()}` : '';
-    const fullPrompt = `You are a content generation assistant.\n\nSOURCES:\n${context}${brandLine}${promptLine}\n\nGenerate the following outputs. For each output, use the format label as a header, then produce the content below it.\n\nOUTPUTS REQUESTED:\n${outputList}\n\nFormat each output clearly. Separate outputs with ---`;
+    const fullPrompt = `You are a content generation assistant.\n\nSOURCES:\n${context}${brandLine}${promptLine}\n\nGenerate the following outputs. For each output, write the format label as a heading on its own line, then write the content below it.\n\nOUTPUTS REQUESTED:\n${outputList}\n\nIMPORTANT: Separate each output with a line containing only three hyphens (---) and nothing else. Do not use --- inside the content of any output.`;
 
     setGenRunning(true);
     setGenStreaming('');
