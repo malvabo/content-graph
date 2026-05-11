@@ -552,11 +552,6 @@ struct ImportSheetView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Capsule()
-                .fill(Color.white.opacity(0.12))
-                .frame(width: 32, height: 4)
-                .padding(.top, 10)
-
             Text("Import content")
                 .font(.app(size: 19, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
@@ -1307,30 +1302,40 @@ private struct FormatPickerSheet: View {
         return Array(filteredTemplates.prefix(5))
     }
 
-    private var doneLabel: String {
-        selectedFormatIDs.isEmpty ? "Done" : "Done · \(selectedFormatIDs.count) selected"
+    private var ctaLabel: String {
+        switch selectedFormatIDs.count {
+        case 0: return "Add formats"
+        case 1: return "Add 1 format"
+        default: return "Add \(selectedFormatIDs.count) formats"
+        }
     }
 
     var body: some View {
         VStack(spacing: 0) {
+            // Header: Cancel · Choose formats · count (matches reference)
             HStack {
-                Spacer()
-                Text("Format")
+                Button("Cancel") { dismiss() }
+                    .font(.app(size: 16))
+                    .foregroundColor(Color.white.opacity(0.55))
+                    .frame(minWidth: 64, alignment: .leading)
+
+                Spacer(minLength: 8)
+
+                Text("Choose formats")
                     .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(.white)
-                Spacer()
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.app(size: 13, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.60))
-                        .frame(width: 28, height: 28)
-                        .background(Color.white.opacity(0.10))
-                        .clipShape(Circle())
-                }
+
+                Spacer(minLength: 8)
+
+                Text(selectedFormatIDs.isEmpty ? "" : "\(selectedFormatIDs.count)")
+                    .font(.app(size: 14))
+                    .foregroundColor(Color.white.opacity(0.45))
+                    .frame(minWidth: 64, alignment: .trailing)
+                    .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 18)
-            .padding(.bottom, 14)
+            .padding(.top, 14)
+            .padding(.bottom, 12)
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
@@ -1351,10 +1356,14 @@ private struct FormatPickerSheet: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(Color.white.opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+            )
             .padding(.horizontal, 16)
-            .padding(.bottom, 2)
+            .padding(.bottom, 10)
 
             if filteredTemplates.isEmpty && filteredFormats.isEmpty {
                 Spacer()
@@ -1364,63 +1373,54 @@ private struct FormatPickerSheet: View {
                 Spacer()
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-
+                    LazyVStack(spacing: 10) {
                         if !filteredTemplates.isEmpty {
                             sectionHeader("Quick picks")
 
                             ForEach(displayedTemplates) { template in
-                                templateRow(template)
-                                divider()
+                                templateBlock(template)
                             }
 
                             if search.isEmpty && !showAllTemplates && allTemplates.count > 5 {
                                 Button {
                                     withAnimation(.easeOut(duration: 0.2)) { showAllTemplates = true }
                                 } label: {
-                                    HStack {
+                                    HStack(spacing: 6) {
                                         Text("See all templates")
-                                            .font(.app(size: 15))
-                                            .foregroundColor(Color.white.opacity(0.50))
-                                        Spacer()
+                                            .font(.app(size: 14))
+                                            .foregroundColor(Color.white.opacity(0.55))
                                         Image(systemName: "chevron.down")
-                                            .font(.app(size: 12, weight: .medium))
+                                            .font(.app(size: 11, weight: .medium))
                                             .foregroundColor(Color.white.opacity(0.30))
                                     }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 14)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
                                 }
                                 .buttonStyle(.plain)
-                                divider()
                             }
                         }
 
                         if !filteredFormats.isEmpty {
                             sectionHeader("All formats")
-                                .padding(.top, filteredTemplates.isEmpty ? 0 : 8)
 
                             ForEach(filteredFormats) { format in
-                                formatRow(format)
-                                if format.id != filteredFormats.last?.id { divider() }
+                                formatBlock(format)
                             }
                         }
                     }
+                    .padding(.horizontal, 16)
                     .padding(.bottom, 16)
                 }
             }
 
             VStack(spacing: 0) {
-                Rectangle()
-                    .fill(Color.white.opacity(0.07))
-                    .frame(height: 0.5)
-
                 AnimatedLightsButton(
-                    title: doneLabel,
+                    title: ctaLabel,
                     isEnabled: !selectedFormatIDs.isEmpty
                 ) { dismiss() }
                 .padding(.horizontal, 16)
-                .padding(.top, 14)
-                .padding(.bottom, 32)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
                 .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
             }
         }
@@ -1432,73 +1432,69 @@ private struct FormatPickerSheet: View {
             .font(.app(size: 11, weight: .semibold))
             .foregroundColor(Color.white.opacity(0.28))
             .tracking(0.6)
-            .padding(.horizontal, 16)
-            .padding(.top, 18)
-            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 8)
+            .padding(.bottom, 2)
     }
 
     @ViewBuilder
-    private func divider() -> some View {
-        Rectangle()
-            .fill(Color.white.opacity(0.06))
-            .frame(height: 0.5)
-            .padding(.horizontal, 16)
+    private func selectionIndicator(_ selected: Bool) -> some View {
+        ZStack {
+            if selected {
+                Circle().fill(.white)
+                Image(systemName: "checkmark")
+                    .font(.app(size: 11, weight: .bold))
+                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+            } else {
+                Circle().stroke(Color.white.opacity(0.22), lineWidth: 1.5)
+            }
+        }
+        .frame(width: 24, height: 24)
     }
 
     @ViewBuilder
-    private func templateRow(_ template: ContentTemplate) -> some View {
+    private func templateBlock(_ template: ContentTemplate) -> some View {
         let isActive = Set(template.formatIDs).isSubset(of: selectedFormatIDs)
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             withAnimation(.easeOut(duration: 0.15)) {
-                selectedFormatIDs.formUnion(template.formatIDs)
+                if isActive {
+                    selectedFormatIDs.subtract(template.formatIDs)
+                } else {
+                    selectedFormatIDs.formUnion(template.formatIDs)
+                }
             }
         } label: {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(template.name)
                         .font(.app(size: 15, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.88))
-
-                    HStack(spacing: 5) {
-                        ForEach(template.formatIDs.prefix(4), id: \.self) { fid in
-                            if let fmt = allFormats.first(where: { $0.id == fid }) {
-                                Text(fmt.label)
-                                    .font(.app(size: 10, weight: .medium))
-                                    .foregroundColor(Color.white.opacity(0.55))
-                                    .padding(.horizontal, 7)
-                                    .padding(.vertical, 3)
-                                    .background(Color.white.opacity(isActive ? 0.14 : 0.07))
-                                    .clipShape(Capsule())
-                            }
-                        }
-                        if template.formatIDs.count > 4 {
-                            Text("+\(template.formatIDs.count - 4)")
-                                .font(.app(size: 10, weight: .medium))
-                                .foregroundColor(Color.white.opacity(0.35))
-                        }
-                    }
-
+                        .foregroundColor(Color.white.opacity(0.92))
                     Text(template.description)
-                        .font(.app(size: 12))
-                        .foregroundColor(Color.white.opacity(0.35))
+                        .font(.app(size: 13))
+                        .foregroundColor(Color.white.opacity(0.45))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
                 }
-                Spacer()
-                if isActive {
-                    Image(systemName: "checkmark")
-                        .font(.app(size: 12, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.top, 2)
-                }
+                Spacer(minLength: 8)
+                selectionIndicator(isActive)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white.opacity(isActive ? 0.10 : 0.04))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.white.opacity(isActive ? 0.30 : 0.06), lineWidth: 0.5)
+            )
         }
         .buttonStyle(.plain)
     }
 
     @ViewBuilder
-    private func formatRow(_ format: ContentFormat) -> some View {
+    private func formatBlock(_ format: ContentFormat) -> some View {
         let selected = selectedFormatIDs.contains(format.id)
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -1507,30 +1503,30 @@ private struct FormatPickerSheet: View {
                 else { selectedFormatIDs.insert(format.id) }
             }
         } label: {
-            HStack(spacing: 14) {
-                ZStack {
-                    if selected {
-                        Circle().fill(.white)
-                        Image(systemName: "checkmark")
-                            .font(.app(size: 11, weight: .bold))
-                            .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                    } else {
-                        Circle().stroke(Color.white.opacity(0.22), lineWidth: 1.5)
-                    }
-                }
-                .frame(width: 22, height: 22)
-                VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(format.label)
-                        .font(.app(size: 15))
-                        .foregroundColor(selected ? Color.white.opacity(0.92) : Color.white.opacity(0.70))
+                        .font(.app(size: 15, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.92))
                     Text(format.description)
-                        .font(.app(size: 12))
-                        .foregroundColor(Color.white.opacity(0.30))
+                        .font(.app(size: 13))
+                        .foregroundColor(Color.white.opacity(0.45))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
                 }
-                Spacer()
+                Spacer(minLength: 8)
+                selectionIndicator(selected)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 13)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white.opacity(selected ? 0.10 : 0.04))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.white.opacity(selected ? 0.30 : 0.06), lineWidth: 0.5)
+            )
         }
         .buttonStyle(.plain)
     }

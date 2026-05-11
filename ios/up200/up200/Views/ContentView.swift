@@ -338,12 +338,6 @@ private struct AddTemplateSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Capsule()
-                .fill(Color.white.opacity(0.12))
-                .frame(width: 32, height: 4)
-                .padding(.top, 12)
-                .padding(.bottom, 20)
-
             Text("New template")
                 .font(.app(size: 18, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
