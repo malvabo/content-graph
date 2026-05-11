@@ -7,6 +7,8 @@
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
     { "source": "/hand-tracking", "destination": "/hand-tracking.html" },
     { "source": "/hand-tracking.html", "destination": "/hand-tracking.html" },
+    { "source": "/continuous-line", "destination": "/continuous-line-preview.html" },
+    { "source": "/continuous-line-preview.html", "destination": "/continuous-line-preview.html" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
