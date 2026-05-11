@@ -1367,7 +1367,7 @@ private struct FormatPickerSheet: View {
                     .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 14)
+            .padding(.top, 20)
             .padding(.bottom, 12)
 
             HStack(spacing: 8) {
@@ -1406,7 +1406,7 @@ private struct FormatPickerSheet: View {
                 Spacer()
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 10) {
+                    VStack(spacing: 10) {
                         if !filteredTemplates.isEmpty {
                             sectionHeader("Quick picks")
 
@@ -1426,7 +1426,7 @@ private struct FormatPickerSheet: View {
                                             .font(.app(size: 11, weight: .medium))
                                             .foregroundColor(Color.white.opacity(0.30))
                                     }
-                                    .frame(maxWidth: .infinity)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.vertical, 10)
                                 }
                                 .buttonStyle(.plain)
