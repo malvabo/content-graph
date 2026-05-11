@@ -940,7 +940,7 @@ export default function CreateHome() {
             <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>Brand voice</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 3 }}>How the output should sound</div>
+                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 3 }}>How the output should sound</div>
               </div>
               <div style={{ position: 'relative' }}>
                 <button
