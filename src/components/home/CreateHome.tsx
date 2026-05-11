@@ -789,6 +789,8 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
   const [genResults, setGenResults] = useState<{ header: string; content: string }[]>([]);
   const [genError, setGenError] = useState<string | null>(null);
   const [activeResultIdx, setActiveResultIdx] = useState(0);
+  const [genFormatLabels, setGenFormatLabels] = useState<string[]>([]);
+  const [copied, setCopied] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -821,6 +823,9 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
     setGenStreaming('');
     setGenResults([]);
     setGenError(null);
+    setCopied(false);
+    setActiveResultIdx(0);
+    setGenFormatLabels(Array.from(selectedFormats).map(id => allFormats.find(f => f.id === id)?.label ?? id));
     setShowGenSheet(true);
 
     let accumulated = '';
@@ -1183,107 +1188,181 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
         </div>
       </Sheet>
 
-      <Sheet
-        isOpen={showGenSheet}
-        onClose={() => { abortRef.current?.abort(); setShowGenSheet(false); }}
-        height="92vh"
-      >
-        <SheetHeader
-          title={genRunning ? 'Generating…' : genError ? 'Generation failed' : 'Results'}
-          onCancel={() => { abortRef.current?.abort(); setShowGenSheet(false); }}
-          action={null}
-        />
-        <Divider />
-        <div style={{ padding: '16px 16px 32px' }}>
-          {genError && (
-            <div style={{
-              padding: '14px 16px', borderRadius: 12,
-              background: 'rgba(220,80,60,0.12)', border: '1px solid rgba(220,80,60,0.30)',
-              color: 'rgba(255,200,190,0.95)', fontSize: 14, lineHeight: 1.5,
-            }}>{genError}</div>
-          )}
+      {/* Full-screen generation view */}
+      <AnimatePresence>
+        {showGenSheet && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 500,
+              background: BG, display: 'flex', flexDirection: 'column',
+              fontFamily: 'var(--font-sans)',
+            }}
+          >
+            <style>{`
+              @keyframes gen-pulse { 0%,100% { transform: scale(1); opacity: 0.15; } 50% { transform: scale(1.28); opacity: 0.25; } }
+              @keyframes gen-pulse2 { 0%,100% { transform: scale(1); opacity: 0.22; } 50% { transform: scale(1.18); opacity: 0.32; } }
+            `}</style>
 
-          {!genError && genRunning && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'rgba(255,255,255,0.55)', fontSize: 14 }}>
-                <div style={{
-                  width: 18, height: 18, border: '2px solid rgba(255,255,255,0.20)',
-                  borderTopColor: '#F29E4D', borderRadius: '50%',
-                  animation: 'create-spin 1s linear infinite',
-                }} />
-                <span>Streaming from Claude…</span>
-              </div>
-              <style>{`@keyframes create-spin { to { transform: rotate(360deg); } }`}</style>
-              {genStreaming && (
-                <pre style={{
-                  whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: 14, padding: '14px 16px',
-                  color: 'rgba(255,255,255,0.82)', fontSize: 14, lineHeight: 1.55,
-                  fontFamily: 'var(--font-sans)', margin: 0,
-                }}>{genStreaming}</pre>
-              )}
-            </div>
-          )}
-
-          {!genError && !genRunning && genResults.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {genResults.length > 1 && (
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {genResults.map((r, i) => {
-                    const on = activeResultIdx === i;
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => setActiveResultIdx(i)}
-                        style={{
-                          border: '1px solid ' + (on ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.08)'),
-                          background: on ? 'rgba(255,255,255,0.10)' : 'transparent',
-                          color: on ? '#fff' : 'rgba(255,255,255,0.55)',
-                          borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 500,
-                          cursor: 'pointer', fontFamily: 'var(--font-sans)',
-                        }}
-                      >{r.header}</button>
-                    );
-                  })}
+            {genRunning ? (
+              /* ── Generating state ── */
+              <>
+                <div style={{ padding: 'max(16px, env(safe-area-inset-top, 0px) + 12px) 16px 0' }}>
+                  <button
+                    onClick={() => { abortRef.current?.abort(); setShowGenSheet(false); }}
+                    style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.45)', fontSize: 16, fontWeight: 500, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-sans)' }}
+                  >Cancel</button>
                 </div>
-              )}
-              <div style={{ fontSize: 17, fontWeight: 600, color: '#fff' }}>
-                {genResults[activeResultIdx]?.header}
-              </div>
-              <pre style={{
-                whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 14, padding: '14px 16px',
-                color: 'rgba(255,255,255,0.88)', fontSize: 15, lineHeight: 1.6,
-                fontFamily: 'var(--font-sans)', margin: 0,
-              }}>{genResults[activeResultIdx]?.content}</pre>
-              <button
-                onClick={() => {
-                  const text = genResults[activeResultIdx]?.content ?? '';
-                  navigator.clipboard?.writeText(text).catch(() => { /* noop */ });
-                }}
-                style={{
-                  alignSelf: 'flex-start',
-                  border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)',
-                  borderRadius: 10, padding: '8px 12px', fontSize: 13, color: 'rgba(255,255,255,0.75)',
-                  cursor: 'pointer', fontFamily: 'var(--font-sans)',
-                }}
-              >Copy</button>
-            </div>
-          )}
 
-          {!genError && !genRunning && genResults.length === 0 && genStreaming && (
-            <pre style={{
-              whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 14, padding: '14px 16px',
-              color: 'rgba(255,255,255,0.82)', fontSize: 14, lineHeight: 1.55,
-              fontFamily: 'var(--font-sans)', margin: 0,
-            }}>{genStreaming}</pre>
-          )}
-        </div>
-      </Sheet>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32, padding: '0 32px', position: 'relative', overflow: 'hidden' }}>
+                  {/* Amber radial bg glow */}
+                  <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(217,115,26,0.13), transparent 70%)', pointerEvents: 'none' }} />
+
+                  {/* Pulsing circles + icon */}
+                  <div style={{ position: 'relative', width: 130, height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ position: 'absolute', width: 130, height: 130, borderRadius: '50%', background: 'rgba(217,115,26,0.15)', animation: 'gen-pulse 1.4s ease-in-out infinite' }} />
+                    <div style={{ position: 'absolute', width: 88, height: 88, borderRadius: '50%', background: 'rgba(217,115,26,0.22)', animation: 'gen-pulse2 1.4s ease-in-out infinite' }} />
+                    <div style={{ position: 'relative', width: 88, height: 88, borderRadius: '50%', background: 'rgba(217,115,26,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgb(217,115,26)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'center', zIndex: 1 }}>
+                    <div style={{ fontSize: 19, fontWeight: 600, color: 'rgba(255,255,255,0.88)', marginBottom: 10 }}>Creating your content</div>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)' }}>{genFormatLabels.join(' · ')}</div>
+                  </div>
+
+                  {/* Live streaming text */}
+                  {genStreaming && (
+                    <div style={{ width: '100%', maxHeight: 200, overflowY: 'auto', zIndex: 1 }}>
+                      <p style={{
+                        margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                        color: 'rgba(255,255,255,0.40)', fontSize: 14, lineHeight: 1.6,
+                        fontFamily: 'var(--font-sans)',
+                      }}>{genStreaming}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              /* ── Results / error state ── */
+              <>
+                {/* Top bar */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: 'max(18px, env(safe-area-inset-top, 0px) + 14px) 16px 14px',
+                  flexShrink: 0,
+                }}>
+                  <button
+                    onClick={() => setShowGenSheet(false)}
+                    aria-label="Back"
+                    style={{
+                      width: 28, height: 28, borderRadius: '50%', border: 'none',
+                      background: 'rgba(255,255,255,0.10)', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'rgba(255,255,255,0.60)', flexShrink: 0,
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+
+                  {/* Format tabs */}
+                  {genResults.length > 1 ? (
+                    <div style={{ flex: 1, overflowX: 'auto', scrollbarWidth: 'none', display: 'flex', gap: 6 }}>
+                      {genResults.map((r, i) => {
+                        const on = activeResultIdx === i;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => { setActiveResultIdx(i); setCopied(false); }}
+                            style={{
+                              flexShrink: 0, border: 'none',
+                              background: on ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.05)',
+                              color: on ? '#fff' : 'rgba(255,255,255,0.40)',
+                              borderRadius: 999, padding: '5px 10px',
+                              fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                            }}
+                          >{r.header}</button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ flex: 1, fontSize: 16, fontWeight: 600, color: '#fff' }}>
+                      {genError ? 'Generation failed' : (genResults[0]?.header ?? '')}
+                    </div>
+                  )}
+
+                  {/* Copy button */}
+                  {!genError && (genResults.length > 0 || genStreaming) && (
+                    <button
+                      onClick={() => {
+                        const text = genResults.length > 0
+                          ? (genResults[activeResultIdx]?.content ?? '')
+                          : genStreaming;
+                        navigator.clipboard?.writeText(text).catch(() => {});
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      style={{
+                        border: 'none', background: 'transparent', cursor: 'pointer', padding: 0,
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        color: copied ? GREEN : 'rgba(255,255,255,0.60)',
+                        fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-sans)', flexShrink: 0,
+                        transition: 'color 0.15s',
+                      }}
+                    >
+                      {copied
+                        ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg> Copied</>
+                        : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</>
+                      }
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ height: 0.5, background: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
+
+                {/* Scrollable content */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px calc(32px + env(safe-area-inset-bottom, 0px))' }}>
+                  {genError ? (
+                    <div style={{
+                      padding: '14px 16px', borderRadius: 12,
+                      background: 'rgba(220,80,60,0.12)', border: '1px solid rgba(220,80,60,0.30)',
+                      color: 'rgba(255,200,190,0.95)', fontSize: 15, lineHeight: 1.55,
+                    }}>{genError}</div>
+                  ) : (
+                    <p style={{
+                      margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                      color: 'rgba(255,255,255,0.85)', fontSize: 17, lineHeight: 1.7,
+                      fontFamily: 'var(--font-sans)',
+                    }}>
+                      {genResults.length > 0
+                        ? genResults[activeResultIdx]?.content
+                        : genStreaming}
+                    </p>
+                  )}
+                </div>
+
+                {/* Saved to Library badge */}
+                {!genError && genResults.length > 0 && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))',
+                    borderTop: '0.5px solid rgba(255,255,255,0.07)', flexShrink: 0,
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill={GREEN} stroke="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5l-4.5-4.5 1.41-1.41L10 13.67l7.09-7.09 1.41 1.41L10 16.5z"/></svg>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.32)', fontFamily: 'var(--font-sans)' }}>Saved to Library</span>
+                  </div>
+                )}
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Hidden file pickers */}
       <input ref={fileInputRef} type="file" accept=".txt,.md,.pdf"
