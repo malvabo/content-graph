@@ -11,6 +11,7 @@ class OnboardingSceneViewController: UIViewController {
 
     // Label anchors: 3D position → UILabel overlay
     private var labelAnchors: [(node: SCNNode, label: UILabel)] = []
+    private var displayLink: CADisplayLink?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,6 +28,16 @@ class OnboardingSceneViewController: UIViewController {
         super.viewDidLayoutSubviews()
         sceneView.frame = view.bounds
         updateLabelPositions()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // CADisplayLink retains its target; without this the controller (and
+        // the whole scene graph it owns) leaks past dismissal and keeps
+        // rendering off-screen.
+        displayLink?.invalidate()
+        displayLink = nil
+        sceneView?.isPlaying = false
     }
 
     // MARK: - Scene View
@@ -344,9 +355,12 @@ class OnboardingSceneViewController: UIViewController {
             labelAnchors.append((node: anchor, label: label))
         }
 
-        // Update label positions every frame via CADisplayLink
+        // Update label positions every frame via CADisplayLink. Stored on
+        // the controller so viewWillDisappear can invalidate it and break
+        // the retain cycle (CADisplayLink retains its target strongly).
         let link = CADisplayLink(target: self, selector: #selector(updateLabelPositions))
         link.add(to: .main, forMode: .common)
+        displayLink = link
     }
 
     @objc private func updateLabelPositions() {
