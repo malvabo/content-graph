@@ -1406,7 +1406,7 @@ private struct FormatPickerSheet: View {
                 Spacer()
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 10) {
+                    VStack(spacing: 10) {
                         if !filteredTemplates.isEmpty {
                             sectionHeader("Quick picks")
 
