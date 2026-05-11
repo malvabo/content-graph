@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useGenerationsStore } from '../../store/generationsStore';
 
@@ -34,6 +34,18 @@ const popularTemplates: FormatTemplate[] = [
   { id: 'blog',        label: 'Blog post',    formatIDs: ['blog'] },
   { id: 'video',       label: 'Video script', formatIDs: ['youtube', 'video'] },
   { id: 'research',    label: 'Research pack', formatIDs: ['newsletter', 'blog', 'twitter'] },
+];
+
+interface FormatTemplate2 { id: string; name: string; description: string; formatIDs: string[] }
+const allTemplates: FormatTemplate2[] = [
+  { id: 'newsletter',   name: 'Newsletter',    description: 'Digest with key takeaways from your source',     formatIDs: ['newsletter'] },
+  { id: 'social-pack',  name: 'Social Pack',   description: 'LinkedIn post + Twitter thread from one source', formatIDs: ['linkedin', 'twitter'] },
+  { id: 'blog',         name: 'Blog Post',     description: 'Long-form SEO-friendly article',                 formatIDs: ['blog'] },
+  { id: 'video-script', name: 'Video Script',  description: 'Hook, body & CTA for YouTube or Reels',          formatIDs: ['youtube', 'video'] },
+  { id: 'email',        name: 'Email',         description: 'Concise campaign or outreach email',             formatIDs: ['email'] },
+  { id: 'podcast',      name: 'Podcast',       description: 'Episode outline and talking points',             formatIDs: ['podcast'] },
+  { id: 'press',        name: 'Press Release', description: 'Formal media announcement',                     formatIDs: ['press'] },
+  { id: 'landing',      name: 'Landing Page',  description: 'Headline, sections and CTA copy',               formatIDs: ['landing'] },
 ];
 
 const BG = '#1A1513';
@@ -556,65 +568,168 @@ function VoiceRecordSheet({ isOpen, onClose, onSave }: {
 
 // ─── Format picker sheet ───────────────────────────────────────────────────
 
+const GREEN = 'rgb(69,179,107)';
+
 function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
   isOpen: boolean; onClose: () => void; selected: Set<string>; onChange: (s: Set<string>) => void;
 }) {
   const [pending, setPending] = useState<Set<string>>(new Set(selected));
-  useEffect(() => { if (isOpen) setPending(new Set(selected)); }, [isOpen, selected]);
-  const toggle = (id: string) => {
-    setPending(prev => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-  };
-  const addLabel = pending.size === 0 ? 'Add' : `Add ${pending.size} format${pending.size > 1 ? 's' : ''}`;
+  const [search, setSearch] = useState('');
+  const [showAllTemplates, setShowAllTemplates] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) { setPending(new Set(selected)); setSearch(''); setShowAllTemplates(false); }
+  }, [isOpen]);
+
+  const q = search.toLowerCase();
+  const filteredTemplates = allTemplates.filter(t =>
+    !q || t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q) ||
+    t.formatIDs.some(id => allFormats.find(f => f.id === id)?.label.toLowerCase().includes(q))
+  );
+  const filteredFormats = allFormats.filter(f =>
+    !q || f.label.toLowerCase().includes(q) || f.description.toLowerCase().includes(q)
+  );
+  const displayedTemplates = (!q && !showAllTemplates) ? filteredTemplates.slice(0, 5) : filteredTemplates;
+
+  const toggleFormat = (id: string) =>
+    setPending(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const addTemplate = (formatIDs: string[]) =>
+    setPending(prev => { const n = new Set(prev); formatIDs.forEach(id => n.add(id)); return n; });
+
+  const doneLabel = pending.size === 0 ? 'Done' : `Done · ${pending.size} selected`;
   const commit = () => { onChange(pending); onClose(); };
+
+  const SectionHeader = ({ title }: { title: string }) => (
+    <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.06em', padding: '18px 16px 8px', textTransform: 'uppercase' }}>{title}</div>
+  );
+  const RowDivider = () => <div style={{ height: 0.5, background: 'rgba(255,255,255,0.06)', margin: '0 16px' }} />;
+  const noResults = filteredTemplates.length === 0 && filteredFormats.length === 0;
+
   return (
-    <Sheet isOpen={isOpen} onClose={onClose} height="86vh">
-      <div style={{ padding: '8px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 16, cursor: 'pointer', padding: 0 }}>Cancel</button>
-        <div style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>Choose formats</div>
-        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, minWidth: 40, textAlign: 'right' }}>{pending.size || ''}</div>
+    <Sheet isOpen={isOpen} onClose={onClose} height="86vh" scrollable={false}>
+      {/* Header */}
+      <div style={{ padding: '8px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 16, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-sans)' }}>Cancel</button>
+        <div style={{ color: '#fff', fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Format</div>
+        <div style={{ minWidth: 56, textAlign: 'right' }} />
       </div>
-      <Divider />
-      <div style={{ padding: '8px 14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {allFormats.map(f => {
-          const on = pending.has(f.id);
-          return (
-            <button
-              key={f.id}
-              onClick={() => toggle(f.id)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                padding: '14px 14px', borderRadius: 14,
-                background: on ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${on ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.06)'}`,
-                cursor: 'pointer', color: '#fff', textAlign: 'left', fontFamily: 'var(--font-sans)',
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 500 }}>{f.label}</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{f.description}</div>
-              </div>
-              <div style={{
-                width: 22, height: 22, borderRadius: 11, flexShrink: 0,
-                background: on ? '#fff' : 'transparent',
-                border: `1.5px solid ${on ? '#fff' : 'rgba(255,255,255,0.20)'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {on && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1A1513" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7"/></svg>}
-              </div>
+
+      {/* Search */}
+      <div style={{ padding: '0 16px 8px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.07)', borderRadius: 10, padding: '10px 12px' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search formats and templates"
+            style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: '#fff', fontSize: 15, fontFamily: 'var(--font-sans)' }}
+          />
+          {search && (
+            <button onClick={() => setSearch('')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, color: 'rgba(255,255,255,0.30)', display: 'flex' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
             </button>
-          );
-        })}
+          )}
+        </div>
       </div>
-      <div style={{
-        position: 'sticky', bottom: 0, left: 0, right: 0,
-        padding: '12px 16px 24px',
-        background: `linear-gradient(to top, ${BG} 70%, transparent)`,
-      }}>
-        <AnimatedLightsButton title={addLabel} isEnabled={pending.size > 0} onClick={commit} />
+
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        {noResults ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.30)', fontSize: 15, fontFamily: 'var(--font-sans)' }}>No matches.</div>
+        ) : (
+          <>
+            {filteredTemplates.length > 0 && (
+              <>
+                <SectionHeader title="Quick picks" />
+                {displayedTemplates.map((tpl, i) => {
+                  const active = tpl.formatIDs.every(id => pending.has(id));
+                  return (
+                    <div key={tpl.id}>
+                      <button
+                        onClick={() => addTemplate(tpl.formatIDs)}
+                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12, fontFamily: 'var(--font-sans)' }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.88)', marginBottom: 6 }}>{tpl.name}</div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 5 }}>
+                            {tpl.formatIDs.slice(0, 4).map(id => {
+                              const fmt = allFormats.find(f => f.id === id);
+                              return fmt ? (
+                                <span key={id} style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.55)', background: active ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)', borderRadius: 999, padding: '3px 7px' }}>{fmt.label}</span>
+                              ) : null;
+                            })}
+                            {tpl.formatIDs.length > 4 && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>+{tpl.formatIDs.length - 4}</span>}
+                          </div>
+                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{tpl.description}</div>
+                        </div>
+                        {active && (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 2, flexShrink: 0 }}><path d="M20 6L9 17l-5-5"/></svg>
+                        )}
+                      </button>
+                      {i < displayedTemplates.length - 1 && <RowDivider />}
+                    </div>
+                  );
+                })}
+                {!q && !showAllTemplates && allTemplates.length > 5 && (
+                  <>
+                    <RowDivider />
+                    <button
+                      onClick={() => setShowAllTemplates(true)}
+                      style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.50)', fontSize: 15 }}
+                    >
+                      See all templates
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.30)" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+
+            {filteredFormats.length > 0 && (
+              <>
+                <SectionHeader title="All formats" />
+                {filteredFormats.map((f, i) => {
+                  const on = pending.has(f.id);
+                  return (
+                    <div key={f.id}>
+                      <button
+                        onClick={() => toggleFormat(f.id)}
+                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 14, fontFamily: 'var(--font-sans)' }}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill={on ? GREEN : 'none'} stroke={on ? GREEN : 'rgba(255,255,255,0.22)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                          {on
+                            ? <><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none"/></>
+                            : <rect x="3" y="3" width="18" height="18" rx="3"/>
+                          }
+                        </svg>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, color: on ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.70)' }}>{f.label}</div>
+                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)', marginTop: 3 }}>{f.description}</div>
+                        </div>
+                      </button>
+                      {i < filteredFormats.length - 1 && <RowDivider />}
+                    </div>
+                  );
+                })}
+              </>
+            )}
+            <div style={{ height: 16 }} />
+          </>
+        )}
+      </div>
+
+      {/* Done button */}
+      <div style={{ flexShrink: 0, padding: '12px 16px 28px', borderTop: '0.5px solid rgba(255,255,255,0.07)' }}>
+        <button
+          onClick={commit}
+          style={{
+            width: '100%', height: 52, border: 'none', borderRadius: 14, cursor: 'pointer',
+            background: pending.size === 0 ? 'rgba(255,255,255,0.12)' : GREEN,
+            color: '#fff', fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-sans)',
+            transition: 'background 0.15s',
+          }}
+        >{doneLabel}</button>
       </div>
     </Sheet>
   );
@@ -652,7 +767,7 @@ function Divider() {
 
 // ─── CreateHome ────────────────────────────────────────────────────────────
 
-export default function CreateHome() {
+export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: () => void }) {
   const [sources, setSources] = useState<SourceItem[]>([]);
   const [selectedFormats, setSelectedFormats] = useState<Set<string>>(new Set());
   const [prompt, setPrompt] = useState('');
@@ -674,6 +789,8 @@ export default function CreateHome() {
   const [genResults, setGenResults] = useState<{ header: string; content: string }[]>([]);
   const [genError, setGenError] = useState<string | null>(null);
   const [activeResultIdx, setActiveResultIdx] = useState(0);
+  const [genFormatLabels, setGenFormatLabels] = useState<string[]>([]);
+  const [copied, setCopied] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -706,6 +823,9 @@ export default function CreateHome() {
     setGenStreaming('');
     setGenResults([]);
     setGenError(null);
+    setCopied(false);
+    setActiveResultIdx(0);
+    setGenFormatLabels(Array.from(selectedFormats).map(id => allFormats.find(f => f.id === id)?.label ?? id));
     setShowGenSheet(true);
 
     let accumulated = '';
@@ -832,7 +952,26 @@ export default function CreateHome() {
           'radial-gradient(320px circle at 100% 85%, rgba(77,51,20,0.22), transparent 70%)',
       }} />
       <div style={{ position: 'relative', maxWidth: 520, margin: '0 auto', padding: '24px 16px calc(80px + env(safe-area-inset-bottom, 0px))' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, margin: '8px 0 16px', color: '#fff' }}>Create</h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 16px' }}>
+          <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, color: '#fff' }}>Create</h1>
+          {onShowOnboarding && (
+            <button
+              onClick={onShowOnboarding}
+              aria-label="Show intro"
+              style={{
+                width: 34, height: 34, borderRadius: '50%',
+                border: '0.5px solid rgba(255,255,255,0.12)',
+                background: 'rgba(255,255,255,0.07)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: 'rgba(255,255,255,0.55)',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
+              </svg>
+            </button>
+          )}
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Sources */}
@@ -1049,107 +1188,181 @@ export default function CreateHome() {
         </div>
       </Sheet>
 
-      <Sheet
-        isOpen={showGenSheet}
-        onClose={() => { abortRef.current?.abort(); setShowGenSheet(false); }}
-        height="92vh"
-      >
-        <SheetHeader
-          title={genRunning ? 'Generating…' : genError ? 'Generation failed' : 'Results'}
-          onCancel={() => { abortRef.current?.abort(); setShowGenSheet(false); }}
-          action={null}
-        />
-        <Divider />
-        <div style={{ padding: '16px 16px 32px' }}>
-          {genError && (
-            <div style={{
-              padding: '14px 16px', borderRadius: 12,
-              background: 'rgba(220,80,60,0.12)', border: '1px solid rgba(220,80,60,0.30)',
-              color: 'rgba(255,200,190,0.95)', fontSize: 14, lineHeight: 1.5,
-            }}>{genError}</div>
-          )}
+      {/* Full-screen generation view */}
+      <AnimatePresence>
+        {showGenSheet && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 500,
+              background: BG, display: 'flex', flexDirection: 'column',
+              fontFamily: 'var(--font-sans)',
+            }}
+          >
+            <style>{`
+              @keyframes gen-pulse { 0%,100% { transform: scale(1); opacity: 0.15; } 50% { transform: scale(1.28); opacity: 0.25; } }
+              @keyframes gen-pulse2 { 0%,100% { transform: scale(1); opacity: 0.22; } 50% { transform: scale(1.18); opacity: 0.32; } }
+            `}</style>
 
-          {!genError && genRunning && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'rgba(255,255,255,0.55)', fontSize: 14 }}>
-                <div style={{
-                  width: 18, height: 18, border: '2px solid rgba(255,255,255,0.20)',
-                  borderTopColor: '#F29E4D', borderRadius: '50%',
-                  animation: 'create-spin 1s linear infinite',
-                }} />
-                <span>Streaming from Claude…</span>
-              </div>
-              <style>{`@keyframes create-spin { to { transform: rotate(360deg); } }`}</style>
-              {genStreaming && (
-                <pre style={{
-                  whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: 14, padding: '14px 16px',
-                  color: 'rgba(255,255,255,0.82)', fontSize: 14, lineHeight: 1.55,
-                  fontFamily: 'var(--font-sans)', margin: 0,
-                }}>{genStreaming}</pre>
-              )}
-            </div>
-          )}
-
-          {!genError && !genRunning && genResults.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {genResults.length > 1 && (
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {genResults.map((r, i) => {
-                    const on = activeResultIdx === i;
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => setActiveResultIdx(i)}
-                        style={{
-                          border: '1px solid ' + (on ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.08)'),
-                          background: on ? 'rgba(255,255,255,0.10)' : 'transparent',
-                          color: on ? '#fff' : 'rgba(255,255,255,0.55)',
-                          borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 500,
-                          cursor: 'pointer', fontFamily: 'var(--font-sans)',
-                        }}
-                      >{r.header}</button>
-                    );
-                  })}
+            {genRunning ? (
+              /* ── Generating state ── */
+              <>
+                <div style={{ padding: 'max(16px, env(safe-area-inset-top, 0px) + 12px) 16px 0' }}>
+                  <button
+                    onClick={() => { abortRef.current?.abort(); setShowGenSheet(false); }}
+                    style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.45)', fontSize: 16, fontWeight: 500, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-sans)' }}
+                  >Cancel</button>
                 </div>
-              )}
-              <div style={{ fontSize: 17, fontWeight: 600, color: '#fff' }}>
-                {genResults[activeResultIdx]?.header}
-              </div>
-              <pre style={{
-                whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 14, padding: '14px 16px',
-                color: 'rgba(255,255,255,0.88)', fontSize: 15, lineHeight: 1.6,
-                fontFamily: 'var(--font-sans)', margin: 0,
-              }}>{genResults[activeResultIdx]?.content}</pre>
-              <button
-                onClick={() => {
-                  const text = genResults[activeResultIdx]?.content ?? '';
-                  navigator.clipboard?.writeText(text).catch(() => { /* noop */ });
-                }}
-                style={{
-                  alignSelf: 'flex-start',
-                  border: '1px solid rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.04)',
-                  borderRadius: 10, padding: '8px 12px', fontSize: 13, color: 'rgba(255,255,255,0.75)',
-                  cursor: 'pointer', fontFamily: 'var(--font-sans)',
-                }}
-              >Copy</button>
-            </div>
-          )}
 
-          {!genError && !genRunning && genResults.length === 0 && genStreaming && (
-            <pre style={{
-              whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 14, padding: '14px 16px',
-              color: 'rgba(255,255,255,0.82)', fontSize: 14, lineHeight: 1.55,
-              fontFamily: 'var(--font-sans)', margin: 0,
-            }}>{genStreaming}</pre>
-          )}
-        </div>
-      </Sheet>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32, padding: '0 32px', position: 'relative', overflow: 'hidden' }}>
+                  {/* Amber radial bg glow */}
+                  <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(217,115,26,0.13), transparent 70%)', pointerEvents: 'none' }} />
+
+                  {/* Pulsing circles + icon */}
+                  <div style={{ position: 'relative', width: 130, height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ position: 'absolute', width: 130, height: 130, borderRadius: '50%', background: 'rgba(217,115,26,0.15)', animation: 'gen-pulse 1.4s ease-in-out infinite' }} />
+                    <div style={{ position: 'absolute', width: 88, height: 88, borderRadius: '50%', background: 'rgba(217,115,26,0.22)', animation: 'gen-pulse2 1.4s ease-in-out infinite' }} />
+                    <div style={{ position: 'relative', width: 88, height: 88, borderRadius: '50%', background: 'rgba(217,115,26,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgb(217,115,26)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'center', zIndex: 1 }}>
+                    <div style={{ fontSize: 19, fontWeight: 600, color: 'rgba(255,255,255,0.88)', marginBottom: 10 }}>Creating your content</div>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)' }}>{genFormatLabels.join(' · ')}</div>
+                  </div>
+
+                  {/* Live streaming text */}
+                  {genStreaming && (
+                    <div style={{ width: '100%', maxHeight: 200, overflowY: 'auto', zIndex: 1 }}>
+                      <p style={{
+                        margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                        color: 'rgba(255,255,255,0.40)', fontSize: 14, lineHeight: 1.6,
+                        fontFamily: 'var(--font-sans)',
+                      }}>{genStreaming}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              /* ── Results / error state ── */
+              <>
+                {/* Top bar */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: 'max(18px, env(safe-area-inset-top, 0px) + 14px) 16px 14px',
+                  flexShrink: 0,
+                }}>
+                  <button
+                    onClick={() => setShowGenSheet(false)}
+                    aria-label="Back"
+                    style={{
+                      width: 28, height: 28, borderRadius: '50%', border: 'none',
+                      background: 'rgba(255,255,255,0.10)', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'rgba(255,255,255,0.60)', flexShrink: 0,
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+
+                  {/* Format tabs */}
+                  {genResults.length > 1 ? (
+                    <div style={{ flex: 1, overflowX: 'auto', scrollbarWidth: 'none', display: 'flex', gap: 6 }}>
+                      {genResults.map((r, i) => {
+                        const on = activeResultIdx === i;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => { setActiveResultIdx(i); setCopied(false); }}
+                            style={{
+                              flexShrink: 0, border: 'none',
+                              background: on ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.05)',
+                              color: on ? '#fff' : 'rgba(255,255,255,0.40)',
+                              borderRadius: 999, padding: '5px 10px',
+                              fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                            }}
+                          >{r.header}</button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ flex: 1, fontSize: 16, fontWeight: 600, color: '#fff' }}>
+                      {genError ? 'Generation failed' : (genResults[0]?.header ?? '')}
+                    </div>
+                  )}
+
+                  {/* Copy button */}
+                  {!genError && (genResults.length > 0 || genStreaming) && (
+                    <button
+                      onClick={() => {
+                        const text = genResults.length > 0
+                          ? (genResults[activeResultIdx]?.content ?? '')
+                          : genStreaming;
+                        navigator.clipboard?.writeText(text).catch(() => {});
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      style={{
+                        border: 'none', background: 'transparent', cursor: 'pointer', padding: 0,
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        color: copied ? GREEN : 'rgba(255,255,255,0.60)',
+                        fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-sans)', flexShrink: 0,
+                        transition: 'color 0.15s',
+                      }}
+                    >
+                      {copied
+                        ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg> Copied</>
+                        : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</>
+                      }
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ height: 0.5, background: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
+
+                {/* Scrollable content */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px calc(32px + env(safe-area-inset-bottom, 0px))' }}>
+                  {genError ? (
+                    <div style={{
+                      padding: '14px 16px', borderRadius: 12,
+                      background: 'rgba(220,80,60,0.12)', border: '1px solid rgba(220,80,60,0.30)',
+                      color: 'rgba(255,200,190,0.95)', fontSize: 15, lineHeight: 1.55,
+                    }}>{genError}</div>
+                  ) : (
+                    <p style={{
+                      margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                      color: 'rgba(255,255,255,0.85)', fontSize: 17, lineHeight: 1.7,
+                      fontFamily: 'var(--font-sans)',
+                    }}>
+                      {genResults.length > 0
+                        ? genResults[activeResultIdx]?.content
+                        : genStreaming}
+                    </p>
+                  )}
+                </div>
+
+                {/* Saved to Library badge */}
+                {!genError && genResults.length > 0 && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))',
+                    borderTop: '0.5px solid rgba(255,255,255,0.07)', flexShrink: 0,
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill={GREEN} stroke="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5l-4.5-4.5 1.41-1.41L10 13.67l7.09-7.09 1.41 1.41L10 16.5z"/></svg>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.32)', fontFamily: 'var(--font-sans)' }}>Saved to Library</span>
+                  </div>
+                )}
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Hidden file pickers */}
       <input ref={fileInputRef} type="file" accept=".txt,.md,.pdf"

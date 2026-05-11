@@ -49,6 +49,7 @@ class ViewErrorBoundary extends Component<{ children: ReactNode; label: string }
 }
 import EmptyCanvasOverlay from './components/canvas/EmptyCanvasOverlay';
 import Intro from './components/Intro';
+import OnboardingScreen from './components/OnboardingScreen';
 import WorkflowLibraryView from './components/canvas/WorkflowLibrary';
 import SettingsPanel from './components/canvas/SettingsPanel';
 import CardsPanel from './components/canvas/CardsPanel';
@@ -68,6 +69,10 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   const isMobile = useIsMobile();
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem('onboarding_complete')
+  );
+  const [showOnboardingOverlay, setShowOnboardingOverlay] = useState(false);
 
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'create', 'capture'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'create'; };
@@ -206,6 +211,13 @@ function AppInner() {
   }, []);
 
 
+  if (showOnboarding) return (
+    <OnboardingScreen onFinish={() => {
+      localStorage.setItem('onboarding_complete', '1');
+      setShowOnboarding(false);
+    }} />
+  );
+
   if (authLoading) return (
     <div role="status" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
       <TypewriterLogo />
@@ -225,7 +237,13 @@ function AppInner() {
           ) : activeView === 'settings' ? (
             <SettingsPanel />
           ) : (
-            <CreateHome />
+            <CreateHome onShowOnboarding={() => setShowOnboardingOverlay(true)} />
+          )}
+          {showOnboardingOverlay && (
+            <OnboardingScreen
+              onFinish={() => setShowOnboardingOverlay(false)}
+              onClose={() => setShowOnboardingOverlay(false)}
+            />
           )}
         </div>
         <MobileBottomBar active={activeView} onChange={setActiveView} />
