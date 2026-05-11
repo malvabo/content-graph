@@ -149,7 +149,7 @@ struct VoiceNotesView: View {
                     Spacer()
                     VStack(spacing: 12) {
                         Image(systemName: "mic.slash")
-                            .font(.app(size: 38, weight: .light))
+                            .font(.app(size: 38, weight: .regular))
                             .foregroundColor(Color.white.opacity(0.18))
                         Text("No notes yet")
                             .font(.app(size: 16))

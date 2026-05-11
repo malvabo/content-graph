@@ -47,7 +47,7 @@ struct LibraryView: View {
                     Spacer()
                     VStack(spacing: 12) {
                         Image(systemName: "tray")
-                            .font(.app(size: 36, weight: .light))
+                            .font(.app(size: 36, weight: .regular))
                             .foregroundColor(Color.white.opacity(0.20))
                         Text("No generations yet")
                             .font(.app(size: 16, weight: .regular))
@@ -273,7 +273,7 @@ private struct TemplateCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
                 Image(systemName: icon)
-                    .font(.app(size: 18, weight: .light))
+                    .font(.app(size: 18, weight: .regular))
                     .foregroundColor(Color.white.opacity(0.70))
                 Spacer()
                 if isCustom {

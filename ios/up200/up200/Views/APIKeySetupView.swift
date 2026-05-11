@@ -27,7 +27,7 @@ struct APIKeySetupView: View {
                             .fill(amber.opacity(0.12))
                             .frame(width: 90, height: 90)
                         Image(systemName: "key.fill")
-                            .font(.app(size: 30, weight: .light))
+                            .font(.app(size: 30, weight: .regular))
                             .foregroundColor(amber)
                     }
 
