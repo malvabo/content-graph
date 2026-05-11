@@ -650,7 +650,14 @@ export default function QuickMode() {
         }),
       });
 
-      if (!res.ok) throw new Error(`API error ${res.status}`);
+      if (!res.ok) {
+        let detail = '';
+        try {
+          const body = await res.text();
+          try { detail = JSON.parse(body)?.error?.message ?? body; } catch { detail = body; }
+        } catch { /* ignore */ }
+        throw new Error(`API error ${res.status}${detail ? `: ${detail}` : ''}`);
+      }
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
