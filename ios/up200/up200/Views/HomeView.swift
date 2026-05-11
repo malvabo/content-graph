@@ -485,9 +485,36 @@ private final class VoiceRecorder: ObservableObject {
 
 // MARK: - Animated Lights Button
 
+/// Sun-rays mark — 8 short rays radiating from a centre gap, scaled to the
+/// shape's bounds. Mirrors the web's `<SparkIcon>` SVG path.
+private struct SparkRaysShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let w = rect.width
+        let pt: (Double, Double) -> CGPoint = { x, y in
+            CGPoint(x: rect.minX + w * x / 24, y: rect.minY + w * y / 24)
+        }
+        let rays: [(Double, Double, Double, Double)] = [
+            (12,   3,   12,   6),
+            (12,  18,   12,  21),
+            ( 3,  12,    6,  12),
+            (18,  12,   21,  12),
+            ( 5.6, 5.6,  7.7, 7.7),
+            (16.3, 16.3, 18.4, 18.4),
+            ( 5.6, 18.4, 7.7, 16.3),
+            (16.3, 7.7, 18.4, 5.6),
+        ]
+        var p = Path()
+        for r in rays {
+            p.move(to: pt(r.0, r.1))
+            p.addLine(to: pt(r.2, r.3))
+        }
+        return p
+    }
+}
+
 struct AnimatedLightsButton: View {
     let title: String
-    var icon: String? = nil
+    var showSparks: Bool = false
     var isEnabled: Bool = true
     var action: () -> Void
     @State private var phase = false
@@ -515,14 +542,18 @@ struct AnimatedLightsButton: View {
                     .stroke(Color.white.opacity(isEnabled ? 0.13 : 0.06), lineWidth: 0.5)
 
                 HStack(spacing: 8) {
-                    if let icon {
-                        Image(systemName: icon)
-                            .font(.app(size: 17, weight: .semibold))
+                    if showSparks {
+                        SparkRaysShape()
+                            .stroke(
+                                isEnabled ? Color.white : Color.white.opacity(0.25),
+                                style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round)
+                            )
+                            .frame(width: 17, height: 17)
                     }
                     Text(title)
                         .font(.app(size: 18, weight: .semibold))
+                        .foregroundColor(isEnabled ? .white : Color.white.opacity(0.25))
                 }
-                .foregroundColor(isEnabled ? .white : Color.white.opacity(0.25))
             }
             .frame(height: 54)
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
@@ -1821,7 +1852,7 @@ struct HomeView: View {
 
                         AnimatedLightsButton(
                             title: generateLabel,
-                            icon: isGenerating ? nil : "sparkles",
+                            showSparks: !isGenerating,
                             isEnabled: canGenerate
                         ) {
                             startGeneration()
