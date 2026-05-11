@@ -982,7 +982,9 @@ private struct VoiceRecordSheet: View {
                             .transition(.opacity)
                     } else {
                         Text(recorder.isRecording ? timeLabel : "Tap to record")
-                            .font(.app(size: 17, design: recorder.isRecording ? .monospaced : .default))
+                            .font(recorder.isRecording
+                                  ? .system(size: 17, design: .monospaced)
+                                  : .app(size: 17))
                             .foregroundColor(Color.white.opacity(recorder.isRecording ? 0.80 : 0.40))
                             .transition(.opacity)
                     }
