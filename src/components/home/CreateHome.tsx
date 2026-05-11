@@ -26,6 +26,15 @@ const allFormats: ContentFormat[] = [
 
 const brands = ['Default', 'Personal', 'Work', 'Brand A', 'Brand B'];
 
+interface FormatTemplate { id: string; label: string; formatIDs: string[] }
+const popularTemplates: FormatTemplate[] = [
+  { id: 'social-pack', label: 'Social pack',  formatIDs: ['linkedin', 'twitter', 'instagram'] },
+  { id: 'newsletter',  label: 'Newsletter',   formatIDs: ['newsletter'] },
+  { id: 'blog',        label: 'Blog post',    formatIDs: ['blog'] },
+  { id: 'video',       label: 'Video script', formatIDs: ['youtube', 'video'] },
+  { id: 'research',    label: 'Research pack', formatIDs: ['newsletter', 'blog', 'twitter'] },
+];
+
 const BG = '#1A1513';
 const CARD_BG = 'rgba(255,255,255,0.04)';
 const CARD_BORDER = 'rgba(255,255,255,0.06)';
@@ -857,6 +866,35 @@ export default function CreateHome() {
               )}
               <span style={{ color: 'rgba(255,255,255,0.20)' }}><ChevronRight /></span>
             </button>
+            <div
+              style={{
+                display: 'flex', gap: 8, overflowX: 'auto', padding: '0 16px 14px',
+                scrollbarWidth: 'none',
+              }}
+              className="hide-scrollbar"
+            >
+              <style>{`.hide-scrollbar::-webkit-scrollbar { display: none; }`}</style>
+              {popularTemplates.map(tpl => {
+                const ids = new Set(tpl.formatIDs);
+                const active = ids.size === selectedFormats.size
+                  && Array.from(ids).every(id => selectedFormats.has(id));
+                return (
+                  <button
+                    key={tpl.id}
+                    onClick={() => setSelectedFormats(new Set(tpl.formatIDs))}
+                    style={{
+                      flexShrink: 0,
+                      border: '0.5px solid ' + (active ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.10)'),
+                      background: active ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
+                      color: active ? '#fff' : 'rgba(255,255,255,0.65)',
+                      borderRadius: 999, padding: '7px 14px',
+                      fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                      fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
+                    }}
+                  >{tpl.label}</button>
+                );
+              })}
+            </div>
           </GlassCard>
 
           {/* Prompt */}
