@@ -960,10 +960,10 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
               aria-label="Show intro"
               style={{
                 width: 34, height: 34, borderRadius: '50%',
-                border: '0.5px solid rgba(255,255,255,0.12)',
-                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.22)',
+                background: 'rgba(255,255,255,0.12)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'rgba(255,255,255,0.55)',
+                cursor: 'pointer', color: 'rgba(255,255,255,0.80)',
               }}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
