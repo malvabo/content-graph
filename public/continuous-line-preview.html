@@ -52,16 +52,32 @@
   .accent { stroke: var(--accent); }
 
   /* Master path that draws across, holds, then erases back */
+  /* Base outline — always visible */
+  .flow-base {
+    stroke: rgba(255, 255, 255, 0.28);
+    stroke-width: 1.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Bright tracer that draws across, holds, then retraces */
   .flow {
-    stroke-dasharray: 1800;
-    stroke-dashoffset: 1800;
-    animation: draw 7s cubic-bezier(.65,.05,.36,1) infinite;
+    stroke: var(--accent);
+    stroke-width: 2.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 2400;
+    stroke-dashoffset: 2400;
+    animation: draw 6s cubic-bezier(.65,.05,.36,1) infinite;
+    filter: drop-shadow(0 0 6px rgba(242,158,77,0.55));
   }
   @keyframes draw {
-    0%   { stroke-dashoffset: 1800; }
-    45%  { stroke-dashoffset: 0; }
-    55%  { stroke-dashoffset: 0; }
-    100% { stroke-dashoffset: -1800; }
+    0%   { stroke-dashoffset: 2400; }
+    35%  { stroke-dashoffset: 0; }
+    70%  { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: -2400; }
   }
 
   /* Document — gentle hover */
@@ -97,14 +113,15 @@
 
   /* Sparks at the leading edge of the drawn line */
   .spark {
-    fill: var(--accent);
+    fill: #fff;
     opacity: 0;
-    animation: spark-pulse 7s ease-in-out infinite;
+    animation: spark-pulse 6s ease-in-out infinite;
+    filter: drop-shadow(0 0 4px rgba(255,255,255,0.9));
   }
   @keyframes spark-pulse {
-    0%, 5%   { opacity: 0; }
-    10%, 45% { opacity: 1; }
-    55%, 100%{ opacity: 0; }
+    0%, 2%   { opacity: 0; }
+    5%, 35%  { opacity: 1; }
+    36%, 100%{ opacity: 0; }
   }
 </style>
 </head>
@@ -145,11 +162,20 @@
       <!--
         One single, organic path from the document edge to the card
         cluster. Sweeps up, dips, loops, then resolves into the
-        receiving area on the right.
+        receiving area on the right. Drawn twice: a faint always-on
+        base outline plus a bright orange tracer that animates.
       -->
+      <path class="flow-base"
+            d="M 240 226
+               C 320 226, 360 140, 440 160
+               S 520 320, 600 260
+               S 700 140, 800 200
+               S 900 320, 980 230
+               S 1040 170, 990 150
+               S 900 200, 920 260
+               S 1000 320, 980 280" />
       <path id="flowPath"
-            class="stroke flow"
-            stroke-width="1.5"
+            class="flow"
             d="M 240 226
                C 320 226, 360 140, 440 160
                S 520 320, 600 260
@@ -160,10 +186,10 @@
                S 1000 320, 980 280" />
 
       <!-- Spark dot that rides at the end of the drawing -->
-      <circle class="spark" r="3.5">
-        <animateMotion dur="7s" repeatCount="indefinite"
-                       keyTimes="0; 0.45; 0.55; 1"
-                       keyPoints="0; 1; 1; 1"
+      <circle class="spark" r="4">
+        <animateMotion dur="6s" repeatCount="indefinite"
+                       keyTimes="0; 0.35; 1"
+                       keyPoints="0; 1; 1"
                        calcMode="linear"
                        rotate="auto">
           <mpath href="#flowPath" />
