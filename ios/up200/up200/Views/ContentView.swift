@@ -80,34 +80,35 @@ private struct ProjectRow: View {
 
     var body: some View {
         Button { showDetail = true } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text(project.outputType)
-                        .font(.app(size: 11, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.45))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color.white.opacity(0.07))
-                        .clipShape(Capsule())
-                    Spacer()
-                    Text(project.date, style: .date)
-                        .font(.app(size: 11))
-                        .foregroundColor(Color.white.opacity(0.30))
-                }
-                Text(project.title)
-                    .font(.app(size: 15, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.85))
+            VStack(alignment: .leading, spacing: 6) {
+                Text(project.outputType)
+                    .font(.app(size: 15, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.88))
                     .lineLimit(1)
                 if !project.preview.isEmpty {
                     Text(project.preview)
                         .font(.app(size: 13))
-                        .foregroundColor(Color.white.opacity(0.40))
+                        .foregroundColor(Color.white.opacity(0.45))
                         .lineLimit(2)
                 }
+                HStack(spacing: 8) {
+                    Text(project.title)
+                        .font(.app(size: 11))
+                        .foregroundColor(Color.white.opacity(0.30))
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    Text(project.date, style: .date)
+                        .font(.app(size: 11))
+                        .foregroundColor(Color.white.opacity(0.30))
+                }
+                .padding(.top, 2)
             }
-            .padding(14)
-            .background(Color.white.opacity(0.04))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.white.opacity(0.04))
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
@@ -117,7 +118,7 @@ private struct ProjectRow: View {
         .sheet(isPresented: $showDetail) {
             ProjectDetailView(project: project)
                 .presentationDetents([.large])
-                .presentationDragIndicator(.hidden)
+                .presentationDragIndicator(.visible)
                 .presentationCornerRadius(22)
                 .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
@@ -386,7 +387,7 @@ private struct AddTemplateSheet: View {
             .padding(.bottom, 32)
         }
         .presentationDetents([.medium])
-        .presentationDragIndicator(.hidden)
+        .presentationDragIndicator(.visible)
         .presentationCornerRadius(22)
         .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
     }
@@ -442,7 +443,7 @@ struct ContentView: View {
                 }
             }
             .presentationDetents([.medium])
-            .presentationDragIndicator(.hidden)
+            .presentationDragIndicator(.visible)
             .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }

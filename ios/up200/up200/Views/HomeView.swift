@@ -255,7 +255,6 @@ private struct GeneratingSheet: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
             RadialGradient(
                 colors: [amber.opacity(0.15), .clear],
                 center: .center, startRadius: 0, endRadius: 340
@@ -610,7 +609,6 @@ struct ImportSheetView: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 32)
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
     }
 }
 
@@ -703,7 +701,6 @@ private struct TextInputSheet: View {
                 .animation(.easeOut(duration: 0.2), value: isGenerating)
             }
         }
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { focused = true }
         }
@@ -810,7 +807,6 @@ private struct LinkInputSheet: View {
 
             Spacer()
         }
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { focused = true }
         }
@@ -897,7 +893,6 @@ private struct VoiceRecordSheet: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
             RadialGradient(
                 colors: [amber.opacity(recorder.isRecording ? 0.16 : 0.0), .clear],
                 center: .center, startRadius: 0, endRadius: 300
@@ -1180,7 +1175,7 @@ private struct SourcesBlock: View {
                 }
             }
             .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.hidden)
+            .presentationDragIndicator(.visible)
             .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
@@ -1191,7 +1186,7 @@ private struct SourcesBlock: View {
                 }
             }
             .presentationDetents([.large])
-            .presentationDragIndicator(.hidden)
+            .presentationDragIndicator(.visible)
             .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
@@ -1202,7 +1197,7 @@ private struct SourcesBlock: View {
                 }
             }
             .presentationDetents([.large])
-            .presentationDragIndicator(.hidden)
+            .presentationDragIndicator(.visible)
             .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
@@ -1213,7 +1208,7 @@ private struct SourcesBlock: View {
                 }
             }
             .presentationDetents([.large])
-            .presentationDragIndicator(.hidden)
+            .presentationDragIndicator(.visible)
             .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
@@ -1439,7 +1434,6 @@ private struct FormatPickerSheet: View {
                 .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
             }
         }
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
     }
 
     @ViewBuilder
@@ -1657,7 +1651,7 @@ private struct FormatsBlock: View {
         .sheet(isPresented: $showPicker) {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
                 .presentationDetents([.large])
-                .presentationDragIndicator(.hidden)
+                .presentationDragIndicator(.visible)
                 .presentationCornerRadius(22)
                 .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
@@ -1871,7 +1865,7 @@ struct HomeView: View {
                 }
             }
             .presentationDetents([.large])
-            .presentationDragIndicator(.hidden)
+            .presentationDragIndicator(.visible)
             .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
@@ -1887,7 +1881,7 @@ struct HomeView: View {
                 showKeyUpdate = false
             }
             .presentationDetents([.large])
-            .presentationDragIndicator(.hidden)
+            .presentationDragIndicator(.visible)
             .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
