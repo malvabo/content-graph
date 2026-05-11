@@ -520,7 +520,7 @@ struct LaunchView: View {
     var body: some View {
         VStack(spacing: 16) {
             Text("up")
-                .font(.app(size: 32, weight: .semibold, design: .rounded))
+                .font(.system(size: 32, weight: .semibold, design: .rounded))
                 .foregroundColor(.white)
             ProgressView()
                 .tint(Color.white.opacity(0.6))
