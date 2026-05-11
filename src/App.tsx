@@ -54,7 +54,6 @@ import SettingsPanel from './components/canvas/SettingsPanel';
 import CardsPanel from './components/canvas/CardsPanel';
 import CardsLibrary from './components/canvas/CardsLibrary';
 import InfographicsPanel from './components/canvas/InfographicsPanel';
-import MobileHome from './components/mobile/MobileHome';
 import MobileBottomBar from './components/mobile/MobileBottomBar';
 import MobileLibrary from './components/mobile/MobileLibrary';
 import CreateHome from './components/home/CreateHome';
@@ -94,6 +93,14 @@ function AppInner() {
 
   useEffect(() => { init(); }, [init]);
   useEffect(() => { if (user) useSettingsStore.getState().load(); }, [user]);
+
+  // 'create' / 'capture' are mobile-only views. If a desktop user lands on
+  // those hashes (e.g. shared link), normalize to the workflow library.
+  useEffect(() => {
+    if (!isMobile && (activeView === 'create' || activeView === 'capture')) {
+      setActiveView('library');
+    }
+  }, [isMobile, activeView, setActiveView]);
 
   // Mobile is a dark-mode-only experience — force the class on mount/change,
   // and restore the user's stored preference when switching back to desktop.
@@ -273,10 +280,6 @@ function AppInner() {
             </div>
           </>
         )}
-
-        {activeView === 'create' && <CreateHome />}
-
-        {activeView === 'capture' && <MobileHome />}
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
