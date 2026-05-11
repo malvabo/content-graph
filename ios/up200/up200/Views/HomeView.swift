@@ -553,7 +553,7 @@ struct ImportSheetView: View {
                 .padding(.top, 10)
 
             Text("Import content")
-                .font(.app(size: 19, weight: .semibold))
+                .font(Font.app(size: 19, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
                 .padding(.bottom, 2)
 
@@ -1102,7 +1102,7 @@ private struct SourcesBlock: View {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     Text("Sources")
-                        .font(.app(size: 15, weight: .medium))
+                        .font(Font.app(size: 15, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.85))
                     Spacer()
                     Button { showImport = true } label: {
@@ -1504,7 +1504,7 @@ private struct FormatPickerSheet: View {
         } label: {
             HStack(spacing: 14) {
                 Image(systemName: selected ? "checkmark.square.fill" : "square")
-                    .font(.app(size: 18))
+                    .font(Font.app(size: 18))
                     .foregroundColor(selected ? green : Color.white.opacity(0.22))
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 3) {
@@ -1786,7 +1786,7 @@ struct HomeView: View {
                     VStack(spacing: 0) {
                         HStack {
                             Text("Create")
-                                .font(.app(size: 28, weight: .bold))
+                                .font(Font.app(size: 28, weight: .bold))
                                 .foregroundColor(.white)
                             Spacer()
                             Button { showKeyUpdate = true } label: {
