@@ -56,8 +56,8 @@ import CardsLibrary from './components/canvas/CardsLibrary';
 import InfographicsPanel from './components/canvas/InfographicsPanel';
 import MobileHome from './components/mobile/MobileHome';
 import MobileBottomBar from './components/mobile/MobileBottomBar';
+import MobileLibrary from './components/mobile/MobileLibrary';
 import CreateHome from './components/home/CreateHome';
-import MobileOnboarding from './components/mobile/MobileOnboarding';
 import { useIsMobile } from './hooks/useIsMobile';
 import TypewriterLogo from './components/TypewriterLogo';
 import QuickMode from './components/canvas/QuickMode';
@@ -69,9 +69,7 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   const isMobile = useIsMobile();
-  const [mobileOnboardingDone, setMobileOnboardingDone] = useState(true);
-  const [mobileOnboardingPhase, setMobileOnboardingPhase] = useState<'idle' | 'recording' | undefined>(undefined);
-  
+
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'create', 'capture'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'create'; };
   const getHashParam = () => { const h = window.location.hash.slice(1); const i = h.indexOf(':'); return i === -1 ? undefined : h.slice(i + 1) || undefined; };
@@ -212,25 +210,11 @@ function AppInner() {
   const isNativeWrapper = !!(window as any).webkit?.messageHandlers?.nativeBridge;
 
   if (isMobile && !isNativeWrapper) {
-    if (!mobileOnboardingDone) {
-      return (
-        <div className="flex flex-col" style={{ height: '100dvh' }}>
-          <MobileOnboarding
-            initialPhase={mobileOnboardingPhase}
-            onComplete={() => { setMobileOnboardingDone(true); setMobileOnboardingPhase(undefined); }}
-          />
-        </div>
-      );
-    }
     return (
       <div className="flex flex-col" style={{ height: '100dvh' }}>
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          {activeView === 'capture' ? (
-            <MobileHome
-              onAddPost={() => { setMobileOnboardingPhase('recording'); setMobileOnboardingDone(false); }}
-            />
-          ) : activeView === 'library' || activeView === 'workflow' ? (
-            <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />
+          {activeView === 'library' ? (
+            <MobileLibrary />
           ) : activeView === 'settings' ? (
             <SettingsPanel />
           ) : (
@@ -292,11 +276,7 @@ function AppInner() {
 
         {activeView === 'create' && <CreateHome />}
 
-        {activeView === 'capture' && (
-          <MobileHome
-            onAddPost={() => { setMobileOnboardingPhase('recording'); setMobileOnboardingDone(false); }}
-          />
-        )}
+        {activeView === 'capture' && <MobileHome />}
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 

@@ -17,17 +17,6 @@ const TABS: Tab[] = [
     ),
   },
   {
-    id: 'capture',
-    label: 'Capture',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-        <line x1="8" y1="22" x2="16" y2="22"/>
-      </svg>
-    ),
-  },
-  {
     id: 'library',
     label: 'Library',
     icon: (
@@ -58,10 +47,7 @@ interface Props {
 }
 
 export default function MobileBottomBar({ active, onChange }: Props) {
-  const isActive = (id: string) => {
-    if (id === 'library') return active === 'library' || active === 'workflow';
-    return active === id;
-  };
+  const isActive = (id: string) => active === id;
   return (
     <nav
       aria-label="Bottom navigation"
