@@ -907,11 +907,13 @@ export default function CreateHome() {
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
               placeholder="Leave empty to generate from sources and format."
-              rows={3}
               style={{
                 width: '100%', padding: '4px 16px 4px', border: 'none', background: 'transparent', outline: 'none',
-                resize: 'none', color: 'rgba(255,255,255,0.88)', fontSize: 15, fontFamily: 'var(--font-sans)',
-                boxSizing: 'border-box', height: 66, lineHeight: 1.35, display: 'block',
+                resize: 'none', color: 'rgba(255,255,255,0.88)', fontSize: 16, fontFamily: 'var(--font-sans)',
+                boxSizing: 'border-box',
+                height: 72, minHeight: 72, maxHeight: 72,
+                lineHeight: 1.35, display: 'block',
+                WebkitAppearance: 'none', appearance: 'none',
               }}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 12px 12px' }}>
@@ -1004,18 +1006,19 @@ export default function CreateHome() {
         <SheetHeader title="Extra details" onCancel={() => setShowPromptFull(false)}
           action={<button onClick={() => setShowPromptFull(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#F29E4D', fontSize: 16, fontWeight: 600, padding: 0, fontFamily: 'var(--font-sans)' }}>Done</button>} />
         <Divider />
-        <div style={{ padding: '14px 16px' }}>
+        <div style={{ padding: '14px 16px', height: 'calc(100% - 56px)', boxSizing: 'border-box' }}>
           <textarea
             className="create-prompt"
             autoFocus
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
             placeholder="Leave empty to generate from sources and format."
-            rows={16}
             style={{
               width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none',
               color: 'rgba(255,255,255,0.88)', fontSize: 16, fontFamily: 'var(--font-sans)', lineHeight: 1.55,
               boxSizing: 'border-box',
+              height: '60vh', minHeight: '60vh', maxHeight: '60vh', display: 'block',
+              WebkitAppearance: 'none', appearance: 'none',
             }}
           />
         </div>
