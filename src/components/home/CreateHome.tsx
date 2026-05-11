@@ -804,7 +804,6 @@ export default function CreateHome() {
           <GlassCard>
             <div style={{ padding: '14px 16px 10px' }}>
               <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>Sources</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 3 }}>What the output should be based on</div>
             </div>
             {sources.map(item => (
               <div key={item.id}>
@@ -861,7 +860,6 @@ export default function CreateHome() {
           <GlassCard>
             <div style={{ padding: '14px 16px 6px' }}>
               <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>Extra details</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', marginTop: 3 }}>Optional notes or instructions</div>
             </div>
             <textarea
               className="create-prompt"
@@ -875,16 +873,18 @@ export default function CreateHome() {
                 boxSizing: 'border-box', height: 66, lineHeight: 1.35, display: 'block',
               }}
             />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 6px 6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 12px 12px' }}>
               <button
                 type="button"
                 onClick={() => setShowPromptFull(true)}
                 aria-label="Expand"
                 style={{
-                  border: 'none', background: 'rgba(255,255,255,0.05)', cursor: 'pointer',
-                  width: 28, height: 28, borderRadius: 8,
+                  border: '0.5px solid rgba(255,255,255,0.10)',
+                  background: 'rgba(255,255,255,0.09)',
+                  cursor: 'pointer',
+                  width: 30, height: 30, borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'rgba(255,255,255,0.50)',
+                  color: 'rgba(255,255,255,0.70)',
                 }}
               >
                 <ExpandIcon />
