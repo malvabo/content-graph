@@ -852,7 +852,7 @@ export default function CreateHome() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>Format</div>
                 {selectedFormats.size > 0 && (
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatsSummary}</div>
+                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatsSummary}</div>
                 )}
               </div>
               {selectedFormats.size === 0 ? (

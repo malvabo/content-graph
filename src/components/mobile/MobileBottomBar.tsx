@@ -89,7 +89,7 @@ export default function MobileBottomBar({ active, onChange }: Props) {
               alignItems: 'center', justifyContent: 'center', gap: 4,
               padding: '6px 4px', border: 'none', background: 'transparent', cursor: 'pointer',
               color: on ? '#fff' : 'rgba(255,255,255,0.38)',
-              fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 500,
+              fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500,
               height: 50,
             }}
           >
