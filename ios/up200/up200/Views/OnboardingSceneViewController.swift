@@ -16,7 +16,8 @@ class OnboardingSceneViewController: UIViewController {
         super.viewDidLoad()
         setupSceneView()
         setupCamera()
-        setupParticles()
+        setupDotCloud()
+        setupDeepAtmosphere()
         setupClouds()
         setupLabelAnchors()
         setupBackground()
@@ -98,40 +99,73 @@ class OnboardingSceneViewController: UIViewController {
         scene.rootNode.addChildNode(cameraNode)
     }
 
-    // MARK: - Particles
+    // MARK: - Dot cloud (the rotating focal element)
 
-    private func setupParticles() {
-        // Main particle system
-        let particles = SCNParticleSystem()
-        particles.birthRate           = 80
-        particles.particleLifeSpan    = 45
-        particles.particleLifeSpanVariation = 20
-        particles.emitterShape        = SCNBox(width: 60, height: 80, length: 40, chamferRadius: 0)
-        particles.emittingDirection   = SCNVector3(0, 0.02, 0)
-        particles.spreadingAngle      = 180        // omnidirectional
-        particles.particleVelocity    = 0.08
-        particles.particleVelocityVariation = 0.06
-        particles.particleSize        = 0.18
-        particles.particleSizeVariation = 0.12
-        particles.particleColor       = .white
-        particles.particleColorVariation = SCNVector4(0, 0, 0.1, 0.2)
-        particles.blendMode           = .additive
-        particles.isLightingEnabled   = false
-        particles.particleImage       = makeParticleSprite()
-        particles.loops               = true
+    /// The central cluster of glowing dots, built as an explicit node graph so
+    /// the whole cluster can rotate rigidly around its own center. Particles
+    /// emitted via SCNParticleSystem live in world space and don't follow a
+    /// parent rotation, which is why the previous implementation looked static.
+    private func setupDotCloud() {
+        let cloudGroup = SCNNode()
+        cloudGroup.position = SCNVector3(0, 0, 0)
 
-        let particleNode = SCNNode()
-        particleNode.addParticleSystem(particles)
-        particleNode.position = SCNVector3(0, 0, 0)
-        scene.rootNode.addChildNode(particleNode)
+        let sprite = makeParticleSprite()
 
-        // Slow global rotation of particle container
-        let rotate = SCNAction.repeatForever(
-            SCNAction.rotateBy(x: 0.04, y: 0.12, z: 0, duration: 60)
+        func rng(_ n: Int) -> Float {
+            let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
+            return Float(v - floor(v))
+        }
+
+        let target = 140
+        var placed = 0
+        var attempt = 0
+        while placed < target && attempt < target * 6 {
+            let nx = (rng(attempt * 3)     - 0.5) * 2
+            let ny = (rng(attempt * 3 + 1) - 0.5) * 2
+            let nz = (rng(attempt * 3 + 2) - 0.5) * 2
+            attempt += 1
+            // Reject points outside the unit sphere → softer, rounder cluster.
+            if nx * nx + ny * ny + nz * nz > 1 { continue }
+
+            let size = CGFloat(0.18 + rng(1000 + placed * 2) * 0.22)
+            let alpha = CGFloat(0.4 + rng(2000 + placed * 2) * 0.55)
+
+            let plane = SCNPlane(width: size, height: size)
+            let mat = plane.firstMaterial!
+            mat.diffuse.contents     = sprite
+            mat.transparent.contents = sprite
+            mat.lightingModel        = .constant
+            mat.blendMode            = .add
+            mat.writesToDepthBuffer  = false
+            mat.isDoubleSided        = true
+
+            let dot = SCNNode(geometry: plane)
+            // Ellipsoid scale 9 × 6 × 5 — roughly the volume the old emitter
+            // covered, just dense enough to read as a cloud.
+            dot.position = SCNVector3(nx * 9, ny * 6, nz * 5)
+            dot.opacity  = alpha
+            dot.constraints = [SCNBillboardConstraint()]
+            cloudGroup.addChildNode(dot)
+            placed += 1
+        }
+
+        scene.rootNode.addChildNode(cloudGroup)
+
+        // Perceptible self-rotation: Y full revolution every 22s, with a
+        // slower X tilt for parallax richness.
+        let spinY = SCNAction.repeatForever(
+            SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 22)
         )
-        particleNode.runAction(rotate)
+        let tiltX = SCNAction.repeatForever(
+            SCNAction.rotateBy(x: CGFloat.pi * 2, y: 0, z: 0, duration: 38)
+        )
+        cloudGroup.runAction(spinY)
+        cloudGroup.runAction(tiltX)
+    }
 
-        // Deeper, sparser layer
+    /// Deeper, sparser atmospheric particle layer behind the dot cloud. Stays
+    /// as a particle system because it's purely ambient — no rotation needed.
+    private func setupDeepAtmosphere() {
         let deep = SCNParticleSystem()
         deep.birthRate            = 20
         deep.particleLifeSpan     = 60
@@ -149,11 +183,6 @@ class OnboardingSceneViewController: UIViewController {
         deepNode.addParticleSystem(deep)
         deepNode.position = SCNVector3(0, 0, -10)
         scene.rootNode.addChildNode(deepNode)
-
-        let rotateDeep = SCNAction.repeatForever(
-            SCNAction.rotateBy(x: -0.02, y: -0.08, z: 0.01, duration: 70)
-        )
-        deepNode.runAction(rotateDeep)
     }
 
     /// Soft circular sprite for particles
