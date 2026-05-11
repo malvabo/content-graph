@@ -81,9 +81,10 @@ function makeParticleSprite(size: number): HTMLCanvasElement {
 
 interface Props {
   onFinish: () => void;
+  onClose?: () => void;
 }
 
-export default function OnboardingScreen({ onFinish }: Props) {
+export default function OnboardingScreen({ onFinish, onClose }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
   const [appeared, setAppeared] = useState(false);
@@ -262,6 +263,25 @@ export default function OnboardingScreen({ onFinish }: Props) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, overflow: 'hidden' }}>
       {/* 3D scene */}
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />
+
+      {/* Close button (only when opened as overlay) */}
+      {onClose && (
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: 'absolute', top: 'max(16px, env(safe-area-inset-top, 0px) + 12px)', right: 16,
+            width: 32, height: 32, borderRadius: '50%',
+            border: 'none', background: 'rgba(0,0,0,0.28)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'rgba(255,255,255,0.80)', zIndex: 1,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      )}
 
       {/* Floating labels */}
       {labels.map(l => (

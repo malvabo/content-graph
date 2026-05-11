@@ -72,6 +72,7 @@ function AppInner() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem('onboarding_complete')
   );
+  const [showOnboardingOverlay, setShowOnboardingOverlay] = useState(false);
 
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'create', 'capture'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'create'; };
@@ -236,7 +237,13 @@ function AppInner() {
           ) : activeView === 'settings' ? (
             <SettingsPanel />
           ) : (
-            <CreateHome />
+            <CreateHome onShowOnboarding={() => setShowOnboardingOverlay(true)} />
+          )}
+          {showOnboardingOverlay && (
+            <OnboardingScreen
+              onFinish={() => setShowOnboardingOverlay(false)}
+              onClose={() => setShowOnboardingOverlay(false)}
+            />
           )}
         </div>
         <MobileBottomBar active={activeView} onChange={setActiveView} />

@@ -652,7 +652,7 @@ function Divider() {
 
 // ─── CreateHome ────────────────────────────────────────────────────────────
 
-export default function CreateHome() {
+export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: () => void }) {
   const [sources, setSources] = useState<SourceItem[]>([]);
   const [selectedFormats, setSelectedFormats] = useState<Set<string>>(new Set());
   const [prompt, setPrompt] = useState('');
@@ -832,7 +832,26 @@ export default function CreateHome() {
           'radial-gradient(320px circle at 100% 85%, rgba(77,51,20,0.22), transparent 70%)',
       }} />
       <div style={{ position: 'relative', maxWidth: 520, margin: '0 auto', padding: '24px 16px calc(80px + env(safe-area-inset-bottom, 0px))' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, margin: '8px 0 16px', color: '#fff' }}>Create</h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 16px' }}>
+          <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, color: '#fff' }}>Create</h1>
+          {onShowOnboarding && (
+            <button
+              onClick={onShowOnboarding}
+              aria-label="Show intro"
+              style={{
+                width: 34, height: 34, borderRadius: '50%',
+                border: '0.5px solid rgba(255,255,255,0.12)',
+                background: 'rgba(255,255,255,0.07)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: 'rgba(255,255,255,0.55)',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+              </svg>
+            </button>
+          )}
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Sources */}
