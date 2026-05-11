@@ -802,8 +802,22 @@ export default function CreateHome() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Sources */}
           <GlassCard>
-            <div style={{ padding: '14px 16px 10px' }}>
+            <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>Sources</div>
+              <button
+                onClick={() => setShowImport(true)}
+                aria-label="Add source"
+                style={{
+                  border: '0.5px solid rgba(255,255,255,0.10)',
+                  background: 'rgba(255,255,255,0.09)',
+                  cursor: 'pointer',
+                  width: 30, height: 30, borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'rgba(255,255,255,0.80)',
+                }}
+              >
+                <PlusIcon />
+              </button>
             </div>
             {sources.map(item => (
               <div key={item.id}>
@@ -818,17 +832,6 @@ export default function CreateHome() {
                 </div>
               </div>
             ))}
-            <div style={{ height: 0.5, background: 'rgba(255,255,255,0.06)' }} />
-            <button
-              onClick={() => setShowImport(true)}
-              style={{
-                width: '100%', border: 'none', background: 'transparent', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '14px 16px',
-                color: 'rgba(255,255,255,0.38)', fontSize: 15, fontWeight: 500, fontFamily: 'var(--font-sans)',
-              }}
-            >
-              <PlusIcon /> <span>Add source</span>
-            </button>
           </GlassCard>
 
           {/* Formats */}
