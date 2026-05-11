@@ -1586,13 +1586,10 @@ private struct FormatsBlock: View {
     @State private var showPicker = false
 
     private var summaryText: String {
-        let labels = allFormats.filter { selectedFormatIDs.contains($0.id) }.map(\.label)
-        switch labels.count {
-        case 0: return ""
-        case 1: return labels[0]
-        case 2: return "\(labels[0]), \(labels[1])"
-        default: return "\(labels[0]), \(labels[1]) +\(labels.count - 2)"
-        }
+        allFormats
+            .filter { selectedFormatIDs.contains($0.id) }
+            .map(\.label)
+            .joined(separator: ", ")
     }
 
     var body: some View {
