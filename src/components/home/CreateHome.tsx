@@ -624,8 +624,8 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
     <Sheet isOpen={isOpen} onClose={onClose} height="86vh" scrollable={false}>
       {/* Header */}
       <div style={{ padding: '8px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 16, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-sans)' }}>Cancel</button>
-        <div style={{ color: '#fff', fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Format</div>
+        <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 17, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-sans)' }}>Cancel</button>
+        <div style={{ color: '#fff', fontSize: 17, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Format</div>
         <div style={{ minWidth: 56, textAlign: 'right' }} />
       </div>
 
@@ -650,7 +650,7 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {noResults ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.30)', fontSize: 15, fontFamily: 'var(--font-sans)' }}>No matches.</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.30)', fontSize: 17, fontFamily: 'var(--font-sans)' }}>No matches.</div>
         ) : (
           <>
             {filteredTemplates.length > 0 && (
@@ -665,7 +665,7 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
                         style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12, fontFamily: 'var(--font-sans)' }}
                       >
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.88)', marginBottom: 6 }}>{tpl.name}</div>
+                          <div style={{ fontSize: 17, fontWeight: 600, color: 'rgba(255,255,255,0.88)', marginBottom: 6 }}>{tpl.name}</div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 5 }}>
                             {tpl.formatIDs.slice(0, 4).map(id => {
                               const fmt = allFormats.find(f => f.id === id);
@@ -675,7 +675,7 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
                             })}
                             {tpl.formatIDs.length > 4 && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>+{tpl.formatIDs.length - 4}</span>}
                           </div>
-                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{tpl.description}</div>
+                          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>{tpl.description}</div>
                         </div>
                         {active && (
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 2, flexShrink: 0 }}><path d="M20 6L9 17l-5-5"/></svg>
@@ -690,7 +690,7 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
                     <RowDivider />
                     <button
                       onClick={() => setShowAllTemplates(true)}
-                      style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.50)', fontSize: 15 }}
+                      style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.50)', fontSize: 17 }}
                     >
                       See all templates
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.30)" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
@@ -718,8 +718,8 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
                           }
                         </svg>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 15, color: on ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.70)' }}>{f.label}</div>
-                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)', marginTop: 3 }}>{f.description}</div>
+                          <div style={{ fontSize: 17, color: on ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.70)' }}>{f.label}</div>
+                          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.30)', marginTop: 3 }}>{f.description}</div>
                         </div>
                       </button>
                       {i < filteredFormats.length - 1 && <RowDivider />}
@@ -740,7 +740,7 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
           style={{
             width: '100%', height: 52, border: 'none', borderRadius: 14, cursor: 'pointer',
             background: pending.size === 0 ? 'rgba(255,255,255,0.12)' : GREEN,
-            color: '#fff', fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-sans)',
+            color: '#fff', fontSize: 17, fontWeight: 600, fontFamily: 'var(--font-sans)',
             transition: 'background 0.15s',
           }}
         >{doneLabel}</button>
@@ -754,8 +754,8 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
 function SheetHeader({ title, onCancel, action }: { title: string; onCancel: () => void; action: React.ReactNode }) {
   return (
     <div style={{ padding: '4px 16px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <button onClick={onCancel} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 16, cursor: 'pointer', padding: 0, minWidth: 56, textAlign: 'left' }}>Cancel</button>
-      <div style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>{title}</div>
+      <button onClick={onCancel} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 17, cursor: 'pointer', padding: 0, minWidth: 56, textAlign: 'left' }}>Cancel</button>
+      <div style={{ color: '#fff', fontSize: 17, fontWeight: 600 }}>{title}</div>
       <div style={{ minWidth: 56, textAlign: 'right' }}>{action}</div>
     </div>
   );
@@ -769,7 +769,7 @@ function SaveButton({ enabled, onClick }: { enabled: boolean; onClick: () => voi
       style={{
         border: 'none', background: 'transparent', cursor: enabled ? 'pointer' : 'default',
         color: enabled ? '#F29E4D' : 'rgba(255,255,255,0.25)',
-        fontSize: 16, fontWeight: 600, padding: 0, fontFamily: 'var(--font-sans)',
+        fontSize: 17, fontWeight: 600, padding: 0, fontFamily: 'var(--font-sans)',
       }}
     >Save</button>
   );
