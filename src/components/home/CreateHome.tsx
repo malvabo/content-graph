@@ -1226,7 +1226,7 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
                     <div style={{ position: 'absolute', width: 130, height: 130, borderRadius: '50%', background: 'rgba(217,115,26,0.15)', animation: 'gen-pulse 1.4s ease-in-out infinite' }} />
                     <div style={{ position: 'absolute', width: 88, height: 88, borderRadius: '50%', background: 'rgba(217,115,26,0.22)', animation: 'gen-pulse2 1.4s ease-in-out infinite' }} />
                     <div style={{ position: 'relative', width: 88, height: 88, borderRadius: '50%', background: 'rgba(217,115,26,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgb(217,115,26)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.90)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
                       </svg>
                     </div>
