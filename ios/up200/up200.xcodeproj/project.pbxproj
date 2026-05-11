@@ -15,6 +15,8 @@
 		A1000008 /* APIKeySetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000009; };
 		A1000009 /* Font+ABCDiatype.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011; };
 		A1000010 /* ABCDiatypeVariable-Trial.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000012; };
+		A1000011 /* OnboardingSceneViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013; };
+		A1000012 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000014; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +31,8 @@
 		A2000009 /* APIKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeySetupView.swift; sourceTree = "<group>"; };
 		A2000011 /* Font+ABCDiatype.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Font+ABCDiatype.swift"; sourceTree = "<group>"; };
 		A2000012 /* ABCDiatypeVariable-Trial.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = ABCDiatypeVariable-Trial.ttf; sourceTree = "<group>"; };
+		A2000013 /* OnboardingSceneViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingSceneViewController.swift; sourceTree = "<group>"; };
+		A2000014 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		A2000010 /* up200.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = up200.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -52,7 +56,7 @@
 		};
 		A3000003 /* Views */ = {
 			isa = PBXGroup;
-			children = (A2000002, A2000006, A2000007, A2000008, A2000009, A2000011);
+			children = (A2000002, A2000006, A2000007, A2000008, A2000009, A2000011, A2000013, A2000014);
 			path = Views;
 			sourceTree = "<group>";
 		};
@@ -105,7 +109,7 @@
 		A5000001 = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = (A1000001, A1000002, A1000003, A1000005, A1000006, A1000007, A1000008, A1000009);
+			files = (A1000001, A1000002, A1000003, A1000005, A1000006, A1000007, A1000008, A1000009, A1000011, A1000012);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
