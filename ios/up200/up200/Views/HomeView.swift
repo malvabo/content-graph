@@ -1100,8 +1100,32 @@ private struct SourcesBlock: View {
     var body: some View {
         GlassCard {
             VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    Text("Sources")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.85))
+                    Spacer()
+                    Button { showImport = true } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color.white.opacity(0.80))
+                            .frame(width: 30, height: 30)
+                            .background(Color.white.opacity(0.09))
+                            .overlay(Circle().stroke(Color.white.opacity(0.10), lineWidth: 0.5))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Add source")
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+
                 ForEach(sources) { item in
                     VStack(spacing: 0) {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.06))
+                            .frame(height: 0.5)
+
                         HStack(spacing: 12) {
                             Image(systemName: item.icon)
                                 .font(.system(size: 15))
@@ -1127,26 +1151,8 @@ private struct SourcesBlock: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 13)
-
-                        Rectangle()
-                            .fill(Color.white.opacity(0.06))
-                            .frame(height: 0.5)
                     }
                 }
-
-                Button { showImport = true } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 13, weight: .medium))
-                        Text("Add source")
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .foregroundColor(Color.white.opacity(0.38))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                }
-                .buttonStyle(.plain)
             }
         }
         .sheet(isPresented: $showImport) {
@@ -1520,6 +1526,20 @@ private struct FormatPickerSheet: View {
 
 // MARK: - Formats Block
 
+private struct PopularTemplate: Identifiable {
+    let id: String
+    let label: String
+    let formatIDs: [String]
+}
+
+private let popularTemplates: [PopularTemplate] = [
+    PopularTemplate(id: "social-pack", label: "Social pack",   formatIDs: ["linkedin", "twitter", "instagram"]),
+    PopularTemplate(id: "newsletter",  label: "Newsletter",    formatIDs: ["newsletter"]),
+    PopularTemplate(id: "blog",        label: "Blog post",     formatIDs: ["blog"]),
+    PopularTemplate(id: "video",       label: "Video script",  formatIDs: ["youtube", "video"]),
+    PopularTemplate(id: "research",    label: "Research pack", formatIDs: ["newsletter", "blog", "twitter"]),
+]
+
 private struct FormatsBlock: View {
     @Binding var selectedFormatIDs: Set<String>
     @State private var showPicker = false
@@ -1538,46 +1558,80 @@ private struct FormatsBlock: View {
 
     var body: some View {
         GlassCard {
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                showPicker = true
-            } label: {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Format")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.85))
-                        if !selectedFormatIDs.isEmpty {
-                            Text(summaryText)
-                                .font(.system(size: 13))
-                                .foregroundColor(Color.white.opacity(0.45))
-                                .lineLimit(1)
-                                .transition(.opacity)
+            VStack(spacing: 0) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    showPicker = true
+                } label: {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Format")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(Color.white.opacity(0.85))
+                            if !selectedFormatIDs.isEmpty {
+                                Text(summaryText)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Color.white.opacity(0.55))
+                                    .lineLimit(1)
+                                    .transition(.opacity)
+                            }
+                        }
+                        Spacer()
+                        if selectedFormatIDs.isEmpty {
+                            Text("None")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color.white.opacity(0.25))
+                        } else {
+                            Text("\(selectedFormatIDs.count)")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(minWidth: 24, minHeight: 24)
+                                .background(green)
+                                .clipShape(Circle())
+                                .transition(.scale.combined(with: .opacity))
+                        }
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.20))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 12)
+                    .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
+                }
+                .buttonStyle(.plain)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(popularTemplates) { tpl in
+                            let active = Set(tpl.formatIDs) == selectedFormatIDs
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                withAnimation(.easeOut(duration: 0.15)) {
+                                    selectedFormatIDs = Set(tpl.formatIDs)
+                                }
+                            } label: {
+                                Text(tpl.label)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(active ? .white : Color.white.opacity(0.65))
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 7)
+                                    .background(active ? Color.white.opacity(0.12) : Color.white.opacity(0.05))
+                                    .overlay(
+                                        Capsule().stroke(
+                                            active ? Color.white.opacity(0.30) : Color.white.opacity(0.10),
+                                            lineWidth: 0.5
+                                        )
+                                    )
+                                    .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
-                    Spacer()
-                    if selectedFormatIDs.isEmpty {
-                        Text("None")
-                            .font(.system(size: 14))
-                            .foregroundColor(Color.white.opacity(0.25))
-                    } else {
-                        Text("\(selectedFormatIDs.count)")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(minWidth: 24, minHeight: 24)
-                            .background(green)
-                            .clipShape(Circle())
-                            .transition(.scale.combined(with: .opacity))
-                    }
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.20))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 14)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 16)
-                .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
             }
-            .buttonStyle(.plain)
         }
         .sheet(isPresented: $showPicker) {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)

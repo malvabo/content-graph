@@ -486,7 +486,7 @@ struct NativeTabBar: View {
                 Image(systemName: tab.icon)
                     .font(.system(size: 18, weight: selected == tab ? .medium : .regular))
                 Text(tab.label)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
             }
             .foregroundColor(selected == tab ? .white : Color.white.opacity(0.38))
             .frame(maxWidth: .infinity)
