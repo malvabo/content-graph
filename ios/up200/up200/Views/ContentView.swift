@@ -37,7 +37,7 @@ struct LibraryView: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 Text("Library")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.app(size: 22, weight: .semibold))
                     .foregroundColor(Color.white.opacity(0.88))
                     .padding(.horizontal, 20)
                     .padding(.top, 28)
@@ -47,13 +47,13 @@ struct LibraryView: View {
                     Spacer()
                     VStack(spacing: 12) {
                         Image(systemName: "tray")
-                            .font(.system(size: 36, weight: .light))
+                            .font(.app(size: 36, weight: .light))
                             .foregroundColor(Color.white.opacity(0.20))
                         Text("No generations yet")
-                            .font(.system(size: 16, weight: .regular))
+                            .font(.app(size: 16, weight: .regular))
                             .foregroundColor(Color.white.opacity(0.30))
                         Text("Your content outputs will appear here")
-                            .font(.system(size: 13, weight: .regular))
+                            .font(.app(size: 13, weight: .regular))
                             .foregroundColor(Color.white.opacity(0.20))
                     }
                     .frame(maxWidth: .infinity)
@@ -83,7 +83,7 @@ private struct ProjectRow: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(project.outputType)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.app(size: 11, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.45))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -91,16 +91,16 @@ private struct ProjectRow: View {
                         .clipShape(Capsule())
                     Spacer()
                     Text(project.date, style: .date)
-                        .font(.system(size: 11))
+                        .font(.app(size: 11))
                         .foregroundColor(Color.white.opacity(0.30))
                 }
                 Text(project.title)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.app(size: 15, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.85))
                     .lineLimit(1)
                 if !project.preview.isEmpty {
                     Text(project.preview)
-                        .font(.system(size: 13))
+                        .font(.app(size: 13))
                         .foregroundColor(Color.white.opacity(0.40))
                         .lineLimit(2)
                 }
@@ -132,7 +132,7 @@ private struct ProjectDetailView: View {
             HStack(spacing: 10) {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.app(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.60))
                         .frame(width: 28, height: 28)
                         .background(Color.white.opacity(0.10))
@@ -140,7 +140,7 @@ private struct ProjectDetailView: View {
                 }
                 Spacer()
                 Text(project.outputType)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.app(size: 15, weight: .semibold))
                     .foregroundColor(.white)
                     .lineLimit(1)
                 Spacer()
@@ -154,7 +154,7 @@ private struct ProjectDetailView: View {
                 } label: {
                     Label(copied ? "Copied" : "Copy",
                           systemImage: copied ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.app(size: 13, weight: .medium))
                         .foregroundColor(copied ? green : Color.white.opacity(0.60))
                 }
                 .buttonStyle(.plain)
@@ -170,10 +170,10 @@ private struct ProjectDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(project.title)
-                        .font(.system(size: 13))
+                        .font(.app(size: 13))
                         .foregroundColor(Color.white.opacity(0.32))
                     Text(project.content.isEmpty ? project.preview : project.content)
-                        .font(.system(size: 15))
+                        .font(.app(size: 15))
                         .foregroundColor(Color.white.opacity(0.85))
                         .lineSpacing(5)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -211,14 +211,14 @@ struct TemplatesView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Text("Templates")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(.app(size: 22, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.88))
                     Spacer()
                     Button {
                         newTitle = ""; newDesc = ""; showAdd = true
                     } label: {
                         Image(systemName: "plus")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.app(size: 16, weight: .medium))
                             .foregroundColor(Color.white.opacity(0.55))
                             .frame(width: 36, height: 36)
                             .background(Color.white.opacity(0.07))
@@ -273,13 +273,13 @@ private struct TemplateCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .light))
+                    .font(.app(size: 18, weight: .light))
                     .foregroundColor(Color.white.opacity(0.70))
                 Spacer()
                 if isCustom {
                     Button(action: onDelete) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.app(size: 11, weight: .medium))
                             .foregroundColor(Color.white.opacity(0.30))
                     }
                     .buttonStyle(.plain)
@@ -287,11 +287,11 @@ private struct TemplateCard: View {
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.app(size: 14, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.86))
                     .multilineTextAlignment(.leading)
                 Text(subtitle)
-                    .font(.system(size: 12, weight: .regular))
+                    .font(.app(size: 12, weight: .regular))
                     .foregroundColor(Color.white.opacity(0.42))
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
@@ -323,13 +323,13 @@ private struct AddTemplateSheet: View {
                 .padding(.bottom, 20)
 
             Text("New template")
-                .font(.system(size: 18, weight: .semibold))
+                .font(.app(size: 18, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
                 .padding(.bottom, 24)
 
             VStack(spacing: 12) {
                 TextField("Title", text: $title)
-                    .font(.system(size: 16))
+                    .font(.app(size: 16))
                     .foregroundColor(.white)
                     .padding(14)
                     .background(Color.white.opacity(0.06))
@@ -337,7 +337,7 @@ private struct AddTemplateSheet: View {
                     .tint(.white)
 
                 TextField("Description (optional)", text: $desc)
-                    .font(.system(size: 16))
+                    .font(.app(size: 16))
                     .foregroundColor(.white)
                     .padding(14)
                     .background(Color.white.opacity(0.06))
@@ -350,7 +350,7 @@ private struct AddTemplateSheet: View {
 
             Button(action: onAdd) {
                 Text("Add template")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(title.isEmpty ? Color.white.opacity(0.30) : .white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
@@ -449,7 +449,7 @@ struct NativeTabBar: View {
                         .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 0.5))
                         .frame(width: 38, height: 38)
                     Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.app(size: 16, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.80))
                 }
             }
@@ -486,7 +486,7 @@ struct NativeTabBar: View {
                 Image(systemName: tab.icon)
                     .font(.system(size: 18, weight: selected == tab ? .medium : .regular))
                 Text(tab.label)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.app(size: 12, weight: .medium))
             }
             .foregroundColor(selected == tab ? .white : Color.white.opacity(0.38))
             .frame(maxWidth: .infinity)

@@ -264,7 +264,7 @@ private struct GeneratingSheet: View {
             VStack(spacing: 0) {
                 HStack {
                     Button("Cancel", action: onCancel)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.app(size: 16, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.45))
                     Spacer()
                 }
@@ -284,17 +284,17 @@ private struct GeneratingSheet: View {
                             .fill(amber.opacity(0.18))
                             .frame(width: 88, height: 88)
                         Image(systemName: "sparkles")
-                            .font(.system(size: 32, weight: .light))
+                            .font(.app(size: 32, weight: .light))
                             .foregroundColor(amber)
                     }
                     .onAppear { pulse = true }
 
                     VStack(spacing: 10) {
                         Text("Creating your content")
-                            .font(.system(size: 19, weight: .semibold))
+                            .font(.app(size: 19, weight: .semibold))
                             .foregroundColor(Color.white.opacity(0.88))
                         Text(formatLabels.joined(separator: " · "))
-                            .font(.system(size: 13))
+                            .font(.app(size: 13))
                             .foregroundColor(Color.white.opacity(0.38))
                     }
                 }
@@ -321,7 +321,7 @@ private struct GenerationResultSheet: View {
             HStack(spacing: 10) {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.app(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.60))
                         .frame(width: 28, height: 28)
                         .background(Color.white.opacity(0.10))
@@ -339,7 +339,7 @@ private struct GenerationResultSheet: View {
                                     }
                                 } label: {
                                     Text(results[i].formatLabel)
-                                        .font(.system(size: 12, weight: .medium))
+                                        .font(.app(size: 12, weight: .medium))
                                         .foregroundColor(selectedIndex == i ? .white : Color.white.opacity(0.40))
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 5)
@@ -353,7 +353,7 @@ private struct GenerationResultSheet: View {
                     }
                 } else {
                     Text(current.formatLabel)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.app(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                 }
 
@@ -369,7 +369,7 @@ private struct GenerationResultSheet: View {
                 } label: {
                     Label(copied ? "Copied" : "Copy",
                           systemImage: copied ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.app(size: 13, weight: .medium))
                         .foregroundColor(copied ? green : Color.white.opacity(0.60))
                 }
                 .buttonStyle(.plain)
@@ -384,7 +384,7 @@ private struct GenerationResultSheet: View {
 
             ScrollView(showsIndicators: false) {
                 Text(current.content)
-                    .font(.system(size: 15))
+                    .font(.app(size: 15))
                     .foregroundColor(Color.white.opacity(0.85))
                     .lineSpacing(5)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -394,10 +394,10 @@ private struct GenerationResultSheet: View {
 
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 12))
+                    .font(.app(size: 12))
                     .foregroundColor(green)
                 Text("Saved to Library")
-                    .font(.system(size: 12))
+                    .font(.app(size: 12))
                     .foregroundColor(Color.white.opacity(0.32))
             }
             .padding(.vertical, 12)
@@ -512,10 +512,10 @@ struct AnimatedLightsButton: View {
                 HStack(spacing: 8) {
                     if let icon {
                         Image(systemName: icon)
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(.app(size: 17, weight: .semibold))
                     }
                     Text(title)
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.app(size: 18, weight: .semibold))
                 }
                 .foregroundColor(isEnabled ? .white : Color.white.opacity(0.25))
             }
@@ -553,7 +553,7 @@ struct ImportSheetView: View {
                 .padding(.top, 10)
 
             Text("Import content")
-                .font(.system(size: 19, weight: .semibold))
+                .font(.app(size: 19, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
                 .padding(.bottom, 2)
 
@@ -563,10 +563,10 @@ struct ImportSheetView: View {
             } label: {
                 VStack(spacing: 12) {
                     Image(systemName: "link")
-                        .font(.system(size: 16, weight: .light))
+                        .font(.app(size: 16, weight: .light))
                         .foregroundColor(Color.white.opacity(0.82))
                     Text("Paste a link")
-                        .font(.system(size: 14, weight: .regular))
+                        .font(.app(size: 14, weight: .regular))
                         .foregroundColor(Color.white.opacity(0.52))
                 }
                 .frame(maxWidth: .infinity)
@@ -584,10 +584,10 @@ struct ImportSheetView: View {
                     } label: {
                         VStack(spacing: 12) {
                             Image(systemName: item.icon)
-                                .font(.system(size: 16, weight: .light))
+                                .font(.app(size: 16, weight: .light))
                                 .foregroundColor(Color.white.opacity(0.82))
                             Text(item.label)
-                                .font(.system(size: 14, weight: .regular))
+                                .font(.app(size: 14, weight: .regular))
                                 .foregroundColor(Color.white.opacity(0.52))
                                 .multilineTextAlignment(.center)
                         }
@@ -630,7 +630,7 @@ private struct TextInputSheet: View {
                 Spacer()
 
                 Text("Text source")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(.white)
 
                 Spacer()
@@ -661,14 +661,14 @@ private struct TextInputSheet: View {
             ZStack(alignment: .topLeading) {
                 if text.isEmpty {
                     Text("Paste your text, transcript or notes\u{2026}")
-                        .font(.system(size: 16))
+                        .font(.app(size: 16))
                         .foregroundColor(Color.white.opacity(0.22))
                         .padding(.horizontal, 20)
                         .padding(.top, 18)
                         .allowsHitTesting(false)
                 }
                 TextEditor(text: $text)
-                    .font(.system(size: 16))
+                    .font(.app(size: 16))
                     .foregroundColor(Color.white.opacity(0.88))
                     .scrollContentBackground(.hidden)
                     .background(.clear)
@@ -682,12 +682,12 @@ private struct TextInputSheet: View {
                 HStack {
                     if isGenerating {
                         Label("Generating title\u{2026}", systemImage: "sparkles")
-                            .font(.system(size: 12))
+                            .font(.app(size: 12))
                             .foregroundColor(Color.white.opacity(0.40))
                     }
                     Spacer()
                     Text("\(wordCount) words")
-                        .font(.system(size: 12))
+                        .font(.app(size: 12))
                         .foregroundColor(Color.white.opacity(0.28))
                 }
                 .padding(.horizontal, 20)
@@ -738,7 +738,7 @@ private struct LinkInputSheet: View {
                     .foregroundColor(Color.white.opacity(0.55))
                 Spacer()
                 Text("Link source")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                 Spacer()
                 Button {
@@ -767,10 +767,10 @@ private struct LinkInputSheet: View {
 
             HStack(spacing: 10) {
                 Image(systemName: "link")
-                    .font(.system(size: 15))
+                    .font(.app(size: 15))
                     .foregroundColor(Color.white.opacity(0.35))
                 TextField("https://", text: $urlText)
-                    .font(.system(size: 16))
+                    .font(.app(size: 16))
                     .foregroundColor(Color.white.opacity(0.88))
                     .autocapitalization(.none)
                     .keyboardType(.URL)
@@ -792,9 +792,9 @@ private struct LinkInputSheet: View {
             if isFetching {
                 HStack(spacing: 6) {
                     Image(systemName: "globe")
-                        .font(.system(size: 12))
+                        .font(.app(size: 12))
                     Text("Fetching page content\u{2026}")
-                        .font(.system(size: 13))
+                        .font(.app(size: 13))
                 }
                 .foregroundColor(Color.white.opacity(0.35))
                 .padding(.top, 4)
@@ -910,7 +910,7 @@ private struct VoiceRecordSheet: View {
                     Spacer()
 
                     Text("Voice Note")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.app(size: 16, weight: .semibold))
                         .foregroundColor(.white)
 
                     Spacer()
@@ -939,7 +939,7 @@ private struct VoiceRecordSheet: View {
                                 .frame(width: 76, height: 76)
                                 .overlay(
                                     Image(systemName: recorder.isRecording ? "stop.fill" : "mic.fill")
-                                        .font(.system(size: 28, weight: .medium))
+                                        .font(.app(size: 28, weight: .medium))
                                         .foregroundColor(.white)
                                 )
                         }
@@ -950,7 +950,7 @@ private struct VoiceRecordSheet: View {
 
                     if isGenerating {
                         Label("Generating title\u{2026}", systemImage: "sparkles")
-                            .font(.system(size: 15))
+                            .font(.app(size: 15))
                             .foregroundColor(Color.white.opacity(0.50))
                             .transition(.opacity)
                     } else {
@@ -965,7 +965,7 @@ private struct VoiceRecordSheet: View {
                 if !recorder.transcript.isEmpty {
                     ScrollView(showsIndicators: false) {
                         Text(recorder.transcript)
-                            .font(.system(size: 14))
+                            .font(.app(size: 14))
                             .foregroundColor(Color.white.opacity(0.50))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
@@ -985,7 +985,7 @@ private struct VoiceRecordSheet: View {
                         handleDone()
                     } label: {
                         Text("Done")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.app(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
@@ -1001,7 +1001,7 @@ private struct VoiceRecordSheet: View {
                         handleDone()
                     } label: {
                         Text("Use this")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.app(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
@@ -1102,12 +1102,12 @@ private struct SourcesBlock: View {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     Text("Sources")
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.app(size: 15, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.85))
                     Spacer()
                     Button { showImport = true } label: {
                         Image(systemName: "plus")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.app(size: 13, weight: .medium))
                             .foregroundColor(Color.white.opacity(0.80))
                             .frame(width: 30, height: 30)
                             .background(Color.white.opacity(0.09))
@@ -1128,11 +1128,11 @@ private struct SourcesBlock: View {
 
                         HStack(spacing: 12) {
                             Image(systemName: item.icon)
-                                .font(.system(size: 15))
+                                .font(.app(size: 15))
                                 .foregroundColor(Color.white.opacity(0.45))
                                 .frame(width: 20)
                             Text(item.label)
-                                .font(.system(size: 15))
+                                .font(.app(size: 15))
                                 .foregroundColor(Color.white.opacity(0.80))
                                 .lineLimit(1)
                             Spacer()
@@ -1142,7 +1142,7 @@ private struct SourcesBlock: View {
                                 }
                             } label: {
                                 Image(systemName: "xmark")
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(.app(size: 11, weight: .medium))
                                     .foregroundColor(Color.white.opacity(0.28))
                                     .frame(width: 32, height: 32)
                                     .contentShape(Rectangle())
@@ -1304,12 +1304,12 @@ private struct FormatPickerSheet: View {
             HStack {
                 Spacer()
                 Text("Format")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.app(size: 13, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.60))
                         .frame(width: 28, height: 28)
                         .background(Color.white.opacity(0.10))
@@ -1322,16 +1322,16 @@ private struct FormatPickerSheet: View {
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 14))
+                    .font(.app(size: 14))
                     .foregroundColor(Color.white.opacity(0.35))
                 TextField("Search formats and templates", text: $search)
-                    .font(.system(size: 15))
+                    .font(.app(size: 15))
                     .foregroundColor(.white)
                     .autocorrectionDisabled()
                 if !search.isEmpty {
                     Button { search = "" } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 15))
+                            .font(.app(size: 15))
                             .foregroundColor(Color.white.opacity(0.30))
                     }
                     .buttonStyle(.plain)
@@ -1347,7 +1347,7 @@ private struct FormatPickerSheet: View {
             if filteredTemplates.isEmpty && filteredFormats.isEmpty {
                 Spacer()
                 Text("No matches.")
-                    .font(.system(size: 15))
+                    .font(.app(size: 15))
                     .foregroundColor(Color.white.opacity(0.30))
                 Spacer()
             } else {
@@ -1368,11 +1368,11 @@ private struct FormatPickerSheet: View {
                                 } label: {
                                     HStack {
                                         Text("See all templates")
-                                            .font(.system(size: 15))
+                                            .font(.app(size: 15))
                                             .foregroundColor(Color.white.opacity(0.50))
                                         Spacer()
                                         Image(systemName: "chevron.down")
-                                            .font(.system(size: 12, weight: .medium))
+                                            .font(.app(size: 12, weight: .medium))
                                             .foregroundColor(Color.white.opacity(0.30))
                                     }
                                     .padding(.horizontal, 16)
@@ -1404,7 +1404,7 @@ private struct FormatPickerSheet: View {
 
                 Button { dismiss() } label: {
                     Text(doneLabel)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.app(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
@@ -1424,7 +1424,7 @@ private struct FormatPickerSheet: View {
     @ViewBuilder
     private func sectionHeader(_ title: String) -> some View {
         Text(title.uppercased())
-            .font(.system(size: 11, weight: .semibold))
+            .font(.app(size: 11, weight: .semibold))
             .foregroundColor(Color.white.opacity(0.28))
             .tracking(0.6)
             .padding(.horizontal, 16)
@@ -1452,14 +1452,14 @@ private struct FormatPickerSheet: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(template.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.app(size: 15, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.88))
 
                     HStack(spacing: 5) {
                         ForEach(template.formatIDs.prefix(4), id: \.self) { fid in
                             if let fmt = allFormats.first(where: { $0.id == fid }) {
                                 Text(fmt.label)
-                                    .font(.system(size: 10, weight: .medium))
+                                    .font(.app(size: 10, weight: .medium))
                                     .foregroundColor(Color.white.opacity(0.55))
                                     .padding(.horizontal, 7)
                                     .padding(.vertical, 3)
@@ -1469,19 +1469,19 @@ private struct FormatPickerSheet: View {
                         }
                         if template.formatIDs.count > 4 {
                             Text("+\(template.formatIDs.count - 4)")
-                                .font(.system(size: 10, weight: .medium))
+                                .font(.app(size: 10, weight: .medium))
                                 .foregroundColor(Color.white.opacity(0.35))
                         }
                     }
 
                     Text(template.description)
-                        .font(.system(size: 12))
+                        .font(.app(size: 12))
                         .foregroundColor(Color.white.opacity(0.35))
                 }
                 Spacer()
                 if isActive {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.app(size: 12, weight: .semibold))
                         .foregroundColor(green)
                         .padding(.top, 2)
                 }
@@ -1504,15 +1504,15 @@ private struct FormatPickerSheet: View {
         } label: {
             HStack(spacing: 14) {
                 Image(systemName: selected ? "checkmark.square.fill" : "square")
-                    .font(.system(size: 18))
+                    .font(.app(size: 18))
                     .foregroundColor(selected ? green : Color.white.opacity(0.22))
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(format.label)
-                        .font(.system(size: 15))
+                        .font(.app(size: 15))
                         .foregroundColor(selected ? Color.white.opacity(0.92) : Color.white.opacity(0.70))
                     Text(format.description)
-                        .font(.system(size: 12))
+                        .font(.app(size: 12))
                         .foregroundColor(Color.white.opacity(0.30))
                 }
                 Spacer()
@@ -1566,11 +1566,11 @@ private struct FormatsBlock: View {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Format")
-                                .font(.system(size: 15, weight: .medium))
+                                .font(.app(size: 15, weight: .medium))
                                 .foregroundColor(Color.white.opacity(0.85))
                             if !selectedFormatIDs.isEmpty {
                                 Text(summaryText)
-                                    .font(.system(size: 14))
+                                    .font(.app(size: 14))
                                     .foregroundColor(Color.white.opacity(0.55))
                                     .lineLimit(1)
                                     .transition(.opacity)
@@ -1579,11 +1579,11 @@ private struct FormatsBlock: View {
                         Spacer()
                         if selectedFormatIDs.isEmpty {
                             Text("None")
-                                .font(.system(size: 14))
+                                .font(.app(size: 14))
                                 .foregroundColor(Color.white.opacity(0.25))
                         } else {
                             Text("\(selectedFormatIDs.count)")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(.app(size: 12, weight: .bold))
                                 .foregroundColor(.white)
                                 .frame(minWidth: 24, minHeight: 24)
                                 .background(green)
@@ -1591,7 +1591,7 @@ private struct FormatsBlock: View {
                                 .transition(.scale.combined(with: .opacity))
                         }
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.app(size: 12, weight: .semibold))
                             .foregroundColor(Color.white.opacity(0.20))
                     }
                     .padding(.horizontal, 16)
@@ -1612,7 +1612,7 @@ private struct FormatsBlock: View {
                                 }
                             } label: {
                                 Text(tpl.label)
-                                    .font(.system(size: 13, weight: .medium))
+                                    .font(.app(size: 13, weight: .medium))
                                     .foregroundColor(active ? .white : Color.white.opacity(0.65))
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 7)
@@ -1653,7 +1653,7 @@ private struct PromptField: View {
         GlassCard {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Add details (optional)")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.app(size: 13, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.40))
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
@@ -1662,14 +1662,14 @@ private struct PromptField: View {
                 ZStack(alignment: .topLeading) {
                     if prompt.isEmpty {
                         Text("Leave empty to generate from sources and format.")
-                            .font(.system(size: 15))
+                            .font(.app(size: 15))
                             .foregroundColor(Color.white.opacity(0.20))
                             .padding(.horizontal, 16)
                             .padding(.top, 2)
                             .allowsHitTesting(false)
                     }
                     TextEditor(text: $prompt)
-                        .font(.system(size: 15))
+                        .font(.app(size: 15))
                         .foregroundColor(Color.white.opacity(0.85))
                         .scrollContentBackground(.hidden)
                         .background(.clear)
@@ -1693,7 +1693,7 @@ private struct BrandCard: View {
         GlassCard {
             HStack(spacing: 12) {
                 Text("Brand Voice")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.app(size: 18, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.85))
 
                 Spacer()
@@ -1713,10 +1713,10 @@ private struct BrandCard: View {
                 } label: {
                     HStack(spacing: 5) {
                         Text(selectedBrand)
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.app(size: 15, weight: .medium))
                             .foregroundColor(Color.white.opacity(0.70))
                         Image(systemName: "chevron.up.chevron.down")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.app(size: 11, weight: .semibold))
                             .foregroundColor(Color.white.opacity(0.35))
                     }
                     .padding(.horizontal, 12)
@@ -1786,12 +1786,12 @@ struct HomeView: View {
                     VStack(spacing: 0) {
                         HStack {
                             Text("Create")
-                                .font(.system(size: 28, weight: .bold))
+                                .font(.app(size: 28, weight: .bold))
                                 .foregroundColor(.white)
                             Spacer()
                             Button { showKeyUpdate = true } label: {
                                 Image(systemName: "key.horizontal")
-                                    .font(.system(size: 14, weight: .medium))
+                                    .font(.app(size: 14, weight: .medium))
                                     .foregroundColor(Color.white.opacity(0.30))
                                     .frame(width: 36, height: 36)
                                     .background(Color.white.opacity(0.07))

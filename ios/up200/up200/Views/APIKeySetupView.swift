@@ -27,16 +27,16 @@ struct APIKeySetupView: View {
                             .fill(amber.opacity(0.12))
                             .frame(width: 90, height: 90)
                         Image(systemName: "key.fill")
-                            .font(.system(size: 30, weight: .light))
+                            .font(.app(size: 30, weight: .light))
                             .foregroundColor(amber)
                     }
 
                     VStack(spacing: 10) {
                         Text("Enter your API key")
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.app(size: 24, weight: .bold))
                             .foregroundColor(.white)
                         Text("Get one free at console.anthropic.com\nunder API Keys. It starts with sk-ant-")
-                            .font(.system(size: 15))
+                            .font(.app(size: 15))
                             .foregroundColor(Color.white.opacity(0.45))
                             .multilineTextAlignment(.center)
                             .lineSpacing(3)
@@ -45,7 +45,7 @@ struct APIKeySetupView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 10) {
                             Image(systemName: "key")
-                                .font(.system(size: 14))
+                                .font(.app(size: 14))
                                 .foregroundColor(Color.white.opacity(0.35))
                             SecureField("sk-ant-api03-…", text: $keyText)
                                 .font(.system(size: 15, design: .monospaced))
@@ -67,7 +67,7 @@ struct APIKeySetupView: View {
 
                         if !keyText.isEmpty && !canSave {
                             Text("Key should start with sk-ant-")
-                                .font(.system(size: 12))
+                                .font(.app(size: 12))
                                 .foregroundColor(Color(red: 0.90, green: 0.40, blue: 0.30))
                                 .padding(.horizontal, 4)
                         }
@@ -79,7 +79,7 @@ struct APIKeySetupView: View {
 
                 Button(action: save) {
                     Text("Save & continue")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.app(size: 17, weight: .semibold))
                         .foregroundColor(canSave ? .white : Color.white.opacity(0.25))
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)

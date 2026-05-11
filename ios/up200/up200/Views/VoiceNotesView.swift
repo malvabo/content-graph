@@ -8,17 +8,17 @@ private struct NoteRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(note.title.isEmpty ? "Untitled" : note.title)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.app(size: 16, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
                 .lineLimit(1)
             if !note.body.isEmpty {
                 Text(note.body)
-                    .font(.system(size: 14))
+                    .font(.app(size: 14))
                     .foregroundColor(Color.white.opacity(0.42))
                     .lineLimit(2)
             }
             Text(note.date, style: .date)
-                .font(.system(size: 12, weight: .regular))
+                .font(.app(size: 12, weight: .regular))
                 .foregroundColor(Color.white.opacity(0.22))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -46,13 +46,13 @@ struct NoteEditorView: View {
         VStack(spacing: 0) {
             HStack {
                 Button("Done") { onDone() }
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.app(size: 16, weight: .medium))
                     .foregroundColor(.white)
                 Spacer()
                 if let del = onDelete {
                     Button(action: del) {
                         Image(systemName: "trash")
-                            .font(.system(size: 17))
+                            .font(.app(size: 17))
                             .foregroundColor(Color.white.opacity(0.40))
                     }
                 }
@@ -66,14 +66,14 @@ struct NoteEditorView: View {
                 .frame(height: 0.5)
 
             TextField("Title", text: $note.title)
-                .font(.system(size: 24, weight: .bold))
+                .font(.app(size: 24, weight: .bold))
                 .foregroundColor(.white)
                 .padding(.horizontal, 16)
                 .padding(.top, 20)
                 .padding(.bottom, 10)
 
             TextEditor(text: $note.body)
-                .font(.system(size: 16))
+                .font(.app(size: 16))
                 .foregroundColor(Color.white.opacity(0.80))
                 .scrollContentBackground(.hidden)
                 .background(.clear)
@@ -137,7 +137,7 @@ struct VoiceNotesView: View {
             VStack(spacing: 0) {
                 HStack {
                     Text("Voice Notes")
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.app(size: 28, weight: .bold))
                         .foregroundColor(.white)
                     Spacer()
                 }
@@ -149,10 +149,10 @@ struct VoiceNotesView: View {
                     Spacer()
                     VStack(spacing: 12) {
                         Image(systemName: "mic.slash")
-                            .font(.system(size: 38, weight: .light))
+                            .font(.app(size: 38, weight: .light))
                             .foregroundColor(Color.white.opacity(0.18))
                         Text("No notes yet")
-                            .font(.system(size: 16))
+                            .font(.app(size: 16))
                             .foregroundColor(Color.white.opacity(0.28))
                     }
                     Spacer()

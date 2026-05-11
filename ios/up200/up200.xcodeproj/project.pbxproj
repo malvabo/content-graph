@@ -13,6 +13,8 @@
 		A1000006 /* VoiceNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000007; };
 		A1000007 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008; };
 		A1000008 /* APIKeySetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000009; };
+		A1000009 /* Font+ABCDiatype.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011; };
+		A1000010 /* ABCDiatypeVariable-Trial.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000012; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +27,8 @@
 		A2000007 /* VoiceNotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNotesView.swift; sourceTree = "<group>"; };
 		A2000008 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		A2000009 /* APIKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeySetupView.swift; sourceTree = "<group>"; };
+		A2000011 /* Font+ABCDiatype.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Font+ABCDiatype.swift"; sourceTree = "<group>"; };
+		A2000012 /* ABCDiatypeVariable-Trial.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = ABCDiatypeVariable-Trial.ttf; sourceTree = "<group>"; };
 		A2000010 /* up200.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = up200.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -36,13 +40,19 @@
 		};
 		A3000002 /* up200 */ = {
 			isa = PBXGroup;
-			children = (A2000001, A3000003, A3000004, A2000004, A2000005);
+			children = (A2000001, A3000003, A3000004, A3000006, A2000004, A2000005);
 			path = up200;
+			sourceTree = "<group>";
+		};
+		A3000006 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (A2000012);
+			path = Fonts;
 			sourceTree = "<group>";
 		};
 		A3000003 /* Views */ = {
 			isa = PBXGroup;
-			children = (A2000002, A2000006, A2000007, A2000008, A2000009);
+			children = (A2000002, A2000006, A2000007, A2000008, A2000009, A2000011);
 			path = Views;
 			sourceTree = "<group>";
 		};
@@ -95,7 +105,7 @@
 		A5000001 = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = (A1000001, A1000002, A1000003, A1000005, A1000006, A1000007, A1000008);
+			files = (A1000001, A1000002, A1000003, A1000005, A1000006, A1000007, A1000008, A1000009);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
@@ -104,7 +114,7 @@
 		A5000002 = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = (A1000004);
+			files = (A1000004, A1000010);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
