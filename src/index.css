@@ -548,7 +548,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
   [role="dialog"] button[aria-label="Close"] { width: 44px !important; height: 44px !important; }
 
   /* Empty state adjustments */
-  textarea { min-height: 120px !important; }
+  textarea:not(.create-prompt) { min-height: 120px !important; }
 }
 
 @layer base {
