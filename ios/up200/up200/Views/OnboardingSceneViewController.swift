@@ -259,7 +259,14 @@ class OnboardingSceneViewController: UIViewController {
             let exhale = SCNAction.scale(to: 0.97, duration: halfBreath)
             inhale.timingMode = .easeInEaseOut
             exhale.timingMode = .easeInEaseOut
-            let breath = SCNAction.repeatForever(SCNAction.sequence([inhale, exhale]))
+            // Desync at t=0 by varying the first action per blob — half the
+            // field inhales while the other half exhales. Combined with the
+            // staggered breathDuration values, no blob is ever static and
+            // the scene drifts apart further over time.
+            let breathSeq: SCNAction = def.seed.isMultiple(of: 2)
+                ? SCNAction.sequence([exhale, inhale])
+                : SCNAction.sequence([inhale, exhale])
+            let breath = SCNAction.repeatForever(breathSeq)
 
             // Soft opacity pulse on a slightly different period so scale and
             // opacity slowly drift against each other — feels organic, not mechanical.
@@ -268,12 +275,15 @@ class OnboardingSceneViewController: UIViewController {
             let glow = SCNAction.fadeOpacity(to: def.opacity + 0.04, duration: halfPulse)
             dim.timingMode  = .easeInEaseOut
             glow.timingMode = .easeInEaseOut
-            let pulse = SCNAction.repeatForever(SCNAction.sequence([dim, glow]))
+            // Same desync trick on opacity, but on a different seed bucket
+            // so scale-direction and opacity-direction don't correlate.
+            let pulseSeq: SCNAction = def.seed.isMultiple(of: 3)
+                ? SCNAction.sequence([glow, dim])
+                : SCNAction.sequence([dim, glow])
+            let pulse = SCNAction.repeatForever(pulseSeq)
 
-            // Per-seed phase offset so blobs aren't synchronized at t=0.
-            let phase = Double(def.seed) * 0.7
-            node.runAction(SCNAction.sequence([SCNAction.wait(duration: phase), breath]))
-            node.runAction(SCNAction.sequence([SCNAction.wait(duration: phase * 1.3), pulse]))
+            node.runAction(breath)
+            node.runAction(pulse)
 
             // Very slow z-axis wobble — kept from the original; reads as
             // "alive in place" rather than translating.
