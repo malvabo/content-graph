@@ -69,7 +69,7 @@ export default function App() {
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
   const isMobile = useIsMobile();
-  const [mobileOnboardingDone, setMobileOnboardingDone] = useState(false);
+  const [mobileOnboardingDone, setMobileOnboardingDone] = useState(true);
   const [mobileOnboardingPhase, setMobileOnboardingPhase] = useState<'idle' | 'recording' | undefined>(undefined);
   
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'create', 'capture'];
