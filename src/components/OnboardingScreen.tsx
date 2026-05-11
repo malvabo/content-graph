@@ -11,15 +11,11 @@ interface Particle {
   size: number; alpha: number;
 }
 
-interface Cloud {
-  x: number; y: number;
-  w: number; h: number;
-  opacity: number;
-  seed: number;
-  driftR: number;
-  driftDuration: number;
-  rotSpeed: number;
-  phase: number;
+// A single point in the rotating dot cluster. Position is in cluster-local
+// coordinates; rotation happens once per frame around the cluster center.
+interface Dot {
+  x: number; y: number; z: number;
+  size: number; alpha: number;
 }
 
 interface Label {
@@ -47,14 +43,14 @@ function makeCloudCanvas(seed: number, w: number, h: number): HTMLCanvasElement 
     const cy = rng(seed, i * 3 + 1) * h;
     const r  = rng(seed, i * 3 + 2) * Math.min(w, h) * 0.25 + Math.min(w, h) * 0.10;
     const a  = rng(seed, i * 3 + 2) * 0.11 + 0.03;
-    const isTeal = i % 3 === 0;
+    const isAmber = i % 3 === 0;
     const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    if (isTeal) {
-      grad.addColorStop(0, `rgba(181,240,230,${a * 1.4})`);
-      grad.addColorStop(1, `rgba(181,240,230,0)`);
+    if (isAmber) {
+      grad.addColorStop(0, `rgba(217,115,26,${a * 1.2})`);
+      grad.addColorStop(1, `rgba(217,115,26,0)`);
     } else {
-      grad.addColorStop(0, `rgba(255,255,255,${a * 2})`);
-      grad.addColorStop(0.5, `rgba(230,230,230,${a})`);
+      grad.addColorStop(0, `rgba(255,255,255,${a * 1.3})`);
+      grad.addColorStop(0.5, `rgba(235,235,235,${a * 0.7})`);
       grad.addColorStop(1, `rgba(255,255,255,0)`);
     }
     ctx.fillStyle = grad;
@@ -109,39 +105,55 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
     resize();
     window.addEventListener('resize', resize);
 
-    // ---- particles ----
-    const W = 60, H = 80, D = 40; // world box half-extents
-    const spawnParticle = (layer: 'near' | 'far'): Particle => {
-      const f = layer === 'far' ? 1.5 : 1;
-      return {
-        x: (Math.random() - 0.5) * W * 2 * f,
-        y: (Math.random() - 0.5) * H * 2 * f,
-        z: (Math.random() - 0.5) * D * 2 * f,
-        vx: (Math.random() - 0.5) * 0.012 * f,
-        vy: (Math.random() - 0.5) * 0.012 * f + 0.006,
-        vz: (Math.random() - 0.5) * 0.008 * f,
-        size: layer === 'near'
-          ? 0.18 + Math.random() * 0.12
-          : 0.10 + Math.random() * 0.08,
-        alpha: layer === 'near' ? 0.7 + Math.random() * 0.3 : 0.3 + Math.random() * 0.2,
-      };
-    };
+    // ---- dot cluster (rotates rigidly around its center; the focal motion) ----
+    // Build a deterministic point cloud inside an ellipsoid via seeded
+    // rejection sampling, mirroring the iOS setupDotCloud.
+    const dotCloud: Dot[] = [];
+    {
+      const target = 140;
+      let placed = 0;
+      let attempt = 0;
+      while (placed < target && attempt < target * 6) {
+        const nx = (rng(0, attempt * 3)     - 0.5) * 2;
+        const ny = (rng(0, attempt * 3 + 1) - 0.5) * 2;
+        const nz = (rng(0, attempt * 3 + 2) - 0.5) * 2;
+        attempt++;
+        if (nx * nx + ny * ny + nz * nz > 1) continue;
+        dotCloud.push({
+          x: nx * 9, y: ny * 6, z: nz * 5,
+          size:  0.18 + rng(1, 1000 + placed * 2) * 0.22,
+          alpha: 0.40 + rng(1, 2000 + placed * 2) * 0.55,
+        });
+        placed++;
+      }
+    }
 
-    const nearParticles: Particle[] = Array.from({ length: 80 },  () => spawnParticle('near'));
-    const farParticles:  Particle[] = Array.from({ length: 20 },  () => spawnParticle('far'));
+    // ---- ambient back-layer particles (kept as wandering atmosphere) ----
+    const W = 60, H = 80, D = 40;
+    const spawnFar = (): Particle => ({
+      x: (Math.random() - 0.5) * W * 3,
+      y: (Math.random() - 0.5) * H * 3,
+      z: (Math.random() - 0.5) * D * 3,
+      vx: (Math.random() - 0.5) * 0.018,
+      vy: (Math.random() - 0.5) * 0.018 + 0.009,
+      vz: (Math.random() - 0.5) * 0.012,
+      size:  0.10 + Math.random() * 0.08,
+      alpha: 0.30 + Math.random() * 0.20,
+    });
+    const farParticles: Particle[] = Array.from({ length: 20 }, spawnFar);
 
     // ---- sprite ----
     const sprite = makeParticleSprite(24);
 
-    // ---- clouds ----
+    // ---- clouds (anchored; breathe in place) ----
     const CLOUD_SIZE = 256;
     const cloudDefs = [
-      { nx: 0.18, ny: 0.30, wf: 0.55, hf: 0.28, opacity: 0.80, seed: 1, driftR: 0.04, dur: 22000, phase: 0    },
-      { nx: 0.72, ny: 0.55, wf: 0.48, hf: 0.22, opacity: 0.65, seed: 2, driftR: 0.03, dur: 28000, phase: 3500 },
-      { nx: 0.40, ny: 0.75, wf: 0.62, hf: 0.30, opacity: 0.60, seed: 3, driftR: 0.05, dur: 19000, phase: 1200 },
-      { nx: 0.82, ny: 0.22, wf: 0.40, hf: 0.25, opacity: 0.50, seed: 4, driftR: 0.03, dur: 32000, phase: 7000 },
-      { nx: 0.10, ny: 0.60, wf: 0.50, hf: 0.33, opacity: 0.45, seed: 5, driftR: 0.04, dur: 25000, phase: 4000 },
-      { nx: 0.55, ny: 0.15, wf: 0.44, hf: 0.20, opacity: 0.55, seed: 6, driftR: 0.04, dur: 21000, phase: 9000 },
+      { nx: 0.18, ny: 0.30, wf: 0.55, hf: 0.28, opacity: 0.80, seed: 1, breathMs: 5200 },
+      { nx: 0.72, ny: 0.55, wf: 0.48, hf: 0.22, opacity: 0.65, seed: 2, breathMs: 6400 },
+      { nx: 0.40, ny: 0.75, wf: 0.62, hf: 0.30, opacity: 0.60, seed: 3, breathMs: 4700 },
+      { nx: 0.82, ny: 0.22, wf: 0.40, hf: 0.25, opacity: 0.50, seed: 4, breathMs: 7100 },
+      { nx: 0.10, ny: 0.60, wf: 0.50, hf: 0.33, opacity: 0.45, seed: 5, breathMs: 5800 },
+      { nx: 0.55, ny: 0.15, wf: 0.44, hf: 0.20, opacity: 0.55, seed: 6, breathMs: 6000 },
     ];
     const cloudTextures = cloudDefs.map(d => makeCloudCanvas(d.seed, CLOUD_SIZE, CLOUD_SIZE));
 
@@ -164,15 +176,29 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
     };
 
     // ---- draw gradient ----
+    // Warm-dark base + two amber radial glows, matching the iOS scene.
     const drawGradient = () => {
       const w = canvas.width;
       const h = canvas.height;
       const gr = ctx.createLinearGradient(w * 0.2, 0, w * 0.8, h);
-      gr.addColorStop(0,    'rgb(125,212,235)');
-      gr.addColorStop(0.35, 'rgb(168,227,207)');
-      gr.addColorStop(0.65, 'rgb( 92,196,199)');
-      gr.addColorStop(1,    'rgb( 43,143,127)');
+      gr.addColorStop(0,    'rgb(33,25,20)');
+      gr.addColorStop(0.35, 'rgb(26,20,18)');
+      gr.addColorStop(0.65, 'rgb(20,15,13)');
+      gr.addColorStop(1,    'rgb(15,13,10)');
       ctx.fillStyle = gr;
+      ctx.fillRect(0, 0, w, h);
+
+      const radius = Math.max(w, h) * 0.7;
+      const glowTL = ctx.createRadialGradient(w * 0.05, h * 0.05, 0, w * 0.05, h * 0.05, radius);
+      glowTL.addColorStop(0, 'rgba(140, 77, 20, 0.35)');
+      glowTL.addColorStop(1, 'rgba(140, 77, 20, 0)');
+      ctx.fillStyle = glowTL;
+      ctx.fillRect(0, 0, w, h);
+
+      const glowBR = ctx.createRadialGradient(w * 1.0, h * 0.85, 0, w * 1.0, h * 0.85, radius);
+      glowBR.addColorStop(0, 'rgba(77, 51, 20, 0.22)');
+      glowBR.addColorStop(1, 'rgba(77, 51, 20, 0)');
+      ctx.fillStyle = glowBR;
       ctx.fillRect(0, 0, w, h);
     };
 
@@ -191,53 +217,76 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
 
       drawGradient();
 
-      // -- clouds --
+      // -- clouds: anchored position, breathing scale + opacity --
+      // Cosine waves give natural ease-in-out at the extremes. The phase
+      // sign per seed mirrors the iOS inhale/exhale-first split so no
+      // blob is ever static at t=0 and they immediately desynchronize.
       cloudDefs.forEach((def, i) => {
-        const elapsed = (t + def.phase) % def.dur;
-        const progress = elapsed / def.dur;
-        const angle = progress * Math.PI * 2;
-        const dx = Math.cos(angle) * def.driftR * cw;
-        const dy = Math.sin(angle) * def.driftR * ch * 0.4;
-        const cx = def.nx * cw + dx;
-        const cy = def.ny * ch + dy;
-        const w  = def.wf * cw;
-        const h  = def.hf * ch;
-        ctx.globalAlpha = def.opacity;
+        const breathSign  = def.seed % 2 === 0 ? 1 : -1;  // even → exhale first
+        const breathPhase = Math.PI / 2 + breathSign * (t / def.breathMs) * Math.PI * 2;
+        const scale = 1.005 + 0.035 * Math.cos(breathPhase);
+
+        const pulseMs    = def.breathMs * 0.85;
+        const pulseSign  = def.seed % 3 === 0 ? -1 : 1;  // multiples of 3 → glow first
+        const pulsePhase = Math.PI / 2 + pulseSign * (t / pulseMs) * Math.PI * 2;
+        const opacity    = Math.max(0, def.opacity + (-0.005 + 0.045 * Math.cos(pulsePhase)));
+
+        const cx = def.nx * cw;
+        const cy = def.ny * ch;
+        const w  = def.wf * cw * scale;
+        const h  = def.hf * ch * scale;
+
+        ctx.globalAlpha = opacity;
         ctx.drawImage(cloudTextures[i], cx - w / 2, cy - h / 2, w, h);
       });
 
       ctx.globalAlpha = 1;
 
-      // -- particles --
-      const drawParticles = (particles: Particle[], layer: 'near' | 'far') => {
-        for (const p of particles) {
-          p.x += p.vx; p.y += p.vy; p.z += p.vz;
-          // wrap
-          const bW = layer === 'far' ? W * 3 : W * 2;
-          const bH = layer === 'far' ? H * 3 : H * 2;
-          const bD = layer === 'far' ? D * 3 : D * 2;
-          if (p.x > bW)  p.x = -bW;
-          if (p.x < -bW) p.x = bW;
-          if (p.y > bH)  p.y = -bH;
-          if (p.y < -bH) p.y = bH;
-          if (p.z > bD)  p.z = -bD;
-          if (p.z < -bD) p.z = bD;
+      // -- ambient back-layer particles (wandering atmosphere) --
+      for (const p of farParticles) {
+        p.x += p.vx; p.y += p.vy; p.z += p.vz;
+        const bW = W * 3, bH = H * 3, bD = D * 3;
+        if (p.x > bW)  p.x = -bW;
+        if (p.x < -bW) p.x = bW;
+        if (p.y > bH)  p.y = -bH;
+        if (p.y < -bH) p.y = bH;
+        if (p.z > bD)  p.z = -bD;
+        if (p.z < -bD) p.z = bD;
 
-          const proj = project(p);
-          if (!proj) continue;
-          const { sx, sy, scale } = proj;
-          const radius = p.size * scale * 40;
-          if (radius < 0.3) continue;
+        const proj = project(p);
+        if (!proj) continue;
+        const { sx, sy, scale } = proj;
+        const radius = p.size * scale * 40;
+        if (radius < 0.3) continue;
 
-          ctx.globalAlpha = p.alpha * (layer === 'far' ? 0.5 : 1);
-          ctx.globalCompositeOperation = 'lighter';
-          ctx.drawImage(sprite, sx - radius, sy - radius, radius * 2, radius * 2);
-          ctx.globalCompositeOperation = 'source-over';
-        }
-      };
+        ctx.globalAlpha = p.alpha * 0.5;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.drawImage(sprite, sx - radius, sy - radius, radius * 2, radius * 2);
+        ctx.globalCompositeOperation = 'source-over';
+      }
 
-      drawParticles(farParticles,  'far');
-      drawParticles(nearParticles, 'near');
+      // -- rotating dot cluster (the focal motion) --
+      // Y spin: full revolution every 22s; X tilt every 38s — matches iOS.
+      const spinY = (t / 22000) * Math.PI * 2;
+      const tiltX = (t / 38000) * Math.PI * 2;
+      const cosY = Math.cos(spinY), sinY = Math.sin(spinY);
+      const cosX = Math.cos(tiltX), sinX = Math.sin(tiltX);
+
+      ctx.globalCompositeOperation = 'lighter';
+      for (const d of dotCloud) {
+        // Rotate around X (tilt) first, then around Y (spin).
+        const y1 = d.y * cosX - d.z * sinX;
+        const z1 = d.y * sinX + d.z * cosX;
+        const x2 =  d.x * cosY + z1 * sinY;
+        const z2 = -d.x * sinY + z1 * cosY;
+        const proj = project({ x: x2, y: y1, z: z2 });
+        if (!proj) continue;
+        const radius = d.size * proj.scale * 40;
+        if (radius < 0.3) continue;
+        ctx.globalAlpha = d.alpha;
+        ctx.drawImage(sprite, proj.sx - radius, proj.sy - radius, radius * 2, radius * 2);
+      }
+      ctx.globalCompositeOperation = 'source-over';
 
       ctx.globalAlpha = 1;
       ctx.restore();
@@ -301,11 +350,13 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
                 fontWeight: 500,
                 color: '#fff',
                 background: l.ghost
-                  ? 'rgba(20,51,41,0.45)'
-                  : 'rgba(5,15,13,0.78)',
+                  ? 'rgba(26,20,18,0.55)'
+                  : 'rgba(15,13,10,0.82)',
                 borderRadius: 2,
                 padding: '5px 11px',
-                border: l.ghost ? '0.5px solid rgba(255,255,255,0.25)' : 'none',
+                border: l.ghost
+                  ? '0.5px solid rgba(255,255,255,0.18)'
+                  : '0.5px solid rgba(255,255,255,0.10)',
                 letterSpacing: '0.04em',
                 whiteSpace: 'nowrap',
                 pointerEvents: 'none',
@@ -362,8 +413,8 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
             height: 54,
             borderRadius: 16,
             border: 'none',
-            background: 'rgba(255,255,255,0.92)',
-            color: 'rgb(26,77,66)',
+            background: 'rgba(255,255,255,0.94)',
+            color: 'rgb(26,20,18)',
             fontFamily: 'var(--font-sans, system-ui)',
             fontSize: 17,
             fontWeight: 600,
