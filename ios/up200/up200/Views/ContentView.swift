@@ -130,8 +130,6 @@ private struct ProjectDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var copied = false
 
-    private let green = Color(red: 0.27, green: 0.70, blue: 0.42)
-
     var body: some View {
         VStack(spacing: 0) {
             // Header: close · title · count(=1)
@@ -176,7 +174,7 @@ private struct ProjectDetailView: View {
                             Label(copied ? "Copied" : "Copy",
                                   systemImage: copied ? "checkmark" : "doc.on.doc")
                                 .font(.app(size: 12, weight: .medium))
-                                .foregroundColor(copied ? green : Color.white.opacity(0.55))
+                                .foregroundColor(copied ? .white : Color.white.opacity(0.55))
                         }
                         .buttonStyle(.plain)
                     }

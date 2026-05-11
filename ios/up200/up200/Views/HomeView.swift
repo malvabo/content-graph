@@ -311,8 +311,6 @@ private struct GenerationResultSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var copiedID: UUID? = nil
 
-    private let green = Color(red: 0.27, green: 0.70, blue: 0.42)
-
     var body: some View {
         VStack(spacing: 0) {
             // Header: close · title · count
@@ -358,7 +356,7 @@ private struct GenerationResultSheet: View {
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.app(size: 12))
-                    .foregroundColor(green)
+                    .foregroundColor(Color.white.opacity(0.32))
                 Text("Saved to Library")
                     .font(.app(size: 12))
                     .foregroundColor(Color.white.opacity(0.32))
@@ -389,7 +387,7 @@ private struct GenerationResultSheet: View {
                     Label(isCopied ? "Copied" : "Copy",
                           systemImage: isCopied ? "checkmark" : "doc.on.doc")
                         .font(.app(size: 12, weight: .medium))
-                        .foregroundColor(isCopied ? green : Color.white.opacity(0.55))
+                        .foregroundColor(isCopied ? .white : Color.white.opacity(0.55))
                 }
                 .buttonStyle(.plain)
             }
@@ -1289,8 +1287,6 @@ private struct FormatPickerSheet: View {
     @State private var search = ""
     @State private var showAllTemplates = false
 
-    private let green = Color(red: 0.27, green: 0.70, blue: 0.42)
-
     private var filteredTemplates: [ContentTemplate] {
         guard !search.isEmpty else { return allTemplates }
         let q = search.lowercased()
@@ -1418,16 +1414,10 @@ private struct FormatPickerSheet: View {
                     .fill(Color.white.opacity(0.07))
                     .frame(height: 0.5)
 
-                Button { dismiss() } label: {
-                    Text(doneLabel)
-                        .font(.app(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(selectedFormatIDs.isEmpty ? Color.white.opacity(0.12) : green)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
-                .buttonStyle(.plain)
+                AnimatedLightsButton(
+                    title: doneLabel,
+                    isEnabled: !selectedFormatIDs.isEmpty
+                ) { dismiss() }
                 .padding(.horizontal, 16)
                 .padding(.top, 14)
                 .padding(.bottom, 32)
@@ -1497,7 +1487,7 @@ private struct FormatPickerSheet: View {
                 if isActive {
                     Image(systemName: "checkmark")
                         .font(.app(size: 12, weight: .semibold))
-                        .foregroundColor(green)
+                        .foregroundColor(.white)
                         .padding(.top, 2)
                 }
             }
@@ -1518,10 +1508,17 @@ private struct FormatPickerSheet: View {
             }
         } label: {
             HStack(spacing: 14) {
-                Image(systemName: selected ? "checkmark.square.fill" : "square")
-                    .font(.app(size: 18))
-                    .foregroundColor(selected ? green : Color.white.opacity(0.22))
-                    .frame(width: 22)
+                ZStack {
+                    if selected {
+                        Circle().fill(.white)
+                        Image(systemName: "checkmark")
+                            .font(.app(size: 11, weight: .bold))
+                            .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                    } else {
+                        Circle().stroke(Color.white.opacity(0.22), lineWidth: 1.5)
+                    }
+                }
+                .frame(width: 22, height: 22)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(format.label)
                         .font(.app(size: 15))
@@ -1558,8 +1555,6 @@ private let popularTemplates: [PopularTemplate] = [
 private struct FormatsBlock: View {
     @Binding var selectedFormatIDs: Set<String>
     @State private var showPicker = false
-
-    private let green = Color(red: 0.27, green: 0.70, blue: 0.42)
 
     private var summaryText: String {
         let labels = allFormats.filter { selectedFormatIDs.contains($0.id) }.map(\.label)
@@ -1599,9 +1594,9 @@ private struct FormatsBlock: View {
                         } else {
                             Text("\(selectedFormatIDs.count)")
                                 .font(.app(size: 12, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
                                 .frame(minWidth: 24, minHeight: 24)
-                                .background(green)
+                                .background(.white)
                                 .clipShape(Circle())
                                 .transition(.scale.combined(with: .opacity))
                         }
