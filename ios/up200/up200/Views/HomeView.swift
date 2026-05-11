@@ -284,7 +284,7 @@ private struct GeneratingSheet: View {
                             .fill(amber.opacity(0.18))
                             .frame(width: 88, height: 88)
                         Image(systemName: "sparkles")
-                            .font(.app(size: 32, weight: .regular))
+                            .font(.app(size: 32, weight: .light))
                             .foregroundColor(amber)
                     }
                     .onAppear { pulse = true }
@@ -310,15 +310,14 @@ private struct GeneratingSheet: View {
 private struct GenerationResultSheet: View {
     let results: [GeneratedResult]
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedIndex = 0
-    @State private var copied = false
+    @State private var copiedID: UUID? = nil
 
     private let green = Color(red: 0.27, green: 0.70, blue: 0.42)
-    private var current: GeneratedResult { results[min(selectedIndex, results.count - 1)] }
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 10) {
+            // Header: close · title · count
+            HStack(spacing: 12) {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
                         .font(.app(size: 13, weight: .semibold))
@@ -328,70 +327,35 @@ private struct GenerationResultSheet: View {
                         .clipShape(Circle())
                 }
 
-                if results.count > 1 {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 6) {
-                            ForEach(results.indices, id: \.self) { i in
-                                Button {
-                                    withAnimation(.easeOut(duration: 0.15)) {
-                                        selectedIndex = i
-                                        copied = false
-                                    }
-                                } label: {
-                                    Text(results[i].formatLabel)
-                                        .font(.app(size: 12, weight: .medium))
-                                        .foregroundColor(selectedIndex == i ? .white : Color.white.opacity(0.40))
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 5)
-                                        .background(selectedIndex == i ? Color.white.opacity(0.14) : Color.white.opacity(0.05))
-                                        .clipShape(Capsule())
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal, 2)
-                    }
-                } else {
-                    Text(current.formatLabel)
-                        .font(.app(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                }
+                Spacer(minLength: 0)
 
-                Spacer()
+                Text("Outputs")
+                    .font(.app(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
 
-                Button {
-                    UIPasteboard.general.string = current.content
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.easeOut(duration: 0.15)) { copied = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        withAnimation { copied = false }
-                    }
-                } label: {
-                    Label(copied ? "Copied" : "Copy",
-                          systemImage: copied ? "checkmark" : "doc.on.doc")
-                        .font(.app(size: 13, weight: .medium))
-                        .foregroundColor(copied ? green : Color.white.opacity(0.60))
-                }
-                .buttonStyle(.plain)
+                Spacer(minLength: 0)
+
+                Text("\(results.count)")
+                    .font(.app(size: 14))
+                    .foregroundColor(Color.white.opacity(0.45))
+                    .frame(width: 28, alignment: .trailing)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 18)
+            .padding(.top, 14)
             .padding(.bottom, 14)
 
-            Rectangle()
-                .fill(Color.white.opacity(0.07))
-                .frame(height: 0.5)
-
+            // Block list
             ScrollView(showsIndicators: false) {
-                Text(current.content)
-                    .font(.app(size: 15))
-                    .foregroundColor(Color.white.opacity(0.85))
-                    .lineSpacing(5)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 20)
+                VStack(spacing: 12) {
+                    ForEach(results) { result in
+                        resultBlock(result)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
 
+            // Saved indicator
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.app(size: 12))
@@ -402,7 +366,51 @@ private struct GenerationResultSheet: View {
             }
             .padding(.vertical, 12)
         }
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+    }
+
+    @ViewBuilder
+    private func resultBlock(_ result: GeneratedResult) -> some View {
+        let isCopied = copiedID == result.id
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(result.formatLabel)
+                    .font(.app(size: 15, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.88))
+                Spacer(minLength: 8)
+                Button {
+                    UIPasteboard.general.string = result.content
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.easeOut(duration: 0.15)) { copiedID = result.id }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        withAnimation {
+                            if copiedID == result.id { copiedID = nil }
+                        }
+                    }
+                } label: {
+                    Label(isCopied ? "Copied" : "Copy",
+                          systemImage: isCopied ? "checkmark" : "doc.on.doc")
+                        .font(.app(size: 12, weight: .medium))
+                        .foregroundColor(isCopied ? green : Color.white.opacity(0.55))
+                }
+                .buttonStyle(.plain)
+            }
+
+            Text(result.content)
+                .font(.app(size: 14))
+                .foregroundColor(Color.white.opacity(0.82))
+                .lineSpacing(4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+        )
     }
 }
 
@@ -553,7 +561,7 @@ struct ImportSheetView: View {
                 .padding(.top, 10)
 
             Text("Import content")
-                .font(Font.app(size: 19, weight: .semibold))
+                .font(.app(size: 19, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
                 .padding(.bottom, 2)
 
@@ -563,7 +571,7 @@ struct ImportSheetView: View {
             } label: {
                 VStack(spacing: 12) {
                     Image(systemName: "link")
-                        .font(.app(size: 16, weight: .regular))
+                        .font(.app(size: 16, weight: .light))
                         .foregroundColor(Color.white.opacity(0.82))
                     Text("Paste a link")
                         .font(.app(size: 14, weight: .regular))
@@ -584,7 +592,7 @@ struct ImportSheetView: View {
                     } label: {
                         VStack(spacing: 12) {
                             Image(systemName: item.icon)
-                                .font(.app(size: 16, weight: .regular))
+                                .font(.app(size: 16, weight: .light))
                                 .foregroundColor(Color.white.opacity(0.82))
                             Text(item.label)
                                 .font(.app(size: 14, weight: .regular))
@@ -955,7 +963,7 @@ private struct VoiceRecordSheet: View {
                             .transition(.opacity)
                     } else {
                         Text(recorder.isRecording ? timeLabel : "Tap to record")
-                            .font(.system(size: 17, design: recorder.isRecording ? .monospaced : .default))
+                            .font(.app(size: 17, design: recorder.isRecording ? .monospaced : .default))
                             .foregroundColor(Color.white.opacity(recorder.isRecording ? 0.80 : 0.40))
                             .transition(.opacity)
                     }
@@ -1102,7 +1110,7 @@ private struct SourcesBlock: View {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     Text("Sources")
-                        .font(Font.app(size: 15, weight: .medium))
+                        .font(.app(size: 15, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.85))
                     Spacer()
                     Button { showImport = true } label: {
@@ -1517,7 +1525,7 @@ private struct FormatPickerSheet: View {
         } label: {
             HStack(spacing: 14) {
                 Image(systemName: selected ? "checkmark.square.fill" : "square")
-                    .font(Font.app(size: 18))
+                    .font(.app(size: 18))
                     .foregroundColor(selected ? green : Color.white.opacity(0.22))
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 3) {
@@ -1799,7 +1807,7 @@ struct HomeView: View {
                     VStack(spacing: 0) {
                         HStack {
                             Text("Create")
-                                .font(Font.app(size: 28, weight: .bold))
+                                .font(.app(size: 28, weight: .bold))
                                 .foregroundColor(.white)
                             Spacer()
                             Button { showKeyUpdate = true } label: {

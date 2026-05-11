@@ -47,7 +47,7 @@ struct LibraryView: View {
                     Spacer()
                     VStack(spacing: 12) {
                         Image(systemName: "tray")
-                            .font(.app(size: 36, weight: .regular))
+                            .font(.app(size: 36, weight: .light))
                             .foregroundColor(Color.white.opacity(0.20))
                         Text("No generations yet")
                             .font(.app(size: 16, weight: .regular))
@@ -133,7 +133,8 @@ private struct ProjectDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 10) {
+            // Header: close · title · count(=1)
+            HStack(spacing: 12) {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
                         .font(.app(size: 13, weight: .semibold))
@@ -142,51 +143,69 @@ private struct ProjectDetailView: View {
                         .background(Color.white.opacity(0.10))
                         .clipShape(Circle())
                 }
-                Spacer()
-                Text(project.outputType)
-                    .font(.app(size: 15, weight: .semibold))
+                Spacer(minLength: 0)
+                Text("Output")
+                    .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(.white)
-                    .lineLimit(1)
-                Spacer()
-                Button {
-                    UIPasteboard.general.string = project.content.isEmpty ? project.preview : project.content
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.easeOut(duration: 0.15)) { copied = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        withAnimation { copied = false }
-                    }
-                } label: {
-                    Label(copied ? "Copied" : "Copy",
-                          systemImage: copied ? "checkmark" : "doc.on.doc")
-                        .font(.app(size: 13, weight: .medium))
-                        .foregroundColor(copied ? green : Color.white.opacity(0.60))
-                }
-                .buttonStyle(.plain)
+                Spacer(minLength: 0)
+                // Right slot kept for symmetry with the result sheet's count chip.
+                Color.clear.frame(width: 28, height: 28)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 18)
+            .padding(.top, 14)
             .padding(.bottom, 14)
 
-            Rectangle()
-                .fill(Color.white.opacity(0.07))
-                .frame(height: 0.5)
-
+            // Block
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(project.title)
-                        .font(.app(size: 13))
-                        .foregroundColor(Color.white.opacity(0.32))
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(project.outputType)
+                            .font(.app(size: 15, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.88))
+                            .lineLimit(1)
+                        Spacer(minLength: 8)
+                        Button {
+                            UIPasteboard.general.string = project.content.isEmpty ? project.preview : project.content
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            withAnimation(.easeOut(duration: 0.15)) { copied = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                withAnimation { copied = false }
+                            }
+                        } label: {
+                            Label(copied ? "Copied" : "Copy",
+                                  systemImage: copied ? "checkmark" : "doc.on.doc")
+                                .font(.app(size: 12, weight: .medium))
+                                .foregroundColor(copied ? green : Color.white.opacity(0.55))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if !project.title.isEmpty {
+                        Text(project.title)
+                            .font(.app(size: 12))
+                            .foregroundColor(Color.white.opacity(0.32))
+                    }
+
                     Text(project.content.isEmpty ? project.preview : project.content)
-                        .font(.app(size: 15))
-                        .foregroundColor(Color.white.opacity(0.85))
-                        .lineSpacing(5)
+                        .font(.app(size: 14))
+                        .foregroundColor(Color.white.opacity(0.82))
+                        .lineSpacing(4)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 20)
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.white.opacity(0.04))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 20)
             }
         }
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
     }
 }
 
@@ -277,7 +296,7 @@ private struct TemplateCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
                 Image(systemName: icon)
-                    .font(.app(size: 18, weight: .regular))
+                    .font(.app(size: 18, weight: .light))
                     .foregroundColor(Color.white.opacity(0.70))
                 Spacer()
                 if isCustom {
@@ -490,7 +509,7 @@ struct NativeTabBar: View {
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: tab.icon)
-                    .font(.system(size: 18, weight: selected == tab ? .medium : .regular))
+                    .font(.app(size: 18, weight: selected == tab ? .medium : .regular))
                 Text(tab.label)
                     .font(.app(size: 12, weight: .medium))
             }
@@ -508,7 +527,7 @@ struct LaunchView: View {
     var body: some View {
         VStack(spacing: 16) {
             Text("up")
-                .font(.system(size: 32, weight: .semibold, design: .rounded))
+                .font(.app(size: 32, weight: .semibold, design: .rounded))
                 .foregroundColor(.white)
             ProgressView()
                 .tint(Color.white.opacity(0.6))
