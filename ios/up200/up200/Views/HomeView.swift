@@ -1367,7 +1367,7 @@ private struct FormatPickerSheet: View {
                     .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 14)
+            .padding(.top, 20)
             .padding(.bottom, 12)
 
             HStack(spacing: 8) {
