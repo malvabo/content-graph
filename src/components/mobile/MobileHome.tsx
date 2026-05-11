@@ -200,7 +200,7 @@ function SecondaryGenRow({ kind, transcript, onTextChange }: { kind: AssetKind; 
           display: 'block', width: '100%',
           margin: 0, padding: 0,
           background: 'transparent', border: 'none', outline: 'none', resize: 'none', overflow: 'hidden',
-          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', fontWeight: 400, lineHeight: 1.55,
+          fontFamily: 'var(--font-sans)', fontSize: 17, fontWeight: 400, lineHeight: 1.55,
           color: 'rgba(255,255,255,0.92)',
           wordBreak: 'break-word', overflowWrap: 'anywhere',
         }}
@@ -2416,7 +2416,7 @@ function CreateSheet({ onClose, onVoice, onText }: { onClose: () => void; onVoic
                         <div style={{ fontWeight: 600, fontSize: 12, fontFamily: 'var(--font-sans)', color: selected ? 'rgba(79,142,247,0.95)' : 'rgba(255,255,255,0.85)', lineHeight: '16px' }}>{out.label}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(255,255,255,0.45)' }}>
                           <OutputFileIcon />
-                          <span style={{ fontSize: 11, fontFamily: 'var(--font-sans)', lineHeight: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{out.desc}</span>
+                          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', lineHeight: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{out.desc}</span>
                         </div>
                       </button>
                     );

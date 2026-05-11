@@ -133,7 +133,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
         @media (max-width: 767px) {
           .icon-nav { width: 100% !important; height: 52px !important; flex-direction: row !important; padding: 0 8px !important; margin: 0 !important; gap: 0 !important; order: 99 !important; border-radius: 0 !important; box-shadow: none !important; border-top: 1px solid var(--color-border-subtle) !important; }
           .icon-nav .nav-item { width: auto !important; padding: 6px 10px !important; flex-direction: column !important; gap: 2px !important; flex: 1; justify-content: center !important; }
-          .icon-nav .nav-label { font-size: 9px !important; opacity: 1 !important; }
+          .icon-nav .nav-label { font-size: 12px !important; opacity: 1 !important; }
           .icon-nav .nav-spacer, .icon-nav .nav-logo, .icon-nav .nav-bottom-utils { display: none !important; }
         }
         @media (max-width: 767px) {
