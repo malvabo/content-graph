@@ -549,6 +549,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-placeholder)
 
   /* Empty state adjustments */
   textarea:not(.create-prompt) { min-height: 120px !important; }
+  .create-prompt-mini { height: 72px !important; min-height: 72px !important; max-height: 72px !important; }
 }
 
 @layer base {
