@@ -782,8 +782,8 @@ export default function CreateHome() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: BG, color: '#fff',
-      fontFamily: 'var(--font-sans)', position: 'relative', overflow: 'hidden',
+      height: '100%', overflowY: 'auto', background: BG, color: '#fff',
+      fontFamily: 'var(--font-sans)', position: 'relative',
     }}>
       {/* Background tints */}
       <div style={{
@@ -792,7 +792,7 @@ export default function CreateHome() {
           'radial-gradient(380px circle at 5% 5%, rgba(140,77,20,0.35), transparent 70%),' +
           'radial-gradient(320px circle at 100% 85%, rgba(77,51,20,0.22), transparent 70%)',
       }} />
-      <div style={{ position: 'relative', maxWidth: 520, margin: '0 auto', padding: '24px 16px 56px' }}>
+      <div style={{ position: 'relative', maxWidth: 520, margin: '0 auto', padding: '24px 16px calc(80px + env(safe-area-inset-bottom, 0px))' }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, margin: '8px 0 16px', color: '#fff' }}>Create</h1>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

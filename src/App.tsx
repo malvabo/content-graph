@@ -55,6 +55,7 @@ import CardsPanel from './components/canvas/CardsPanel';
 import CardsLibrary from './components/canvas/CardsLibrary';
 import InfographicsPanel from './components/canvas/InfographicsPanel';
 import MobileHome from './components/mobile/MobileHome';
+import MobileBottomBar from './components/mobile/MobileBottomBar';
 import CreateHome from './components/home/CreateHome';
 import MobileOnboarding from './components/mobile/MobileOnboarding';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -223,13 +224,20 @@ function AppInner() {
     }
     return (
       <div className="flex flex-col" style={{ height: '100dvh' }}>
-        {activeView === 'capture' ? (
-          <MobileHome
-            onAddPost={() => { setMobileOnboardingPhase('recording'); setMobileOnboardingDone(false); }}
-          />
-        ) : (
-          <CreateHome />
-        )}
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          {activeView === 'capture' ? (
+            <MobileHome
+              onAddPost={() => { setMobileOnboardingPhase('recording'); setMobileOnboardingDone(false); }}
+            />
+          ) : activeView === 'library' || activeView === 'workflow' ? (
+            <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />
+          ) : activeView === 'settings' ? (
+            <SettingsPanel />
+          ) : (
+            <CreateHome />
+          )}
+        </div>
+        <MobileBottomBar active={activeView} onChange={setActiveView} />
       </div>
     );
   }
