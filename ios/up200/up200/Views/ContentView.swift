@@ -106,11 +106,11 @@ private struct ProjectRow: View {
                 }
             }
             .padding(14)
-            .background(Color.white.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Color.white.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
             )
         }
         .buttonStyle(.plain)
@@ -299,11 +299,11 @@ private struct TemplateCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
         )
     }
 }
@@ -379,7 +379,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 17/255, green: 17/255, blue: 20/255)
+            Color(red: 0.10, green: 0.08, blue: 0.07)
                 .ignoresSafeArea()
 
             if showSplash {
@@ -463,7 +463,7 @@ struct NativeTabBar: View {
             ZStack(alignment: .top) {
                 Rectangle()
                     .fill(.ultraThinMaterial)
-                    .overlay(Color(red: 0.10, green: 0.08, blue: 0.07).opacity(0.55))
+                    .overlay(Color(red: 0.10, green: 0.08, blue: 0.07).opacity(0.78))
                     .ignoresSafeArea(edges: .bottom)
                 Rectangle()
                     .fill(Color.white.opacity(0.10))
@@ -508,7 +508,7 @@ struct LaunchView: View {
                 .tint(Color.white.opacity(0.6))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 17/255, green: 17/255, blue: 20/255))
+        .background(Color(red: 0.10, green: 0.08, blue: 0.07))
     }
 }
 

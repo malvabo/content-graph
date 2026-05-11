@@ -1073,10 +1073,10 @@ private struct GlassCard<Content: View>: View {
         content
             .background(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color.white.opacity(0.07))
+                    .fill(Color.white.opacity(0.04))
                     .overlay(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                            .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
                     )
             )
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
