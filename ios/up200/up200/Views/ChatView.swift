@@ -256,7 +256,7 @@ struct ChatView: View {
                         .focused($inputFocused)
                         .padding(.horizontal, 12)
                         .padding(.top, 8)
-                        .frame(minHeight: 44, maxHeight: 120)
+                        .frame(minHeight: 36, maxHeight: 100)
                 }
 
                 HStack(spacing: 4) {
