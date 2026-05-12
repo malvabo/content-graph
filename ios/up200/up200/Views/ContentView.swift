@@ -571,10 +571,6 @@ struct ContentView: View {
                     .tabItem { Label("Notes",     systemImage: "note.text") }
                     .tag(AppTab.notes)
 
-                Color.clear.ignoresSafeArea()
-                    .tabItem { Label("Voice",     systemImage: "mic.fill") }
-                    .tag(AppTab.voice)
-
                 LibraryView()
                     .tabItem { Label("Library",   systemImage: "tray.2") }
                     .tag(AppTab.library)
@@ -582,6 +578,10 @@ struct ContentView: View {
                 TemplatesView()
                     .tabItem { Label("Templates", systemImage: "rectangle.stack") }
                     .tag(AppTab.templates)
+
+                Color.clear.ignoresSafeArea()
+                    .tabItem { Label("Voice",     systemImage: "mic.fill") }
+                    .tag(AppTab.voice)
             }
             .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
             .onChange(of: selectedTab) { _, newTab in
