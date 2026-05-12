@@ -531,7 +531,6 @@ struct ContentView: View {
                 TabView(selection: tabSelection) {
                     Tab(AppTab.home.label, systemImage: AppTab.home.icon, value: AppTab.home) {
                         HomeView(scrollToTopSignal: homeScrollToTop, pendingSheet: $pendingSheet)
-                            .overlay(alignment: .bottomTrailing) { addFAB }
                     }
                     Tab(AppTab.library.label, systemImage: AppTab.library.icon, value: AppTab.library) {
                         LibraryView()
