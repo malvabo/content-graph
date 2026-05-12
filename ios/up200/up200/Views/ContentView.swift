@@ -225,8 +225,9 @@ struct TemplatesView: View {
     @AppStorage("custom_templates") private var customData: Data = Data()
     @State private var custom: [CustomTemplate] = []
     @State private var showAdd = false
-    @State private var newTitle = ""
-    @State private var newDesc = ""
+    @State private var editingTemplate: CustomTemplate? = nil
+
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -236,9 +237,7 @@ struct TemplatesView: View {
                         .font(.app(size: 22, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.88))
                     Spacer()
-                    Button {
-                        newTitle = ""; newDesc = ""; showAdd = true
-                    } label: {
+                    Button { showAdd = true } label: {
                         Image(systemName: "plus")
                             .font(.app(size: 16, weight: .medium))
                             .foregroundColor(Color.white.opacity(0.55))
@@ -250,33 +249,64 @@ struct TemplatesView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 28)
-                .padding(.bottom, 20)
+                .padding(.bottom, 8)
 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                sectionLabel("Library")
+
+                LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(builtIn, id: \.title) { tpl in
-                        TemplateCard(title: tpl.title, subtitle: tpl.subtitle, icon: tpl.icon, isCustom: false) {}
-                    }
-                    ForEach(custom) { tpl in
-                        TemplateCard(title: tpl.title, subtitle: tpl.subtitle, icon: "doc.badge.plus", isCustom: true) {
-                            custom.removeAll { $0.id == tpl.id }
-                            saveCustom()
-                        }
+                        TemplateCard(title: tpl.title, subtitle: tpl.subtitle, icon: tpl.icon)
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 32)
+
+                if !custom.isEmpty {
+                    sectionLabel("Custom")
+
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ForEach(custom) { tpl in
+                            TemplateCard(title: tpl.title, subtitle: tpl.subtitle, icon: "doc.badge.plus")
+                                .contentShape(Rectangle())
+                                .onTapGesture { editingTemplate = tpl }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+
+                Spacer(minLength: 48)
             }
         }
         .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
         .onAppear { custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? [] }
         .sheet(isPresented: $showAdd) {
-            AddTemplateSheet(title: $newTitle, desc: $newDesc) {
-                guard !newTitle.isEmpty else { return }
-                custom.append(CustomTemplate(title: newTitle, subtitle: newDesc))
+            TemplateEditSheet(template: nil) { newTpl in
+                custom.append(newTpl)
                 saveCustom()
-                showAdd = false
             }
         }
+        .sheet(item: $editingTemplate) { tpl in
+            TemplateEditSheet(template: tpl) { updated in
+                if let idx = custom.firstIndex(where: { $0.id == tpl.id }) {
+                    custom[idx] = updated
+                }
+                saveCustom()
+            } onDelete: {
+                custom.removeAll { $0.id == tpl.id }
+                saveCustom()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.app(size: 11, weight: .semibold))
+            .tracking(0.8)
+            .foregroundColor(Color.white.opacity(0.28))
+            .padding(.horizontal, 20)
+            .padding(.top, 28)
+            .padding(.bottom, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func saveCustom() {
@@ -288,94 +318,214 @@ private struct TemplateCard: View {
     let title: String
     let subtitle: String
     let icon: String
-    let isCustom: Bool
-    var onDelete: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top) {
+        VStack(alignment: .leading, spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.white.opacity(0.07))
+                    .frame(width: 40, height: 40)
                 Image(systemName: icon)
-                    .font(.app(size: 18, weight: .regular))
-                    .foregroundColor(Color.white.opacity(0.70))
-                Spacer()
-                if isCustom {
-                    Button(action: onDelete) {
-                        Image(systemName: "xmark")
-                            .font(.app(size: 11, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.30))
-                    }
-                    .buttonStyle(.plain)
-                }
+                    .font(.system(size: 17, weight: .regular))
+                    .foregroundColor(Color.white.opacity(0.72))
             }
-            VStack(alignment: .leading, spacing: 3) {
+
+            VStack(alignment: .leading, spacing: 5) {
                 Text(title)
-                    .font(.app(size: 14, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.86))
+                    .font(.app(size: 14, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.88))
                     .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(subtitle)
-                    .font(.app(size: 12, weight: .regular))
-                    .foregroundColor(Color.white.opacity(0.42))
+                    .font(.app(size: 12))
+                    .foregroundColor(Color.white.opacity(0.40))
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
+        .padding(18)
         .background(Color.white.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
         )
     }
 }
 
-private struct AddTemplateSheet: View {
-    @Binding var title: String
-    @Binding var desc: String
-    var onAdd: () -> Void
+private struct TemplateEditSheet: View {
+    let originalID: UUID?
+    let onSave: (CustomTemplate) -> Void
+    let onDelete: (() -> Void)?
+
+    @State private var title: String
+    @State private var subtitle: String
+    @State private var prompt: String
+    @State private var formatIDs: Set<String>
+
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focus: Field?
 
-    private enum Field { case title, desc }
+    private enum Field { case title, subtitle, prompt }
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    init(template: CustomTemplate?, onSave: @escaping (CustomTemplate) -> Void, onDelete: (() -> Void)? = nil) {
+        self.originalID = template?.id
+        self.onSave = onSave
+        self.onDelete = onDelete
+        _title = State(initialValue: template?.title ?? "")
+        _subtitle = State(initialValue: template?.subtitle ?? "")
+        _prompt = State(initialValue: template?.prompt ?? "")
+        _formatIDs = State(initialValue: Set(template?.formatIDs ?? []))
+    }
+
+    private var isNew: Bool { originalID == nil }
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("New template")
-                .font(.app(size: 18, weight: .semibold))
-                .foregroundColor(Color.white.opacity(0.88))
-                .padding(.top, 8)
-                .padding(.bottom, 24)
+            HStack {
+                Button { dismiss() } label: {
+                    Text("Cancel")
+                        .font(.app(size: 16))
+                        .foregroundColor(Color.white.opacity(0.50))
+                }
+                .buttonStyle(.plain)
 
-            VStack(spacing: 12) {
-                TextField("Title", text: $title)
-                    .font(.app(size: 16))
-                    .foregroundColor(.white)
-                    .padding(14)
-                    .background(Color.white.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .tint(.white)
-                    .focused($focus, equals: .title)
-                    .submitLabel(.next)
-                    .onSubmit { focus = .desc }
+                Spacer()
 
-                TextField("Description (optional)", text: $desc)
-                    .font(.app(size: 16))
+                Text(isNew ? "New Template" : "Edit Template")
+                    .font(.app(size: 17, weight: .semibold))
                     .foregroundColor(.white)
-                    .padding(14)
-                    .background(Color.white.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .tint(.white)
-                    .focused($focus, equals: .desc)
-                    .submitLabel(.done)
-                    .onSubmit { if !title.isEmpty { onAdd() } }
+
+                Spacer()
+
+                if !isNew, let del = onDelete {
+                    Button {
+                        del()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color.red.opacity(0.65))
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text("Cancel").font(.app(size: 16)).opacity(0)
+                }
             }
             .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
 
-            Spacer()
+            Rectangle()
+                .fill(Color.white.opacity(0.06))
+                .frame(height: 0.5)
 
-            Button(action: onAdd) {
-                Text("Add template")
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(spacing: 10) {
+                        TextField("Template name", text: $title)
+                            .font(.app(size: 16))
+                            .foregroundColor(.white)
+                            .padding(14)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .tint(.white)
+                            .focused($focus, equals: .title)
+
+                        TextField("Short description (optional)", text: $subtitle)
+                            .font(.app(size: 15))
+                            .foregroundColor(.white)
+                            .padding(14)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .tint(.white)
+                            .focused($focus, equals: .subtitle)
+                    }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Prompt")
+                            .font(.app(size: 11, weight: .semibold))
+                            .tracking(0.6)
+                            .foregroundColor(Color.white.opacity(0.30))
+
+                        ZStack(alignment: .topLeading) {
+                            if prompt.isEmpty {
+                                Text("Describe what this template should produce…")
+                                    .font(.app(size: 15))
+                                    .foregroundColor(Color.white.opacity(0.22))
+                                    .padding(.horizontal, 14)
+                                    .padding(.top, 14)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $prompt)
+                                .font(.app(size: 15))
+                                .foregroundColor(.white)
+                                .scrollContentBackground(.hidden)
+                                .background(Color.clear)
+                                .tint(.white)
+                                .focused($focus, equals: .prompt)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .frame(minHeight: 100)
+                        }
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Formats")
+                            .font(.app(size: 11, weight: .semibold))
+                            .tracking(0.6)
+                            .foregroundColor(Color.white.opacity(0.30))
+
+                        LazyVGrid(
+                            columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
+                            spacing: 8
+                        ) {
+                            ForEach(allFormats) { fmt in
+                                let selected = formatIDs.contains(fmt.id)
+                                Button {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    withAnimation(.easeOut(duration: 0.15)) {
+                                        if selected { formatIDs.remove(fmt.id) }
+                                        else { formatIDs.insert(fmt.id) }
+                                    }
+                                } label: {
+                                    Text(fmt.label)
+                                        .font(.app(size: 13, weight: .medium))
+                                        .foregroundColor(selected ? .white : Color.white.opacity(0.55))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                        .background(selected ? amber.opacity(0.22) : Color.white.opacity(0.06))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                                .stroke(selected ? amber.opacity(0.45) : Color.white.opacity(0.10), lineWidth: 0.5)
+                                        )
+                                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 24)
+                .padding(.bottom, 32)
+            }
+
+            Button {
+                guard !title.isEmpty else { return }
+                var tpl = CustomTemplate(title: title, subtitle: subtitle)
+                if let id = originalID { tpl.id = id }
+                tpl.prompt = prompt
+                tpl.formatIDs = Array(formatIDs)
+                onSave(tpl)
+                dismiss()
+            } label: {
+                Text(isNew ? "Add Template" : "Save Changes")
                     .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(title.isEmpty ? Color.white.opacity(0.30) : .white)
                     .frame(maxWidth: .infinity)
@@ -388,11 +538,11 @@ private struct AddTemplateSheet: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(22)
         .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
-        .interactiveDismissDisabled(!title.isEmpty || !desc.isEmpty)
+        .interactiveDismissDisabled(isNew && (!title.isEmpty || !prompt.isEmpty))
         .task { focus = .title }
     }
 }

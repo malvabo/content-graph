@@ -40,13 +40,13 @@ struct SourceItem: Identifiable {
 
 // MARK: - Format & Template Models
 
-private struct ContentFormat: Identifiable {
+struct ContentFormat: Identifiable {
     let id: String
     let label: String
     let description: String
 }
 
-private let allFormats: [ContentFormat] = [
+let allFormats: [ContentFormat] = [
     ContentFormat(id: "newsletter",     label: "Newsletter",         description: "Digest with key takeaways from your source"),
     ContentFormat(id: "linkedin",       label: "LinkedIn Post",      description: "Professional hook post, 150–300 words"),
     ContentFormat(id: "twitter",        label: "Twitter Thread",     description: "5–10 tweet thread from your source"),
