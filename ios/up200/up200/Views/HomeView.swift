@@ -1673,12 +1673,13 @@ private struct FormatsBlock: View {
     @Binding var selectedFormatIDs: Set<String>
     @State private var showPicker = false
 
-    private var summaryText: String {
-        allFormats
-            .filter { selectedFormatIDs.contains($0.id) }
-            .map(\.label)
-            .joined(separator: ", ")
+    private var selectedFormats: [ContentFormat] {
+        // Preserve allFormats declaration order so chips don't jump around
+        // when the underlying Set's iteration order changes.
+        allFormats.filter { selectedFormatIDs.contains($0.id) }
     }
+
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     var body: some View {
         GlassCard {
@@ -1692,20 +1693,14 @@ private struct FormatsBlock: View {
                             Text("Format")
                                 .font(.app(size: 15, weight: .medium))
                                 .foregroundColor(Color.white.opacity(0.85))
-                            if !selectedFormatIDs.isEmpty {
-                                Text(summaryText)
-                                    .font(.app(size: 14))
-                                    .foregroundColor(Color.white.opacity(0.55))
-                                    .lineLimit(1)
-                                    .transition(.opacity)
-                            }
+                            Text(selectedFormatIDs.isEmpty
+                                 ? "Tap to choose formats"
+                                 : "\(selectedFormatIDs.count) selected")
+                                .font(.app(size: 13))
+                                .foregroundColor(Color.white.opacity(0.40))
                         }
                         Spacer()
-                        if selectedFormatIDs.isEmpty {
-                            Text("None")
-                                .font(.app(size: 14))
-                                .foregroundColor(Color.white.opacity(0.25))
-                        } else {
+                        if !selectedFormatIDs.isEmpty {
                             Text("\(selectedFormatIDs.count)")
                                 .font(.app(size: 12, weight: .bold))
                                 .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
@@ -1725,37 +1720,68 @@ private struct FormatsBlock: View {
                 }
                 .buttonStyle(.plain)
 
+                // Chip row adapts to state: selected formats with X-to-remove
+                // once any are picked, popular-template shortcuts otherwise.
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(popularTemplates) { tpl in
-                            let active = Set(tpl.formatIDs) == selectedFormatIDs
-                            Button {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                withAnimation(.easeOut(duration: 0.15)) {
-                                    selectedFormatIDs = Set(tpl.formatIDs)
-                                }
-                            } label: {
-                                Text(tpl.label)
-                                    .font(.app(size: 13, weight: .medium))
-                                    .foregroundColor(active ? .white : Color.white.opacity(0.65))
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 7)
-                                    .background(active ? Color.white.opacity(0.12) : Color.white.opacity(0.05))
-                                    .overlay(
-                                        Capsule().stroke(
-                                            active ? Color.white.opacity(0.30) : Color.white.opacity(0.10),
-                                            lineWidth: 0.5
+                        if selectedFormatIDs.isEmpty {
+                            ForEach(popularTemplates) { tpl in
+                                Button {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    withAnimation(.easeOut(duration: 0.15)) {
+                                        selectedFormatIDs = Set(tpl.formatIDs)
+                                    }
+                                } label: {
+                                    Text(tpl.label)
+                                        .font(.app(size: 13, weight: .medium))
+                                        .foregroundColor(Color.white.opacity(0.65))
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 7)
+                                        .background(Color.white.opacity(0.05))
+                                        .overlay(
+                                            Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.5)
                                         )
-                                    )
-                                    .clipShape(Capsule())
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
+                        } else {
+                            ForEach(selectedFormats) { fmt in
+                                HStack(spacing: 6) {
+                                    Text(fmt.label)
+                                        .font(.app(size: 13, weight: .medium))
+                                        .foregroundColor(.white)
+                                    Button {
+                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                        withAnimation(.easeOut(duration: 0.15)) {
+                                            selectedFormatIDs.remove(fmt.id)
+                                        }
+                                    } label: {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundColor(Color.white.opacity(0.65))
+                                            .frame(width: 16, height: 16)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                .padding(.leading, 12)
+                                .padding(.trailing, 6)
+                                .padding(.vertical, 6)
+                                .background(amber.opacity(0.20))
+                                .overlay(Capsule().stroke(amber.opacity(0.45), lineWidth: 0.5))
+                                .clipShape(Capsule())
+                                .transition(.scale.combined(with: .opacity))
+                            }
                         }
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 14)
                 }
             }
+            // Match PromptField's minimum footprint so the form has a
+            // consistent rhythm between the Format card and the
+            // "Add details" card below it.
+            .frame(minHeight: 110)
         }
         .sheet(isPresented: $showPicker) {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
