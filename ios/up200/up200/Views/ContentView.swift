@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - App Tab
 
 enum AppTab: String {
-    case notes, create, library, templates
+    case notes, voice, library, templates
 }
 
 // MARK: - Library View
@@ -30,7 +30,7 @@ struct LibraryView: View {
 
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Library")
-                        .font(.app(size: 33, weight: .semibold))
+                        .font(.app(size: 28, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.88))
                         .padding(.horizontal, 20)
                         .padding(.top, 28)
@@ -85,7 +85,7 @@ private struct LibraryGroupRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.app(size: 23, weight: .medium))
+                    .font(.app(size: 19, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.88))
                     .lineLimit(1)
                 Text("\(count) output\(count == 1 ? "" : "s") · \(date, style: .relative) ago")
@@ -126,7 +126,7 @@ private struct ProjectGroupView: View {
                 .padding(.bottom, 6)
 
                 Text(title)
-                    .font(.app(size: 33, weight: .semibold))
+                    .font(.app(size: 28, weight: .semibold))
                     .foregroundColor(Color.white.opacity(0.88))
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
@@ -157,7 +157,7 @@ private struct ProjectRow: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(project.outputType)
-                        .font(.app(size: 23, weight: .medium))
+                        .font(.app(size: 19, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.88))
                         .lineLimit(1)
                     if !project.preview.isEmpty {
@@ -292,7 +292,7 @@ struct TemplatesView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Text("Templates")
-                        .font(.app(size: 33, weight: .semibold))
+                        .font(.app(size: 28, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.88))
                     Spacer()
                     Button { showAdd = true } label: {
@@ -355,7 +355,7 @@ private struct TemplateRow: View {
 
     var body: some View {
         Text(title)
-            .font(.app(size: 23, weight: .regular))
+            .font(.app(size: 19, weight: .regular))
             .foregroundColor(Color.white.opacity(0.82))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
@@ -560,6 +560,8 @@ private struct TemplateEditSheet: View {
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .notes
+    @State private var lastTab: AppTab = .notes
+    @State private var showVoice = false
     @State private var showSplash = true
 
     var body: some View {
@@ -569,9 +571,9 @@ struct ContentView: View {
                     .tabItem { Label("Notes",     systemImage: "note.text") }
                     .tag(AppTab.notes)
 
-                HomeView()
-                    .tabItem { Label("Create",    systemImage: "sparkles") }
-                    .tag(AppTab.create)
+                Color.clear.ignoresSafeArea()
+                    .tabItem { Label("Voice",     systemImage: "mic.fill") }
+                    .tag(AppTab.voice)
 
                 LibraryView()
                     .tabItem { Label("Library",   systemImage: "tray.2") }
@@ -582,6 +584,14 @@ struct ContentView: View {
                     .tag(AppTab.templates)
             }
             .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
+            .onChange(of: selectedTab) { _, newTab in
+                if newTab == .voice {
+                    selectedTab = lastTab
+                    showVoice = true
+                } else {
+                    lastTab = newTab
+                }
+            }
 
             if showSplash {
                 LaunchView()
@@ -593,6 +603,18 @@ struct ContentView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation(.easeOut(duration: 0.3)) { showSplash = false }
             }
+        }
+        .fullScreenCover(isPresented: $showVoice) {
+            VoiceRecordSheet(onSave: { _, transcript in
+                var notes = NotesStore.load()
+                var note = Note()
+                note.body = transcript
+                note.updatedAt = Date()
+                notes.append(note)
+                NotesStore.save(notes)
+            }, autoStart: true)
+            .preferredColorScheme(.dark)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }

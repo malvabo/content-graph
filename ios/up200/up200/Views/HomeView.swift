@@ -460,7 +460,7 @@ private struct GenerationResultSheet: View {
 // MARK: - Voice Recorder
 
 @MainActor
-private final class VoiceRecorder: ObservableObject {
+final class VoiceRecorder: ObservableObject {
     @Published var transcript = ""
     @Published var isRecording = false
     @Published var permissionDenied = false
@@ -1165,8 +1165,9 @@ private struct LinkInputSheet: View {
 
 // MARK: - Voice Record Sheet
 
-private struct VoiceRecordSheet: View {
+struct VoiceRecordSheet: View {
     var onSave: (String, String) -> Void
+    var autoStart: Bool = false
     @Environment(\.dismiss) private var dismiss
     @StateObject private var recorder = VoiceRecorder()
     @State private var seconds = 0
@@ -1311,6 +1312,7 @@ private struct VoiceRecordSheet: View {
                 }
             }
         }
+        .task { if autoStart { recorder.start() } }
         .onReceive(clock) { _ in
             if recorder.isRecording { seconds += 1 }
         }
@@ -2218,7 +2220,7 @@ struct HomeView: View {
                     VStack(spacing: 0) {
                         HStack(spacing: 8) {
                             Text("Create")
-                                .font(.app(size: 26, weight: .semibold))
+                                .font(.app(size: 21, weight: .semibold))
                                 .foregroundColor(.white)
 
                             Spacer()
