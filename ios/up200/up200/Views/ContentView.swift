@@ -553,47 +553,73 @@ private struct TemplateEditSheet: View {
 private struct AppTabBar: View {
     @Binding var selected: AppTab
 
-    private let items: [(AppTab, String)] = [
-        (.notes,     "note.text"),
-        (.create,    "sparkles"),
-        (.library,   "folder"),
-        (.templates, "square.on.square"),
+    private let mainItems: [(AppTab, String, String)] = [
+        (.notes,     "note.text",        "Notes"),
+        (.library,   "folder",           "Library"),
+        (.templates, "square.on.square", "Templates"),
     ]
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(items, id: \.0.rawValue) { tab, icon in
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    selected = tab
-                } label: {
-                    Image(systemName: icon)
-                        .font(.system(size: 19, weight: selected == tab ? .semibold : .regular))
+        HStack(spacing: 10) {
+            // Main pill — Notes / Library / Templates
+            HStack(spacing: 0) {
+                ForEach(mainItems, id: \.0.rawValue) { tab, icon, label in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        selected = tab
+                    } label: {
+                        VStack(spacing: 3) {
+                            Image(systemName: icon)
+                                .font(.system(size: 18, weight: selected == tab ? .semibold : .regular))
+                            Text(label)
+                                .font(.system(size: 10, weight: selected == tab ? .semibold : .regular))
+                        }
                         .foregroundColor(selected == tab ? .white : Color.white.opacity(0.38))
-                        .frame(maxWidth: .infinity, minHeight: 46)
+                        .frame(maxWidth: .infinity, minHeight: 52)
                         .background(
                             Group {
                                 if selected == tab {
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(Color.white.opacity(0.11))
-                                        .padding(.horizontal, 6)
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(Color.white.opacity(0.12))
+                                        .padding(.horizontal, 4)
                                 }
                             }
                         )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                    )
+            )
+
+            // Separate Create button
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                selected = .create
+            } label: {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 20, weight: selected == .create ? .semibold : .regular))
+                    .foregroundColor(selected == .create ? .white : Color.white.opacity(0.70))
+                    .frame(width: 62, height: 62)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(.ultraThinMaterial)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                            )
+                    )
+            }
+            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 5)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-                )
-        )
         .environment(\.colorScheme, .dark)
     }
 }
