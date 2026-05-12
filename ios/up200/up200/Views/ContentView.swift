@@ -696,12 +696,9 @@ struct ContentView: View {
                         .presentationCornerRadius(22)
                         .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
                 }
-                .sheet(isPresented: $showCreate) {
+                .fullScreenCover(isPresented: $showCreate) {
                     HomeView()
-                        .presentationDetents([.large])
-                        .presentationDragIndicator(.visible)
-                        .presentationCornerRadius(22)
-                        .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+                        .preferredColorScheme(.dark)
                 }
             }
         }
