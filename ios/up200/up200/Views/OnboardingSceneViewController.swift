@@ -73,16 +73,15 @@ class OnboardingSceneViewController: UIViewController {
         sceneView.isPlaying = true
         view.addSubview(sceneView)
 
-        // Warm-dark page background matching the rest of the app (#1A1513
-        // with deeper warm stops). 160° angle, similar to the mobile-web
-        // CreateHome.
+        // Near-black warm page background so the cloud blobs and dot
+        // cluster read against deep void rather than a hazy warm wash.
         let gradient = CAGradientLayer()
         gradient.frame = view.bounds
         gradient.colors = [
-            UIColor(red: 0.13, green: 0.10, blue: 0.08, alpha: 1).cgColor,
-            UIColor(red: 0.10, green: 0.08, blue: 0.07, alpha: 1).cgColor,
-            UIColor(red: 0.08, green: 0.06, blue: 0.05, alpha: 1).cgColor,
-            UIColor(red: 0.06, green: 0.05, blue: 0.04, alpha: 1).cgColor,
+            UIColor(red: 0.07, green: 0.05, blue: 0.04, alpha: 1).cgColor,
+            UIColor(red: 0.05, green: 0.04, blue: 0.03, alpha: 1).cgColor,
+            UIColor(red: 0.03, green: 0.025, blue: 0.02, alpha: 1).cgColor,
+            UIColor(red: 0.02, green: 0.015, blue: 0.01, alpha: 1).cgColor,
         ]
         gradient.locations = [0, 0.35, 0.65, 1]
         gradient.startPoint = CGPoint(x: 0.2, y: 0)
@@ -90,18 +89,18 @@ class OnboardingSceneViewController: UIViewController {
         view.layer.insertSublayer(gradient, at: 0)
         pageGradientLayer = gradient
 
-        // Amber radial glows (top-left + bottom-right) — mirrors the
-        // HomeView's corner blobs so the surfaces feel cohesive.
+        // Subtle amber corner glows — opacities cut roughly in half so they
+        // hint at warmth without lifting the page back into a haze.
         let glowTL = CAGradientLayer()
         glowTL.type = .radial
         glowTL.frame = view.bounds
         glowTL.colors = [
-            UIColor(red: 0.55, green: 0.30, blue: 0.08, alpha: 0.35).cgColor,
+            UIColor(red: 0.55, green: 0.30, blue: 0.08, alpha: 0.16).cgColor,
             UIColor(red: 0.55, green: 0.30, blue: 0.08, alpha: 0).cgColor,
         ]
         glowTL.locations = [0, 1]
         glowTL.startPoint = CGPoint(x: 0.05, y: 0.05)
-        glowTL.endPoint   = CGPoint(x: 0.60, y: 0.55)
+        glowTL.endPoint   = CGPoint(x: 0.45, y: 0.40)
         view.layer.insertSublayer(glowTL, at: 1)
         glowTLLayer = glowTL
 
@@ -109,12 +108,12 @@ class OnboardingSceneViewController: UIViewController {
         glowBR.type = .radial
         glowBR.frame = view.bounds
         glowBR.colors = [
-            UIColor(red: 0.30, green: 0.20, blue: 0.08, alpha: 0.22).cgColor,
+            UIColor(red: 0.30, green: 0.20, blue: 0.08, alpha: 0.10).cgColor,
             UIColor(red: 0.30, green: 0.20, blue: 0.08, alpha: 0).cgColor,
         ]
         glowBR.locations = [0, 1]
         glowBR.startPoint = CGPoint(x: 1.0, y: 0.85)
-        glowBR.endPoint   = CGPoint(x: 0.45, y: 0.40)
+        glowBR.endPoint   = CGPoint(x: 0.55, y: 0.50)
         view.layer.insertSublayer(glowBR, at: 2)
         glowBRLayer = glowBR
     }
