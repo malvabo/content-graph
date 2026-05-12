@@ -267,14 +267,14 @@ class OnboardingSceneViewController: UIViewController {
         // Opacities lowered so individual planes blend without piling up
         // into muddy low-contrast zones where many planes overlap.
         let defs: [CloudDef] = [
-            CloudDef(x: -10, y:  9,  z: -6,  w: 32, h: 22, opacity: 0.62, breathDuration: 5.2, seed: 1),
-            CloudDef(x:  8,  y: -6,  z: -10, w: 28, h: 18, opacity: 0.48, breathDuration: 6.4, seed: 2),
-            CloudDef(x: -4,  y: -11, z:  1,  w: 36, h: 24, opacity: 0.45, breathDuration: 4.7, seed: 3),
-            CloudDef(x: 14,  y:  4,  z: -14, w: 26, h: 20, opacity: 0.42, breathDuration: 7.1, seed: 4),
-            CloudDef(x: -16, y:  0,  z: -18, w: 30, h: 26, opacity: 0.36, breathDuration: 5.8, seed: 5),
-            CloudDef(x:  3,  y: 13,  z: -4,  w: 26, h: 16, opacity: 0.44, breathDuration: 6.0, seed: 6),
-            CloudDef(x: 13,  y: -12, z: -8,  w: 26, h: 18, opacity: 0.38, breathDuration: 5.5, seed: 7),
-            CloudDef(x: -12, y: -7,  z: -12, w: 24, h: 18, opacity: 0.34, breathDuration: 6.7, seed: 8),
+            CloudDef(x: -10, y:  9,  z: -6,  w: 32, h: 22, opacity: 0.34, breathDuration: 5.2, seed: 1),
+            CloudDef(x:  8,  y: -6,  z: -10, w: 28, h: 18, opacity: 0.26, breathDuration: 6.4, seed: 2),
+            CloudDef(x: -4,  y: -11, z:  1,  w: 36, h: 24, opacity: 0.25, breathDuration: 4.7, seed: 3),
+            CloudDef(x: 14,  y:  4,  z: -14, w: 26, h: 20, opacity: 0.22, breathDuration: 7.1, seed: 4),
+            CloudDef(x: -16, y:  0,  z: -18, w: 30, h: 26, opacity: 0.20, breathDuration: 5.8, seed: 5),
+            CloudDef(x:  3,  y: 13,  z: -4,  w: 26, h: 16, opacity: 0.24, breathDuration: 6.0, seed: 6),
+            CloudDef(x: 13,  y: -12, z: -8,  w: 26, h: 18, opacity: 0.20, breathDuration: 5.5, seed: 7),
+            CloudDef(x: -12, y: -7,  z: -12, w: 24, h: 18, opacity: 0.18, breathDuration: 6.7, seed: 8),
         ]
 
         for def in defs {
@@ -365,10 +365,10 @@ class OnboardingSceneViewController: UIViewController {
             let r  = isSmall
                 ? rng(i * 3 + 2) * 45  + 20   // sharper detail blob (20–65)
                 : rng(i * 3 + 2) * 90  + 50   // softer halo blob (50–140)
-            // Wider alpha range so peaks read as highlights and valleys
-            // genuinely fall off, instead of every blob landing in the
-            // mid-tones that produced the washed-out look.
-            let a  = rng(i * 3 + 2) * 0.20 + 0.02
+            // Lower alpha ceiling so the cloud field reads as dim
+            // atmosphere rather than a bright haze. Peaks still pop
+            // because contrast is preserved; just dimmer overall.
+            let a  = rng(i * 3 + 2) * 0.12 + 0.015
             let isAmber = i % 4 == 0
 
             let colors: [CGColor]
