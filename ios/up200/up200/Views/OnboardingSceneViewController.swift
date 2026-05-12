@@ -340,6 +340,25 @@ class OnboardingSceneViewController: UIViewController {
                                    options: [])
         }
 
+        // Soft circular vignette pass: multiplies existing alpha by a radial
+        // gradient that's opaque in the middle and fully transparent at the
+        // canvas edges. Without this, any inner blob whose radius extends past
+        // the canvas bounds gets sliced flat against the edge — the plane then
+        // renders as a hard-edged rectangle instead of a soft cloud.
+        let edgeColors = [
+            UIColor(white: 1, alpha: 1).cgColor,
+            UIColor(white: 1, alpha: 1).cgColor,
+            UIColor(white: 1, alpha: 0).cgColor,
+        ]
+        let edgeMask = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                  colors: edgeColors as CFArray,
+                                  locations: [0, 0.55, 1.0])!
+        ctx.setBlendMode(.destinationIn)
+        ctx.drawRadialGradient(edgeMask,
+                               startCenter: CGPoint(x: size / 2, y: size / 2), startRadius: 0,
+                               endCenter:   CGPoint(x: size / 2, y: size / 2), endRadius: size / 2,
+                               options: [])
+
         let img = UIGraphicsGetImageFromCurrentImageContext()!
         UIGraphicsEndImageContext()
         return img
