@@ -33,46 +33,136 @@ struct LibraryView: View {
         (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
     }
 
+    private var groups: [(title: String, items: [GenerationProject])] {
+        var dict: [String: [GenerationProject]] = [:]
+        for p in projects { dict[p.title, default: []].append(p) }
+        return dict
+            .map { (title: $0.key, items: $0.value.sorted { $0.date > $1.date }) }
+            .sorted { ($0.items.first?.date ?? .distantPast) > ($1.items.first?.date ?? .distantPast) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Library")
+                        .font(.app(size: 22, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.88))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 28)
+                        .padding(.bottom, 20)
+
+                    if groups.isEmpty {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Image(systemName: "tray")
+                                .font(.app(size: 36, weight: .regular))
+                                .foregroundColor(Color.white.opacity(0.20))
+                            Text("No generations yet")
+                                .font(.app(size: 16, weight: .regular))
+                                .foregroundColor(Color.white.opacity(0.30))
+                            Text("Your content outputs will appear here")
+                                .font(.app(size: 13, weight: .regular))
+                                .foregroundColor(Color.white.opacity(0.20))
+                        }
+                        .frame(maxWidth: .infinity)
+                        Spacer()
+                    } else {
+                        ScrollView(showsIndicators: false) {
+                            VStack(spacing: 0) {
+                                ForEach(Array(groups.enumerated()), id: \.element.title) { idx, group in
+                                    NavigationLink {
+                                        ProjectGroupView(title: group.title, items: group.items)
+                                    } label: {
+                                        LibraryGroupRow(title: group.title, count: group.items.count, date: group.items.first?.date ?? Date())
+                                    }
+                                    .buttonStyle(.plain)
+                                    if idx < groups.count - 1 {
+                                        Divider().background(Color.white.opacity(0.06)).padding(.leading, 20)
+                                    }
+                                }
+                            }
+                            .padding(.bottom, 32)
+                        }
+                    }
+                }
+            }
+            .toolbar(.hidden, for: .navigationBar)
+        }
+    }
+}
+
+private struct LibraryGroupRow: View {
+    let title: String
+    let count: Int
+    let date: Date
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.app(size: 15, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.88))
+                    .lineLimit(1)
+                Text("\(count) output\(count == 1 ? "" : "s") · \(date, style: .relative) ago")
+                    .font(.app(size: 12))
+                    .foregroundColor(Color.white.opacity(0.35))
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(Color.white.opacity(0.18))
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+    }
+}
+
+private struct ProjectGroupView: View {
+    let title: String
+    let items: [GenerationProject]
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         ZStack {
             Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
-                Text("Library")
+                HStack(spacing: 12) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.55))
+                    }
+                    .buttonStyle(.plain)
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 6)
+
+                Text(title)
                     .font(.app(size: 22, weight: .semibold))
                     .foregroundColor(Color.white.opacity(0.88))
                     .padding(.horizontal, 20)
-                    .padding(.top, 28)
                     .padding(.bottom, 20)
 
-                if projects.isEmpty {
-                    Spacer()
-                    VStack(spacing: 12) {
-                        Image(systemName: "tray")
-                            .font(.app(size: 36, weight: .regular))
-                            .foregroundColor(Color.white.opacity(0.20))
-                        Text("No generations yet")
-                            .font(.app(size: 16, weight: .regular))
-                            .foregroundColor(Color.white.opacity(0.30))
-                        Text("Your content outputs will appear here")
-                            .font(.app(size: 13, weight: .regular))
-                            .foregroundColor(Color.white.opacity(0.20))
-                    }
-                    .frame(maxWidth: .infinity)
-                    Spacer()
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        LazyVStack(spacing: 10) {
-                            ForEach(projects) { project in
-                                ProjectRow(project: project)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(items.enumerated()), id: \.element.id) { idx, project in
+                            ProjectRow(project: project)
+                            if idx < items.count - 1 {
+                                Divider().background(Color.white.opacity(0.06)).padding(.leading, 20)
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 32)
                     }
+                    .padding(.bottom, 32)
                 }
             }
         }
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 
@@ -82,39 +172,26 @@ private struct ProjectRow: View {
 
     var body: some View {
         Button { showDetail = true } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(project.outputType)
-                    .font(.app(size: 15, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.88))
-                    .lineLimit(1)
-                if !project.preview.isEmpty {
-                    Text(project.preview)
-                        .font(.app(size: 13))
-                        .foregroundColor(Color.white.opacity(0.45))
-                        .lineLimit(2)
-                }
-                HStack(spacing: 8) {
-                    Text(project.title)
-                        .font(.app(size: 11))
-                        .foregroundColor(Color.white.opacity(0.30))
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(project.outputType)
+                        .font(.app(size: 15, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.88))
                         .lineLimit(1)
-                    Spacer(minLength: 8)
-                    Text(project.date, style: .date)
-                        .font(.app(size: 11))
-                        .foregroundColor(Color.white.opacity(0.30))
+                    if !project.preview.isEmpty {
+                        Text(project.preview)
+                            .font(.app(size: 13))
+                            .foregroundColor(Color.white.opacity(0.40))
+                            .lineLimit(1)
+                    }
                 }
-                .padding(.top, 2)
+                Spacer()
+                Text(project.date, style: .date)
+                    .font(.app(size: 12))
+                    .foregroundColor(Color.white.opacity(0.28))
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color.white.opacity(0.04))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
-            )
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showDetail) {
@@ -134,7 +211,6 @@ private struct ProjectDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header: close · title · count(=1)
             HStack(spacing: 12) {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
@@ -149,14 +225,12 @@ private struct ProjectDetailView: View {
                     .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                 Spacer(minLength: 0)
-                // Right slot kept for symmetry with the result sheet's count chip.
                 Color.clear.frame(width: 28, height: 28)
             }
             .padding(.horizontal, 16)
             .padding(.top, 20)
             .padding(.bottom, 14)
 
-            // Block
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
