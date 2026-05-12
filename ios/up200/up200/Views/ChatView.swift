@@ -55,6 +55,7 @@ private struct ChatService {
 // MARK: - Chat View
 
 struct ChatView: View {
+    @Environment(\.dismiss) private var dismiss
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @State private var messages: [ChatMessage] = []
     @State private var inputText = ""
@@ -104,23 +105,18 @@ struct ChatView: View {
     private var header: some View {
         HStack(spacing: 0) {
             Button {
-                guard !messages.isEmpty else { return }
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                withAnimation(.easeOut(duration: 0.2)) {
-                    messages = []
-                    _ = selectedProjectIDs.isEmpty
-                    selectedProjectIDs = []
-                }
+                dismiss()
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color.white.opacity(messages.isEmpty ? 0.22 : 0.65))
+                    .foregroundColor(Color.white.opacity(0.65))
                     .frame(width: 32, height: 32)
-                    .background(Color.white.opacity(messages.isEmpty ? 0.03 : 0.08))
+                    .background(Color.white.opacity(0.08))
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("New chat")
+            .accessibilityLabel("Close")
 
             Spacer(minLength: 8)
 

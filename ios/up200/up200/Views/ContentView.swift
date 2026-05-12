@@ -507,12 +507,17 @@ struct ContentView: View {
     @State private var showSplash = true
     @State private var homeScrollToTop = 0
     @State private var pendingSheet: SourceSheet? = nil
+    @State private var showChat = false
 
-    // Re-tapping the current Home tab scrolls HomeView to the top.
+    // Re-tapping Home scrolls to top; tapping Chat opens a sheet instead of navigating.
     private var tabSelection: Binding<AppTab> {
         Binding(
             get: { selectedTab },
             set: { newValue in
+                if newValue == .chat {
+                    showChat = true
+                    return
+                }
                 if newValue == selectedTab, newValue == .home {
                     homeScrollToTop &+= 1
                 }
@@ -535,7 +540,7 @@ struct ContentView: View {
                         HomeView(scrollToTopSignal: homeScrollToTop, pendingSheet: $pendingSheet)
                     }
                     Tab(AppTab.chat.label, systemImage: AppTab.chat.icon, value: AppTab.chat) {
-                        ChatView()
+                        Color.clear
                     }
                     Tab(AppTab.library.label, systemImage: AppTab.library.icon, value: AppTab.library) {
                         LibraryView()
@@ -548,6 +553,13 @@ struct ContentView: View {
                 .toolbarBackground(Color(red: 0.10, green: 0.08, blue: 0.07), for: .tabBar)
                 .toolbarBackground(.visible, for: .tabBar)
                 .toolbarColorScheme(.dark, for: .tabBar)
+                .sheet(isPresented: $showChat) {
+                    ChatView()
+                        .presentationDetents([.large])
+                        .presentationDragIndicator(.hidden)
+                        .presentationCornerRadius(22)
+                        .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+                }
             }
         }
         .onAppear {
