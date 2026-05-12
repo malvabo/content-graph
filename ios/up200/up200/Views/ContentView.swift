@@ -545,13 +545,14 @@ private struct TemplateEditSheet: View {
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .notes
+    @State private var lastTab: AppTab = .notes
     @State private var showVoice = false
     @State private var showSplash = true
 
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             TabView(selection: $selectedTab) {
                 NotesView()
                     .tabItem { Label("Notes",     systemImage: "note.text") }
@@ -568,24 +569,21 @@ struct ContentView: View {
                 TemplatesView()
                     .tabItem { Label("Templates", systemImage: "square.on.square") }
                     .tag(AppTab.templates)
+
+                Color.clear.ignoresSafeArea()
+                    .tabItem { Label("Voice",     systemImage: "mic") }
+                    .tag(AppTab.voice)
             }
             .tint(amber)
-
-            // Floating voice button centered above the tab bar
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                showVoice = true
-            } label: {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 56, height: 56)
-                    .background(amber)
-                    .clipShape(Circle())
-                    .shadow(color: amber.opacity(0.50), radius: 12, y: 4)
+            .onChange(of: selectedTab) { _, newTab in
+                if newTab == .voice {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    selectedTab = lastTab
+                    showVoice = true
+                } else {
+                    lastTab = newTab
+                }
             }
-            .buttonStyle(.plain)
-            .padding(.bottom, 24)
 
             if showSplash {
                 LaunchView()
