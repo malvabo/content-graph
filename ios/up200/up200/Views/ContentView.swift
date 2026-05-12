@@ -551,32 +551,92 @@ private struct TemplateEditSheet: View {
     }
 }
 
+// MARK: - Custom Tab Bar
+
+private struct AppTabBar: View {
+    @Binding var selected: AppTab
+    let onVoice: () -> Void
+
+    private let items: [(AppTab, String)] = [
+        (.notes,     "note.text"),
+        (.create,    "sparkles"),
+        (.library,   "folder"),
+        (.templates, "square.on.square"),
+    ]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(items, id: \.0.rawValue) { tab, icon in
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    selected = tab
+                } label: {
+                    Image(systemName: icon)
+                        .font(.system(size: 19, weight: selected == tab ? .semibold : .regular))
+                        .foregroundColor(selected == tab ? .white : Color.white.opacity(0.38))
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                        .background(
+                            Group {
+                                if selected == tab {
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(Color.white.opacity(0.11))
+                                        .padding(.horizontal, 6)
+                                }
+                            }
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                onVoice()
+            } label: {
+                Image(systemName: "mic")
+                    .font(.system(size: 19, weight: .regular))
+                    .foregroundColor(Color.white.opacity(0.38))
+                    .frame(maxWidth: .infinity, minHeight: 46)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color(red: 0.13, green: 0.11, blue: 0.09))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+                )
+        )
+        .environment(\.colorScheme, .dark)
+    }
+}
+
 // MARK: - Content View
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .notes
+    @State private var showVoice = false
     @State private var showSplash = true
+
+    init() {
+        UITabBar.appearance().isHidden = true
+    }
 
     var body: some View {
         ZStack {
             TabView(selection: $selectedTab) {
-                NotesView()
-                    .tabItem { Label("Notes",     systemImage: "note.text") }
-                    .tag(AppTab.notes)
-
-                HomeView()
-                    .tabItem { Label("Create",    systemImage: "sparkles") }
-                    .tag(AppTab.create)
-
-                LibraryView()
-                    .tabItem { Label("Library",   systemImage: "folder") }
-                    .tag(AppTab.library)
-
-                TemplatesView()
-                    .tabItem { Label("Templates", systemImage: "square.on.square") }
-                    .tag(AppTab.templates)
+                NotesView().tag(AppTab.notes)
+                HomeView().tag(AppTab.create)
+                LibraryView().tag(AppTab.library)
+                TemplatesView().tag(AppTab.templates)
             }
-            .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                AppTabBar(selected: $selectedTab, onVoice: { showVoice = true })
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+            }
 
             if showSplash {
                 LaunchView()
@@ -588,6 +648,18 @@ struct ContentView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation(.easeOut(duration: 0.3)) { showSplash = false }
             }
+        }
+        .fullScreenCover(isPresented: $showVoice) {
+            VoiceRecordSheet(onSave: { _, transcript in
+                var notes = NotesStore.load()
+                var note = Note()
+                note.body = transcript
+                note.updatedAt = Date()
+                notes.append(note)
+                NotesStore.save(notes)
+            }, autoStart: true)
+            .preferredColorScheme(.dark)
+            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }
