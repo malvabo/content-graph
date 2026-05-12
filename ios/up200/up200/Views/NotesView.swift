@@ -10,6 +10,7 @@ private final class NoteDictation: ObservableObject {
     @Published var transcript: String = ""
     @Published var isRecording: Bool = false
     @Published var permissionDenied: Bool = false
+    @Published var audioLevel: Float = 0.0  // RMS, ~0...1
 
     private let audioEngine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
@@ -23,6 +24,7 @@ private final class NoteDictation: ObservableObject {
                 guard let self else { return }
                 if status == .authorized {
                     self.transcript = ""
+                    self.audioLevel = 0
                     self.startEngine()
                 } else {
                     self.permissionDenied = true
@@ -31,7 +33,21 @@ private final class NoteDictation: ObservableObject {
         }
     }
 
+    /// Stop and keep the transcript that's been emitted.
     func stop() {
+        teardown()
+    }
+
+    /// Stop and suppress the trailing final transcript (so caller can revert
+    /// the body without a late `onChange` overwriting the rollback).
+    func cancel() {
+        task?.cancel()
+        task = nil
+        transcript = ""
+        teardown()
+    }
+
+    private func teardown() {
         audioEngine.stop()
         request?.endAudio()
         if audioEngine.inputNode.numberOfInputs > 0 {
@@ -39,6 +55,7 @@ private final class NoteDictation: ObservableObject {
         }
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         isRecording = false
+        audioLevel = 0
     }
 
     private func startEngine() {
@@ -66,8 +83,21 @@ private final class NoteDictation: ObservableObject {
 
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             req.append(buffer)
+            guard let channels = buffer.floatChannelData else { return }
+            let frames = Int(buffer.frameLength)
+            guard frames > 0 else { return }
+            let samples = channels[0]
+            var sum: Float = 0
+            for i in 0..<frames {
+                let s = samples[i]
+                sum += s * s
+            }
+            let rms = (sum / Float(frames)).squareRoot()
+            DispatchQueue.main.async { [weak self] in
+                self?.audioLevel = rms
+            }
         }
 
         audioEngine.prepare()
@@ -170,72 +200,128 @@ private struct NoteListRow: View {
     }
 }
 
-// MARK: - Dictation Button
+// MARK: - Waveform
 
-private struct DictationButton: View {
-    let isRecording: Bool
-    let action: () -> Void
+private struct Waveform: View {
+    let level: Float
 
-    @State private var pulse: Bool = false
+    private let barCount = 14
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
-    private let recordingRed = Color(red: 0.95, green: 0.30, blue: 0.30)
 
     var body: some View {
-        let tint = isRecording ? recordingRed : amber
-        Button(action: action) {
-            ZStack {
-                if isRecording {
-                    Circle()
-                        .fill(tint.opacity(0.30))
-                        .scaleEffect(pulse ? 1.45 : 1.0)
-                        .opacity(pulse ? 0.0 : 0.7)
-                        .animation(
-                            .easeOut(duration: 1.1).repeatForever(autoreverses: false),
-                            value: pulse
-                        )
+        TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 3) {
+                ForEach(0..<barCount, id: \.self) { i in
+                    Capsule()
+                        .fill(amber)
+                        .frame(width: 3, height: barHeight(index: i, time: t))
                 }
-                Circle()
-                    .fill(.regularMaterial)
-                    .overlay(Circle().stroke(Color.white.opacity(0.15), lineWidth: 0.5))
-                    .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
-
-                Image(systemName: isRecording ? "stop.fill" : "mic.fill")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundColor(tint)
             }
-            .frame(width: 56, height: 56)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(isRecording ? "Stop dictation" : "Start dictation")
-        .onChange(of: isRecording) { _, recording in
-            pulse = recording
-        }
+        .frame(height: 32)
+        .accessibilityHidden(true)
+    }
+
+    private func barHeight(index: Int, time: Double) -> CGFloat {
+        let phase = time * 5.0 + Double(index) * 0.55
+        let wave = (sin(phase) + 1.0) / 2.0
+        // Amplify low RMS values so quiet speech still moves the bars.
+        let amplified = min(1.6, pow(Double(level), 0.35) * 3.0)
+        let scaled = wave * amplified
+        return CGFloat(max(4.0, 4.0 + scaled * 22.0))
     }
 }
 
-// MARK: - Recording Pill
+// MARK: - Dictation Controls
 
-private struct RecordingHeaderPill: View {
-    @State private var pulse: Bool = false
+private struct DictationControls: View {
+    @ObservedObject var dictation: NoteDictation
+    let onStart: () -> Void
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
+
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let stroke = Color.white.opacity(0.15)
+    private let glassShadow = Color.black.opacity(0.22)
 
     var body: some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(Color.red.opacity(0.85))
-                .frame(width: 8, height: 8)
-                .scaleEffect(pulse ? 1.3 : 1.0)
-                .opacity(pulse ? 0.55 : 1.0)
-                .animation(
-                    .easeInOut(duration: 0.75).repeatForever(autoreverses: true),
-                    value: pulse
-                )
-            Text("Recording")
-                .font(.app(size: 13, weight: .medium))
-                .foregroundColor(.white)
+        Group {
+            if dictation.isRecording {
+                recordingRow
+            } else {
+                idleMic
+            }
         }
-        .onAppear { pulse = true }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Recording")
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
+    }
+
+    private var idleMic: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            onStart()
+        } label: {
+            Image(systemName: "mic.fill")
+                .font(.system(size: 19, weight: .semibold))
+                .foregroundColor(amber)
+                .frame(width: 56, height: 56)
+                .background(glassCircle)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Start dictation")
+        .transition(.scale(scale: 0.85).combined(with: .opacity))
+    }
+
+    private var recordingRow: some View {
+        HStack(spacing: 10) {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                onCancel()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.65))
+                    .frame(width: 44, height: 44)
+                    .background(glassCircle)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Cancel dictation")
+
+            Waveform(level: dictation.audioLevel)
+                .padding(.horizontal, 18)
+                .frame(height: 44)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(.regularMaterial)
+                        .overlay(Capsule().stroke(stroke, lineWidth: 0.5))
+                        .shadow(color: glassShadow, radius: 10, y: 3)
+                )
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                onConfirm()
+            } label: {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(amber)
+                            .shadow(color: amber.opacity(0.45), radius: 10, y: 3)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Finish dictation")
+        }
+        .transition(.scale(scale: 0.92).combined(with: .opacity))
+    }
+
+    private var glassCircle: some View {
+        Circle()
+            .fill(.regularMaterial)
+            .overlay(Circle().stroke(stroke, lineWidth: 0.5))
+            .shadow(color: glassShadow, radius: 10, y: 3)
     }
 }
 
@@ -290,13 +376,9 @@ private struct NoteComposerSheet: View {
 
                 Spacer()
 
-                if dictation.isRecording {
-                    RecordingHeaderPill()
-                } else {
-                    Text(isNew ? "New Note" : "Edit Note")
-                        .font(.app(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                }
+                Text(isNew ? "New Note" : "Edit Note")
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
 
                 Spacer()
 
@@ -344,15 +426,20 @@ private struct NoteComposerSheet: View {
                         .focused($bodyFocused)
                 }
 
-                DictationButton(isRecording: dictation.isRecording) {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    if dictation.isRecording {
-                        dictation.stop()
-                    } else {
+                DictationControls(
+                    dictation: dictation,
+                    onStart: {
                         bodyBeforeDictation = draft.body
                         dictation.start()
+                    },
+                    onCancel: {
+                        dictation.cancel()
+                        draft.body = bodyBeforeDictation
+                    },
+                    onConfirm: {
+                        dictation.stop()
                     }
-                }
+                )
                 .padding(.trailing, 20)
                 .padding(.bottom, 20)
             }
