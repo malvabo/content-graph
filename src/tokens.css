@@ -310,7 +310,7 @@
   --color-bg-subtle: #141210;
   --color-bg-dark: #080808;
   --color-bg-hover: #1e1c1a;
-  --color-node-bg: rgba(38,34,28,0.84);
+  --color-node-bg: rgba(255,255,255,0.10);
   --node-backdrop: blur(16px) saturate(1.4);
   --color-bg-tooltip: #e8e6e3;
   --color-text-primary: #e8e6e3;
