@@ -938,12 +938,21 @@ private struct LinkInputSheet: View {
     var onSave: (String, String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var urlText = ""
+    @State private var stagedURLs: [String] = []
     @State private var isFetching = false
     @FocusState private var focused: Bool
 
-    private var isValidURL: Bool {
-        let t = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return (t.hasPrefix("http://") || t.hasPrefix("https://")) && t.count > 11
+    private var trimmedInput: String {
+        urlText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    private func isValidURL(_ s: String) -> Bool {
+        (s.hasPrefix("http://") || s.hasPrefix("https://")) && s.count > 11
+    }
+    private var canStage: Bool {
+        isValidURL(trimmedInput) && !stagedURLs.contains(trimmedInput)
+    }
+    private var canSave: Bool {
+        !stagedURLs.isEmpty || canStage
     }
 
     var body: some View {
@@ -952,13 +961,13 @@ private struct LinkInputSheet: View {
                 Button("Cancel") { dismiss() }
                     .foregroundColor(Color.white.opacity(0.55))
                 Spacer()
-                Text("Link source")
+                Text(stagedURLs.count > 1 ? "Link sources" : "Link source")
                     .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                 Spacer()
                 Button {
                     guard !isFetching else { return }
-                    saveLink()
+                    saveAll()
                 } label: {
                     if isFetching {
                         ProgressView()
@@ -967,10 +976,10 @@ private struct LinkInputSheet: View {
                             .frame(width: 40)
                     } else {
                         Text("Save")
-                            .foregroundColor(isValidURL ? Color.white.opacity(0.88) : Color.white.opacity(0.25))
+                            .foregroundColor(canSave ? Color.white.opacity(0.88) : Color.white.opacity(0.25))
                     }
                 }
-                .disabled(!isValidURL || isFetching)
+                .disabled(!canSave || isFetching)
             }
             .padding(.horizontal, 16)
             .padding(.top, 20)
@@ -991,45 +1000,116 @@ private struct LinkInputSheet: View {
                     .keyboardType(.URL)
                     .autocorrectionDisabled()
                     .focused($focused)
-                    .submitLabel(.done)
-                    .onSubmit { if isValidURL { saveLink() } }
-                if !urlText.isEmpty {
-                    Button { urlText = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(Color.white.opacity(0.30))
-                    }
-                    .buttonStyle(.plain)
+                    .submitLabel(.next)
+                    .onSubmit { stageCurrent() }
+                Button { stageCurrent() } label: {
+                    Image(systemName: "plus")
+                        .font(.app(size: 14, weight: .semibold))
+                        .foregroundColor(canStage ? .white : Color.white.opacity(0.25))
+                        .frame(width: 30, height: 30)
+                        .background(canStage ? Color.white.opacity(0.12) : Color.white.opacity(0.04))
+                        .clipShape(Circle())
                 }
+                .buttonStyle(.plain)
+                .disabled(!canStage)
+                .accessibilityLabel("Add another link")
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 18)
 
-            if isFetching {
-                HStack(spacing: 6) {
-                    Image(systemName: "globe")
-                        .font(.app(size: 12))
-                    Text("Fetching page content\u{2026}")
-                        .font(.app(size: 13))
+            if !stagedURLs.isEmpty {
+                Rectangle()
+                    .fill(Color.white.opacity(0.07))
+                    .frame(height: 0.5)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(stagedURLs.enumerated()), id: \.element) { idx, link in
+                            HStack(spacing: 12) {
+                                Image(systemName: "link")
+                                    .font(.app(size: 13))
+                                    .foregroundColor(Color.white.opacity(0.45))
+                                    .frame(width: 20)
+                                Text(link)
+                                    .font(.app(size: 14))
+                                    .foregroundColor(Color.white.opacity(0.80))
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                Spacer(minLength: 8)
+                                Button {
+                                    withAnimation(.easeOut(duration: 0.2)) {
+                                        stagedURLs.removeAll { $0 == link }
+                                    }
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.app(size: 11, weight: .medium))
+                                        .foregroundColor(Color.white.opacity(0.30))
+                                        .frame(width: 32, height: 32)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+
+                            if idx < stagedURLs.count - 1 {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.05))
+                                    .frame(height: 0.5)
+                            }
+                        }
+                    }
                 }
-                .foregroundColor(Color.white.opacity(0.35))
-                .padding(.top, 4)
+                .frame(maxHeight: .infinity)
+            } else {
+                Spacer()
             }
 
-            Spacer()
+            if isFetching {
+                HStack(spacing: 6) {
+                    Image(systemName: "globe").font(.app(size: 12))
+                    Text("Fetching page content\u{2026}").font(.app(size: 13))
+                }
+                .foregroundColor(Color.white.opacity(0.35))
+                .padding(.bottom, 12)
+            }
         }
         .task { focused = true }
-        .interactiveDismissDisabled(!urlText.isEmpty || isFetching)
+        .interactiveDismissDisabled(canSave || isFetching)
     }
 
-    private func saveLink() {
-        let trimmed = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: trimmed) else { return }
+    private func stageCurrent() {
+        guard canStage else { return }
+        let t = trimmedInput
+        withAnimation(.spring(duration: 0.25)) {
+            stagedURLs.append(t)
+        }
+        urlText = ""
+        focused = true
+    }
+
+    private func saveAll() {
+        if canStage {
+            stagedURLs.append(trimmedInput)
+            urlText = ""
+        }
+        let pending = stagedURLs
+        guard !pending.isEmpty else { return }
         isFetching = true
         Task {
-            let (label, content) = await fetchPageContent(from: url)
+            var results: [(String, String)] = []
+            for link in pending {
+                guard let url = URL(string: link) else {
+                    results.append((link, ""))
+                    continue
+                }
+                let pair = await fetchPageContent(from: url)
+                results.append(pair)
+            }
             await MainActor.run {
                 isFetching = false
-                onSave(label, content)
+                for (label, content) in results {
+                    onSave(label, content)
+                }
                 dismiss()
             }
         }
