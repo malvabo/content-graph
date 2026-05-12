@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - App Tab
 
 enum AppTab: String {
-    case notes, voice, library, templates
+    case notes, library, templates
 }
 
 // MARK: - Library View
@@ -560,12 +560,13 @@ private struct TemplateEditSheet: View {
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .notes
-    @State private var lastTab: AppTab = .notes
     @State private var showVoice = false
     @State private var showSplash = true
 
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             TabView(selection: $selectedTab) {
                 NotesView()
                     .tabItem { Label("Notes",     systemImage: "note.text") }
@@ -578,20 +579,24 @@ struct ContentView: View {
                 TemplatesView()
                     .tabItem { Label("Templates", systemImage: "rectangle.stack") }
                     .tag(AppTab.templates)
+            }
+            .tint(amber)
 
-                Color.clear.ignoresSafeArea()
-                    .tabItem { Label("Voice",     systemImage: "mic.fill") }
-                    .tag(AppTab.voice)
+            // Floating voice button centered above the tab bar
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                showVoice = true
+            } label: {
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 56, height: 56)
+                    .background(amber)
+                    .clipShape(Circle())
+                    .shadow(color: amber.opacity(0.50), radius: 12, y: 4)
             }
-            .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
-            .onChange(of: selectedTab) { _, newTab in
-                if newTab == .voice {
-                    selectedTab = lastTab
-                    showVoice = true
-                } else {
-                    lastTab = newTab
-                }
-            }
+            .buttonStyle(.plain)
+            .padding(.bottom, 24)
 
             if showSplash {
                 LaunchView()
