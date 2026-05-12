@@ -262,14 +262,20 @@ class OnboardingSceneViewController: UIViewController {
         }
 
         // Per-blob breath periods deliberately staggered (4.7–7.1s) so the
-        // field never pulses in unison.
+        // field never pulses in unison. Positions pushed outward and two
+        // corner clouds added so the cloud field spreads across the whole
+        // viewport rather than clustering near the optical center.
+        // Opacities lowered so individual planes blend without piling up
+        // into muddy low-contrast zones where many planes overlap.
         let defs: [CloudDef] = [
-            CloudDef(x: -7,  y:  6,  z: -6,  w: 30, h: 20, opacity: 0.80, breathDuration: 5.2, seed: 1),
-            CloudDef(x:  6,  y: -4,  z: -10, w: 26, h: 16, opacity: 0.65, breathDuration: 6.4, seed: 2),
-            CloudDef(x: -3,  y: -9,  z:  1,  w: 34, h: 22, opacity: 0.60, breathDuration: 4.7, seed: 3),
-            CloudDef(x: 11,  y:  3,  z: -14, w: 22, h: 18, opacity: 0.50, breathDuration: 7.1, seed: 4),
-            CloudDef(x: -13, y:  0,  z: -18, w: 28, h: 24, opacity: 0.45, breathDuration: 5.8, seed: 5),
-            CloudDef(x:  2,  y: 10,  z: -4,  w: 24, h: 14, opacity: 0.55, breathDuration: 6.0, seed: 6),
+            CloudDef(x: -10, y:  9,  z: -6,  w: 32, h: 22, opacity: 0.62, breathDuration: 5.2, seed: 1),
+            CloudDef(x:  8,  y: -6,  z: -10, w: 28, h: 18, opacity: 0.48, breathDuration: 6.4, seed: 2),
+            CloudDef(x: -4,  y: -11, z:  1,  w: 36, h: 24, opacity: 0.45, breathDuration: 4.7, seed: 3),
+            CloudDef(x: 14,  y:  4,  z: -14, w: 26, h: 20, opacity: 0.42, breathDuration: 7.1, seed: 4),
+            CloudDef(x: -16, y:  0,  z: -18, w: 30, h: 26, opacity: 0.36, breathDuration: 5.8, seed: 5),
+            CloudDef(x:  3,  y: 13,  z: -4,  w: 26, h: 16, opacity: 0.44, breathDuration: 6.0, seed: 6),
+            CloudDef(x: 13,  y: -12, z: -8,  w: 26, h: 18, opacity: 0.38, breathDuration: 5.5, seed: 7),
+            CloudDef(x: -12, y: -7,  z: -12, w: 24, h: 18, opacity: 0.34, breathDuration: 6.7, seed: 8),
         ]
 
         for def in defs {
@@ -346,12 +352,25 @@ class OnboardingSceneViewController: UIViewController {
             return CGFloat((v - floor(v)))
         }
 
-        for i in 0..<14 {
-            let cx = rng(i * 3)     * size
-            let cy = rng(i * 3 + 1) * size
-            let r  = rng(i * 3 + 2) * 130 + 50
-            let a  = rng(i * 3 + 2) * 0.11 + 0.03
-            let isAmber = i % 3 == 0
+        // 22 gradient seeds with constrained centers and a mix of small/large
+        // radii. Constraining centers to the inner 50% of the canvas keeps the
+        // edges naturally transparent (the vignette pass is now safety, not
+        // load-bearing) and lets the cloud silhouette follow the random blob
+        // distribution instead of a perfect circle. The small/large mix gives
+        // sharp highlights + softer halos in the same texture, breaking up
+        // the muddy low-contrast wash the old uniform 50–180 radii produced.
+        for i in 0..<22 {
+            let cx = (rng(i * 3)     * 0.5 + 0.25) * size
+            let cy = (rng(i * 3 + 1) * 0.5 + 0.25) * size
+            let isSmall = i % 3 == 0
+            let r  = isSmall
+                ? rng(i * 3 + 2) * 45  + 20   // sharper detail blob (20–65)
+                : rng(i * 3 + 2) * 90  + 50   // softer halo blob (50–140)
+            // Wider alpha range so peaks read as highlights and valleys
+            // genuinely fall off, instead of every blob landing in the
+            // mid-tones that produced the washed-out look.
+            let a  = rng(i * 3 + 2) * 0.20 + 0.02
+            let isAmber = i % 4 == 0
 
             let colors: [CGColor]
             if isAmber {
