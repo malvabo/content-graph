@@ -1966,15 +1966,6 @@ private struct FormatsBlock: View {
                                     .foregroundColor(Color.white.opacity(0.40))
                             }
                             Spacer()
-                            if !selectedFormatIDs.isEmpty {
-                                Text("\(selectedFormatIDs.count)")
-                                    .font(.app(size: 12, weight: .bold))
-                                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                                    .frame(minWidth: 24, minHeight: 24)
-                                    .background(.white)
-                                    .clipShape(Circle())
-                                    .transition(.scale.combined(with: .opacity))
-                            }
                             Image(systemName: "chevron.right")
                                 .font(.app(size: 12, weight: .semibold))
                                 .foregroundColor(Color.white.opacity(0.20))
