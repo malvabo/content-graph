@@ -251,17 +251,19 @@ struct TemplatesView: View {
                 .padding(.top, 28)
                 .padding(.bottom, 20)
 
-                LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(custom) { tpl in
-                        TemplateCard(title: tpl.title, subtitle: tpl.subtitle, icon: "doc.badge.plus")
-                            .contentShape(Rectangle())
-                            .onTapGesture { editingTemplate = tpl }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(custom) { tpl in
+                            TemplatePill(title: tpl.title)
+                                .onTapGesture { editingTemplate = tpl }
+                        }
+                        ForEach(builtIn, id: \.title) { tpl in
+                            TemplatePill(title: tpl.title)
+                        }
                     }
-                    ForEach(builtIn, id: \.title) { tpl in
-                        TemplateCard(title: tpl.title, subtitle: tpl.subtitle, icon: tpl.icon)
-                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 2)
                 }
-                .padding(.horizontal, 16)
 
                 Spacer(minLength: 48)
             }
@@ -292,44 +294,21 @@ struct TemplatesView: View {
     }
 }
 
-private struct TemplateCard: View {
+private struct TemplatePill: View {
     let title: String
-    let subtitle: String
-    let icon: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(0.07))
-                    .frame(width: 40, height: 40)
-                Image(systemName: icon)
-                    .font(.system(size: 17, weight: .regular))
-                    .foregroundColor(Color.white.opacity(0.72))
-            }
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text(title)
-                    .font(.app(size: 14, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.88))
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(subtitle)
-                    .font(.app(size: 12))
-                    .foregroundColor(Color.white.opacity(0.40))
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(18)
-        .background(Color.white.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
-        )
+        Text(title)
+            .font(.app(size: 14, weight: .medium))
+            .foregroundColor(Color.white.opacity(0.82))
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+            )
     }
 }
 
