@@ -247,7 +247,7 @@ function Sheet({ isOpen, onClose, children, height = 'auto', scrollable = true }
               height: typeof height === 'number' ? `${height}px` : height,
               overflow: 'hidden', display: 'flex', flexDirection: 'column',
               boxShadow: '0 -8px 32px rgba(0,0,0,0.6)',
-              transition: kbOffset > 0 ? 'bottom 0.25s ease, max-height 0.25s ease' : undefined,
+              transition: 'bottom 0.25s ease, max-height 0.25s ease',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, paddingBottom: 4, flexShrink: 0 }}>
@@ -288,7 +288,7 @@ function ImportSheet({ isOpen, onClose, onPick }: {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/>
           </svg>
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.52)' }}>Paste a link</div>
+          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.52)' }}>Paste a link</div>
         </button>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {tiles.map(t => (
@@ -302,7 +302,7 @@ function ImportSheet({ isOpen, onClose, onPick }: {
               }}
             >
               <TileIcon icon={t.icon} />
-              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.52)' }}>{t.label}</div>
+              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.52)' }}>{t.label}</div>
             </button>
           ))}
         </div>
@@ -580,7 +580,7 @@ function VoiceRecordSheet({ isOpen, onClose, onSave }: {
             <div style={{
               width: '100%', maxHeight: 140, overflowY: 'auto', padding: '12px 14px',
               borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-              color: 'rgba(255,255,255,0.80)', fontSize: 14, lineHeight: 1.5,
+              color: 'rgba(255,255,255,0.80)', fontSize: 15, lineHeight: 1.5,
             }}>{transcript}</div>
           )}
           {transcript && (
@@ -649,7 +649,7 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search formats and templates"
-            style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: '#fff', fontSize: 15, fontFamily: 'var(--font-sans)' }}
+            style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: '#fff', fontSize: 16, fontFamily: 'var(--font-sans)' }}
           />
           {search && (
             <button onClick={() => setSearch('')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, color: 'rgba(255,255,255,0.30)', display: 'flex' }}>
@@ -1268,7 +1268,7 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
                     <div style={{ width: '100%', maxHeight: 200, overflowY: 'auto', zIndex: 1 }}>
                       <p style={{
                         margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                        color: 'rgba(255,255,255,0.40)', fontSize: 14, lineHeight: 1.6,
+                        color: 'rgba(255,255,255,0.40)', fontSize: 15, lineHeight: 1.6,
                         fontFamily: 'var(--font-sans)',
                       }}>{genStreaming}</p>
                     </div>
@@ -1311,14 +1311,14 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
                               background: on ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.05)',
                               color: on ? '#fff' : 'rgba(255,255,255,0.40)',
                               borderRadius: 999, padding: '5px 10px',
-                              fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                              fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)',
                             }}
                           >{r.header}</button>
                         );
                       })}
                     </div>
                   ) : (
-                    <div style={{ flex: 1, fontSize: 16, fontWeight: 600, color: '#fff' }}>
+                    <div style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#fff' }}>
                       {genError ? 'Generation failed' : (genResults[0]?.header ?? '')}
                     </div>
                   )}
@@ -1358,7 +1358,7 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
                     <div style={{
                       padding: '14px 16px', borderRadius: 12,
                       background: 'rgba(220,80,60,0.12)', border: '1px solid rgba(220,80,60,0.30)',
-                      color: 'rgba(255,200,190,0.95)', fontSize: 15, lineHeight: 1.55,
+                      color: 'rgba(255,200,190,0.95)', fontSize: 16, lineHeight: 1.55,
                     }}>{genError}</div>
                   ) : (
                     <p style={{
