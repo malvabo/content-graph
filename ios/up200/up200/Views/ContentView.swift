@@ -3,13 +3,12 @@ import SwiftUI
 // MARK: - App Tab
 
 enum AppTab: String, CaseIterable {
-    case home, chat, notes, library, templates
+    case notes, chat, library, templates
 
     var label: String {
         switch self {
-        case .home:      return "Home"
-        case .chat:      return "Chat"
         case .notes:     return "Notes"
+        case .chat:      return "Chat"
         case .library:   return "Library"
         case .templates: return "Templates"
         }
@@ -17,12 +16,81 @@ enum AppTab: String, CaseIterable {
 
     var icon: String {
         switch self {
-        case .home:      return "house"
-        case .chat:      return "message"
         case .notes:     return "note.text"
+        case .chat:      return "message"
         case .library:   return "tray.2"
         case .templates: return "rectangle.stack"
         }
+    }
+}
+
+// MARK: - Custom Tab Bar
+
+private struct AppTabBar: View {
+    @Binding var selected: AppTab
+    let onChatTap: () -> Void
+    let onCreateTap: () -> Void
+
+    private let tabs: [AppTab] = [.notes, .chat, .library, .templates]
+    private let pillBg = Color.white.opacity(0.07)
+    private let activeBg = Color.white.opacity(0.16)
+    private let stroke = Color.white.opacity(0.08)
+
+    var body: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 4) {
+                ForEach(tabs, id: \.self) { tab in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        if tab == .chat {
+                            onChatTap()
+                        } else {
+                            selected = tab
+                        }
+                    } label: {
+                        Image(systemName: tab.icon)
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(
+                                (selected == tab && tab != .chat)
+                                    ? .white
+                                    : Color.white.opacity(0.55)
+                            )
+                            .frame(width: 48, height: 40)
+                            .background(
+                                Capsule(style: .continuous)
+                                    .fill((selected == tab && tab != .chat) ? activeBg : Color.clear)
+                            )
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(6)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(pillBg)
+                    .overlay(Capsule().stroke(stroke, lineWidth: 0.5))
+            )
+
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                onCreateTap()
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 56, height: 56)
+                    .background(
+                        Circle()
+                            .fill(pillBg)
+                            .overlay(Circle().stroke(stroke, lineWidth: 0.5))
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
     }
 }
 
@@ -579,28 +647,10 @@ private struct TemplateEditSheet: View {
 // MARK: - Content View
 
 struct ContentView: View {
-    @State private var selectedTab: AppTab = .home
+    @State private var selectedTab: AppTab = .notes
     @State private var showSplash = true
-    @State private var homeScrollToTop = 0
-    @State private var pendingSheet: SourceSheet? = nil
     @State private var showChat = false
-
-    // Re-tapping Home scrolls to top; tapping Chat opens a sheet instead of navigating.
-    private var tabSelection: Binding<AppTab> {
-        Binding(
-            get: { selectedTab },
-            set: { newValue in
-                if newValue == .chat {
-                    showChat = true
-                    return
-                }
-                if newValue == selectedTab, newValue == .home {
-                    homeScrollToTop &+= 1
-                }
-                selectedTab = newValue
-            }
-        )
-    }
+    @State private var showCreate = false
 
     var body: some View {
         ZStack {
@@ -611,29 +661,31 @@ struct ContentView: View {
                 LaunchView()
                     .transition(.opacity)
             } else {
-                TabView(selection: tabSelection) {
-                    Tab(AppTab.home.label, systemImage: AppTab.home.icon, value: AppTab.home) {
-                        HomeView(scrollToTopSignal: homeScrollToTop, pendingSheet: $pendingSheet)
-                    }
-                    Tab(AppTab.chat.label, systemImage: AppTab.chat.icon, value: AppTab.chat) {
-                        Color.clear
-                    }
-                    Tab(AppTab.notes.label, systemImage: AppTab.notes.icon, value: AppTab.notes) {
-                        NotesView()
-                    }
-                    Tab(AppTab.library.label, systemImage: AppTab.library.icon, value: AppTab.library) {
-                        LibraryView()
-                    }
-                    Tab(AppTab.templates.label, systemImage: AppTab.templates.icon, value: AppTab.templates) {
-                        TemplatesView()
+                Group {
+                    switch selectedTab {
+                    case .notes:     NotesView()
+                    case .library:   LibraryView()
+                    case .templates: TemplatesView()
+                    case .chat:      NotesView()
                     }
                 }
-                .tint(.white)
-                .toolbarBackground(Color(red: 0.10, green: 0.08, blue: 0.07), for: .tabBar)
-                .toolbarBackground(.visible, for: .tabBar)
-                .toolbarColorScheme(.dark, for: .tabBar)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    AppTabBar(
+                        selected: $selectedTab,
+                        onChatTap: { showChat = true },
+                        onCreateTap: { showCreate = true }
+                    )
+                }
                 .sheet(isPresented: $showChat) {
                     ChatView()
+                        .presentationDetents([.large])
+                        .presentationDragIndicator(.hidden)
+                        .presentationCornerRadius(22)
+                        .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+                }
+                .sheet(isPresented: $showCreate) {
+                    HomeView()
                         .presentationDetents([.large])
                         .presentationDragIndicator(.hidden)
                         .presentationCornerRadius(22)
@@ -647,7 +699,6 @@ struct ContentView: View {
             }
         }
     }
-
 }
 
 // MARK: - Launch View
