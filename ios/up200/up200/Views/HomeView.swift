@@ -626,11 +626,11 @@ struct ImportSheetView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 10) {
             Text("Import content")
                 .font(.app(size: 19, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
-                .padding(.top, 20)
+                .padding(.top, 8)
                 .padding(.bottom, 2)
 
             Button {
@@ -675,7 +675,7 @@ struct ImportSheetView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.bottom, 32)
+        .padding(.bottom, 16)
     }
 }
 
@@ -2259,11 +2259,13 @@ struct HomeView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showOnboarding = true } label: {
                         Image(systemName: "sun.max")
+                            .font(.system(size: 14, weight: .regular))
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showKeyUpdate = true } label: {
                         Image(systemName: "key.horizontal")
+                            .font(.system(size: 14, weight: .regular))
                     }
                 }
             }
