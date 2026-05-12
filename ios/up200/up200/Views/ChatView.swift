@@ -189,7 +189,7 @@ struct ChatView: View {
                 ForEach(selectedProjects) { proj in
                     ContextPill(title: proj.outputType) {
                         withAnimation(.easeOut(duration: 0.15)) {
-                            selectedProjectIDs.remove(proj.id)
+                            _ = selectedProjectIDs.remove(proj.id)
                         }
                     }
                 }
@@ -419,8 +419,11 @@ private struct ResourcePickerSheet: View {
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 withAnimation(.easeOut(duration: 0.15)) {
-                                    if selected { selectedIDs.remove(proj.id) }
-                                    else { selectedIDs.insert(proj.id) }
+                                    if selected {
+                                        _ = selectedIDs.remove(proj.id)
+                                    } else {
+                                        _ = selectedIDs.insert(proj.id)
+                                    }
                                 }
                             } label: {
                                 HStack(spacing: 12) {
