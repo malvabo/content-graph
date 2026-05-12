@@ -156,7 +156,7 @@ class OnboardingSceneViewController: UIViewController {
             return Float(v - floor(v))
         }
 
-        let target = 140
+        let target = 200
         var placed = 0
         var attempt = 0
         while placed < target && attempt < target * 6 {
@@ -180,9 +180,12 @@ class OnboardingSceneViewController: UIViewController {
             mat.isDoubleSided        = true
 
             let dot = SCNNode(geometry: plane)
-            // Ellipsoid scale 9 × 6 × 5 — roughly the volume the old emitter
-            // covered, just dense enough to read as a cloud.
-            dot.position = SCNVector3(nx * 9, ny * 6, nz * 5)
+            // Ellipsoid scale 10 × 14 × 6 — column-like shape that fills more
+            // of the portrait viewport's vertical extent than the previous
+            // 9×6×5 cluster (which left the top/bottom mostly empty). Dot
+            // count bumped to 200 above so the larger volume still reads as
+            // a dense cloud rather than scattered specks.
+            dot.position = SCNVector3(nx * 10, ny * 14, nz * 6)
             dot.opacity  = alpha
             dot.constraints = [SCNBillboardConstraint()]
             tiltNode.addChildNode(dot)
