@@ -1,4 +1,79 @@
 import SwiftUI
+import Speech
+import AVFoundation
+
+// MARK: - Voice Dictation
+
+@MainActor
+private final class NoteDictation: ObservableObject {
+    @Published var transcript: String = ""
+    @Published var isRecording: Bool = false
+    @Published var permissionDenied: Bool = false
+
+    private let audioEngine = AVAudioEngine()
+    private var request: SFSpeechAudioBufferRecognitionRequest?
+    private var task: SFSpeechRecognitionTask?
+    private let recognizer = SFSpeechRecognizer(locale: Locale.current)
+        ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+
+    func start() {
+        SFSpeechRecognizer.requestAuthorization { [weak self] status in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if status == .authorized {
+                    self.transcript = ""
+                    self.startEngine()
+                } else {
+                    self.permissionDenied = true
+                }
+            }
+        }
+    }
+
+    func stop() {
+        audioEngine.stop()
+        request?.endAudio()
+        if audioEngine.inputNode.numberOfInputs > 0 {
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
+        isRecording = false
+    }
+
+    private func startEngine() {
+        task?.cancel()
+        task = nil
+
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try? session.setActive(true, options: .notifyOthersOnDeactivation)
+
+        request = SFSpeechAudioBufferRecognitionRequest()
+        guard let req = request, let rec = recognizer else { return }
+        req.shouldReportPartialResults = true
+
+        task = rec.recognitionTask(with: req) { [weak self] result, error in
+            DispatchQueue.main.async {
+                if let result {
+                    self?.transcript = result.bestTranscription.formattedString
+                }
+                if error != nil || (result?.isFinal ?? false) {
+                    self?.isRecording = false
+                }
+            }
+        }
+
+        let inputNode = audioEngine.inputNode
+        let format = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+            req.append(buffer)
+        }
+
+        audioEngine.prepare()
+        if (try? audioEngine.start()) != nil {
+            isRecording = true
+        }
+    }
+}
 
 // MARK: - Storage
 
@@ -50,6 +125,46 @@ private struct NoteListRow: View {
     }
 }
 
+// MARK: - Dictation Button
+
+private struct DictationButton: View {
+    let isRecording: Bool
+    let action: () -> Void
+
+    @State private var pulse: Bool = false
+    private let purple = Color(red: 0.45, green: 0.30, blue: 0.85)
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                if isRecording {
+                    Circle()
+                        .fill(purple.opacity(0.35))
+                        .scaleEffect(pulse ? 1.45 : 1.0)
+                        .opacity(pulse ? 0.0 : 0.7)
+                        .animation(
+                            .easeOut(duration: 1.1).repeatForever(autoreverses: false),
+                            value: pulse
+                        )
+                }
+                Circle()
+                    .fill(purple)
+                    .shadow(color: purple.opacity(0.45), radius: 12, y: 4)
+
+                Image(systemName: isRecording ? "stop.fill" : "mic.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            .frame(width: 56, height: 56)
+        }
+        .buttonStyle(.plain)
+        .onAppear { pulse = true }
+        .onChange(of: isRecording) { _, recording in
+            pulse = recording
+        }
+    }
+}
+
 // MARK: - Composer Sheet
 
 private struct NoteComposerSheet: View {
@@ -59,6 +174,8 @@ private struct NoteComposerSheet: View {
     let onDelete: (() -> Void)?
 
     @State private var draft: Note
+    @State private var bodyBeforeDictation: String = ""
+    @StateObject private var dictation = NoteDictation()
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focus: Field?
 
@@ -78,7 +195,10 @@ private struct NoteComposerSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button { dismiss() } label: {
+                Button {
+                    dictation.stop()
+                    dismiss()
+                } label: {
                     Text("Cancel")
                         .font(.app(size: 16))
                         .foregroundColor(Color.white.opacity(0.50))
@@ -94,6 +214,7 @@ private struct NoteComposerSheet: View {
                 Spacer()
 
                 Button {
+                    dictation.stop()
                     var saved = draft
                     saved.updatedAt = Date()
                     onSave(saved)
@@ -125,24 +246,53 @@ private struct NoteComposerSheet: View {
                 .submitLabel(.next)
                 .onSubmit { focus = .body }
 
-            ZStack(alignment: .topLeading) {
-                if draft.body.isEmpty {
-                    Text("Start typing…")
+            ZStack(alignment: .bottomTrailing) {
+                ZStack(alignment: .topLeading) {
+                    if draft.body.isEmpty {
+                        Text("Start typing…")
+                            .font(.app(size: 16))
+                            .foregroundColor(Color.white.opacity(0.22))
+                            .padding(.horizontal, 24)
+                            .padding(.top, 12)
+                            .allowsHitTesting(false)
+                    }
+                    TextEditor(text: $draft.body)
                         .font(.app(size: 16))
-                        .foregroundColor(Color.white.opacity(0.22))
-                        .padding(.horizontal, 24)
-                        .padding(.top, 12)
-                        .allowsHitTesting(false)
+                        .foregroundColor(Color.white.opacity(0.86))
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .tint(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 4)
+                        .focused($focus, equals: .body)
                 }
-                TextEditor(text: $draft.body)
-                    .font(.app(size: 16))
-                    .foregroundColor(Color.white.opacity(0.86))
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .tint(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 4)
-                    .focused($focus, equals: .body)
+
+                DictationButton(isRecording: dictation.isRecording) {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    if dictation.isRecording {
+                        dictation.stop()
+                    } else {
+                        bodyBeforeDictation = draft.body
+                        dictation.start()
+                    }
+                }
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
+            }
+            .onChange(of: dictation.transcript) { _, newValue in
+                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return }
+                if bodyBeforeDictation.isEmpty {
+                    draft.body = trimmed
+                } else {
+                    let needsSeparator = !bodyBeforeDictation.hasSuffix("\n") && !bodyBeforeDictation.hasSuffix(" ")
+                    draft.body = bodyBeforeDictation + (needsSeparator ? " " : "") + trimmed
+                }
+            }
+            .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
             }
 
             if let del = onDelete, !isNew {
@@ -150,6 +300,7 @@ private struct NoteComposerSheet: View {
                     .fill(Color.white.opacity(0.06))
                     .frame(height: 0.5)
                 Button {
+                    dictation.stop()
                     del()
                     dismiss()
                 } label: {
