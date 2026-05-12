@@ -325,6 +325,183 @@ private struct DictationControls: View {
     }
 }
 
+// MARK: - Voice Start Sheet
+
+private struct AudioBlobsView: View {
+    let level: Float
+    let isRecording: Bool
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { ctx in
+            HStack(spacing: 14) {
+                ForEach(0..<4, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(amber)
+                        .frame(width: 62, height: blobHeight(index: i, time: ctx.date.timeIntervalSinceReferenceDate))
+                }
+            }
+        }
+        .frame(height: 120)
+    }
+
+    private func blobHeight(index: Int, time: Double) -> CGFloat {
+        guard isRecording else { return 54 }
+        let phases = [0.0, 0.9, 1.8, 2.7]
+        let wave = (sin(time * 4.0 + phases[index]) + 1.0) / 2.0
+        let amp = min(1.0, Double(level) * 3.5)
+        return 48 + CGFloat(wave * 0.35 + amp * 0.65) * 56
+    }
+}
+
+private struct NoteVoiceSheet: View {
+    let onSave: (Note) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var dictation = NoteDictation()
+    @State private var selectedDetent: PresentationDetent = .medium
+    @State private var seconds = 0
+    @State private var accumulatedTranscript = ""
+    @State private var isPaused = false
+
+    private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
+
+    private var timeLabel: String {
+        String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+
+    private var fullTranscript: String {
+        let cur = dictation.transcript
+        guard !accumulatedTranscript.isEmpty else { return cur }
+        guard !cur.isEmpty else { return accumulatedTranscript }
+        return accumulatedTranscript + " " + cur
+    }
+
+    var body: some View {
+        ZStack {
+            sheetBg.ignoresSafeArea()
+
+            if selectedDetent == .large {
+                NoteComposerSheet(
+                    note: {
+                        var n = Note()
+                        n.body = accumulatedTranscript
+                        return n
+                    }(),
+                    isNew: true,
+                    onSave: onSave,
+                    onDelete: nil
+                )
+                .transition(.opacity)
+            } else {
+                voiceUI
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: selectedDetent == .large)
+        .presentationDetents([.medium, .large], selection: $selectedDetent)
+        .presentationDragIndicator(.visible)
+        .presentationBackground(sheetBg)
+        .presentationCornerRadius(22)
+        .task { dictation.start() }
+        .onReceive(clock) { _ in
+            if dictation.isRecording { seconds += 1 }
+        }
+        .onChange(of: selectedDetent) { _, newDetent in
+            if newDetent == .large {
+                accumulatedTranscript = fullTranscript
+                dictation.stop()
+            }
+        }
+    }
+
+    private var voiceUI: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Text("Swipe up to add notes")
+                    .font(.subheadline)
+                    .foregroundColor(Color.white.opacity(0.35))
+                Spacer()
+                Button {
+                    dictation.stop()
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.55))
+                        .frame(width: 30, height: 30)
+                        .background(Color.white.opacity(0.12))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+
+            Spacer()
+
+            AudioBlobsView(level: dictation.audioLevel, isRecording: dictation.isRecording)
+
+            Spacer()
+
+            Text(timeLabel)
+                .font(.system(size: 44, weight: .bold, design: .monospaced))
+                .foregroundColor(.white)
+
+            Spacer()
+
+            HStack(spacing: 12) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    if isPaused {
+                        dictation.start()
+                        isPaused = false
+                    } else {
+                        accumulatedTranscript = fullTranscript
+                        dictation.stop()
+                        isPaused = true
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: isPaused ? "play.fill" : "pause.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text(isPaused ? "Resume" : "Pause")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    withAnimation { selectedDetent = .large }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text("End")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+        }
+    }
+}
+
 // MARK: - Composer Sheet
 
 private struct NoteComposerSheet: View {
@@ -601,19 +778,10 @@ struct NotesView: View {
         .sheet(item: $sheet) { which in
             switch which {
             case .new:
-                NoteComposerSheet(
-                    note: Note(),
-                    isNew: true,
-                    onSave: { saved in
-                        notes.append(saved)
-                        NotesStore.save(notes)
-                    },
-                    onDelete: nil
-                )
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(22)
-                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+                NoteVoiceSheet(onSave: { saved in
+                    notes.append(saved)
+                    NotesStore.save(notes)
+                })
 
             case .edit(let note):
                 NoteComposerSheet(
