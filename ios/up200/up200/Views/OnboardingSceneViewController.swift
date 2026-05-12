@@ -9,6 +9,12 @@ class OnboardingSceneViewController: UIViewController {
     private var sceneView: SCNView!
     private let scene = SCNScene()
 
+    // Background gradient layers. Held as properties so viewDidLayoutSubviews
+    // can keep their frames in sync with the view bounds across rotations.
+    private var pageGradientLayer: CAGradientLayer?
+    private var glowTLLayer:       CAGradientLayer?
+    private var glowBRLayer:       CAGradientLayer?
+
     // Each label cycles through type → hold → fade. fullSize is captured at
     // setup so the pill stays at a constant footprint while text streams in.
     private var labelAnchors: [(node: SCNNode, label: PaddedLabel, fullText: String, fullSize: CGSize)] = []
@@ -18,6 +24,12 @@ class OnboardingSceneViewController: UIViewController {
     private let labelFadeDuration:  CFTimeInterval = 0.7
     private var displayLink: CADisplayLink?
 
+    // Read once at setup. Drives whether the dot cluster rotates, the cloud
+    // blobs breathe, and labels typewriter or appear instantly. We don't
+    // observe live changes — the user toggling reduce-motion mid-onboarding
+    // is rare, and they'll see the static version on the next presentation.
+    private let reduceMotion = UIAccessibility.isReduceMotionEnabled
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupSceneView()
@@ -26,12 +38,17 @@ class OnboardingSceneViewController: UIViewController {
         setupDeepAtmosphere()
         setupClouds()
         setupLabelAnchors()
-        setupBackground()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         sceneView.frame = view.bounds
+        // Background gradient layers don't autoresize with the view, so they
+        // stay at the original launch-time bounds and clip after rotation
+        // unless we re-frame them on every layout pass.
+        pageGradientLayer?.frame = view.bounds
+        glowTLLayer?.frame       = view.bounds
+        glowBRLayer?.frame       = view.bounds
         updateLabelPositions()
     }
 
@@ -71,6 +88,7 @@ class OnboardingSceneViewController: UIViewController {
         gradient.startPoint = CGPoint(x: 0.2, y: 0)
         gradient.endPoint   = CGPoint(x: 0.8, y: 1)
         view.layer.insertSublayer(gradient, at: 0)
+        pageGradientLayer = gradient
 
         // Amber radial glows (top-left + bottom-right) — mirrors the
         // HomeView's corner blobs so the surfaces feel cohesive.
@@ -85,6 +103,7 @@ class OnboardingSceneViewController: UIViewController {
         glowTL.startPoint = CGPoint(x: 0.05, y: 0.05)
         glowTL.endPoint   = CGPoint(x: 0.60, y: 0.55)
         view.layer.insertSublayer(glowTL, at: 1)
+        glowTLLayer = glowTL
 
         let glowBR = CAGradientLayer()
         glowBR.type = .radial
@@ -97,10 +116,7 @@ class OnboardingSceneViewController: UIViewController {
         glowBR.startPoint = CGPoint(x: 1.0, y: 0.85)
         glowBR.endPoint   = CGPoint(x: 0.45, y: 0.40)
         view.layer.insertSublayer(glowBR, at: 2)
-    }
-
-    private func setupBackground() {
-        sceneView.backgroundColor = .clear
+        glowBRLayer = glowBR
     }
 
     // MARK: - Camera (fixed POV)
@@ -178,12 +194,16 @@ class OnboardingSceneViewController: UIViewController {
         // Perceptible self-rotation: Y full revolution every 22s on the
         // outer node, X tilt every 38s on the inner node. Two separate
         // nodes so the actions don't compete for the same rotation slot.
-        spinNode.runAction(SCNAction.repeatForever(
-            SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 22)
-        ))
-        tiltNode.runAction(SCNAction.repeatForever(
-            SCNAction.rotateBy(x: CGFloat.pi * 2, y: 0, z: 0, duration: 38)
-        ))
+        // Skipped under reduce-motion — the rotating cluster is the
+        // largest spatial motion in the scene.
+        if !reduceMotion {
+            spinNode.runAction(SCNAction.repeatForever(
+                SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 22)
+            ))
+            tiltNode.runAction(SCNAction.repeatForever(
+                SCNAction.rotateBy(x: CGFloat.pi * 2, y: 0, z: 0, duration: 38)
+            ))
+        }
     }
 
     /// Deeper, sparser atmospheric particle layer behind the dot cloud. Stays
@@ -263,7 +283,11 @@ class OnboardingSceneViewController: UIViewController {
             node.opacity  = def.opacity
             scene.rootNode.addChildNode(node)
 
-            // Breathing: gentle scale pulse (0.97 ↔ 1.04) in place. No
+            // All cloud animations skipped under reduce-motion. Blobs render
+            // statically at their anchor scale and base opacity.
+            guard !reduceMotion else { continue }
+
+            // Breathing: gentle scale pulse (0.92 ↔ 1.08) in place. No
             // translation — blobs hold their anchor positions so the dot
             // cloud remains the only large-amplitude motion in the scene.
             let halfBreath = def.breathDuration / 2
@@ -441,12 +465,20 @@ class OnboardingSceneViewController: UIViewController {
             }
 
             // Phase: type → hold → fade.
+            // Under reduce-motion the type phase shows full text immediately
+            // (no per-char streaming); cycle + crossfade still happen because
+            // they aren't spatial motion.
             let charCount: Int
             let alpha: CGFloat
             if phase < labelTypeDuration {
-                let progress = phase / labelTypeDuration
-                charCount = Int(ceil(progress * Double(entry.fullText.count)))
-                alpha = charCount > 0 ? 1 : 0
+                if reduceMotion {
+                    charCount = entry.fullText.count
+                    alpha = 1
+                } else {
+                    let progress = phase / labelTypeDuration
+                    charCount = Int(ceil(progress * Double(entry.fullText.count)))
+                    alpha = charCount > 0 ? 1 : 0
+                }
             } else if phase < labelTypeDuration + labelHoldDuration {
                 charCount = entry.fullText.count
                 alpha = 1
