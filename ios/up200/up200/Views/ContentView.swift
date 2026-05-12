@@ -533,7 +533,6 @@ struct ContentView: View {
                 TabView(selection: tabSelection) {
                     Tab(AppTab.home.label, systemImage: AppTab.home.icon, value: AppTab.home) {
                         HomeView(scrollToTopSignal: homeScrollToTop, pendingSheet: $pendingSheet)
-                            .overlay(alignment: .bottomTrailing) { addFAB }
                     }
                     Tab(AppTab.chat.label, systemImage: AppTab.chat.icon, value: AppTab.chat) {
                         ChatView()
