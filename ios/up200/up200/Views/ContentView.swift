@@ -92,9 +92,6 @@ private struct LibraryGroupRow: View {
                     .foregroundColor(Color.white.opacity(0.35))
             }
             Spacer()
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color.white.opacity(0.18))
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
