@@ -1654,24 +1654,38 @@ private struct FormatPickerSheet: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 10) {
+                    // Nested VStacks make every gap explicit: 8pt header→card,
+                    // 10pt card→card, 22pt section→section. Avoid LazyVStack
+                    // here — its spacing across ConditionalContent boundaries
+                    // wasn't consistent on iOS and produced visible dead space
+                    // below the "All formats" header.
+                    VStack(alignment: .leading, spacing: 22) {
                         if !filteredTemplates.isEmpty {
-                            sectionHeader("Quick picks")
-                            ForEach(displayedTemplates) { template in
-                                templateBlock(template)
-                            }
-                            if search.isEmpty && allTemplates.count > 5 {
-                                seeAllToggle
+                            VStack(alignment: .leading, spacing: 8) {
+                                sectionHeader("Quick picks")
+                                VStack(spacing: 10) {
+                                    ForEach(displayedTemplates) { template in
+                                        templateBlock(template)
+                                    }
+                                }
+                                if search.isEmpty && allTemplates.count > 5 {
+                                    seeAllToggle
+                                }
                             }
                         }
                         if !filteredFormats.isEmpty {
-                            sectionHeader("All formats")
-                            ForEach(filteredFormats) { format in
-                                formatBlock(format)
+                            VStack(alignment: .leading, spacing: 8) {
+                                sectionHeader("All formats")
+                                VStack(spacing: 10) {
+                                    ForEach(filteredFormats) { format in
+                                        formatBlock(format)
+                                    }
+                                }
                             }
                         }
                     }
                     .padding(.horizontal, 16)
+                    .padding(.top, 6)
                     .padding(.bottom, 12)
                 }
             }
@@ -1747,15 +1761,10 @@ private struct FormatPickerSheet: View {
 
     @ViewBuilder
     private func sectionHeader(_ title: String) -> some View {
-        // Breathing room above (clear section break), negative bottom
-        // padding so the header tightly attaches to its first row instead
-        // of floating with LazyVStack's full 10pt spacing below it.
         Text(title)
             .font(.app(size: 13, weight: .medium))
             .foregroundColor(Color.white.opacity(0.55))
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 14)
-            .padding(.bottom, -6)
     }
 
     @ViewBuilder
