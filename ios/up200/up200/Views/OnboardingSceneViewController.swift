@@ -255,8 +255,8 @@ class OnboardingSceneViewController: UIViewController {
             // translation — blobs hold their anchor positions so the dot
             // cloud remains the only large-amplitude motion in the scene.
             let halfBreath = def.breathDuration / 2
-            let inhale = SCNAction.scale(to: 1.04, duration: halfBreath)
-            let exhale = SCNAction.scale(to: 0.97, duration: halfBreath)
+            let inhale = SCNAction.scale(to: 1.08, duration: halfBreath)
+            let exhale = SCNAction.scale(to: 0.92, duration: halfBreath)
             inhale.timingMode = .easeInEaseOut
             exhale.timingMode = .easeInEaseOut
             // Desync at t=0 by varying the first action per blob — half the
@@ -271,8 +271,8 @@ class OnboardingSceneViewController: UIViewController {
             // Soft opacity pulse on a slightly different period so scale and
             // opacity slowly drift against each other — feels organic, not mechanical.
             let halfPulse = (def.breathDuration * 0.85) / 2
-            let dim  = SCNAction.fadeOpacity(to: def.opacity - 0.05, duration: halfPulse)
-            let glow = SCNAction.fadeOpacity(to: def.opacity + 0.04, duration: halfPulse)
+            let dim  = SCNAction.fadeOpacity(to: max(0, def.opacity - 0.10), duration: halfPulse)
+            let glow = SCNAction.fadeOpacity(to: min(1, def.opacity + 0.10), duration: halfPulse)
             dim.timingMode  = .easeInEaseOut
             glow.timingMode = .easeInEaseOut
             // Same desync trick on opacity, but on a different seed bucket

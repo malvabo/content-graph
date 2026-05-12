@@ -224,12 +224,12 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
       cloudDefs.forEach((def, i) => {
         const breathSign  = def.seed % 2 === 0 ? 1 : -1;  // even → exhale first
         const breathPhase = Math.PI / 2 + breathSign * (t / def.breathMs) * Math.PI * 2;
-        const scale = 1.005 + 0.035 * Math.cos(breathPhase);
+        const scale = 1.0 + 0.08 * Math.cos(breathPhase);
 
         const pulseMs    = def.breathMs * 0.85;
         const pulseSign  = def.seed % 3 === 0 ? -1 : 1;  // multiples of 3 → glow first
         const pulsePhase = Math.PI / 2 + pulseSign * (t / pulseMs) * Math.PI * 2;
-        const opacity    = Math.max(0, def.opacity + (-0.005 + 0.045 * Math.cos(pulsePhase)));
+        const opacity    = Math.max(0, def.opacity + 0.10 * Math.cos(pulsePhase));
 
         const cx = def.nx * cw;
         const cy = def.ny * ch;
@@ -281,7 +281,11 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
         const z2 = -d.x * sinY + z1 * cosY;
         const proj = project({ x: x2, y: y1, z: z2 });
         if (!proj) continue;
-        const radius = d.size * proj.scale * 40;
+        // Smaller multiplier than the wandering ambient particles below: the
+        // rotating cluster has to read as a *cloud of distinct dots* so the
+        // rotation is visible. With *40 the dots overlap into one giant
+        // additive-white blob and the spin becomes invisible.
+        const radius = d.size * proj.scale * 4;
         if (radius < 0.3) continue;
         ctx.globalAlpha = d.alpha;
         ctx.drawImage(sprite, proj.sx - radius, proj.sy - radius, radius * 2, radius * 2);
