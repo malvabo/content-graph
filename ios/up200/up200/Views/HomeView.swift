@@ -291,7 +291,7 @@ private struct GeneratingSheet: View {
                             .fill(amber.opacity(0.18))
                             .frame(width: 88, height: 88)
                         Image(systemName: "sparkles")
-                            .font(.app(size: 32, weight: .light))
+                            .font(.app(size: 32, weight: .regular))
                             .foregroundColor(amber)
                     }
                     .onAppear { pulse = true }
@@ -600,7 +600,7 @@ struct ImportSheetView: View {
             } label: {
                 VStack(spacing: 12) {
                     Image(systemName: "link")
-                        .font(.app(size: 16, weight: .light))
+                        .font(.app(size: 16, weight: .regular))
                         .foregroundColor(Color.white.opacity(0.82))
                     Text("Paste a link")
                         .font(.app(size: 14, weight: .regular))
@@ -620,7 +620,7 @@ struct ImportSheetView: View {
                     } label: {
                         VStack(spacing: 12) {
                             Image(systemName: item.icon)
-                                .font(.app(size: 16, weight: .light))
+                                .font(.app(size: 16, weight: .regular))
                                 .foregroundColor(Color.white.opacity(0.82))
                             Text(item.label)
                                 .font(.app(size: 14, weight: .regular))
