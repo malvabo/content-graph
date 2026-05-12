@@ -178,13 +178,15 @@ private struct DictationButton: View {
 
     @State private var pulse: Bool = false
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let recordingRed = Color(red: 0.95, green: 0.30, blue: 0.30)
 
     var body: some View {
+        let tint = isRecording ? recordingRed : amber
         Button(action: action) {
             ZStack {
                 if isRecording {
                     Circle()
-                        .fill(amber.opacity(0.35))
+                        .fill(tint.opacity(0.30))
                         .scaleEffect(pulse ? 1.45 : 1.0)
                         .opacity(pulse ? 0.0 : 0.7)
                         .animation(
@@ -193,12 +195,13 @@ private struct DictationButton: View {
                         )
                 }
                 Circle()
-                    .fill(amber)
-                    .shadow(color: amber.opacity(0.45), radius: 12, y: 4)
+                    .fill(.regularMaterial)
+                    .overlay(Circle().stroke(Color.white.opacity(0.15), lineWidth: 0.5))
+                    .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
 
                 Image(systemName: isRecording ? "stop.fill" : "mic.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundColor(tint)
             }
             .frame(width: 56, height: 56)
         }
