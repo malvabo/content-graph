@@ -685,44 +685,75 @@ struct ImportSheetView: View {
 private struct TextInputSheet: View {
     var onSave: (String, String) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var text = ""
+    @State private var titleText = ""
+    @State private var bodyText = ""
     @State private var isGenerating = false
-    @FocusState private var focused: Bool
+    @FocusState private var focusedField: InputField?
 
+    private enum InputField { case title, body }
     private let sheetBackground = Color(red: 0.10, green: 0.08, blue: 0.07)
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
-    private var canSave: Bool { !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    private var canSave: Bool {
+        !titleText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        !bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
-        GeometryReader { proxy in
-            VStack(spacing: 0) {
-                header
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        if text.isEmpty {
-                            Spacer().frame(maxHeight: .infinity)
-                            emptyState
-                            Spacer().frame(maxHeight: .infinity)
-                            Spacer().frame(maxHeight: .infinity)
-                        } else {
-                            Spacer().frame(maxHeight: .infinity)
+        VStack(spacing: 0) {
+            header
+
+            Rectangle()
+                .fill(Color.white.opacity(0.06))
+                .frame(height: 0.5)
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    TextField("Title", text: $titleText)
+                        .font(.app(size: 26, weight: .bold))
+                        .foregroundColor(.white)
+                        .tint(amber)
+                        .focused($focusedField, equals: .title)
+                        .submitLabel(.next)
+                        .onSubmit { focusedField = .body }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        .padding(.bottom, 14)
+                        .disabled(isGenerating)
+
+                    ZStack(alignment: .topLeading) {
+                        if bodyText.isEmpty {
+                            Text("Start writing\u{2026}")
+                                .font(.app(size: 17))
+                                .foregroundColor(Color.white.opacity(0.28))
+                                .padding(.horizontal, 20)
+                                .padding(.top, 2)
+                                .allowsHitTesting(false)
                         }
+                        TextEditor(text: $bodyText)
+                            .font(.app(size: 17))
+                            .foregroundColor(Color.white.opacity(0.88))
+                            .lineSpacing(3)
+                            .tint(amber)
+                            .scrollContentBackground(.hidden)
+                            .background(.clear)
+                            .focused($focusedField, equals: .body)
+                            .disabled(isGenerating)
+                            .padding(.horizontal, 16)
+                            .frame(minHeight: 300)
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: max(proxy.size.height - 164, 200))
                 }
-                .scrollDismissesKeyboard(.interactively)
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    inputCard
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 12)
-                        .background(sheetBackground)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    keyboardToolbar
                 }
             }
         }
-        .background(sheetBackground.ignoresSafeArea(.keyboard, edges: .bottom))
+        .background(sheetBackground.ignoresSafeArea())
         .interactiveDismissDisabled(canSave || isGenerating)
+        .task { focusedField = .title }
     }
 
     private var header: some View {
@@ -749,191 +780,88 @@ private struct TextInputSheet: View {
 
             Spacer(minLength: 8)
 
-            // Visual affordance only — no source history backing yet.
-            Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color.white.opacity(0.25))
+            Button(action: handleSave) {
+                Group {
+                    if isGenerating {
+                        ProgressView().scaleEffect(0.65).tint(.white)
+                    } else {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(canSave ? .white : Color.white.opacity(0.28))
+                    }
+                }
                 .frame(width: 32, height: 32)
-                .background(Color.white.opacity(0.04))
+                .background(canSave ? Color.white.opacity(0.12) : Color.white.opacity(0.05))
                 .clipShape(Circle())
-                .accessibilityHidden(true)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSave || isGenerating)
+            .accessibilityLabel("Save")
         }
         .padding(.horizontal, 16)
         .frame(height: 56)
         .padding(.top, 8)
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 0) {
-            Image(systemName: "doc.text")
-                .font(.system(size: 20, weight: .regular))
-                .foregroundColor(Color.white.opacity(0.55))
-
-            Color.clear.frame(height: 12)
-
-            Text("Add a text source")
-                .font(.app(size: 17, weight: .semibold))
-                .foregroundColor(.white)
-
-            Color.clear.frame(height: 4)
-
-            Text("Paste an article, transcript, or note")
-                .font(.app(size: 15))
-                .foregroundColor(Color.white.opacity(0.55))
-                .multilineTextAlignment(.center)
-
-            Color.clear.frame(height: 20)
-
-            chipsRow
-                .padding(.horizontal, 16)
-
-            Color.clear.frame(height: 16)
-
-            HStack(spacing: 6) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 12))
-                Text("We'll auto-generate a title when you save")
-                    .font(.app(size: 13))
-            }
-            .foregroundColor(Color.white.opacity(0.50))
-        }
-    }
-
-    private var chipsRow: some View {
-        FlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
-            chip(label: "Paste") {
+    private var keyboardToolbar: some View {
+        HStack(spacing: 0) {
+            kbButton(icon: "photo") {
                 if let clip = UIPasteboard.general.string, !clip.isEmpty {
-                    text = clip
-                    focused = true
+                    bodyText += clip
+                    focusedField = .body
                 }
             }
-            chip(label: "Outline") {
-                text = "1. \n2. \n3. "
-                focused = true
+            kbButton(icon: "at") {
+                bodyText += "@"
+                focusedField = .body
             }
-            chip(label: "Quote") {
-                text = "> "
-                focused = true
+            kbButton(icon: "list.bullet") {
+                bodyText += bodyText.isEmpty || bodyText.hasSuffix("\n") ? "• " : "\n• "
+                focusedField = .body
             }
-            chip(label: "Idea") {
-                text = "Idea: "
-                focused = true
+            kbButton(icon: "checklist") {
+                bodyText += bodyText.isEmpty || bodyText.hasSuffix("\n") ? "- [ ] " : "\n- [ ] "
+                focusedField = .body
             }
+            kbButton(icon: "chevron.left.forwardslash.chevron.right") {
+                bodyText += "`"
+                focusedField = .body
+            }
+            kbButton(icon: "quote.closing") {
+                bodyText += bodyText.isEmpty || bodyText.hasSuffix("\n") ? "> " : "\n> "
+                focusedField = .body
+            }
+            Spacer()
         }
     }
 
-    private func chip(label: String, action: @escaping () -> Void) -> some View {
+    private func kbButton(icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(label)
-                .font(.app(size: 14, weight: .medium))
-                .foregroundColor(Color.white.opacity(0.85))
-                .padding(.horizontal, 12)
-                .frame(height: 32)
-                .background(Color.white.opacity(0.08))
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.5))
+            Image(systemName: icon)
+                .font(.system(size: 17))
+                .foregroundColor(Color.white.opacity(0.60))
+                .frame(width: 44, height: 36)
         }
         .buttonStyle(.plain)
     }
 
-    private var inputCard: some View {
-        VStack(spacing: 0) {
-            // TextEditor (not TextField) so long pastes scroll inside the
-            // card instead of capping at a line limit. The ZStack adds a
-            // placeholder since TextEditor has no native placeholder.
-            ZStack(alignment: .topLeading) {
-                if text.isEmpty {
-                    Text("Paste your text, transcript or notes\u{2026}")
-                        .font(.app(size: 17))
-                        .foregroundColor(Color.white.opacity(0.40))
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                        .allowsHitTesting(false)
-                }
-                TextEditor(text: $text)
-                    .font(.app(size: 17))
-                    .foregroundColor(.white)
-                    .tint(amber)
-                    .scrollContentBackground(.hidden)
-                    .background(.clear)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 8)
-                    .focused($focused)
-                    .disabled(isGenerating)
-                    .frame(minHeight: 56, maxHeight: 180)
-            }
-
-            HStack(spacing: 8) {
-                Button {
-                    // Attachment hook — wired up via the source picker flow.
-                } label: {
-                    Image(systemName: "paperclip")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.55))
-                        .frame(width: 32, height: 32)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Attach")
-
-                Button {
-                    text.append("@")
-                    focused = true
-                } label: {
-                    Image(systemName: "at")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.55))
-                        .frame(width: 32, height: 32)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Mention")
-
-                Spacer()
-
-                Button(action: handleSave) {
-                    Group {
-                        if isGenerating {
-                            ProgressView()
-                                .scaleEffect(0.65)
-                                .tint(.white)
-                        } else {
-                            Image(systemName: "arrow.up")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(canSave ? .white : Color.white.opacity(0.35))
-                        }
-                    }
-                    .frame(width: 32, height: 32)
-                    .background(canSave ? amber : Color.white.opacity(0.10))
-                    .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSave || isGenerating)
-                .accessibilityLabel("Save")
-            }
-            .frame(height: 32)
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.05))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-        )
-    }
-
     private func handleSave() {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        focused = false
+        let trimmedTitle = titleText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedBody  = bodyText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let content = trimmedBody.isEmpty ? trimmedTitle : trimmedBody
+        guard !content.isEmpty else { return }
+        focusedField = nil
         isGenerating = true
         Task {
-            let title = await AIService.generateTitle(from: trimmed)
+            let finalTitle: String
+            if trimmedTitle.isEmpty {
+                finalTitle = await AIService.generateTitle(from: content)
+            } else {
+                finalTitle = trimmedTitle
+            }
             await MainActor.run {
                 isGenerating = false
-                onSave(title, trimmed)
+                onSave(finalTitle, content)
                 dismiss()
             }
         }
