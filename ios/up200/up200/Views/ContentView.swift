@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - App Tab
 
 enum AppTab: String {
-    case notes, library, templates
+    case notes, create, library, templates
 }
 
 // MARK: - Library View
@@ -571,6 +571,10 @@ struct ContentView: View {
                 NotesView()
                     .tabItem { Label("Notes",     systemImage: "note.text") }
                     .tag(AppTab.notes)
+
+                HomeView()
+                    .tabItem { Label("Create",    systemImage: "sparkles") }
+                    .tag(AppTab.create)
 
                 LibraryView()
                     .tabItem { Label("Library",   systemImage: "tray.2") }
