@@ -1827,7 +1827,9 @@ struct HomeView: View {
                                 .foregroundColor(.white)
                             Spacer()
                             // Intro pill — replays the onboarding scene.
-                            // Mirrors the amber pill on mobile web's CreateHome.
+                            // Visible footprint stays at 32pt for design density;
+                            // the outer 44pt frame + Rectangle contentShape expand
+                            // the hit area to Apple's HIG minimum tap target.
                             Button { showOnboarding = true } label: {
                                 HStack(spacing: 6) {
                                     Image(systemName: "sun.max")
@@ -1846,6 +1848,8 @@ struct HomeView: View {
                                     )
                                 )
                                 .clipShape(Capsule())
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             Button { showKeyUpdate = true } label: {
