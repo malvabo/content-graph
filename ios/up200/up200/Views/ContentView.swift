@@ -67,7 +67,7 @@ struct LibraryView: View {
                 }
             }
             .navigationTitle("Library")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .searchable(text: $searchText, prompt: "Search library")
@@ -306,7 +306,7 @@ struct TemplatesView: View {
             .scrollContentBackground(.hidden)
             .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
             .navigationTitle("Templates")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
