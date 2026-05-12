@@ -63,6 +63,8 @@ struct ChatView: View {
     @State private var selectedProjectIDs: Set<UUID> = []
     @FocusState private var inputFocused: Bool
 
+    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
+
     private var projects: [GenerationProject] {
         (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
     }
@@ -73,29 +75,23 @@ struct ChatView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+            bg.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 header
 
+                Rectangle()
+                    .fill(Color.white.opacity(0.06))
+                    .frame(height: 0.5)
+
                 if messages.isEmpty {
-                    emptyState
+                    welcomeState
                 } else {
                     messageList
                 }
-
-                if !selectedProjectIDs.isEmpty {
-                    contextPills
-                }
-
-                ChatInputBar(
-                    text: $inputText,
-                    focused: $inputFocused,
-                    isLoading: isLoading,
-                    onSend: sendMessage
-                )
-                .padding(.horizontal, 12)
-                .padding(.bottom, 12)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                inputArea
             }
         }
         .sheet(isPresented: $showResourcePicker) {
@@ -103,53 +99,93 @@ struct ChatView: View {
         }
     }
 
-    // MARK: Sub-views
+    // MARK: Header
 
     private var header: some View {
-        HStack {
-            Text("Chat")
-                .font(.app(size: 22, weight: .semibold))
-                .foregroundColor(Color.white.opacity(0.88))
-            Spacer()
-            if !projects.isEmpty {
-                Button { showResourcePicker = true } label: {
-                    Image(systemName: selectedProjectIDs.isEmpty ? "tray" : "tray.fill")
-                        .font(.app(size: 16, weight: .medium))
-                        .foregroundColor(
-                            selectedProjectIDs.isEmpty
-                                ? Color.white.opacity(0.45)
-                                : Color(red: 0.85, green: 0.45, blue: 0.10)
-                        )
-                        .frame(width: 36, height: 36)
-                        .background(Color.white.opacity(0.07))
-                        .clipShape(Circle())
+        HStack(spacing: 0) {
+            Button {
+                guard !messages.isEmpty else { return }
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                withAnimation(.easeOut(duration: 0.2)) {
+                    messages = []
+                    _ = selectedProjectIDs.isEmpty
+                    selectedProjectIDs = []
                 }
-                .buttonStyle(.plain)
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color.white.opacity(messages.isEmpty ? 0.22 : 0.65))
+                    .frame(width: 32, height: 32)
+                    .background(Color.white.opacity(messages.isEmpty ? 0.03 : 0.08))
+                    .clipShape(Circle())
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("New chat")
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 6) {
+                Text("BETA")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(Color.white.opacity(0.70))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+
+                Text("New chat")
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                if !projects.isEmpty { showResourcePicker = true }
+            } label: {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(
+                        selectedProjectIDs.isEmpty
+                            ? Color.white.opacity(projects.isEmpty ? 0.18 : 0.55)
+                            : Color(red: 0.85, green: 0.45, blue: 0.10)
+                    )
+                    .frame(width: 32, height: 32)
+                    .background(Color.white.opacity(0.07))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Library context")
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 28)
-        .padding(.bottom, 12)
+        .padding(.horizontal, 16)
+        .frame(height: 56)
+        .padding(.top, 8)
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 12) {
+    // MARK: Welcome state
+
+    private var welcomeState: some View {
+        VStack(spacing: 0) {
             Spacer()
-            Image(systemName: "bubble.left.and.bubble.right")
-                .font(.app(size: 36, weight: .regular))
-                .foregroundColor(Color.white.opacity(0.20))
-            Text("Ask anything")
-                .font(.app(size: 16, weight: .regular))
-                .foregroundColor(Color.white.opacity(0.30))
-            if !projects.isEmpty {
-                Text("Tap the tray icon to include library context")
-                    .font(.app(size: 13, weight: .regular))
-                    .foregroundColor(Color.white.opacity(0.20))
+            VStack(spacing: 12) {
+                Image(systemName: "cursorarrow")
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundColor(Color.white.opacity(0.35))
+                Text("Welcome to Chat")
+                    .font(.app(size: 20, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.88))
+                Text("Ask anything or tell me what you need")
+                    .font(.app(size: 15))
+                    .foregroundColor(Color.white.opacity(0.42))
+                    .multilineTextAlignment(.center)
             }
             Spacer()
+            Color.clear.frame(height: 96)
         }
         .frame(maxWidth: .infinity)
     }
+
+    // MARK: Message list
 
     private var messageList: some View {
         ScrollViewReader { proxy in
@@ -165,9 +201,10 @@ struct ChatView: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 4)
-                .padding(.bottom, 8)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
             }
+            .scrollDismissesKeyboard(.interactively)
             .onChange(of: messages.count) { _, _ in
                 withAnimation(.easeOut(duration: 0.2)) {
                     proxy.scrollTo(messages.last?.id, anchor: .bottom)
@@ -183,23 +220,114 @@ struct ChatView: View {
         }
     }
 
-    private var contextPills: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(selectedProjects) { proj in
-                    ContextPill(title: proj.outputType) {
-                        withAnimation(.easeOut(duration: 0.15)) {
-                            _ = selectedProjectIDs.remove(proj.id)
+    // MARK: Input area
+
+    private var inputArea: some View {
+        VStack(spacing: 0) {
+            if !selectedProjectIDs.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(selectedProjects) { proj in
+                            ContextPill(title: proj.outputType) {
+                                withAnimation(.easeOut(duration: 0.15)) {
+                                    _ = selectedProjectIDs.remove(proj.id)
+                                }
+                            }
                         }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+
+            VStack(spacing: 0) {
+                ZStack(alignment: .topLeading) {
+                    if inputText.isEmpty {
+                        Text("Ask anything\u{2026}")
+                            .font(.app(size: 16))
+                            .foregroundColor(Color.white.opacity(0.28))
+                            .padding(.horizontal, 16)
+                            .padding(.top, 14)
+                            .allowsHitTesting(false)
+                    }
+                    TextEditor(text: $inputText)
+                        .font(.app(size: 16))
+                        .foregroundColor(.white)
+                        .scrollContentBackground(.hidden)
+                        .background(.clear)
+                        .tint(.white)
+                        .focused($inputFocused)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 8)
+                        .frame(minHeight: 44, maxHeight: 120)
+                }
+
+                HStack(spacing: 4) {
+                    Button {
+                        if let clip = UIPasteboard.general.string, !clip.isEmpty {
+                            inputText += clip
+                        }
+                    } label: {
+                        Image(systemName: "paperclip")
+                            .font(.system(size: 17))
+                            .foregroundColor(Color.white.opacity(0.45))
+                            .frame(width: 40, height: 36)
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        inputText += "@"
+                        inputFocused = true
+                    } label: {
+                        Image(systemName: "at")
+                            .font(.system(size: 17))
+                            .foregroundColor(Color.white.opacity(0.45))
+                            .frame(width: 40, height: 36)
+                    }
+                    .buttonStyle(.plain)
+
+                    Spacer()
+
+                    Button(action: sendMessage) {
+                        let ready = canSend
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(ready ? .white : Color.white.opacity(0.28))
+                            .frame(width: 32, height: 32)
+                            .background(ready ? Color.white.opacity(0.18) : Color.white.opacity(0.06))
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle().stroke(
+                                    ready ? Color.white.opacity(0.22) : Color.white.opacity(0.08),
+                                    lineWidth: 0.5
+                                )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!canSend)
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 10)
+            }
+            .background(Color.white.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+            )
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
         }
+        .background(bg)
     }
 
     // MARK: Actions
+
+    private var canSend: Bool {
+        !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isLoading
+    }
 
     private func sendMessage() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -227,7 +355,6 @@ struct ChatView: View {
 
 private struct MessageBubble: View {
     let message: ChatMessage
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
     private var isUser: Bool { message.role == "user" }
 
     var body: some View {
@@ -240,11 +367,11 @@ private struct MessageBubble: View {
                 .lineSpacing(3)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(isUser ? amber.opacity(0.18) : Color.white.opacity(0.05))
+                .background(isUser ? Color.white.opacity(0.12) : Color.white.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(isUser ? amber.opacity(0.30) : Color.white.opacity(0.08), lineWidth: 0.5)
+                        .stroke(Color.white.opacity(isUser ? 0.14 : 0.08), lineWidth: 0.5)
                 )
                 .textSelection(.enabled)
 
@@ -275,63 +402,6 @@ private struct TypingIndicator: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .frame(maxWidth: .infinity, alignment: .leading)
         .onReceive(timer) { _ in phase = (phase + 1) % 3 }
-    }
-}
-
-// MARK: - Chat Input Bar
-
-private struct ChatInputBar: View {
-    @Binding var text: String
-    var focused: FocusState<Bool>.Binding
-    let isLoading: Bool
-    let onSend: () -> Void
-
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
-    private var canSend: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isLoading
-    }
-
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            ZStack(alignment: .topLeading) {
-                if text.isEmpty {
-                    Text("Message…")
-                        .font(.app(size: 15))
-                        .foregroundColor(Color.white.opacity(0.25))
-                        .padding(.horizontal, 14)
-                        .padding(.top, 12)
-                        .allowsHitTesting(false)
-                }
-                TextEditor(text: $text)
-                    .font(.app(size: 15))
-                    .foregroundColor(.white)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .tint(.white)
-                    .focused(focused)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .frame(minHeight: 44, maxHeight: 120)
-            }
-            .background(Color.white.opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-            )
-
-            Button(action: onSend) {
-                Image(systemName: "arrow.up")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(canSend ? .white : Color.white.opacity(0.25))
-                    .frame(width: 36, height: 36)
-                    .background(canSend ? amber.opacity(0.45) : Color.white.opacity(0.07))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .disabled(!canSend)
-            .padding(.bottom, 4)
-        }
     }
 }
 
