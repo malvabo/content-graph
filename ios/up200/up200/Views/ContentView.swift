@@ -569,19 +569,19 @@ struct ContentView: View {
         ZStack(alignment: .bottom) {
             TabView(selection: $selectedTab) {
                 NotesView()
-                    .tabItem { Label("Notes",     systemImage: "note.text") }
+                    .tabItem { Image(systemName: "note.text") }
                     .tag(AppTab.notes)
 
                 HomeView()
-                    .tabItem { Label("Create",    systemImage: "sparkles") }
+                    .tabItem { Image(systemName: "sparkles") }
                     .tag(AppTab.create)
 
                 LibraryView()
-                    .tabItem { Label("Library",   systemImage: "tray.2") }
+                    .tabItem { Image(systemName: "folder") }
                     .tag(AppTab.library)
 
                 TemplatesView()
-                    .tabItem { Label("Templates", systemImage: "rectangle.stack") }
+                    .tabItem { Image(systemName: "square.on.square") }
                     .tag(AppTab.templates)
             }
             .tint(amber)
