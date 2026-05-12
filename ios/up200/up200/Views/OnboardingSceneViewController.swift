@@ -9,8 +9,13 @@ class OnboardingSceneViewController: UIViewController {
     private var sceneView: SCNView!
     private let scene = SCNScene()
 
-    // Label anchors: 3D position → UILabel overlay
-    private var labelAnchors: [(node: SCNNode, label: UILabel)] = []
+    // Each label cycles through type → hold → fade. fullSize is captured at
+    // setup so the pill stays at a constant footprint while text streams in.
+    private var labelAnchors: [(node: SCNNode, label: PaddedLabel, fullText: String, fullSize: CGSize)] = []
+    private var labelStartTime: CFTimeInterval = 0
+    private let labelTypeDuration:  CFTimeInterval = 1.1
+    private let labelHoldDuration:  CFTimeInterval = 1.6
+    private let labelFadeDuration:  CFTimeInterval = 0.7
     private var displayLink: CADisplayLink?
 
     override func viewDidLoad() {
@@ -367,10 +372,14 @@ class OnboardingSceneViewController: UIViewController {
     // MARK: - Floating Labels
 
     private func setupLabelAnchors() {
+        // Anchor positions pulled in from the original far-corner values so
+        // a fully-typed pill of the widest label ("FINANCIAL DATA") still
+        // fits inside the viewport without the on-screen clamp having to do
+        // visible work.
         let defs: [(text: String, pos: SCNVector3, ghost: Bool)] = [
-            ("PEOPLE",         SCNVector3( 8.5,  5.5,  1),  false),
-            ("FINANCIAL DATA", SCNVector3(-6.5,  0.5,  3),  true),
-            ("COMPANIES",      SCNVector3( 8.0, -5.5, -1),  false),
+            ("FINANCIAL DATA", SCNVector3(-3.5,  0.5,  3),  true),
+            ("PEOPLE",         SCNVector3( 5.0,  5.5,  1),  false),
+            ("COMPANIES",      SCNVector3( 5.0, -5.5, -1),  false),
         ]
 
         for def in defs {
@@ -379,7 +388,8 @@ class OnboardingSceneViewController: UIViewController {
             anchor.position = def.pos
             scene.rootNode.addChildNode(anchor)
 
-            let label = UILabel()
+            let label = PaddedLabel()
+            label.textInsets = UIEdgeInsets(top: 5, left: 11, bottom: 5, right: 11)
             label.text = def.text
             label.font = UIFont.monospacedSystemFont(ofSize: 10, weight: .medium)
             label.textColor = UIColor(white: 1, alpha: 0.92)
@@ -389,34 +399,119 @@ class OnboardingSceneViewController: UIViewController {
                 : UIColor(red: 0.06, green: 0.05, blue: 0.04, alpha: 0.82)
             label.layer.cornerRadius = 2
             label.layer.masksToBounds = true
-            label.textAlignment = .center
+            // Left-aligned so chars stream in from the left edge of the pill
+            // (true typewriter feel) instead of expanding from a center caret.
+            label.textAlignment = .left
             label.sizeToFit()
-            label.frame = CGRect(x: 0, y: 0,
-                                 width: label.frame.width + 22,
-                                 height: label.frame.height + 10)
+            let fullSize = label.frame.size
+            label.frame = CGRect(origin: .zero, size: fullSize)
             label.layer.borderWidth = 0.5
             label.layer.borderColor = UIColor(white: 1, alpha: def.ghost ? 0.18 : 0.10).cgColor
+            label.text = ""
+            label.alpha = 0
+            label.isHidden = true
             view.addSubview(label)
-            labelAnchors.append((node: anchor, label: label))
+            labelAnchors.append((node: anchor, label: label, fullText: def.text, fullSize: fullSize))
         }
 
-        // Update label positions every frame via CADisplayLink. Stored on
-        // the controller so viewWillDisappear can invalidate it and break
-        // the retain cycle (CADisplayLink retains its target strongly).
+        labelStartTime = CACurrentMediaTime()
+
+        // Drives both 3D → 2D projection updates AND the per-cycle typewriter
+        // animation. Stored on the controller so viewWillDisappear can
+        // invalidate it (CADisplayLink retains its target strongly).
         let link = CADisplayLink(target: self, selector: #selector(updateLabelPositions))
         link.add(to: .main, forMode: .common)
         displayLink = link
     }
 
     @objc private func updateLabelPositions() {
-        guard let _ = sceneView.pointOfView else { return }
-        for (node, label) in labelAnchors {
-            let projected = sceneView.projectPoint(node.worldPosition)
-            // projected.z < 1 means in front of camera
+        guard sceneView.pointOfView != nil, !labelAnchors.isEmpty else { return }
+
+        let cycle = labelTypeDuration + labelHoldDuration + labelFadeDuration
+        let elapsed = CACurrentMediaTime() - labelStartTime
+        let activeIndex = Int(elapsed / cycle) % labelAnchors.count
+        let phase = elapsed.truncatingRemainder(dividingBy: cycle)
+
+        for (i, entry) in labelAnchors.enumerated() {
+            let label = entry.label
+
+            if i != activeIndex {
+                label.isHidden = true
+                continue
+            }
+
+            // Phase: type → hold → fade.
+            let charCount: Int
+            let alpha: CGFloat
+            if phase < labelTypeDuration {
+                let progress = phase / labelTypeDuration
+                charCount = Int(ceil(progress * Double(entry.fullText.count)))
+                alpha = charCount > 0 ? 1 : 0
+            } else if phase < labelTypeDuration + labelHoldDuration {
+                charCount = entry.fullText.count
+                alpha = 1
+            } else {
+                charCount = entry.fullText.count
+                let fp = (phase - labelTypeDuration - labelHoldDuration) / labelFadeDuration
+                alpha = CGFloat(max(0, 1 - fp))
+            }
+
+            let projected = sceneView.projectPoint(entry.node.worldPosition)
             let inFront = projected.z < 1
-            label.isHidden = !inFront
-            label.center   = CGPoint(x: CGFloat(projected.x),
-                                     y: CGFloat(projected.y))
+            if !inFront || alpha <= 0.001 {
+                label.isHidden = true
+                continue
+            }
+
+            let newText = String(entry.fullText.prefix(charCount))
+            if label.text != newText { label.text = newText }
+            label.alpha = alpha
+            label.isHidden = false
+
+            // Keep pill at its fully-typed footprint so it doesn't visibly
+            // grow as chars stream in — the user reads a fixed tag whose
+            // contents fill from left to right.
+            label.bounds = CGRect(origin: .zero, size: entry.fullSize)
+
+            // Center on projected anchor, clamped to screen so a label
+            // anchored near the viewport edge never gets sliced.
+            let halfW = entry.fullSize.width  / 2
+            let halfH = entry.fullSize.height / 2
+            let margin: CGFloat = 8
+            let cx = min(max(CGFloat(projected.x), halfW + margin),
+                         view.bounds.width - halfW - margin)
+            let cy = min(max(CGFloat(projected.y), halfH + margin),
+                         view.bounds.height - halfH - margin)
+            label.center = CGPoint(x: cx, y: cy)
         }
+    }
+}
+
+// MARK: - PaddedLabel
+
+/// UILabel that draws its text inset from its bounds. Used for the pill-shaped
+/// label tags so the visible text has breathing room from the pill edges while
+/// the pill itself stays at a fixed footprint during the typewriter animation.
+final class PaddedLabel: UILabel {
+    var textInsets: UIEdgeInsets = .zero {
+        didSet { invalidateIntrinsicContentSize() }
+    }
+
+    override func drawText(in rect: CGRect) {
+        super.drawText(in: rect.inset(by: textInsets))
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let s = super.intrinsicContentSize
+        return CGSize(width:  s.width  + textInsets.left + textInsets.right,
+                      height: s.height + textInsets.top  + textInsets.bottom)
+    }
+
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+        let inner = CGSize(width:  max(0, size.width  - textInsets.left - textInsets.right),
+                           height: max(0, size.height - textInsets.top  - textInsets.bottom))
+        let fit = super.sizeThatFits(inner)
+        return CGSize(width:  fit.width  + textInsets.left + textInsets.right,
+                      height: fit.height + textInsets.top  + textInsets.bottom)
     }
 }
