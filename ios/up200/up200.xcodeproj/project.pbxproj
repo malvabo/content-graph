@@ -1,22 +1,24 @@
 // !$*UTF8*$!
 {
 	archiveVersion = 1;
-	classes = {};
+	classes = {
+	};
 	objectVersion = 56;
 	objects = {
+
 /* Begin PBXBuildFile section */
-		A1000001 /* Up200App.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001; };
-		A1000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002; };
-		A1000003 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000003; };
-		A1000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000004; };
-		A1000005 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000006; };
-		A1000006 /* VoiceNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000007; };
-		A1000007 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008; };
-		A1000008 /* APIKeySetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000009; };
-		A1000009 /* Font+ABCDiatype.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011; };
-		A1000010 /* ABCDiatypeVariable-Trial.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000012; };
-		A1000011 /* OnboardingSceneViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013; };
-		A1000012 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000014; };
+		A1000001 /* Up200App.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001 /* Up200App.swift */; };
+		A1000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002 /* ContentView.swift */; };
+		A1000003 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000003 /* WebView.swift */; };
+		A1000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000004 /* Assets.xcassets */; };
+		A1000005 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000006 /* HomeView.swift */; };
+		A1000006 /* VoiceNotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000007 /* VoiceNotesView.swift */; };
+		A1000007 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008 /* Models.swift */; };
+		A1000008 /* APIKeySetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000009 /* APIKeySetupView.swift */; };
+		A1000009 /* Font+ABCDiatype.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011 /* Font+ABCDiatype.swift */; };
+		A1000010 /* ABCDiatypeVariable-Trial.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000012 /* ABCDiatypeVariable-Trial.ttf */; };
+		A1000011 /* OnboardingSceneViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013 /* OnboardingSceneViewController.swift */; };
+		A1000012 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000014 /* OnboardingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,47 +31,72 @@
 		A2000007 /* VoiceNotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNotesView.swift; sourceTree = "<group>"; };
 		A2000008 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		A2000009 /* APIKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeySetupView.swift; sourceTree = "<group>"; };
+		A2000010 /* up200.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = up200.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000011 /* Font+ABCDiatype.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Font+ABCDiatype.swift"; sourceTree = "<group>"; };
-		A2000012 /* ABCDiatypeVariable-Trial.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = ABCDiatypeVariable-Trial.ttf; sourceTree = "<group>"; };
+		A2000012 /* ABCDiatypeVariable-Trial.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ABCDiatypeVariable-Trial.ttf"; sourceTree = "<group>"; };
 		A2000013 /* OnboardingSceneViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingSceneViewController.swift; sourceTree = "<group>"; };
 		A2000014 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		A2000010 /* up200.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = up200.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		A3000001 = {
 			isa = PBXGroup;
-			children = (A3000002, A3000005);
+			children = (
+				A3000002 /* up200 */,
+				A3000005 /* Products */,
+			);
 			sourceTree = "<group>";
 		};
 		A3000002 /* up200 */ = {
 			isa = PBXGroup;
-			children = (A2000001, A3000003, A3000004, A3000006, A2000004, A2000005);
+			children = (
+				A2000001 /* Up200App.swift */,
+				A3000003 /* Views */,
+				A3000004 /* WebView */,
+				A3000006 /* Fonts */,
+				A2000004 /* Assets.xcassets */,
+				A2000005 /* Info.plist */,
+			);
 			path = up200;
-			sourceTree = "<group>";
-		};
-		A3000006 /* Fonts */ = {
-			isa = PBXGroup;
-			children = (A2000012);
-			path = Fonts;
 			sourceTree = "<group>";
 		};
 		A3000003 /* Views */ = {
 			isa = PBXGroup;
-			children = (A2000002, A2000006, A2000007, A2000008, A2000009, A2000011, A2000013, A2000014);
+			children = (
+				A2000002 /* ContentView.swift */,
+				A2000006 /* HomeView.swift */,
+				A2000007 /* VoiceNotesView.swift */,
+				A2000008 /* Models.swift */,
+				A2000009 /* APIKeySetupView.swift */,
+				A2000011 /* Font+ABCDiatype.swift */,
+				A2000013 /* OnboardingSceneViewController.swift */,
+				A2000014 /* OnboardingView.swift */,
+			);
 			path = Views;
 			sourceTree = "<group>";
 		};
 		A3000004 /* WebView */ = {
 			isa = PBXGroup;
-			children = (A2000003);
+			children = (
+				A2000003 /* WebView.swift */,
+			);
 			path = WebView;
 			sourceTree = "<group>";
 		};
 		A3000005 /* Products */ = {
 			isa = PBXGroup;
-			children = (A2000010);
+			children = (
+				A2000010 /* up200.app */,
+			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A3000006 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				A2000012 /* ABCDiatypeVariable-Trial.ttf */,
+			);
+			path = Fonts;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -77,13 +104,18 @@
 /* Begin PBXNativeTarget section */
 		A4000001 /* up200 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A6000003;
-			buildPhases = (A5000001, A5000002);
-			buildRules = ();
-			dependencies = ();
+			buildConfigurationList = A6000003 /* Build configuration list for PBXNativeTarget "up200" */;
+			buildPhases = (
+				A5000001 /* Sources */,
+				A5000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
 			name = up200;
 			productName = up200;
-			productReference = A2000010;
+			productReference = A2000010 /* up200.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -91,37 +123,60 @@
 /* Begin PBXProject section */
 		A7000001 /* Project object */ = {
 			isa = PBXProject;
-			attributes = { BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500; };
-			buildConfigurationList = A6000001;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = A6000001 /* Build configuration list for PBXProject "up200" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
-			knownRegions = (en, Base);
+			knownRegions = (
+				en,
+				Base,
+			);
 			mainGroup = A3000001;
-			productRefGroup = A3000005;
+			productRefGroup = A3000005 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-			targets = (A4000001);
+			targets = (
+				A4000001 /* up200 */,
+			);
 		};
 /* End PBXProject section */
 
-/* Begin PBXSourcesBuildPhase section */
-		A5000001 = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (A1000001, A1000002, A1000003, A1000005, A1000006, A1000007, A1000008, A1000009, A1000011, A1000012);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXSourcesBuildPhase section */
-
 /* Begin PBXResourcesBuildPhase section */
-		A5000002 = {
+		A5000002 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = (A1000004, A1000010);
+			files = (
+				A1000004 /* Assets.xcassets in Resources */,
+				A1000010 /* ABCDiatypeVariable-Trial.ttf in Resources */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A5000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000001 /* Up200App.swift in Sources */,
+				A1000002 /* ContentView.swift in Sources */,
+				A1000003 /* WebView.swift in Sources */,
+				A1000005 /* HomeView.swift in Sources */,
+				A1000006 /* VoiceNotesView.swift in Sources */,
+				A1000007 /* Models.swift in Sources */,
+				A1000008 /* APIKeySetupView.swift in Sources */,
+				A1000009 /* Font+ABCDiatype.swift in Sources */,
+				A1000011 /* OnboardingSceneViewController.swift in Sources */,
+				A1000012 /* OnboardingView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		A6000010 /* Debug */ = {
@@ -129,15 +184,19 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANTHROPIC_API_KEY = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 4ALG4CS7DT;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = up200/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.up200.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -152,15 +211,19 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANTHROPIC_API_KEY = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 4ALG4CS7DT;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = up200/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.up200.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -220,19 +283,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A6000001 /* Build configuration list for PBXProject */ = {
+		A6000001 /* Build configuration list for PBXProject "up200" */ = {
 			isa = XCConfigurationList;
-			buildConfigurations = (A6000020, A6000021);
+			buildConfigurations = (
+				A6000020 /* Debug */,
+				A6000021 /* Release */,
+			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A6000003 /* Build configuration list for PBXNativeTarget */ = {
+		A6000003 /* Build configuration list for PBXNativeTarget "up200" */ = {
 			isa = XCConfigurationList;
-			buildConfigurations = (A6000010, A6000011);
+			buildConfigurations = (
+				A6000010 /* Debug */,
+				A6000011 /* Release */,
+			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = A7000001;
+	rootObject = A7000001 /* Project object */;
 }
