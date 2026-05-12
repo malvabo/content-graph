@@ -371,9 +371,11 @@ class OnboardingSceneViewController: UIViewController {
 
         // Soft circular vignette pass: multiplies existing alpha by a radial
         // gradient that's opaque in the middle and fully transparent at the
-        // canvas edges. Without this, any inner blob whose radius extends past
-        // the canvas bounds gets sliced flat against the edge — the plane then
-        // renders as a hard-edged rectangle instead of a soft cloud.
+        // canvas edges. .drawsAfterEndLocation is critical — without it the
+        // gradient only paints inside the endRadius circle, leaving the four
+        // canvas corners (diagonal distance > endRadius) at their original
+        // blob-painted alpha. Those corners then read as hard-edged rotated
+        // rectangles when the plane wobbles.
         let edgeColors = [
             UIColor(white: 1, alpha: 1).cgColor,
             UIColor(white: 1, alpha: 1).cgColor,
@@ -386,7 +388,7 @@ class OnboardingSceneViewController: UIViewController {
         ctx.drawRadialGradient(edgeMask,
                                startCenter: CGPoint(x: size / 2, y: size / 2), startRadius: 0,
                                endCenter:   CGPoint(x: size / 2, y: size / 2), endRadius: size / 2,
-                               options: [])
+                               options: [.drawsAfterEndLocation])
 
         let img = UIGraphicsGetImageFromCurrentImageContext()!
         UIGraphicsEndImageContext()
