@@ -688,88 +688,227 @@ private struct TextInputSheet: View {
     @State private var isGenerating = false
     @FocusState private var focused: Bool
 
-    private var wordCount: Int { text.split { $0.isWhitespace }.count }
+    private let sheetBackground = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
     private var canSave: Bool { !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button("Cancel") {
-                    guard !isGenerating else { return }
-                    dismiss()
-                }
-                .foregroundColor(Color.white.opacity(0.55))
-
-                Spacer()
-
-                Text("Text source")
-                    .font(.app(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-
-                Spacer()
-
-                Button {
-                    handleSave()
-                } label: {
-                    if isGenerating {
-                        ProgressView()
-                            .scaleEffect(0.75)
-                            .tint(Color.white.opacity(0.55))
-                            .frame(width: 40)
-                    } else {
-                        Text("Save")
-                            .foregroundColor(canSave ? Color.white.opacity(0.88) : Color.white.opacity(0.25))
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                header
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        Spacer().frame(maxHeight: .infinity)
+                        emptyState
+                        Spacer().frame(maxHeight: .infinity)
+                        Spacer().frame(maxHeight: .infinity)
                     }
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: max(proxy.size.height - 56, 240))
                 }
-                .disabled(!canSave || isGenerating)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 14)
-
-            Rectangle()
-                .fill(Color.white.opacity(0.07))
-                .frame(height: 0.5)
-
-            ZStack(alignment: .topLeading) {
-                if text.isEmpty {
-                    Text("Paste your text, transcript or notes\u{2026}")
-                        .font(.app(size: 16))
-                        .foregroundColor(Color.white.opacity(0.22))
-                        .padding(.horizontal, 20)
-                        .padding(.top, 18)
-                        .allowsHitTesting(false)
+                .scrollDismissesKeyboard(.interactively)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    inputCard
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 12)
+                        .background(sheetBackground)
                 }
-                TextEditor(text: $text)
-                    .font(.app(size: 16))
-                    .foregroundColor(Color.white.opacity(0.88))
-                    .scrollContentBackground(.hidden)
-                    .background(.clear)
-                    .padding(.horizontal, 16)
-                    .focused($focused)
-                    .disabled(isGenerating)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            if wordCount > 0 {
-                HStack {
-                    if isGenerating {
-                        Label("Generating title\u{2026}", systemImage: "sparkles")
-                            .font(.app(size: 12))
-                            .foregroundColor(Color.white.opacity(0.40))
-                    }
-                    Spacer()
-                    Text("\(wordCount) words")
-                        .font(.app(size: 12))
-                        .foregroundColor(Color.white.opacity(0.28))
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
-                .animation(.easeOut(duration: 0.2), value: isGenerating)
             }
         }
-        .task { focused = true }
-        .interactiveDismissDisabled(canSave || isGenerating)
+        .background(sheetBackground.ignoresSafeArea(.keyboard, edges: .bottom))
+        .interactiveDismissDisabled(isGenerating)
+    }
+
+    private var header: some View {
+        HStack(spacing: 0) {
+            Button {
+                guard !isGenerating else { return }
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.65))
+                    .frame(width: 32, height: 32)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Close")
+
+            Spacer(minLength: 8)
+
+            Text("Text source")
+                .font(.app(size: 17, weight: .semibold))
+                .foregroundColor(.white)
+
+            Spacer(minLength: 8)
+
+            Button {
+                // Source history hook — no-op until history backing exists.
+            } label: {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.65))
+                    .frame(width: 32, height: 32)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("History")
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 56)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 0) {
+            Image(systemName: "doc.text")
+                .font(.system(size: 20, weight: .regular))
+                .foregroundColor(Color.white.opacity(0.55))
+
+            Color.clear.frame(height: 12)
+
+            Text("Add a text source")
+                .font(.app(size: 17, weight: .semibold))
+                .foregroundColor(.white)
+
+            Color.clear.frame(height: 4)
+
+            Text("Paste an article, transcript, or note")
+                .font(.app(size: 15))
+                .foregroundColor(Color.white.opacity(0.55))
+                .multilineTextAlignment(.center)
+
+            Color.clear.frame(height: 20)
+
+            chipsRow
+                .padding(.horizontal, 16)
+
+            Color.clear.frame(height: 16)
+
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12))
+                Text("We'll auto-generate a title when you save")
+                    .font(.app(size: 13))
+            }
+            .foregroundColor(Color.white.opacity(0.50))
+        }
+    }
+
+    private var chipsRow: some View {
+        FlowLayout(horizontalSpacing: 8, verticalSpacing: 8) {
+            chip(label: "Paste") {
+                if let clip = UIPasteboard.general.string, !clip.isEmpty {
+                    text = clip
+                    focused = true
+                }
+            }
+            chip(label: "Outline") {
+                text = "1. \n2. \n3. "
+                focused = true
+            }
+            chip(label: "Quote") {
+                text = "> "
+                focused = true
+            }
+            chip(label: "Idea") {
+                text = "Idea: "
+                focused = true
+            }
+        }
+    }
+
+    private func chip(label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.app(size: 14, weight: .medium))
+                .foregroundColor(Color.white.opacity(0.85))
+                .padding(.horizontal, 12)
+                .frame(height: 32)
+                .background(Color.white.opacity(0.08))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.5))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var inputCard: some View {
+        VStack(spacing: 0) {
+            TextField(
+                "Paste your text, transcript or notes\u{2026}",
+                text: $text,
+                axis: .vertical
+            )
+            .font(.app(size: 17))
+            .foregroundColor(.white)
+            .tint(amber)
+            .lineLimit(1...6)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .focused($focused)
+            .disabled(isGenerating)
+
+            HStack(spacing: 8) {
+                Button {
+                    // Attachment hook — wired up via the source picker flow.
+                } label: {
+                    Image(systemName: "paperclip")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.55))
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Attach")
+
+                Button {
+                    text.append("@")
+                    focused = true
+                } label: {
+                    Image(systemName: "at")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.55))
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Mention")
+
+                Spacer()
+
+                Button(action: handleSave) {
+                    Group {
+                        if isGenerating {
+                            ProgressView()
+                                .scaleEffect(0.65)
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(canSave ? .white : Color.white.opacity(0.35))
+                        }
+                    }
+                    .frame(width: 32, height: 32)
+                    .background(canSave ? amber : Color.white.opacity(0.10))
+                    .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSave || isGenerating)
+                .accessibilityLabel("Save")
+            }
+            .frame(height: 32)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+        )
     }
 
     private func handleSave() {
@@ -784,6 +923,53 @@ private struct TextInputSheet: View {
                 onSave(title, trimmed)
                 dismiss()
             }
+        }
+    }
+}
+
+// Wrapping flow layout: chips lay out left-to-right and wrap to the next
+// row when they would overflow the available width.
+private struct FlowLayout: Layout {
+    var horizontalSpacing: CGFloat = 8
+    var verticalSpacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var lineHeight: CGFloat = 0
+        var widestLine: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > maxWidth {
+                widestLine = max(widestLine, x - horizontalSpacing)
+                y += lineHeight + verticalSpacing
+                x = 0
+                lineHeight = 0
+            }
+            x += size.width + horizontalSpacing
+            lineHeight = max(lineHeight, size.height)
+        }
+        widestLine = max(widestLine, x - horizontalSpacing)
+        return CGSize(width: min(widestLine, maxWidth), height: y + lineHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x: CGFloat = bounds.minX
+        var y: CGFloat = bounds.minY
+        var lineHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > bounds.minX, x + size.width > bounds.maxX {
+                y += lineHeight + verticalSpacing
+                x = bounds.minX
+                lineHeight = 0
+            }
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + horizontalSpacing
+            lineHeight = max(lineHeight, size.height)
         }
     }
 }
@@ -1263,7 +1449,7 @@ private struct SourcesBlock: View {
             }
             .presentationDetents(sheet == .picker ? [.medium, .large] : [.large])
             .presentationDragIndicator(.visible)
-            .presentationCornerRadius(22)
+            .presentationCornerRadius(sheet == .text ? 10 : 22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .fileImporter(
