@@ -1,6 +1,7 @@
 import SwiftUI
 import Speech
 import AVFoundation
+import UIKit
 
 // MARK: - Voice Dictation
 
@@ -83,12 +84,55 @@ private struct NotesStore {
 
     static func load() -> [Note] {
         guard let data = UserDefaults.standard.data(forKey: key) else { return [] }
-        return (try? JSONDecoder().decode([Note].self, from: data)) ?? []
+        let raw = (try? JSONDecoder().decode([Note].self, from: data)) ?? []
+        return raw.map(Note.migrated)
     }
 
     static func save(_ notes: [Note]) {
         guard let data = try? JSONEncoder().encode(notes) else { return }
         UserDefaults.standard.set(data, forKey: key)
+    }
+}
+
+// MARK: - Relative date
+
+private enum RowDate {
+    private static let time: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        return f
+    }()
+    private static let weekday: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE"
+        return f
+    }()
+    private static let monthDay: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f
+    }()
+    private static let full: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        return f
+    }()
+
+    static func string(from date: Date) -> String {
+        let cal = Calendar.current
+        if cal.isDateInToday(date) { return time.string(from: date) }
+        if cal.isDateInYesterday(date) { return "Yesterday" }
+        let now = Date()
+        let days = cal.dateComponents(
+            [.day],
+            from: cal.startOfDay(for: date),
+            to: cal.startOfDay(for: now)
+        ).day ?? 0
+        if days < 7 { return weekday.string(from: date) }
+        if cal.component(.year, from: date) == cal.component(.year, from: now) {
+            return monthDay.string(from: date)
+        }
+        return full.string(from: date)
     }
 }
 
@@ -105,11 +149,11 @@ private struct NoteListRow: View {
                 .lineLimit(1)
 
             HStack(spacing: 6) {
-                Text(note.updatedAt, style: .date)
+                Text(RowDate.string(from: note.updatedAt))
                     .font(.app(size: 12))
                     .foregroundColor(Color.white.opacity(0.35))
                 if !note.preview.isEmpty {
-                    Text("·")
+                    Text("\u{00B7}")
                         .font(.app(size: 12))
                         .foregroundColor(Color.white.opacity(0.22))
                     Text(note.preview)
@@ -166,6 +210,32 @@ private struct DictationButton: View {
     }
 }
 
+// MARK: - Recording Pill
+
+private struct RecordingHeaderPill: View {
+    @State private var pulse: Bool = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(Color.red.opacity(0.85))
+                .frame(width: 8, height: 8)
+                .scaleEffect(pulse ? 1.3 : 1.0)
+                .opacity(pulse ? 0.55 : 1.0)
+                .animation(
+                    .easeInOut(duration: 0.75).repeatForever(autoreverses: true),
+                    value: pulse
+                )
+            Text("Recording")
+                .font(.app(size: 13, weight: .medium))
+                .foregroundColor(.white)
+        }
+        .onAppear { pulse = true }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Recording")
+    }
+}
+
 // MARK: - Composer Sheet
 
 private struct NoteComposerSheet: View {
@@ -182,15 +252,21 @@ private struct NoteComposerSheet: View {
     @FocusState private var bodyFocused: Bool
 
     init(note: Note, isNew: Bool, onSave: @escaping (Note) -> Void, onDelete: (() -> Void)?) {
-        self.original = note
+        let migrated = Note.migrated(note)
+        self.original = migrated
         self.isNew = isNew
         self.onSave = onSave
         self.onDelete = onDelete
-        self._draft = State(initialValue: note)
+        self._draft = State(initialValue: migrated)
     }
 
     private var canSave: Bool { !draft.isEmpty }
-    private var isDirty: Bool { draft.title != original.title || draft.body != original.body }
+    private var isDirty: Bool { draft.body != original.body }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -211,9 +287,13 @@ private struct NoteComposerSheet: View {
 
                 Spacer()
 
-                Text(isNew ? "New Note" : "Edit Note")
-                    .font(.app(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
+                if dictation.isRecording {
+                    RecordingHeaderPill()
+                } else {
+                    Text(isNew ? "New Note" : "Edit Note")
+                        .font(.app(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                }
 
                 Spacer()
 
@@ -284,7 +364,8 @@ private struct NoteComposerSheet: View {
                 }
             }
             .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
-                Button("OK", role: .cancel) {}
+                Button("Open Settings") { openSettings() }
+                Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
             }
@@ -349,6 +430,11 @@ struct NotesView: View {
         notes.sorted { $0.updatedAt > $1.updatedAt }
     }
 
+    private func delete(_ note: Note) {
+        notes.removeAll { $0.id == note.id }
+        NotesStore.save(notes)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -372,6 +458,7 @@ struct NotesView: View {
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("New note")
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 28)
@@ -393,23 +480,31 @@ struct NotesView: View {
                         .frame(maxWidth: .infinity)
                         Spacer()
                     } else {
-                        ScrollView(showsIndicators: false) {
-                            VStack(spacing: 0) {
-                                ForEach(Array(sortedNotes.enumerated()), id: \.element.id) { idx, note in
+                        List {
+                            ForEach(sortedNotes) { note in
+                                Button {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    sheet = .edit(note)
+                                } label: {
                                     NoteListRow(note: note)
-                                        .onTapGesture {
-                                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                            sheet = .edit(note)
-                                        }
-                                    if idx < sortedNotes.count - 1 {
-                                        Divider()
-                                            .background(Color.white.opacity(0.06))
-                                            .padding(.leading, 20)
+                                }
+                                .buttonStyle(.plain)
+                                .listRowInsets(EdgeInsets())
+                                .listRowBackground(Color.clear)
+                                .listRowSeparatorTint(Color.white.opacity(0.06))
+                                .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        delete(note)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
                                     }
                                 }
                             }
-                            .padding(.bottom, 32)
                         }
+                        .listStyle(.plain)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
                     }
                 }
             }
@@ -444,8 +539,7 @@ struct NotesView: View {
                         NotesStore.save(notes)
                     },
                     onDelete: {
-                        notes.removeAll { $0.id == note.id }
-                        NotesStore.save(notes)
+                        delete(note)
                     }
                 )
                 .presentationDetents([.large])
