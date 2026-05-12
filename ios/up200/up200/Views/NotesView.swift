@@ -481,7 +481,17 @@ private struct NoteVoiceSheet: View {
 
                 Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    withAnimation { selectedDetent = .large }
+                    let transcript = fullTranscript
+                    dictation.stop()
+                    guard !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                        dismiss()
+                        return
+                    }
+                    var note = Note()
+                    note.body = transcript
+                    note.updatedAt = Date()
+                    onSave(note)
+                    dismiss()
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "stop.fill")
