@@ -59,4 +59,6 @@ struct CustomTemplate: Identifiable, Codable {
     var id = UUID()
     var title: String
     var subtitle: String
+    var prompt: String = ""
+    var formatIDs: [String] = []
 }
