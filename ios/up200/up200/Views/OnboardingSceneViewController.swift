@@ -528,14 +528,41 @@ class OnboardingSceneViewController: UIViewController {
             // contents fill from left to right.
             label.bounds = CGRect(origin: .zero, size: entry.fullSize)
 
-            // Center on projected anchor, clamped to screen so a label
+            // Tag drifts a tiny amount in the direction the dot cluster is
+            // rotating at the tag's world position, as if the tag is pinned
+            // to a dot on the surface of the rotating cluster. Skipped under
+            // reduce-motion. Drift accumulates linearly through type → hold
+            // → fade, then resets when the next anchor takes over.
+            var driftDX: CGFloat = 0
+            var driftDY: CGFloat = 0
+            if !reduceMotion {
+                let anchor = entry.node.worldPosition
+                // For Y-axis rotation, the tangent vector at (x, y, z) is
+                // (-z, 0, x). Project anchor + tangent step and take the
+                // screen-space delta as the drift direction.
+                let tipPoint = SCNVector3(anchor.x - anchor.z * 0.5,
+                                          anchor.y,
+                                          anchor.z + anchor.x * 0.5)
+                let tipProj = sceneView.projectPoint(tipPoint)
+                let dx = CGFloat(tipProj.x - projected.x)
+                let dy = CGFloat(tipProj.y - projected.y)
+                let mag = sqrt(dx * dx + dy * dy)
+                if mag > 0.001 {
+                    let driftProgress = CGFloat(min(1.0, phase / cycle))
+                    let maxDrift: CGFloat = 18  // points across the visible lifetime
+                    driftDX = (dx / mag) * maxDrift * driftProgress
+                    driftDY = (dy / mag) * maxDrift * driftProgress
+                }
+            }
+
+            // Center on projected anchor (+ drift), clamped to screen so a label
             // anchored near the viewport edge never gets sliced.
             let halfW = entry.fullSize.width  / 2
             let halfH = entry.fullSize.height / 2
             let margin: CGFloat = 8
-            let cx = min(max(CGFloat(projected.x), halfW + margin),
+            let cx = min(max(CGFloat(projected.x) + driftDX, halfW + margin),
                          view.bounds.width - halfW - margin)
-            let cy = min(max(CGFloat(projected.y), halfH + margin),
+            let cy = min(max(CGFloat(projected.y) + driftDY, halfH + margin),
                          view.bounds.height - halfH - margin)
             label.center = CGPoint(x: cx, y: cy)
         }
