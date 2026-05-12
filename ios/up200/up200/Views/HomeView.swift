@@ -2010,7 +2010,7 @@ private struct FormatsBlock: View {
                                 HStack(spacing: 6) {
                                     Text(fmt.label)
                                         .font(.app(size: 13, weight: .medium))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(Color.white.opacity(0.85))
                                     Button {
                                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                         withAnimation(.easeOut(duration: 0.15)) {
@@ -2019,16 +2019,16 @@ private struct FormatsBlock: View {
                                     } label: {
                                         Image(systemName: "xmark")
                                             .font(.system(size: 9, weight: .bold))
-                                            .foregroundColor(Color.white.opacity(0.65))
+                                            .foregroundColor(Color.white.opacity(0.55))
                                             .frame(width: 16, height: 16)
                                     }
                                     .buttonStyle(.plain)
                                 }
-                                .padding(.leading, 12)
+                                .padding(.leading, 14)
                                 .padding(.trailing, 6)
-                                .padding(.vertical, 6)
-                                .background(amber.opacity(0.20))
-                                .overlay(Capsule().stroke(amber.opacity(0.45), lineWidth: 0.5))
+                                .padding(.vertical, 7)
+                                .background(Color.white.opacity(0.10))
+                                .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 0.5))
                                 .clipShape(Capsule())
                                 .transition(.scale.combined(with: .opacity))
                             }
