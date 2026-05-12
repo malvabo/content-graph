@@ -603,10 +603,10 @@ private struct AppTabBar: View {
         .padding(.vertical, 5)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color(red: 0.13, green: 0.11, blue: 0.09))
+                .fill(.ultraThinMaterial)
                 .overlay(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+                        .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
                 )
         )
         .environment(\.colorScheme, .dark)
