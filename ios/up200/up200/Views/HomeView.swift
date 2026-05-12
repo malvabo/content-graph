@@ -1313,6 +1313,7 @@ struct VoiceRecordSheet: View {
             }
         }
         .task { if autoStart { recorder.start() } }
+        .onDisappear { recorder.stop() }
         .onReceive(clock) { _ in
             if recorder.isRecording { seconds += 1 }
         }

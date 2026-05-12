@@ -669,6 +669,7 @@ private struct NoteComposerSheet: View {
         .task {
             if isNew { bodyFocused = true }
         }
+        .onDisappear { dictation.stop() }
         .interactiveDismissDisabled(isDirty)
     }
 }
