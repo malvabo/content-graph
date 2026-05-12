@@ -249,29 +249,19 @@ struct TemplatesView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 28)
-                .padding(.bottom, 8)
-
-                sectionLabel("Library")
+                .padding(.bottom, 20)
 
                 LazyVGrid(columns: columns, spacing: 12) {
+                    ForEach(custom) { tpl in
+                        TemplateCard(title: tpl.title, subtitle: tpl.subtitle, icon: "doc.badge.plus")
+                            .contentShape(Rectangle())
+                            .onTapGesture { editingTemplate = tpl }
+                    }
                     ForEach(builtIn, id: \.title) { tpl in
                         TemplateCard(title: tpl.title, subtitle: tpl.subtitle, icon: tpl.icon)
                     }
                 }
                 .padding(.horizontal, 16)
-
-                if !custom.isEmpty {
-                    sectionLabel("Custom")
-
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(custom) { tpl in
-                            TemplateCard(title: tpl.title, subtitle: tpl.subtitle, icon: "doc.badge.plus")
-                                .contentShape(Rectangle())
-                                .onTapGesture { editingTemplate = tpl }
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                }
 
                 Spacer(minLength: 48)
             }
@@ -280,7 +270,7 @@ struct TemplatesView: View {
         .onAppear { custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? [] }
         .sheet(isPresented: $showAdd) {
             TemplateEditSheet(template: nil) { newTpl in
-                custom.append(newTpl)
+                custom.insert(newTpl, at: 0)
                 saveCustom()
             }
         }
@@ -295,18 +285,6 @@ struct TemplatesView: View {
                 saveCustom()
             }
         }
-    }
-
-    @ViewBuilder
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.app(size: 11, weight: .semibold))
-            .tracking(0.8)
-            .foregroundColor(Color.white.opacity(0.28))
-            .padding(.horizontal, 20)
-            .padding(.top, 28)
-            .padding(.bottom, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func saveCustom() {
