@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - App Tab
 
 enum AppTab: String {
-    case notes, create, library, templates
+    case notes, create, library, templates, voice
 }
 
 // MARK: - Library View
@@ -277,59 +277,55 @@ struct TemplatesView: View {
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Text("Templates")
-                        .font(.app(size: 28, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.88))
-                    Spacer()
+        NavigationStack {
+            List {
+                ForEach(custom) { tpl in
+                    TemplateRow(title: tpl.title)
+                        .onTapGesture { editingTemplate = tpl }
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .listRowSeparatorTint(Color.white.opacity(0.06))
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                }
+                ForEach(builtIn, id: \.title) { tpl in
+                    TemplateRow(title: tpl.title)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .listRowSeparatorTint(Color.white.opacity(0.06))
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+            .navigationTitle("Templates")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button { showAdd = true } label: {
                         Image(systemName: "plus")
-                            .font(.app(size: 16, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.55))
-                            .frame(width: 36, height: 36)
-                            .background(Color.white.opacity(0.07))
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 28)
-                .padding(.bottom, 8)
-
-                VStack(spacing: 0) {
-                    ForEach(custom) { tpl in
-                        TemplateRow(title: tpl.title)
-                            .onTapGesture { editingTemplate = tpl }
-                        Divider().background(Color.white.opacity(0.06)).padding(.leading, 20)
-                    }
-                    ForEach(builtIn, id: \.title) { tpl in
-                        TemplateRow(title: tpl.title)
-                        if tpl.title != builtIn.last?.title {
-                            Divider().background(Color.white.opacity(0.06)).padding(.leading, 20)
-                        }
                     }
                 }
             }
-        }
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
-        .onAppear { custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? [] }
-        .sheet(isPresented: $showAdd) {
-            TemplateEditSheet(template: nil) { newTpl in
-                custom.insert(newTpl, at: 0)
-                saveCustom()
-            }
-        }
-        .sheet(item: $editingTemplate) { tpl in
-            TemplateEditSheet(template: tpl) { updated in
-                if let idx = custom.firstIndex(where: { $0.id == tpl.id }) {
-                    custom[idx] = updated
+            .onAppear { custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? [] }
+            .sheet(isPresented: $showAdd) {
+                TemplateEditSheet(template: nil) { newTpl in
+                    custom.insert(newTpl, at: 0)
+                    saveCustom()
                 }
-                saveCustom()
-            } onDelete: {
-                custom.removeAll { $0.id == tpl.id }
-                saveCustom()
+            }
+            .sheet(item: $editingTemplate) { tpl in
+                TemplateEditSheet(template: tpl) { updated in
+                    if let idx = custom.firstIndex(where: { $0.id == tpl.id }) {
+                        custom[idx] = updated
+                    }
+                    saveCustom()
+                } onDelete: {
+                    custom.removeAll { $0.id == tpl.id }
+                    saveCustom()
+                }
             }
         }
     }

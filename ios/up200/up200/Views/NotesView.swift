@@ -530,75 +530,60 @@ struct NotesView: View {
             ZStack {
                 Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
 
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text("Notes")
-                            .font(.app(size: 28, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.88))
-                        Spacer()
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            sheet = .new
-                        } label: {
-                            Image(systemName: "square.and.pencil")
-                                .font(.app(size: 16, weight: .medium))
-                                .foregroundColor(Color.white.opacity(0.65))
-                                .frame(width: 36, height: 36)
-                                .background(Color.white.opacity(0.07))
-                                .clipShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("New note")
+                if sortedNotes.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "note.text")
+                            .font(.system(size: 36))
+                            .foregroundColor(Color.white.opacity(0.20))
+                        Text("No notes yet")
+                            .foregroundColor(Color.white.opacity(0.30))
+                        Text("Tap the pencil to write your first note")
+                            .font(.footnote)
+                            .foregroundColor(Color.white.opacity(0.20))
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 28)
-                    .padding(.bottom, 20)
-
-                    if sortedNotes.isEmpty {
-                        Spacer()
-                        VStack(spacing: 12) {
-                            Image(systemName: "note.text")
-                                .font(.app(size: 36, weight: .regular))
-                                .foregroundColor(Color.white.opacity(0.20))
-                            Text("No notes yet")
-                                .font(.app(size: 16, weight: .regular))
-                                .foregroundColor(Color.white.opacity(0.30))
-                            Text("Tap the pencil to write your first note")
-                                .font(.app(size: 13, weight: .regular))
-                                .foregroundColor(Color.white.opacity(0.20))
-                        }
-                        .frame(maxWidth: .infinity)
-                        Spacer()
-                    } else {
-                        List {
-                            ForEach(sortedNotes) { note in
-                                Button {
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    sheet = .edit(note)
+                } else {
+                    List {
+                        ForEach(sortedNotes) { note in
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                sheet = .edit(note)
+                            } label: {
+                                NoteListRow(note: note)
+                            }
+                            .buttonStyle(.plain)
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                            .listRowSeparatorTint(Color.white.opacity(0.06))
+                            .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    delete(note)
                                 } label: {
-                                    NoteListRow(note: note)
-                                }
-                                .buttonStyle(.plain)
-                                .listRowInsets(EdgeInsets())
-                                .listRowBackground(Color.clear)
-                                .listRowSeparatorTint(Color.white.opacity(0.06))
-                                .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        delete(note)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
+                                    Label("Delete", systemImage: "trash")
                                 }
                             }
                         }
-                        .listStyle(.plain)
-                        .scrollContentBackground(.hidden)
-                        .background(Color.clear)
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
                 }
             }
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationTitle("Notes")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        sheet = .new
+                    } label: {
+                        Image(systemName: "square.and.pencil")
+                    }
+                    .accessibilityLabel("New note")
+                }
+            }
         }
         .onAppear { notes = NotesStore.load() }
         .sheet(item: $sheet) { which in

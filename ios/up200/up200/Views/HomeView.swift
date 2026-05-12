@@ -2202,92 +2202,66 @@ struct HomeView: View {
     }
 
     var body: some View {
-        ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
-            RadialGradient(
-                colors: [Color(red: 0.55, green: 0.30, blue: 0.08).opacity(0.35), .clear],
-                center: .init(x: 0.05, y: 0.05),
-                startRadius: 0, endRadius: 380
-            ).ignoresSafeArea()
-            RadialGradient(
-                colors: [Color(red: 0.30, green: 0.20, blue: 0.08).opacity(0.22), .clear],
-                center: .init(x: 1.0, y: 0.85),
-                startRadius: 0, endRadius: 320
-            ).ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+                RadialGradient(
+                    colors: [Color(red: 0.55, green: 0.30, blue: 0.08).opacity(0.35), .clear],
+                    center: .init(x: 0.05, y: 0.05),
+                    startRadius: 0, endRadius: 380
+                ).ignoresSafeArea()
+                RadialGradient(
+                    colors: [Color(red: 0.30, green: 0.20, blue: 0.08).opacity(0.22), .clear],
+                    center: .init(x: 1.0, y: 0.85),
+                    startRadius: 0, endRadius: 320
+                ).ignoresSafeArea()
 
-            ScrollViewReader { proxy in
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        HStack(spacing: 8) {
-                            Text("Create")
-                                .font(.app(size: 21, weight: .semibold))
-                                .foregroundColor(.white)
-
-                            Spacer()
-
-                            // Intro pill — replays the onboarding scene.
-                            Button { showOnboarding = true } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "sun.max")
-                                        .font(.system(size: 11, weight: .medium))
-                                    Text("Intro")
-                                        .font(.app(size: 12, weight: .medium))
-                                }
-                                .foregroundColor(Color(red: 1.0, green: 0.88, blue: 0.72))
-                                .padding(.horizontal, 12)
-                                .frame(height: 32)
-                                .background(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.18))
-                                .overlay(
-                                    Capsule().stroke(
-                                        Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.45),
-                                        lineWidth: 1
-                                    )
-                                )
-                                .clipShape(Capsule())
-                                .frame(minHeight: 44)
-                                .contentShape(Rectangle())
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 0) {
+                            VStack(spacing: 12) {
+                                SourcesBlock(sources: $sources, pendingSheet: pendingSheet)
+                                FormatsBlock(selectedFormatIDs: $selectedFormatIDs)
+                                PromptField(prompt: $prompt)
+                                BrandCard(selectedBrand: $brand)
                             }
-                            .buttonStyle(.plain)
+                            .id("top")
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                            .padding(.bottom, 16)
 
-                            Button { showKeyUpdate = true } label: {
-                                Image(systemName: "key.horizontal")
-                                    .font(.app(size: 14, weight: .medium))
-                                    .foregroundColor(Color.white.opacity(0.30))
-                                    .frame(width: 36, height: 36)
-                                    .background(Color.white.opacity(0.07))
-                                    .clipShape(Circle())
+                            AnimatedLightsButton(
+                                title: generateLabel,
+                                showSparks: !isGenerating,
+                                isEnabled: canGenerate
+                            ) {
+                                startGeneration()
                             }
-                            .buttonStyle(.plain)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 40)
                         }
-                        .id("top")
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        .padding(.bottom, 16)
-
-                        VStack(spacing: 12) {
-                            SourcesBlock(sources: $sources, pendingSheet: pendingSheet)
-                            FormatsBlock(selectedFormatIDs: $selectedFormatIDs)
-                            PromptField(prompt: $prompt)
-                            BrandCard(selectedBrand: $brand)
+                    }
+                    .scrollDismissesKeyboard(.immediately)
+                    .onChange(of: scrollToTopSignal) { _, _ in
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            proxy.scrollTo("top", anchor: .top)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 16)
-
-                        AnimatedLightsButton(
-                            title: generateLabel,
-                            showSparks: !isGenerating,
-                            isEnabled: canGenerate
-                        ) {
-                            startGeneration()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 40)
                     }
                 }
-                .scrollDismissesKeyboard(.immediately)
-                .onChange(of: scrollToTopSignal) { _, _ in
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        proxy.scrollTo("top", anchor: .top)
+            }
+            .navigationTitle("Create")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { showOnboarding = true } label: {
+                        Image(systemName: "sun.max")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showKeyUpdate = true } label: {
+                        Image(systemName: "key.horizontal")
                     }
                 }
             }
