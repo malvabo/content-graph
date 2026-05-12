@@ -1299,8 +1299,19 @@ private struct SourcesBlock: View {
 private struct FormatPickerSheet: View {
     @Binding var selectedFormatIDs: Set<String>
     @Environment(\.dismiss) private var dismiss
+    @State private var draft: Set<String>
     @State private var search = ""
     @State private var showAllTemplates = false
+
+    init(selectedFormatIDs: Binding<Set<String>>) {
+        _selectedFormatIDs = selectedFormatIDs
+        _draft = State(initialValue: selectedFormatIDs.wrappedValue)
+    }
+
+    private enum SelectionState { case none, partial, all }
+
+    private let sheetBackground = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     private var filteredTemplates: [ContentTemplate] {
         guard !search.isEmpty else { return allTemplates }
@@ -1323,35 +1334,28 @@ private struct FormatPickerSheet: View {
     }
 
     private var ctaLabel: String {
-        switch selectedFormatIDs.count {
-        case 0: return "Add formats"
+        switch draft.count {
+        case 0: return "Pick at least one"
         case 1: return "Add 1 format"
-        default: return "Add \(selectedFormatIDs.count) formats"
+        default: return "Add \(draft.count) formats"
         }
     }
 
+    private var isDirty: Bool { draft != selectedFormatIDs }
+
     var body: some View {
         VStack(spacing: 0) {
-            // Header: Cancel · Choose formats · count (matches reference)
             HStack {
                 Button("Cancel") { dismiss() }
                     .font(.app(size: 16))
-                    .foregroundColor(Color.white.opacity(0.55))
+                    .foregroundColor(Color.white.opacity(0.65))
                     .frame(minWidth: 64, alignment: .leading)
-
                 Spacer(minLength: 8)
-
                 Text("Choose formats")
                     .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(.white)
-
                 Spacer(minLength: 8)
-
-                Text(selectedFormatIDs.isEmpty ? "" : "\(selectedFormatIDs.count)")
-                    .font(.app(size: 14))
-                    .foregroundColor(Color.white.opacity(0.45))
-                    .frame(minWidth: 64, alignment: .trailing)
-                    .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
+                Color.clear.frame(width: 64, height: 1)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -1365,6 +1369,7 @@ private struct FormatPickerSheet: View {
                     .font(.app(size: 15))
                     .foregroundColor(.white)
                     .autocorrectionDisabled()
+                    .submitLabel(.search)
                 if !search.isEmpty {
                     Button { search = "" } label: {
                         Image(systemName: "xmark.circle.fill")
@@ -1386,156 +1391,212 @@ private struct FormatPickerSheet: View {
             .padding(.bottom, 10)
 
             if filteredTemplates.isEmpty && filteredFormats.isEmpty {
-                Spacer()
-                Text("No matches.")
-                    .font(.app(size: 15))
-                    .foregroundColor(Color.white.opacity(0.30))
-                Spacer()
+                ContentUnavailableView.search(text: search)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(showsIndicators: false) {
                     LazyVStack(spacing: 10) {
                         if !filteredTemplates.isEmpty {
                             sectionHeader("Quick picks")
-
                             ForEach(displayedTemplates) { template in
                                 templateBlock(template)
                             }
-
-                            if search.isEmpty && !showAllTemplates && allTemplates.count > 5 {
-                                Button {
-                                    withAnimation(.easeOut(duration: 0.2)) { showAllTemplates = true }
-                                } label: {
-                                    HStack(spacing: 6) {
-                                        Text("See all templates")
-                                            .font(.app(size: 14))
-                                            .foregroundColor(Color.white.opacity(0.55))
-                                        Image(systemName: "chevron.down")
-                                            .font(.app(size: 11, weight: .medium))
-                                            .foregroundColor(Color.white.opacity(0.30))
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                }
-                                .buttonStyle(.plain)
+                            if search.isEmpty && allTemplates.count > 5 {
+                                seeAllToggle
                             }
                         }
-
                         if !filteredFormats.isEmpty {
                             sectionHeader("All formats")
-
                             ForEach(filteredFormats) { format in
                                 formatBlock(format)
                             }
                         }
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
+                    .padding(.bottom, 12)
                 }
             }
-
-            VStack(spacing: 0) {
-                AnimatedLightsButton(
-                    title: ctaLabel,
-                    isEnabled: !selectedFormatIDs.isEmpty
-                ) { dismiss() }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 24)
-                .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
-            }
         }
+        .interactiveDismissDisabled(isDirty)
+        // Sticky CTA in the safe area with a soft scroll-edge fade so list
+        // content fades into the sheet background instead of crashing into
+        // the button.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            primaryCTA
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+                .background(alignment: .top) {
+                    LinearGradient(
+                        colors: [sheetBackground.opacity(0), sheetBackground],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 24)
+                    .offset(y: -24)
+                    .allowsHitTesting(false)
+                }
+                .background(sheetBackground)
+        }
+    }
+
+    private var primaryCTA: some View {
+        Button(action: commit) {
+            Text(ctaLabel)
+                .font(.app(size: 17, weight: .semibold))
+                .foregroundColor(draft.isEmpty ? Color.white.opacity(0.40) : .white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(draft.isEmpty ? Color.white.opacity(0.07) : amber)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(draft.isEmpty)
+        .animation(.easeOut(duration: 0.2), value: draft.count)
+    }
+
+    private var seeAllToggle: some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.25)) { showAllTemplates.toggle() }
+        } label: {
+            HStack(spacing: 6) {
+                Text(showAllTemplates ? "Show less" : "See all templates")
+                    .font(.app(size: 14, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.65))
+                Image(systemName: showAllTemplates ? "chevron.up" : "chevron.down")
+                    .font(.app(size: 11, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.40))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func commit() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        selectedFormatIDs = draft
+        dismiss()
+    }
+
+    private func templateState(_ template: ContentTemplate) -> SelectionState {
+        let hit = Set(template.formatIDs).intersection(draft)
+        if hit.isEmpty { return .none }
+        if hit.count == template.formatIDs.count { return .all }
+        return .partial
     }
 
     @ViewBuilder
     private func sectionHeader(_ title: String) -> some View {
-        Text(title.uppercased())
-            .font(.app(size: 11, weight: .semibold))
-            .foregroundColor(Color.white.opacity(0.28))
-            .tracking(0.6)
+        Text(title)
+            .font(.app(size: 13, weight: .medium))
+            .foregroundColor(Color.white.opacity(0.55))
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 8)
+            .padding(.top, 6)
             .padding(.bottom, 2)
     }
 
     @ViewBuilder
-    private func selectionIndicator(_ selected: Bool) -> some View {
+    private func selectionIndicator(_ state: SelectionState) -> some View {
         ZStack {
-            if selected {
+            switch state {
+            case .all:
                 Circle().fill(.white)
                 Image(systemName: "checkmark")
                     .font(.app(size: 11, weight: .bold))
-                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-            } else {
+                    .foregroundColor(sheetBackground)
+            case .partial:
+                Circle().fill(Color.white.opacity(0.45))
+                Image(systemName: "minus")
+                    .font(.app(size: 11, weight: .bold))
+                    .foregroundColor(sheetBackground)
+            case .none:
                 Circle().stroke(Color.white.opacity(0.22), lineWidth: 1.5)
             }
         }
         .frame(width: 24, height: 24)
+        .accessibilityHidden(true)
     }
 
     @ViewBuilder
     private func templateBlock(_ template: ContentTemplate) -> some View {
-        let isActive = Set(template.formatIDs).isSubset(of: selectedFormatIDs)
+        let state = templateState(template)
+        let fillOpacity: Double = {
+            switch state {
+            case .all: return 0.10
+            case .partial: return 0.07
+            case .none: return 0.04
+            }
+        }()
+        let strokeOpacity: Double = {
+            switch state {
+            case .all: return 0.30
+            case .partial: return 0.18
+            case .none: return 0.06
+            }
+        }()
         Button {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            withAnimation(.easeOut(duration: 0.15)) {
-                if isActive {
-                    selectedFormatIDs.subtract(template.formatIDs)
+            withAnimation(.easeInOut(duration: 0.22)) {
+                if state == .all {
+                    draft.subtract(template.formatIDs)
                 } else {
-                    selectedFormatIDs.formUnion(template.formatIDs)
+                    draft.formUnion(template.formatIDs)
                 }
             }
         } label: {
             HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(template.name)
                         .font(.app(size: 15, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.92))
+                        .foregroundColor(.white)
                     Text(template.description)
                         .font(.app(size: 13))
-                        .foregroundColor(Color.white.opacity(0.45))
+                        .foregroundColor(Color.white.opacity(0.50))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                 }
                 Spacer(minLength: 8)
-                selectionIndicator(isActive)
+                selectionIndicator(state)
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.white.opacity(isActive ? 0.10 : 0.04))
+                    .fill(Color.white.opacity(fillOpacity))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(isActive ? 0.30 : 0.06), lineWidth: 0.5)
+                    .stroke(Color.white.opacity(strokeOpacity), lineWidth: 0.5)
             )
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(state == .all ? .isSelected : [])
+        .accessibilityHint("Template with \(template.formatIDs.count) formats")
     }
 
     @ViewBuilder
     private func formatBlock(_ format: ContentFormat) -> some View {
-        let selected = selectedFormatIDs.contains(format.id)
+        let selected = draft.contains(format.id)
         Button {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            withAnimation(.easeOut(duration: 0.12)) {
-                if selected { selectedFormatIDs.remove(format.id) }
-                else { selectedFormatIDs.insert(format.id) }
+            withAnimation(.easeInOut(duration: 0.22)) {
+                if selected { draft.remove(format.id) }
+                else { draft.insert(format.id) }
             }
         } label: {
             HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(format.label)
                         .font(.app(size: 15, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.92))
+                        .foregroundColor(.white)
                     Text(format.description)
                         .font(.app(size: 13))
-                        .foregroundColor(Color.white.opacity(0.45))
+                        .foregroundColor(Color.white.opacity(0.50))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                 }
                 Spacer(minLength: 8)
-                selectionIndicator(selected)
+                selectionIndicator(selected ? .all : .none)
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1549,6 +1610,8 @@ private struct FormatPickerSheet: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
@@ -1658,7 +1721,7 @@ private struct FormatsBlock: View {
         }
         .sheet(isPresented: $showPicker) {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
-                .presentationDetents([.large])
+                .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(22)
                 .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
