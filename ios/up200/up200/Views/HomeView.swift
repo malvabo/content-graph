@@ -2098,10 +2098,12 @@ private struct PromptField: View {
                     // the page-level ScrollView. TextEditor inside a height cap
                     // fights the parent for scroll gestures.
                     TextField(
-                        "Leave empty to generate from sources and format.",
                         text: $prompt,
                         axis: .vertical
-                    )
+                    ) {
+                        Text("Leave empty to generate from sources and format.")
+                            .foregroundStyle(Color.white.opacity(0.22))
+                    }
                     .font(.app(size: 15))
                     .foregroundColor(Color.white.opacity(0.85))
                     .tint(.white)
