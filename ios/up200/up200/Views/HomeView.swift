@@ -2077,9 +2077,9 @@ private struct PromptField: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 10) {
                     SectionDisclosure(expanded: $expanded)
-                    Text("Add details (optional)")
-                        .font(.app(size: 13, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.40))
+                    Text("Details")
+                        .font(.app(size: 15, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.85))
                     if !expanded && !prompt.isEmpty {
                         Text(prompt)
                             .font(.app(size: 13))
@@ -2090,7 +2090,7 @@ private struct PromptField: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.vertical, 14)
 
                 if expanded {
                     // Multi-line TextField with axis:.vertical grows with content
