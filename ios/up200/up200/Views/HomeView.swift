@@ -2172,8 +2172,6 @@ struct HomeView: View {
     var scrollToTopSignal: Int = 0
     var pendingSheet: Binding<SourceSheet?> = .constant(nil)
 
-    @Environment(\.dismiss) private var dismiss
-
     @State private var sources: [SourceItem] = []
     @State private var selectedFormatIDs: Set<String> = []
     @State private var prompt = ""
@@ -2218,63 +2216,46 @@ struct HomeView: View {
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        ZStack {
+                        HStack(spacing: 8) {
                             Text("Create")
                                 .font(.app(size: 26, weight: .semibold))
                                 .foregroundColor(.white)
 
-                            HStack(spacing: 8) {
-                                Button {
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    dismiss()
-                                } label: {
-                                    Image(systemName: "chevron.down")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 36, height: 36)
-                                        .background(Color.white.opacity(0.08))
-                                        .clipShape(Circle())
-                                        .frame(minWidth: 44, minHeight: 44)
-                                        .contentShape(Rectangle())
+                            Spacer()
+
+                            // Intro pill — replays the onboarding scene.
+                            Button { showOnboarding = true } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "sun.max")
+                                        .font(.system(size: 11, weight: .medium))
+                                    Text("Intro")
+                                        .font(.app(size: 12, weight: .medium))
                                 }
-                                .buttonStyle(.plain)
-
-                                Spacer()
-
-                                // Intro pill — replays the onboarding scene.
-                                Button { showOnboarding = true } label: {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "sun.max")
-                                            .font(.system(size: 11, weight: .medium))
-                                        Text("Intro")
-                                            .font(.app(size: 12, weight: .medium))
-                                    }
-                                    .foregroundColor(Color(red: 1.0, green: 0.88, blue: 0.72))
-                                    .padding(.horizontal, 12)
-                                    .frame(height: 32)
-                                    .background(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.18))
-                                    .overlay(
-                                        Capsule().stroke(
-                                            Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.45),
-                                            lineWidth: 1
-                                        )
+                                .foregroundColor(Color(red: 1.0, green: 0.88, blue: 0.72))
+                                .padding(.horizontal, 12)
+                                .frame(height: 32)
+                                .background(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.18))
+                                .overlay(
+                                    Capsule().stroke(
+                                        Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.45),
+                                        lineWidth: 1
                                     )
-                                    .clipShape(Capsule())
-                                    .frame(minHeight: 44)
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-
-                                Button { showKeyUpdate = true } label: {
-                                    Image(systemName: "key.horizontal")
-                                        .font(.app(size: 14, weight: .medium))
-                                        .foregroundColor(Color.white.opacity(0.30))
-                                        .frame(width: 36, height: 36)
-                                        .background(Color.white.opacity(0.07))
-                                        .clipShape(Circle())
-                                }
-                                .buttonStyle(.plain)
+                                )
+                                .clipShape(Capsule())
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
                             }
+                            .buttonStyle(.plain)
+
+                            Button { showKeyUpdate = true } label: {
+                                Image(systemName: "key.horizontal")
+                                    .font(.app(size: 14, weight: .medium))
+                                    .foregroundColor(Color.white.opacity(0.30))
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.white.opacity(0.07))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
                         }
                         .id("top")
                         .padding(.horizontal, 16)
