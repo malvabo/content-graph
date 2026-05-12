@@ -117,8 +117,16 @@ class OnboardingSceneViewController: UIViewController {
     /// emitted via SCNParticleSystem live in world space and don't follow a
     /// parent rotation, which is why the previous implementation looked static.
     private func setupDotCloud() {
-        let cloudGroup = SCNNode()
-        cloudGroup.position = SCNVector3(0, 0, 0)
+        // Two nested nodes so the Y spin and X tilt live on different
+        // transforms. Both rotateBy actions write to a node's rotation
+        // property every frame, so attaching both to the same node makes
+        // them fight (last writer per frame wins) and the cluster reads
+        // as static. Splitting them — outer = Y spin, inner = X tilt —
+        // composes the rotations correctly via the parent/child matrix.
+        let spinNode = SCNNode()           // Y rotation
+        let tiltNode = SCNNode()           // X rotation
+        spinNode.addChildNode(tiltNode)
+        spinNode.position = SCNVector3(0, 0, 0)
 
         let sprite = makeParticleSprite()
 
@@ -156,22 +164,21 @@ class OnboardingSceneViewController: UIViewController {
             dot.position = SCNVector3(nx * 9, ny * 6, nz * 5)
             dot.opacity  = alpha
             dot.constraints = [SCNBillboardConstraint()]
-            cloudGroup.addChildNode(dot)
+            tiltNode.addChildNode(dot)
             placed += 1
         }
 
-        scene.rootNode.addChildNode(cloudGroup)
+        scene.rootNode.addChildNode(spinNode)
 
-        // Perceptible self-rotation: Y full revolution every 22s, with a
-        // slower X tilt for parallax richness.
-        let spinY = SCNAction.repeatForever(
+        // Perceptible self-rotation: Y full revolution every 22s on the
+        // outer node, X tilt every 38s on the inner node. Two separate
+        // nodes so the actions don't compete for the same rotation slot.
+        spinNode.runAction(SCNAction.repeatForever(
             SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 22)
-        )
-        let tiltX = SCNAction.repeatForever(
+        ))
+        tiltNode.runAction(SCNAction.repeatForever(
             SCNAction.rotateBy(x: CGFloat.pi * 2, y: 0, z: 0, duration: 38)
-        )
-        cloudGroup.runAction(spinY)
-        cloudGroup.runAction(tiltX)
+        ))
     }
 
     /// Deeper, sparser atmospheric particle layer behind the dot cloud. Stays
