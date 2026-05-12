@@ -1978,14 +1978,15 @@ private struct FormatsBlock: View {
                             Image(systemName: "chevron.right")
                                 .font(.app(size: 12, weight: .semibold))
                                 .foregroundColor(Color.white.opacity(0.20))
+                        }
+                        .contentShape(Rectangle())
+                        .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 12)
-                    .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
 
                 // Chip row adapts to state: selected formats with X-to-remove
                 // once any are picked, popular-template shortcuts otherwise.
