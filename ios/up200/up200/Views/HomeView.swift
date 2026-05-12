@@ -623,7 +623,6 @@ struct ImportSheetView: View {
         ("arrow.up.doc", "Upload a file", .file),
         ("pencil",       "Write text",    .text),
         ("waveform",     "Voice note",    .voice),
-        ("photo",        "Image",         .image),
     ]
 
     var body: some View {
@@ -652,7 +651,7 @@ struct ImportSheetView: View {
             }
             .buttonStyle(.plain)
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 ForEach(gridItems, id: \.type) { item in
                     Button {
                         onSelect(item.type)
