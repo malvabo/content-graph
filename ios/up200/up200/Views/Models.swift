@@ -46,6 +46,38 @@ struct VoiceNote: Identifiable, Codable {
     var date: Date
 }
 
+struct Note: Identifiable, Codable, Equatable {
+    var id = UUID()
+    var title: String = ""
+    var body: String = ""
+    var createdAt: Date = Date()
+    var updatedAt: Date = Date()
+
+    var isEmpty: Bool {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var displayTitle: String {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed }
+        let firstLine = body.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
+        let cleaned = firstLine.trimmingCharacters(in: .whitespacesAndNewlines)
+        return cleaned.isEmpty ? "New Note" : cleaned
+    }
+
+    var preview: String {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lines = body.split(whereSeparator: \.isNewline).map(String.init)
+        if !trimmedTitle.isEmpty {
+            return lines.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        }
+        guard lines.count > 1 else { return "" }
+        return lines.dropFirst().first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+}
+
 struct GenerationProject: Identifiable, Codable {
     var id = UUID()
     var title: String

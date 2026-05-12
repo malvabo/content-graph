@@ -3,12 +3,13 @@ import SwiftUI
 // MARK: - App Tab
 
 enum AppTab: String, CaseIterable {
-    case home, chat, library, templates
+    case home, chat, notes, library, templates
 
     var label: String {
         switch self {
         case .home:      return "Home"
         case .chat:      return "Chat"
+        case .notes:     return "Notes"
         case .library:   return "Library"
         case .templates: return "Templates"
         }
@@ -18,6 +19,7 @@ enum AppTab: String, CaseIterable {
         switch self {
         case .home:      return "house"
         case .chat:      return "message"
+        case .notes:     return "note.text"
         case .library:   return "tray.2"
         case .templates: return "rectangle.stack"
         }
@@ -615,6 +617,9 @@ struct ContentView: View {
                     }
                     Tab(AppTab.chat.label, systemImage: AppTab.chat.icon, value: AppTab.chat) {
                         Color.clear
+                    }
+                    Tab(AppTab.notes.label, systemImage: AppTab.notes.icon, value: AppTab.notes) {
+                        NotesView()
                     }
                     Tab(AppTab.library.label, systemImage: AppTab.library.icon, value: AppTab.library) {
                         LibraryView()
