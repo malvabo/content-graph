@@ -1791,6 +1791,7 @@ struct HomeView: View {
     @State private var generationFailReason = ""
     @State private var generationTask: Task<Void, Never>? = nil
     @State private var showKeyUpdate = false
+    @State private var showOnboarding = false
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
@@ -1820,11 +1821,33 @@ struct HomeView: View {
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        HStack {
+                        HStack(spacing: 8) {
                             Text("Create")
                                 .font(.app(size: 28, weight: .bold))
                                 .foregroundColor(.white)
                             Spacer()
+                            // Intro pill — replays the onboarding scene.
+                            // Mirrors the amber pill on mobile web's CreateHome.
+                            Button { showOnboarding = true } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "sun.max")
+                                        .font(.system(size: 11, weight: .medium))
+                                    Text("Intro")
+                                        .font(.app(size: 12, weight: .medium))
+                                }
+                                .foregroundColor(Color(red: 1.0, green: 0.88, blue: 0.72))
+                                .padding(.horizontal, 12)
+                                .frame(height: 32)
+                                .background(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.18))
+                                .overlay(
+                                    Capsule().stroke(
+                                        Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.45),
+                                        lineWidth: 1
+                                    )
+                                )
+                                .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
                             Button { showKeyUpdate = true } label: {
                                 Image(systemName: "key.horizontal")
                                     .font(.app(size: 14, weight: .medium))
@@ -1905,6 +1928,10 @@ struct HomeView: View {
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        }
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingView { showOnboarding = false }
+                .preferredColorScheme(.dark)
         }
     }
 
