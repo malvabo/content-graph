@@ -394,6 +394,19 @@ struct ContentView: View {
     @State private var showImport = false
     @State private var pendingSourceType: SourceType? = nil
 
+    // Re-tapping the current Home tab scrolls HomeView to the top.
+    private var tabSelection: Binding<AppTab> {
+        Binding(
+            get: { selectedTab },
+            set: { newValue in
+                if newValue == selectedTab, newValue == .home {
+                    homeScrollToTop &+= 1
+                }
+                selectedTab = newValue
+            }
+        )
+    }
+
     var body: some View {
         ZStack {
             Color(red: 0.10, green: 0.08, blue: 0.07)
@@ -403,28 +416,24 @@ struct ContentView: View {
                 LaunchView()
                     .transition(.opacity)
             } else {
-                ZStack {
-                    switch selectedTab {
-                    case .home:
+                TabView(selection: tabSelection) {
+                    Tab(AppTab.home.label, systemImage: AppTab.home.icon, value: AppTab.home) {
                         HomeView(scrollToTopSignal: homeScrollToTop, pendingSourceType: $pendingSourceType)
-                    case .library:
+                            .overlay(alignment: .bottomTrailing) { addFAB }
+                    }
+                    Tab(AppTab.library.label, systemImage: AppTab.library.icon, value: AppTab.library) {
                         LibraryView()
-                    case .templates:
+                            .overlay(alignment: .bottomTrailing) { addFAB }
+                    }
+                    Tab(AppTab.templates.label, systemImage: AppTab.templates.icon, value: AppTab.templates) {
                         TemplatesView()
+                            .overlay(alignment: .bottomTrailing) { addFAB }
                     }
                 }
-                .safeAreaInset(edge: .bottom) {
-                    NativeTabBar(
-                        selected: $selectedTab,
-                        onSameTabTap: { tab in
-                            if tab == .home { homeScrollToTop += 1 }
-                        },
-                        onAdd: {
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            showImport = true
-                        }
-                    )
-                }
+                .tint(.white)
+                .toolbarBackground(Color(red: 0.10, green: 0.08, blue: 0.07), for: .tabBar)
+                .toolbarBackground(.visible, for: .tabBar)
+                .toolbarColorScheme(.dark, for: .tabBar)
             }
         }
         .sheet(isPresented: $showImport) {
@@ -445,72 +454,37 @@ struct ContentView: View {
             }
         }
     }
+
+    private var addFAB: some View {
+        AddFAB {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            showImport = true
+        }
+        .padding(.trailing, 16)
+        .padding(.bottom, 24)
+    }
 }
 
-// MARK: - Native Tab Bar
+// MARK: - Add FAB
 
-struct NativeTabBar: View {
-    @Binding var selected: AppTab
-    var onSameTabTap: ((AppTab) -> Void)?
-    var onAdd: () -> Void
+struct AddFAB: View {
+    var action: () -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: 0) {
-            ForEach(AppTab.allCases, id: \.self) { tab in
-                tabItem(tab)
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.09))
+                    .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 0.5))
+                    .frame(width: 56, height: 56)
+                    .shadow(color: .black.opacity(0.25), radius: 12, y: 4)
+                Image(systemName: "plus")
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundColor(.white)
             }
-
-            Button(action: onAdd) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.09))
-                        .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 0.5))
-                        .frame(width: 38, height: 38)
-                    Image(systemName: "plus")
-                        .font(.app(size: 16, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.80))
-                }
-            }
-            .buttonStyle(.plain)
-            .padding(.trailing, 20)
-            .padding(.leading, 4)
-        }
-        .padding(.top, 8)
-        .padding(.bottom, 2)
-        .background {
-            ZStack(alignment: .top) {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .overlay(Color(red: 0.10, green: 0.08, blue: 0.07).opacity(0.78))
-                    .ignoresSafeArea(edges: .bottom)
-                Rectangle()
-                    .fill(Color.white.opacity(0.10))
-                    .frame(height: 0.5)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func tabItem(_ tab: AppTab) -> some View {
-        Button {
-            if tab == selected {
-                onSameTabTap?(tab)
-            } else {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                selected = tab
-            }
-        } label: {
-            VStack(spacing: 4) {
-                Image(systemName: tab.icon)
-                    .font(.app(size: 18, weight: selected == tab ? .medium : .regular))
-                Text(tab.label)
-                    .font(.app(size: 12, weight: .medium))
-            }
-            .foregroundColor(selected == tab ? .white : Color.white.opacity(0.38))
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Add source")
     }
 }
 
