@@ -252,63 +252,85 @@ private struct ContentGenerator {
     }
 }
 
-// MARK: - Generating Sheet
+// MARK: - Generation Banner
 
-private struct GeneratingSheet: View {
+// Top-anchored generation status banner. Floats below the safe-area
+// edge (under the dynamic island) so the rest of the Create form stays
+// usable while generation runs.
+private struct GenerationBanner: View {
     let formatLabels: [String]
-    var onCancel: () -> Void
+    let isReady: Bool
+    var onTap: () -> Void
+    var onDismiss: () -> Void
 
     @State private var pulse = false
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     var body: some View {
-        ZStack {
-            RadialGradient(
-                colors: [amber.opacity(0.15), .clear],
-                center: .center, startRadius: 0, endRadius: 340
-            ).ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                HStack {
-                    Button("Cancel", action: onCancel)
-                        .font(.app(size: 16, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.45))
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-
-                Spacer()
-
-                VStack(spacing: 28) {
-                    ZStack {
-                        Circle()
-                            .fill(amber.opacity(0.10))
-                            .frame(width: 130, height: 130)
-                            .scaleEffect(pulse ? 1.28 : 1.0)
-                            .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: pulse)
-                        Circle()
-                            .fill(amber.opacity(0.18))
-                            .frame(width: 88, height: 88)
-                        Image(systemName: "sparkles")
-                            .font(.app(size: 32, weight: .regular))
-                            .foregroundColor(amber)
-                    }
-                    .onAppear { pulse = true }
-
-                    VStack(spacing: 10) {
-                        Text("Creating your content")
-                            .font(.app(size: 19, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.88))
-                        Text(formatLabels.joined(separator: " · "))
-                            .font(.app(size: 13))
-                            .foregroundColor(Color.white.opacity(0.38))
-                    }
-                }
-
-                Spacer()
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(amber.opacity(isReady ? 0.85 : 0.18))
+                    .frame(width: 38, height: 38)
+                    .scaleEffect(isReady ? 1 : (pulse ? 1.10 : 0.94))
+                    .animation(
+                        isReady ? nil :
+                            .easeInOut(duration: 1.2).repeatForever(autoreverses: true),
+                        value: pulse
+                    )
+                Image(systemName: isReady ? "play.fill" : "sparkles")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(isReady ? .white : amber)
             }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(isReady ? "Content ready, tap to view" : "Creating your content")
+                    .font(.app(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                Text(formatLabels.joined(separator: " · "))
+                    .font(.app(size: 12))
+                    .foregroundColor(Color.white.opacity(0.55))
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.60))
+                    .frame(width: 26, height: 26)
+                    .background(Color.white.opacity(0.10))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(red: 0.30, green: 0.16, blue: 0.09),
+                    Color(red: 0.18, green: 0.10, blue: 0.06),
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .strokeBorder(amber.opacity(0.30), lineWidth: 0.5)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .shadow(color: Color.black.opacity(0.45), radius: 14, x: 0, y: 6)
+        // Whole banner is tappable when ready; ignored otherwise so taps
+        // pass through to the X button hit area only.
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if isReady { onTap() }
+        }
+        .onAppear { pulse = true }
     }
 }
 
@@ -1817,9 +1839,8 @@ private struct BrandCard: View {
 
 // MARK: - Home View
 
-private enum GenerationSheet: String, Identifiable {
-    case generating, results
-    var id: String { rawValue }
+private enum GenerationBannerState {
+    case hidden, generating, ready
 }
 
 struct HomeView: View {
@@ -1832,7 +1853,9 @@ struct HomeView: View {
     @State private var brand = "Default"
 
     @State private var isGenerating = false
-    @State private var activeSheet: GenerationSheet? = nil
+    @State private var bannerState: GenerationBannerState = .hidden
+    @State private var bannerFormatLabels: [String] = []
+    @State private var showResults = false
     @State private var generationResults: [GeneratedResult] = []
     @State private var generationFailed = false
     @State private var generationFailReason = ""
@@ -1942,28 +1965,39 @@ struct HomeView: View {
                 }
             }
         }
-        .sheet(item: $activeSheet) { sheet in
-            Group {
-                switch sheet {
-                case .generating:
-                    GeneratingSheet(
-                        formatLabels: selectedFormatIDs.compactMap { id in allFormats.first { $0.id == id }?.label }
-                    ) {
-                        generationTask?.cancel()
-                        generationTask = nil
-                        activeSheet = nil
-                        isGenerating = false
-                    }
-                    .interactiveDismissDisabled()
-                case .results:
-                    GenerationResultSheet(results: generationResults)
-                }
-            }
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
-            .presentationCornerRadius(22)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        .sheet(isPresented: $showResults) {
+            GenerationResultSheet(results: generationResults)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(22)
+                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
+        .overlay(alignment: .top) {
+            if bannerState != .hidden {
+                GenerationBanner(
+                    formatLabels: bannerFormatLabels,
+                    isReady: bannerState == .ready,
+                    onTap: {
+                        guard bannerState == .ready else { return }
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        bannerState = .hidden
+                        showResults = true
+                    },
+                    onDismiss: {
+                        if bannerState == .generating {
+                            generationTask?.cancel()
+                            generationTask = nil
+                            isGenerating = false
+                        }
+                        bannerState = .hidden
+                    }
+                )
+                .padding(.horizontal, 8)
+                .padding(.top, 6)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerState)
         .alert("Generation failed", isPresented: $generationFailed) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -2004,7 +2038,8 @@ struct HomeView: View {
 
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         isGenerating = true
-        activeSheet = .generating
+        bannerFormatLabels = selectedFormatIDs.compactMap { id in allFormats.first { $0.id == id }?.label }
+        bannerState = .generating
 
         let capturedSources = effectiveSources
         let capturedIDs = Array(selectedFormatIDs)
@@ -2030,13 +2065,15 @@ struct HomeView: View {
                 isGenerating = false
                 generationTask = nil
                 if results.isEmpty {
-                    activeSheet = nil
+                    bannerState = .hidden
                     generationFailed = true
                 } else {
                     generationResults = results
                     saveToLibrary(results, sources: capturedSources)
-                    // Direct swap on the same .sheet(item:) — no dismiss-and-redelay.
-                    activeSheet = .results
+                    // Banner shifts from "Creating…" to "ready, tap to view".
+                    // Results no longer auto-present so the rest of the app
+                    // stays usable underneath the generating indicator.
+                    bannerState = .ready
                 }
             }
         }
