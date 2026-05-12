@@ -10,6 +10,7 @@ enum AppTab: String {
 
 struct LibraryView: View {
     @AppStorage("library_projects") private var projectsData: Data = Data()
+    @State private var searchText = ""
 
     private var projects: [GenerationProject] {
         (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
@@ -23,25 +24,33 @@ struct LibraryView: View {
             .sorted { ($0.items.first?.date ?? .distantPast) > ($1.items.first?.date ?? .distantPast) }
     }
 
+    private var filteredGroups: [(title: String, items: [GenerationProject])] {
+        guard !searchText.isEmpty else { return groups }
+        let q = searchText.lowercased()
+        return groups.filter { $0.title.lowercased().contains(q) }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
 
-                if groups.isEmpty {
+                if filteredGroups.isEmpty {
                     VStack(spacing: 12) {
-                        Image(systemName: "tray")
+                        Image(systemName: searchText.isEmpty ? "tray" : "magnifyingglass")
                             .font(.system(size: 36))
                             .foregroundColor(Color.white.opacity(0.20))
-                        Text("No generations yet")
+                        Text(searchText.isEmpty ? "No generations yet" : "No results")
                             .foregroundColor(Color.white.opacity(0.30))
-                        Text("Your content outputs will appear here")
-                            .font(.footnote)
-                            .foregroundColor(Color.white.opacity(0.20))
+                        if searchText.isEmpty {
+                            Text("Your content outputs will appear here")
+                                .font(.footnote)
+                                .foregroundColor(Color.white.opacity(0.20))
+                        }
                     }
                 } else {
                     List {
-                        ForEach(Array(groups.enumerated()), id: \.element.title) { idx, group in
+                        ForEach(Array(filteredGroups.enumerated()), id: \.element.title) { idx, group in
                             NavigationLink {
                                 ProjectGroupView(title: group.title, items: group.items)
                             } label: {
@@ -61,6 +70,7 @@ struct LibraryView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search library")
         }
     }
 }

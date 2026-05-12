@@ -515,9 +515,18 @@ private enum NoteSheet: Identifiable {
 struct NotesView: View {
     @State private var notes: [Note] = []
     @State private var sheet: NoteSheet? = nil
+    @State private var searchText = ""
 
     private var sortedNotes: [Note] {
         notes.sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    private var filteredNotes: [Note] {
+        guard !searchText.isEmpty else { return sortedNotes }
+        let q = searchText.lowercased()
+        return sortedNotes.filter {
+            $0.displayTitle.lowercased().contains(q) || $0.body.lowercased().contains(q)
+        }
     }
 
     private func delete(_ note: Note) {
@@ -530,20 +539,22 @@ struct NotesView: View {
             ZStack {
                 Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
 
-                if sortedNotes.isEmpty {
+                if filteredNotes.isEmpty {
                     VStack(spacing: 12) {
-                        Image(systemName: "note.text")
+                        Image(systemName: searchText.isEmpty ? "note.text" : "magnifyingglass")
                             .font(.system(size: 36))
                             .foregroundColor(Color.white.opacity(0.20))
-                        Text("No notes yet")
+                        Text(searchText.isEmpty ? "No notes yet" : "No results")
                             .foregroundColor(Color.white.opacity(0.30))
-                        Text("Tap the pencil to write your first note")
-                            .font(.footnote)
-                            .foregroundColor(Color.white.opacity(0.20))
+                        if searchText.isEmpty {
+                            Text("Tap the pencil to write your first note")
+                                .font(.footnote)
+                                .foregroundColor(Color.white.opacity(0.20))
+                        }
                     }
                 } else {
                     List {
-                        ForEach(sortedNotes) { note in
+                        ForEach(filteredNotes) { note in
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 sheet = .edit(note)
@@ -573,6 +584,7 @@ struct NotesView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search notes")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
