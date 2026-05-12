@@ -390,6 +390,7 @@ private struct NoteVoiceSheet: View {
                         return n
                     }(),
                     isNew: true,
+                    autoStartDictation: true,
                     onSave: onSave,
                     onDelete: nil
                 )
@@ -507,6 +508,7 @@ private struct NoteVoiceSheet: View {
 private struct NoteComposerSheet: View {
     let original: Note
     let isNew: Bool
+    let autoStartDictation: Bool
     let onSave: (Note) -> Void
     let onDelete: (() -> Void)?
 
@@ -517,10 +519,11 @@ private struct NoteComposerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @FocusState private var bodyFocused: Bool
 
-    init(note: Note, isNew: Bool, onSave: @escaping (Note) -> Void, onDelete: (() -> Void)?) {
+    init(note: Note, isNew: Bool, autoStartDictation: Bool = false, onSave: @escaping (Note) -> Void, onDelete: (() -> Void)?) {
         let migrated = Note.migrated(note)
         self.original = migrated
         self.isNew = isNew
+        self.autoStartDictation = autoStartDictation
         self.onSave = onSave
         self.onDelete = onDelete
         self._draft = State(initialValue: migrated)
@@ -668,6 +671,10 @@ private struct NoteComposerSheet: View {
         }
         .task {
             if isNew { bodyFocused = true }
+            if autoStartDictation {
+                bodyBeforeDictation = draft.body
+                dictation.start()
+            }
         }
         .onDisappear { dictation.stop() }
         .interactiveDismissDisabled(isDirty)
