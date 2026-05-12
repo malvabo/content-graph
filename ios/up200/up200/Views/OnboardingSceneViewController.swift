@@ -13,7 +13,7 @@ class OnboardingSceneViewController: UIViewController {
     // setup so the pill stays at a constant footprint while text streams in.
     private var labelAnchors: [(node: SCNNode, label: PaddedLabel, fullText: String, fullSize: CGSize)] = []
     private var labelStartTime: CFTimeInterval = 0
-    private let labelTypeDuration:  CFTimeInterval = 1.1
+    private let labelTypeDuration:  CFTimeInterval = 0.88
     private let labelHoldDuration:  CFTimeInterval = 1.6
     private let labelFadeDuration:  CFTimeInterval = 0.7
     private var displayLink: CADisplayLink?
