@@ -1154,6 +1154,32 @@ private struct GlassCard<Content: View>: View {
     }
 }
 
+// MARK: - Section Disclosure
+
+// Tiny chevron button used at the start of collapsible section headers
+// (Sources / Format / Prompt). Pointing right when collapsed, rotated 90°
+// when expanded. The rotation animates via the spring on the toggle.
+private struct SectionDisclosure: View {
+    @Binding var expanded: Bool
+
+    var body: some View {
+        Button {
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                expanded.toggle()
+            }
+        } label: {
+            Image(systemName: "chevron.right")
+                .font(.app(size: 11, weight: .semibold))
+                .foregroundColor(Color.white.opacity(0.55))
+                .rotationEffect(.degrees(expanded ? 90 : 0))
+                .frame(width: 16, height: 32)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(expanded ? "Collapse section" : "Expand section")
+    }
+}
+
 // MARK: - Sources Block
 
 private struct SourcesBlock: View {
@@ -1164,14 +1190,21 @@ private struct SourcesBlock: View {
     @State private var showFilePicker = false
     @State private var showPhotoPicker = false
     @State private var photoPickerItem: PhotosPickerItem? = nil
+    @State private var expanded: Bool = true
 
     var body: some View {
         GlassCard {
             VStack(spacing: 0) {
-                HStack(spacing: 12) {
+                HStack(spacing: 10) {
+                    SectionDisclosure(expanded: $expanded)
                     Text("Sources")
                         .font(.app(size: 15, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.85))
+                    if !expanded && !sources.isEmpty {
+                        Text("\(sources.count)")
+                            .font(.app(size: 13))
+                            .foregroundColor(Color.white.opacity(0.40))
+                    }
                     Spacer()
                     Button { activeSheet = .picker } label: {
                         Image(systemName: "plus")
@@ -1188,7 +1221,8 @@ private struct SourcesBlock: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
 
-                ForEach(sources) { item in
+                if expanded {
+                    ForEach(sources) { item in
                     VStack(spacing: 0) {
                         Rectangle()
                             .fill(Color.white.opacity(0.06))
@@ -1220,6 +1254,7 @@ private struct SourcesBlock: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 13)
                     }
+                }
                 }
             }
         }
@@ -1672,6 +1707,7 @@ private let popularTemplates: [PopularTemplate] = [
 private struct FormatsBlock: View {
     @Binding var selectedFormatIDs: Set<String>
     @State private var showPicker = false
+    @State private var expanded: Bool = true
 
     private var selectedFormats: [ContentFormat] {
         // Preserve allFormats declaration order so chips don't jump around
@@ -1684,34 +1720,36 @@ private struct FormatsBlock: View {
     var body: some View {
         GlassCard {
             VStack(spacing: 0) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    showPicker = true
-                } label: {
-                    HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Format")
-                                .font(.app(size: 15, weight: .medium))
-                                .foregroundColor(Color.white.opacity(0.85))
-                            Text(selectedFormatIDs.isEmpty
-                                 ? "Tap to choose formats"
-                                 : "\(selectedFormatIDs.count) selected")
-                                .font(.app(size: 13))
-                                .foregroundColor(Color.white.opacity(0.40))
-                        }
-                        Spacer()
-                        if !selectedFormatIDs.isEmpty {
-                            Text("\(selectedFormatIDs.count)")
-                                .font(.app(size: 12, weight: .bold))
-                                .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                                .frame(minWidth: 24, minHeight: 24)
-                                .background(.white)
-                                .clipShape(Circle())
-                                .transition(.scale.combined(with: .opacity))
-                        }
-                        Image(systemName: "chevron.right")
-                            .font(.app(size: 12, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.20))
+                HStack(spacing: 10) {
+                    SectionDisclosure(expanded: $expanded)
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        showPicker = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Format")
+                                    .font(.app(size: 15, weight: .medium))
+                                    .foregroundColor(Color.white.opacity(0.85))
+                                Text(selectedFormatIDs.isEmpty
+                                     ? "Tap to choose formats"
+                                     : "\(selectedFormatIDs.count) selected")
+                                    .font(.app(size: 13))
+                                    .foregroundColor(Color.white.opacity(0.40))
+                            }
+                            Spacer()
+                            if !selectedFormatIDs.isEmpty {
+                                Text("\(selectedFormatIDs.count)")
+                                    .font(.app(size: 12, weight: .bold))
+                                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                                    .frame(minWidth: 24, minHeight: 24)
+                                    .background(.white)
+                                    .clipShape(Circle())
+                                    .transition(.scale.combined(with: .opacity))
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.app(size: 12, weight: .semibold))
+                                .foregroundColor(Color.white.opacity(0.20))
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
@@ -1719,9 +1757,11 @@ private struct FormatsBlock: View {
                     .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
                 }
                 .buttonStyle(.plain)
+                }
 
                 // Chip row adapts to state: selected formats with X-to-remove
                 // once any are picked, popular-template shortcuts otherwise.
+                if expanded {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         if selectedFormatIDs.isEmpty {
@@ -1777,11 +1817,12 @@ private struct FormatsBlock: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 14)
                 }
+                }
             }
             // Match PromptField's minimum footprint so the form has a
             // consistent rhythm between the Format card and the
             // "Add details" card below it.
-            .frame(minHeight: 110)
+            .frame(minHeight: expanded ? 110 : 0)
         }
         .sheet(isPresented: $showPicker) {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
@@ -1798,33 +1839,46 @@ private struct FormatsBlock: View {
 private struct PromptField: View {
     @Binding var prompt: String
     @FocusState private var focused: Bool
+    @State private var expanded: Bool = true
 
     var body: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Add details (optional)")
-                    .font(.app(size: 13, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.40))
-                    .padding(.horizontal, 16)
-                    .padding(.top, 14)
-                    .padding(.bottom, 6)
-
-                // Multi-line TextField with axis:.vertical grows with content
-                // and doesn't engage its own scroll, so it plays nicely with
-                // the page-level ScrollView. TextEditor inside a height cap
-                // fights the parent for scroll gestures.
-                TextField(
-                    "Leave empty to generate from sources and format.",
-                    text: $prompt,
-                    axis: .vertical
-                )
-                .font(.app(size: 15))
-                .foregroundColor(Color.white.opacity(0.85))
-                .tint(.white)
-                .lineLimit(3...6)
+                HStack(spacing: 10) {
+                    SectionDisclosure(expanded: $expanded)
+                    Text("Add details (optional)")
+                        .font(.app(size: 13, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.40))
+                    if !expanded && !prompt.isEmpty {
+                        Text(prompt)
+                            .font(.app(size: 13))
+                            .foregroundColor(Color.white.opacity(0.30))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+                    Spacer(minLength: 0)
+                }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 14)
-                .focused($focused)
+                .padding(.vertical, 12)
+
+                if expanded {
+                    // Multi-line TextField with axis:.vertical grows with content
+                    // and doesn't engage its own scroll, so it plays nicely with
+                    // the page-level ScrollView. TextEditor inside a height cap
+                    // fights the parent for scroll gestures.
+                    TextField(
+                        "Leave empty to generate from sources and format.",
+                        text: $prompt,
+                        axis: .vertical
+                    )
+                    .font(.app(size: 15))
+                    .foregroundColor(Color.white.opacity(0.85))
+                    .tint(.white)
+                    .lineLimit(3...6)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 14)
+                    .focused($focused)
+                }
             }
         }
     }
