@@ -13,6 +13,14 @@ enum SourceType: String, Identifiable {
     var id: String { rawValue }
 }
 
+// Sheet states for the Sources block. The picker case opens the import
+// chooser; the others present the input UIs. Files and photos use the
+// system fileImporter / photosPicker and stay on their own Bools.
+enum SourceSheet: Identifiable, Hashable {
+    case picker, text, link, voice
+    var id: Self { self }
+}
+
 struct SourceItem: Identifiable {
     let id = UUID()
     let type: SourceType
@@ -572,7 +580,6 @@ struct AnimatedLightsButton: View {
 
 struct ImportSheetView: View {
     var onSelect: (SourceType) -> Void
-    @Environment(\.dismiss) private var dismiss
 
     private let gridItems: [(icon: String, label: String, type: SourceType)] = [
         ("arrow.up.doc", "Upload a file", .file),
@@ -590,7 +597,6 @@ struct ImportSheetView: View {
 
             Button {
                 onSelect(.link)
-                dismiss()
             } label: {
                 VStack(spacing: 12) {
                     Image(systemName: "link")
@@ -611,7 +617,6 @@ struct ImportSheetView: View {
                 ForEach(gridItems, id: \.type) { item in
                     Button {
                         onSelect(item.type)
-                        dismiss()
                     } label: {
                         VStack(spacing: 12) {
                             Image(systemName: item.icon)
@@ -725,9 +730,8 @@ private struct TextInputSheet: View {
                 .animation(.easeOut(duration: 0.2), value: isGenerating)
             }
         }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { focused = true }
-        }
+        .task { focused = true }
+        .interactiveDismissDisabled(canSave || isGenerating)
     }
 
     private func handleSave() {
@@ -831,9 +835,8 @@ private struct LinkInputSheet: View {
 
             Spacer()
         }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { focused = true }
-        }
+        .task { focused = true }
+        .interactiveDismissDisabled(!urlText.isEmpty || isFetching)
     }
 
     private func saveLink() {
@@ -1067,6 +1070,7 @@ private struct VoiceRecordSheet: View {
         } message: {
             Text("Microphone and speech recognition access is required to record a voice note.")
         }
+        .interactiveDismissDisabled(recorder.isRecording || !recorder.transcript.isEmpty || isGenerating)
     }
 
     private func handleMicTap() {
@@ -1116,12 +1120,9 @@ private struct GlassCard<Content: View>: View {
 
 private struct SourcesBlock: View {
     @Binding var sources: [SourceItem]
-    var pendingSourceType: Binding<SourceType?> = .constant(nil)
+    var pendingSheet: Binding<SourceSheet?> = .constant(nil)
 
-    @State private var showImport = false
-    @State private var showTextInput = false
-    @State private var showLinkInput = false
-    @State private var showVoiceRecord = false
+    @State private var activeSheet: SourceSheet? = nil
     @State private var showFilePicker = false
     @State private var showPhotoPicker = false
     @State private var photoPickerItem: PhotosPickerItem? = nil
@@ -1134,7 +1135,7 @@ private struct SourcesBlock: View {
                         .font(.app(size: 15, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.85))
                     Spacer()
-                    Button { showImport = true } label: {
+                    Button { activeSheet = .picker } label: {
                         Image(systemName: "plus")
                             .font(.app(size: 13, weight: .medium))
                             .foregroundColor(Color.white.opacity(0.80))
@@ -1184,56 +1185,45 @@ private struct SourcesBlock: View {
                 }
             }
         }
-        .sheet(isPresented: $showImport) {
-            ImportSheetView { type in
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                switch type {
+        .sheet(item: $activeSheet) { sheet in
+            Group {
+                switch sheet {
+                case .picker:
+                    ImportSheetView { type in
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        switch type {
+                        case .text:  activeSheet = .text
+                        case .link:  activeSheet = .link
+                        case .voice: activeSheet = .voice
+                        case .file:
+                            activeSheet = nil
+                            showFilePicker = true
+                        case .image:
+                            activeSheet = nil
+                            showPhotoPicker = true
+                        }
+                    }
                 case .text:
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showTextInput = true }
+                    TextInputSheet { label, content in
+                        withAnimation(.spring(duration: 0.25)) {
+                            sources.append(SourceItem(type: .text, label: label, content: content))
+                        }
+                    }
                 case .link:
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showLinkInput = true }
+                    LinkInputSheet { label, url in
+                        withAnimation(.spring(duration: 0.25)) {
+                            sources.append(SourceItem(type: .link, label: label, content: url))
+                        }
+                    }
                 case .voice:
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showVoiceRecord = true }
-                case .file:
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) { showFilePicker = true }
-                case .image:
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) { showPhotoPicker = true }
+                    VoiceRecordSheet { label, transcript in
+                        withAnimation(.spring(duration: 0.25)) {
+                            sources.append(SourceItem(type: .voice, label: label, content: transcript))
+                        }
+                    }
                 }
             }
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
-            .presentationCornerRadius(22)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
-        }
-        .sheet(isPresented: $showTextInput) {
-            TextInputSheet { label, content in
-                withAnimation(.spring(duration: 0.25)) {
-                    sources.append(SourceItem(type: .text, label: label, content: content))
-                }
-            }
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
-            .presentationCornerRadius(22)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
-        }
-        .sheet(isPresented: $showLinkInput) {
-            LinkInputSheet { label, url in
-                withAnimation(.spring(duration: 0.25)) {
-                    sources.append(SourceItem(type: .link, label: label, content: url))
-                }
-            }
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
-            .presentationCornerRadius(22)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
-        }
-        .sheet(isPresented: $showVoiceRecord) {
-            VoiceRecordSheet { label, transcript in
-                withAnimation(.spring(duration: 0.25)) {
-                    sources.append(SourceItem(type: .voice, label: label, content: transcript))
-                }
-            }
-            .presentationDetents([.large])
+            .presentationDetents(sheet == .picker ? [.medium, .large] : [.large])
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
@@ -1267,16 +1257,13 @@ private struct SourcesBlock: View {
                 }
             }
         }
-        .onChange(of: pendingSourceType.wrappedValue) { _, type in
-            guard let type else { return }
-            pendingSourceType.wrappedValue = nil
-            switch type {
-            case .text:  DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showTextInput = true }
-            case .link:  DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showLinkInput = true }
-            case .voice: DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showVoiceRecord = true }
-            case .file:  DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showFilePicker = true }
-            case .image: DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { showPhotoPicker = true }
-            }
+        // `.task(id:)` fires on mount AND on id change, so FAB-triggered
+        // opens still work even if HomeView was being created in the same
+        // pass (tab switch + signal). `.onChange` would miss that race.
+        .task(id: pendingSheet.wrappedValue) {
+            guard let s = pendingSheet.wrappedValue else { return }
+            pendingSheet.wrappedValue = nil
+            activeSheet = s
         }
     }
 
@@ -1695,25 +1682,22 @@ private struct PromptField: View {
                     .padding(.top, 14)
                     .padding(.bottom, 6)
 
-                ZStack(alignment: .topLeading) {
-                    if prompt.isEmpty {
-                        Text("Leave empty to generate from sources and format.")
-                            .font(.app(size: 15))
-                            .foregroundColor(Color.white.opacity(0.20))
-                            .padding(.horizontal, 16)
-                            .padding(.top, 2)
-                            .allowsHitTesting(false)
-                    }
-                    TextEditor(text: $prompt)
-                        .font(.app(size: 15))
-                        .foregroundColor(Color.white.opacity(0.85))
-                        .scrollContentBackground(.hidden)
-                        .background(.clear)
-                        .frame(minHeight: 70, maxHeight: 130)
-                        .padding(.horizontal, 12)
-                        .padding(.bottom, 10)
-                        .focused($focused)
-                }
+                // Multi-line TextField with axis:.vertical grows with content
+                // and doesn't engage its own scroll, so it plays nicely with
+                // the page-level ScrollView. TextEditor inside a height cap
+                // fights the parent for scroll gestures.
+                TextField(
+                    "Leave empty to generate from sources and format.",
+                    text: $prompt,
+                    axis: .vertical
+                )
+                .font(.app(size: 15))
+                .foregroundColor(Color.white.opacity(0.85))
+                .tint(.white)
+                .lineLimit(3...6)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 14)
+                .focused($focused)
             }
         }
     }
@@ -1777,7 +1761,7 @@ private enum GenerationSheet: String, Identifiable {
 
 struct HomeView: View {
     var scrollToTopSignal: Int = 0
-    var pendingSourceType: Binding<SourceType?> = .constant(nil)
+    var pendingSheet: Binding<SourceSheet?> = .constant(nil)
 
     @State private var sources: [SourceItem] = []
     @State private var selectedFormatIDs: Set<String> = []
@@ -1868,7 +1852,7 @@ struct HomeView: View {
                         .padding(.bottom, 16)
 
                         VStack(spacing: 12) {
-                            SourcesBlock(sources: $sources, pendingSourceType: pendingSourceType)
+                            SourcesBlock(sources: $sources, pendingSheet: pendingSheet)
                             FormatsBlock(selectedFormatIDs: $selectedFormatIDs)
                             PromptField(prompt: $prompt)
                             BrandCard(selectedBrand: $brand)
@@ -1982,15 +1966,14 @@ struct HomeView: View {
             await MainActor.run {
                 isGenerating = false
                 generationTask = nil
-                activeSheet = nil
                 if results.isEmpty {
+                    activeSheet = nil
                     generationFailed = true
                 } else {
                     generationResults = results
                     saveToLibrary(results, sources: capturedSources)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        activeSheet = .results
-                    }
+                    // Direct swap on the same .sheet(item:) — no dismiss-and-redelay.
+                    activeSheet = .results
                 }
             }
         }
