@@ -70,7 +70,7 @@ struct LibraryView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search library")
+            .searchable(text: $searchText, prompt: "Search library")
         }
     }
 }
