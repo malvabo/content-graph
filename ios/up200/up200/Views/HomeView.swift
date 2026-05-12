@@ -700,13 +700,17 @@ private struct TextInputSheet: View {
                 header
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        Spacer().frame(maxHeight: .infinity)
-                        emptyState
-                        Spacer().frame(maxHeight: .infinity)
-                        Spacer().frame(maxHeight: .infinity)
+                        if text.isEmpty {
+                            Spacer().frame(maxHeight: .infinity)
+                            emptyState
+                            Spacer().frame(maxHeight: .infinity)
+                            Spacer().frame(maxHeight: .infinity)
+                        } else {
+                            Spacer().frame(maxHeight: .infinity)
+                        }
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(minHeight: max(proxy.size.height - 64, 240))
+                    .frame(minHeight: max(proxy.size.height - 164, 200))
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -718,7 +722,7 @@ private struct TextInputSheet: View {
             }
         }
         .background(sheetBackground.ignoresSafeArea(.keyboard, edges: .bottom))
-        .interactiveDismissDisabled(isGenerating)
+        .interactiveDismissDisabled(canSave || isGenerating)
     }
 
     private var header: some View {
@@ -728,7 +732,7 @@ private struct TextInputSheet: View {
                 dismiss()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.65))
                     .frame(width: 32, height: 32)
                     .background(Color.white.opacity(0.08))
@@ -745,18 +749,14 @@ private struct TextInputSheet: View {
 
             Spacer(minLength: 8)
 
-            Button {
-                // Source history hook — no-op until history backing exists.
-            } label: {
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.65))
-                    .frame(width: 32, height: 32)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("History")
+            // Visual affordance only — no source history backing yet.
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Color.white.opacity(0.25))
+                .frame(width: 32, height: 32)
+                .background(Color.white.opacity(0.04))
+                .clipShape(Circle())
+                .accessibilityHidden(true)
         }
         .padding(.horizontal, 16)
         .frame(height: 56)
@@ -838,19 +838,30 @@ private struct TextInputSheet: View {
 
     private var inputCard: some View {
         VStack(spacing: 0) {
-            TextField(
-                "Paste your text, transcript or notes\u{2026}",
-                text: $text,
-                axis: .vertical
-            )
-            .font(.app(size: 17))
-            .foregroundColor(.white)
-            .tint(amber)
-            .lineLimit(1...6)
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .focused($focused)
-            .disabled(isGenerating)
+            // TextEditor (not TextField) so long pastes scroll inside the
+            // card instead of capping at a line limit. The ZStack adds a
+            // placeholder since TextEditor has no native placeholder.
+            ZStack(alignment: .topLeading) {
+                if text.isEmpty {
+                    Text("Paste your text, transcript or notes\u{2026}")
+                        .font(.app(size: 17))
+                        .foregroundColor(Color.white.opacity(0.40))
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+                        .allowsHitTesting(false)
+                }
+                TextEditor(text: $text)
+                    .font(.app(size: 17))
+                    .foregroundColor(.white)
+                    .tint(amber)
+                    .scrollContentBackground(.hidden)
+                    .background(.clear)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+                    .focused($focused)
+                    .disabled(isGenerating)
+                    .frame(minHeight: 56, maxHeight: 180)
+            }
 
             HStack(spacing: 8) {
                 Button {
@@ -958,20 +969,37 @@ private struct FlowLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x: CGFloat = bounds.minX
-        var y: CGFloat = bounds.minY
-        var lineHeight: CGFloat = 0
-
-        for subview in subviews {
+        // Group into lines first so each line can be horizontally centred —
+        // a single left-aligned wrap would look off-axis next to the
+        // centred title / subtitle / helper text above and below.
+        var lines: [[(index: Int, size: CGSize)]] = [[]]
+        var lineWidth: CGFloat = 0
+        for (index, subview) in subviews.enumerated() {
             let size = subview.sizeThatFits(.unspecified)
-            if x > bounds.minX, x + size.width > bounds.maxX {
-                y += lineHeight + verticalSpacing
-                x = bounds.minX
-                lineHeight = 0
+            let prospective = lineWidth == 0 ? size.width : lineWidth + horizontalSpacing + size.width
+            if !lines.last!.isEmpty, prospective > bounds.width {
+                lines.append([(index, size)])
+                lineWidth = size.width
+            } else {
+                lines[lines.count - 1].append((index, size))
+                lineWidth = prospective
             }
-            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + horizontalSpacing
-            lineHeight = max(lineHeight, size.height)
+        }
+
+        var y: CGFloat = bounds.minY
+        for line in lines {
+            let totalWidth = line.reduce(CGFloat(0)) { $0 + $1.size.width }
+                + CGFloat(max(line.count - 1, 0)) * horizontalSpacing
+            let lineHeight = line.map { $0.size.height }.max() ?? 0
+            var x = bounds.minX + max((bounds.width - totalWidth) / 2, 0)
+            for item in line {
+                subviews[item.index].place(
+                    at: CGPoint(x: x, y: y),
+                    proposal: ProposedViewSize(item.size)
+                )
+                x += item.size.width + horizontalSpacing
+            }
+            y += lineHeight + verticalSpacing
         }
     }
 }
