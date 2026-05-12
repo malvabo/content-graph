@@ -344,7 +344,7 @@ private struct TemplateCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(18)
         .background(Color.white.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
