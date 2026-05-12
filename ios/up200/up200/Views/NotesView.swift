@@ -36,6 +36,7 @@ private final class NoteDictation: ObservableObject {
         if audioEngine.inputNode.numberOfInputs > 0 {
             audioEngine.inputNode.removeTap(onBus: 0)
         }
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         isRecording = false
     }
 
@@ -132,14 +133,14 @@ private struct DictationButton: View {
     let action: () -> Void
 
     @State private var pulse: Bool = false
-    private let purple = Color(red: 0.45, green: 0.30, blue: 0.85)
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     var body: some View {
         Button(action: action) {
             ZStack {
                 if isRecording {
                     Circle()
-                        .fill(purple.opacity(0.35))
+                        .fill(amber.opacity(0.35))
                         .scaleEffect(pulse ? 1.45 : 1.0)
                         .opacity(pulse ? 0.0 : 0.7)
                         .animation(
@@ -148,8 +149,8 @@ private struct DictationButton: View {
                         )
                 }
                 Circle()
-                    .fill(purple)
-                    .shadow(color: purple.opacity(0.45), radius: 12, y: 4)
+                    .fill(amber)
+                    .shadow(color: amber.opacity(0.45), radius: 12, y: 4)
 
                 Image(systemName: isRecording ? "stop.fill" : "mic.fill")
                     .font(.system(size: 20, weight: .semibold))
@@ -158,7 +159,7 @@ private struct DictationButton: View {
             .frame(width: 56, height: 56)
         }
         .buttonStyle(.plain)
-        .onAppear { pulse = true }
+        .accessibilityLabel(isRecording ? "Stop dictation" : "Start dictation")
         .onChange(of: isRecording) { _, recording in
             pulse = recording
         }
@@ -175,11 +176,10 @@ private struct NoteComposerSheet: View {
 
     @State private var draft: Note
     @State private var bodyBeforeDictation: String = ""
+    @State private var showDiscardAlert: Bool = false
     @StateObject private var dictation = NoteDictation()
     @Environment(\.dismiss) private var dismiss
-    @FocusState private var focus: Field?
-
-    private enum Field { case title, body }
+    @FocusState private var bodyFocused: Bool
 
     init(note: Note, isNew: Bool, onSave: @escaping (Note) -> Void, onDelete: (() -> Void)?) {
         self.original = note
@@ -196,8 +196,12 @@ private struct NoteComposerSheet: View {
         VStack(spacing: 0) {
             HStack {
                 Button {
-                    dictation.stop()
-                    dismiss()
+                    if isDirty {
+                        showDiscardAlert = true
+                    } else {
+                        dictation.stop()
+                        dismiss()
+                    }
                 } label: {
                     Text("Cancel")
                         .font(.app(size: 16))
@@ -220,7 +224,7 @@ private struct NoteComposerSheet: View {
                     onSave(saved)
                     dismiss()
                 } label: {
-                    Text("Save")
+                    Text("Done")
                         .font(.app(size: 16, weight: .semibold))
                         .foregroundColor(canSave ? .white : Color.white.opacity(0.25))
                 }
@@ -235,36 +239,26 @@ private struct NoteComposerSheet: View {
                 .fill(Color.white.opacity(0.06))
                 .frame(height: 0.5)
 
-            TextField("Title", text: $draft.title)
-                .font(.app(size: 22, weight: .bold))
-                .foregroundColor(.white)
-                .tint(.white)
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 10)
-                .focused($focus, equals: .title)
-                .submitLabel(.next)
-                .onSubmit { focus = .body }
-
             ZStack(alignment: .bottomTrailing) {
                 ZStack(alignment: .topLeading) {
                     if draft.body.isEmpty {
-                        Text("Start typing…")
-                            .font(.app(size: 16))
+                        Text("Start typing\u{2026}")
+                            .font(.app(size: 17))
                             .foregroundColor(Color.white.opacity(0.22))
                             .padding(.horizontal, 24)
-                            .padding(.top, 12)
+                            .padding(.top, 20)
                             .allowsHitTesting(false)
                     }
                     TextEditor(text: $draft.body)
-                        .font(.app(size: 16))
-                        .foregroundColor(Color.white.opacity(0.86))
+                        .font(.app(size: 17))
+                        .foregroundColor(Color.white.opacity(0.92))
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)
                         .tint(.white)
                         .padding(.horizontal, 16)
-                        .padding(.top, 4)
-                        .focused($focus, equals: .body)
+                        .padding(.top, 12)
+                        .contentMargins(.bottom, 84, for: .scrollContent)
+                        .focused($bodyFocused)
                 }
 
                 DictationButton(isRecording: dictation.isRecording) {
@@ -317,8 +311,15 @@ private struct NoteComposerSheet: View {
                 .buttonStyle(.plain)
             }
         }
+        .alert("Discard changes?", isPresented: $showDiscardAlert) {
+            Button("Keep Editing", role: .cancel) {}
+            Button("Discard", role: .destructive) {
+                dictation.stop()
+                dismiss()
+            }
+        }
         .task {
-            focus = isNew ? .body : nil
+            if isNew { bodyFocused = true }
         }
         .interactiveDismissDisabled(isDirty)
     }

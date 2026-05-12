@@ -33,13 +33,18 @@ private struct AppTabBar: View {
 
     private let tabs: [AppTab] = [.notes, .chat, .library, .templates]
     private let pillBg = Color.white.opacity(0.07)
-    private let activeBg = Color.white.opacity(0.16)
     private let stroke = Color.white.opacity(0.08)
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    private func isActive(_ tab: AppTab) -> Bool {
+        tab != .chat && selected == tab
+    }
 
     var body: some View {
         HStack(spacing: 10) {
             HStack(spacing: 4) {
                 ForEach(tabs, id: \.self) { tab in
+                    let active = isActive(tab)
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         if tab == .chat {
@@ -50,19 +55,22 @@ private struct AppTabBar: View {
                     } label: {
                         Image(systemName: tab.icon)
                             .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(
-                                (selected == tab && tab != .chat)
-                                    ? .white
-                                    : Color.white.opacity(0.55)
-                            )
+                            .foregroundColor(active ? .white : Color.white.opacity(0.55))
                             .frame(width: 48, height: 40)
                             .background(
                                 Capsule(style: .continuous)
-                                    .fill((selected == tab && tab != .chat) ? activeBg : Color.clear)
+                                    .fill(active ? amber.opacity(0.22) : Color.clear)
+                                    .overlay(
+                                        Capsule().stroke(
+                                            active ? amber.opacity(0.45) : Color.clear,
+                                            lineWidth: 0.5
+                                        )
+                                    )
                             )
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(tab.label)
                 }
             }
             .padding(6)
@@ -87,6 +95,7 @@ private struct AppTabBar: View {
                     )
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Create")
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)
@@ -687,7 +696,7 @@ struct ContentView: View {
                 .sheet(isPresented: $showCreate) {
                     HomeView()
                         .presentationDetents([.large])
-                        .presentationDragIndicator(.hidden)
+                        .presentationDragIndicator(.visible)
                         .presentationCornerRadius(22)
                         .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
                 }
