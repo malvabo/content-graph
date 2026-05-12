@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - App Tab
 
 enum AppTab: String {
-    case notes, create, library, templates, voice
+    case notes, create, library, templates
 }
 
 // MARK: - Library View
@@ -555,11 +555,7 @@ private struct TemplateEditSheet: View {
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .notes
-    @State private var lastTab: AppTab = .notes
-    @State private var showVoice = false
     @State private var showSplash = true
-
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     var body: some View {
         ZStack {
@@ -579,21 +575,8 @@ struct ContentView: View {
                 TemplatesView()
                     .tabItem { Label("Templates", systemImage: "square.on.square") }
                     .tag(AppTab.templates)
-
-                Color.clear.ignoresSafeArea()
-                    .tabItem { Label("Voice",     systemImage: "mic") }
-                    .tag(AppTab.voice)
             }
-            .tint(amber)
-            .onChange(of: selectedTab) { _, newTab in
-                if newTab == .voice {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    selectedTab = lastTab
-                    showVoice = true
-                } else {
-                    lastTab = newTab
-                }
-            }
+            .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
 
             if showSplash {
                 LaunchView()
@@ -605,18 +588,6 @@ struct ContentView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation(.easeOut(duration: 0.3)) { showSplash = false }
             }
-        }
-        .fullScreenCover(isPresented: $showVoice) {
-            VoiceRecordSheet(onSave: { _, transcript in
-                var notes = NotesStore.load()
-                var note = Note()
-                note.body = transcript
-                note.updatedAt = Date()
-                notes.append(note)
-                NotesStore.save(notes)
-            }, autoStart: true)
-            .preferredColorScheme(.dark)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }
