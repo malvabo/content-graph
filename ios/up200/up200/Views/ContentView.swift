@@ -76,7 +76,8 @@ private struct AppTabBar: View {
             .padding(6)
             .background(
                 Capsule(style: .continuous)
-                    .fill(pillBg)
+                    .fill(.ultraThinMaterial)
+                    .overlay(Capsule().fill(pillBg))
                     .overlay(Capsule().stroke(stroke, lineWidth: 0.5))
             )
 
@@ -90,16 +91,18 @@ private struct AppTabBar: View {
                     .frame(width: 56, height: 56)
                     .background(
                         Circle()
-                            .fill(pillBg)
+                            .fill(.ultraThinMaterial)
+                            .overlay(Circle().fill(pillBg))
                             .overlay(Circle().stroke(stroke, lineWidth: 0.5))
                     )
+                    .shadow(color: Color.black.opacity(0.35), radius: 12, y: 4)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Create")
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)
-        .padding(.bottom, 4)
+        .padding(.bottom, 14)
     }
 }
 
@@ -675,7 +678,7 @@ struct ContentView: View {
                     case .notes:     NotesView()
                     case .library:   LibraryView()
                     case .templates: TemplatesView()
-                    case .chat:      NotesView()
+                    case .chat:      EmptyView() // chat opens as a sheet; never selected
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
