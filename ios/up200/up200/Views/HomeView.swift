@@ -278,13 +278,13 @@ private struct GenerationBanner: View {
                             .easeInOut(duration: 1.2).repeatForever(autoreverses: true),
                         value: pulse
                     )
-                Image(systemName: isReady ? "play.fill" : "sparkles")
+                Image(systemName: isReady ? "checkmark" : "sparkles")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(isReady ? .white : amber)
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(isReady ? "Content ready, tap to view" : "Creating your content")
+                Text(isReady ? "Content ready" : "Creating your content")
                     .font(.app(size: 15, weight: .semibold))
                     .foregroundColor(.white)
                     .lineLimit(1)
@@ -296,15 +296,31 @@ private struct GenerationBanner: View {
 
             Spacer(minLength: 0)
 
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.60))
-                    .frame(width: 26, height: 26)
-                    .background(Color.white.opacity(0.10))
-                    .clipShape(Circle())
+            // Action slot: explicit "Open" pill once content is ready (the
+            // banner's primary affordance), or a small X to cancel while
+            // generation is still running.
+            if isReady {
+                Button(action: onTap) {
+                    Text("Open")
+                        .font(.app(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .frame(height: 30)
+                        .background(amber)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            } else {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.60))
+                        .frame(width: 26, height: 26)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
