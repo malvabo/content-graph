@@ -28,50 +28,39 @@ struct LibraryView: View {
             ZStack {
                 Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
 
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Library")
-                        .font(.app(size: 28, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.88))
-                        .padding(.horizontal, 20)
-                        .padding(.top, 28)
-                        .padding(.bottom, 20)
-
-                    if groups.isEmpty {
-                        Spacer()
-                        VStack(spacing: 12) {
-                            Image(systemName: "tray")
-                                .font(.app(size: 36, weight: .regular))
-                                .foregroundColor(Color.white.opacity(0.20))
-                            Text("No generations yet")
-                                .font(.app(size: 16, weight: .regular))
-                                .foregroundColor(Color.white.opacity(0.30))
-                            Text("Your content outputs will appear here")
-                                .font(.app(size: 13, weight: .regular))
-                                .foregroundColor(Color.white.opacity(0.20))
-                        }
-                        .frame(maxWidth: .infinity)
-                        Spacer()
-                    } else {
-                        ScrollView(showsIndicators: false) {
-                            VStack(spacing: 0) {
-                                ForEach(Array(groups.enumerated()), id: \.element.title) { idx, group in
-                                    NavigationLink {
-                                        ProjectGroupView(title: group.title, items: group.items)
-                                    } label: {
-                                        LibraryGroupRow(title: group.title, count: group.items.count, date: group.items.first?.date ?? Date())
-                                    }
-                                    .buttonStyle(.plain)
-                                    if idx < groups.count - 1 {
-                                        Divider().background(Color.white.opacity(0.06)).padding(.leading, 20)
-                                    }
-                                }
+                if groups.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "tray")
+                            .font(.system(size: 36))
+                            .foregroundColor(Color.white.opacity(0.20))
+                        Text("No generations yet")
+                            .foregroundColor(Color.white.opacity(0.30))
+                        Text("Your content outputs will appear here")
+                            .font(.footnote)
+                            .foregroundColor(Color.white.opacity(0.20))
+                    }
+                } else {
+                    List {
+                        ForEach(Array(groups.enumerated()), id: \.element.title) { idx, group in
+                            NavigationLink {
+                                ProjectGroupView(title: group.title, items: group.items)
+                            } label: {
+                                LibraryGroupRow(title: group.title, count: group.items.count, date: group.items.first?.date ?? Date())
                             }
-                            .padding(.bottom, 32)
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                            .listRowSeparatorTint(Color.white.opacity(0.06))
+                            .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
                         }
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
             }
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationTitle("Library")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
         }
     }
 }
@@ -569,19 +558,19 @@ struct ContentView: View {
         ZStack(alignment: .bottom) {
             TabView(selection: $selectedTab) {
                 NotesView()
-                    .tabItem { Image(systemName: "note.text") }
+                    .tabItem { Label("Notes",     systemImage: "note.text") }
                     .tag(AppTab.notes)
 
                 HomeView()
-                    .tabItem { Image(systemName: "sparkles") }
+                    .tabItem { Label("Create",    systemImage: "sparkles") }
                     .tag(AppTab.create)
 
                 LibraryView()
-                    .tabItem { Image(systemName: "folder") }
+                    .tabItem { Label("Library",   systemImage: "folder") }
                     .tag(AppTab.library)
 
                 TemplatesView()
-                    .tabItem { Image(systemName: "square.on.square") }
+                    .tabItem { Label("Templates", systemImage: "square.on.square") }
                     .tag(AppTab.templates)
             }
             .tint(amber)
