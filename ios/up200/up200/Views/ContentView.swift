@@ -552,7 +552,6 @@ private struct TemplateEditSheet: View {
 
 private struct AppTabBar: View {
     @Binding var selected: AppTab
-    let onVoice: () -> Void
 
     private let items: [(AppTab, String)] = [
         (.notes,     "note.text"),
@@ -584,17 +583,6 @@ private struct AppTabBar: View {
                 }
                 .buttonStyle(.plain)
             }
-
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                onVoice()
-            } label: {
-                Image(systemName: "mic")
-                    .font(.system(size: 19, weight: .regular))
-                    .foregroundColor(Color.white.opacity(0.38))
-                    .frame(maxWidth: .infinity, minHeight: 46)
-            }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 5)
@@ -614,7 +602,6 @@ private struct AppTabBar: View {
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .notes
-    @State private var showVoice = false
     @State private var showSplash = true
 
     init() {
@@ -630,7 +617,7 @@ struct ContentView: View {
                 TemplatesView().tag(AppTab.templates)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                AppTabBar(selected: $selectedTab, onVoice: { showVoice = true })
+                AppTabBar(selected: $selectedTab)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 8)
             }
@@ -645,18 +632,6 @@ struct ContentView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation(.easeOut(duration: 0.3)) { showSplash = false }
             }
-        }
-        .fullScreenCover(isPresented: $showVoice) {
-            VoiceRecordSheet(onSave: { _, transcript in
-                var notes = NotesStore.load()
-                var note = Note()
-                note.body = transcript
-                note.updatedAt = Date()
-                notes.append(note)
-                NotesStore.save(notes)
-            }, autoStart: true)
-            .preferredColorScheme(.dark)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }
