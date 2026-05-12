@@ -120,18 +120,18 @@ export default function NodePalette({ onAddNode }: Props) {
   };
 
   return (
-    <div ref={ref} className="absolute bottom-4 left-4 right-4 z-20">
+    <div ref={ref} className="absolute bottom-4 left-4 z-20">
       <style>{`
         @keyframes paletteIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes tplPickerIn { from { opacity: 0; transform: scale(0.97) translateY(4px); } to { opacity: 1; transform: scale(1) translateY(0); } }
       `}</style>
-      {/* Full-width + button */}
+      {/* Floating + button */}
       <motion.button
         onClick={() => setOpen(!open)}
         aria-label="Add node" aria-expanded={open}
-        whileHover={{ scale: 1.01 }}
+        whileHover={{ scale: 1.04 }}
         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-        className="relative w-full h-10 rounded-xl flex items-center justify-center gap-2 overflow-hidden"
+        className="relative w-12 h-12 rounded-full flex items-center justify-center overflow-hidden"
         style={{
           background: 'var(--color-bg-card)',
           border: '1px solid var(--color-border-subtle)',
@@ -143,19 +143,18 @@ export default function NodePalette({ onAddNode }: Props) {
         onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}
       >
         <motion.svg
-          width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+          width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
           animate={{ rotate: open ? 45 : 0 }}
           transition={{ type: 'spring', stiffness: 400, damping: 28 }}
         >
           <path d="M12 5v14"/><path d="M5 12h14"/>
         </motion.svg>
-        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500 }}>Add node</span>
       </motion.button>
 
       {/* Popover */}
       {open && (
-        <div className="palette-popover absolute left-0 right-0 flex flex-col"
-          style={{ bottom: 44, background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)', animation: 'paletteIn 150ms ease' }}
+        <div className="palette-popover absolute left-0 flex flex-col"
+          style={{ width: 300, bottom: 52, background: 'var(--color-bg-popover)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--color-border-subtle)', animation: 'paletteIn 150ms ease' }}
           onKeyDown={(e) => { if (e.key === 'Escape') { setTemplatePickerOpen(false); setOpen(false); } }}>
 
           {/* Prompt section — outside scroll area so template picker isn't clipped */}
