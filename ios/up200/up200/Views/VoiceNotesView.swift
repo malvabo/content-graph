@@ -82,11 +82,7 @@ struct NoteEditorView: View {
 
             Spacer(minLength: 0)
         }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                bodyFocused = true
-            }
-        }
+        .task { bodyFocused = true }
     }
 }
 
@@ -107,6 +103,10 @@ private struct NoteEditorSheet: View {
         self._draft = State(initialValue: note)
     }
 
+    private var isDirty: Bool {
+        draft.title != original.title || draft.body != original.body
+    }
+
     var body: some View {
         NoteEditorView(note: $draft) {
             onSave(draft)
@@ -115,6 +115,7 @@ private struct NoteEditorSheet: View {
             onDelete()
             dismiss()
         }
+        .interactiveDismissDisabled(isDirty)
     }
 }
 

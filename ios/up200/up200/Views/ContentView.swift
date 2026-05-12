@@ -335,12 +335,16 @@ private struct AddTemplateSheet: View {
     @Binding var desc: String
     var onAdd: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var focus: Field?
+
+    private enum Field { case title, desc }
 
     var body: some View {
         VStack(spacing: 0) {
             Text("New template")
                 .font(.app(size: 18, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
+                .padding(.top, 8)
                 .padding(.bottom, 24)
 
             VStack(spacing: 12) {
@@ -351,6 +355,9 @@ private struct AddTemplateSheet: View {
                     .background(Color.white.opacity(0.06))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .tint(.white)
+                    .focused($focus, equals: .title)
+                    .submitLabel(.next)
+                    .onSubmit { focus = .desc }
 
                 TextField("Description (optional)", text: $desc)
                     .font(.app(size: 16))
@@ -359,6 +366,9 @@ private struct AddTemplateSheet: View {
                     .background(Color.white.opacity(0.06))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .tint(.white)
+                    .focused($focus, equals: .desc)
+                    .submitLabel(.done)
+                    .onSubmit { if !title.isEmpty { onAdd() } }
             }
             .padding(.horizontal, 20)
 
@@ -378,10 +388,12 @@ private struct AddTemplateSheet: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(22)
         .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        .interactiveDismissDisabled(!title.isEmpty || !desc.isEmpty)
+        .task { focus = .title }
     }
 }
 
@@ -391,8 +403,7 @@ struct ContentView: View {
     @State private var selectedTab: AppTab = .home
     @State private var showSplash = true
     @State private var homeScrollToTop = 0
-    @State private var showImport = false
-    @State private var pendingSourceType: SourceType? = nil
+    @State private var pendingSheet: SourceSheet? = nil
 
     // Re-tapping the current Home tab scrolls HomeView to the top.
     private var tabSelection: Binding<AppTab> {
@@ -418,7 +429,7 @@ struct ContentView: View {
             } else {
                 TabView(selection: tabSelection) {
                     Tab(AppTab.home.label, systemImage: AppTab.home.icon, value: AppTab.home) {
-                        HomeView(scrollToTopSignal: homeScrollToTop, pendingSourceType: $pendingSourceType)
+                        HomeView(scrollToTopSignal: homeScrollToTop, pendingSheet: $pendingSheet)
                             .overlay(alignment: .bottomTrailing) { addFAB }
                     }
                     Tab(AppTab.library.label, systemImage: AppTab.library.icon, value: AppTab.library) {
@@ -436,18 +447,6 @@ struct ContentView: View {
                 .toolbarColorScheme(.dark, for: .tabBar)
             }
         }
-        .sheet(isPresented: $showImport) {
-            ImportSheetView { type in
-                selectedTab = .home
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    pendingSourceType = type
-                }
-            }
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-            .presentationCornerRadius(22)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
-        }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation(.easeOut(duration: 0.3)) { showSplash = false }
@@ -458,7 +457,8 @@ struct ContentView: View {
     private var addFAB: some View {
         AddFAB {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            showImport = true
+            selectedTab = .home
+            pendingSheet = .picker
         }
         .padding(.trailing, 16)
         .padding(.bottom, 24)

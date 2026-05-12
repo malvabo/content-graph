@@ -93,9 +93,7 @@ struct APIKeySetupView: View {
                 .animation(.easeOut(duration: 0.15), value: canSave)
             }
         }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { focused = true }
-        }
+        .task { focused = true }
     }
 
     private func save() {
