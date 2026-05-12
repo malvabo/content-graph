@@ -249,23 +249,21 @@ struct TemplatesView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 28)
-                .padding(.bottom, 20)
+                .padding(.bottom, 8)
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(custom) { tpl in
-                            TemplatePill(title: tpl.title)
-                                .onTapGesture { editingTemplate = tpl }
-                        }
-                        ForEach(builtIn, id: \.title) { tpl in
-                            TemplatePill(title: tpl.title)
+                VStack(spacing: 0) {
+                    ForEach(custom) { tpl in
+                        TemplateRow(title: tpl.title)
+                            .onTapGesture { editingTemplate = tpl }
+                        Divider().background(Color.white.opacity(0.06)).padding(.leading, 20)
+                    }
+                    ForEach(builtIn, id: \.title) { tpl in
+                        TemplateRow(title: tpl.title)
+                        if tpl.title != builtIn.last?.title {
+                            Divider().background(Color.white.opacity(0.06)).padding(.leading, 20)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 2)
                 }
-
-                Spacer(minLength: 48)
             }
         }
         .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
@@ -294,21 +292,17 @@ struct TemplatesView: View {
     }
 }
 
-private struct TemplatePill: View {
+private struct TemplateRow: View {
     let title: String
 
     var body: some View {
         Text(title)
-            .font(.app(size: 14, weight: .medium))
+            .font(.app(size: 15, weight: .regular))
             .foregroundColor(Color.white.opacity(0.82))
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
-            .background(Color.white.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
-            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .contentShape(Rectangle())
     }
 }
 
