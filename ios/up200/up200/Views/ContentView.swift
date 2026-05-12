@@ -151,7 +151,7 @@ private struct ProjectDetailView: View {
                 Color.clear.frame(width: 28, height: 28)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 14)
+            .padding(.top, 20)
             .padding(.bottom, 14)
 
             // Block

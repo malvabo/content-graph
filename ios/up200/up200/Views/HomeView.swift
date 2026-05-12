@@ -384,7 +384,7 @@ private struct GenerationResultSheet: View {
                     .frame(width: 28, alignment: .trailing)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 14)
+            .padding(.top, 20)
             .padding(.bottom, 14)
 
             // Block list
@@ -631,6 +631,7 @@ struct ImportSheetView: View {
             Text("Import content")
                 .font(.app(size: 19, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
+                .padding(.top, 20)
                 .padding(.bottom, 2)
 
             Button {
@@ -705,7 +706,7 @@ private struct TextInputSheet: View {
                         Spacer().frame(maxHeight: .infinity)
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(minHeight: max(proxy.size.height - 56, 240))
+                    .frame(minHeight: max(proxy.size.height - 64, 240))
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -759,6 +760,7 @@ private struct TextInputSheet: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 56)
+        .padding(.top, 8)
     }
 
     private var emptyState: some View {
@@ -1015,7 +1017,7 @@ private struct LinkInputSheet: View {
                 .disabled(!isValidURL || isFetching)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 16)
+            .padding(.top, 20)
             .padding(.bottom, 14)
 
             Rectangle()
@@ -1171,7 +1173,7 @@ private struct VoiceRecordSheet: View {
                     Text("Cancel").foregroundColor(.clear)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .padding(.top, 20)
 
                 Spacer()
 
@@ -1617,7 +1619,7 @@ private struct FormatPickerSheet: View {
                 Color.clear.frame(width: 64, height: 1)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 14)
+            .padding(.top, 20)
             .padding(.bottom, 12)
 
             HStack(spacing: 8) {
