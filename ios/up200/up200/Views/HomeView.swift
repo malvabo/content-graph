@@ -2359,7 +2359,7 @@ struct HomeView: View {
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .fullScreenCover(isPresented: $showOnboarding) {
-            OnboardingView { showOnboarding = false }
+            OnboardingView(onGetStarted: { showOnboarding = false }, onLogin: { showOnboarding = false })
                 .preferredColorScheme(.dark)
         }
     }
