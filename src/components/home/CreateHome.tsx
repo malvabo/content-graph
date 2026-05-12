@@ -623,7 +623,7 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
   const addTemplate = (formatIDs: string[]) =>
     setPending(prev => { const n = new Set(prev); formatIDs.forEach(id => n.add(id)); return n; });
 
-  const doneLabel = pending.size === 0 ? 'Done' : `Done · ${pending.size} selected`;
+  const doneLabel = pending.size === 0 ? 'Done' : `Add ${pending.size} format${pending.size === 1 ? '' : 's'}`;
   const commit = () => { onChange(pending); onClose(); };
 
   const SectionHeader = ({ title }: { title: string }) => (
@@ -748,12 +748,15 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
       {/* Done button */}
       <div style={{ flexShrink: 0, padding: '12px 16px 28px', borderTop: '0.5px solid rgba(255,255,255,0.07)' }}>
         <button
-          onClick={commit}
+          onClick={pending.size > 0 ? commit : undefined}
+          disabled={pending.size === 0}
           style={{
-            width: '100%', height: 52, border: 'none', borderRadius: 14, cursor: 'pointer',
-            background: pending.size === 0 ? 'rgba(255,255,255,0.12)' : GREEN,
-            color: '#fff', fontSize: 17, fontWeight: 600, fontFamily: 'var(--font-sans)',
-            transition: 'background 0.15s',
+            width: '100%', height: 52, border: 'none', borderRadius: 14,
+            cursor: pending.size > 0 ? 'pointer' : 'default',
+            background: pending.size === 0 ? 'rgba(255,255,255,0.10)' : GREEN,
+            color: pending.size === 0 ? 'rgba(255,255,255,0.30)' : '#fff',
+            fontSize: 17, fontWeight: 600, fontFamily: 'var(--font-sans)',
+            transition: 'background 0.15s, color 0.15s',
           }}
         >{doneLabel}</button>
       </div>
