@@ -12,6 +12,10 @@ struct Up200App: App {
                     withAnimation(.easeOut(duration: 0.4)) {
                         onboardingComplete = true
                     }
+                } onLogin: {
+                    withAnimation(.easeOut(duration: 0.4)) {
+                        onboardingComplete = true
+                    }
                 }
                 .preferredColorScheme(.dark)
             } else {

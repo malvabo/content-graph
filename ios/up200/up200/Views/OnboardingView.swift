@@ -12,7 +12,8 @@ private struct OnboardingSceneView: UIViewControllerRepresentable {
 // MARK: - Onboarding screen
 
 struct OnboardingView: View {
-    var onFinish: () -> Void
+    var onGetStarted: () -> Void
+    var onLogin: () -> Void
 
     @State private var appeared = false
     // Typewriter state for the brand mark. Mirrors web's TypewriterLogo —
@@ -77,19 +78,39 @@ struct OnboardingView: View {
 
                 Spacer().frame(height: 48)
 
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    onFinish()
-                }) {
-                    Text("Get started")
-                        .font(.app(size: 17, weight: .semibold))
-                        .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(Color.white.opacity(0.94))
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                VStack(spacing: 12) {
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        onGetStarted()
+                    }) {
+                        Text("Get started")
+                            .font(.app(size: 17, weight: .semibold))
+                            .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(Color.white.opacity(0.94))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onLogin()
+                    }) {
+                        Text("Log in")
+                            .font(.app(size: 17, weight: .medium))
+                            .foregroundColor(Color.white.opacity(0.70))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(Color.white.opacity(0.07))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                            )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
                 .padding(.horizontal, 28)
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 20)
@@ -103,5 +124,5 @@ struct OnboardingView: View {
 }
 
 #Preview {
-    OnboardingView(onFinish: {})
+    OnboardingView(onGetStarted: {}, onLogin: {})
 }
