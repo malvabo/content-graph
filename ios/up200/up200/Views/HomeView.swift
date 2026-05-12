@@ -2158,16 +2158,19 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+            Color(red: 0.06, green: 0.05, blue: 0.04).ignoresSafeArea()
+            // Corner glows tightened up: opacities and radii both halved
+            // so the page reads as a deep warm-black instead of a hazy
+            // mid-tone wash.
             RadialGradient(
-                colors: [Color(red: 0.55, green: 0.30, blue: 0.08).opacity(0.35), .clear],
+                colors: [Color(red: 0.55, green: 0.30, blue: 0.08).opacity(0.16), .clear],
                 center: .init(x: 0.05, y: 0.05),
-                startRadius: 0, endRadius: 380
+                startRadius: 0, endRadius: 240
             ).ignoresSafeArea()
             RadialGradient(
-                colors: [Color(red: 0.30, green: 0.20, blue: 0.08).opacity(0.22), .clear],
+                colors: [Color(red: 0.30, green: 0.20, blue: 0.08).opacity(0.09), .clear],
                 center: .init(x: 1.0, y: 0.85),
-                startRadius: 0, endRadius: 320
+                startRadius: 0, endRadius: 200
             ).ignoresSafeArea()
 
             ScrollViewReader { proxy in
