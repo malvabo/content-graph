@@ -30,7 +30,7 @@ struct LibraryView: View {
 
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Library")
-                        .font(.app(size: 22, weight: .semibold))
+                        .font(.app(size: 33, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.88))
                         .padding(.horizontal, 20)
                         .padding(.top, 28)
@@ -85,7 +85,7 @@ private struct LibraryGroupRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.app(size: 15, weight: .medium))
+                    .font(.app(size: 23, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.88))
                     .lineLimit(1)
                 Text("\(count) output\(count == 1 ? "" : "s") · \(date, style: .relative) ago")
@@ -126,7 +126,7 @@ private struct ProjectGroupView: View {
                 .padding(.bottom, 6)
 
                 Text(title)
-                    .font(.app(size: 22, weight: .semibold))
+                    .font(.app(size: 33, weight: .semibold))
                     .foregroundColor(Color.white.opacity(0.88))
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
@@ -157,7 +157,7 @@ private struct ProjectRow: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(project.outputType)
-                        .font(.app(size: 15, weight: .medium))
+                        .font(.app(size: 23, weight: .medium))
                         .foregroundColor(Color.white.opacity(0.88))
                         .lineLimit(1)
                     if !project.preview.isEmpty {
@@ -292,7 +292,7 @@ struct TemplatesView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Text("Templates")
-                        .font(.app(size: 22, weight: .semibold))
+                        .font(.app(size: 33, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.88))
                     Spacer()
                     Button { showAdd = true } label: {
@@ -355,7 +355,7 @@ private struct TemplateRow: View {
 
     var body: some View {
         Text(title)
-            .font(.app(size: 15, weight: .regular))
+            .font(.app(size: 23, weight: .regular))
             .foregroundColor(Color.white.opacity(0.82))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)

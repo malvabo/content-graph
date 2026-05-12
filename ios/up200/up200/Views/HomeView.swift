@@ -2220,7 +2220,7 @@ struct HomeView: View {
                     VStack(spacing: 0) {
                         ZStack {
                             Text("Create")
-                                .font(.app(size: 17, weight: .semibold))
+                                .font(.app(size: 26, weight: .semibold))
                                 .foregroundColor(.white)
 
                             HStack(spacing: 8) {

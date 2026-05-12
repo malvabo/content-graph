@@ -174,7 +174,7 @@ private struct NoteListRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(note.displayTitle)
-                .font(.app(size: 16, weight: .semibold))
+                .font(.app(size: 24, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.88))
                 .lineLimit(1)
 
@@ -533,7 +533,7 @@ struct NotesView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Text("Notes")
-                            .font(.app(size: 22, weight: .semibold))
+                            .font(.app(size: 33, weight: .semibold))
                             .foregroundColor(Color.white.opacity(0.88))
                         Spacer()
                         Button {
