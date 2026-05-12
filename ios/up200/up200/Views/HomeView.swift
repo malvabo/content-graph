@@ -1474,9 +1474,10 @@ private struct SourcesBlock: View {
                 }
             }
         }
-        // `.task(id:)` fires on mount AND on id change, so FAB-triggered
-        // opens still work even if HomeView was being created in the same
-        // pass (tab switch + signal). `.onChange` would miss that race.
+        // `.task(id:)` fires on mount AND on id change, so externally
+        // triggered opens still work even if HomeView was being created in
+        // the same pass (tab switch + signal). `.onChange` would miss that
+        // race.
         .task(id: pendingSheet.wrappedValue) {
             guard let s = pendingSheet.wrappedValue else { return }
             pendingSheet.wrappedValue = nil

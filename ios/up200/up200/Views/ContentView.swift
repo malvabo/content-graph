@@ -539,11 +539,9 @@ struct ContentView: View {
                     }
                     Tab(AppTab.library.label, systemImage: AppTab.library.icon, value: AppTab.library) {
                         LibraryView()
-                            .overlay(alignment: .bottomTrailing) { addFAB }
                     }
                     Tab(AppTab.templates.label, systemImage: AppTab.templates.icon, value: AppTab.templates) {
                         TemplatesView()
-                            .overlay(alignment: .bottomTrailing) { addFAB }
                     }
                 }
                 .tint(.white)
@@ -559,38 +557,6 @@ struct ContentView: View {
         }
     }
 
-    private var addFAB: some View {
-        AddFAB {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            selectedTab = .home
-            pendingSheet = .picker
-        }
-        .padding(.trailing, 16)
-        .padding(.bottom, 24)
-    }
-}
-
-// MARK: - Add FAB
-
-struct AddFAB: View {
-    var action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                Circle()
-                    .fill(Color.white.opacity(0.09))
-                    .overlay(Circle().stroke(Color.white.opacity(0.14), lineWidth: 0.5))
-                    .frame(width: 56, height: 56)
-                    .shadow(color: .black.opacity(0.25), radius: 12, y: 4)
-                Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .medium))
-                    .foregroundColor(.white)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Add source")
-    }
 }
 
 // MARK: - Launch View
