@@ -2,108 +2,8 @@ import SwiftUI
 
 // MARK: - App Tab
 
-enum AppTab: String, CaseIterable {
-    case notes, chat, library, templates
-
-    var label: String {
-        switch self {
-        case .notes:     return "Notes"
-        case .chat:      return "Chat"
-        case .library:   return "Library"
-        case .templates: return "Templates"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .notes:     return "note.text"
-        case .chat:      return "message"
-        case .library:   return "tray.2"
-        case .templates: return "rectangle.stack"
-        }
-    }
-}
-
-// MARK: - Custom Tab Bar
-
-private struct AppTabBar: View {
-    @Binding var selected: AppTab
-    let onChatTap: () -> Void
-    let onCreateTap: () -> Void
-
-    private let tabs: [AppTab] = [.notes, .chat, .library, .templates]
-    private let pillBg = Color.white.opacity(0.07)
-    private let stroke = Color.white.opacity(0.08)
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
-
-    private func isActive(_ tab: AppTab) -> Bool {
-        tab != .chat && selected == tab
-    }
-
-    var body: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 4) {
-                ForEach(tabs, id: \.self) { tab in
-                    let active = isActive(tab)
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        if tab == .chat {
-                            onChatTap()
-                        } else {
-                            selected = tab
-                        }
-                    } label: {
-                        Image(systemName: tab.icon)
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(active ? .white : Color.white.opacity(0.55))
-                            .frame(width: 48, height: 40)
-                            .background(
-                                Capsule(style: .continuous)
-                                    .fill(active ? amber.opacity(0.22) : Color.clear)
-                                    .overlay(
-                                        Capsule().stroke(
-                                            active ? amber.opacity(0.45) : Color.clear,
-                                            lineWidth: 0.5
-                                        )
-                                    )
-                            )
-                            .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(tab.label)
-                }
-            }
-            .padding(6)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay(Capsule().fill(pillBg))
-                    .overlay(Capsule().stroke(stroke, lineWidth: 0.5))
-            )
-
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                onCreateTap()
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 56, height: 56)
-                    .background(
-                        Circle()
-                            .fill(.ultraThinMaterial)
-                            .overlay(Circle().fill(pillBg))
-                            .overlay(Circle().stroke(stroke, lineWidth: 0.5))
-                    )
-                    .shadow(color: Color.black.opacity(0.35), radius: 12, y: 4)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Create")
-        }
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
-        .padding(.bottom, 14)
-    }
+enum AppTab: String {
+    case notes, create, library, templates
 }
 
 // MARK: - Library View
@@ -661,45 +561,32 @@ private struct TemplateEditSheet: View {
 struct ContentView: View {
     @State private var selectedTab: AppTab = .notes
     @State private var showSplash = true
-    @State private var showChat = false
-    @State private var showCreate = false
 
     var body: some View {
         ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07)
-                .ignoresSafeArea()
+            TabView(selection: $selectedTab) {
+                NotesView()
+                    .tabItem { Label("Notes",     systemImage: "note.text") }
+                    .tag(AppTab.notes)
+
+                HomeView()
+                    .tabItem { Label("Create",    systemImage: "sparkles") }
+                    .tag(AppTab.create)
+
+                LibraryView()
+                    .tabItem { Label("Library",   systemImage: "tray.2") }
+                    .tag(AppTab.library)
+
+                TemplatesView()
+                    .tabItem { Label("Templates", systemImage: "rectangle.stack") }
+                    .tag(AppTab.templates)
+            }
+            .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
 
             if showSplash {
                 LaunchView()
                     .transition(.opacity)
-            } else {
-                Group {
-                    switch selectedTab {
-                    case .notes:     NotesView()
-                    case .library:   LibraryView()
-                    case .templates: TemplatesView()
-                    case .chat:      EmptyView() // chat opens as a sheet; never selected
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    AppTabBar(
-                        selected: $selectedTab,
-                        onChatTap: { showChat = true },
-                        onCreateTap: { showCreate = true }
-                    )
-                }
-                .sheet(isPresented: $showChat) {
-                    ChatView()
-                        .presentationDetents([.large])
-                        .presentationDragIndicator(.hidden)
-                        .presentationCornerRadius(22)
-                        .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
-                }
-                .fullScreenCover(isPresented: $showCreate) {
-                    HomeView()
-                        .preferredColorScheme(.dark)
-                }
+                    .zIndex(1)
             }
         }
         .onAppear {
