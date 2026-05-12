@@ -248,12 +248,13 @@ function Sheet({ isOpen, onClose, children, height = 'auto', scrollable = true }
               overflow: 'hidden', display: 'flex', flexDirection: 'column',
               boxShadow: '0 -8px 32px rgba(0,0,0,0.6)',
               transition: 'bottom 0.25s ease, max-height 0.25s ease',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, paddingBottom: 4, flexShrink: 0 }}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} />
             </div>
-            <div style={{ flex: 1, overflowY: scrollable ? 'auto' : 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>{children}</div>
+            <div style={{ flex: 1, overflowY: scrollable ? 'auto' : 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column', overscrollBehavior: scrollable ? 'contain' : undefined }}>{children}</div>
           </motion.div>
         </>
       )}
@@ -275,9 +276,10 @@ function ImportSheet({ isOpen, onClose, onPick }: {
   const pick = (t: SourceType) => { onPick(t); onClose(); };
   return (
     <Sheet isOpen={isOpen} onClose={onClose}>
-      <div style={{ padding: '4px 16px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ padding: '4px 16px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.88)', fontSize: 19, fontWeight: 600 }}>Import content</div>
         <button
+          className="import-tile"
           onClick={() => pick('link')}
           style={{
             border: 'none', background: 'rgba(255,255,255,0.06)', borderRadius: 16, height: 88,
@@ -285,15 +287,16 @@ function ImportSheet({ isOpen, onClose, onPick }: {
             color: 'rgba(255,255,255,0.82)', cursor: 'pointer',
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/>
           </svg>
-          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.52)' }}>Paste a link</div>
+          <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.70)' }}>Paste a link</div>
         </button>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {tiles.map(t => (
             <button
               key={t.type}
+              className="import-tile"
               onClick={() => pick(t.type)}
               style={{
                 border: 'none', background: 'rgba(255,255,255,0.06)', borderRadius: 16, height: 88,
@@ -302,17 +305,25 @@ function ImportSheet({ isOpen, onClose, onPick }: {
               }}
             >
               <TileIcon icon={t.icon} />
-              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.52)' }}>{t.label}</div>
+              <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.70)' }}>{t.label}</div>
             </button>
           ))}
         </div>
+        <button
+          onClick={onClose}
+          style={{
+            width: '100%', border: 'none', background: 'rgba(255,255,255,0.06)', borderRadius: 16, height: 56,
+            color: 'rgba(255,255,255,0.55)', fontSize: 17, fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'var(--font-sans)',
+          }}
+        >Cancel</button>
       </div>
     </Sheet>
   );
 }
 
 function TileIcon({ icon }: { icon: 'file' | 'text' | 'voice' | 'image' }) {
-  const p = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor' as const, strokeWidth: 1.4, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  const p = { width: 28, height: 28, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor' as const, strokeWidth: 1.3, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   switch (icon) {
     case 'file':  return <svg {...p}><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M12 13v6M9 16l3-3 3 3"/></svg>;
     case 'text':  return <svg {...p}><path d="M17 3l4 4M14 6l4 4-9 9H5v-4z"/></svg>;
@@ -343,20 +354,20 @@ function TextInputSheet({ isOpen, onClose, onSave }: {
       <SheetHeader title="Text source" onCancel={onClose}
         action={<SaveButton enabled={canSave} onClick={handleSave} />} />
       <Divider />
-      <div style={{ flex: 1, overflow: 'hidden', padding: '14px 16px', minHeight: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '14px 16px', minHeight: 0, overflow: 'hidden' }}>
         <textarea
           ref={taRef}
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder="Paste your text, transcript or notes…"
           style={{
-            width: '100%', height: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none',
+            width: '100%', flex: 1, minHeight: 0, background: 'transparent', border: 'none', outline: 'none', resize: 'none',
             color: 'rgba(255,255,255,0.88)', fontSize: 16, fontFamily: 'var(--font-sans)', lineHeight: 1.55,
           }}
         />
       </div>
       {wordCount > 0 && (
-        <div style={{ padding: '6px 20px 14px', textAlign: 'right', color: 'rgba(255,255,255,0.28)', fontSize: 12 }}>
+        <div style={{ padding: '6px 20px 14px', textAlign: 'right', color: 'rgba(255,255,255,0.28)', fontSize: 13 }}>
           {wordCount} words
         </div>
       )}
@@ -383,34 +394,41 @@ function LinkInputSheet({ isOpen, onClose, onSave }: {
     onClose();
   };
   return (
-    <Sheet isOpen={isOpen} onClose={onClose} height="60vh">
+    <Sheet isOpen={isOpen} onClose={onClose} height="auto">
       <SheetHeader title="Link source" onCancel={onClose}
         action={<SaveButton enabled={isValid} onClick={handleSave} />} />
       <Divider />
-      <div style={{ padding: '18px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ color: 'rgba(255,255,255,0.35)', display: 'inline-flex' }}>
-          <SourceIcon type="link" />
-        </span>
-        <input
-          ref={inputRef}
-          value={url}
-          onChange={e => setUrl(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && isValid) handleSave(); }}
-          placeholder="example.com"
-          type="url"
-          autoCapitalize="none"
-          autoCorrect="off"
-          style={{
-            flex: 1, background: 'transparent', border: 'none', outline: 'none',
-            color: 'rgba(255,255,255,0.88)', fontSize: 16, fontFamily: 'var(--font-sans)',
-          }}
-        />
-        {url && (
-          <button onClick={() => setUrl('')} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: 4 }}>
-            <XIcon size={16} />
-          </button>
-        )}
+      <div style={{ padding: '12px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: '12px 14px' }}>
+          <span style={{ color: 'rgba(255,255,255,0.35)', display: 'inline-flex' }}>
+            <SourceIcon type="link" />
+          </span>
+          <input
+            ref={inputRef}
+            value={url}
+            onChange={e => setUrl(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && isValid) handleSave(); }}
+            placeholder="example.com"
+            type="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            style={{
+              flex: 1, background: 'transparent', border: 'none', outline: 'none',
+              color: 'rgba(255,255,255,0.88)', fontSize: 16, fontFamily: 'var(--font-sans)',
+            }}
+          />
+          {url && (
+            <button onClick={() => setUrl('')} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '12px 8px', display: 'flex' }}>
+              <XIcon size={16} />
+            </button>
+          )}
+        </div>
       </div>
+      {url.trim() && !isValid && (
+        <div style={{ padding: '4px 16px 12px', fontSize: 13, color: 'rgba(255,100,80,0.75)' }}>
+          Enter a valid web address
+        </div>
+      )}
     </Sheet>
   );
 }
@@ -423,13 +441,14 @@ function VoiceRecordSheet({ isOpen, onClose, onSave }: {
   const [recording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [seconds, setSeconds] = useState(0);
+  const [micError, setMicError] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const levelRef = useRef(0);
   const recognitionRef = useRef<{ stop?: () => void } | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      setRecording(false); setTranscript(''); setSeconds(0); levelRef.current = 0;
+      setRecording(false); setTranscript(''); setSeconds(0); setMicError(''); levelRef.current = 0;
       try { recognitionRef.current?.stop?.(); } catch { /* noop */ }
       recognitionRef.current = null;
     }
@@ -469,7 +488,7 @@ function VoiceRecordSheet({ isOpen, onClose, onSave }: {
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.88;
         audioCtx.createMediaStreamSource(stream).connect(analyser);
-      }).catch(() => { /* permission denied */ });
+      }).catch(() => { setMicError('Microphone access denied. Enable it in Settings.'); setRecording(false); });
     }
 
     const birthStart = Date.now();
@@ -555,36 +574,50 @@ function VoiceRecordSheet({ isOpen, onClose, onSave }: {
   const toggle = () => recording ? stopRec() : startRec();
   const handleDone = () => {
     const t = transcript.trim();
-    if (!t) { onClose(); return; }
+    if (!t) {
+      if (seconds > 0) { setMicError('No speech detected. Try again.'); return; }
+      onClose(); return;
+    }
     const label = truncateLabel(t, 40) || 'Voice note';
     onSave(label, t);
     onClose();
   };
   const timeLabel = `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
 
+  const doneAction = (
+    <button
+      onClick={handleDone}
+      style={{
+        border: 'none', background: 'transparent', cursor: 'pointer',
+        color: transcript ? '#F29E4D' : 'rgba(255,255,255,0.25)',
+        fontSize: 17, fontWeight: 600, padding: '11px 0', fontFamily: 'var(--font-sans)',
+      }}
+    >Done</button>
+  );
+
   return (
     <Sheet isOpen={isOpen} onClose={onClose} height="86vh">
-      <SheetHeader title="Voice Note" onCancel={onClose} action={null} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px 24px' }}>
+      <SheetHeader title="Voice Note" onCancel={onClose} action={doneAction} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px 12px' }}>
         <div onClick={toggle} style={{ width: '100%', height: 280, cursor: 'pointer', position: 'relative' }}>
           <canvas ref={canvasRef} style={{ width: '100%', height: '100%', mixBlendMode: 'screen' }} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, width: '100%' }}>
           <div style={{
-            color: recording ? 'rgba(255,255,255,0.80)' : 'rgba(255,255,255,0.40)',
+            color: recording ? 'rgba(255,255,255,0.80)' : 'rgba(255,255,255,0.62)',
             fontSize: 17, fontFamily: recording ? 'var(--font-mono, monospace)' : 'var(--font-sans)',
           }}>
             {recording ? timeLabel : 'Tap orb to record'}
           </div>
+          {micError && (
+            <div style={{ fontSize: 13, color: 'rgba(255,100,100,0.80)', textAlign: 'center' }}>{micError}</div>
+          )}
           {transcript && (
             <div style={{
               width: '100%', maxHeight: 140, overflowY: 'auto', padding: '12px 14px',
               borderRadius: 14, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
               color: 'rgba(255,255,255,0.80)', fontSize: 15, lineHeight: 1.5,
             }}>{transcript}</div>
-          )}
-          {transcript && (
-            <AnimatedLightsButton title={recording ? 'Done' : 'Use this'} onClick={handleDone} isEnabled={true} />
           )}
         </div>
       </div>
@@ -637,7 +670,7 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
       {/* Header */}
       <div style={{ padding: '8px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 17, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-sans)' }}>Cancel</button>
-        <div style={{ color: '#fff', fontSize: 17, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Format</div>
+        <div style={{ color: '#fff', fontSize: 17, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Choose formats</div>
         <div style={{ minWidth: 56, textAlign: 'right' }} />
       </div>
 
@@ -689,8 +722,10 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
                           </div>
                           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>{tpl.description}</div>
                         </div>
-                        {active && (
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 2, flexShrink: 0 }}><path d="M20 6L9 17l-5-5"/></svg>
+                        {active ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 2, flexShrink: 0 }}><path d="M20 6L9 17l-5-5"/></svg>
+                        ) : (
+                          <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.15)', flexShrink: 0, marginTop: 2 }} />
                         )}
                       </button>
                       {i < displayedTemplates.length - 1 && <RowDivider />}
@@ -721,7 +756,7 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
                     <div key={f.id}>
                       <button
                         onClick={() => toggleFormat(f.id)}
-                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 14, fontFamily: 'var(--font-sans)' }}
+                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, fontFamily: 'var(--font-sans)' }}
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill={on ? GREEN : 'none'} stroke={on ? GREEN : 'rgba(255,255,255,0.22)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                           {on
@@ -769,7 +804,7 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
 function SheetHeader({ title, onCancel, action }: { title: string; onCancel: () => void; action: React.ReactNode }) {
   return (
     <div style={{ padding: '4px 16px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <button onClick={onCancel} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 17, cursor: 'pointer', padding: 0, minWidth: 56, textAlign: 'left' }}>Cancel</button>
+      <button onClick={onCancel} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 17, cursor: 'pointer', padding: '11px 0', minWidth: 56, textAlign: 'left' }}>Cancel</button>
       <div style={{ color: '#fff', fontSize: 17, fontWeight: 600 }}>{title}</div>
       <div style={{ minWidth: 56, textAlign: 'right' }}>{action}</div>
     </div>
@@ -784,7 +819,7 @@ function SaveButton({ enabled, onClick }: { enabled: boolean; onClick: () => voi
       style={{
         border: 'none', background: 'transparent', cursor: enabled ? 'pointer' : 'default',
         color: enabled ? '#F29E4D' : 'rgba(255,255,255,0.25)',
-        fontSize: 17, fontWeight: 600, padding: 0, fontFamily: 'var(--font-sans)',
+        fontSize: 17, fontWeight: 600, padding: '11px 0', fontFamily: 'var(--font-sans)',
       }}
     >Save</button>
   );
@@ -972,6 +1007,7 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
       <style>{`
         .create-prompt::placeholder { color: rgba(255,255,255,0.18); }
         .create-prompt::-webkit-input-placeholder { color: rgba(255,255,255,0.18); }
+        .import-tile:active { background: rgba(255,255,255,0.12) !important; }
       `}</style>
       {/* Background tints */}
       <div style={{
@@ -1198,19 +1234,18 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
       <FormatPickerSheet isOpen={showFormats} onClose={() => setShowFormats(false)} selected={selectedFormats} onChange={setSelectedFormats} />
       <Sheet isOpen={showPromptFull} onClose={() => setShowPromptFull(false)} height="80vh" scrollable={false}>
         <SheetHeader title="Extra details" onCancel={() => setShowPromptFull(false)}
-          action={<button onClick={() => setShowPromptFull(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#F29E4D', fontSize: 16, fontWeight: 600, padding: 0, fontFamily: 'var(--font-sans)' }}>Done</button>} />
+          action={<button onClick={() => setShowPromptFull(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#F29E4D', fontSize: 17, fontWeight: 600, padding: '11px 0', fontFamily: 'var(--font-sans)' }}>Done</button>} />
         <Divider />
-        <div style={{ padding: '14px 16px', height: 'calc(100% - 56px)', boxSizing: 'border-box' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '14px 16px', minHeight: 0 }}>
           <textarea
             className="create-prompt"
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
             placeholder="Leave empty to generate from sources and format."
             style={{
-              width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none',
+              width: '100%', flex: 1, minHeight: 0, background: 'transparent', border: 'none', outline: 'none', resize: 'none',
               color: 'rgba(255,255,255,0.88)', fontSize: 16, fontFamily: 'var(--font-sans)', lineHeight: 1.55,
-              boxSizing: 'border-box',
-              height: '60vh', minHeight: '60vh', maxHeight: '60vh', display: 'block',
+              boxSizing: 'border-box', display: 'block',
               WebkitAppearance: 'none', appearance: 'none',
             }}
           />
