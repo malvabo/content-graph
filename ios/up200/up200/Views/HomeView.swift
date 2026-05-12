@@ -1747,12 +1747,15 @@ private struct FormatPickerSheet: View {
 
     @ViewBuilder
     private func sectionHeader(_ title: String) -> some View {
+        // Breathing room above (clear section break), negative bottom
+        // padding so the header tightly attaches to its first row instead
+        // of floating with LazyVStack's full 10pt spacing below it.
         Text(title)
             .font(.app(size: 13, weight: .medium))
             .foregroundColor(Color.white.opacity(0.55))
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 6)
-            .padding(.bottom, 2)
+            .padding(.top, 14)
+            .padding(.bottom, -6)
     }
 
     @ViewBuilder
