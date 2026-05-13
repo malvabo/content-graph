@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - App Tab
 
 enum AppTab: String {
-    case notes, create, library, templates
+    case notes, create, templates
 }
 
 // MARK: - Library View
@@ -712,9 +712,9 @@ private struct AppTabBar: View {
     @Binding var selected: AppTab
 
     private let mainItems: [(AppTab, String, String)] = [
-        (.notes,     "note.text",        "Home"),
-        (.library,   "folder",           "Explore"),
-        (.templates, "square.on.square", "Templates"),
+        (.notes,     "house",                "Home"),
+        (.create,    "sparkles",             "Creator"),
+        (.templates, "square.grid.2x2.fill", "Templates"),
     ]
 
     var body: some View {
@@ -726,8 +726,17 @@ private struct AppTabBar: View {
                         selected = tab
                     } label: {
                         VStack(spacing: 4) {
-                            Image(systemName: icon)
-                                .font(.system(size: 22, weight: selected == tab ? .semibold : .regular))
+                            if tab == .create {
+                                SparkRaysShape()
+                                    .stroke(style: StrokeStyle(
+                                        lineWidth: selected == tab ? 2.2 : 1.8,
+                                        lineCap: .round
+                                    ))
+                                    .frame(width: 24, height: 24)
+                            } else {
+                                Image(systemName: icon)
+                                    .font(.system(size: 22, weight: selected == tab ? .semibold : .regular))
+                            }
                             Text(label)
                                 .font(.system(size: 13, weight: selected == tab ? .semibold : .regular))
                         }
@@ -760,22 +769,14 @@ private struct AppTabBar: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 selected = .create
             } label: {
-                VStack(spacing: 4) {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 22, weight: selected == .create ? .semibold : .regular))
-                    Text("Creator")
-                        .font(.system(size: 13, weight: selected == .create ? .semibold : .regular))
-                }
-                .foregroundColor(selected == .create ? .white : Color.white.opacity(0.55))
-                .frame(width: 76, height: 76)
-                .background(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-                        )
-                )
+                Image(systemName: "plus")
+                    .font(.system(size: 22, weight: .regular))
+                    .foregroundColor(Color.white.opacity(0.85))
+                    .frame(width: 76, height: 76)
+                    .background(
+                        Circle()
+                            .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
+                    )
             }
             .buttonStyle(.plain)
         }
@@ -801,7 +802,6 @@ struct ContentView: View {
             TabView(selection: $selectedTab) {
                 NotesView().tag(AppTab.notes)
                 HomeView().tag(AppTab.create)
-                LibraryView().tag(AppTab.library)
                 TemplatesView().tag(AppTab.templates)
             }
             .environmentObject(bannerController)

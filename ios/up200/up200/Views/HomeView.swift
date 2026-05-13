@@ -466,7 +466,7 @@ final class VoiceRecorder: ObservableObject {
 
 /// Sun-rays mark — 8 short rays radiating from a centre gap, scaled to the
 /// shape's bounds. Mirrors the web's `<SparkIcon>` SVG path.
-private struct SparkRaysShape: Shape {
+struct SparkRaysShape: Shape {
     func path(in rect: CGRect) -> Path {
         let w = rect.width
         let pt: (Double, Double) -> CGPoint = { x, y in
