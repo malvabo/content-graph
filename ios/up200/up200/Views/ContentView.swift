@@ -228,12 +228,8 @@ private struct ProjectRow: View {
             .padding(.vertical, 16)
         }
         .buttonStyle(.plain)
-        .sheet(isPresented: $showDetail) {
+        .fullScreenCover(isPresented: $showDetail) {
             ProjectDetailView(project: project)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(22)
-                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }
@@ -243,77 +239,119 @@ private struct ProjectDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var copied = false
 
+    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private var bodyText: String { project.content.isEmpty ? project.preview : project.content }
+
+    private var dateString: String {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        return f.string(from: project.date)
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.app(size: 13, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.60))
-                        .frame(width: 28, height: 28)
-                        .background(Color.white.opacity(0.10))
-                        .clipShape(Circle())
+        ZStack {
+            bg.ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 0) {
+                // Top bar
+                HStack(spacing: 10) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(Circle())
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    Spacer()
+
+                    ShareLink(item: bodyText) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(Circle())
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                Spacer(minLength: 0)
-                Text("Output")
-                    .font(.app(size: 16, weight: .semibold))
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .padding(.bottom, 12)
+
+                // Date
+                Text(dateString)
+                    .font(.app(size: 13))
+                    .foregroundColor(Color.white.opacity(0.40))
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 4)
+
+                // Output type as title
+                Text(project.outputType)
+                    .font(.app(size: 28, weight: .bold))
                     .foregroundColor(.white)
-                Spacer(minLength: 0)
-                Color.clear.frame(width: 28, height: 28)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
-            .padding(.bottom, 14)
+                    .lineLimit(2)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 10)
 
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(project.outputType)
-                            .font(.app(size: 15, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.88))
-                            .lineLimit(1)
-                        Spacer(minLength: 8)
-                        Button {
-                            UIPasteboard.general.string = project.content.isEmpty ? project.preview : project.content
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            withAnimation(.easeOut(duration: 0.15)) { copied = true }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                withAnimation { copied = false }
-                            }
-                        } label: {
-                            Label(copied ? "Copied" : "Copy",
-                                  systemImage: copied ? "checkmark" : "doc.on.doc")
-                                .font(.app(size: 12, weight: .medium))
-                                .foregroundColor(copied ? .white : Color.white.opacity(0.55))
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    if !project.title.isEmpty {
-                        Text(project.title)
-                            .font(.app(size: 12))
-                            .foregroundColor(Color.white.opacity(0.32))
-                    }
-
-                    Text(project.content.isEmpty ? project.preview : project.content)
-                        .font(.app(size: 14))
-                        .foregroundColor(Color.white.opacity(0.82))
-                        .lineSpacing(4)
+                // Body
+                ScrollView(showsIndicators: false) {
+                    Text(bodyText)
+                        .font(.app(size: 17))
+                        .foregroundColor(Color.white.opacity(0.88))
+                        .lineSpacing(5)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .textSelection(.enabled)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 96)
                 }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.white.opacity(0.04))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
-                )
-                .padding(.horizontal, 16)
-                .padding(.bottom, 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Button {
+                UIPasteboard.general.string = bodyText
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                withAnimation(.easeOut(duration: 0.15)) { copied = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    withAnimation { copied = false }
+                }
+            } label: {
+                Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(copied ? Color.white.opacity(0.70) : .white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(copied ? Color.white.opacity(0.07) : Color.white.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .animation(.easeOut(duration: 0.2), value: copied)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+            .background(alignment: .top) {
+                LinearGradient(
+                    colors: [bg.opacity(0), bg],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 28)
+                .offset(y: -28)
+                .allowsHitTesting(false)
+            }
+            .background(bg)
         }
     }
 }
