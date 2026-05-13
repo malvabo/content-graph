@@ -445,6 +445,7 @@ private struct NoteVoiceSheet: View {
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
     private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private static let miniDetent = PresentationDetent.height(88)
 
     private var timeLabel: String {
         String(format: "%02d:%02d", seconds / 60, seconds % 60)
@@ -457,9 +458,11 @@ private struct NoteVoiceSheet: View {
         return accumulatedTranscript + " " + cur
     }
 
+    private var isMini: Bool { selectedDetent == Self.miniDetent }
+
     var body: some View {
         ZStack {
-            sheetBg.ignoresSafeArea()
+            if !isMini { sheetBg.ignoresSafeArea() }
 
             if selectedDetent == .large {
                 NoteComposerSheet(
@@ -474,15 +477,18 @@ private struct NoteVoiceSheet: View {
                     onDelete: nil
                 )
                 .transition(.opacity)
+            } else if isMini {
+                miniPlayer
+                    .transition(.opacity)
             } else {
                 voiceUI
                     .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.22), value: selectedDetent == .large)
-        .presentationDetents([.medium, .large], selection: $selectedDetent)
+        .animation(.easeInOut(duration: 0.22), value: selectedDetent)
+        .presentationDetents([Self.miniDetent, .medium, .large], selection: $selectedDetent)
         .presentationDragIndicator(.visible)
-        .presentationBackground(sheetBg)
+        .presentationBackground(isMini ? Color.clear : sheetBg)
         .presentationCornerRadius(22)
         .task { dictation.start() }
         .onReceive(clock) { _ in
@@ -494,6 +500,71 @@ private struct NoteVoiceSheet: View {
                 dictation.stop()
             }
         }
+    }
+
+    private func endRecording() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        let transcript = fullTranscript
+        dictation.stop()
+        guard !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            dismiss(); return
+        }
+        var note = Note()
+        note.body = transcript
+        note.updatedAt = Date()
+        onSave(note)
+        dismiss()
+    }
+
+    private var miniPlayer: some View {
+        HStack(spacing: 0) {
+            Button {
+                dictation.stop()
+                dismiss()
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.65))
+                    .frame(width: 48, height: 48)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .padding(.leading, 14)
+
+            Spacer()
+
+            HStack(spacing: 14) {
+                Waveform(level: dictation.audioLevel)
+                    .frame(width: 90)
+                Text(timeLabel)
+                    .font(.system(size: 16, design: .monospaced))
+                    .foregroundColor(Color.white.opacity(0.55))
+            }
+
+            Spacer()
+
+            Button { endRecording() } label: {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 48, height: 48)
+                    .background(amber)
+                    .clipShape(Circle())
+                    .shadow(color: amber.opacity(0.4), radius: 8, y: 2)
+            }
+            .buttonStyle(.plain)
+            .padding(.trailing, 14)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 64)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(red: 0.16, green: 0.13, blue: 0.11))
+                .shadow(color: Color.black.opacity(0.45), radius: 18, y: 4)
+        )
+        .padding(.horizontal, 16)
+        .frame(maxHeight: .infinity, alignment: .center)
     }
 
     private var voiceUI: some View {
@@ -559,20 +630,7 @@ private struct NoteVoiceSheet: View {
                 }
                 .buttonStyle(.plain)
 
-                Button {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    let transcript = fullTranscript
-                    dictation.stop()
-                    guard !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                        dismiss()
-                        return
-                    }
-                    var note = Note()
-                    note.body = transcript
-                    note.updatedAt = Date()
-                    onSave(note)
-                    dismiss()
-                } label: {
+                Button { endRecording() } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "stop.fill")
                             .font(.system(size: 15, weight: .semibold))
