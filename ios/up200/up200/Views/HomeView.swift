@@ -255,33 +255,26 @@ private struct ContentGenerator {
 
 // MARK: - Generation Banner
 
-// Top-anchored generation status banner. Floats below the safe-area
-// edge (under the dynamic island) so the rest of the Create form stays
-// usable while generation runs.
-private struct GenerationBanner: View {
+struct GenerationBanner: View {
     let formatLabels: [String]
     let isReady: Bool
     var onTap: () -> Void
     var onDismiss: () -> Void
 
     @State private var pulse = false
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    @State private var glowPhase = false
 
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(amber.opacity(isReady ? 0.85 : 0.18))
-                    .frame(width: 38, height: 38)
-                    .scaleEffect(isReady ? 1 : (pulse ? 1.10 : 0.94))
-                    .animation(
-                        isReady ? nil :
-                            .easeInOut(duration: 1.2).repeatForever(autoreverses: true),
-                        value: pulse
-                    )
+                    .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(pulse ? 0.14 : 0.06))
+                    .frame(width: 36, height: 36)
+                    .blur(radius: 6)
+                    .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: pulse)
                 Image(systemName: isReady ? "checkmark" : "sparkles")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(isReady ? .white : amber)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(Color.white.opacity(isReady ? 0.90 : 0.72))
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -291,63 +284,63 @@ private struct GenerationBanner: View {
                     .lineLimit(1)
                 Text(formatLabels.joined(separator: " · "))
                     .font(.app(size: 12))
-                    .foregroundColor(Color.white.opacity(0.55))
+                    .foregroundColor(Color.white.opacity(0.50))
                     .lineLimit(1)
             }
 
             Spacer(minLength: 0)
 
-            // Action slot: explicit "Open" pill once content is ready (the
-            // banner's primary affordance), or a small X to cancel while
-            // generation is still running.
             if isReady {
                 Button(action: onTap) {
-                    Text("Open")
-                        .font(.app(size: 13, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .frame(height: 30)
-                        .background(amber)
-                        .clipShape(Capsule())
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
+                        Ellipse()
+                            .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.55))
+                            .frame(width: 80, height: 36)
+                            .blur(radius: 16)
+                            .offset(x: glowPhase ? 10 : -10)
+                            .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: glowPhase)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                        Text("Open")
+                            .font(.app(size: 13, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 68, height: 32)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
             } else {
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.60))
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.50))
                         .frame(width: 26, height: 26)
-                        .background(Color.white.opacity(0.10))
+                        .background(Color.white.opacity(0.08))
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .background(
-            LinearGradient(
-                colors: [
-                    Color(red: 0.30, green: 0.16, blue: 0.09),
-                    Color(red: 0.18, green: 0.10, blue: 0.06),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            ZStack {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color(red: 0.11, green: 0.09, blue: 0.08))
+                Ellipse()
+                    .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.06))
+                    .blur(radius: 20)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+            }
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .strokeBorder(amber.opacity(0.30), lineWidth: 0.5)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .shadow(color: Color.black.opacity(0.45), radius: 14, x: 0, y: 6)
-        // Whole banner is tappable when ready; ignored otherwise so taps
-        // pass through to the X button hit area only.
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: Color.black.opacity(0.40), radius: 16, x: 0, y: 8)
         .contentShape(Rectangle())
-        .onTapGesture {
-            if isReady { onTap() }
-        }
-        .onAppear { pulse = true }
+        .onTapGesture { if isReady { onTap() } }
+        .onAppear { pulse = true; glowPhase = true }
     }
 }
 
@@ -2347,13 +2340,10 @@ private struct BrandCard: View {
 
 // MARK: - Home View
 
-private enum GenerationBannerState {
-    case hidden, generating, ready
-}
-
 struct HomeView: View {
     var scrollToTopSignal: Int = 0
     var pendingSheet: Binding<SourceSheet?> = .constant(nil)
+    @EnvironmentObject private var bannerController: BannerController
 
     @State private var sources: [SourceItem] = []
     @State private var selectedFormatIDs: Set<String> = []
@@ -2361,8 +2351,6 @@ struct HomeView: View {
     @State private var brand = "Default"
 
     @State private var isGenerating = false
-    @State private var bannerState: GenerationBannerState = .hidden
-    @State private var bannerFormatLabels: [String] = []
     @State private var showResults = false
     @State private var generationResults: [GeneratedResult] = []
     @State private var generationFailed = false
@@ -2456,32 +2444,6 @@ struct HomeView: View {
                 .presentationCornerRadius(22)
                 .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
-        .overlay(alignment: .top) {
-            if bannerState != .hidden {
-                GenerationBanner(
-                    formatLabels: bannerFormatLabels,
-                    isReady: bannerState == .ready,
-                    onTap: {
-                        guard bannerState == .ready else { return }
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        bannerState = .hidden
-                        showResults = true
-                    },
-                    onDismiss: {
-                        if bannerState == .generating {
-                            generationTask?.cancel()
-                            generationTask = nil
-                            isGenerating = false
-                        }
-                        bannerState = .hidden
-                    }
-                )
-                .padding(.horizontal, 8)
-                .padding(.top, 6)
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
-        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerState)
         .alert("Generation failed", isPresented: $generationFailed) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -2522,8 +2484,11 @@ struct HomeView: View {
 
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         isGenerating = true
-        bannerFormatLabels = selectedFormatIDs.compactMap { id in allFormats.first { $0.id == id }?.label }
-        bannerState = .generating
+        bannerController.formatLabels = selectedFormatIDs.compactMap { id in allFormats.first { $0.id == id }?.label }
+        bannerController.isReady = false
+        bannerController.isVisible = true
+        bannerController.onOpen = { [self] in showResults = true; bannerController.isVisible = false }
+        bannerController.onCancel = { [self] in generationTask?.cancel(); generationTask = nil; isGenerating = false; bannerController.isVisible = false }
 
         let capturedSources = effectiveSources
         let capturedIDs = Array(selectedFormatIDs)
@@ -2549,15 +2514,12 @@ struct HomeView: View {
                 isGenerating = false
                 generationTask = nil
                 if results.isEmpty {
-                    bannerState = .hidden
+                    bannerController.isVisible = false
                     generationFailed = true
                 } else {
                     generationResults = results
                     saveToLibrary(results, sources: capturedSources)
-                    // Banner shifts from "Creating…" to "ready, tap to view".
-                    // Results no longer auto-present so the rest of the app
-                    // stays usable underneath the generating indicator.
-                    bannerState = .ready
+                    bannerController.isReady = true
                 }
             }
         }
