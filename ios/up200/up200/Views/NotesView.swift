@@ -591,24 +591,26 @@ private struct NoteVoiceSheet: View {
 
     private var voiceUI: some View {
         VStack(spacing: 0) {
-            HStack {
-                Spacer()
+            ZStack {
                 Text("Swipe up to add notes")
                     .font(.subheadline)
                     .foregroundColor(Color.white.opacity(0.35))
-                Spacer()
-                Button {
-                    dictation.stop()
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.55))
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.12))
-                        .clipShape(Circle())
+                    .frame(maxWidth: .infinity)
+                HStack {
+                    Spacer()
+                    Button {
+                        dictation.stop()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.55))
+                            .frame(width: 28, height: 28)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
