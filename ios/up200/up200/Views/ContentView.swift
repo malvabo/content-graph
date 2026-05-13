@@ -264,6 +264,11 @@ private struct ProjectDetailView: View {
 
 // MARK: - Templates View
 
+private enum TemplateDestination: Hashable {
+    case new
+    case edit(UUID)
+}
+
 struct TemplatesView: View {
     private let builtIn: [(title: String, subtitle: String, icon: String)] = [
         ("Landing page",     "Structured hero + sections copy",  "doc.richtext"),
@@ -278,17 +283,14 @@ struct TemplatesView: View {
 
     @AppStorage("custom_templates") private var customData: Data = Data()
     @State private var custom: [CustomTemplate] = []
-    @State private var showAdd = false
-    @State private var editingTemplate: CustomTemplate? = nil
-
-    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    @State private var path: [TemplateDestination] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             List {
                 ForEach(custom) { tpl in
                     TemplateRow(title: tpl.title)
-                        .onTapGesture { editingTemplate = tpl }
+                        .onTapGesture { path.append(.edit(tpl.id)) }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
                         .listRowSeparatorTint(Color.white.opacity(0.06))
@@ -311,27 +313,31 @@ struct TemplatesView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showAdd = true } label: {
+                    Button { path.append(.new) } label: {
                         Image(systemName: "plus")
                     }
                 }
             }
             .onAppear { custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? [] }
-            .sheet(isPresented: $showAdd) {
-                TemplateEditSheet(template: nil) { newTpl in
-                    custom.insert(newTpl, at: 0)
-                    saveCustom()
-                }
-            }
-            .sheet(item: $editingTemplate) { tpl in
-                TemplateEditSheet(template: tpl) { updated in
-                    if let idx = custom.firstIndex(where: { $0.id == tpl.id }) {
-                        custom[idx] = updated
+            .navigationDestination(for: TemplateDestination.self) { dest in
+                switch dest {
+                case .new:
+                    TemplateEditPage(template: nil) { newTpl in
+                        custom.insert(newTpl, at: 0)
+                        saveCustom()
                     }
-                    saveCustom()
-                } onDelete: {
-                    custom.removeAll { $0.id == tpl.id }
-                    saveCustom()
+                case .edit(let id):
+                    if let tpl = custom.first(where: { $0.id == id }) {
+                        TemplateEditPage(template: tpl) { updated in
+                            if let idx = custom.firstIndex(where: { $0.id == id }) {
+                                custom[idx] = updated
+                            }
+                            saveCustom()
+                        } onDelete: {
+                            custom.removeAll { $0.id == id }
+                            saveCustom()
+                        }
+                    }
                 }
             }
         }
@@ -356,7 +362,7 @@ private struct TemplateRow: View {
     }
 }
 
-private struct TemplateEditSheet: View {
+private struct TemplateEditPage: View {
     let originalID: UUID?
     let onSave: (CustomTemplate) -> Void
     let onDelete: (() -> Void)?
@@ -385,45 +391,10 @@ private struct TemplateEditSheet: View {
     private var isNew: Bool { originalID == nil }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button { dismiss() } label: {
-                    Text("Cancel")
-                        .font(.app(size: 16))
-                        .foregroundColor(Color.white.opacity(0.50))
-                }
-                .buttonStyle(.plain)
+        ZStack {
+            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
 
-                Spacer()
-
-                Text(isNew ? "New Template" : "Edit Template")
-                    .font(.app(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-
-                Spacer()
-
-                if !isNew, let del = onDelete {
-                    Button {
-                        del()
-                        dismiss()
-                    } label: {
-                        Image(systemName: "trash")
-                            .font(.system(size: 14))
-                            .foregroundColor(Color.red.opacity(0.65))
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Text("Cancel").font(.app(size: 16)).opacity(0)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 16)
-
-            Rectangle()
-                .fill(Color.white.opacity(0.06))
-                .frame(height: 0.5)
-
+            VStack(spacing: 0) {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     VStack(spacing: 10) {
@@ -538,12 +509,25 @@ private struct TemplateEditSheet: View {
             .disabled(title.isEmpty)
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
+            } // VStack
+        } // ZStack
+        .navigationTitle(isNew ? "New Template" : "Edit Template")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            if !isNew, let del = onDelete {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        del()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundColor(Color.red.opacity(0.65))
+                    }
+                }
+            }
         }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(22)
-        .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
-        .interactiveDismissDisabled(isNew && (!title.isEmpty || !prompt.isEmpty))
         .task { focus = .title }
     }
 }
