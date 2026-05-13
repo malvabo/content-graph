@@ -567,6 +567,84 @@ private struct TemplateEditPage: View {
     }
 }
 
+// MARK: - Custom Tab Bar
+
+private struct AppTabBar: View {
+    @Binding var selected: AppTab
+
+    private let mainItems: [(AppTab, String, String)] = [
+        (.notes,     "note.text",        "Home"),
+        (.library,   "folder",           "Explore"),
+        (.templates, "square.on.square", "Templates"),
+    ]
+
+    var body: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 0) {
+                ForEach(mainItems, id: \.0.rawValue) { tab, icon, label in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        selected = tab
+                    } label: {
+                        VStack(spacing: 3) {
+                            Image(systemName: icon)
+                                .font(.system(size: 18, weight: selected == tab ? .semibold : .regular))
+                            Text(label)
+                                .font(.system(size: 10, weight: selected == tab ? .semibold : .regular))
+                        }
+                        .foregroundColor(selected == tab ? .white : Color.white.opacity(0.38))
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .background(
+                            Group {
+                                if selected == tab {
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(Color.white.opacity(0.12))
+                                        .padding(.horizontal, 4)
+                                }
+                            }
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                    )
+            )
+
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                selected = .create
+            } label: {
+                VStack(spacing: 3) {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 18, weight: selected == .create ? .semibold : .regular))
+                    Text("Creator")
+                        .font(.system(size: 10, weight: selected == .create ? .semibold : .regular))
+                }
+                .foregroundColor(selected == .create ? .white : Color.white.opacity(0.55))
+                .frame(width: 62, height: 62)
+                .background(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .environment(\.colorScheme, .dark)
+    }
+}
+
 // MARK: - Content View
 
 struct ContentView: View {
@@ -574,24 +652,24 @@ struct ContentView: View {
     @State private var showSplash = true
     @StateObject private var bannerController = BannerController()
 
+    init() {
+        UITabBar.appearance().isHidden = true
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
             TabView(selection: $selectedTab) {
-                Tab("Notes", systemImage: "note.text", value: AppTab.notes) {
-                    NotesView()
-                }
-                Tab("Create", systemImage: "sparkles", value: AppTab.create) {
-                    HomeView()
-                }
-                Tab("Library", systemImage: "folder", value: AppTab.library) {
-                    LibraryView()
-                }
-                Tab("Templates", systemImage: "square.on.square", value: AppTab.templates) {
-                    TemplatesView()
-                }
+                NotesView().tag(AppTab.notes)
+                HomeView().tag(AppTab.create)
+                LibraryView().tag(AppTab.library)
+                TemplatesView().tag(AppTab.templates)
             }
             .environmentObject(bannerController)
-            .tint(.white)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                AppTabBar(selected: $selectedTab)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+            }
 
             if showSplash {
                 LaunchView()
