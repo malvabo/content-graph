@@ -613,19 +613,21 @@ private struct AppTabBar: View {
 struct ContentView: View {
     @State private var selectedTab: AppTab = .notes
     @State private var showSplash = true
+    @StateObject private var bannerController = BannerController()
 
     init() {
         UITabBar.appearance().isHidden = true
     }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .top) {
             TabView(selection: $selectedTab) {
                 NotesView().tag(AppTab.notes)
                 HomeView().tag(AppTab.create)
                 LibraryView().tag(AppTab.library)
                 TemplatesView().tag(AppTab.templates)
             }
+            .environmentObject(bannerController)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 AppTabBar(selected: $selectedTab)
                     .padding(.horizontal, 16)
@@ -637,7 +639,26 @@ struct ContentView: View {
                     .transition(.opacity)
                     .zIndex(1)
             }
+
+            if bannerController.isVisible {
+                GenerationBanner(
+                    formatLabels: bannerController.formatLabels,
+                    isReady: bannerController.isReady,
+                    onTap: {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        bannerController.onOpen?()
+                    },
+                    onDismiss: {
+                        bannerController.onCancel?()
+                    }
+                )
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(2)
+            }
         }
+        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation(.easeOut(duration: 0.3)) { showSplash = false }

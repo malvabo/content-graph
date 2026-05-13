@@ -246,6 +246,16 @@ private struct NoteListRow: View {
                         .font(.app(size: 12))
                         .foregroundColor(amber.opacity(0.75))
                 }
+                let otherTags = note.tags.filter { $0 != "Starred" }
+                if !otherTags.isEmpty {
+                    Text("\u{00B7}")
+                        .font(.app(size: 12))
+                        .foregroundColor(Color.white.opacity(0.22))
+                    Text(otherTags.joined(separator: ", "))
+                        .font(.app(size: 12))
+                        .foregroundColor(amber.opacity(0.75))
+                        .lineLimit(1)
+                }
             }
 
             Spacer(minLength: 0)
@@ -1121,6 +1131,7 @@ struct NotesView: View {
                                 .listRowInsets(EdgeInsets())
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)
+
 
                             ForEach(filteredNotes) { note in
                                 Button {

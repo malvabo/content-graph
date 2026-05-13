@@ -98,3 +98,11 @@ struct CustomTemplate: Identifiable, Codable {
     var prompt: String = ""
     var formatIDs: [String] = []
 }
+
+final class BannerController: ObservableObject {
+    @Published var isVisible = false
+    @Published var isReady = false
+    @Published var formatLabels: [String] = []
+    var onOpen: (() -> Void)?
+    var onCancel: (() -> Void)?
+}

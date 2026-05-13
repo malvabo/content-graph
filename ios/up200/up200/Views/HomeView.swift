@@ -255,34 +255,45 @@ private struct ContentGenerator {
 
 // MARK: - Generation Banner
 
-// Top-anchored generation status banner. Floats below the safe-area
-// edge (under the dynamic island) so the rest of the Create form stays
-// usable while generation runs.
-private struct GenerationBanner: View {
+struct GenerationBanner: View {
     let formatLabels: [String]
     let isReady: Bool
     var onTap: () -> Void
     var onDismiss: () -> Void
 
     @State private var pulse = false
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    @State private var glowPhase = false
+    @State private var p1 = false
+    @State private var p2 = false
+    @State private var p3 = false
 
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(amber.opacity(isReady ? 0.85 : 0.18))
-                    .frame(width: 38, height: 38)
-                    .scaleEffect(isReady ? 1 : (pulse ? 1.10 : 0.94))
-                    .animation(
-                        isReady ? nil :
-                            .easeInOut(duration: 1.2).repeatForever(autoreverses: true),
-                        value: pulse
-                    )
-                Image(systemName: isReady ? "checkmark" : "sparkles")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(isReady ? .white : amber)
+                    .fill(Color.white.opacity(0.05))
+                    .frame(width: 36, height: 36)
+                Circle()
+                    .fill(Color.white.opacity(p1 ? 0.90 : 0.40))
+                    .frame(width: p1 ? 4 : 3, height: p1 ? 4 : 3)
+                    .blur(radius: 1.5)
+                    .offset(x: -7, y: -6)
+                    .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: p1)
+                Circle()
+                    .fill(Color.white.opacity(p2 ? 0.70 : 0.25))
+                    .frame(width: p2 ? 3 : 2, height: p2 ? 3 : 2)
+                    .blur(radius: 1)
+                    .offset(x: 6, y: 1)
+                    .animation(.easeInOut(duration: 2.1).repeatForever(autoreverses: true), value: p2)
+                Circle()
+                    .fill(Color.white.opacity(p3 ? 0.80 : 0.35))
+                    .frame(width: p3 ? 3.5 : 2.5, height: p3 ? 3.5 : 2.5)
+                    .blur(radius: 1.2)
+                    .offset(x: -4, y: 7)
+                    .animation(.easeInOut(duration: 1.85).repeatForever(autoreverses: true), value: p3)
             }
+            .frame(width: 36, height: 36)
+            .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(isReady ? "Content ready" : "Creating your content")
@@ -291,63 +302,68 @@ private struct GenerationBanner: View {
                     .lineLimit(1)
                 Text(formatLabels.joined(separator: " · "))
                     .font(.app(size: 12))
-                    .foregroundColor(Color.white.opacity(0.55))
+                    .foregroundColor(Color.white.opacity(0.50))
                     .lineLimit(1)
             }
 
             Spacer(minLength: 0)
 
-            // Action slot: explicit "Open" pill once content is ready (the
-            // banner's primary affordance), or a small X to cancel while
-            // generation is still running.
             if isReady {
                 Button(action: onTap) {
-                    Text("Open")
-                        .font(.app(size: 13, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .frame(height: 30)
-                        .background(amber)
-                        .clipShape(Capsule())
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
+                        Ellipse()
+                            .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.55))
+                            .frame(width: 80, height: 36)
+                            .blur(radius: 16)
+                            .offset(x: glowPhase ? 10 : -10)
+                            .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: glowPhase)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                        Text("Open")
+                            .font(.app(size: 13, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 68, height: 32)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
             } else {
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.60))
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.50))
                         .frame(width: 26, height: 26)
-                        .background(Color.white.opacity(0.10))
+                        .background(Color.white.opacity(0.08))
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .background(
-            LinearGradient(
-                colors: [
-                    Color(red: 0.30, green: 0.16, blue: 0.09),
-                    Color(red: 0.18, green: 0.10, blue: 0.06),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            ZStack {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color(red: 0.11, green: 0.09, blue: 0.08))
+                Ellipse()
+                    .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.06))
+                    .blur(radius: 20)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+            }
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .strokeBorder(amber.opacity(0.30), lineWidth: 0.5)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .shadow(color: Color.black.opacity(0.45), radius: 14, x: 0, y: 6)
-        // Whole banner is tappable when ready; ignored otherwise so taps
-        // pass through to the X button hit area only.
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: Color.black.opacity(0.40), radius: 16, x: 0, y: 8)
         .contentShape(Rectangle())
-        .onTapGesture {
-            if isReady { onTap() }
+        .onTapGesture { if isReady { onTap() } }
+        .onAppear {
+            pulse = true; glowPhase = true
+            p1 = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { p2 = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { p3 = true }
         }
-        .onAppear { pulse = true }
     }
 }
 
@@ -1578,15 +1594,14 @@ private struct SourcesBlock: View {
                         }
                     }
                 case .note:
-                    NoteInputSheet { content in
+                    NotePickerSheet { note in
                         withAnimation(.spring(duration: 0.25)) {
-                            let label = String(content.prefix(40)).trimmingCharacters(in: .whitespacesAndNewlines)
-                            sources.append(SourceItem(type: .note, label: label.isEmpty ? "Note" : label, content: content))
+                            sources.append(SourceItem(type: .note, label: note.displayTitle, content: note.body))
                         }
                     }
                 }
             }
-            .presentationDetents(sheet == .picker ? [.medium, .large] : [.large])
+            .presentationDetents((sheet == .picker || sheet == .note) ? [.medium, .large] : [.large])
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(sheet == .text ? 10 : 22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
@@ -1658,69 +1673,116 @@ private struct SourcesBlock: View {
     }
 }
 
-// MARK: - Note Input Sheet
+// MARK: - Note Picker Sheet
 
-private struct NoteInputSheet: View {
-    var onSave: (String) -> Void
+private struct NotePickerSheet: View {
+    var onSelect: (Note) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var noteText = ""
-    @FocusState private var isFocused: Bool
+    @State private var query = ""
+    @State private var notes: [Note] = []
+    @FocusState private var searchFocused: Bool
 
     private let sheetBackground = Color(red: 0.10, green: 0.08, blue: 0.07)
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    private var filtered: [Note] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return notes }
+        return notes.filter {
+            $0.displayTitle.localizedCaseInsensitiveContains(q) ||
+            $0.body.localizedCaseInsensitiveContains(q)
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Button("Cancel") { dismiss() }
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .font(.app(size: 15))
+                    .foregroundColor(Color.white.opacity(0.35))
+                TextField("Search notes", text: $query)
                     .font(.app(size: 16))
-                    .foregroundColor(Color.white.opacity(0.45))
-                Spacer()
-                Image(systemName: "note.text")
-                    .font(.app(size: 16, weight: .regular))
-                    .foregroundColor(Color.white.opacity(0.50))
-                Spacer()
-                Button("Add") {
-                    let trimmed = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmed.isEmpty else { return }
-                    onSave(trimmed)
-                    dismiss()
+                    .foregroundColor(.white)
+                    .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
+                    .focused($searchFocused)
+                if !query.isEmpty {
+                    Button { query = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.app(size: 15))
+                            .foregroundColor(Color.white.opacity(0.30))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .font(.app(size: 16, weight: .semibold))
-                .foregroundColor(noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.white.opacity(0.25) : amber)
-                .disabled(noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.white.opacity(0.07))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 10)
 
             Rectangle()
                 .fill(Color.white.opacity(0.06))
                 .frame(height: 0.5)
 
-            ZStack(alignment: .topLeading) {
-                if noteText.isEmpty {
-                    Text("Write a note\u{2026}")
-                        .font(.app(size: 17))
-                        .foregroundColor(Color.white.opacity(0.28))
-                        .padding(.horizontal, 20)
-                        .padding(.top, 18)
-                        .allowsHitTesting(false)
+            if filtered.isEmpty {
+                Spacer()
+                VStack(spacing: 8) {
+                    Image(systemName: "note.text")
+                        .font(.system(size: 32, weight: .light))
+                        .foregroundColor(Color.white.opacity(0.18))
+                    Text(notes.isEmpty ? "No notes yet" : "No results")
+                        .font(.app(size: 15))
+                        .foregroundColor(Color.white.opacity(0.30))
                 }
-                TextEditor(text: $noteText)
-                    .font(.app(size: 17))
-                    .foregroundColor(Color.white.opacity(0.88))
-                    .lineSpacing(3)
-                    .tint(amber)
-                    .scrollContentBackground(.hidden)
-                    .background(.clear)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 14)
-                    .focused($isFocused)
+                Spacer()
+            } else {
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(filtered) { note in
+                            Button {
+                                onSelect(note)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 14) {
+                                    Image(systemName: "note.text")
+                                        .font(.app(size: 15))
+                                        .foregroundColor(Color.white.opacity(0.40))
+                                        .frame(width: 22)
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(note.displayTitle)
+                                            .font(.app(size: 15, weight: .medium))
+                                            .foregroundColor(Color.white.opacity(0.85))
+                                            .lineLimit(1)
+                                        if !note.preview.isEmpty {
+                                            Text(note.preview)
+                                                .font(.app(size: 13))
+                                                .foregroundColor(Color.white.opacity(0.38))
+                                                .lineLimit(1)
+                                        }
+                                    }
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 13)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+
+                            Rectangle()
+                                .fill(Color.white.opacity(0.05))
+                                .frame(height: 0.5)
+                                .padding(.leading, 52)
+                        }
+                    }
+                }
             }
-            .frame(maxHeight: .infinity)
         }
         .background(sheetBackground)
-        .onAppear { isFocused = true }
+        .onAppear {
+            notes = NotesStore.load().filter { !$0.isEmpty }
+            searchFocused = true
+        }
     }
 }
 
@@ -2096,23 +2158,15 @@ private struct FormatsBlock: View {
                         showPicker = true
                     } label: {
                         HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Format")
-                                    .font(.app(size: 15, weight: .medium))
-                                    .foregroundColor(Color.white.opacity(0.85))
-                                Text(selectedFormatIDs.isEmpty
-                                     ? "Tap to choose formats"
-                                     : "\(selectedFormatIDs.count) selected")
-                                    .font(.app(size: 13))
-                                    .foregroundColor(Color.white.opacity(0.40))
-                            }
+                            Text("Format")
+                                .font(.app(size: 15, weight: .medium))
+                                .foregroundColor(Color.white.opacity(0.85))
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .font(.app(size: 12, weight: .semibold))
                                 .foregroundColor(Color.white.opacity(0.20))
                         }
                         .contentShape(Rectangle())
-                        .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
                     }
                     .buttonStyle(.plain)
                 }
@@ -2178,6 +2232,17 @@ private struct FormatsBlock: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 14)
                 }
+                .mask(
+                    HStack(spacing: 0) {
+                        Color.black
+                        LinearGradient(
+                            colors: [.black, .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: 36)
+                    }
+                )
                 }
             }
             // Match PromptField's minimum footprint so the form has a
@@ -2298,13 +2363,10 @@ private struct BrandCard: View {
 
 // MARK: - Home View
 
-private enum GenerationBannerState {
-    case hidden, generating, ready
-}
-
 struct HomeView: View {
     var scrollToTopSignal: Int = 0
     var pendingSheet: Binding<SourceSheet?> = .constant(nil)
+    @EnvironmentObject private var bannerController: BannerController
 
     @State private var sources: [SourceItem] = []
     @State private var selectedFormatIDs: Set<String> = []
@@ -2312,8 +2374,6 @@ struct HomeView: View {
     @State private var brand = "Default"
 
     @State private var isGenerating = false
-    @State private var bannerState: GenerationBannerState = .hidden
-    @State private var bannerFormatLabels: [String] = []
     @State private var showResults = false
     @State private var generationResults: [GeneratedResult] = []
     @State private var generationFailed = false
@@ -2407,32 +2467,6 @@ struct HomeView: View {
                 .presentationCornerRadius(22)
                 .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
-        .overlay(alignment: .top) {
-            if bannerState != .hidden {
-                GenerationBanner(
-                    formatLabels: bannerFormatLabels,
-                    isReady: bannerState == .ready,
-                    onTap: {
-                        guard bannerState == .ready else { return }
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        bannerState = .hidden
-                        showResults = true
-                    },
-                    onDismiss: {
-                        if bannerState == .generating {
-                            generationTask?.cancel()
-                            generationTask = nil
-                            isGenerating = false
-                        }
-                        bannerState = .hidden
-                    }
-                )
-                .padding(.horizontal, 8)
-                .padding(.top, 6)
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
-        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerState)
         .alert("Generation failed", isPresented: $generationFailed) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -2473,8 +2507,11 @@ struct HomeView: View {
 
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         isGenerating = true
-        bannerFormatLabels = selectedFormatIDs.compactMap { id in allFormats.first { $0.id == id }?.label }
-        bannerState = .generating
+        bannerController.formatLabels = selectedFormatIDs.compactMap { id in allFormats.first { $0.id == id }?.label }
+        bannerController.isReady = false
+        bannerController.isVisible = true
+        bannerController.onOpen = { [self] in showResults = true; bannerController.isVisible = false }
+        bannerController.onCancel = { [self] in generationTask?.cancel(); generationTask = nil; isGenerating = false; bannerController.isVisible = false }
 
         let capturedSources = effectiveSources
         let capturedIDs = Array(selectedFormatIDs)
@@ -2500,15 +2537,12 @@ struct HomeView: View {
                 isGenerating = false
                 generationTask = nil
                 if results.isEmpty {
-                    bannerState = .hidden
+                    bannerController.isVisible = false
                     generationFailed = true
                 } else {
                     generationResults = results
                     saveToLibrary(results, sources: capturedSources)
-                    // Banner shifts from "Creating…" to "ready, tap to view".
-                    // Results no longer auto-present so the rest of the app
-                    // stays usable underneath the generating indicator.
-                    bannerState = .ready
+                    bannerController.isReady = true
                 }
             }
         }
