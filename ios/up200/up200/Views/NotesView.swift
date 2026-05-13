@@ -1169,7 +1169,7 @@ struct NotesView: View {
                                             toggleTag(tag, for: note)
                                         } label: {
                                             Label(
-                                                note.tags.contains(tag) ? "Remove "\(tag)"" : "Tag as "\(tag)"",
+                                                note.tags.contains(tag) ? "Remove \"\(tag)\"" : "Tag as \"\(tag)\"",
                                                 systemImage: note.tags.contains(tag) ? "tag.slash" : "tag"
                                             )
                                         }
