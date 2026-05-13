@@ -1578,15 +1578,14 @@ private struct SourcesBlock: View {
                         }
                     }
                 case .note:
-                    NoteInputSheet { content in
+                    NotePickerSheet { note in
                         withAnimation(.spring(duration: 0.25)) {
-                            let label = String(content.prefix(40)).trimmingCharacters(in: .whitespacesAndNewlines)
-                            sources.append(SourceItem(type: .note, label: label.isEmpty ? "Note" : label, content: content))
+                            sources.append(SourceItem(type: .note, label: note.displayTitle, content: note.body))
                         }
                     }
                 }
             }
-            .presentationDetents(sheet == .picker ? [.medium, .large] : [.large])
+            .presentationDetents((sheet == .picker || sheet == .note) ? [.medium, .large] : [.large])
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(sheet == .text ? 10 : 22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
@@ -1658,69 +1657,116 @@ private struct SourcesBlock: View {
     }
 }
 
-// MARK: - Note Input Sheet
+// MARK: - Note Picker Sheet
 
-private struct NoteInputSheet: View {
-    var onSave: (String) -> Void
+private struct NotePickerSheet: View {
+    var onSelect: (Note) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var noteText = ""
-    @FocusState private var isFocused: Bool
+    @State private var query = ""
+    @State private var notes: [Note] = []
+    @FocusState private var searchFocused: Bool
 
     private let sheetBackground = Color(red: 0.10, green: 0.08, blue: 0.07)
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    private var filtered: [Note] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return notes }
+        return notes.filter {
+            $0.displayTitle.localizedCaseInsensitiveContains(q) ||
+            $0.body.localizedCaseInsensitiveContains(q)
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Button("Cancel") { dismiss() }
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .font(.app(size: 15))
+                    .foregroundColor(Color.white.opacity(0.35))
+                TextField("Search notes", text: $query)
                     .font(.app(size: 16))
-                    .foregroundColor(Color.white.opacity(0.45))
-                Spacer()
-                Image(systemName: "note.text")
-                    .font(.app(size: 16, weight: .regular))
-                    .foregroundColor(Color.white.opacity(0.50))
-                Spacer()
-                Button("Add") {
-                    let trimmed = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmed.isEmpty else { return }
-                    onSave(trimmed)
-                    dismiss()
+                    .foregroundColor(.white)
+                    .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
+                    .focused($searchFocused)
+                if !query.isEmpty {
+                    Button { query = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.app(size: 15))
+                            .foregroundColor(Color.white.opacity(0.30))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .font(.app(size: 16, weight: .semibold))
-                .foregroundColor(noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.white.opacity(0.25) : amber)
-                .disabled(noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.white.opacity(0.07))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 10)
 
             Rectangle()
                 .fill(Color.white.opacity(0.06))
                 .frame(height: 0.5)
 
-            ZStack(alignment: .topLeading) {
-                if noteText.isEmpty {
-                    Text("Write a note\u{2026}")
-                        .font(.app(size: 17))
-                        .foregroundColor(Color.white.opacity(0.28))
-                        .padding(.horizontal, 20)
-                        .padding(.top, 18)
-                        .allowsHitTesting(false)
+            if filtered.isEmpty {
+                Spacer()
+                VStack(spacing: 8) {
+                    Image(systemName: "note.text")
+                        .font(.system(size: 32, weight: .light))
+                        .foregroundColor(Color.white.opacity(0.18))
+                    Text(notes.isEmpty ? "No notes yet" : "No results")
+                        .font(.app(size: 15))
+                        .foregroundColor(Color.white.opacity(0.30))
                 }
-                TextEditor(text: $noteText)
-                    .font(.app(size: 17))
-                    .foregroundColor(Color.white.opacity(0.88))
-                    .lineSpacing(3)
-                    .tint(amber)
-                    .scrollContentBackground(.hidden)
-                    .background(.clear)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 14)
-                    .focused($isFocused)
+                Spacer()
+            } else {
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(filtered) { note in
+                            Button {
+                                onSelect(note)
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 14) {
+                                    Image(systemName: "note.text")
+                                        .font(.app(size: 15))
+                                        .foregroundColor(Color.white.opacity(0.40))
+                                        .frame(width: 22)
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(note.displayTitle)
+                                            .font(.app(size: 15, weight: .medium))
+                                            .foregroundColor(Color.white.opacity(0.85))
+                                            .lineLimit(1)
+                                        if !note.preview.isEmpty {
+                                            Text(note.preview)
+                                                .font(.app(size: 13))
+                                                .foregroundColor(Color.white.opacity(0.38))
+                                                .lineLimit(1)
+                                        }
+                                    }
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 13)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+
+                            Rectangle()
+                                .fill(Color.white.opacity(0.05))
+                                .frame(height: 0.5)
+                                .padding(.leading, 52)
+                        }
+                    }
+                }
             }
-            .frame(maxHeight: .infinity)
         }
         .background(sheetBackground)
-        .onAppear { isFocused = true }
+        .onAppear {
+            notes = NotesStore.load().filter { !$0.isEmpty }
+            searchFocused = true
+        }
     }
 }
 
