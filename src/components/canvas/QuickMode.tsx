@@ -113,16 +113,10 @@ const CHIP_BASE: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 6,
   padding: '6px 14px', borderRadius: 'var(--radius-full)',
   fontSize: 13, lineHeight: '18px', fontFamily: 'var(--font-sans)',
-  cursor: 'pointer', border: '1px solid var(--color-border-subtle)',
-  background: 'var(--color-bg-surface)', color: 'var(--color-text-tertiary)',
-  transition: 'border-color 120ms, background 120ms, color 120ms',
+  cursor: 'pointer', transition: 'border-color 120ms, background 120ms, color 120ms',
   whiteSpace: 'nowrap', userSelect: 'none',
 };
-const CHIP_ACTIVE: React.CSSProperties = {
-  border: '1px solid var(--color-accent)',
-  background: 'var(--color-bg-surface)',
-  color: 'var(--color-accent)',
-};
+const CHIP_ACTIVE: React.CSSProperties = {};
 const FIELD_LABEL: React.CSSProperties = {
   display: 'block', fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)',
   color: 'var(--color-text-secondary)', marginBottom: 6, letterSpacing: 0.1,
@@ -726,6 +720,24 @@ export default function QuickMode() {
     @keyframes qm-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(201,48,48,0.4); } 50% { box-shadow: 0 0 0 8px rgba(201,48,48,0); } }
     @keyframes spin { to { transform: rotate(360deg); } }
     .qm-source-input { transition: opacity 200ms; }
+    .qm-chip {
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border-default);
+      color: var(--color-text-secondary);
+    }
+    :root.dark .qm-chip {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--color-text-tertiary);
+    }
+    .qm-chip.active {
+      border-color: var(--color-accent);
+      background: var(--color-bg-surface);
+      color: var(--color-accent);
+    }
+    :root.dark .qm-chip.active {
+      background: rgba(29,114,66,0.12);
+    }
   `;
 
   // ── Results page ──
@@ -792,7 +804,7 @@ export default function QuickMode() {
           {SOURCE_DEFS.map(({ key, label, icon }) => {
             const active = store.selectedSources.includes(key);
             return (
-              <button key={key} onClick={() => toggleSource(key)} style={{ ...CHIP_BASE, ...(active ? CHIP_ACTIVE : {}) }}>
+              <button key={key} onClick={() => toggleSource(key)} className={`qm-chip${active ? ' active' : ''}`} style={CHIP_BASE}>
                 {icon}{label}
               </button>
             );
@@ -825,7 +837,7 @@ export default function QuickMode() {
               <button
                 key={tpl.key}
                 onClick={() => selectTemplate(tpl.key)}
-                style={{ ...CHIP_BASE, ...(active ? CHIP_ACTIVE : {}), flexShrink: 0 }}
+                className={`qm-chip${active ? ' active' : ''}`} style={{ ...CHIP_BASE, flexShrink: 0 }}
               >
                 {tpl.label}
               </button>
@@ -855,7 +867,7 @@ export default function QuickMode() {
               <button
                 key={key}
                 onClick={() => toggleOutput(key)}
-                style={{ ...CHIP_BASE, ...(active ? CHIP_ACTIVE : {}), borderRadius: 'var(--radius-md)', padding: '10px 14px', justifyContent: 'flex-start' }}
+                className={`qm-chip${active ? ' active' : ''}`} style={{ ...CHIP_BASE, borderRadius: 'var(--radius-md)', padding: '10px 14px', justifyContent: 'flex-start' }}
               >
                 {label}
               </button>
