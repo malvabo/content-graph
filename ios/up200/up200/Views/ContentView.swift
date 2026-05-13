@@ -589,7 +589,7 @@ private struct AppTabBar: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 selected = .create
             } label: {
-                Image(systemName: "sparkles")
+                Image(systemName: "square.and.pencil")
                     .font(.system(size: 20, weight: selected == .create ? .semibold : .regular))
                     .foregroundColor(selected == .create ? .white : Color.white.opacity(0.70))
                     .frame(width: 62, height: 62)
