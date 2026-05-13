@@ -294,7 +294,7 @@ private struct ProjectDetailView: View {
                     .font(.app(size: 13))
                     .foregroundColor(Color.white.opacity(0.40))
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 4)
+                    .padding(.bottom, 8)
 
                 // Output type as title
                 Text(project.outputType)
@@ -302,7 +302,7 @@ private struct ProjectDetailView: View {
                     .foregroundColor(.white)
                     .lineLimit(2)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 10)
+                    .padding(.bottom, 20)
 
                 // Body
                 ScrollView(showsIndicators: false) {
