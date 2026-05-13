@@ -185,6 +185,7 @@ private struct ProjectGroupDetailView: View {
     @State private var selectedIndex: Int = 0
     @State private var editText: String = ""
     @State private var copied = false
+    @FocusState private var editorFocused: Bool
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
@@ -335,6 +336,7 @@ private struct ProjectGroupDetailView: View {
                                 .tint(.white)
                                 .padding(.horizontal, 16)
                                 .contentMargins(.bottom, 96, for: .scrollContent)
+                                .focused($editorFocused)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     }
@@ -346,6 +348,10 @@ private struct ProjectGroupDetailView: View {
         .toolbar(.hidden, for: .navigationBar)
         .task {
             if items.indices.contains(selectedIndex) { editText = bodyText(for: items[selectedIndex]) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { editorFocused = true }
+        }
+        .onChange(of: selectedIndex) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { editorFocused = true }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Button {
