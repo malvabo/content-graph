@@ -298,11 +298,11 @@ private struct ProjectDetailView: View {
 
                 // Output type as title
                 Text(project.outputType)
-                    .font(.app(size: 17, weight: .semibold))
+                    .font(.app(size: 28, weight: .bold))
                     .foregroundColor(.white)
                     .lineLimit(2)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 10)
 
                 // Body
                 ScrollView(showsIndicators: false) {
