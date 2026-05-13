@@ -954,7 +954,7 @@ private struct NoteEditorPage: View {
                     prompt: Text("Title").foregroundColor(Color.white.opacity(0.25)),
                     axis: .vertical
                 )
-                .font(.app(size: 17, weight: .semibold))
+                .font(.app(size: 26, weight: .bold))
                 .foregroundColor(.white)
                 .tint(.white)
                 .lineLimit(1...3)
