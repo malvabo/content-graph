@@ -107,27 +107,25 @@ struct LibraryView: View {
                     }
                 }
             }
-            .navigationTitle("")
+            .navigationTitle("Library")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    LeadingTitle(text: "Library")
-                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    TopBarPill {
-                        TopBarPillButton(
-                            systemImage: showSearch ? "xmark" : "magnifyingglass",
-                            isActive: showSearch
-                        ) {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            withAnimation(.easeInOut(duration: 0.22)) {
-                                showSearch.toggle()
-                                if !showSearch { searchText = "" }
-                                else { searchFocused = true }
-                            }
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        withAnimation(.easeInOut(duration: 0.22)) {
+                            showSearch.toggle()
+                            if !showSearch { searchText = "" }
+                            else { searchFocused = true }
                         }
+                    } label: {
+                        Image(systemName: showSearch ? "xmark" : "magnifyingglass")
+                            .font(.system(size: 17, weight: .regular))
+                            .frame(width: 32, height: 32)
+                            .background(Color.white.opacity(showSearch ? 0.12 : 0.0))
+                            .clipShape(Circle())
                     }
                 }
             }
