@@ -1248,6 +1248,7 @@ struct VoiceRecordSheet: View {
 
     var body: some View {
         ZStack {
+            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
             RadialGradient(
                 colors: [amber.opacity(recorder.isRecording ? 0.16 : 0.0), .clear],
                 center: .center, startRadius: 0, endRadius: 300
@@ -1256,83 +1257,74 @@ struct VoiceRecordSheet: View {
             .animation(.easeInOut(duration: 0.6), value: recorder.isRecording)
 
             VStack(spacing: 0) {
+                // Header
                 HStack {
-                    Button("Cancel") {
+                    Spacer()
+                    Text(recorder.isRecording ? "Recording…" : recorder.transcript.isEmpty ? "Voice Note" : "Done recording")
+                        .font(.subheadline)
+                        .foregroundColor(Color.white.opacity(0.35))
+                    Spacer()
+                    Button {
                         guard !isGenerating else { return }
                         recorder.stop()
                         dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.55))
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(Circle())
                     }
-                    .foregroundColor(Color.white.opacity(0.55))
+                    .buttonStyle(.plain)
                     .disabled(isGenerating)
-
-                    Spacer()
-
-                    Text("Voice Note")
-                        .font(.app(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-
-                    Spacer()
-                    Text("Cancel").foregroundColor(.clear)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 20)
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
 
-                Spacer()
+                Spacer(minLength: 24)
 
-                VStack(spacing: 32) {
-                    if recorder.isRecording {
-                        RecordingWaveform(level: recorder.audioLevel)
-                            .padding(.horizontal, 24)
-                            .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    } else {
-                        Button(action: handleMicTap) {
-                            Circle()
-                                .fill(amber.opacity(0.18))
-                                .frame(width: 76, height: 76)
-                                .overlay(
-                                    Image(systemName: "mic.fill")
-                                        .font(.app(size: 28, weight: .medium))
-                                        .foregroundColor(amber)
-                                )
-                                .overlay(Circle().stroke(amber.opacity(0.35), lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(isGenerating)
+                // Waveform or mic button
+                if recorder.isRecording {
+                    RecordingWaveform(level: recorder.audioLevel)
+                        .padding(.horizontal, 28)
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    }
-
-                    if isGenerating {
-                        Label("Generating title\u{2026}", systemImage: "sparkles")
-                            .font(.app(size: 15))
-                            .foregroundColor(Color.white.opacity(0.50))
-                            .transition(.opacity)
-                    } else if recorder.isRecording {
-                        HStack(spacing: 16) {
-                            Text(timeLabel)
-                                .font(.system(size: 20, design: .monospaced))
-                                .foregroundColor(Color.white.opacity(0.80))
-
-                            Button(action: handleMicTap) {
-                                Image(systemName: "stop.fill")
-                                    .font(.app(size: 15, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(width: 44, height: 44)
-                                    .background(amber)
-                                    .clipShape(Circle())
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(isGenerating)
-                        }
+                } else if !recorder.transcript.isEmpty {
+                    RecordingWaveform(level: 0)
+                        .padding(.horizontal, 28)
+                        .opacity(0.3)
                         .transition(.opacity)
-                    } else {
-                        Text("Tap to record")
-                            .font(.app(size: 17))
-                            .foregroundColor(Color.white.opacity(0.40))
-                            .transition(.opacity)
+                } else {
+                    Button(action: handleMicTap) {
+                        Circle()
+                            .fill(amber.opacity(0.18))
+                            .frame(width: 76, height: 76)
+                            .overlay(
+                                Image(systemName: "mic.fill")
+                                    .font(.app(size: 28, weight: .medium))
+                                    .foregroundColor(amber)
+                            )
+                            .overlay(Circle().stroke(amber.opacity(0.35), lineWidth: 1))
                     }
+                    .buttonStyle(.plain)
+                    .disabled(isGenerating)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 }
-                .animation(.spring(response: 0.4, dampingFraction: 0.75), value: recorder.isRecording)
-                .animation(.easeOut(duration: 0.2), value: isGenerating)
+
+                Spacer(minLength: 20)
+
+                // Timer
+                if recorder.isRecording || !recorder.transcript.isEmpty {
+                    Text(timeLabel)
+                        .font(.system(size: 22, weight: .medium, design: .monospaced))
+                        .foregroundColor(Color.white.opacity(0.70))
+                        .transition(.opacity)
+                } else {
+                    Text("Tap to record")
+                        .font(.app(size: 17))
+                        .foregroundColor(Color.white.opacity(0.40))
+                        .transition(.opacity)
+                }
 
                 if !recorder.transcript.isEmpty {
                     ScrollView(showsIndicators: false) {
@@ -1341,54 +1333,79 @@ struct VoiceRecordSheet: View {
                             .foregroundColor(Color.white.opacity(0.50))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
-                            .padding(.top, 24)
+                            .padding(.top, 16)
                             .frame(maxWidth: .infinity)
                     }
-                    .frame(maxHeight: 120)
+                    .frame(maxHeight: 100)
                     .transition(.opacity)
-                } else {
-                    Spacer()
                 }
 
-                Spacer()
+                Spacer(minLength: 24)
 
-                if recorder.isRecording && !recorder.transcript.isEmpty {
-                    Button {
-                        handleDone()
-                    } label: {
-                        Text("Done")
-                            .font(.app(size: 16, weight: .semibold))
+                // Bottom buttons
+                if isGenerating {
+                    Label("Generating title\u{2026}", systemImage: "sparkles")
+                        .font(.app(size: 15))
+                        .foregroundColor(Color.white.opacity(0.50))
+                        .padding(.bottom, 40)
+                        .transition(.opacity)
+                } else if recorder.isRecording {
+                    HStack(spacing: 12) {
+                        Button(action: handleMicTap) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "pause.fill")
+                                    .font(.system(size: 15, weight: .semibold))
+                                Text("Pause")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .frame(minWidth: 60)
+                            }
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(amber)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .frame(height: 56)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button(action: handleDone) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "stop.fill")
+                                    .font(.system(size: 15, weight: .semibold))
+                                Text("End")
+                                    .font(.system(size: 17, weight: .semibold))
+                            }
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 20)
                     .padding(.bottom, 40)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
-                } else if !recorder.isRecording && !recorder.transcript.isEmpty && !isGenerating {
-                    Button {
-                        handleDone()
-                    } label: {
+                } else if !recorder.transcript.isEmpty {
+                    Button(action: handleDone) {
                         Text("Use this")
                             .font(.app(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
+                            .frame(height: 56)
                             .background(amber)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 20)
                     .padding(.bottom, 40)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else {
-                    Color.clear.frame(height: 92)
+                    Color.clear.frame(height: 96)
                 }
             }
         }
+        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: recorder.isRecording)
+        .animation(.easeOut(duration: 0.2), value: isGenerating)
         .task { if autoStart { recorder.start() } }
         .onDisappear { recorder.stop() }
         .onReceive(clock) { _ in
