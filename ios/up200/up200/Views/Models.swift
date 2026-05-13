@@ -39,7 +39,7 @@ struct KeychainService {
     }
 }
 
-struct Note: Identifiable, Codable, Equatable {
+struct Note: Identifiable, Codable, Equatable, Hashable {
     var id = UUID()
     // Legacy field. The composer stores everything in `body`; this stays
     // for decoding stored notes written by earlier versions, and is folded
