@@ -2182,56 +2182,6 @@ private struct FormatsBlock: View {
 }
 
 // MARK: - Prompt Field
-                                            .frame(width: 16, height: 16)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                                .padding(.leading, 14)
-                                .padding(.trailing, 6)
-                                .padding(.vertical, 7)
-                                .background(Color.white.opacity(0.10))
-                                .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 0.5))
-                                .clipShape(Capsule())
-                                .transition(.scale.combined(with: .opacity))
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 14)
-                }
-                .mask(
-                    HStack(spacing: 0) {
-                        Color.black
-                        LinearGradient(
-                            stops: [
-                                .init(color: .black, location: 0),
-                                .init(color: .black.opacity(0.6), location: 0.4),
-                                .init(color: .clear, location: 1),
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                        .frame(width: 64)
-                    }
-                )
-                }
-            }
-            // Match PromptField's minimum footprint so the form has a
-            // consistent rhythm between the Format card and the
-            // "Add details" card below it.
-            .frame(minHeight: expanded ? 110 : 0)
-        }
-        .sheet(isPresented: $showPicker) {
-            FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(22)
-                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
-        }
-    }
-}
-
-// MARK: - Prompt Field
 
 private struct PromptField: View {
     @Binding var prompt: String
