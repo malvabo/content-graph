@@ -111,6 +111,7 @@ private final class NoteDictation: ObservableObject {
 
 struct NotesStore {
     static let key = "notes_v1"
+    private static let saveQueue = DispatchQueue(label: "com.up200.notes.save", qos: .utility)
 
     static func load() -> [Note] {
         guard let data = UserDefaults.standard.data(forKey: key) else { return [] }
@@ -118,9 +119,22 @@ struct NotesStore {
         return raw.map(Note.migrated)
     }
 
+    static func loadAsync() async -> [Note] {
+        await withCheckedContinuation { continuation in
+            saveQueue.async {
+                continuation.resume(returning: load())
+            }
+        }
+    }
+
     static func save(_ notes: [Note]) {
         guard let data = try? JSONEncoder().encode(notes) else { return }
         UserDefaults.standard.set(data, forKey: key)
+    }
+
+    static func saveInBackground(_ notes: [Note]) {
+        let snapshot = notes
+        saveQueue.async { save(snapshot) }
     }
 }
 
@@ -1114,6 +1128,7 @@ struct NotesView: View {
     @State private var notes: [Note] = []
     @State private var sheet: NoteSheet? = nil
     @State private var editingNote: Note? = nil
+    @State private var pendingSave: DispatchWorkItem? = nil
     @State private var searchText = ""
     @State private var selectedFilter: String? = nil
     @State private var customTags: [String] = UserDefaults.standard.stringArray(forKey: "note_custom_tags") ?? []
@@ -1144,7 +1159,7 @@ struct NotesView: View {
 
     private func delete(_ note: Note) {
         notes.removeAll { $0.id == note.id }
-        NotesStore.save(notes)
+        scheduleSave()
     }
 
     private func toggleTag(_ tag: String, for note: Note) {
@@ -1154,7 +1169,17 @@ struct NotesView: View {
         } else {
             notes[idx].tags.append(tag)
         }
-        NotesStore.save(notes)
+        scheduleSave()
+    }
+
+    private func scheduleSave() {
+        pendingSave?.cancel()
+        let snapshot = notes
+        let work = DispatchWorkItem {
+            NotesStore.saveInBackground(snapshot)
+        }
+        pendingSave = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
     }
 
     private func removeTag(_ tag: String) {
@@ -1309,7 +1334,7 @@ struct NotesView: View {
                         if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
                             notes[idx] = saved
                         }
-                        NotesStore.save(notes)
+                        scheduleSave()
                     },
                     onDelete: { delete(note) }
                 )
@@ -1324,13 +1349,13 @@ struct NotesView: View {
                 }
             }
         }
-        .onAppear { notes = NotesStore.load() }
+        .task { notes = await NotesStore.loadAsync() }
         .sheet(item: $sheet) { which in
             switch which {
             case .new:
                 NoteVoiceSheet(onSave: { saved in
                     notes.append(saved)
-                    NotesStore.save(notes)
+                    scheduleSave()
                 })
             }
         }

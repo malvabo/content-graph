@@ -11,26 +11,24 @@ enum AppTab: String {
 struct LibraryView: View {
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @State private var searchText = ""
+    @State private var cachedGroups: [(title: String, items: [GenerationProject])] = []
     @FocusState private var searchFocused: Bool
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
-    private var projects: [GenerationProject] {
-        (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+    private var filteredGroups: [(title: String, items: [GenerationProject])] {
+        guard !searchText.isEmpty else { return cachedGroups }
+        let q = searchText.lowercased()
+        return cachedGroups.filter { $0.title.lowercased().contains(q) }
     }
 
-    private var groups: [(title: String, items: [GenerationProject])] {
+    private func buildGroups() {
+        let projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
         var dict: [String: [GenerationProject]] = [:]
         for p in projects { dict[p.title, default: []].append(p) }
-        return dict
+        cachedGroups = dict
             .map { (title: $0.key, items: $0.value.sorted { $0.date > $1.date }) }
             .sorted { ($0.items.first?.date ?? .distantPast) > ($1.items.first?.date ?? .distantPast) }
-    }
-
-    private var filteredGroups: [(title: String, items: [GenerationProject])] {
-        guard !searchText.isEmpty else { return groups }
-        let q = searchText.lowercased()
-        return groups.filter { $0.title.lowercased().contains(q) }
     }
 
     var body: some View {
@@ -110,6 +108,8 @@ struct LibraryView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .task { buildGroups() }
+            .onChange(of: projectsData) { buildGroups() }
         }
     }
 }
