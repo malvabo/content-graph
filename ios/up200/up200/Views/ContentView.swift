@@ -587,7 +587,7 @@ private struct TemplateEditPage: View {
                                 .font(.app(size: 13, weight: .medium))
                                 .foregroundColor(Color.white.opacity(0.40))
                                 .padding(.horizontal, 20)
-                            TemplateTagFlow(items: allFormats, selectedIDs: $formatIDs, amber: amber)
+                            TemplateTagFlow(items: allFormats, selectedIDs: $formatIDs)
                                 .padding(.horizontal, 20)
                         }
 
@@ -640,7 +640,6 @@ private struct TemplateEditPage: View {
 private struct TemplateTagFlow: View {
     let items: [ContentFormat]
     @Binding var selectedIDs: Set<String>
-    let amber: Color
 
     var body: some View {
         ChipFlowLayout(spacing: 8) {
@@ -655,12 +654,12 @@ private struct TemplateTagFlow: View {
                 } label: {
                     Text(fmt.label)
                         .font(.app(size: 14, weight: selected ? .semibold : .regular))
-                        .foregroundColor(selected ? amber : Color.white.opacity(0.55))
+                        .foregroundColor(selected ? .white : Color.white.opacity(0.55))
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
-                        .background(selected ? amber.opacity(0.12) : Color.white.opacity(0.07))
+                        .background(selected ? Color.white.opacity(0.14) : Color.white.opacity(0.07))
                         .clipShape(Capsule())
-                        .overlay(Capsule().stroke(selected ? amber.opacity(0.35) : Color.white.opacity(0.10), lineWidth: 0.5))
+                        .overlay(Capsule().stroke(selected ? Color.white.opacity(0.30) : Color.white.opacity(0.10), lineWidth: 0.5))
                 }
                 .buttonStyle(.plain)
                 .animation(.easeOut(duration: 0.15), value: selected)
