@@ -386,7 +386,7 @@ private struct NoteVoiceSheet: View {
                 NoteComposerSheet(
                     note: {
                         var n = Note()
-                        n.body = accumulatedTranscript
+                        n.body = fullTranscript
                         return n
                     }(),
                     isNew: true,
