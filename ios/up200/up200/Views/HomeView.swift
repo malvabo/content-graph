@@ -2440,20 +2440,20 @@ struct HomeView: View {
                 }
             }
             .navigationTitle("Create")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showOnboarding = true } label: {
                         Image(systemName: "sun.max")
-                            .font(.system(size: 14, weight: .regular))
+                            .font(.system(size: 17, weight: .regular))
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showKeyUpdate = true } label: {
                         Image(systemName: "key.horizontal")
-                            .font(.system(size: 14, weight: .regular))
+                            .font(.system(size: 17, weight: .regular))
                     }
                 }
             }
