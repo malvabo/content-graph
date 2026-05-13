@@ -2142,23 +2142,15 @@ private struct FormatsBlock: View {
                         showPicker = true
                     } label: {
                         HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Format")
-                                    .font(.app(size: 15, weight: .medium))
-                                    .foregroundColor(Color.white.opacity(0.85))
-                                Text(selectedFormatIDs.isEmpty
-                                     ? "Tap to choose formats"
-                                     : "\(selectedFormatIDs.count) selected")
-                                    .font(.app(size: 13))
-                                    .foregroundColor(Color.white.opacity(0.40))
-                            }
+                            Text("Format")
+                                .font(.app(size: 15, weight: .medium))
+                                .foregroundColor(Color.white.opacity(0.85))
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .font(.app(size: 12, weight: .semibold))
                                 .foregroundColor(Color.white.opacity(0.20))
                         }
                         .contentShape(Rectangle())
-                        .animation(.easeOut(duration: 0.15), value: selectedFormatIDs.count)
                     }
                     .buttonStyle(.plain)
                 }
@@ -2224,6 +2216,17 @@ private struct FormatsBlock: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 14)
                 }
+                .mask(
+                    HStack(spacing: 0) {
+                        Color.black
+                        LinearGradient(
+                            colors: [.black, .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: 36)
+                    }
+                )
                 }
             }
             // Match PromptField's minimum footprint so the form has a
