@@ -1341,29 +1341,29 @@ struct NotesView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 4) {
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            withAnimation(.easeInOut(duration: 0.22)) {
-                                showSearch.toggle()
-                                if !showSearch { searchText = "" }
-                                else { searchFocused = true }
-                            }
-                        } label: {
-                            Image(systemName: showSearch ? "xmark" : "magnifyingglass")
-                                .font(.system(size: 17, weight: .regular))
-                                .frame(width: 32, height: 32)
-                                .background(Color.white.opacity(showSearch ? 0.12 : 0.0))
-                                .clipShape(Circle())
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        sheet = .new
+                    } label: {
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: 17, weight: .regular))
+                    }
+                    .accessibilityLabel("New note")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        withAnimation(.easeInOut(duration: 0.22)) {
+                            showSearch.toggle()
+                            if !showSearch { searchText = "" }
+                            else { searchFocused = true }
                         }
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            sheet = .new
-                        } label: {
-                            Image(systemName: "square.and.pencil")
-                                .font(.system(size: 17, weight: .regular))
-                        }
-                        .accessibilityLabel("New note")
+                    } label: {
+                        Image(systemName: showSearch ? "xmark" : "magnifyingglass")
+                            .font(.system(size: 17, weight: .regular))
+                            .frame(width: 32, height: 32)
+                            .background(Color.white.opacity(showSearch ? 0.12 : 0.0))
+                            .clipShape(Circle())
                     }
                 }
             }
