@@ -113,8 +113,8 @@ const CHIP_BASE: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: 6,
   padding: '6px 14px', borderRadius: 'var(--radius-full)',
   fontSize: 13, lineHeight: '18px', fontFamily: 'var(--font-sans)',
-  cursor: 'pointer', border: '1.5px solid var(--color-border-subtle)',
-  background: 'transparent', color: 'var(--color-text-secondary)',
+  cursor: 'pointer', border: '1.5px solid var(--color-border-default)',
+  background: 'var(--color-interactive-default)', color: 'var(--color-text-secondary)',
   transition: 'border-color 120ms, background 120ms, color 120ms',
   whiteSpace: 'nowrap', userSelect: 'none',
 };
