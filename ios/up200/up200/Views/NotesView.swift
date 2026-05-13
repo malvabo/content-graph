@@ -951,7 +951,7 @@ private struct NoteEditorPage: View {
                     prompt: Text("Title").foregroundColor(Color.white.opacity(0.25)),
                     axis: .vertical
                 )
-                .font(.app(size: 28, weight: .bold))
+                .font(.app(size: 17, weight: .semibold))
                 .foregroundColor(.white)
                 .tint(.white)
                 .lineLimit(1...3)
@@ -1332,7 +1332,7 @@ struct NotesView: View {
                 }
             }
             .navigationTitle("Notes")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {

@@ -108,7 +108,7 @@ struct LibraryView: View {
                 }
             }
             .navigationTitle("Library")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
@@ -194,7 +194,7 @@ private struct ProjectGroupView: View {
         .scrollContentBackground(.hidden)
         .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
         .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
     }
@@ -298,7 +298,7 @@ private struct ProjectDetailView: View {
 
                 // Output type as title
                 Text(project.outputType)
-                    .font(.app(size: 28, weight: .bold))
+                    .font(.app(size: 17, weight: .semibold))
                     .foregroundColor(.white)
                     .lineLimit(2)
                     .padding(.horizontal, 20)
@@ -402,7 +402,7 @@ struct TemplatesView: View {
             .scrollContentBackground(.hidden)
             .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
             .navigationTitle("Templates")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {

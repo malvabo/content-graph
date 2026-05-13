@@ -1840,7 +1840,7 @@ private struct FormatPickerSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Text("Choose formats")
-                    .font(.app(size: 20, weight: .semibold))
+                    .font(.app(size: 17, weight: .semibold))
                     .foregroundColor(.white)
                 Spacer()
                 Button("Cancel") { dismiss() }
