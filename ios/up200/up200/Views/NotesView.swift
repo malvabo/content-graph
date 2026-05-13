@@ -164,6 +164,53 @@ private enum RowDate {
         }
         return full.string(from: date)
     }
+
+    static func relative(from date: Date) -> String {
+        let diff = Date().timeIntervalSince(date)
+        if diff < 60 { return "Just now" }
+        if diff < 3600 {
+            let m = Int(diff / 60)
+            return "Viewed \(m) minute\(m == 1 ? "" : "s") ago"
+        }
+        if diff < 86400 {
+            let h = Int(diff / 3600)
+            return "Viewed \(h) hour\(h == 1 ? "" : "s") ago"
+        }
+        let cal = Calendar.current
+        if cal.isDateInYesterday(date) { return "Viewed yesterday" }
+        let d = Int(diff / 86400)
+        if d < 7 { return "Viewed \(d) days ago" }
+        return "Viewed \(monthDay.string(from: date))"
+    }
+}
+
+// MARK: - Note Thumbnail
+
+private struct NoteThumb: View {
+    let note: Note
+
+    private let lineWidths: [CGFloat] = [34, 26, 30, 18, 22, 28]
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(Color.white.opacity(0.07))
+            .overlay(
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(0..<6, id: \.self) { i in
+                        Capsule()
+                            .fill(Color.white.opacity(i == 0 ? 0.55 : 0.20))
+                            .frame(width: lineWidths[i], height: i == 0 ? 3 : 2)
+                    }
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+            )
+            .frame(width: 58, height: 72)
+    }
 }
 
 // MARK: - Row
@@ -173,47 +220,39 @@ private struct NoteListRow: View {
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Text(note.displayTitle)
-                    .font(.app(size: 20, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.88))
-                    .lineLimit(1)
-                if note.tags.contains("Starred") {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(amber)
+        HStack(spacing: 16) {
+            NoteThumb(note: note)
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 6) {
+                    Text(note.displayTitle)
+                        .font(.app(size: 19, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.88))
+                        .lineLimit(2)
+                    if note.tags.contains("Starred") {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(amber)
+                    }
+                }
+
+                Text(RowDate.relative(from: note.updatedAt))
+                    .font(.app(size: 14))
+                    .foregroundColor(Color.white.opacity(0.35))
+
+                let otherTags = note.tags.filter { $0 != "Starred" }
+                if !otherTags.isEmpty {
+                    Text(otherTags.joined(separator: " · "))
+                        .font(.app(size: 12))
+                        .foregroundColor(amber.opacity(0.75))
                 }
             }
 
-            HStack(spacing: 6) {
-                Text(RowDate.string(from: note.updatedAt))
-                    .font(.app(size: 12))
-                    .foregroundColor(Color.white.opacity(0.35))
-                if !note.preview.isEmpty {
-                    Text("\u{00B7}")
-                        .font(.app(size: 12))
-                        .foregroundColor(Color.white.opacity(0.22))
-                    Text(note.preview)
-                        .font(.app(size: 12))
-                        .foregroundColor(Color.white.opacity(0.40))
-                        .lineLimit(1)
-                }
-                let otherTags = note.tags.filter { $0 != "Starred" }
-                if !otherTags.isEmpty {
-                    Text("\u{00B7}")
-                        .font(.app(size: 12))
-                        .foregroundColor(Color.white.opacity(0.22))
-                    Text(otherTags.joined(separator: ", "))
-                        .font(.app(size: 12))
-                        .foregroundColor(amber.opacity(0.75))
-                        .lineLimit(1)
-                }
-            }
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.vertical, 12)
         .contentShape(Rectangle())
     }
 }
@@ -1073,6 +1112,16 @@ struct NotesView: View {
                         Spacer()
                     } else {
                         List {
+                            Text(selectedFilter ?? "Recent")
+                                .font(.app(size: 22, weight: .bold))
+                                .foregroundColor(Color.white.opacity(0.35))
+                                .padding(.horizontal, 20)
+                                .padding(.top, 12)
+                                .padding(.bottom, 4)
+                                .listRowInsets(EdgeInsets())
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+
                             ForEach(filteredNotes) { note in
                                 Button {
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -1083,8 +1132,7 @@ struct NotesView: View {
                                 .buttonStyle(.plain)
                                 .listRowInsets(EdgeInsets())
                                 .listRowBackground(Color.clear)
-                                .listRowSeparatorTint(Color.white.opacity(0.06))
-                                .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                                .listRowSeparator(.hidden)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     Button(role: .destructive) {
                                         delete(note)
