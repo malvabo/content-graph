@@ -306,7 +306,7 @@ private struct ProjectGroupDetailView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
                             Text(allFormats.first(where: { $0.id == item.outputType })?.label ?? item.outputType)
-                                .font(.app(size: 28, weight: .bold))
+                                .font(.app(size: 26, weight: .bold))
                                 .foregroundColor(.white)
                             Spacer()
                             Text(item.date, style: .date)
@@ -568,7 +568,7 @@ private struct TemplateEditPage: View {
                             prompt: Text("Template name").foregroundColor(Color.white.opacity(0.25)),
                             axis: .vertical
                         )
-                        .font(.app(size: 28, weight: .bold))
+                        .font(.app(size: 26, weight: .bold))
                         .foregroundColor(.white)
                         .tint(.white)
                         .lineLimit(1...3)
