@@ -2295,7 +2295,8 @@ struct HomeView: View {
     @State private var brand = "Default"
 
     @State private var isGenerating = false
-    @State private var resultProject: GenerationProject? = nil
+    @State private var resultBatch: ResultBatch? = nil
+    @State private var lastBatchIDs: [UUID] = []
     @State private var generationFailed = false
     @State private var generationFailReason = ""
     @State private var generationTask: Task<Void, Never>? = nil
@@ -2380,8 +2381,8 @@ struct HomeView: View {
                 }
             }
         }
-        .fullScreenCover(item: $resultProject) { project in
-            ProjectGroupDetailView(groupTitle: project.title, initialItems: [project])
+        .fullScreenCover(item: $resultBatch) { batch in
+            ProjectGroupDetailView(groupTitle: batch.title, initialItems: batch.items)
         }
         .alert("Generation failed", isPresented: $generationFailed) {
             Button("OK", role: .cancel) {}
@@ -2428,7 +2429,11 @@ struct HomeView: View {
         bannerController.isVisible = true
         bannerController.onOpen = { [self] in
             let projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
-            resultProject = projects.first
+            let batchItems = lastBatchIDs.compactMap { id in projects.first { $0.id == id } }
+            let items = batchItems.isEmpty ? (projects.first.map { [$0] } ?? []) : batchItems
+            if let first = items.first {
+                resultBatch = ResultBatch(title: first.title, items: items)
+            }
             bannerController.isVisible = false
         }
         bannerController.onCancel = { [self] in generationTask?.cancel(); generationTask = nil; isGenerating = false; bannerController.isVisible = false }
@@ -2470,17 +2475,26 @@ struct HomeView: View {
     private func saveToLibrary(_ results: [GeneratedResult], sources: [SourceItem]) {
         var projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
         let sourceTitle = sources.first?.label ?? "Untitled"
-        let formatLabel = results.map(\.formatLabel).joined(separator: ", ")
-        let preview = String(results.first?.content.prefix(160) ?? "")
-        let allContent = results.count == 1
-            ? results[0].content
-            : results.map { "## \($0.formatLabel)\n\n\($0.content)" }.joined(separator: "\n\n---\n\n")
-        projects.insert(
-            GenerationProject(title: sourceTitle, outputType: formatLabel, preview: preview, content: allContent, date: Date()),
-            at: 0
-        )
+        let now = Date()
+        let newProjects: [GenerationProject] = results.enumerated().map { idx, r in
+            GenerationProject(
+                title: sourceTitle,
+                outputType: r.formatID,
+                preview: String(r.content.prefix(160)),
+                content: r.content,
+                date: now.addingTimeInterval(-Double(idx) * 0.001)
+            )
+        }
+        lastBatchIDs = newProjects.map { $0.id }
+        projects.insert(contentsOf: newProjects, at: 0)
         projectsData = (try? JSONEncoder().encode(projects)) ?? Data()
     }
+}
+
+private struct ResultBatch: Identifiable {
+    let id = UUID()
+    let title: String
+    let items: [GenerationProject]
 }
 
 #Preview {
