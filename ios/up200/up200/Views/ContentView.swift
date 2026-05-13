@@ -158,46 +158,24 @@ private struct LibraryGroupRow: View {
 private struct ProjectGroupView: View {
     let title: String
     let items: [GenerationProject]
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
-
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 12) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.55))
-                    }
-                    .buttonStyle(.plain)
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 6)
-
-                Text(title)
-                    .font(.app(size: 28, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.88))
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(items.enumerated()), id: \.element.id) { idx, project in
-                            ProjectRow(project: project)
-                            if idx < items.count - 1 {
-                                Divider().background(Color.white.opacity(0.06)).padding(.leading, 20)
-                            }
-                        }
-                    }
-                    .padding(.bottom, 32)
-                }
+        List {
+            ForEach(Array(items.enumerated()), id: \.element.id) { idx, project in
+                ProjectRow(project: project)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(Color.white.opacity(0.06))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
             }
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.large)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 }
 
