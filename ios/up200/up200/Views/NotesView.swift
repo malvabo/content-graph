@@ -189,9 +189,8 @@ private enum RowDate {
 private struct NoteThumb: View {
     let note: Note
 
-    private let lineWidths: [CGFloat] = [34, 26, 30, 18, 22, 28]
-
     var body: some View {
+        let widths = Self.lineWidths(for: note.id)
         RoundedRectangle(cornerRadius: 10, style: .continuous)
             .fill(Color.white.opacity(0.07))
             .overlay(
@@ -199,7 +198,7 @@ private struct NoteThumb: View {
                     ForEach(0..<6, id: \.self) { i in
                         Capsule()
                             .fill(Color.white.opacity(i == 0 ? 0.55 : 0.20))
-                            .frame(width: lineWidths[i], height: i == 0 ? 3 : 2)
+                            .frame(width: widths[i], height: i == 0 ? 3 : 2)
                     }
                 }
                 .padding(10)
@@ -210,6 +209,14 @@ private struct NoteThumb: View {
                     .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
             )
             .frame(width: 58, height: 72)
+    }
+
+    private static func lineWidths(for id: UUID) -> [CGFloat] {
+        var h = id.hashValue
+        return (0..<6).map { _ in
+            h = h &* 1664525 &+ 1013904223
+            return 10 + CGFloat(h & 0x1F)
+        }
     }
 }
 
@@ -430,6 +437,7 @@ private struct NoteVoiceSheet: View {
     @State private var seconds = 0
     @State private var accumulatedTranscript = ""
     @State private var isPaused = false
+    @State private var showDiscardAlert = false
 
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
@@ -508,8 +516,8 @@ private struct NoteVoiceSheet: View {
     private var miniPlayer: some View {
         HStack(spacing: 0) {
             Button {
-                dictation.stop()
-                dismiss()
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                showDiscardAlert = true
             } label: {
                 Image(systemName: "trash")
                     .font(.system(size: 16, weight: .medium))
@@ -520,12 +528,22 @@ private struct NoteVoiceSheet: View {
             }
             .buttonStyle(.plain)
             .padding(.leading, 14)
+            .alert("Discard recording?", isPresented: $showDiscardAlert) {
+                Button("Discard", role: .destructive) {
+                    dictation.stop()
+                    dismiss()
+                }
+                Button("Keep", role: .cancel) {}
+            } message: {
+                Text("The current recording will be lost.")
+            }
 
             Spacer()
 
             HStack(spacing: 14) {
                 Waveform(level: dictation.audioLevel)
                     .frame(width: 90)
+                    .clipped()
                 Text(timeLabel)
                     .font(.system(size: 16, design: .monospaced))
                     .foregroundColor(Color.white.opacity(0.55))
@@ -549,11 +567,12 @@ private struct NoteVoiceSheet: View {
         .frame(height: 64)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color(red: 0.16, green: 0.13, blue: 0.11))
-                .shadow(color: Color.black.opacity(0.45), radius: 18, y: 4)
+                .fill(Color(red: 0.18, green: 0.14, blue: 0.12))
+                .shadow(color: Color.black.opacity(0.55), radius: 24, y: 6)
         )
         .padding(.horizontal, 16)
-        .frame(maxHeight: .infinity, alignment: .center)
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        .padding(.bottom, 12)
     }
 
     private var voiceUI: some View {
@@ -571,7 +590,7 @@ private struct NoteVoiceSheet: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.55))
-                        .frame(width: 30, height: 30)
+                        .frame(width: 44, height: 44)
                         .background(Color.white.opacity(0.12))
                         .clipShape(Circle())
                 }
@@ -580,18 +599,18 @@ private struct NoteVoiceSheet: View {
             .padding(.horizontal, 20)
             .padding(.top, 16)
 
-            Spacer()
+            Spacer(minLength: 24)
 
             NoteWaveform(level: dictation.audioLevel)
                 .padding(.horizontal, 28)
 
-            Spacer()
+            Spacer(minLength: 20)
 
             Text(timeLabel)
-                .font(.system(size: 32, weight: .semibold, design: .monospaced))
-                .foregroundColor(Color.white.opacity(0.85))
+                .font(.system(size: 22, weight: .medium, design: .monospaced))
+                .foregroundColor(Color.white.opacity(0.70))
 
-            Spacer()
+            Spacer(minLength: 24)
 
             HStack(spacing: 12) {
                 Button {
@@ -610,6 +629,7 @@ private struct NoteVoiceSheet: View {
                             .font(.system(size: 15, weight: .semibold))
                         Text(isPaused ? "Resume" : "Pause")
                             .font(.system(size: 17, weight: .semibold))
+                            .frame(minWidth: 60)
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -1049,7 +1069,9 @@ private struct NoteEditorPage: View {
 private struct FilterChip: View {
     let label: String
     let isSelected: Bool
+    let isDeletable: Bool
     let action: () -> Void
+    var onDelete: (() -> Void)? = nil
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     var body: some View {
@@ -1064,6 +1086,13 @@ private struct FilterChip: View {
         }
         .buttonStyle(.plain)
         .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isSelected)
+        .contextMenu {
+            if isDeletable, let onDelete {
+                Button(role: .destructive, action: onDelete) {
+                    Label("Remove tag", systemImage: "trash")
+                }
+            }
+        }
     }
 }
 
@@ -1128,6 +1157,12 @@ struct NotesView: View {
         NotesStore.save(notes)
     }
 
+    private func removeTag(_ tag: String) {
+        customTags.removeAll { $0 == tag }
+        UserDefaults.standard.set(customTags, forKey: "note_custom_tags")
+        if selectedFilter == tag { selectedFilter = nil }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -1136,13 +1171,17 @@ struct NotesView: View {
                 VStack(spacing: 0) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            FilterChip(label: "All", isSelected: selectedFilter == nil) {
+                            FilterChip(label: "All", isSelected: selectedFilter == nil, isDeletable: false) {
                                 withAnimation { selectedFilter = nil }
                             }
                             ForEach(allTags, id: \.self) { tag in
-                                FilterChip(label: tag, isSelected: selectedFilter == tag) {
-                                    withAnimation { selectedFilter = selectedFilter == tag ? nil : tag }
-                                }
+                                FilterChip(
+                                    label: tag,
+                                    isSelected: selectedFilter == tag,
+                                    isDeletable: customTags.contains(tag),
+                                    action: { withAnimation { selectedFilter = selectedFilter == tag ? nil : tag } },
+                                    onDelete: customTags.contains(tag) ? { removeTag(tag) } : nil
+                                )
                             }
                             Button {
                                 newTagName = ""

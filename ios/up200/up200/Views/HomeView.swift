@@ -1287,13 +1287,14 @@ struct VoiceRecordSheet: View {
                     } else {
                         Button(action: handleMicTap) {
                             Circle()
-                                .fill(Color.white.opacity(0.10))
+                                .fill(amber.opacity(0.18))
                                 .frame(width: 76, height: 76)
                                 .overlay(
                                     Image(systemName: "mic.fill")
                                         .font(.app(size: 28, weight: .medium))
                                         .foregroundColor(amber)
                                 )
+                                .overlay(Circle().stroke(amber.opacity(0.35), lineWidth: 1))
                         }
                         .buttonStyle(.plain)
                         .disabled(isGenerating)
@@ -1308,14 +1309,14 @@ struct VoiceRecordSheet: View {
                     } else if recorder.isRecording {
                         HStack(spacing: 16) {
                             Text(timeLabel)
-                                .font(.system(size: 17, design: .monospaced))
+                                .font(.system(size: 20, design: .monospaced))
                                 .foregroundColor(Color.white.opacity(0.80))
 
                             Button(action: handleMicTap) {
                                 Image(systemName: "stop.fill")
                                     .font(.app(size: 15, weight: .medium))
                                     .foregroundColor(.white)
-                                    .frame(width: 40, height: 40)
+                                    .frame(width: 44, height: 44)
                                     .background(amber)
                                     .clipShape(Circle())
                             }
