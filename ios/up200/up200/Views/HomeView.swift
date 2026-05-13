@@ -2062,82 +2062,126 @@ private struct FormatsBlock: View {
     @Binding var selectedFormatIDs: Set<String>
     @State private var showPicker = false
     @State private var expanded: Bool = true
+    @State private var suggestions: [ContentFormat] = []
 
     private var selectedFormats: [ContentFormat] {
-        // Preserve allFormats declaration order so chips don't jump around
-        // when the underlying Set's iteration order changes.
         allFormats.filter { selectedFormatIDs.contains($0.id) }
     }
 
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private var displayText: String {
+        selectedFormats.map(\.label).joined(separator: ", ")
+    }
+
+    private func refreshSuggestions() {
+        let unselected = allFormats.filter { !selectedFormatIDs.contains($0.id) }
+        suggestions = Array(unselected.shuffled().prefix(4))
+    }
 
     var body: some View {
         GlassCard {
-            VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Header — same style as PromptField/Details
                 HStack(spacing: 10) {
                     SectionDisclosure(expanded: $expanded)
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        showPicker = true
-                    } label: {
-                        HStack(spacing: 12) {
-                            Text("Format")
-                                .font(.appSubtextMedium)
-                                .foregroundColor(Color.white.opacity(0.85))
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.appMicro)
-                                .foregroundColor(Color.white.opacity(0.20))
-                        }
-                        .contentShape(Rectangle())
+                    Text("Format")
+                        .font(.appSubtextMedium)
+                        .foregroundColor(Color.white.opacity(0.85))
+                    if !expanded && !displayText.isEmpty {
+                        Text(displayText)
+                            .font(.appCaption)
+                            .foregroundColor(Color.white.opacity(0.30))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                     }
-                    .buttonStyle(.plain)
+                    Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 12)
+                .padding(.vertical, 14)
 
-                // Chip row adapts to state: selected formats with X-to-remove
-                // once any are picked, popular-template shortcuts otherwise.
                 if expanded {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        if selectedFormatIDs.isEmpty {
-                            ForEach(popularTemplates) { tpl in
+                    // Display selected formats as text (matches Details text style)
+                    Text(displayText.isEmpty ? "Choose output formats below…" : displayText)
+                        .font(.appSubtext)
+                        .foregroundColor(displayText.isEmpty ? Color.white.opacity(0.22) : Color.white.opacity(0.85))
+                        .lineLimit(3)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 14)
+
+                    // Suggestion chip row: refresh · chips · expand
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            // Refresh
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                refreshSuggestions()
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(Color.white.opacity(0.45))
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.white.opacity(0.06))
+                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+
+                            // Format suggestions
+                            ForEach(suggestions) { fmt in
                                 Button {
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                     withAnimation(.easeOut(duration: 0.15)) {
-                                        selectedFormatIDs = Set(tpl.formatIDs)
+                                        selectedFormatIDs.insert(fmt.id)
+                                        refreshSuggestions()
                                     }
                                 } label: {
-                                    Text(tpl.label)
+                                    Text(fmt.label)
                                         .font(.appCaptionMedium)
                                         .foregroundColor(Color.white.opacity(0.65))
                                         .padding(.horizontal, 14)
-                                        .padding(.vertical, 7)
-                                        .background(Color.white.opacity(0.05))
+                                        .padding(.vertical, 9)
+                                        .background(Color.white.opacity(0.06))
+                                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                                         .overlay(
-                                            Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
                                         )
-                                        .clipShape(Capsule())
                                 }
                                 .buttonStyle(.plain)
+                                .transition(.scale.combined(with: .opacity))
                             }
-                        } else {
-                            ForEach(selectedFormats) { fmt in
-                                HStack(spacing: 6) {
-                                    Text(fmt.label)
-                                        .font(.appCaptionMedium)
-                                        .foregroundColor(Color.white.opacity(0.85))
-                                    Button {
-                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                        withAnimation(.easeOut(duration: 0.15)) {
-                                            selectedFormatIDs.remove(fmt.id)
-                                        }
-                                    } label: {
-                                        Image(systemName: "xmark")
-                                            .font(.system(size: 9, weight: .bold))
-                                            .foregroundColor(Color.white.opacity(0.55))
+
+                            // Expand — opens full picker
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                showPicker = true
+                            } label: {
+                                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(Color.white.opacity(0.45))
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.white.opacity(0.06))
+                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                    .padding(.bottom, 14)
+                }
+            }
+        }
+        .onAppear { refreshSuggestions() }
+        .onChange(of: selectedFormatIDs) { refreshSuggestions() }
+        .sheet(isPresented: $showPicker) {
+            FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(22)
+                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        }
+    }
+}
+
+// MARK: - Prompt Field
                                             .frame(width: 16, height: 16)
                                     }
                                     .buttonStyle(.plain)
