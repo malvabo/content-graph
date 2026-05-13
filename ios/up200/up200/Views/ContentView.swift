@@ -236,17 +236,34 @@ private struct ProjectRow: View {
 
 private struct ProjectDetailView: View {
     let project: GenerationProject
+    @AppStorage("library_projects") private var projectsData: Data = Data()
     @Environment(\.dismiss) private var dismiss
+    @State private var editText: String
     @State private var copied = false
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
-    private var bodyText: String { project.content.isEmpty ? project.preview : project.content }
+
+    init(project: GenerationProject) {
+        self.project = project
+        _editText = State(initialValue: project.content.isEmpty ? project.preview : project.content)
+    }
 
     private var dateString: String {
         let f = DateFormatter()
         f.dateStyle = .medium
         f.timeStyle = .short
         return f.string(from: project.date)
+    }
+
+    private func persistIfNeeded() {
+        let original = project.content.isEmpty ? project.preview : project.content
+        guard editText != original else { return }
+        var projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+        if let idx = projects.firstIndex(where: { $0.id == project.id }) {
+            projects[idx].content = editText
+            projects[idx].preview = String(editText.prefix(120))
+        }
+        if let data = try? JSONEncoder().encode(projects) { projectsData = data }
     }
 
     var body: some View {
@@ -273,7 +290,7 @@ private struct ProjectDetailView: View {
 
                     Spacer()
 
-                    ShareLink(item: bodyText) {
+                    ShareLink(item: editText) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
@@ -304,24 +321,33 @@ private struct ProjectDetailView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 10)
 
-                // Body
-                ScrollView(showsIndicators: false) {
-                    Text(bodyText)
+                // Editable body
+                ZStack(alignment: .topLeading) {
+                    if self.editText.isEmpty {
+                        Text("Start typing\u{2026}")
+                            .font(.app(size: 17))
+                            .foregroundColor(Color.white.opacity(0.22))
+                            .padding(.horizontal, 24)
+                            .padding(.top, 8)
+                            .allowsHitTesting(false)
+                    }
+                    TextEditor(text: $editText)
                         .font(.app(size: 17))
                         .foregroundColor(Color.white.opacity(0.88))
-                        .lineSpacing(5)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .textSelection(.enabled)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 96)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .tint(.white)
+                        .padding(.horizontal, 16)
+                        .contentMargins(.bottom, 96, for: .scrollContent)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+        .onDisappear { persistIfNeeded() }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Button {
-                UIPasteboard.general.string = bodyText
+                UIPasteboard.general.string = editText
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 withAnimation(.easeOut(duration: 0.15)) { copied = true }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
