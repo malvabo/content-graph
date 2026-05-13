@@ -41,17 +41,17 @@ struct LibraryView: View {
                     if showSearch {
                         HStack(spacing: 10) {
                             Image(systemName: "magnifyingglass")
-                                .font(.app(size: 16))
+                                .font(.appLabel)
                                 .foregroundColor(Color.white.opacity(0.35))
                             TextField("Search library", text: $searchText)
-                                .font(.app(size: 16))
+                                .font(.appLabel)
                                 .foregroundColor(.white)
                                 .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
                                 .focused($searchFocused)
                             if !searchText.isEmpty {
                                 Button { searchText = "" } label: {
                                     Image(systemName: "xmark.circle.fill")
-                                        .font(.app(size: 15))
+                                        .font(.appSubtext)
                                         .foregroundColor(Color.white.opacity(0.30))
                                 }
                                 .buttonStyle(.plain)
@@ -165,7 +165,7 @@ private struct LibraryGroupRow: View {
                     .foregroundColor(Color.white.opacity(0.88))
                     .lineLimit(1)
                 Text("\(outputTypesList(items)) · \(libraryRelativeTime(items.first?.date ?? Date()))")
-                    .font(.app(size: 12))
+                    .font(.appMicro)
                     .foregroundColor(Color.white.opacity(0.35))
                     .lineLimit(1)
             }
@@ -248,7 +248,7 @@ private struct ProjectGroupDetailView: View {
                     .buttonStyle(.plain)
 
                     Text(groupTitle)
-                        .font(.app(size: 17, weight: .semibold))
+                        .font(.appBodyBold)
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -306,11 +306,11 @@ private struct ProjectGroupDetailView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
                             Text(allFormats.first(where: { $0.id == item.outputType })?.label ?? item.outputType)
-                                .font(.app(size: 26, weight: .bold))
+                                .font(.appTitle)
                                 .foregroundColor(.white)
                             Spacer()
                             Text(item.date, style: .date)
-                                .font(.app(size: 13))
+                                .font(.appCaption)
                                 .foregroundColor(Color.white.opacity(0.35))
                         }
                         .padding(.horizontal, 20)
@@ -320,14 +320,14 @@ private struct ProjectGroupDetailView: View {
                         ZStack(alignment: .topLeading) {
                             if editText.isEmpty {
                                 Text("No content")
-                                    .font(.app(size: 17))
+                                    .font(.appBody)
                                     .foregroundColor(Color.white.opacity(0.22))
                                     .padding(.horizontal, 24)
                                     .padding(.top, 8)
                                     .allowsHitTesting(false)
                             }
                             TextEditor(text: $editText)
-                                .font(.app(size: 17))
+                                .font(.appBody)
                                 .lineSpacing(8)
                                 .foregroundColor(Color.white.opacity(0.88))
                                 .scrollContentBackground(.hidden)
@@ -355,7 +355,7 @@ private struct ProjectGroupDetailView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { copied = false } }
             } label: {
                 Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
-                    .font(.app(size: 17, weight: .semibold))
+                    .font(.appBodyBold)
                     .foregroundColor(copied ? Color.white.opacity(0.70) : .white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
@@ -568,7 +568,7 @@ private struct TemplateEditPage: View {
                             prompt: Text("Template name").foregroundColor(Color.white.opacity(0.25)),
                             axis: .vertical
                         )
-                        .font(.app(size: 26, weight: .bold))
+                        .font(.appTitle)
                         .foregroundColor(.white)
                         .tint(.white)
                         .lineLimit(1...3)
@@ -588,14 +588,14 @@ private struct TemplateEditPage: View {
                         ZStack(alignment: .topLeading) {
                             if prompt.isEmpty {
                                 Text("Describe what this template should produce\u{2026}")
-                                    .font(.app(size: 17))
+                                    .font(.appBody)
                                     .foregroundColor(Color.white.opacity(0.22))
                                     .padding(.horizontal, 24)
                                     .padding(.top, 8)
                                     .allowsHitTesting(false)
                             }
                             TextEditor(text: $prompt)
-                                .font(.app(size: 17))
+                                .font(.appBody)
                                 .foregroundColor(Color.white.opacity(0.92))
                                 .scrollContentBackground(.hidden)
                                 .background(Color.clear)

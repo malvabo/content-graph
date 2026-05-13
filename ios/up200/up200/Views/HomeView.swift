@@ -315,11 +315,11 @@ struct GenerationBanner: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(isReady ? "Content ready" : "Creating your content")
-                    .font(.app(size: 15, weight: .semibold))
+                    .font(.appSubtextBold)
                     .foregroundColor(.white)
                     .lineLimit(1)
                 Text(formatLabels.joined(separator: " · "))
-                    .font(.app(size: 12))
+                    .font(.appMicro)
                     .foregroundColor(Color.white.opacity(0.50))
                     .lineLimit(1)
             }
@@ -340,7 +340,7 @@ struct GenerationBanner: View {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
                         Text("Open")
-                            .font(.app(size: 13, weight: .semibold))
+                            .font(.appCaptionMedium)
                             .foregroundColor(.white)
                     }
                     .frame(width: 68, height: 32)
@@ -395,7 +395,7 @@ private struct GenerationResultSheet: View {
             HStack(spacing: 12) {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
-                        .font(.app(size: 13, weight: .semibold))
+                        .font(.appCaptionMedium)
                         .foregroundColor(Color.white.opacity(0.60))
                         .frame(width: 28, height: 28)
                         .background(Color.white.opacity(0.10))
@@ -405,13 +405,13 @@ private struct GenerationResultSheet: View {
                 Spacer(minLength: 0)
 
                 Text("Outputs")
-                    .font(.app(size: 16, weight: .semibold))
+                    .font(.appLabelBold)
                     .foregroundColor(.white)
 
                 Spacer(minLength: 0)
 
                 Text("\(results.count)")
-                    .font(.app(size: 14))
+                    .font(.appSmall)
                     .foregroundColor(Color.white.opacity(0.45))
                     .frame(width: 28, alignment: .trailing)
             }
@@ -433,10 +433,10 @@ private struct GenerationResultSheet: View {
             // Saved indicator
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.app(size: 12))
+                    .font(.appMicro)
                     .foregroundColor(Color.white.opacity(0.32))
                 Text("Saved to Library")
-                    .font(.app(size: 12))
+                    .font(.appMicro)
                     .foregroundColor(Color.white.opacity(0.32))
             }
             .padding(.vertical, 12)
@@ -449,7 +449,7 @@ private struct GenerationResultSheet: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(result.formatLabel)
-                    .font(.app(size: 15, weight: .semibold))
+                    .font(.appSubtextBold)
                     .foregroundColor(Color.white.opacity(0.88))
                 Spacer(minLength: 8)
                 Button {
@@ -464,14 +464,14 @@ private struct GenerationResultSheet: View {
                 } label: {
                     Label(isCopied ? "Copied" : "Copy",
                           systemImage: isCopied ? "checkmark" : "doc.on.doc")
-                        .font(.app(size: 12, weight: .medium))
+                        .font(.appMicro)
                         .foregroundColor(isCopied ? .white : Color.white.opacity(0.55))
                 }
                 .buttonStyle(.plain)
             }
 
             Text(result.content)
-                .font(.app(size: 14))
+                .font(.appSmall)
                 .foregroundColor(Color.white.opacity(0.82))
                 .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -669,7 +669,7 @@ struct ImportSheetView: View {
     var body: some View {
         VStack(spacing: 10) {
             Text("Import content")
-                .font(.app(size: 19, weight: .semibold))
+                .font(.appNavTitle)
                 .foregroundColor(Color.white.opacity(0.88))
                 .padding(.top, 8)
                 .padding(.bottom, 2)
@@ -681,10 +681,10 @@ struct ImportSheetView: View {
                     } label: {
                         VStack(spacing: 12) {
                             Image(systemName: item.icon)
-                                .font(.app(size: 16, weight: .regular))
+                                .font(.appLabel)
                                 .foregroundColor(Color.white.opacity(0.82))
                             Text(item.label)
-                                .font(.app(size: 14, weight: .regular))
+                                .font(.appSmall)
                                 .foregroundColor(Color.white.opacity(0.52))
                                 .multilineTextAlignment(.center)
                         }
@@ -702,10 +702,10 @@ struct ImportSheetView: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "note.text")
-                        .font(.app(size: 16, weight: .regular))
+                        .font(.appLabel)
                         .foregroundColor(Color.white.opacity(0.82))
                     Text("Add note")
-                        .font(.app(size: 14, weight: .regular))
+                        .font(.appSmall)
                         .foregroundColor(Color.white.opacity(0.52))
                     Spacer()
                 }
@@ -752,7 +752,7 @@ private struct TextInputSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
                     TextField("Title", text: $titleText)
-                        .font(.app(size: 26, weight: .bold))
+                        .font(.appTitle)
                         .foregroundColor(.white)
                         .tint(amber)
                         .focused($focusedField, equals: .title)
@@ -766,14 +766,14 @@ private struct TextInputSheet: View {
                     ZStack(alignment: .topLeading) {
                         if bodyText.isEmpty {
                             Text("Start writing\u{2026}")
-                                .font(.app(size: 17))
+                                .font(.appBody)
                                 .foregroundColor(Color.white.opacity(0.28))
                                 .padding(.horizontal, 20)
                                 .padding(.top, 2)
                                 .allowsHitTesting(false)
                         }
                         TextEditor(text: $bodyText)
-                            .font(.app(size: 17))
+                            .font(.appBody)
                             .foregroundColor(Color.white.opacity(0.88))
                             .lineSpacing(3)
                             .tint(amber)
@@ -817,7 +817,7 @@ private struct TextInputSheet: View {
             Spacer(minLength: 8)
 
             Text("Text source")
-                .font(.app(size: 17, weight: .semibold))
+                .font(.appBodyBold)
                 .foregroundColor(.white)
 
             Spacer(minLength: 8)
@@ -1004,7 +1004,7 @@ private struct LinkInputSheet: View {
                     .foregroundColor(Color.white.opacity(0.55))
                 Spacer()
                 Text(stagedURLs.count > 1 ? "Link sources" : "Link source")
-                    .font(.app(size: 16, weight: .semibold))
+                    .font(.appLabelBold)
                     .foregroundColor(.white)
                 Spacer()
                 Button {
@@ -1033,10 +1033,10 @@ private struct LinkInputSheet: View {
 
             HStack(spacing: 10) {
                 Image(systemName: "link")
-                    .font(.app(size: 15))
+                    .font(.appSubtext)
                     .foregroundColor(Color.white.opacity(0.35))
                 TextField("https://", text: $urlText)
-                    .font(.app(size: 16))
+                    .font(.appLabel)
                     .foregroundColor(Color.white.opacity(0.88))
                     .autocapitalization(.none)
                     .keyboardType(.URL)
@@ -1068,11 +1068,11 @@ private struct LinkInputSheet: View {
                         ForEach(Array(stagedURLs.enumerated()), id: \.element) { idx, link in
                             HStack(spacing: 12) {
                                 Image(systemName: "link")
-                                    .font(.app(size: 13))
+                                    .font(.appCaption)
                                     .foregroundColor(Color.white.opacity(0.45))
                                     .frame(width: 20)
                                 Text(link)
-                                    .font(.app(size: 14))
+                                    .font(.appSmall)
                                     .foregroundColor(Color.white.opacity(0.80))
                                     .lineLimit(1)
                                     .truncationMode(.middle)
@@ -1083,7 +1083,7 @@ private struct LinkInputSheet: View {
                                     }
                                 } label: {
                                     Image(systemName: "xmark")
-                                        .font(.app(size: 11, weight: .medium))
+                                        .font(.appBadge)
                                         .foregroundColor(Color.white.opacity(0.30))
                                         .frame(width: 32, height: 32)
                                         .contentShape(Rectangle())
@@ -1108,8 +1108,8 @@ private struct LinkInputSheet: View {
 
             if isFetching {
                 HStack(spacing: 6) {
-                    Image(systemName: "globe").font(.app(size: 12))
-                    Text("Fetching page content\u{2026}").font(.app(size: 13))
+                    Image(systemName: "globe").font(.appMicro)
+                    Text("Fetching page content\u{2026}").font(.appCaption)
                 }
                 .foregroundColor(Color.white.opacity(0.35))
                 .padding(.bottom, 12)
@@ -1336,7 +1336,7 @@ struct VoiceRecordSheet: View {
                         .transition(.opacity)
                 } else {
                     Text("Tap to record")
-                        .font(.app(size: 17))
+                        .font(.appBody)
                         .foregroundColor(Color.white.opacity(0.40))
                         .transition(.opacity)
                 }
@@ -1344,7 +1344,7 @@ struct VoiceRecordSheet: View {
                 if !recorder.transcript.isEmpty {
                     ScrollView(showsIndicators: false) {
                         Text(recorder.transcript)
-                            .font(.app(size: 14))
+                            .font(.appSmall)
                             .foregroundColor(Color.white.opacity(0.50))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
@@ -1360,7 +1360,7 @@ struct VoiceRecordSheet: View {
                 // Bottom buttons
                 if isGenerating {
                     Label("Generating title\u{2026}", systemImage: "sparkles")
-                        .font(.app(size: 15))
+                        .font(.appSubtext)
                         .foregroundColor(Color.white.opacity(0.50))
                         .padding(.bottom, 40)
                         .transition(.opacity)
@@ -1403,7 +1403,7 @@ struct VoiceRecordSheet: View {
                 } else if !recorder.transcript.isEmpty {
                     Button(action: handleDone) {
                         Text("Use this")
-                            .font(.app(size: 16, weight: .semibold))
+                            .font(.appLabelBold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
@@ -1529,17 +1529,17 @@ private struct SourcesBlock: View {
                 HStack(spacing: 10) {
                     SectionDisclosure(expanded: $expanded)
                     Text("Sources")
-                        .font(.app(size: 15, weight: .medium))
+                        .font(.appSubtextMedium)
                         .foregroundColor(Color.white.opacity(0.85))
                     if !expanded && !sources.isEmpty {
                         Text("\(sources.count)")
-                            .font(.app(size: 13))
+                            .font(.appCaption)
                             .foregroundColor(Color.white.opacity(0.40))
                     }
                     Spacer()
                     Button { activeSheet = .picker } label: {
                         Image(systemName: "plus")
-                            .font(.app(size: 13, weight: .medium))
+                            .font(.appCaptionMedium)
                             .foregroundColor(Color.white.opacity(0.80))
                             .frame(width: 30, height: 30)
                             .background(Color.white.opacity(0.09))
@@ -1561,11 +1561,11 @@ private struct SourcesBlock: View {
 
                         HStack(spacing: 12) {
                             Image(systemName: item.icon)
-                                .font(.app(size: 15))
+                                .font(.appSubtext)
                                 .foregroundColor(Color.white.opacity(0.45))
                                 .frame(width: 20)
                             Text(item.label)
-                                .font(.app(size: 15))
+                                .font(.appSubtext)
                                 .foregroundColor(Color.white.opacity(0.80))
                                 .lineLimit(1)
                             Spacer()
@@ -1575,7 +1575,7 @@ private struct SourcesBlock: View {
                                 }
                             } label: {
                                 Image(systemName: "xmark")
-                                    .font(.app(size: 11, weight: .medium))
+                                    .font(.appBadge)
                                     .foregroundColor(Color.white.opacity(0.28))
                                     .frame(width: 32, height: 32)
                                     .contentShape(Rectangle())
@@ -1730,17 +1730,17 @@ private struct NotePickerSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
-                    .font(.app(size: 16))
+                    .font(.appLabel)
                     .foregroundColor(Color.white.opacity(0.35))
                 TextField("Search notes", text: $query)
-                    .font(.app(size: 16))
+                    .font(.appLabel)
                     .foregroundColor(.white)
                     .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
                     .focused($searchFocused)
                 if !query.isEmpty {
                     Button { query = "" } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.app(size: 15))
+                            .font(.appSubtext)
                             .foregroundColor(Color.white.opacity(0.30))
                     }
                     .buttonStyle(.plain)
@@ -1765,7 +1765,7 @@ private struct NotePickerSheet: View {
                         .font(.system(size: 32, weight: .light))
                         .foregroundColor(Color.white.opacity(0.18))
                     Text(notes.isEmpty ? "No notes yet" : "No results")
-                        .font(.app(size: 15))
+                        .font(.appSubtext)
                         .foregroundColor(Color.white.opacity(0.30))
                 }
                 Spacer()
@@ -1779,17 +1779,17 @@ private struct NotePickerSheet: View {
                             } label: {
                                 HStack(spacing: 14) {
                                     Image(systemName: "note.text")
-                                        .font(.app(size: 15))
+                                        .font(.appSubtext)
                                         .foregroundColor(Color.white.opacity(0.40))
                                         .frame(width: 22)
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(note.displayTitle)
-                                            .font(.app(size: 15, weight: .medium))
+                                            .font(.appSubtextMedium)
                                             .foregroundColor(Color.white.opacity(0.85))
                                             .lineLimit(1)
                                         if !note.preview.isEmpty {
                                             Text(note.preview)
-                                                .font(.app(size: 13))
+                                                .font(.appCaption)
                                                 .foregroundColor(Color.white.opacity(0.38))
                                                 .lineLimit(1)
                                         }
@@ -1872,11 +1872,11 @@ private struct FormatPickerSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Text("Choose formats")
-                    .font(.app(size: 17, weight: .semibold))
+                    .font(.appBodyBold)
                     .foregroundColor(.white)
                 Spacer()
                 Button("Cancel") { dismiss() }
-                    .font(.app(size: 16))
+                    .font(.appLabel)
                     .foregroundColor(Color.white.opacity(0.55))
             }
             .padding(.horizontal, 16)
@@ -1885,17 +1885,17 @@ private struct FormatPickerSheet: View {
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .font(.app(size: 16))
+                    .font(.appLabel)
                     .foregroundColor(Color.white.opacity(0.35))
                 TextField("Search formats and templates", text: $search)
-                    .font(.app(size: 15))
+                    .font(.appSubtext)
                     .foregroundColor(.white)
                     .autocorrectionDisabled()
                     .submitLabel(.search)
                 if !search.isEmpty {
                     Button { search = "" } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.app(size: 15))
+                            .font(.appSubtext)
                             .foregroundColor(Color.white.opacity(0.30))
                     }
                     .buttonStyle(.plain)
@@ -1979,7 +1979,7 @@ private struct FormatPickerSheet: View {
     private var primaryCTA: some View {
         Button(action: commit) {
             Text(ctaLabel)
-                .font(.app(size: 17, weight: .semibold))
+                .font(.appBodyBold)
                 .foregroundColor(draft.isEmpty ? Color.white.opacity(0.40) : .white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
@@ -2000,7 +2000,7 @@ private struct FormatPickerSheet: View {
                     .font(.app(size: 14, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.65))
                 Image(systemName: showAllTemplates ? "chevron.up" : "chevron.down")
-                    .font(.app(size: 11, weight: .medium))
+                    .font(.appBadge)
                     .foregroundColor(Color.white.opacity(0.40))
             }
             .frame(maxWidth: .infinity)
@@ -2025,7 +2025,7 @@ private struct FormatPickerSheet: View {
     @ViewBuilder
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(.app(size: 13, weight: .medium))
+            .font(.appCaptionMedium)
             .foregroundColor(Color.white.opacity(0.55))
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -2081,10 +2081,10 @@ private struct FormatPickerSheet: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(template.name)
-                        .font(.app(size: 15, weight: .semibold))
+                        .font(.appSubtextBold)
                         .foregroundColor(.white)
                     Text(template.description)
-                        .font(.app(size: 13))
+                        .font(.appCaption)
                         .foregroundColor(Color.white.opacity(0.50))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
@@ -2121,10 +2121,10 @@ private struct FormatPickerSheet: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(format.label)
-                        .font(.app(size: 15, weight: .semibold))
+                        .font(.appSubtextBold)
                         .foregroundColor(.white)
                     Text(format.description)
-                        .font(.app(size: 13))
+                        .font(.appCaption)
                         .foregroundColor(Color.white.opacity(0.50))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
@@ -2189,11 +2189,11 @@ private struct FormatsBlock: View {
                     } label: {
                         HStack(spacing: 12) {
                             Text("Format")
-                                .font(.app(size: 15, weight: .medium))
+                                .font(.appSubtextMedium)
                                 .foregroundColor(Color.white.opacity(0.85))
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .font(.app(size: 12, weight: .semibold))
+                                .font(.appMicro)
                                 .foregroundColor(Color.white.opacity(0.20))
                         }
                         .contentShape(Rectangle())
@@ -2218,7 +2218,7 @@ private struct FormatsBlock: View {
                                     }
                                 } label: {
                                     Text(tpl.label)
-                                        .font(.app(size: 13, weight: .medium))
+                                        .font(.appCaptionMedium)
                                         .foregroundColor(Color.white.opacity(0.65))
                                         .padding(.horizontal, 14)
                                         .padding(.vertical, 7)
@@ -2234,7 +2234,7 @@ private struct FormatsBlock: View {
                             ForEach(selectedFormats) { fmt in
                                 HStack(spacing: 6) {
                                     Text(fmt.label)
-                                        .font(.app(size: 13, weight: .medium))
+                                        .font(.appCaptionMedium)
                                         .foregroundColor(Color.white.opacity(0.85))
                                     Button {
                                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -2307,11 +2307,11 @@ private struct PromptField: View {
                 HStack(spacing: 10) {
                     SectionDisclosure(expanded: $expanded)
                     Text("Details")
-                        .font(.app(size: 15, weight: .medium))
+                        .font(.appSubtextMedium)
                         .foregroundColor(Color.white.opacity(0.85))
                     if !expanded && !prompt.isEmpty {
                         Text(prompt)
-                            .font(.app(size: 13))
+                            .font(.appCaption)
                             .foregroundColor(Color.white.opacity(0.30))
                             .lineLimit(1)
                             .truncationMode(.tail)
@@ -2333,7 +2333,7 @@ private struct PromptField: View {
                         Text("Leave empty to generate from sources and format.")
                             .foregroundStyle(Color.white.opacity(0.22))
                     }
-                    .font(.app(size: 15))
+                    .font(.appSubtext)
                     .foregroundColor(Color.white.opacity(0.85))
                     .tint(.white)
                     .lineLimit(3...6)
@@ -2356,7 +2356,7 @@ private struct BrandCard: View {
         GlassCard {
             HStack(spacing: 12) {
                 Text("Brand voice")
-                    .font(.app(size: 15, weight: .medium))
+                    .font(.appSubtextMedium)
                     .foregroundColor(Color.white.opacity(0.85))
 
                 Spacer()
@@ -2376,7 +2376,7 @@ private struct BrandCard: View {
                 } label: {
                     HStack(spacing: 5) {
                         Text(selectedBrand)
-                            .font(.app(size: 15, weight: .medium))
+                            .font(.appSubtextMedium)
                             .foregroundColor(Color.white.opacity(0.70))
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.app(size: 11, weight: .semibold))

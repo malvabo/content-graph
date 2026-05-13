@@ -247,7 +247,7 @@ private struct NoteListRow: View {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 6) {
                     Text(note.displayTitle)
-                        .font(.app(size: 19, weight: .semibold))
+                        .font(.appNavTitle)
                         .foregroundColor(Color.white.opacity(0.88))
                         .lineLimit(2)
                     if note.tags.contains("Starred") {
@@ -258,13 +258,13 @@ private struct NoteListRow: View {
                 }
 
                 Text(RowDate.relative(from: note.updatedAt))
-                    .font(.app(size: 14))
+                    .font(.appSmall)
                     .foregroundColor(Color.white.opacity(0.35))
 
                 let otherTags = note.tags.filter { $0 != "Starred" }
                 if !otherTags.isEmpty {
                     Text(otherTags.joined(separator: " · "))
-                        .font(.app(size: 12))
+                        .font(.appMicro)
                         .foregroundColor(amber.opacity(0.75))
                         .lineLimit(1)
                 }
@@ -722,7 +722,7 @@ private struct NoteComposerSheet: View {
                     }
                 } label: {
                     Text("Cancel")
-                        .font(.app(size: 16))
+                        .font(.appLabel)
                         .foregroundColor(Color.white.opacity(0.50))
                 }
                 .buttonStyle(.plain)
@@ -730,7 +730,7 @@ private struct NoteComposerSheet: View {
                 Spacer()
 
                 Text(isNew ? "New Note" : "Edit Note")
-                    .font(.app(size: 17, weight: .semibold))
+                    .font(.appBodyBold)
                     .foregroundColor(.white)
 
                 Spacer()
@@ -743,7 +743,7 @@ private struct NoteComposerSheet: View {
                     dismiss()
                 } label: {
                     Text("Done")
-                        .font(.app(size: 16, weight: .semibold))
+                        .font(.appLabelBold)
                         .foregroundColor(canSave ? .white : Color.white.opacity(0.25))
                 }
                 .buttonStyle(.plain)
@@ -761,14 +761,14 @@ private struct NoteComposerSheet: View {
                 ZStack(alignment: .topLeading) {
                     if draft.body.isEmpty {
                         Text("Start typing\u{2026}")
-                            .font(.app(size: 17))
+                            .font(.appBody)
                             .foregroundColor(Color.white.opacity(0.22))
                             .padding(.horizontal, 24)
                             .padding(.top, 20)
                             .allowsHitTesting(false)
                     }
                     TextEditor(text: $draft.body)
-                        .font(.app(size: 17))
+                        .font(.appBody)
                         .lineSpacing(8)
                         .foregroundColor(Color.white.opacity(0.92))
                         .scrollContentBackground(.hidden)
@@ -825,9 +825,9 @@ private struct NoteComposerSheet: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "trash")
-                            .font(.app(size: 14))
+                            .font(.appSmall)
                         Text("Delete Note")
-                            .font(.app(size: 15, weight: .medium))
+                            .font(.appSubtextMedium)
                     }
                     .foregroundColor(Color.red.opacity(0.75))
                     .frame(maxWidth: .infinity)
@@ -943,7 +943,7 @@ private struct NoteEditorPage: View {
                     .padding(.bottom, 12)
 
                 Text(dateString)
-                    .font(.app(size: 13))
+                    .font(.appCaption)
                     .foregroundColor(Color.white.opacity(0.40))
                     .padding(.horizontal, 20)
                     .padding(.bottom, 8)
@@ -954,7 +954,7 @@ private struct NoteEditorPage: View {
                     prompt: Text("Title").foregroundColor(Color.white.opacity(0.25)),
                     axis: .vertical
                 )
-                .font(.app(size: 26, weight: .bold))
+                .font(.appTitle)
                 .foregroundColor(.white)
                 .tint(.white)
                 .lineLimit(1...3)
@@ -965,14 +965,14 @@ private struct NoteEditorPage: View {
                 ZStack(alignment: .topLeading) {
                     if noteBody.isEmpty {
                         Text("Start typing\u{2026}")
-                            .font(.app(size: 17))
+                            .font(.appBody)
                             .foregroundColor(Color.white.opacity(0.22))
                             .padding(.horizontal, 24)
                             .padding(.top, 8)
                             .allowsHitTesting(false)
                     }
                     TextEditor(text: $noteBody)
-                        .font(.app(size: 17))
+                        .font(.appBody)
                         .lineSpacing(8)
                         .foregroundColor(Color.white.opacity(0.92))
                         .scrollContentBackground(.hidden)
@@ -1203,17 +1203,17 @@ struct NotesView: View {
                     if showSearch {
                         HStack(spacing: 10) {
                             Image(systemName: "magnifyingglass")
-                                .font(.app(size: 16))
+                                .font(.appLabel)
                                 .foregroundColor(Color.white.opacity(0.35))
                             TextField("Search notes", text: $searchText)
-                                .font(.app(size: 16))
+                                .font(.appLabel)
                                 .foregroundColor(.white)
                                 .tint(amber)
                                 .focused($searchFocused)
                             if !searchText.isEmpty {
                                 Button { searchText = "" } label: {
                                     Image(systemName: "xmark.circle.fill")
-                                        .font(.app(size: 15))
+                                        .font(.appSubtext)
                                         .foregroundColor(Color.white.opacity(0.30))
                                 }
                                 .buttonStyle(.plain)
@@ -1412,7 +1412,7 @@ private struct NewTagSheet: View {
         NavigationStack {
             VStack(spacing: 0) {
                 TextField("Tag name", text: $newTagName)
-                    .font(.app(size: 17))
+                    .font(.appBody)
                     .foregroundColor(.white)
                     .tint(.white)
                     .padding(.horizontal, 16)
