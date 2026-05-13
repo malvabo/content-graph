@@ -1334,7 +1334,7 @@ struct NotesView: View {
                 }
             }
             .navigationTitle("Notes")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
