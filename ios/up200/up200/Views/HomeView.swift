@@ -465,6 +465,7 @@ final class VoiceRecorder: ObservableObject {
     @Published var transcript = ""
     @Published var isRecording = false
     @Published var permissionDenied = false
+    @Published var audioLevel: Float = 0.0
 
     private let audioEngine = AVAudioEngine()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
@@ -492,6 +493,7 @@ final class VoiceRecorder: ObservableObject {
             audioEngine.inputNode.removeTap(onBus: 0)
         }
         isRecording = false
+        audioLevel = 0
     }
 
     private func startEngine() {
@@ -519,8 +521,14 @@ final class VoiceRecorder: ObservableObject {
 
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             request.append(buffer)
+            guard let channelData = buffer.floatChannelData?[0] else { return }
+            let frames = Int(buffer.frameLength)
+            var rms: Float = 0
+            for i in 0..<frames { rms += channelData[i] * channelData[i] }
+            let level = sqrt(rms / Float(max(frames, 1)))
+            DispatchQueue.main.async { self?.audioLevel = level }
         }
 
         audioEngine.prepare()
@@ -1168,13 +1176,51 @@ private struct LinkInputSheet: View {
 
 // MARK: - Voice Record Sheet
 
+private struct RecordingWaveform: View {
+    let level: Float
+
+    private let barCount = 38
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 2.5) {
+                ForEach(0..<barCount, id: \.self) { i in
+                    Capsule()
+                        .fill(amber.opacity(barOpacity(index: i)))
+                        .frame(width: 3, height: barHeight(index: i, time: t))
+                }
+            }
+        }
+        .frame(height: 75)
+        .accessibilityHidden(true)
+    }
+
+    private func barHeight(index: Int, time: Double) -> CGFloat {
+        let pos = Double(index) / Double(barCount - 1)
+        let envelope = sin(pos * .pi)
+        let phase1 = time * 4.5 + Double(index) * 0.42
+        let phase2 = time * 2.8 + Double(index) * 0.65
+        let wave = (sin(phase1) * 0.65 + sin(phase2) * 0.35 + 1.0) / 2.0
+        let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
+        let dynamic = wave * amplified * envelope
+        let minH: CGFloat = 3
+        return minH + CGFloat(dynamic) * (75 - minH)
+    }
+
+    private func barOpacity(index: Int) -> Double {
+        let pos = Double(index) / Double(barCount - 1)
+        return 0.55 + sin(pos * .pi) * 0.45
+    }
+}
+
 struct VoiceRecordSheet: View {
     var onSave: (String, String) -> Void
     var autoStart: Bool = false
     @Environment(\.dismiss) private var dismiss
     @StateObject private var recorder = VoiceRecorder()
     @State private var seconds = 0
-    @State private var pulse = false
     @State private var isGenerating = false
 
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -1217,47 +1263,58 @@ struct VoiceRecordSheet: View {
 
                 Spacer()
 
-                VStack(spacing: 28) {
-                    ZStack {
-                        if recorder.isRecording {
-                            Circle()
-                                .fill(amber.opacity(0.10))
-                                .frame(width: 150, height: 150)
-                                .scaleEffect(pulse ? 1.3 : 1.0)
-                                .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: pulse)
-                            Circle()
-                                .fill(amber.opacity(0.20))
-                                .frame(width: 108, height: 108)
-                        }
+                VStack(spacing: 32) {
+                    if recorder.isRecording {
+                        RecordingWaveform(level: recorder.audioLevel)
+                            .padding(.horizontal, 24)
+                            .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    } else {
                         Button(action: handleMicTap) {
                             Circle()
-                                .fill(recorder.isRecording ? amber : Color.white.opacity(0.12))
+                                .fill(Color.white.opacity(0.10))
                                 .frame(width: 76, height: 76)
                                 .overlay(
-                                    Image(systemName: recorder.isRecording ? "stop.fill" : "mic.fill")
+                                    Image(systemName: "mic.fill")
                                         .font(.app(size: 28, weight: .medium))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(amber)
                                 )
                         }
                         .buttonStyle(.plain)
                         .disabled(isGenerating)
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
                     }
-                    .animation(.spring(duration: 0.4), value: recorder.isRecording)
 
                     if isGenerating {
                         Label("Generating title\u{2026}", systemImage: "sparkles")
                             .font(.app(size: 15))
                             .foregroundColor(Color.white.opacity(0.50))
                             .transition(.opacity)
+                    } else if recorder.isRecording {
+                        HStack(spacing: 16) {
+                            Text(timeLabel)
+                                .font(.system(size: 17, design: .monospaced))
+                                .foregroundColor(Color.white.opacity(0.80))
+
+                            Button(action: handleMicTap) {
+                                Image(systemName: "stop.fill")
+                                    .font(.app(size: 15, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .frame(width: 40, height: 40)
+                                    .background(amber)
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isGenerating)
+                        }
+                        .transition(.opacity)
                     } else {
-                        Text(recorder.isRecording ? timeLabel : "Tap to record")
-                            .font(recorder.isRecording
-                                  ? .system(size: 17, design: .monospaced)
-                                  : .app(size: 17))
-                            .foregroundColor(Color.white.opacity(recorder.isRecording ? 0.80 : 0.40))
+                        Text("Tap to record")
+                            .font(.app(size: 17))
+                            .foregroundColor(Color.white.opacity(0.40))
                             .transition(.opacity)
                     }
                 }
+                .animation(.spring(response: 0.4, dampingFraction: 0.75), value: recorder.isRecording)
                 .animation(.easeOut(duration: 0.2), value: isGenerating)
 
                 if !recorder.transcript.isEmpty {
@@ -1321,12 +1378,7 @@ struct VoiceRecordSheet: View {
             if recorder.isRecording { seconds += 1 }
         }
         .onChange(of: recorder.isRecording) { _, recording in
-            if recording {
-                seconds = 0
-                withAnimation { pulse = true }
-            } else {
-                pulse = false
-            }
+            if recording { seconds = 0 }
         }
         .alert("Microphone Access", isPresented: $recorder.permissionDenied) {
             Button("Open Settings") {
