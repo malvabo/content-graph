@@ -456,7 +456,7 @@ private struct NoteVoiceSheet: View {
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
     private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
-    private static let miniDetent = PresentationDetent.height(88)
+    private static let miniDetent = PresentationDetent.height(154)
 
     private var timeLabel: String {
         String(format: "%02d:%02d", seconds / 60, seconds % 60)
@@ -586,7 +586,7 @@ private struct NoteVoiceSheet: View {
         )
         .padding(.horizontal, 16)
         .frame(maxHeight: .infinity, alignment: .bottom)
-        .padding(.bottom, 12)
+        .padding(.bottom, 80)
     }
 
     private var voiceUI: some View {
