@@ -346,12 +346,12 @@ struct ProjectGroupDetailView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .task {
             if items.indices.contains(selectedIndex) { editText = bodyText(for: items[selectedIndex]) }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { editorFocused = true }
         }
         .onChange(of: selectedIndex) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { editorFocused = true }
+            if items.indices.contains(selectedIndex) { editText = bodyText(for: items[selectedIndex]) }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Button {
