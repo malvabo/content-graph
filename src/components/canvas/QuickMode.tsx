@@ -116,7 +116,6 @@ const CHIP_BASE: React.CSSProperties = {
   cursor: 'pointer', transition: 'border-color 120ms, background 120ms, color 120ms',
   whiteSpace: 'nowrap', userSelect: 'none',
 };
-const CHIP_ACTIVE: React.CSSProperties = {};
 const FIELD_LABEL: React.CSSProperties = {
   display: 'block', fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)',
   color: 'var(--color-text-secondary)', marginBottom: 6, letterSpacing: 0.1,
@@ -533,6 +532,30 @@ function AccordionSection({ title, sub, open, onToggle, children }: {
   );
 }
 
+const STYLES = `
+  @keyframes qm-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(201,48,48,0.4); } 50% { box-shadow: 0 0 0 8px rgba(201,48,48,0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .qm-source-input { transition: opacity 200ms; }
+  .qm-chip {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-secondary);
+  }
+  :root.dark .qm-chip {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--color-text-tertiary);
+  }
+  .qm-chip.active {
+    border-color: var(--color-accent);
+    background: var(--color-bg-surface);
+    color: var(--color-accent);
+  }
+  :root.dark .qm-chip.active {
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  }
+`;
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 type RunState = 'idle' | 'running' | 'done' | 'error';
@@ -715,30 +738,6 @@ export default function QuickMode() {
   useEffect(() => {
     return () => abortRef.current?.abort();
   }, []);
-
-  const STYLES = `
-    @keyframes qm-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(201,48,48,0.4); } 50% { box-shadow: 0 0 0 8px rgba(201,48,48,0); } }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .qm-source-input { transition: opacity 200ms; }
-    .qm-chip {
-      background: var(--color-bg-surface);
-      border: 1px solid var(--color-border-default);
-      color: var(--color-text-secondary);
-    }
-    :root.dark .qm-chip {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.1);
-      color: var(--color-text-tertiary);
-    }
-    .qm-chip.active {
-      border-color: var(--color-accent);
-      background: var(--color-bg-surface);
-      color: var(--color-accent);
-    }
-    :root.dark .qm-chip.active {
-      background: rgba(29,114,66,0.12);
-    }
-  `;
 
   // ── Results page ──
   if (view === 'results') {
