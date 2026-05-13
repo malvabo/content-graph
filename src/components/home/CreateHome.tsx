@@ -830,6 +830,7 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
 
     let accumulated = '';
     let lineBuffer = '';
+    let lastFlush = 0;
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -878,11 +879,16 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
             const parsed = JSON.parse(data);
             if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
               accumulated += parsed.delta.text;
-              setGenStreaming(accumulated);
+              const now = Date.now();
+              if (now - lastFlush > 150) {
+                setGenStreaming(accumulated);
+                lastFlush = now;
+              }
             }
           } catch { /* skip */ }
         }
       }
+      setGenStreaming(accumulated);
       const parsedResults = parseGenerationResults(accumulated);
       setGenResults(parsedResults);
       setActiveResultIdx(0);
