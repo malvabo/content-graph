@@ -11,6 +11,7 @@ enum AppTab: String {
 struct LibraryView: View {
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @State private var searchText = ""
+    @State private var showSearch = false
     @FocusState private var searchFocused: Bool
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
@@ -39,32 +40,34 @@ struct LibraryView: View {
                 bg.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // Always-visible search bar
-                    HStack(spacing: 10) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.app(size: 15))
-                            .foregroundColor(Color.white.opacity(0.35))
-                        TextField("Search library", text: $searchText)
-                            .font(.app(size: 16))
-                            .foregroundColor(.white)
-                            .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
-                            .focused($searchFocused)
-                        if !searchText.isEmpty {
-                            Button { searchText = "" } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.app(size: 15))
-                                    .foregroundColor(Color.white.opacity(0.30))
+                    if showSearch {
+                        HStack(spacing: 10) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.app(size: 15))
+                                .foregroundColor(Color.white.opacity(0.35))
+                            TextField("Search library", text: $searchText)
+                                .font(.app(size: 16))
+                                .foregroundColor(.white)
+                                .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
+                                .focused($searchFocused)
+                            if !searchText.isEmpty {
+                                Button { searchText = "" } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.app(size: 15))
+                                        .foregroundColor(Color.white.opacity(0.30))
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.07))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 10)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(Color.white.opacity(0.07))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 10)
 
                     Rectangle()
                         .fill(Color.white.opacity(0.06))
@@ -110,6 +113,24 @@ struct LibraryView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        withAnimation(.easeInOut(duration: 0.22)) {
+                            showSearch.toggle()
+                            if !showSearch { searchText = "" }
+                            else { searchFocused = true }
+                        }
+                    } label: {
+                        Image(systemName: showSearch ? "xmark" : "magnifyingglass")
+                            .font(.system(size: 15, weight: .regular))
+                            .frame(width: 32, height: 32)
+                            .background(Color.white.opacity(showSearch ? 0.12 : 0.0))
+                            .clipShape(Circle())
+                    }
+                }
+            }
         }
     }
 }
@@ -343,7 +364,7 @@ struct TemplatesView: View {
             .scrollContentBackground(.hidden)
             .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
             .navigationTitle("Templates")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {

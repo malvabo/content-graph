@@ -1115,10 +1115,12 @@ struct NotesView: View {
     @State private var sheet: NoteSheet? = nil
     @State private var editingNote: Note? = nil
     @State private var searchText = ""
+    @State private var showSearch = false
     @State private var selectedFilter: String? = nil
     @State private var customTags: [String] = UserDefaults.standard.stringArray(forKey: "note_custom_tags") ?? []
     @State private var showAddTag = false
     @State private var newTagName = ""
+    @FocusState private var searchFocused: Bool
 
     private let builtinTags = ["Starred", "Work", "Personal"]
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
@@ -1169,6 +1171,35 @@ struct NotesView: View {
                 Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
 
                 VStack(spacing: 0) {
+                    if showSearch {
+                        HStack(spacing: 10) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.app(size: 15))
+                                .foregroundColor(Color.white.opacity(0.35))
+                            TextField("Search notes", text: $searchText)
+                                .font(.app(size: 16))
+                                .foregroundColor(.white)
+                                .tint(amber)
+                                .focused($searchFocused)
+                            if !searchText.isEmpty {
+                                Button { searchText = "" } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.app(size: 15))
+                                        .foregroundColor(Color.white.opacity(0.30))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.07))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 6)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             FilterChip(label: "All", isSelected: selectedFilter == nil, isDeletable: false) {
@@ -1276,19 +1307,35 @@ struct NotesView: View {
                 }
             }
             .navigationTitle("Notes")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .searchable(text: $searchText, prompt: "Search notes")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        sheet = .new
-                    } label: {
-                        Image(systemName: "square.and.pencil")
+                    HStack(spacing: 4) {
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            withAnimation(.easeInOut(duration: 0.22)) {
+                                showSearch.toggle()
+                                if !showSearch { searchText = "" }
+                                else { searchFocused = true }
+                            }
+                        } label: {
+                            Image(systemName: showSearch ? "xmark" : "magnifyingglass")
+                                .font(.system(size: 15, weight: .regular))
+                                .frame(width: 32, height: 32)
+                                .background(Color.white.opacity(showSearch ? 0.12 : 0.0))
+                                .clipShape(Circle())
+                        }
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            sheet = .new
+                        } label: {
+                            Image(systemName: "square.and.pencil")
+                                .font(.system(size: 15, weight: .regular))
+                        }
+                        .accessibilityLabel("New note")
                     }
-                    .accessibilityLabel("New note")
                 }
             }
             .navigationDestination(item: $editingNote) { note in
