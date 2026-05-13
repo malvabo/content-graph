@@ -191,6 +191,12 @@ struct ProjectGroupDetailView: View {
     @State private var isAIProcessing = false
     @State private var aiFailed = false
     @State private var aiFailReason = ""
+    @State private var showAIPreview = false
+    @State private var aiPreviewText: String = ""
+    @State private var aiPreviewLabel: String = ""
+    @State private var aiPreviewIcon: String = "sparkles"
+    @State private var aiPreviewInstruction: String = ""
+    @State private var aiSourceSnapshot: String = ""
     @FocusState private var editorFocused: Bool
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
@@ -411,10 +417,37 @@ struct ProjectGroupDetailView: View {
             .background(bg)
         }
         .sheet(isPresented: $showAIMenu) {
-            AIActionsSheet { instruction in
+            AIActionsSheet { label, icon, instruction in
                 showAIMenu = false
-                runAITransform(instruction: instruction)
+                runAITransform(instruction: instruction, label: label, icon: icon, source: editText)
             }
+        }
+        .sheet(isPresented: $showAIPreview) {
+            AIPreviewSheet(
+                actionLabel: aiPreviewLabel,
+                actionIcon: aiPreviewIcon,
+                previewText: aiPreviewText,
+                isLoading: isAIProcessing,
+                onApply: {
+                    editText = aiPreviewText
+                    persistCurrent()
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    showAIPreview = false
+                },
+                onCopy: {
+                    UIPasteboard.general.string = aiPreviewText
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                },
+                onRegenerate: {
+                    runAITransform(
+                        instruction: aiPreviewInstruction,
+                        label: aiPreviewLabel,
+                        icon: aiPreviewIcon,
+                        source: aiSourceSnapshot
+                    )
+                },
+                onClose: { showAIPreview = false }
+            )
         }
         .alert("AI request failed", isPresented: $aiFailed) {
             Button("OK", role: .cancel) {}
@@ -425,22 +458,26 @@ struct ProjectGroupDetailView: View {
         }
     }
 
-    private func runAITransform(instruction: String) {
-        guard !instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        let snapshot = editText
-        guard !snapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+    private func runAITransform(instruction: String, label: String, icon: String, source: String) {
+        let trimmedInstruction = instruction.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedInstruction.isEmpty else { return }
+        guard !source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             aiFailReason = "There's no text to transform yet."
             aiFailed = true
             return
         }
+        aiPreviewLabel = label
+        aiPreviewIcon = icon
+        aiPreviewInstruction = trimmedInstruction
+        aiSourceSnapshot = source
         isAIProcessing = true
         Task {
-            let result = await AITransformService.transform(text: snapshot, instruction: instruction)
+            let result = await AITransformService.transform(text: source, instruction: trimmedInstruction)
             await MainActor.run {
                 isAIProcessing = false
                 if let result, !result.isEmpty {
-                    editText = result
-                    persistCurrent()
+                    aiPreviewText = result
+                    if !showAIPreview { showAIPreview = true }
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 } else {
                     aiFailReason = AITransformService.isKeyConfigured
@@ -1170,7 +1207,7 @@ private let builtInAIActions: [AIAction] = [
 ]
 
 struct AIActionsSheet: View {
-    let onAction: (String) -> Void
+    let onAction: (_ label: String, _ icon: String, _ instruction: String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var customPrompt: String = ""
     @FocusState private var promptFocused: Bool
@@ -1192,7 +1229,8 @@ struct AIActionsSheet: View {
                     .onSubmit {
                         let trimmed = customPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
                         guard !trimmed.isEmpty else { return }
-                        onAction(trimmed)
+                        let short = String(trimmed.prefix(40))
+                        onAction("Ask AI: \(short)", "sparkles", trimmed)
                     }
             }
             .padding(.horizontal, 16)
@@ -1240,7 +1278,7 @@ struct AIActionsSheet: View {
     private func actionRow(_ action: AIAction) -> some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            onAction(action.instruction)
+            onAction(action.label, action.icon, action.instruction)
         } label: {
             HStack(spacing: 14) {
                 Image(systemName: action.icon)
@@ -1259,6 +1297,127 @@ struct AIActionsSheet: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - AI preview sheet
+
+struct AIPreviewSheet: View {
+    let actionLabel: String
+    let actionIcon: String
+    let previewText: String
+    let isLoading: Bool
+    let onApply: () -> Void
+    let onCopy: () -> Void
+    let onRegenerate: () -> Void
+    let onClose: () -> Void
+
+    @State private var didCopy = false
+
+    private let sheetBg = Color(red: 0.16, green: 0.13, blue: 0.11)
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Image(systemName: actionIcon)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(BrandColor.amber)
+                    .frame(width: 34, height: 34)
+                    .background(BrandColor.amber.opacity(0.14))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                Text(actionLabel)
+                    .font(.appBodyBold)
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer()
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.55))
+                        .frame(width: 30, height: 30)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+
+            ZStack {
+                ScrollView(showsIndicators: false) {
+                    Text(previewText.isEmpty ? " " : previewText)
+                        .font(.appBody)
+                        .foregroundColor(Color.white.opacity(0.92))
+                        .lineSpacing(4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .textSelection(.enabled)
+                }
+                if isLoading {
+                    Color.black.opacity(0.25).allowsHitTesting(false)
+                    ProgressView().tint(.white)
+                }
+            }
+
+            HStack(spacing: 12) {
+                Button {
+                    onRegenerate()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.70))
+                        .frame(width: 40, height: 40)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .disabled(isLoading)
+
+                Spacer()
+
+                Button {
+                    onCopy()
+                    withAnimation(.easeOut(duration: 0.15)) { didCopy = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        withAnimation { didCopy = false }
+                    }
+                } label: {
+                    Text(didCopy ? "Copied" : "Copy")
+                        .font(.appBodyBold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 22)
+                        .frame(height: 40)
+                        .overlay(Capsule().stroke(Color.white.opacity(0.20), lineWidth: 0.5))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(isLoading)
+
+                Button(action: onApply) {
+                    Text("Apply")
+                        .font(.appBodyBold)
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 22)
+                        .frame(height: 40)
+                        .background(.white)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(isLoading)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 16)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(sheetBg)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(sheetBg)
+        .presentationCornerRadius(22)
     }
 }
 
