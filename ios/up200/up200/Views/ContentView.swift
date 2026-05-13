@@ -493,6 +493,7 @@ private struct TemplateEditPage: View {
     @State private var formatIDs: Set<String>
 
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var chrome: ChromeController
     @FocusState private var focus: Field?
 
     private enum Field { case title, prompt }
@@ -633,7 +634,11 @@ private struct TemplateEditPage: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .onDisappear { persist() }
+        .onAppear { chrome.hideTabBar = true }
+        .onDisappear {
+            chrome.hideTabBar = false
+            persist()
+        }
     }
 }
 
