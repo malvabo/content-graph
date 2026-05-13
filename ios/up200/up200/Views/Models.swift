@@ -2,6 +2,18 @@ import Foundation
 import Security
 import Speech
 import AVFoundation
+import SwiftUI
+
+// MARK: - Design tokens
+
+enum BrandColor {
+    static let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+}
+
+enum SelectionStyle {
+    static let fill = Color.white.opacity(0.14)
+    static let stroke = Color.white.opacity(0.30)
+}
 
 struct KeychainService {
     private static let account = "com.up200.app.anthropic_api_key"

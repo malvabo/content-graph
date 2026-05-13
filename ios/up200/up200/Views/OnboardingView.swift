@@ -38,7 +38,7 @@ struct OnboardingView: View {
                             .kerning(-0.5)
                             .foregroundColor(.white)
                         Rectangle()
-                            .fill(Color(red: 0.85, green: 0.45, blue: 0.10))
+                            .fill(BrandColor.amber)
                             .frame(width: 2, height: 44)
                             .cornerRadius(1)
                             .opacity(caretOn ? 1 : 0)

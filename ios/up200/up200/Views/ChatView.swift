@@ -144,7 +144,7 @@ struct ChatView: View {
                     .foregroundColor(
                         selectedProjectIDs.isEmpty
                             ? Color.white.opacity(projects.isEmpty ? 0.18 : 0.55)
-                            : Color(red: 0.85, green: 0.45, blue: 0.10)
+                            : .white
                     )
                     .frame(width: 32, height: 32)
                     .background(Color.white.opacity(0.07))
@@ -437,7 +437,6 @@ private struct ResourcePickerSheet: View {
     let projects: [GenerationProject]
     @Binding var selectedIDs: Set<UUID>
     @Environment(\.dismiss) private var dismiss
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -508,16 +507,16 @@ private struct ResourcePickerSheet: View {
                                     Spacer()
                                     Image(systemName: selected ? "checkmark.circle.fill" : "circle")
                                         .font(.system(size: 18))
-                                        .foregroundColor(selected ? amber : Color.white.opacity(0.25))
+                                        .foregroundColor(selected ? .white : Color.white.opacity(0.25))
                                 }
                                 .padding(14)
                                 .background(
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(selected ? amber.opacity(0.08) : Color.white.opacity(0.04))
+                                        .fill(selected ? SelectionStyle.fill : Color.white.opacity(0.04))
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .stroke(selected ? amber.opacity(0.25) : Color.white.opacity(0.06), lineWidth: 0.5)
+                                        .stroke(selected ? SelectionStyle.stroke : Color.white.opacity(0.06), lineWidth: 0.5)
                                 )
                             }
                             .buttonStyle(.plain)

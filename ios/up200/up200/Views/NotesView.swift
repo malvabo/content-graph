@@ -238,7 +238,7 @@ private struct NoteThumb: View {
 
 private struct NoteListRow: View {
     let note: Note
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let amber = BrandColor.amber
 
     var body: some View {
         HStack(spacing: 16) {
@@ -285,7 +285,7 @@ private struct Waveform: View {
     let level: Float
 
     private let barCount = 14
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let amber = BrandColor.amber
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
@@ -320,7 +320,7 @@ private struct DictationControls: View {
     let onCancel: () -> Void
     let onConfirm: () -> Void
 
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let amber = BrandColor.amber
     private let stroke = Color.white.opacity(0.15)
     private let glassShadow = Color.black.opacity(0.22)
 
@@ -406,10 +406,10 @@ private struct DictationControls: View {
 
 // MARK: - Voice Start Sheet
 
-private struct NoteWaveform: View {
+struct NoteWaveform: View {
     let level: Float
     private let barCount = 38
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let amber = BrandColor.amber
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
@@ -799,7 +799,6 @@ private struct FilterChip: View {
     let isDeletable: Bool
     let action: () -> Void
     var onDelete: (() -> Void)? = nil
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     var body: some View {
         Button(action: action) {
@@ -808,8 +807,9 @@ private struct FilterChip: View {
                 .foregroundColor(isSelected ? .white : Color.white.opacity(0.55))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(isSelected ? amber : Color.white.opacity(0.08))
+                .background(isSelected ? SelectionStyle.fill : Color.white.opacity(0.08))
                 .clipShape(Capsule())
+                .overlay(Capsule().stroke(isSelected ? SelectionStyle.stroke : Color.clear, lineWidth: 0.5))
         }
         .buttonStyle(.plain)
         .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isSelected)
@@ -839,7 +839,7 @@ struct NotesView: View {
     @FocusState private var searchFocused: Bool
 
     private let builtinTags = ["Starred", "Work", "Personal"]
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let amber = BrandColor.amber
     private var allTags: [String] { builtinTags + customTags }
 
     private var sortedNotes: [Note] {
@@ -905,7 +905,7 @@ struct NotesView: View {
                             TextField("Search notes", text: $searchText)
                                 .font(.appLabel)
                                 .foregroundColor(.white)
-                                .tint(amber)
+                                .tint(.white)
                                 .focused($searchFocused)
                             if !searchText.isEmpty {
                                 Button { searchText = "" } label: {
