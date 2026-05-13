@@ -1838,17 +1838,14 @@ private struct FormatPickerSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: 12) {
+                Text("Choose formats")
+                    .font(.app(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer()
                 Button("Cancel") { dismiss() }
                     .font(.app(size: 16))
-                    .foregroundColor(Color.white.opacity(0.65))
-                    .frame(minWidth: 64, alignment: .leading)
-                Spacer(minLength: 8)
-                Text("Choose formats")
-                    .font(.app(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                Spacer(minLength: 8)
-                Color.clear.frame(width: 64, height: 1)
+                    .foregroundColor(Color.white.opacity(0.55))
             }
             .padding(.horizontal, 16)
             .padding(.top, 20)
@@ -2253,7 +2250,7 @@ private struct FormatsBlock: View {
         }
         .sheet(isPresented: $showPicker) {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(22)
                 .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
