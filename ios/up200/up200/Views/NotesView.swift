@@ -1246,17 +1246,6 @@ struct NotesView: View {
                         Spacer()
                     } else {
                         List {
-                            Text(selectedFilter ?? "All Notes")
-                                .font(.app(size: 22, weight: .bold))
-                                .foregroundColor(Color.white.opacity(0.35))
-                                .padding(.horizontal, 20)
-                                .padding(.top, 12)
-                                .padding(.bottom, 4)
-                                .listRowInsets(EdgeInsets())
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-
-
                             ForEach(filteredNotes) { note in
                                 Button {
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
