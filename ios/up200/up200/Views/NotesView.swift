@@ -1228,17 +1228,14 @@ struct NotesView: View {
                     onDelete: { delete(note) }
                 )
             }
-            .alert("New Tag", isPresented: $showAddTag) {
-                TextField("Tag name", text: $newTagName)
-                Button("Add") {
+            .sheet(isPresented: $showAddTag) {
+                NewTagSheet(newTagName: $newTagName) {
                     let t = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !t.isEmpty, !allTags.map({ $0.lowercased() }).contains(t.lowercased()) else { return }
                     customTags.append(t)
                     UserDefaults.standard.set(customTags, forKey: "note_custom_tags")
+                    showAddTag = false
                 }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Enter a name for the new tag")
             }
         }
         .onAppear { notes = NotesStore.load() }
@@ -1251,6 +1248,54 @@ struct NotesView: View {
                 })
             }
         }
+    }
+}
+
+private struct NewTagSheet: View {
+    @Binding var newTagName: String
+    let onAdd: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                TextField("Tag name", text: $newTagName)
+                    .font(.app(size: 17))
+                    .foregroundColor(.white)
+                    .tint(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(Color.white.opacity(0.07))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
+                    .focused($focused)
+                    .onSubmit { if !newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { onAdd() } }
+                Spacer()
+            }
+            .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+            .navigationTitle("New Tag")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundColor(Color.white.opacity(0.55))
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Add") { onAdd() }
+                        .fontWeight(.semibold)
+                        .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+        .presentationDetents([.height(180)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(22)
+        .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        .onAppear { focused = true }
     }
 }
 
