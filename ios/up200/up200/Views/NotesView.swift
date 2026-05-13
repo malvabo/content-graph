@@ -883,7 +883,11 @@ private struct NoteEditorPage: View {
     }
 
     private static func split(_ body: String) -> (String, String) {
-        guard let nl = body.firstIndex(of: "\n") else { return (body, "") }
+        // A title is only present when the user explicitly entered one — marked
+        // by a newline separating it from the body (or trailing it, for a
+        // title-only note). Bodies with no newline are treated as body-only
+        // so dictated transcripts populate the body, not the title.
+        guard let nl = body.firstIndex(of: "\n") else { return ("", body) }
         let firstLine = String(body[..<nl])
         var rest = String(body[body.index(after: nl)...])
         while let c = rest.first, c == "\n" || c == "\r" { rest.removeFirst() }
@@ -894,7 +898,9 @@ private struct NoteEditorPage: View {
         let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let bTrim = noteBody.trimmingCharacters(in: .whitespacesAndNewlines)
         if t.isEmpty && bTrim.isEmpty { return "" }
-        if bTrim.isEmpty { return t }
+        // Preserve a title-only note across save/reopen by trailing a newline,
+        // which `split` uses to distinguish it from a body-only note.
+        if bTrim.isEmpty { return t + "\n" }
         if t.isEmpty { return noteBody }
         return t + "\n" + noteBody
     }
