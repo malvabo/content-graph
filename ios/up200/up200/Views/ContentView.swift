@@ -91,7 +91,7 @@ struct LibraryView: View {
                             LazyVStack(spacing: 0) {
                                 ForEach(filteredGroups, id: \.title) { group in
                                     NavigationLink {
-                                        ProjectGroupView(title: group.title, items: group.items)
+                                        ProjectGroupDetailView(groupTitle: group.title, initialItems: group.items)
                                     } label: {
                                         LibraryGroupRow(title: group.title, items: group.items)
                                     }
@@ -176,94 +176,52 @@ private struct LibraryGroupRow: View {
     }
 }
 
-private struct ProjectGroupView: View {
-    let title: String
-    let items: [GenerationProject]
-
-    var body: some View {
-        List {
-            ForEach(Array(items.enumerated()), id: \.element.id) { idx, project in
-                ProjectRow(project: project)
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparatorTint(Color.white.opacity(0.06))
-                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
-        .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbarBackground(.hidden, for: .navigationBar)
-    }
-}
-
-private struct ProjectRow: View {
-    let project: GenerationProject
-    @State private var showDetail = false
-
-    var body: some View {
-        Button { showDetail = true } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(project.outputType)
-                        .font(.app(size: 19, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.88))
-                        .lineLimit(1)
-                    if !project.preview.isEmpty {
-                        Text(project.preview)
-                            .font(.app(size: 13))
-                            .foregroundColor(Color.white.opacity(0.40))
-                            .lineLimit(1)
-                    }
-                }
-                Spacer()
-                Text(project.date, style: .date)
-                    .font(.app(size: 12))
-                    .foregroundColor(Color.white.opacity(0.28))
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-        }
-        .buttonStyle(.plain)
-        .fullScreenCover(isPresented: $showDetail) {
-            ProjectDetailView(project: project)
-        }
-    }
-}
-
-private struct ProjectDetailView: View {
-    let project: GenerationProject
+private struct ProjectGroupDetailView: View {
+    let groupTitle: String
+    let initialItems: [GenerationProject]
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @Environment(\.dismiss) private var dismiss
-    @State private var editText: String
+
+    @State private var selectedIndex: Int = 0
+    @State private var editText: String = ""
     @State private var copied = false
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
-    init(project: GenerationProject) {
-        self.project = project
-        _editText = State(initialValue: project.content.isEmpty ? project.preview : project.content)
+    private var allProjects: [GenerationProject] {
+        (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
     }
 
-    private var dateString: String {
-        let f = DateFormatter()
-        f.dateStyle = .medium
-        f.timeStyle = .short
-        return f.string(from: project.date)
+    private var items: [GenerationProject] {
+        let ids = Set(initialItems.map { $0.id })
+        let live = allProjects.filter { ids.contains($0.id) }
+        return live.isEmpty ? initialItems : live.sorted { $0.date > $1.date }
     }
 
-    private func persistIfNeeded() {
-        let original = project.content.isEmpty ? project.preview : project.content
-        guard editText != original else { return }
-        var projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
-        if let idx = projects.firstIndex(where: { $0.id == project.id }) {
+    private func tabLabel(_ item: GenerationProject) -> String {
+        allFormats.first(where: { $0.id == item.outputType })?.label ?? item.outputType
+    }
+
+    private func bodyText(for item: GenerationProject) -> String {
+        item.content.isEmpty ? item.preview : item.content
+    }
+
+    private func persistCurrent() {
+        guard items.indices.contains(selectedIndex) else { return }
+        let item = items[selectedIndex]
+        guard editText != bodyText(for: item) else { return }
+        var projects = allProjects
+        if let idx = projects.firstIndex(where: { $0.id == item.id }) {
             projects[idx].content = editText
             projects[idx].preview = String(editText.prefix(120))
         }
         if let data = try? JSONEncoder().encode(projects) { projectsData = data }
+    }
+
+    private func selectTab(_ index: Int) {
+        persistCurrent()
+        selectedIndex = index
+        if items.indices.contains(index) { editText = bodyText(for: items[index]) }
     }
 
     var body: some View {
@@ -275,6 +233,7 @@ private struct ProjectDetailView: View {
                 HStack(spacing: 10) {
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        persistCurrent()
                         dismiss()
                     } label: {
                         Image(systemName: "chevron.left")
@@ -287,6 +246,12 @@ private struct ProjectDetailView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+
+                    Text(groupTitle)
+                        .font(.app(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
 
                     Spacer()
 
@@ -304,55 +269,89 @@ private struct ProjectDetailView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 4)
-                .padding(.bottom, 12)
+                .padding(.bottom, 10)
 
-                // Date
-                Text(dateString)
-                    .font(.app(size: 13))
-                    .foregroundColor(Color.white.opacity(0.40))
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
-
-                // Output type as title
-                Text(project.outputType)
-                    .font(.app(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-                    .lineLimit(2)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-
-                // Editable body
-                ZStack(alignment: .topLeading) {
-                    if self.editText.isEmpty {
-                        Text("Start typing\u{2026}")
-                            .font(.app(size: 17))
-                            .foregroundColor(Color.white.opacity(0.22))
-                            .padding(.horizontal, 24)
-                            .padding(.top, 8)
-                            .allowsHitTesting(false)
-                    }
-                    TextEditor(text: $editText)
-                        .font(.app(size: 17))
-                        .foregroundColor(Color.white.opacity(0.88))
-                        .scrollContentBackground(.hidden)
-                        .background(Color.clear)
-                        .tint(.white)
+                // Tabs
+                if items.count > 1 {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
+                                Button { selectTab(idx) } label: {
+                                    Text(tabLabel(item))
+                                        .font(.app(size: 14, weight: selectedIndex == idx ? .semibold : .regular))
+                                        .foregroundColor(selectedIndex == idx ? .white : Color.white.opacity(0.45))
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 7)
+                                        .background(selectedIndex == idx ? Color.white.opacity(0.12) : Color.clear)
+                                        .clipShape(Capsule())
+                                        .overlay(Capsule().stroke(selectedIndex == idx ? Color.white.opacity(0.20) : Color.clear, lineWidth: 0.5))
+                                }
+                                .buttonStyle(.plain)
+                                .animation(.easeOut(duration: 0.15), value: selectedIndex)
+                            }
+                        }
                         .padding(.horizontal, 16)
-                        .contentMargins(.bottom, 96, for: .scrollContent)
+                        .padding(.bottom, 10)
+                    }
+
+                    Rectangle()
+                        .fill(Color.white.opacity(0.06))
+                        .frame(height: 0.5)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+                // Content
+                if items.indices.contains(selectedIndex) {
+                    let item = items[selectedIndex]
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text(allFormats.first(where: { $0.id == item.outputType })?.label ?? item.outputType)
+                                .font(.app(size: 28, weight: .bold))
+                                .foregroundColor(.white)
+                            Spacer()
+                            Text(item.date, style: .date)
+                                .font(.app(size: 13))
+                                .foregroundColor(Color.white.opacity(0.35))
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 10)
+
+                        ZStack(alignment: .topLeading) {
+                            if editText.isEmpty {
+                                Text("No content")
+                                    .font(.app(size: 17))
+                                    .foregroundColor(Color.white.opacity(0.22))
+                                    .padding(.horizontal, 24)
+                                    .padding(.top, 8)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $editText)
+                                .font(.app(size: 17))
+                                .foregroundColor(Color.white.opacity(0.88))
+                                .scrollContentBackground(.hidden)
+                                .background(Color.clear)
+                                .tint(.white)
+                                .padding(.horizontal, 16)
+                                .contentMargins(.bottom, 96, for: .scrollContent)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .onDisappear { persistIfNeeded() }
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .task {
+            if items.indices.contains(selectedIndex) { editText = bodyText(for: items[selectedIndex]) }
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Button {
                 UIPasteboard.general.string = editText
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 withAnimation(.easeOut(duration: 0.15)) { copied = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    withAnimation { copied = false }
-                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { copied = false } }
             } label: {
                 Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
                     .font(.app(size: 17, weight: .semibold))
@@ -368,14 +367,8 @@ private struct ProjectDetailView: View {
             .padding(.top, 12)
             .padding(.bottom, 8)
             .background(alignment: .top) {
-                LinearGradient(
-                    colors: [bg.opacity(0), bg],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 28)
-                .offset(y: -28)
-                .allowsHitTesting(false)
+                LinearGradient(colors: [bg.opacity(0), bg], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 28).offset(y: -28).allowsHitTesting(false)
             }
             .background(bg)
         }
