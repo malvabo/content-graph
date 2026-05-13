@@ -582,8 +582,14 @@ private struct TemplateEditPage: View {
                         .focused($focus, equals: .title)
 
                         // Format chips — wrapping flow
-                        TemplateTagFlow(items: allFormats, selectedIDs: $formatIDs, amber: amber)
-                            .padding(.horizontal, 20)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Choose formats of the output")
+                                .font(.app(size: 13, weight: .medium))
+                                .foregroundColor(Color.white.opacity(0.40))
+                                .padding(.horizontal, 20)
+                            TemplateTagFlow(items: allFormats, selectedIDs: $formatIDs, amber: amber)
+                                .padding(.horizontal, 20)
+                        }
 
                         Rectangle()
                             .fill(Color.white.opacity(0.06))
@@ -591,25 +597,31 @@ private struct TemplateEditPage: View {
                             .padding(.horizontal, 20)
 
                         // Prompt text
-                        ZStack(alignment: .topLeading) {
-                            if prompt.isEmpty {
-                                Text("Describe what this template should produce\u{2026}")
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Prompt")
+                                .font(.app(size: 13, weight: .medium))
+                                .foregroundColor(Color.white.opacity(0.40))
+                                .padding(.horizontal, 20)
+                            ZStack(alignment: .topLeading) {
+                                if prompt.isEmpty {
+                                    Text("Describe what this template should produce\u{2026}")
+                                        .font(.appBody)
+                                        .foregroundColor(Color.white.opacity(0.22))
+                                        .padding(.horizontal, 24)
+                                        .padding(.top, 8)
+                                        .allowsHitTesting(false)
+                                }
+                                TextEditor(text: $prompt)
                                     .font(.appBody)
-                                    .foregroundColor(Color.white.opacity(0.22))
-                                    .padding(.horizontal, 24)
-                                    .padding(.top, 8)
-                                    .allowsHitTesting(false)
+                                    .foregroundColor(Color.white.opacity(0.92))
+                                    .scrollContentBackground(.hidden)
+                                    .background(Color.clear)
+                                    .tint(.white)
+                                    .padding(.horizontal, 16)
+                                    .contentMargins(.bottom, 96, for: .scrollContent)
+                                    .focused($focus, equals: .prompt)
+                                    .frame(minHeight: 200)
                             }
-                            TextEditor(text: $prompt)
-                                .font(.appBody)
-                                .foregroundColor(Color.white.opacity(0.92))
-                                .scrollContentBackground(.hidden)
-                                .background(Color.clear)
-                                .tint(.white)
-                                .padding(.horizontal, 16)
-                                .contentMargins(.bottom, 96, for: .scrollContent)
-                                .focused($focus, equals: .prompt)
-                                .frame(minHeight: 200)
                         }
                     }
                     .padding(.top, 4)
@@ -620,6 +632,7 @@ private struct TemplateEditPage: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .task { focus = .title }
         .onDisappear { persist() }
     }
