@@ -261,36 +261,54 @@ struct GenerationBanner: View {
     var onTap: () -> Void
     var onDismiss: () -> Void
 
-    @State private var pulse = false
     @State private var glowPhase = false
-    @State private var p1 = false
-    @State private var p2 = false
-    @State private var p3 = false
+
+    private struct DotConfig {
+        let radius: Double
+        let size: Double
+        let speed: Double
+        let phase: Double
+        let opacity: Double
+    }
+    private let dotConfigs: [DotConfig] = [
+        DotConfig(radius: 9,  size: 3.5, speed: 1.1,  phase: 0.0,  opacity: 0.95),
+        DotConfig(radius: 7,  size: 2.5, speed: 1.7,  phase: 0.4,  opacity: 0.70),
+        DotConfig(radius: 11, size: 2.0, speed: 0.85, phase: 0.9,  opacity: 0.55),
+        DotConfig(radius: 6,  size: 3.0, speed: 2.2,  phase: 1.4,  opacity: 0.80),
+        DotConfig(radius: 10, size: 2.0, speed: 1.45, phase: 1.9,  opacity: 0.60),
+        DotConfig(radius: 8,  size: 2.5, speed: 0.95, phase: 2.5,  opacity: 0.75),
+    ]
 
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color.white.opacity(0.05))
+                    .fill(Color.white.opacity(0.06))
                     .frame(width: 36, height: 36)
-                Circle()
-                    .fill(Color.white.opacity(p1 ? 0.90 : 0.40))
-                    .frame(width: p1 ? 4 : 3, height: p1 ? 4 : 3)
-                    .blur(radius: 1.5)
-                    .offset(x: -7, y: -6)
-                    .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: p1)
-                Circle()
-                    .fill(Color.white.opacity(p2 ? 0.70 : 0.25))
-                    .frame(width: p2 ? 3 : 2, height: p2 ? 3 : 2)
-                    .blur(radius: 1)
-                    .offset(x: 6, y: 1)
-                    .animation(.easeInOut(duration: 2.1).repeatForever(autoreverses: true), value: p2)
-                Circle()
-                    .fill(Color.white.opacity(p3 ? 0.80 : 0.35))
-                    .frame(width: p3 ? 3.5 : 2.5, height: p3 ? 3.5 : 2.5)
-                    .blur(radius: 1.2)
-                    .offset(x: -4, y: 7)
-                    .animation(.easeInOut(duration: 1.85).repeatForever(autoreverses: true), value: p3)
+                if !isReady {
+                    TimelineView(.animation(minimumInterval: 1.0/30.0)) { tl in
+                        let t = tl.date.timeIntervalSinceReferenceDate
+                        ZStack {
+                            ForEach(dotConfigs.indices, id: \.self) { i in
+                                let cfg = dotConfigs[i]
+                                let angle = t * cfg.speed + cfg.phase
+                                let x = cfg.radius * cos(angle)
+                                let y = cfg.radius * sin(angle)
+                                let pulse = (sin(t * cfg.speed * 2.3 + cfg.phase) + 1) / 2
+                                Circle()
+                                    .fill(Color.white.opacity(cfg.opacity * (0.5 + 0.5 * pulse)))
+                                    .frame(width: cfg.size * (0.75 + 0.25 * pulse),
+                                           height: cfg.size * (0.75 + 0.25 * pulse))
+                                    .blur(radius: 0.8)
+                                    .offset(x: x, y: y)
+                            }
+                        }
+                    }
+                } else {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                }
             }
             .frame(width: 36, height: 36)
             .clipShape(Circle())
@@ -359,10 +377,7 @@ struct GenerationBanner: View {
         .contentShape(Rectangle())
         .onTapGesture { if isReady { onTap() } }
         .onAppear {
-            pulse = true; glowPhase = true
-            p1 = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { p2 = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { p3 = true }
+            glowPhase = true
         }
     }
 }
