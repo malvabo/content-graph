@@ -246,12 +246,14 @@ private struct NoteListRow: View {
                         .font(.app(size: 12))
                         .foregroundColor(amber.opacity(0.75))
                 }
+
+                Text(RowDate.relative(from: note.updatedAt))
+                    .font(.app(size: 14))
+                    .foregroundColor(Color.white.opacity(0.35))
+
                 let otherTags = note.tags.filter { $0 != "Starred" }
                 if !otherTags.isEmpty {
-                    Text("\u{00B7}")
-                        .font(.app(size: 12))
-                        .foregroundColor(Color.white.opacity(0.22))
-                    Text(otherTags.joined(separator: ", "))
+                    Text(otherTags.joined(separator: " · "))
                         .font(.app(size: 12))
                         .foregroundColor(amber.opacity(0.75))
                         .lineLimit(1)
@@ -1180,7 +1182,7 @@ struct NotesView: View {
                                             toggleTag(tag, for: note)
                                         } label: {
                                             Label(
-                                                note.tags.contains(tag) ? "Remove "\(tag)"" : "Tag as "\(tag)"",
+                                                note.tags.contains(tag) ? "Remove \"\(tag)\"" : "Tag as \"\(tag)\"",
                                                 systemImage: note.tags.contains(tag) ? "tag.slash" : "tag"
                                             )
                                         }

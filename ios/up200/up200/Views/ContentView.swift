@@ -11,6 +11,9 @@ enum AppTab: String {
 struct LibraryView: View {
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @State private var searchText = ""
+    @FocusState private var searchFocused: Bool
+
+    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
     private var projects: [GenerationProject] {
         (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
@@ -33,52 +36,105 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+                bg.ignoresSafeArea()
 
-                if filteredGroups.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: searchText.isEmpty ? "tray" : "magnifyingglass")
-                            .font(.system(size: 36))
-                            .foregroundColor(Color.white.opacity(0.20))
-                        Text(searchText.isEmpty ? "No generations yet" : "No results")
-                            .foregroundColor(Color.white.opacity(0.30))
-                        if searchText.isEmpty {
-                            Text("Your content outputs will appear here")
-                                .font(.footnote)
-                                .foregroundColor(Color.white.opacity(0.20))
-                        }
-                    }
-                } else {
-                    List {
-                        ForEach(Array(filteredGroups.enumerated()), id: \.element.title) { idx, group in
-                            NavigationLink {
-                                ProjectGroupView(title: group.title, items: group.items)
-                            } label: {
-                                LibraryGroupRow(title: group.title, count: group.items.count, date: group.items.first?.date ?? Date())
+                VStack(spacing: 0) {
+                    // Always-visible search bar
+                    HStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.app(size: 15))
+                            .foregroundColor(Color.white.opacity(0.35))
+                        TextField("Search library", text: $searchText)
+                            .font(.app(size: 16))
+                            .foregroundColor(.white)
+                            .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
+                            .focused($searchFocused)
+                        if !searchText.isEmpty {
+                            Button { searchText = "" } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.app(size: 15))
+                                    .foregroundColor(Color.white.opacity(0.30))
                             }
-                            .listRowInsets(EdgeInsets())
-                            .listRowBackground(Color.clear)
-                            .listRowSeparatorTint(Color.white.opacity(0.06))
-                            .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                            .buttonStyle(.plain)
                         }
                     }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color.white.opacity(0.07))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 10)
+
+                    Rectangle()
+                        .fill(Color.white.opacity(0.06))
+                        .frame(height: 0.5)
+
+                    if filteredGroups.isEmpty {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Image(systemName: searchText.isEmpty ? "tray" : "magnifyingglass")
+                                .font(.system(size: 36))
+                                .foregroundColor(Color.white.opacity(0.20))
+                            Text(searchText.isEmpty ? "No generations yet" : "No results")
+                                .foregroundColor(Color.white.opacity(0.30))
+                            if searchText.isEmpty {
+                                Text("Your content outputs will appear here")
+                                    .font(.footnote)
+                                    .foregroundColor(Color.white.opacity(0.20))
+                            }
+                        }
+                        Spacer()
+                    } else {
+                        ScrollView(showsIndicators: false) {
+                            LazyVStack(spacing: 0) {
+                                ForEach(filteredGroups, id: \.title) { group in
+                                    NavigationLink {
+                                        ProjectGroupView(title: group.title, items: group.items)
+                                    } label: {
+                                        LibraryGroupRow(title: group.title, items: group.items)
+                                    }
+                                    .buttonStyle(.plain)
+
+                                    Rectangle()
+                                        .fill(Color.white.opacity(0.06))
+                                        .frame(height: 0.5)
+                                        .padding(.leading, 20)
+                                }
+                            }
+                        }
+                    }
                 }
             }
             .navigationTitle("Library")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .searchable(text: $searchText, prompt: "Search library")
         }
     }
 }
 
+private func libraryRelativeTime(_ date: Date) -> String {
+    let interval = Date().timeIntervalSince(date)
+    if interval < 60 { return "just now" }
+    if interval < 3600 { return "\(Int(interval / 60))m ago" }
+    if interval < 86400 { return "\(Int(interval / 3600))h ago" }
+    let days = Int(interval / 86400)
+    return days == 1 ? "yesterday" : "\(days) days ago"
+}
+
+private func outputTypesList(_ items: [GenerationProject]) -> String {
+    var seen = Set<String>()
+    let labels: [String] = items.compactMap { item in
+        guard seen.insert(item.outputType).inserted else { return nil }
+        return allFormats.first(where: { $0.id == item.outputType })?.label ?? item.outputType
+    }
+    return labels.joined(separator: ", ")
+}
+
 private struct LibraryGroupRow: View {
     let title: String
-    let count: Int
-    let date: Date
+    let items: [GenerationProject]
 
     var body: some View {
         HStack(spacing: 12) {
@@ -87,9 +143,10 @@ private struct LibraryGroupRow: View {
                     .font(.app(size: 19, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.88))
                     .lineLimit(1)
-                Text("\(count) output\(count == 1 ? "" : "s") · \(date, style: .relative) ago")
+                Text("\(outputTypesList(items)) · \(libraryRelativeTime(items.first?.date ?? Date()))")
                     .font(.app(size: 12))
                     .foregroundColor(Color.white.opacity(0.35))
+                    .lineLimit(1)
             }
             Spacer()
         }
@@ -101,46 +158,24 @@ private struct LibraryGroupRow: View {
 private struct ProjectGroupView: View {
     let title: String
     let items: [GenerationProject]
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
-
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 12) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.55))
-                    }
-                    .buttonStyle(.plain)
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 6)
-
-                Text(title)
-                    .font(.app(size: 28, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.88))
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(items.enumerated()), id: \.element.id) { idx, project in
-                            ProjectRow(project: project)
-                            if idx < items.count - 1 {
-                                Divider().background(Color.white.opacity(0.06)).padding(.leading, 20)
-                            }
-                        }
-                    }
-                    .padding(.bottom, 32)
-                }
+        List {
+            ForEach(Array(items.enumerated()), id: \.element.id) { idx, project in
+                ProjectRow(project: project)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(Color.white.opacity(0.06))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
             }
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.large)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 }
 
@@ -532,82 +567,6 @@ private struct TemplateEditPage: View {
     }
 }
 
-// MARK: - Custom Tab Bar
-
-private struct AppTabBar: View {
-    @Binding var selected: AppTab
-
-    private let mainItems: [(AppTab, String, String)] = [
-        (.notes,     "note.text",        "Notes"),
-        (.library,   "folder",           "Library"),
-        (.templates, "square.on.square", "Templates"),
-    ]
-
-    var body: some View {
-        HStack(spacing: 10) {
-            // Main pill — Notes / Library / Templates
-            HStack(spacing: 0) {
-                ForEach(mainItems, id: \.0.rawValue) { tab, icon, label in
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        selected = tab
-                    } label: {
-                        VStack(spacing: 3) {
-                            Image(systemName: icon)
-                                .font(.system(size: 18, weight: selected == tab ? .semibold : .regular))
-                            Text(label)
-                                .font(.system(size: 10, weight: selected == tab ? .semibold : .regular))
-                        }
-                        .foregroundColor(selected == tab ? .white : Color.white.opacity(0.38))
-                        .frame(maxWidth: .infinity, minHeight: 52)
-                        .background(
-                            Group {
-                                if selected == tab {
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(Color.white.opacity(0.12))
-                                        .padding(.horizontal, 4)
-                                }
-                            }
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 5)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-                    )
-            )
-
-            // Separate Create button
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                selected = .create
-            } label: {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 20, weight: selected == .create ? .semibold : .regular))
-                    .foregroundColor(selected == .create ? .white : Color.white.opacity(0.70))
-                    .frame(width: 62, height: 62)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                    .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-                            )
-                    )
-            }
-            .buttonStyle(.plain)
-        }
-        .environment(\.colorScheme, .dark)
-    }
-}
-
 // MARK: - Content View
 
 struct ContentView: View {
@@ -615,24 +574,24 @@ struct ContentView: View {
     @State private var showSplash = true
     @StateObject private var bannerController = BannerController()
 
-    init() {
-        UITabBar.appearance().isHidden = true
-    }
-
     var body: some View {
         ZStack(alignment: .top) {
             TabView(selection: $selectedTab) {
-                NotesView().tag(AppTab.notes)
-                HomeView().tag(AppTab.create)
-                LibraryView().tag(AppTab.library)
-                TemplatesView().tag(AppTab.templates)
+                Tab("Notes", systemImage: "note.text", value: AppTab.notes) {
+                    NotesView()
+                }
+                Tab("Create", systemImage: "sparkles", value: AppTab.create) {
+                    HomeView()
+                }
+                Tab("Library", systemImage: "folder", value: AppTab.library) {
+                    LibraryView()
+                }
+                Tab("Templates", systemImage: "square.on.square", value: AppTab.templates) {
+                    TemplatesView()
+                }
             }
             .environmentObject(bannerController)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                AppTabBar(selected: $selectedTab)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
-            }
+            .tint(.white)
 
             if showSplash {
                 LaunchView()
