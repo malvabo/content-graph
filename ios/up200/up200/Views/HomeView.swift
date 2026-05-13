@@ -1698,7 +1698,7 @@ private struct NotePickerSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
-                    .font(.app(size: 15))
+                    .font(.app(size: 16))
                     .foregroundColor(Color.white.opacity(0.35))
                 TextField("Search notes", text: $query)
                     .font(.app(size: 16))
@@ -1853,7 +1853,7 @@ private struct FormatPickerSheet: View {
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .font(.app(size: 14))
+                    .font(.app(size: 16))
                     .foregroundColor(Color.white.opacity(0.35))
                 TextField("Search formats and templates", text: $search)
                     .font(.app(size: 15))

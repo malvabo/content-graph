@@ -1199,7 +1199,7 @@ struct NotesView: View {
                     if showSearch {
                         HStack(spacing: 10) {
                             Image(systemName: "magnifyingglass")
-                                .font(.app(size: 15))
+                                .font(.app(size: 16))
                                 .foregroundColor(Color.white.opacity(0.35))
                             TextField("Search notes", text: $searchText)
                                 .font(.app(size: 16))
@@ -1347,7 +1347,7 @@ struct NotesView: View {
                             }
                         } label: {
                             Image(systemName: showSearch ? "xmark" : "magnifyingglass")
-                                .font(.system(size: 15, weight: .regular))
+                                .font(.system(size: 17, weight: .regular))
                                 .frame(width: 32, height: 32)
                                 .background(Color.white.opacity(showSearch ? 0.12 : 0.0))
                                 .clipShape(Circle())
@@ -1357,7 +1357,7 @@ struct NotesView: View {
                             sheet = .new
                         } label: {
                             Image(systemName: "square.and.pencil")
-                                .font(.system(size: 15, weight: .regular))
+                                .font(.system(size: 17, weight: .regular))
                         }
                         .accessibilityLabel("New note")
                     }
