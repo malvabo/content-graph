@@ -488,14 +488,15 @@ private struct TemplateEditPage: View {
     let onDelete: (() -> Void)?
 
     @State private var title: String
-    @State private var subtitle: String
+    @State private var existingSubtitle: String
     @State private var prompt: String
     @State private var formatIDs: Set<String>
 
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focus: Field?
 
-    private enum Field { case title, subtitle, prompt }
+    private enum Field { case title, prompt }
+    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     init(template: CustomTemplate?, onSave: @escaping (CustomTemplate) -> Void, onDelete: (() -> Void)? = nil) {
@@ -503,152 +504,193 @@ private struct TemplateEditPage: View {
         self.onSave = onSave
         self.onDelete = onDelete
         _title = State(initialValue: template?.title ?? "")
-        _subtitle = State(initialValue: template?.subtitle ?? "")
+        _existingSubtitle = State(initialValue: template?.subtitle ?? "")
         _prompt = State(initialValue: template?.prompt ?? "")
         _formatIDs = State(initialValue: Set(template?.formatIDs ?? []))
     }
 
     private var isNew: Bool { originalID == nil }
 
+    private func persist() {
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        var tpl = CustomTemplate(title: title, subtitle: existingSubtitle)
+        if let id = originalID { tpl.id = id }
+        tpl.prompt = prompt
+        tpl.formatIDs = Array(formatIDs)
+        onSave(tpl)
+    }
+
     var body: some View {
         ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+            bg.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(spacing: 10) {
-                        TextField("Template name", text: $title)
-                            .font(.app(size: 16))
+            VStack(alignment: .leading, spacing: 0) {
+                // Top bar
+                HStack(spacing: 10) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
-                            .padding(14)
-                            .background(Color.white.opacity(0.06))
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .tint(.white)
-                            .focused($focus, equals: .title)
-
-                        TextField("Short description (optional)", text: $subtitle)
-                            .font(.app(size: 15))
-                            .foregroundColor(.white)
-                            .padding(14)
-                            .background(Color.white.opacity(0.06))
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .tint(.white)
-                            .focused($focus, equals: .subtitle)
+                            .frame(width: 36, height: 36)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(Circle())
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Prompt")
-                            .font(.app(size: 11, weight: .semibold))
-                            .tracking(0.6)
-                            .foregroundColor(Color.white.opacity(0.30))
+                    Spacer()
 
+                    if !isNew, let del = onDelete {
+                        Button {
+                            del()
+                            dismiss()
+                        } label: {
+                            Image(systemName: "trash")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Color.red.opacity(0.75))
+                                .frame(width: 36, height: 36)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(Circle())
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .padding(.bottom, 12)
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Large title
+                        TextField(
+                            "",
+                            text: $title,
+                            prompt: Text("Template name").foregroundColor(Color.white.opacity(0.25)),
+                            axis: .vertical
+                        )
+                        .font(.app(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+                        .tint(.white)
+                        .lineLimit(1...3)
+                        .padding(.horizontal, 20)
+                        .focused($focus, equals: .title)
+
+                        // Format chips — wrapping flow
+                        TemplateTagFlow(items: allFormats, selectedIDs: $formatIDs, amber: amber)
+                            .padding(.horizontal, 20)
+
+                        Rectangle()
+                            .fill(Color.white.opacity(0.06))
+                            .frame(height: 0.5)
+                            .padding(.horizontal, 20)
+
+                        // Prompt text
                         ZStack(alignment: .topLeading) {
                             if prompt.isEmpty {
-                                Text("Describe what this template should produce…")
-                                    .font(.app(size: 15))
+                                Text("Describe what this template should produce\u{2026}")
+                                    .font(.app(size: 17))
                                     .foregroundColor(Color.white.opacity(0.22))
-                                    .padding(.horizontal, 14)
-                                    .padding(.top, 14)
+                                    .padding(.horizontal, 24)
+                                    .padding(.top, 8)
                                     .allowsHitTesting(false)
                             }
                             TextEditor(text: $prompt)
-                                .font(.app(size: 15))
-                                .foregroundColor(.white)
+                                .font(.app(size: 17))
+                                .foregroundColor(Color.white.opacity(0.92))
                                 .scrollContentBackground(.hidden)
                                 .background(Color.clear)
                                 .tint(.white)
+                                .padding(.horizontal, 16)
+                                .contentMargins(.bottom, 96, for: .scrollContent)
                                 .focused($focus, equals: .prompt)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
-                                .frame(minHeight: 100)
-                        }
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    }
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Formats")
-                            .font(.app(size: 11, weight: .semibold))
-                            .tracking(0.6)
-                            .foregroundColor(Color.white.opacity(0.30))
-
-                        LazyVGrid(
-                            columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
-                            spacing: 8
-                        ) {
-                            ForEach(allFormats) { fmt in
-                                let selected = formatIDs.contains(fmt.id)
-                                Button {
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    withAnimation(.easeOut(duration: 0.15)) {
-                                        if selected { formatIDs.remove(fmt.id) }
-                                        else { formatIDs.insert(fmt.id) }
-                                    }
-                                } label: {
-                                    Text(fmt.label)
-                                        .font(.app(size: 13, weight: .medium))
-                                        .foregroundColor(selected ? .white : Color.white.opacity(0.55))
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 10)
-                                        .background(selected ? amber.opacity(0.22) : Color.white.opacity(0.06))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                                .stroke(selected ? amber.opacity(0.45) : Color.white.opacity(0.10), lineWidth: 0.5)
-                                        )
-                                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                                }
-                                .buttonStyle(.plain)
-                            }
+                                .frame(minHeight: 200)
                         }
                     }
+                    .padding(.top, 4)
+                    .padding(.bottom, 48)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 24)
-                .padding(.bottom, 32)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .task { focus = .title }
+        .onDisappear { persist() }
+    }
+}
 
-            Button {
-                guard !title.isEmpty else { return }
-                var tpl = CustomTemplate(title: title, subtitle: subtitle)
-                if let id = originalID { tpl.id = id }
-                tpl.prompt = prompt
-                tpl.formatIDs = Array(formatIDs)
-                onSave(tpl)
-                dismiss()
-            } label: {
-                Text(isNew ? "Add Template" : "Save Changes")
-                    .font(.app(size: 16, weight: .semibold))
-                    .foregroundColor(title.isEmpty ? Color.white.opacity(0.30) : .white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(title.isEmpty ? Color.white.opacity(0.06) : Color.white.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .disabled(title.isEmpty)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 32)
-            } // VStack
-        } // ZStack
-        .navigationTitle(isNew ? "New Template" : "Edit Template")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbar {
-            if !isNew, let del = onDelete {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        del()
-                        dismiss()
-                    } label: {
-                        Image(systemName: "trash")
-                            .foregroundColor(Color.red.opacity(0.65))
+private struct TemplateTagFlow: View {
+    let items: [ContentFormat]
+    @Binding var selectedIDs: Set<String>
+    let amber: Color
+
+    var body: some View {
+        ChipFlowLayout(spacing: 8) {
+            ForEach(items) { fmt in
+                let selected = selectedIDs.contains(fmt.id)
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        if selected { selectedIDs.remove(fmt.id) }
+                        else { selectedIDs.insert(fmt.id) }
                     }
+                } label: {
+                    Text(fmt.label)
+                        .font(.app(size: 14, weight: selected ? .semibold : .regular))
+                        .foregroundColor(selected ? amber : Color.white.opacity(0.55))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(selected ? amber.opacity(0.12) : Color.white.opacity(0.07))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(selected ? amber.opacity(0.35) : Color.white.opacity(0.10), lineWidth: 0.5))
                 }
+                .buttonStyle(.plain)
+                .animation(.easeOut(duration: 0.15), value: selected)
             }
         }
-        .task { focus = .title }
+    }
+}
+
+private struct ChipFlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? 0
+        var height: CGFloat = 0
+        var x: CGFloat = 0
+        var rowH: CGFloat = 0
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x + size.width > width && x > 0 {
+                height += rowH + spacing
+                x = 0; rowH = 0
+            }
+            x += size.width + spacing
+            rowH = max(rowH, size.height)
+        }
+        return CGSize(width: width, height: height + rowH)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowH: CGFloat = 0
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x + size.width > bounds.maxX && x > bounds.minX {
+                y += rowH + spacing
+                x = bounds.minX; rowH = 0
+            }
+            sub.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowH = max(rowH, size.height)
+        }
     }
 }
 
