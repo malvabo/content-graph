@@ -2476,7 +2476,7 @@ struct HomeView: View {
                 }
             }
             .navigationTitle("Create")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
