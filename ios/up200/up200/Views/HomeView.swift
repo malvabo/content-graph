@@ -2234,11 +2234,15 @@ private struct FormatsBlock: View {
                     HStack(spacing: 0) {
                         Color.black
                         LinearGradient(
-                            colors: [.black, .clear],
+                            stops: [
+                                .init(color: .black, location: 0),
+                                .init(color: .black.opacity(0.6), location: 0.4),
+                                .init(color: .clear, location: 1),
+                            ],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
-                        .frame(width: 36)
+                        .frame(width: 64)
                     }
                 )
                 }
