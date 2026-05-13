@@ -2003,7 +2003,7 @@ private struct FormatPickerSheet: View {
                     .font(.appBadge)
                     .foregroundColor(Color.white.opacity(0.40))
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 8)
         }
         .buttonStyle(.plain)
