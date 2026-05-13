@@ -263,19 +263,37 @@ struct GenerationBanner: View {
 
     @State private var pulse = false
     @State private var glowPhase = false
+    @State private var p1 = false
+    @State private var p2 = false
+    @State private var p3 = false
 
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(pulse ? 0.14 : 0.06))
+                    .fill(Color.white.opacity(0.05))
                     .frame(width: 36, height: 36)
-                    .blur(radius: 6)
-                    .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: pulse)
-                Image(systemName: isReady ? "checkmark" : "sparkles")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Color.white.opacity(isReady ? 0.90 : 0.72))
+                Circle()
+                    .fill(Color.white.opacity(p1 ? 0.90 : 0.40))
+                    .frame(width: p1 ? 4 : 3, height: p1 ? 4 : 3)
+                    .blur(radius: 1.5)
+                    .offset(x: -7, y: -6)
+                    .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: p1)
+                Circle()
+                    .fill(Color.white.opacity(p2 ? 0.70 : 0.25))
+                    .frame(width: p2 ? 3 : 2, height: p2 ? 3 : 2)
+                    .blur(radius: 1)
+                    .offset(x: 6, y: 1)
+                    .animation(.easeInOut(duration: 2.1).repeatForever(autoreverses: true), value: p2)
+                Circle()
+                    .fill(Color.white.opacity(p3 ? 0.80 : 0.35))
+                    .frame(width: p3 ? 3.5 : 2.5, height: p3 ? 3.5 : 2.5)
+                    .blur(radius: 1.2)
+                    .offset(x: -4, y: 7)
+                    .animation(.easeInOut(duration: 1.85).repeatForever(autoreverses: true), value: p3)
             }
+            .frame(width: 36, height: 36)
+            .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(isReady ? "Content ready" : "Creating your content")
@@ -340,7 +358,12 @@ struct GenerationBanner: View {
         .shadow(color: Color.black.opacity(0.40), radius: 16, x: 0, y: 8)
         .contentShape(Rectangle())
         .onTapGesture { if isReady { onTap() } }
-        .onAppear { pulse = true; glowPhase = true }
+        .onAppear {
+            pulse = true; glowPhase = true
+            p1 = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { p2 = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { p3 = true }
+        }
     }
 }
 
