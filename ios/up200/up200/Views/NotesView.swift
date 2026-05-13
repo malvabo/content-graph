@@ -691,16 +691,238 @@ private struct NoteComposerSheet: View {
     }
 }
 
+// MARK: - Editor Page (full-page edit for existing notes)
+
+private struct NoteEditorPage: View {
+    let original: Note
+    let onSave: (Note) -> Void
+    let onDelete: () -> Void
+
+    @State private var title: String
+    @State private var noteBody: String
+    @State private var bodyBeforeDictation: String = ""
+    @State private var didDelete: Bool = false
+    @StateObject private var dictation = NoteDictation()
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var focus: Field?
+
+    private enum Field { case title, body }
+
+    init(note: Note, onSave: @escaping (Note) -> Void, onDelete: @escaping () -> Void) {
+        let migrated = Note.migrated(note)
+        self.original = migrated
+        self.onSave = onSave
+        self.onDelete = onDelete
+        let (t, b) = Self.split(migrated.body)
+        self._title = State(initialValue: t)
+        self._noteBody = State(initialValue: b)
+    }
+
+    private static func split(_ body: String) -> (String, String) {
+        guard let nl = body.firstIndex(of: "\n") else { return (body, "") }
+        let firstLine = String(body[..<nl])
+        var rest = String(body[body.index(after: nl)...])
+        while let c = rest.first, c == "\n" || c == "\r" { rest.removeFirst() }
+        return (firstLine, rest)
+    }
+
+    private var combined: String {
+        let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let bTrim = noteBody.trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.isEmpty && bTrim.isEmpty { return "" }
+        if bTrim.isEmpty { return t }
+        if t.isEmpty { return noteBody }
+        return t + "\n" + noteBody
+    }
+
+    private var hasContent: Bool {
+        !combined.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var dateString: String {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        return f.string(from: original.updatedAt)
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func persistIfNeeded() {
+        guard !didDelete else { return }
+        if combined == original.body { return }
+        var saved = original
+        saved.body = combined
+        saved.title = ""
+        saved.updatedAt = Date()
+        onSave(saved)
+    }
+
+    private func performDelete() {
+        dictation.stop()
+        didDelete = true
+        onDelete()
+        dismiss()
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 0) {
+                topBar
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+                    .padding(.bottom, 12)
+
+                Text(dateString)
+                    .font(.app(size: 13))
+                    .foregroundColor(Color.white.opacity(0.40))
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 4)
+
+                TextField(
+                    "",
+                    text: $title,
+                    prompt: Text("Title").foregroundColor(Color.white.opacity(0.25)),
+                    axis: .vertical
+                )
+                .font(.app(size: 28, weight: .bold))
+                .foregroundColor(.white)
+                .tint(.white)
+                .lineLimit(1...3)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 10)
+                .focused($focus, equals: .title)
+
+                ZStack(alignment: .topLeading) {
+                    if noteBody.isEmpty {
+                        Text("Start typing\u{2026}")
+                            .font(.app(size: 17))
+                            .foregroundColor(Color.white.opacity(0.22))
+                            .padding(.horizontal, 24)
+                            .padding(.top, 8)
+                            .allowsHitTesting(false)
+                    }
+                    TextEditor(text: $noteBody)
+                        .font(.app(size: 17))
+                        .foregroundColor(Color.white.opacity(0.92))
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .tint(.white)
+                        .padding(.horizontal, 16)
+                        .contentMargins(.bottom, 96, for: .scrollContent)
+                        .focused($focus, equals: .body)
+                }
+            }
+
+            DictationControls(
+                dictation: dictation,
+                onStart: {
+                    bodyBeforeDictation = noteBody
+                    dictation.start()
+                },
+                onCancel: {
+                    dictation.cancel()
+                    noteBody = bodyBeforeDictation
+                },
+                onConfirm: {
+                    dictation.stop()
+                }
+            )
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .onChange(of: dictation.transcript) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            if bodyBeforeDictation.isEmpty {
+                noteBody = trimmed
+            } else {
+                let needsSeparator = !bodyBeforeDictation.hasSuffix("\n") && !bodyBeforeDictation.hasSuffix(" ")
+                noteBody = bodyBeforeDictation + (needsSeparator ? " " : "") + trimmed
+            }
+        }
+        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+            Button("Open Settings") { openSettings() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
+        }
+        .onDisappear {
+            dictation.stop()
+            persistIfNeeded()
+        }
+    }
+
+    private var topBar: some View {
+        HStack(spacing: 10) {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                dictation.stop()
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Circle())
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Back")
+
+            Spacer()
+
+            if hasContent {
+                ShareLink(item: combined) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(width: 36, height: 36)
+                        .background(Color.white.opacity(0.08))
+                        .clipShape(Circle())
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+            }
+
+            Menu {
+                Button(role: .destructive) {
+                    performDelete()
+                } label: {
+                    Label("Delete Note", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Circle())
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("More")
+        }
+    }
+}
+
 // MARK: - Sheet Routing
 
 private enum NoteSheet: Identifiable {
     case new
-    case edit(Note)
 
     var id: String {
         switch self {
         case .new: return "new"
-        case .edit(let n): return "edit-\(n.id.uuidString)"
         }
     }
 }
@@ -710,6 +932,7 @@ private enum NoteSheet: Identifiable {
 struct NotesView: View {
     @State private var notes: [Note] = []
     @State private var sheet: NoteSheet? = nil
+    @State private var editingNote: Note? = nil
     @State private var searchText = ""
 
     private var sortedNotes: [Note] {
@@ -752,7 +975,7 @@ struct NotesView: View {
                         ForEach(filteredNotes) { note in
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                sheet = .edit(note)
+                                editingNote = note
                             } label: {
                                 NoteListRow(note: note)
                             }
@@ -791,20 +1014,9 @@ struct NotesView: View {
                     .accessibilityLabel("New note")
                 }
             }
-        }
-        .onAppear { notes = NotesStore.load() }
-        .sheet(item: $sheet) { which in
-            switch which {
-            case .new:
-                NoteVoiceSheet(onSave: { saved in
-                    notes.append(saved)
-                    NotesStore.save(notes)
-                })
-
-            case .edit(let note):
-                NoteComposerSheet(
+            .navigationDestination(item: $editingNote) { note in
+                NoteEditorPage(
                     note: note,
-                    isNew: false,
                     onSave: { saved in
                         if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
                             notes[idx] = saved
@@ -815,10 +1027,16 @@ struct NotesView: View {
                         delete(note)
                     }
                 )
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(22)
-                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+            }
+        }
+        .onAppear { notes = NotesStore.load() }
+        .sheet(item: $sheet) { which in
+            switch which {
+            case .new:
+                NoteVoiceSheet(onSave: { saved in
+                    notes.append(saved)
+                    NotesStore.save(notes)
+                })
             }
         }
     }
