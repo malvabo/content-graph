@@ -245,6 +245,17 @@ private struct NoteListRow: View {
                     Text(otherTags.joined(separator: " · "))
                         .font(.app(size: 12))
                         .foregroundColor(amber.opacity(0.75))
+                }
+
+                Text(RowDate.relative(from: note.updatedAt))
+                    .font(.app(size: 14))
+                    .foregroundColor(Color.white.opacity(0.35))
+
+                let otherTags = note.tags.filter { $0 != "Starred" }
+                if !otherTags.isEmpty {
+                    Text(otherTags.joined(separator: " · "))
+                        .font(.app(size: 12))
+                        .foregroundColor(amber.opacity(0.75))
                         .lineLimit(1)
                 }
             }
@@ -385,30 +396,40 @@ private struct DictationControls: View {
 
 // MARK: - Voice Start Sheet
 
-private struct AudioBlobsView: View {
+private struct NoteWaveform: View {
     let level: Float
-    let isRecording: Bool
+    private let barCount = 38
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { ctx in
-            HStack(spacing: 14) {
-                ForEach(0..<4, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .fill(amber)
-                        .frame(width: 62, height: blobHeight(index: i, time: ctx.date.timeIntervalSinceReferenceDate))
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 2.5) {
+                ForEach(0..<barCount, id: \.self) { i in
+                    Capsule()
+                        .fill(amber.opacity(barOpacity(index: i)))
+                        .frame(width: 3, height: barHeight(index: i, time: t))
                 }
             }
         }
-        .frame(height: 120)
+        .frame(height: 75)
+        .accessibilityHidden(true)
     }
 
-    private func blobHeight(index: Int, time: Double) -> CGFloat {
-        guard isRecording else { return 54 }
-        let phases = [0.0, 0.9, 1.8, 2.7]
-        let wave = (sin(time * 4.0 + phases[index]) + 1.0) / 2.0
-        let amp = min(1.0, Double(level) * 3.5)
-        return 48 + CGFloat(wave * 0.35 + amp * 0.65) * 56
+    private func barHeight(index: Int, time: Double) -> CGFloat {
+        let pos = Double(index) / Double(barCount - 1)
+        let envelope = sin(pos * .pi)
+        let phase1 = time * 4.5 + Double(index) * 0.42
+        let phase2 = time * 2.8 + Double(index) * 0.65
+        let wave = (sin(phase1) * 0.65 + sin(phase2) * 0.35 + 1.0) / 2.0
+        let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
+        let dynamic = wave * amplified * envelope
+        return 3 + CGFloat(dynamic) * 72
+    }
+
+    private func barOpacity(index: Int) -> Double {
+        let pos = Double(index) / Double(barCount - 1)
+        return 0.55 + sin(pos * .pi) * 0.45
     }
 }
 
@@ -501,13 +522,14 @@ private struct NoteVoiceSheet: View {
 
             Spacer()
 
-            AudioBlobsView(level: dictation.audioLevel, isRecording: dictation.isRecording)
+            NoteWaveform(level: dictation.audioLevel)
+                .padding(.horizontal, 28)
 
             Spacer()
 
             Text(timeLabel)
-                .font(.system(size: 44, weight: .bold, design: .monospaced))
-                .foregroundColor(.white)
+                .font(.system(size: 32, weight: .semibold, design: .monospaced))
+                .foregroundColor(Color.white.opacity(0.85))
 
             Spacer()
 
