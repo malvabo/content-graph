@@ -1715,7 +1715,7 @@ private struct NotePickerSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
-                    .font(.app(size: 15))
+                    .font(.app(size: 16))
                     .foregroundColor(Color.white.opacity(0.35))
                 TextField("Search notes", text: $query)
                     .font(.app(size: 16))
@@ -1855,17 +1855,14 @@ private struct FormatPickerSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: 12) {
+                Text("Choose formats")
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer()
                 Button("Cancel") { dismiss() }
                     .font(.app(size: 16))
-                    .foregroundColor(Color.white.opacity(0.65))
-                    .frame(minWidth: 64, alignment: .leading)
-                Spacer(minLength: 8)
-                Text("Choose formats")
-                    .font(.app(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                Spacer(minLength: 8)
-                Color.clear.frame(width: 64, height: 1)
+                    .foregroundColor(Color.white.opacity(0.55))
             }
             .padding(.horizontal, 16)
             .padding(.top, 20)
@@ -1873,7 +1870,7 @@ private struct FormatPickerSheet: View {
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .font(.app(size: 14))
+                    .font(.app(size: 16))
                     .foregroundColor(Color.white.opacity(0.35))
                 TextField("Search formats and templates", text: $search)
                     .font(.app(size: 15))
@@ -2254,11 +2251,15 @@ private struct FormatsBlock: View {
                     HStack(spacing: 0) {
                         Color.black
                         LinearGradient(
-                            colors: [.black, .clear],
+                            stops: [
+                                .init(color: .black, location: 0),
+                                .init(color: .black.opacity(0.6), location: 0.4),
+                                .init(color: .clear, location: 1),
+                            ],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
-                        .frame(width: 36)
+                        .frame(width: 64)
                     }
                 )
                 }
@@ -2270,7 +2271,7 @@ private struct FormatsBlock: View {
         }
         .sheet(isPresented: $showPicker) {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(22)
                 .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
@@ -2467,13 +2468,13 @@ struct HomeView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showOnboarding = true } label: {
                         Image(systemName: "sun.max")
-                            .font(.system(size: 14, weight: .regular))
+                            .font(.system(size: 17, weight: .regular))
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showKeyUpdate = true } label: {
                         Image(systemName: "key.horizontal")
-                            .font(.system(size: 14, weight: .regular))
+                            .font(.system(size: 17, weight: .regular))
                     }
                 }
             }

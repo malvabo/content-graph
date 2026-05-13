@@ -456,7 +456,7 @@ private struct NoteVoiceSheet: View {
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
     private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
-    private static let miniDetent = PresentationDetent.height(88)
+    private static let miniDetent = PresentationDetent.height(154)
 
     private var timeLabel: String {
         String(format: "%02d:%02d", seconds / 60, seconds % 60)
@@ -586,29 +586,31 @@ private struct NoteVoiceSheet: View {
         )
         .padding(.horizontal, 16)
         .frame(maxHeight: .infinity, alignment: .bottom)
-        .padding(.bottom, 12)
+        .padding(.bottom, 80)
     }
 
     private var voiceUI: some View {
         VStack(spacing: 0) {
-            HStack {
-                Spacer()
+            ZStack {
                 Text("Swipe up to add notes")
                     .font(.subheadline)
                     .foregroundColor(Color.white.opacity(0.35))
-                Spacer()
-                Button {
-                    dictation.stop()
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.55))
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.12))
-                        .clipShape(Circle())
+                    .frame(maxWidth: .infinity)
+                HStack {
+                    Spacer()
+                    Button {
+                        dictation.stop()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.55))
+                            .frame(width: 28, height: 28)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
@@ -943,7 +945,7 @@ private struct NoteEditorPage: View {
                     .font(.app(size: 13))
                     .foregroundColor(Color.white.opacity(0.40))
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 4)
+                    .padding(.bottom, 8)
 
                 TextField(
                     "",
@@ -951,12 +953,12 @@ private struct NoteEditorPage: View {
                     prompt: Text("Title").foregroundColor(Color.white.opacity(0.25)),
                     axis: .vertical
                 )
-                .font(.app(size: 28, weight: .bold))
+                .font(.app(size: 17, weight: .semibold))
                 .foregroundColor(.white)
                 .tint(.white)
                 .lineLimit(1...3)
                 .padding(.horizontal, 20)
-                .padding(.bottom, 10)
+                .padding(.bottom, 20)
                 .focused($focus, equals: .title)
 
                 ZStack(alignment: .topLeading) {
@@ -1199,7 +1201,7 @@ struct NotesView: View {
                     if showSearch {
                         HStack(spacing: 10) {
                             Image(systemName: "magnifyingglass")
-                                .font(.app(size: 15))
+                                .font(.app(size: 16))
                                 .foregroundColor(Color.white.opacity(0.35))
                             TextField("Search notes", text: $searchText)
                                 .font(.app(size: 16))
@@ -1347,7 +1349,7 @@ struct NotesView: View {
                             }
                         } label: {
                             Image(systemName: showSearch ? "xmark" : "magnifyingglass")
-                                .font(.system(size: 15, weight: .regular))
+                                .font(.system(size: 17, weight: .regular))
                                 .frame(width: 32, height: 32)
                                 .background(Color.white.opacity(showSearch ? 0.12 : 0.0))
                                 .clipShape(Circle())
@@ -1357,7 +1359,7 @@ struct NotesView: View {
                             sheet = .new
                         } label: {
                             Image(systemName: "square.and.pencil")
-                                .font(.system(size: 15, weight: .regular))
+                                .font(.system(size: 17, weight: .regular))
                         }
                         .accessibilityLabel("New note")
                     }

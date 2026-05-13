@@ -41,7 +41,7 @@ struct LibraryView: View {
                     if showSearch {
                         HStack(spacing: 10) {
                             Image(systemName: "magnifyingglass")
-                                .font(.app(size: 15))
+                                .font(.app(size: 16))
                                 .foregroundColor(Color.white.opacity(0.35))
                             TextField("Search library", text: $searchText)
                                 .font(.app(size: 16))
@@ -108,7 +108,7 @@ struct LibraryView: View {
                 }
             }
             .navigationTitle("Library")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
@@ -122,7 +122,7 @@ struct LibraryView: View {
                         }
                     } label: {
                         Image(systemName: showSearch ? "xmark" : "magnifyingglass")
-                            .font(.system(size: 15, weight: .regular))
+                            .font(.system(size: 17, weight: .regular))
                             .frame(width: 32, height: 32)
                             .background(Color.white.opacity(showSearch ? 0.12 : 0.0))
                             .clipShape(Circle())
@@ -194,7 +194,7 @@ private struct ProjectGroupView: View {
         .scrollContentBackground(.hidden)
         .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
         .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
     }
@@ -228,92 +228,156 @@ private struct ProjectRow: View {
             .padding(.vertical, 16)
         }
         .buttonStyle(.plain)
-        .sheet(isPresented: $showDetail) {
+        .fullScreenCover(isPresented: $showDetail) {
             ProjectDetailView(project: project)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(22)
-                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
 }
 
 private struct ProjectDetailView: View {
     let project: GenerationProject
+    @AppStorage("library_projects") private var projectsData: Data = Data()
     @Environment(\.dismiss) private var dismiss
+    @State private var editText: String
     @State private var copied = false
 
+    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
+
+    init(project: GenerationProject) {
+        self.project = project
+        _editText = State(initialValue: project.content.isEmpty ? project.preview : project.content)
+    }
+
+    private var dateString: String {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        return f.string(from: project.date)
+    }
+
+    private func persistIfNeeded() {
+        let original = project.content.isEmpty ? project.preview : project.content
+        guard editText != original else { return }
+        var projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+        if let idx = projects.firstIndex(where: { $0.id == project.id }) {
+            projects[idx].content = editText
+            projects[idx].preview = String(editText.prefix(120))
+        }
+        if let data = try? JSONEncoder().encode(projects) { projectsData = data }
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.app(size: 13, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.60))
-                        .frame(width: 28, height: 28)
-                        .background(Color.white.opacity(0.10))
-                        .clipShape(Circle())
-                }
-                Spacer(minLength: 0)
-                Text("Output")
-                    .font(.app(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                Spacer(minLength: 0)
-                Color.clear.frame(width: 28, height: 28)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
-            .padding(.bottom, 14)
+        ZStack {
+            bg.ignoresSafeArea()
 
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(project.outputType)
-                            .font(.app(size: 15, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.88))
-                            .lineLimit(1)
-                        Spacer(minLength: 8)
-                        Button {
-                            UIPasteboard.general.string = project.content.isEmpty ? project.preview : project.content
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            withAnimation(.easeOut(duration: 0.15)) { copied = true }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                withAnimation { copied = false }
-                            }
-                        } label: {
-                            Label(copied ? "Copied" : "Copy",
-                                  systemImage: copied ? "checkmark" : "doc.on.doc")
-                                .font(.app(size: 12, weight: .medium))
-                                .foregroundColor(copied ? .white : Color.white.opacity(0.55))
-                        }
-                        .buttonStyle(.plain)
+            VStack(alignment: .leading, spacing: 0) {
+                // Top bar
+                HStack(spacing: 10) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(Circle())
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
 
-                    if !project.title.isEmpty {
-                        Text(project.title)
-                            .font(.app(size: 12))
-                            .foregroundColor(Color.white.opacity(0.32))
+                    Spacer()
+
+                    ShareLink(item: editText) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(Circle())
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
-
-                    Text(project.content.isEmpty ? project.preview : project.content)
-                        .font(.app(size: 14))
-                        .foregroundColor(Color.white.opacity(0.82))
-                        .lineSpacing(4)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .textSelection(.enabled)
+                    .buttonStyle(.plain)
                 }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.white.opacity(0.04))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
-                )
                 .padding(.horizontal, 16)
-                .padding(.bottom, 20)
+                .padding(.top, 4)
+                .padding(.bottom, 12)
+
+                // Date
+                Text(dateString)
+                    .font(.app(size: 13))
+                    .foregroundColor(Color.white.opacity(0.40))
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
+
+                // Output type as title
+                Text(project.outputType)
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+
+                // Editable body
+                ZStack(alignment: .topLeading) {
+                    if self.editText.isEmpty {
+                        Text("Start typing\u{2026}")
+                            .font(.app(size: 17))
+                            .foregroundColor(Color.white.opacity(0.22))
+                            .padding(.horizontal, 24)
+                            .padding(.top, 8)
+                            .allowsHitTesting(false)
+                    }
+                    TextEditor(text: $editText)
+                        .font(.app(size: 17))
+                        .foregroundColor(Color.white.opacity(0.88))
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .tint(.white)
+                        .padding(.horizontal, 16)
+                        .contentMargins(.bottom, 96, for: .scrollContent)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .onDisappear { persistIfNeeded() }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Button {
+                UIPasteboard.general.string = editText
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                withAnimation(.easeOut(duration: 0.15)) { copied = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    withAnimation { copied = false }
+                }
+            } label: {
+                Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(copied ? Color.white.opacity(0.70) : .white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(copied ? Color.white.opacity(0.07) : Color.white.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .animation(.easeOut(duration: 0.2), value: copied)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+            .background(alignment: .top) {
+                LinearGradient(
+                    colors: [bg.opacity(0), bg],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 28)
+                .offset(y: -28)
+                .allowsHitTesting(false)
+            }
+            .background(bg)
         }
     }
 }
