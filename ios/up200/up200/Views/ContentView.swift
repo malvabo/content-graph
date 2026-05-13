@@ -720,26 +720,25 @@ private struct AppTabBar: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            HStack(spacing: 0) {
+            HStack(spacing: 4) {
                 ForEach(mainItems, id: \.0.rawValue) { tab, icon, label in
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         selected = tab
                     } label: {
-                        VStack(spacing: 3) {
+                        VStack(spacing: 4) {
                             Image(systemName: icon)
-                                .font(.system(size: 18, weight: selected == tab ? .semibold : .regular))
+                                .font(.system(size: 22, weight: selected == tab ? .semibold : .regular))
                             Text(label)
-                                .font(.system(size: 10, weight: selected == tab ? .semibold : .regular))
+                                .font(.system(size: 13, weight: selected == tab ? .semibold : .regular))
                         }
-                        .foregroundColor(selected == tab ? .white : Color.white.opacity(0.38))
-                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .foregroundColor(selected == tab ? .white : Color.white.opacity(0.45))
+                        .frame(maxWidth: .infinity, minHeight: 64)
                         .background(
                             Group {
                                 if selected == tab {
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(Color.white.opacity(0.12))
-                                        .padding(.horizontal, 4)
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .fill(Color.white.opacity(0.16))
                                 }
                             }
                         )
@@ -748,12 +747,12 @@ private struct AppTabBar: View {
                 }
             }
             .padding(.horizontal, 6)
-            .padding(.vertical, 5)
+            .padding(.vertical, 6)
             .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .fill(.ultraThinMaterial)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
                             .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
                     )
             )
@@ -762,19 +761,19 @@ private struct AppTabBar: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 selected = .create
             } label: {
-                VStack(spacing: 3) {
+                VStack(spacing: 4) {
                     Image(systemName: "square.and.pencil")
-                        .font(.system(size: 18, weight: selected == .create ? .semibold : .regular))
+                        .font(.system(size: 22, weight: selected == .create ? .semibold : .regular))
                     Text("Creator")
-                        .font(.system(size: 10, weight: selected == .create ? .semibold : .regular))
+                        .font(.system(size: 13, weight: selected == .create ? .semibold : .regular))
                 }
                 .foregroundColor(selected == .create ? .white : Color.white.opacity(0.55))
-                .frame(width: 62, height: 62)
+                .frame(width: 76, height: 76)
                 .background(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
                         .fill(.ultraThinMaterial)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
                                 .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
                         )
                 )
