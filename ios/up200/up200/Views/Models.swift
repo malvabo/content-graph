@@ -47,6 +47,7 @@ struct Note: Identifiable, Codable, Equatable, Hashable {
     var title: String = ""
     var body: String = ""
     var updatedAt: Date = Date()
+    var tags: [String] = []
 
     var isEmpty: Bool {
         body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty

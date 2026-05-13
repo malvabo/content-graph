@@ -170,13 +170,21 @@ private enum RowDate {
 
 private struct NoteListRow: View {
     let note: Note
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(note.displayTitle)
-                .font(.app(size: 20, weight: .semibold))
-                .foregroundColor(Color.white.opacity(0.88))
-                .lineLimit(1)
+            HStack(spacing: 6) {
+                Text(note.displayTitle)
+                    .font(.app(size: 20, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.88))
+                    .lineLimit(1)
+                if note.tags.contains("Starred") {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(amber)
+                }
+            }
 
             HStack(spacing: 6) {
                 Text(RowDate.string(from: note.updatedAt))
@@ -189,6 +197,16 @@ private struct NoteListRow: View {
                     Text(note.preview)
                         .font(.app(size: 12))
                         .foregroundColor(Color.white.opacity(0.40))
+                        .lineLimit(1)
+                }
+                let otherTags = note.tags.filter { $0 != "Starred" }
+                if !otherTags.isEmpty {
+                    Text("\u{00B7}")
+                        .font(.app(size: 12))
+                        .foregroundColor(Color.white.opacity(0.22))
+                    Text(otherTags.joined(separator: ", "))
+                        .font(.app(size: 12))
+                        .foregroundColor(amber.opacity(0.75))
                         .lineLimit(1)
                 }
             }
@@ -917,6 +935,29 @@ private struct NoteEditorPage: View {
     }
 }
 
+// MARK: - Filter Chip
+
+private struct FilterChip: View {
+    let label: String
+    let isSelected: Bool
+    let action: () -> Void
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.app(size: 14, weight: isSelected ? .semibold : .regular))
+                .foregroundColor(isSelected ? .white : Color.white.opacity(0.55))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(isSelected ? amber : Color.white.opacity(0.08))
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isSelected)
+    }
+}
+
 // MARK: - Sheet Routing
 
 private enum NoteSheet: Identifiable {
@@ -936,21 +977,45 @@ struct NotesView: View {
     @State private var sheet: NoteSheet? = nil
     @State private var editingNote: Note? = nil
     @State private var searchText = ""
+    @State private var selectedFilter: String? = nil
+    @State private var customTags: [String] = UserDefaults.standard.stringArray(forKey: "note_custom_tags") ?? []
+    @State private var showAddTag = false
+    @State private var newTagName = ""
+
+    private let builtinTags = ["Starred", "Work", "Personal"]
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private var allTags: [String] { builtinTags + customTags }
 
     private var sortedNotes: [Note] {
         notes.sorted { $0.updatedAt > $1.updatedAt }
     }
 
     private var filteredNotes: [Note] {
-        guard !searchText.isEmpty else { return sortedNotes }
-        let q = searchText.lowercased()
-        return sortedNotes.filter {
-            $0.displayTitle.lowercased().contains(q) || $0.body.lowercased().contains(q)
+        var result = sortedNotes
+        if !searchText.isEmpty {
+            let q = searchText.lowercased()
+            result = result.filter {
+                $0.displayTitle.lowercased().contains(q) || $0.body.lowercased().contains(q)
+            }
         }
+        if let tag = selectedFilter {
+            result = result.filter { $0.tags.contains(tag) }
+        }
+        return result
     }
 
     private func delete(_ note: Note) {
         notes.removeAll { $0.id == note.id }
+        NotesStore.save(notes)
+    }
+
+    private func toggleTag(_ tag: String, for note: Note) {
+        guard let idx = notes.firstIndex(where: { $0.id == note.id }) else { return }
+        if notes[idx].tags.contains(tag) {
+            notes[idx].tags.removeAll { $0 == tag }
+        } else {
+            notes[idx].tags.append(tag)
+        }
         NotesStore.save(notes)
     }
 
@@ -959,45 +1024,108 @@ struct NotesView: View {
             ZStack {
                 Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
 
-                if filteredNotes.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: searchText.isEmpty ? "note.text" : "magnifyingglass")
-                            .font(.system(size: 36))
-                            .foregroundColor(Color.white.opacity(0.20))
-                        Text(searchText.isEmpty ? "No notes yet" : "No results")
-                            .foregroundColor(Color.white.opacity(0.30))
-                        if searchText.isEmpty {
-                            Text("Tap the pencil to write your first note")
-                                .font(.footnote)
-                                .foregroundColor(Color.white.opacity(0.20))
-                        }
-                    }
-                } else {
-                    List {
-                        ForEach(filteredNotes) { note in
+                VStack(spacing: 0) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            FilterChip(label: "All", isSelected: selectedFilter == nil) {
+                                withAnimation { selectedFilter = nil }
+                            }
+                            ForEach(allTags, id: \.self) { tag in
+                                FilterChip(label: tag, isSelected: selectedFilter == tag) {
+                                    withAnimation { selectedFilter = selectedFilter == tag ? nil : tag }
+                                }
+                            }
                             Button {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                editingNote = note
+                                newTagName = ""
+                                showAddTag = true
                             } label: {
-                                NoteListRow(note: note)
+                                Image(systemName: "plus")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(Color.white.opacity(0.55))
+                                    .frame(width: 34, height: 34)
+                                    .background(Color.white.opacity(0.08))
+                                    .clipShape(Circle())
                             }
                             .buttonStyle(.plain)
-                            .listRowInsets(EdgeInsets())
-                            .listRowBackground(Color.clear)
-                            .listRowSeparatorTint(Color.white.opacity(0.06))
-                            .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    delete(note)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                    }
+
+                    Rectangle()
+                        .fill(Color.white.opacity(0.06))
+                        .frame(height: 0.5)
+
+                    if filteredNotes.isEmpty {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Image(systemName: (searchText.isEmpty && selectedFilter == nil) ? "note.text" : "magnifyingglass")
+                                .font(.system(size: 36))
+                                .foregroundColor(Color.white.opacity(0.20))
+                            Text((searchText.isEmpty && selectedFilter == nil) ? "No notes yet" : "No results")
+                                .foregroundColor(Color.white.opacity(0.30))
+                            if searchText.isEmpty && selectedFilter == nil {
+                                Text("Tap the pencil to write your first note")
+                                    .font(.footnote)
+                                    .foregroundColor(Color.white.opacity(0.20))
+                            }
+                        }
+                        Spacer()
+                    } else {
+                        List {
+                            ForEach(filteredNotes) { note in
+                                Button {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    editingNote = note
                                 } label: {
-                                    Label("Delete", systemImage: "trash")
+                                    NoteListRow(note: note)
+                                }
+                                .buttonStyle(.plain)
+                                .listRowInsets(EdgeInsets())
+                                .listRowBackground(Color.clear)
+                                .listRowSeparatorTint(Color.white.opacity(0.06))
+                                .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        delete(note)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                                .swipeActions(edge: .leading) {
+                                    Button {
+                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                        toggleTag("Starred", for: note)
+                                    } label: {
+                                        Label(
+                                            note.tags.contains("Starred") ? "Unstar" : "Star",
+                                            systemImage: note.tags.contains("Starred") ? "star.slash" : "star.fill"
+                                        )
+                                    }
+                                    .tint(amber)
+                                }
+                                .contextMenu {
+                                    ForEach(allTags.filter { $0 != "Starred" }, id: \.self) { tag in
+                                        Button {
+                                            toggleTag(tag, for: note)
+                                        } label: {
+                                            Label(
+                                                note.tags.contains(tag) ? "Remove "\(tag)"" : "Tag as "\(tag)"",
+                                                systemImage: note.tags.contains(tag) ? "tag.slash" : "tag"
+                                            )
+                                        }
+                                    }
+                                    Divider()
+                                    Button(role: .destructive) { delete(note) } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
                                 }
                             }
                         }
+                        .listStyle(.plain)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
                     }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
                 }
             }
             .navigationTitle("Notes")
@@ -1025,10 +1153,20 @@ struct NotesView: View {
                         }
                         NotesStore.save(notes)
                     },
-                    onDelete: {
-                        delete(note)
-                    }
+                    onDelete: { delete(note) }
                 )
+            }
+            .alert("New Tag", isPresented: $showAddTag) {
+                TextField("Tag name", text: $newTagName)
+                Button("Add") {
+                    let t = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !t.isEmpty, !allTags.map({ $0.lowercased() }).contains(t.lowercased()) else { return }
+                    customTags.append(t)
+                    UserDefaults.standard.set(customTags, forKey: "note_custom_tags")
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Enter a name for the new tag")
             }
         }
         .onAppear { notes = NotesStore.load() }
