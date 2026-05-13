@@ -245,17 +245,6 @@ private struct NoteListRow: View {
                     Text(otherTags.joined(separator: " · "))
                         .font(.app(size: 12))
                         .foregroundColor(amber.opacity(0.75))
-                }
-
-                Text(RowDate.relative(from: note.updatedAt))
-                    .font(.app(size: 14))
-                    .foregroundColor(Color.white.opacity(0.35))
-
-                let otherTags = note.tags.filter { $0 != "Starred" }
-                if !otherTags.isEmpty {
-                    Text(otherTags.joined(separator: " · "))
-                        .font(.app(size: 12))
-                        .foregroundColor(amber.opacity(0.75))
                         .lineLimit(1)
                 }
             }
