@@ -107,25 +107,27 @@ struct LibraryView: View {
                     }
                 }
             }
-            .navigationTitle("Library")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    LeadingTitle(text: "Library")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        withAnimation(.easeInOut(duration: 0.22)) {
-                            showSearch.toggle()
-                            if !showSearch { searchText = "" }
-                            else { searchFocused = true }
+                    TopBarPill {
+                        TopBarPillButton(
+                            systemImage: showSearch ? "xmark" : "magnifyingglass",
+                            isActive: showSearch
+                        ) {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            withAnimation(.easeInOut(duration: 0.22)) {
+                                showSearch.toggle()
+                                if !showSearch { searchText = "" }
+                                else { searchFocused = true }
+                            }
                         }
-                    } label: {
-                        Image(systemName: showSearch ? "xmark" : "magnifyingglass")
-                            .font(.system(size: 17, weight: .regular))
-                            .frame(width: 32, height: 32)
-                            .background(Color.white.opacity(showSearch ? 0.12 : 0.0))
-                            .clipShape(Circle())
                     }
                 }
             }
@@ -427,14 +429,20 @@ struct TemplatesView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
-            .navigationTitle("Templates")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    LeadingTitle(text: "Templates")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { path.append(.new) } label: {
-                        Image(systemName: "plus")
+                    TopBarPill {
+                        TopBarPillButton(systemImage: "plus") {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            path.append(.new)
+                        }
                     }
                 }
             }
@@ -969,6 +977,62 @@ struct LaunchView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(red: 0.10, green: 0.08, blue: 0.07))
+    }
+}
+
+// MARK: - Top bar primitives
+
+struct LeadingTitle: View {
+    let text: String
+    var body: some View {
+        Text(text)
+            .font(.appBodyBold)
+            .foregroundColor(.white)
+    }
+}
+
+struct TopBarPill<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+    var body: some View {
+        HStack(spacing: 0) { content() }
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.08))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                    )
+            )
+    }
+}
+
+struct TopBarPillButton: View {
+    let systemImage: String
+    let isActive: Bool
+    let action: () -> Void
+    init(systemImage: String, isActive: Bool = false, action: @escaping () -> Void) {
+        self.systemImage = systemImage
+        self.isActive = isActive
+        self.action = action
+    }
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 15, weight: .regular))
+                .foregroundColor(.white)
+                .frame(width: 38, height: 32)
+                .background(isActive ? Color.white.opacity(0.12) : Color.clear)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct TopBarPillDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.10))
+            .frame(width: 0.5, height: 18)
     }
 }
 

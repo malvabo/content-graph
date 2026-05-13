@@ -2322,21 +2322,29 @@ struct HomeView: View {
                     }
                 }
             }
-            .navigationTitle("Create")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button { showOnboarding = true } label: {
-                        Image(systemName: "sun.max")
-                            .font(.system(size: 17, weight: .regular))
-                    }
+                    LeadingTitle(text: "Create")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showKeyUpdate = true } label: {
-                        Image(systemName: "key.horizontal")
-                            .font(.system(size: 17, weight: .regular))
+                    TopBarPill {
+                        TopBarPillButton(systemImage: "sun.max") {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            showOnboarding = true
+                        }
+                        .accessibilityLabel("Onboarding")
+
+                        TopBarPillDivider()
+
+                        TopBarPillButton(systemImage: "key.horizontal") {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            showKeyUpdate = true
+                        }
+                        .accessibilityLabel("API key")
                     }
                 }
             }
