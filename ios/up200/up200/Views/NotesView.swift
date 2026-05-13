@@ -769,6 +769,7 @@ private struct NoteComposerSheet: View {
                     }
                     TextEditor(text: $draft.body)
                         .font(.app(size: 17))
+                        .lineSpacing(8)
                         .foregroundColor(Color.white.opacity(0.92))
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)
@@ -972,6 +973,7 @@ private struct NoteEditorPage: View {
                     }
                     TextEditor(text: $noteBody)
                         .font(.app(size: 17))
+                        .lineSpacing(8)
                         .foregroundColor(Color.white.opacity(0.92))
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)

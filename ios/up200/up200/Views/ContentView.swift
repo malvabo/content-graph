@@ -328,6 +328,7 @@ private struct ProjectGroupDetailView: View {
                             }
                             TextEditor(text: $editText)
                                 .font(.app(size: 17))
+                                .lineSpacing(8)
                                 .foregroundColor(Color.white.opacity(0.88))
                                 .scrollContentBackground(.hidden)
                                 .background(Color.clear)
