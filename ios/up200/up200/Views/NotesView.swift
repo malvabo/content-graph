@@ -1032,42 +1032,43 @@ struct NotesView: View {
                     }
                 }
             }
-            .navigationTitle("Notes")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        recording.begin { transcript in
-                            var note = Note()
-                            note.body = transcript
-                            note.updatedAt = Date()
-                            notes.append(note)
-                            scheduleSave()
-                        }
-                        recording.showingSheet = true
-                    } label: {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: 17, weight: .regular))
-                    }
-                    .accessibilityLabel("New note")
+                ToolbarItem(placement: .topBarLeading) {
+                    LeadingTitle(text: "Notes")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        withAnimation(.easeInOut(duration: 0.22)) {
-                            showSearch.toggle()
-                            if !showSearch { searchText = "" }
-                            else { searchFocused = true }
+                    TopBarPill {
+                        TopBarPillButton(systemImage: "square.and.pencil") {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            recording.begin { transcript in
+                                var note = Note()
+                                note.body = transcript
+                                note.updatedAt = Date()
+                                notes.append(note)
+                                scheduleSave()
+                            }
+                            recording.showingSheet = true
                         }
-                    } label: {
-                        Image(systemName: showSearch ? "xmark" : "magnifyingglass")
-                            .font(.system(size: 17, weight: .regular))
-                            .frame(width: 32, height: 32)
-                            .background(Color.white.opacity(showSearch ? 0.12 : 0.0))
-                            .clipShape(Circle())
+                        .accessibilityLabel("New note")
+
+                        TopBarPillDivider()
+
+                        TopBarPillButton(
+                            systemImage: showSearch ? "xmark" : "magnifyingglass",
+                            isActive: showSearch
+                        ) {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            withAnimation(.easeInOut(duration: 0.22)) {
+                                showSearch.toggle()
+                                if !showSearch { searchText = "" }
+                                else { searchFocused = true }
+                            }
+                        }
+                        .accessibilityLabel(showSearch ? "Close search" : "Search")
                     }
                 }
             }
