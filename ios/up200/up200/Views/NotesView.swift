@@ -817,7 +817,9 @@ private struct NoteEditorPage: View {
                         .contentMargins(.bottom, 96, for: .scrollContent)
                         .focused($focus, equals: .body)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
             DictationControls(
                 dictation: dictation,
