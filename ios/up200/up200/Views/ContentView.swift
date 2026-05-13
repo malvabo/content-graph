@@ -577,16 +577,16 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: .top) {
             TabView(selection: $selectedTab) {
-                Tab("Notes", systemImage: "note.text", value: AppTab.notes) {
+                Tab("Home", systemImage: "house", value: AppTab.notes) {
                     NotesView()
                 }
-                Tab("Create", systemImage: "sparkles", value: AppTab.create) {
+                Tab("Creator", systemImage: "square.and.pencil", value: AppTab.create) {
                     HomeView()
                 }
-                Tab("Library", systemImage: "folder", value: AppTab.library) {
+                Tab("Explore", systemImage: "square.grid.2x2", value: AppTab.library) {
                     LibraryView()
                 }
-                Tab("Templates", systemImage: "square.on.square", value: AppTab.templates) {
+                Tab("Templates", systemImage: "doc.on.doc", value: AppTab.templates) {
                     TemplatesView()
                 }
             }
