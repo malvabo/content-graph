@@ -176,7 +176,7 @@ private struct LibraryGroupRow: View {
     }
 }
 
-private struct ProjectGroupDetailView: View {
+struct ProjectGroupDetailView: View {
     let groupTitle: String
     let initialItems: [GenerationProject]
     @AppStorage("library_projects") private var projectsData: Data = Data()

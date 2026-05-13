@@ -382,113 +382,6 @@ struct GenerationBanner: View {
     }
 }
 
-// MARK: - Generation Result Sheet
-
-private struct GenerationResultSheet: View {
-    let results: [GeneratedResult]
-    @Environment(\.dismiss) private var dismiss
-    @State private var copiedID: UUID? = nil
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header: close · title · count
-            HStack(spacing: 12) {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.appCaptionMedium)
-                        .foregroundColor(Color.white.opacity(0.60))
-                        .frame(width: 28, height: 28)
-                        .background(Color.white.opacity(0.10))
-                        .clipShape(Circle())
-                }
-
-                Spacer(minLength: 0)
-
-                Text("Outputs")
-                    .font(.appLabelBold)
-                    .foregroundColor(.white)
-
-                Spacer(minLength: 0)
-
-                Text("\(results.count)")
-                    .font(.appSmall)
-                    .foregroundColor(Color.white.opacity(0.45))
-                    .frame(width: 28, alignment: .trailing)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
-            .padding(.bottom, 14)
-
-            // Block list
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
-                    ForEach(results) { result in
-                        resultBlock(result)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
-            }
-
-            // Saved indicator
-            HStack(spacing: 6) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.appMicro)
-                    .foregroundColor(Color.white.opacity(0.32))
-                Text("Saved to Library")
-                    .font(.appMicro)
-                    .foregroundColor(Color.white.opacity(0.32))
-            }
-            .padding(.vertical, 12)
-        }
-    }
-
-    @ViewBuilder
-    private func resultBlock(_ result: GeneratedResult) -> some View {
-        let isCopied = copiedID == result.id
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(result.formatLabel)
-                    .font(.appSubtextBold)
-                    .foregroundColor(Color.white.opacity(0.88))
-                Spacer(minLength: 8)
-                Button {
-                    UIPasteboard.general.string = result.content
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.easeOut(duration: 0.15)) { copiedID = result.id }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        withAnimation {
-                            if copiedID == result.id { copiedID = nil }
-                        }
-                    }
-                } label: {
-                    Label(isCopied ? "Copied" : "Copy",
-                          systemImage: isCopied ? "checkmark" : "doc.on.doc")
-                        .font(.appMicro)
-                        .foregroundColor(isCopied ? .white : Color.white.opacity(0.55))
-                }
-                .buttonStyle(.plain)
-            }
-
-            Text(result.content)
-                .font(.appSmall)
-                .foregroundColor(Color.white.opacity(0.82))
-                .lineSpacing(4)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .textSelection(.enabled)
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.04))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
-        )
-    }
-}
-
 // MARK: - Voice Recorder
 
 @MainActor
@@ -2408,8 +2301,7 @@ struct HomeView: View {
     @State private var brand = "Default"
 
     @State private var isGenerating = false
-    @State private var showResults = false
-    @State private var generationResults: [GeneratedResult] = []
+    @State private var resultProject: GenerationProject? = nil
     @State private var generationFailed = false
     @State private var generationFailReason = ""
     @State private var generationTask: Task<Void, Never>? = nil
@@ -2494,12 +2386,8 @@ struct HomeView: View {
                 }
             }
         }
-        .sheet(isPresented: $showResults) {
-            GenerationResultSheet(results: generationResults)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(22)
-                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        .fullScreenCover(item: $resultProject) { project in
+            ProjectGroupDetailView(groupTitle: project.title, initialItems: [project])
         }
         .alert("Generation failed", isPresented: $generationFailed) {
             Button("OK", role: .cancel) {}
@@ -2544,7 +2432,11 @@ struct HomeView: View {
         bannerController.formatLabels = selectedFormatIDs.compactMap { id in allFormats.first { $0.id == id }?.label }
         bannerController.isReady = false
         bannerController.isVisible = true
-        bannerController.onOpen = { [self] in showResults = true; bannerController.isVisible = false }
+        bannerController.onOpen = { [self] in
+            let projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+            resultProject = projects.first
+            bannerController.isVisible = false
+        }
         bannerController.onCancel = { [self] in generationTask?.cancel(); generationTask = nil; isGenerating = false; bannerController.isVisible = false }
 
         let capturedSources = effectiveSources
@@ -2574,7 +2466,6 @@ struct HomeView: View {
                     bannerController.isVisible = false
                     generationFailed = true
                 } else {
-                    generationResults = results
                     saveToLibrary(results, sources: capturedSources)
                     bannerController.isReady = true
                 }
