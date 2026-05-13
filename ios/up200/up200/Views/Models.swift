@@ -139,7 +139,9 @@ final class RecordingController: ObservableObject {
     }
 
     func begin(saveHandler: @escaping (String) -> Void) {
-        guard !isRecording, !isPaused else { return }
+        if isRecording || isPaused {
+            finish()
+        }
         self.saveHandler = saveHandler
         accumulated = ""
         transcript = ""
