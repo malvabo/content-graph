@@ -443,166 +443,48 @@ private struct NoteWaveform: View {
     }
 }
 
-private struct NoteVoiceSheet: View {
-    let onSave: (Note) -> Void
+struct NoteVoiceSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var dictation = NoteDictation()
+    @EnvironmentObject private var recording: RecordingController
     @State private var selectedDetent: PresentationDetent = .medium
-    @State private var seconds = 0
-    @State private var accumulatedTranscript = ""
-    @State private var isPaused = false
-    @State private var showDiscardAlert = false
 
-    private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
     private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
-    private static let miniDetent = PresentationDetent.height(154)
 
     private var timeLabel: String {
-        String(format: "%02d:%02d", seconds / 60, seconds % 60)
+        String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)
     }
-
-    private var fullTranscript: String {
-        let cur = dictation.transcript
-        guard !accumulatedTranscript.isEmpty else { return cur }
-        guard !cur.isEmpty else { return accumulatedTranscript }
-        return accumulatedTranscript + " " + cur
-    }
-
-    private var isMini: Bool { selectedDetent == Self.miniDetent }
 
     var body: some View {
         ZStack {
-            if !isMini { sheetBg.ignoresSafeArea() }
-
-            if selectedDetent == .large {
-                NoteComposerSheet(
-                    note: {
-                        var n = Note()
-                        n.body = fullTranscript
-                        return n
-                    }(),
-                    isNew: true,
-                    autoStartDictation: true,
-                    onSave: onSave,
-                    onDelete: nil
-                )
-                .transition(.opacity)
-            } else if isMini {
-                miniPlayer
-                    .transition(.opacity)
-            } else {
-                voiceUI
-                    .transition(.opacity)
-            }
+            sheetBg.ignoresSafeArea()
+            voiceUI.transition(.opacity)
         }
         .animation(.easeInOut(duration: 0.22), value: selectedDetent)
-        .presentationDetents([Self.miniDetent, .medium, .large], selection: $selectedDetent)
+        .presentationDetents([.medium, .large], selection: $selectedDetent)
         .presentationDragIndicator(.visible)
-        .presentationBackground(isMini ? Color.clear : sheetBg)
+        .presentationBackground(sheetBg)
         .presentationCornerRadius(22)
-        .task { dictation.start() }
-        .onReceive(clock) { _ in
-            if dictation.isRecording { seconds += 1 }
-        }
-        .onChange(of: selectedDetent) { _, newDetent in
-            if newDetent == .large {
-                accumulatedTranscript = fullTranscript
-                dictation.stop()
-            }
-        }
     }
 
     private func endRecording() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        let transcript = fullTranscript
-        dictation.stop()
-        guard !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            dismiss(); return
-        }
-        var note = Note()
-        note.body = transcript
-        note.updatedAt = Date()
-        onSave(note)
+        recording.finish()
         dismiss()
-    }
-
-    private var miniPlayer: some View {
-        HStack(spacing: 0) {
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                showDiscardAlert = true
-            } label: {
-                Image(systemName: "trash")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.65))
-                    .frame(width: 48, height: 48)
-                    .background(Color.white.opacity(0.12))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .padding(.leading, 14)
-            .alert("Discard recording?", isPresented: $showDiscardAlert) {
-                Button("Discard", role: .destructive) {
-                    dictation.stop()
-                    dismiss()
-                }
-                Button("Keep", role: .cancel) {}
-            } message: {
-                Text("The current recording will be lost.")
-            }
-
-            Spacer()
-
-            HStack(spacing: 14) {
-                Waveform(level: dictation.audioLevel)
-                    .frame(width: 90)
-                    .clipped()
-                Text(timeLabel)
-                    .font(.system(size: 16, design: .monospaced))
-                    .foregroundColor(Color.white.opacity(0.55))
-            }
-
-            Spacer()
-
-            Button { endRecording() } label: {
-                Image(systemName: "stop.fill")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 48, height: 48)
-                    .background(amber)
-                    .clipShape(Circle())
-                    .shadow(color: amber.opacity(0.4), radius: 8, y: 2)
-            }
-            .buttonStyle(.plain)
-            .padding(.trailing, 14)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 64)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color(red: 0.18, green: 0.14, blue: 0.12))
-                .shadow(color: Color.black.opacity(0.55), radius: 24, y: 6)
-        )
-        .padding(.horizontal, 16)
-        .frame(maxHeight: .infinity, alignment: .bottom)
-        .padding(.bottom, 80)
     }
 
     private var voiceUI: some View {
         VStack(spacing: 0) {
             ZStack {
-                Text("Swipe up to add notes")
+                Text("Swipe down to keep recording")
                     .font(.subheadline)
                     .foregroundColor(Color.white.opacity(0.35))
                     .frame(maxWidth: .infinity)
                 HStack {
                     Spacer()
                     Button {
-                        dictation.stop()
                         dismiss()
                     } label: {
-                        Image(systemName: "xmark")
+                        Image(systemName: "chevron.down")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(Color.white.opacity(0.55))
                             .frame(width: 28, height: 28)
@@ -617,7 +499,7 @@ private struct NoteVoiceSheet: View {
 
             Spacer(minLength: 24)
 
-            NoteWaveform(level: dictation.audioLevel)
+            NoteWaveform(level: recording.audioLevel)
                 .padding(.horizontal, 28)
 
             Spacer(minLength: 20)
@@ -631,19 +513,16 @@ private struct NoteVoiceSheet: View {
             HStack(spacing: 12) {
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    if isPaused {
-                        dictation.start()
-                        isPaused = false
+                    if recording.isPaused {
+                        recording.resume()
                     } else {
-                        accumulatedTranscript = fullTranscript
-                        dictation.stop()
-                        isPaused = true
+                        recording.pause()
                     }
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: isPaused ? "play.fill" : "pause.fill")
+                        Image(systemName: recording.isPaused ? "play.fill" : "pause.fill")
                             .font(.system(size: 15, weight: .semibold))
-                        Text(isPaused ? "Resume" : "Pause")
+                        Text(recording.isPaused ? "Resume" : "Pause")
                             .font(.system(size: 17, weight: .semibold))
                             .frame(minWidth: 60)
                     }
@@ -673,185 +552,6 @@ private struct NoteVoiceSheet: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
         }
-    }
-}
-
-// MARK: - Composer Sheet
-
-private struct NoteComposerSheet: View {
-    let original: Note
-    let isNew: Bool
-    let autoStartDictation: Bool
-    let onSave: (Note) -> Void
-    let onDelete: (() -> Void)?
-
-    @State private var draft: Note
-    @State private var bodyBeforeDictation: String = ""
-    @State private var showDiscardAlert: Bool = false
-    @StateObject private var dictation = NoteDictation()
-    @Environment(\.dismiss) private var dismiss
-    @FocusState private var bodyFocused: Bool
-
-    init(note: Note, isNew: Bool, autoStartDictation: Bool = false, onSave: @escaping (Note) -> Void, onDelete: (() -> Void)?) {
-        let migrated = Note.migrated(note)
-        self.original = migrated
-        self.isNew = isNew
-        self.autoStartDictation = autoStartDictation
-        self.onSave = onSave
-        self.onDelete = onDelete
-        self._draft = State(initialValue: migrated)
-    }
-
-    private var canSave: Bool { !draft.isEmpty }
-    private var isDirty: Bool { draft.body != original.body }
-
-    private func openSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button {
-                    if isDirty {
-                        showDiscardAlert = true
-                    } else {
-                        dictation.stop()
-                        dismiss()
-                    }
-                } label: {
-                    Text("Cancel")
-                        .font(.appLabel)
-                        .foregroundColor(Color.white.opacity(0.50))
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-
-                Text(isNew ? "New Note" : "Edit Note")
-                    .font(.appBodyBold)
-                    .foregroundColor(.white)
-
-                Spacer()
-
-                Button {
-                    dictation.stop()
-                    var saved = draft
-                    saved.updatedAt = Date()
-                    onSave(saved)
-                    dismiss()
-                } label: {
-                    Text("Done")
-                        .font(.appLabelBold)
-                        .foregroundColor(canSave ? .white : Color.white.opacity(0.25))
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSave)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 14)
-
-            Rectangle()
-                .fill(Color.white.opacity(0.06))
-                .frame(height: 0.5)
-
-            ZStack(alignment: .bottomTrailing) {
-                ZStack(alignment: .topLeading) {
-                    if draft.body.isEmpty {
-                        Text("Start typing\u{2026}")
-                            .font(.appBody)
-                            .foregroundColor(Color.white.opacity(0.22))
-                            .padding(.horizontal, 24)
-                            .padding(.top, 20)
-                            .allowsHitTesting(false)
-                    }
-                    TextEditor(text: $draft.body)
-                        .font(.appBody)
-                        .lineSpacing(8)
-                        .foregroundColor(Color.white.opacity(0.92))
-                        .scrollContentBackground(.hidden)
-                        .background(Color.clear)
-                        .tint(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .contentMargins(.bottom, 84, for: .scrollContent)
-                        .focused($bodyFocused)
-                }
-
-                DictationControls(
-                    dictation: dictation,
-                    onStart: {
-                        bodyBeforeDictation = draft.body
-                        dictation.start()
-                    },
-                    onCancel: {
-                        dictation.cancel()
-                        draft.body = bodyBeforeDictation
-                    },
-                    onConfirm: {
-                        dictation.stop()
-                    }
-                )
-                .padding(.trailing, 20)
-                .padding(.bottom, 20)
-            }
-            .onChange(of: dictation.transcript) { _, newValue in
-                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return }
-                if bodyBeforeDictation.isEmpty {
-                    draft.body = trimmed
-                } else {
-                    let needsSeparator = !bodyBeforeDictation.hasSuffix("\n") && !bodyBeforeDictation.hasSuffix(" ")
-                    draft.body = bodyBeforeDictation + (needsSeparator ? " " : "") + trimmed
-                }
-            }
-            .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
-                Button("Open Settings") { openSettings() }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
-            }
-
-            if let del = onDelete, !isNew {
-                Rectangle()
-                    .fill(Color.white.opacity(0.06))
-                    .frame(height: 0.5)
-                Button {
-                    dictation.stop()
-                    del()
-                    dismiss()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "trash")
-                            .font(.appSmall)
-                        Text("Delete Note")
-                            .font(.appSubtextMedium)
-                    }
-                    .foregroundColor(Color.red.opacity(0.75))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .alert("Discard changes?", isPresented: $showDiscardAlert) {
-            Button("Keep Editing", role: .cancel) {}
-            Button("Discard", role: .destructive) {
-                dictation.stop()
-                dismiss()
-            }
-        }
-        .task {
-            if isNew { bodyFocused = true }
-            if autoStartDictation {
-                bodyBeforeDictation = draft.body
-                dictation.start()
-            }
-        }
-        .onDisappear { dictation.stop() }
-        .interactiveDismissDisabled(isDirty)
     }
 }
 
@@ -1123,23 +823,11 @@ private struct FilterChip: View {
     }
 }
 
-// MARK: - Sheet Routing
-
-private enum NoteSheet: Identifiable {
-    case new
-
-    var id: String {
-        switch self {
-        case .new: return "new"
-        }
-    }
-}
-
 // MARK: - Notes View
 
 struct NotesView: View {
+    @EnvironmentObject private var recording: RecordingController
     @State private var notes: [Note] = []
-    @State private var sheet: NoteSheet? = nil
     @State private var editingNote: Note? = nil
     @State private var pendingSave: DispatchWorkItem? = nil
     @State private var searchText = ""
@@ -1352,7 +1040,14 @@ struct NotesView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        sheet = .new
+                        recording.begin { transcript in
+                            var note = Note()
+                            note.body = transcript
+                            note.updatedAt = Date()
+                            notes.append(note)
+                            scheduleSave()
+                        }
+                        recording.showingSheet = true
                     } label: {
                         Image(systemName: "square.and.pencil")
                             .font(.system(size: 17, weight: .regular))
@@ -1399,15 +1094,6 @@ struct NotesView: View {
             }
         }
         .task { notes = await NotesStore.loadAsync() }
-        .sheet(item: $sheet) { which in
-            switch which {
-            case .new:
-                NoteVoiceSheet(onSave: { saved in
-                    notes.append(saved)
-                    scheduleSave()
-                })
-            }
-        }
     }
 }
 

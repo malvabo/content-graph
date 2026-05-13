@@ -1,5 +1,7 @@
 import Foundation
 import Security
+import Speech
+import AVFoundation
 
 struct KeychainService {
     private static let account = "com.up200.app.anthropic_api_key"
@@ -109,4 +111,176 @@ final class BannerController: ObservableObject {
 
 final class ChromeController: ObservableObject {
     @Published var hideTabBar = false
+}
+
+@MainActor
+final class RecordingController: ObservableObject {
+    @Published var isRecording: Bool = false
+    @Published var isPaused: Bool = false
+    @Published var transcript: String = ""
+    @Published var accumulated: String = ""
+    @Published var audioLevel: Float = 0
+    @Published var seconds: Int = 0
+    @Published var permissionDenied: Bool = false
+    @Published var showingSheet: Bool = false
+
+    private let audioEngine = AVAudioEngine()
+    private var request: SFSpeechAudioBufferRecognitionRequest?
+    private var task: SFSpeechRecognitionTask?
+    private let recognizer = SFSpeechRecognizer(locale: Locale.current)
+        ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var timer: Timer?
+    private var saveHandler: ((String) -> Void)?
+
+    var fullTranscript: String {
+        if accumulated.isEmpty { return transcript }
+        if transcript.isEmpty { return accumulated }
+        return accumulated + " " + transcript
+    }
+
+    func begin(saveHandler: @escaping (String) -> Void) {
+        guard !isRecording, !isPaused else { return }
+        self.saveHandler = saveHandler
+        accumulated = ""
+        transcript = ""
+        audioLevel = 0
+        seconds = 0
+        startTimer()
+        requestAuthAndStart()
+    }
+
+    func pause() {
+        guard isRecording, !isPaused else { return }
+        accumulated = fullTranscript
+        transcript = ""
+        teardownEngine()
+        stopTimer()
+        isPaused = true
+    }
+
+    func resume() {
+        guard isPaused else { return }
+        isPaused = false
+        startTimer()
+        requestAuthAndStart()
+    }
+
+    /// Stop recording and route the transcript to the registered save handler.
+    func finish() {
+        let final = fullTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+        let handler = saveHandler
+        teardownEngine()
+        stopTimer()
+        reset()
+        if !final.isEmpty {
+            handler?(final)
+        }
+    }
+
+    /// Stop recording and discard the transcript.
+    func cancel() {
+        task?.cancel()
+        task = nil
+        teardownEngine()
+        stopTimer()
+        reset()
+    }
+
+    private func reset() {
+        isRecording = false
+        isPaused = false
+        transcript = ""
+        accumulated = ""
+        audioLevel = 0
+        seconds = 0
+        showingSheet = false
+        saveHandler = nil
+    }
+
+    private func startTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.seconds += 1
+            }
+        }
+    }
+
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func teardownEngine() {
+        audioEngine.stop()
+        request?.endAudio()
+        if audioEngine.inputNode.numberOfInputs > 0 {
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        audioLevel = 0
+        isRecording = false
+    }
+
+    private func requestAuthAndStart() {
+        SFSpeechRecognizer.requestAuthorization { [weak self] status in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if status == .authorized {
+                    self.startEngine()
+                } else {
+                    self.permissionDenied = true
+                    self.reset()
+                }
+            }
+        }
+    }
+
+    private func startEngine() {
+        task?.cancel()
+        task = nil
+
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try? session.setActive(true, options: .notifyOthersOnDeactivation)
+
+        request = SFSpeechAudioBufferRecognitionRequest()
+        guard let req = request, let rec = recognizer else { return }
+        req.shouldReportPartialResults = true
+
+        task = rec.recognitionTask(with: req) { [weak self] result, error in
+            DispatchQueue.main.async {
+                if let result {
+                    self?.transcript = result.bestTranscription.formattedString
+                }
+                if error != nil || (result?.isFinal ?? false) {
+                    self?.isRecording = false
+                }
+            }
+        }
+
+        let inputNode = audioEngine.inputNode
+        let format = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+            req.append(buffer)
+            guard let channels = buffer.floatChannelData else { return }
+            let frames = Int(buffer.frameLength)
+            guard frames > 0 else { return }
+            let samples = channels[0]
+            var sum: Float = 0
+            for i in 0..<frames {
+                let s = samples[i]
+                sum += s * s
+            }
+            let rms = (sum / Float(frames)).squareRoot()
+            DispatchQueue.main.async {
+                self?.audioLevel = rms
+            }
+        }
+
+        audioEngine.prepare()
+        if (try? audioEngine.start()) != nil {
+            isRecording = true
+        }
+    }
 }

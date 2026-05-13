@@ -796,6 +796,7 @@ struct ContentView: View {
     @State private var keyboardVisible = false
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
+    @StateObject private var recordingController = RecordingController()
 
     init() {
         UITabBar.appearance().isHidden = true
@@ -810,6 +811,11 @@ struct ContentView: View {
             }
             .environmentObject(bannerController)
             .environmentObject(chromeController)
+            .environmentObject(recordingController)
+            .sheet(isPresented: $recordingController.showingSheet) {
+                NoteVoiceSheet()
+                    .environmentObject(recordingController)
+            }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !keyboardVisible && !chromeController.hideTabBar {
                     AppTabBar(selected: $selectedTab)
@@ -847,13 +853,106 @@ struct ContentView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .zIndex(2)
             }
+
+            if (recordingController.isRecording || recordingController.isPaused) && !recordingController.showingSheet {
+                VStack {
+                    Spacer()
+                    RecordingMiniBar(
+                        onTap: {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            selectedTab = .notes
+                            recordingController.showingSheet = true
+                        },
+                        onStop: {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            recordingController.finish()
+                        }
+                    )
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, (!keyboardVisible && !chromeController.hideTabBar) ? 96 : 12)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .zIndex(3)
+            }
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
+        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
+        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.showingSheet)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation(.easeOut(duration: 0.3)) { showSplash = false }
             }
         }
+    }
+}
+
+// MARK: - Recording Mini Bar
+
+private struct RecordingMiniBar: View {
+    @EnvironmentObject private var recording: RecordingController
+    let onTap: () -> Void
+    let onStop: () -> Void
+
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    private var timeLabel: String {
+        String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                PulsingDot(active: recording.isRecording)
+                    .frame(width: 10, height: 10)
+                Text(recording.isPaused ? "Paused" : "Recording")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                Text(timeLabel)
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundColor(Color.white.opacity(0.55))
+                Spacer(minLength: 8)
+                Button {
+                    onStop()
+                } label: {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 32, height: 32)
+                        .background(amber)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.leading, 16)
+            .padding(.trailing, 6)
+            .frame(height: 52)
+            .background(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(Color(red: 0.18, green: 0.14, blue: 0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                    )
+                    .shadow(color: Color.black.opacity(0.45), radius: 18, y: 6)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(recording.isPaused ? "Paused recording" : "Recording in progress")
+        .accessibilityHint("Tap to expand, stop button to finish")
+    }
+}
+
+private struct PulsingDot: View {
+    let active: Bool
+    @State private var pulse: Bool = false
+
+    var body: some View {
+        Circle()
+            .fill(Color.red)
+            .opacity(active && pulse ? 0.45 : 1.0)
+            .scaleEffect(active && pulse ? 1.25 : 1.0)
+            .animation(active ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : .default, value: pulse)
+            .onAppear { pulse = true }
     }
 }
 
