@@ -106,3 +106,7 @@ final class BannerController: ObservableObject {
     var onOpen: (() -> Void)?
     var onCancel: (() -> Void)?
 }
+
+final class ChromeController: ObservableObject {
+    @Published var hideTabBar = false
+}

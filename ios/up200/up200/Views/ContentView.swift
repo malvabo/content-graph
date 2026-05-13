@@ -790,6 +790,7 @@ struct ContentView: View {
     @State private var showSplash = true
     @State private var keyboardVisible = false
     @StateObject private var bannerController = BannerController()
+    @StateObject private var chromeController = ChromeController()
 
     init() {
         UITabBar.appearance().isHidden = true
@@ -804,8 +805,9 @@ struct ContentView: View {
                 TemplatesView().tag(AppTab.templates)
             }
             .environmentObject(bannerController)
+            .environmentObject(chromeController)
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if !keyboardVisible {
+                if !keyboardVisible && !chromeController.hideTabBar {
                     AppTabBar(selected: $selectedTab)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 8)
