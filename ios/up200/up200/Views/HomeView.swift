@@ -9,7 +9,7 @@ import Vision
 // MARK: - Source Item Model
 
 enum SourceType: String, Identifiable {
-    case text, link, file, voice, image
+    case text, link, file, voice, image, note
     var id: String { rawValue }
 }
 
@@ -17,7 +17,7 @@ enum SourceType: String, Identifiable {
 // chooser; the others present the input UIs. Files and photos use the
 // system fileImporter / photosPicker and stay on their own Bools.
 enum SourceSheet: Identifiable, Hashable {
-    case picker, text, link, voice
+    case picker, text, link, voice, note
     var id: Self { self }
 }
 
@@ -34,6 +34,7 @@ struct SourceItem: Identifiable {
         case .file:  return "doc.text"
         case .voice: return "mic"
         case .image: return "photo"
+        case .note:  return "note.text"
         }
     }
 }
@@ -619,10 +620,11 @@ struct AnimatedLightsButton: View {
 struct ImportSheetView: View {
     var onSelect: (SourceType) -> Void
 
-    private let gridItems: [(icon: String, label: String, type: SourceType)] = [
-        ("arrow.up.doc", "Upload a file", .file),
-        ("pencil",       "Write text",    .text),
-        ("waveform",     "Voice note",    .voice),
+    private let sourceItems: [(icon: String, label: String, type: SourceType)] = [
+        ("link",          "Paste a link",   .link),
+        ("arrow.up.doc",  "Upload a file",  .file),
+        ("pencil",        "Write text",     .text),
+        ("waveform",      "Voice note",     .voice),
     ]
 
     var body: some View {
@@ -633,26 +635,8 @@ struct ImportSheetView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 2)
 
-            Button {
-                onSelect(.link)
-            } label: {
-                VStack(spacing: 12) {
-                    Image(systemName: "link")
-                        .font(.app(size: 16, weight: .regular))
-                        .foregroundColor(Color.white.opacity(0.82))
-                    Text("Paste a link")
-                        .font(.app(size: 14, weight: .regular))
-                        .foregroundColor(Color.white.opacity(0.52))
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 88)
-                .background(Color.white.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            }
-            .buttonStyle(.plain)
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                ForEach(gridItems, id: \.type) { item in
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                ForEach(sourceItems, id: \.type) { item in
                     Button {
                         onSelect(item.type)
                     } label: {
@@ -673,6 +657,26 @@ struct ImportSheetView: View {
                     .buttonStyle(.plain)
                 }
             }
+
+            Button {
+                onSelect(.note)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "note.text")
+                        .font(.app(size: 16, weight: .regular))
+                        .foregroundColor(Color.white.opacity(0.82))
+                    Text("Add note")
+                        .font(.app(size: 14, weight: .regular))
+                        .foregroundColor(Color.white.opacity(0.52))
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.white.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 16)
@@ -1494,6 +1498,7 @@ private struct SourcesBlock: View {
                         case .text:  activeSheet = .text
                         case .link:  activeSheet = .link
                         case .voice: activeSheet = .voice
+                        case .note:  activeSheet = .note
                         case .file:
                             activeSheet = nil
                             showFilePicker = true
@@ -1518,6 +1523,13 @@ private struct SourcesBlock: View {
                     VoiceRecordSheet { label, transcript in
                         withAnimation(.spring(duration: 0.25)) {
                             sources.append(SourceItem(type: .voice, label: label, content: transcript))
+                        }
+                    }
+                case .note:
+                    NoteInputSheet { content in
+                        withAnimation(.spring(duration: 0.25)) {
+                            let label = String(content.prefix(40)).trimmingCharacters(in: .whitespacesAndNewlines)
+                            sources.append(SourceItem(type: .note, label: label.isEmpty ? "Note" : label, content: content))
                         }
                     }
                 }
@@ -1591,6 +1603,72 @@ private struct SourcesBlock: View {
             request.recognitionLevel = .accurate
             try? VNImageRequestHandler(cgImage: cgImage).perform([request])
         }
+    }
+}
+
+// MARK: - Note Input Sheet
+
+private struct NoteInputSheet: View {
+    var onSave: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var noteText = ""
+    @FocusState private var isFocused: Bool
+
+    private let sheetBackground = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .font(.app(size: 16))
+                    .foregroundColor(Color.white.opacity(0.45))
+                Spacer()
+                Image(systemName: "note.text")
+                    .font(.app(size: 16, weight: .regular))
+                    .foregroundColor(Color.white.opacity(0.50))
+                Spacer()
+                Button("Add") {
+                    let trimmed = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return }
+                    onSave(trimmed)
+                    dismiss()
+                }
+                .font(.app(size: 16, weight: .semibold))
+                .foregroundColor(noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.white.opacity(0.25) : amber)
+                .disabled(noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.06))
+                .frame(height: 0.5)
+
+            ZStack(alignment: .topLeading) {
+                if noteText.isEmpty {
+                    Text("Write a note\u{2026}")
+                        .font(.app(size: 17))
+                        .foregroundColor(Color.white.opacity(0.28))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 18)
+                        .allowsHitTesting(false)
+                }
+                TextEditor(text: $noteText)
+                    .font(.app(size: 17))
+                    .foregroundColor(Color.white.opacity(0.88))
+                    .lineSpacing(3)
+                    .tint(amber)
+                    .scrollContentBackground(.hidden)
+                    .background(.clear)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
+                    .focused($isFocused)
+            }
+            .frame(maxHeight: .infinity)
+        }
+        .background(sheetBackground)
+        .onAppear { isFocused = true }
     }
 }
 
