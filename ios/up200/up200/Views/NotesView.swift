@@ -868,6 +868,7 @@ private struct NoteEditorPage: View {
     @State private var didDelete: Bool = false
     @StateObject private var dictation = NoteDictation()
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var chrome: ChromeController
     @FocusState private var focus: Field?
 
     private enum Field { case title, body }
@@ -1027,7 +1028,9 @@ private struct NoteEditorPage: View {
         } message: {
             Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
         }
+        .onAppear { chrome.hideTabBar = true }
         .onDisappear {
+            chrome.hideTabBar = false
             dictation.stop()
             persistIfNeeded()
         }
