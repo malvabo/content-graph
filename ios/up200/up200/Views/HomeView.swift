@@ -332,7 +332,7 @@ struct GenerationBanner: View {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
                         Ellipse()
-                            .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.55))
+                            .fill(BrandColor.amber.opacity(0.55))
                             .frame(width: 80, height: 36)
                             .blur(radius: 16)
                             .offset(x: glowPhase ? 10 : -10)
@@ -366,7 +366,7 @@ struct GenerationBanner: View {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(Color(red: 0.11, green: 0.09, blue: 0.08))
                 Ellipse()
-                    .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.06))
+                    .fill(BrandColor.amber.opacity(0.06))
                     .blur(radius: 20)
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
@@ -506,7 +506,7 @@ struct AnimatedLightsButton: View {
 
                 if isEnabled {
                     Ellipse()
-                        .fill(Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.60))
+                        .fill(BrandColor.amber.opacity(0.60))
                         .frame(width: 220, height: 100)
                         .blur(radius: 44)
                         .offset(x: phase ? -80 : 80)
@@ -627,7 +627,6 @@ private struct TextInputSheet: View {
 
     private enum InputField { case title, body }
     private let sheetBackground = Color(red: 0.10, green: 0.08, blue: 0.07)
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     private var canSave: Bool {
         !titleText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
@@ -647,7 +646,7 @@ private struct TextInputSheet: View {
                     TextField("Title", text: $titleText)
                         .font(.appTitle)
                         .foregroundColor(.white)
-                        .tint(amber)
+                        .tint(.white)
                         .focused($focusedField, equals: .title)
                         .submitLabel(.next)
                         .onSubmit { focusedField = .body }
@@ -669,7 +668,7 @@ private struct TextInputSheet: View {
                             .font(.appBody)
                             .foregroundColor(Color.white.opacity(0.88))
                             .lineSpacing(3)
-                            .tint(amber)
+                            .tint(.white)
                             .scrollContentBackground(.hidden)
                             .background(.clear)
                             .focused($focusedField, equals: .body)
@@ -1100,45 +1099,6 @@ private struct LinkInputSheet: View {
 
 // MARK: - Voice Record Sheet
 
-private struct RecordingWaveform: View {
-    let level: Float
-
-    private let barCount = 38
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            HStack(spacing: 2.5) {
-                ForEach(0..<barCount, id: \.self) { i in
-                    Capsule()
-                        .fill(amber.opacity(barOpacity(index: i)))
-                        .frame(width: 3, height: barHeight(index: i, time: t))
-                }
-            }
-        }
-        .frame(height: 75)
-        .accessibilityHidden(true)
-    }
-
-    private func barHeight(index: Int, time: Double) -> CGFloat {
-        let pos = Double(index) / Double(barCount - 1)
-        let envelope = sin(pos * .pi)
-        let phase1 = time * 4.5 + Double(index) * 0.42
-        let phase2 = time * 2.8 + Double(index) * 0.65
-        let wave = (sin(phase1) * 0.65 + sin(phase2) * 0.35 + 1.0) / 2.0
-        let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
-        let dynamic = wave * amplified * envelope
-        let minH: CGFloat = 3
-        return minH + CGFloat(dynamic) * (75 - minH)
-    }
-
-    private func barOpacity(index: Int) -> Double {
-        let pos = Double(index) / Double(barCount - 1)
-        return 0.55 + sin(pos * .pi) * 0.45
-    }
-}
-
 struct VoiceRecordSheet: View {
     var onSave: (String, String) -> Void
     var autoStart: Bool = false
@@ -1148,7 +1108,7 @@ struct VoiceRecordSheet: View {
     @State private var isGenerating = false
 
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let amber = BrandColor.amber
 
     private var timeLabel: String {
         String(format: "%d:%02d", seconds / 60, seconds % 60)
@@ -1194,11 +1154,11 @@ struct VoiceRecordSheet: View {
 
                 // Waveform or mic button
                 if recorder.isRecording {
-                    RecordingWaveform(level: recorder.audioLevel)
+                    NoteWaveform(level: recorder.audioLevel)
                         .padding(.horizontal, 28)
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 } else if !recorder.transcript.isEmpty {
-                    RecordingWaveform(level: 0)
+                    NoteWaveform(level: 0)
                         .padding(.horizontal, 28)
                         .opacity(0.3)
                         .transition(.opacity)
@@ -1628,7 +1588,7 @@ private struct NotePickerSheet: View {
                 TextField("Search notes", text: $query)
                     .font(.appLabel)
                     .foregroundColor(.white)
-                    .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
+                    .tint(.white)
                     .focused($searchFocused)
                 if !query.isEmpty {
                     Button { query = "" } label: {
@@ -1729,7 +1689,7 @@ private struct FormatPickerSheet: View {
     private enum SelectionState { case none, partial, all }
 
     private let sheetBackground = Color(red: 0.10, green: 0.08, blue: 0.07)
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let amber = BrandColor.amber
 
     private var filteredTemplates: [ContentTemplate] {
         guard !search.isEmpty else { return allTemplates }

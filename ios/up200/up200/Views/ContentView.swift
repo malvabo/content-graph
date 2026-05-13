@@ -46,7 +46,7 @@ struct LibraryView: View {
                             TextField("Search library", text: $searchText)
                                 .font(.appLabel)
                                 .foregroundColor(.white)
-                                .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
+                                .tint(.white)
                                 .focused($searchFocused)
                             if !searchText.isEmpty {
                                 Button { searchText = "" } label: {
@@ -498,7 +498,7 @@ private struct TemplateEditPage: View {
 
     private enum Field { case title, prompt }
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let amber = BrandColor.amber
 
     init(template: CustomTemplate?, onSave: @escaping (CustomTemplate) -> Void, onDelete: (() -> Void)? = nil) {
         self.originalID = template?.id
@@ -893,7 +893,7 @@ private struct RecordingMiniBar: View {
     let onTap: () -> Void
     let onStop: () -> Void
 
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let amber = BrandColor.amber
 
     private var timeLabel: String {
         String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)

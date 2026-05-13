@@ -5,7 +5,7 @@ struct APIKeySetupView: View {
     @State private var keyText = ""
     @FocusState private var focused: Bool
 
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let amber = BrandColor.amber
 
     private var trimmed: String { keyText.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var canSave: Bool { trimmed.hasPrefix("sk-ant-") && trimmed.count > 20 }
