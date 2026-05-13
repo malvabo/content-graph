@@ -943,7 +943,7 @@ private struct NoteEditorPage: View {
                     .font(.app(size: 13))
                     .foregroundColor(Color.white.opacity(0.40))
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 4)
+                    .padding(.bottom, 8)
 
                 TextField(
                     "",
@@ -956,7 +956,7 @@ private struct NoteEditorPage: View {
                 .tint(.white)
                 .lineLimit(1...3)
                 .padding(.horizontal, 20)
-                .padding(.bottom, 10)
+                .padding(.bottom, 20)
                 .focused($focus, equals: .title)
 
                 ZStack(alignment: .topLeading) {
