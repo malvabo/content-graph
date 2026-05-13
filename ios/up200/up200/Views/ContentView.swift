@@ -11,6 +11,9 @@ enum AppTab: String {
 struct LibraryView: View {
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @State private var searchText = ""
+    @FocusState private var searchFocused: Bool
+
+    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
     private var projects: [GenerationProject] {
         (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
@@ -33,47 +36,80 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+                bg.ignoresSafeArea()
 
-                if filteredGroups.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: searchText.isEmpty ? "tray" : "magnifyingglass")
-                            .font(.system(size: 36))
-                            .foregroundColor(Color.white.opacity(0.20))
-                        Text(searchText.isEmpty ? "No generations yet" : "No results")
-                            .foregroundColor(Color.white.opacity(0.30))
-                        if searchText.isEmpty {
-                            Text("Your content outputs will appear here")
-                                .font(.footnote)
-                                .foregroundColor(Color.white.opacity(0.20))
+                VStack(spacing: 0) {
+                    // Always-visible search bar
+                    HStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.app(size: 15))
+                            .foregroundColor(Color.white.opacity(0.35))
+                        TextField("Search library", text: $searchText)
+                            .font(.app(size: 16))
+                            .foregroundColor(.white)
+                            .tint(Color(red: 0.85, green: 0.45, blue: 0.10))
+                            .focused($searchFocused)
+                        if !searchText.isEmpty {
+                            Button { searchText = "" } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.app(size: 15))
+                                    .foregroundColor(Color.white.opacity(0.30))
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        LazyVStack(spacing: 0) {
-                            ForEach(filteredGroups, id: \.title) { group in
-                                NavigationLink {
-                                    ProjectGroupView(title: group.title, items: group.items)
-                                } label: {
-                                    LibraryGroupRow(title: group.title, items: group.items)
-                                }
-                                .buttonStyle(.plain)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color.white.opacity(0.07))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 10)
 
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.06))
-                                    .frame(height: 0.5)
-                                    .padding(.leading, 20)
+                    Rectangle()
+                        .fill(Color.white.opacity(0.06))
+                        .frame(height: 0.5)
+
+                    if filteredGroups.isEmpty {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Image(systemName: searchText.isEmpty ? "tray" : "magnifyingglass")
+                                .font(.system(size: 36))
+                                .foregroundColor(Color.white.opacity(0.20))
+                            Text(searchText.isEmpty ? "No generations yet" : "No results")
+                                .foregroundColor(Color.white.opacity(0.30))
+                            if searchText.isEmpty {
+                                Text("Your content outputs will appear here")
+                                    .font(.footnote)
+                                    .foregroundColor(Color.white.opacity(0.20))
                             }
                         }
-                        .padding(.top, 4)
+                        Spacer()
+                    } else {
+                        ScrollView(showsIndicators: false) {
+                            LazyVStack(spacing: 0) {
+                                ForEach(filteredGroups, id: \.title) { group in
+                                    NavigationLink {
+                                        ProjectGroupView(title: group.title, items: group.items)
+                                    } label: {
+                                        LibraryGroupRow(title: group.title, items: group.items)
+                                    }
+                                    .buttonStyle(.plain)
+
+                                    Rectangle()
+                                        .fill(Color.white.opacity(0.06))
+                                        .frame(height: 0.5)
+                                        .padding(.leading, 20)
+                                }
+                            }
+                        }
                     }
                 }
             }
             .navigationTitle("Library")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .searchable(text: $searchText, prompt: "Search library")
         }
     }
 }
@@ -563,16 +599,16 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: .top) {
             TabView(selection: $selectedTab) {
-                Tab("Notes", systemImage: "note.text", value: AppTab.notes) {
+                Tab("Home", systemImage: "house", value: AppTab.notes) {
                     NotesView()
                 }
-                Tab("Create", systemImage: "sparkles", value: AppTab.create) {
+                Tab("Creator", systemImage: "square.and.pencil", value: AppTab.create) {
                     HomeView()
                 }
-                Tab("Library", systemImage: "folder", value: AppTab.library) {
+                Tab("Explore", systemImage: "square.grid.2x2", value: AppTab.library) {
                     LibraryView()
                 }
-                Tab("Templates", systemImage: "square.on.square", value: AppTab.templates) {
+                Tab("Templates", systemImage: "doc.on.doc", value: AppTab.templates) {
                     TemplatesView()
                 }
             }
