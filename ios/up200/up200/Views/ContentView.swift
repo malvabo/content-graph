@@ -49,21 +49,24 @@ struct LibraryView: View {
                         }
                     }
                 } else {
-                    List {
-                        ForEach(Array(filteredGroups.enumerated()), id: \.element.title) { idx, group in
-                            NavigationLink {
-                                ProjectGroupView(title: group.title, items: group.items)
-                            } label: {
-                                LibraryGroupRow(title: group.title, count: group.items.count, date: group.items.first?.date ?? Date())
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(spacing: 0) {
+                            ForEach(filteredGroups, id: \.title) { group in
+                                NavigationLink {
+                                    ProjectGroupView(title: group.title, items: group.items)
+                                } label: {
+                                    LibraryGroupRow(title: group.title, items: group.items)
+                                }
+                                .buttonStyle(.plain)
+
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.06))
+                                    .frame(height: 0.5)
+                                    .padding(.leading, 20)
                             }
-                            .listRowInsets(EdgeInsets())
-                            .listRowBackground(Color.clear)
-                            .listRowSeparatorTint(Color.white.opacity(0.06))
-                            .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
                         }
+                        .padding(.top, 4)
                     }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
                 }
             }
             .navigationTitle("Library")
@@ -75,10 +78,27 @@ struct LibraryView: View {
     }
 }
 
+private func libraryRelativeTime(_ date: Date) -> String {
+    let interval = Date().timeIntervalSince(date)
+    if interval < 60 { return "just now" }
+    if interval < 3600 { return "\(Int(interval / 60))m ago" }
+    if interval < 86400 { return "\(Int(interval / 3600))h ago" }
+    let days = Int(interval / 86400)
+    return days == 1 ? "yesterday" : "\(days) days ago"
+}
+
+private func outputTypesList(_ items: [GenerationProject]) -> String {
+    var seen = Set<String>()
+    let labels: [String] = items.compactMap { item in
+        guard seen.insert(item.outputType).inserted else { return nil }
+        return allFormats.first(where: { $0.id == item.outputType })?.label ?? item.outputType
+    }
+    return labels.joined(separator: ", ")
+}
+
 private struct LibraryGroupRow: View {
     let title: String
-    let count: Int
-    let date: Date
+    let items: [GenerationProject]
 
     var body: some View {
         HStack(spacing: 12) {
@@ -87,9 +107,10 @@ private struct LibraryGroupRow: View {
                     .font(.app(size: 19, weight: .medium))
                     .foregroundColor(Color.white.opacity(0.88))
                     .lineLimit(1)
-                Text("\(count) output\(count == 1 ? "" : "s") · \(date, style: .relative) ago")
+                Text("\(outputTypesList(items)) · \(libraryRelativeTime(items.first?.date ?? Date()))")
                     .font(.app(size: 12))
                     .foregroundColor(Color.white.opacity(0.35))
+                    .lineLimit(1)
             }
             Spacer()
         }
