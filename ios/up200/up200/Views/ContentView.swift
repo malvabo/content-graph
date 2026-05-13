@@ -633,7 +633,6 @@ private struct TemplateEditPage: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .task { focus = .title }
         .onDisappear { persist() }
     }
 }
@@ -789,6 +788,7 @@ private struct AppTabBar: View {
 struct ContentView: View {
     @State private var selectedTab: AppTab = .notes
     @State private var showSplash = true
+    @State private var keyboardVisible = false
     @StateObject private var bannerController = BannerController()
 
     init() {
@@ -805,9 +805,17 @@ struct ContentView: View {
             }
             .environmentObject(bannerController)
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                AppTabBar(selected: $selectedTab)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
+                if !keyboardVisible {
+                    AppTabBar(selected: $selectedTab)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                keyboardVisible = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                keyboardVisible = false
             }
 
             if showSplash {
