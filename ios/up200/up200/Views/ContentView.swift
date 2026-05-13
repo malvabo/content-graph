@@ -187,6 +187,10 @@ struct ProjectGroupDetailView: View {
     @State private var selectedIndex: Int = 0
     @State private var editText: String = ""
     @State private var copied = false
+    @State private var showAIMenu = false
+    @State private var isAIProcessing = false
+    @State private var aiFailed = false
+    @State private var aiFailReason = ""
     @FocusState private var editorFocused: Bool
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
@@ -356,22 +360,47 @@ struct ProjectGroupDetailView: View {
             if items.indices.contains(selectedIndex) { editText = bodyText(for: items[selectedIndex]) }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            Button {
-                UIPasteboard.general.string = editText
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                withAnimation(.easeOut(duration: 0.15)) { copied = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { copied = false } }
-            } label: {
-                Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
-                    .font(.appBodyBold)
-                    .foregroundColor(copied ? Color.white.opacity(0.70) : .white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(copied ? Color.white.opacity(0.07) : Color.white.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            HStack(spacing: 10) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    showAIMenu = true
+                } label: {
+                    Group {
+                        if isAIProcessing {
+                            ProgressView()
+                                .controlSize(.small)
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .frame(width: 52, height: 52)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .disabled(isAIProcessing)
+                .accessibilityLabel("AI actions")
+
+                Button {
+                    UIPasteboard.general.string = editText
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(.easeOut(duration: 0.15)) { copied = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { copied = false } }
+                } label: {
+                    Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                        .font(.appBodyBold)
+                        .foregroundColor(copied ? Color.white.opacity(0.70) : .white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(copied ? Color.white.opacity(0.07) : Color.white.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .animation(.easeOut(duration: 0.2), value: copied)
             }
-            .buttonStyle(.plain)
-            .animation(.easeOut(duration: 0.2), value: copied)
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 8)
@@ -380,6 +409,46 @@ struct ProjectGroupDetailView: View {
                     .frame(height: 28).offset(y: -28).allowsHitTesting(false)
             }
             .background(bg)
+        }
+        .sheet(isPresented: $showAIMenu) {
+            AIActionsSheet { instruction in
+                showAIMenu = false
+                runAITransform(instruction: instruction)
+            }
+        }
+        .alert("AI request failed", isPresented: $aiFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(aiFailReason.isEmpty
+                 ? "Could not reach the API. Check your network and try again."
+                 : aiFailReason)
+        }
+    }
+
+    private func runAITransform(instruction: String) {
+        guard !instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let snapshot = editText
+        guard !snapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            aiFailReason = "There's no text to transform yet."
+            aiFailed = true
+            return
+        }
+        isAIProcessing = true
+        Task {
+            let result = await AITransformService.transform(text: snapshot, instruction: instruction)
+            await MainActor.run {
+                isAIProcessing = false
+                if let result, !result.isEmpty {
+                    editText = result
+                    persistCurrent()
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                } else {
+                    aiFailReason = AITransformService.isKeyConfigured
+                        ? "The model didn't return any text. Try again."
+                        : "Add your Anthropic API key in the Create tab first."
+                    aiFailed = true
+                }
+            }
         }
     }
 }
@@ -1033,6 +1102,163 @@ struct TopBarPillDivider: View {
         Rectangle()
             .fill(Color.white.opacity(0.10))
             .frame(width: 0.5, height: 18)
+    }
+}
+
+// MARK: - AI transform service
+
+struct AITransformService {
+    static var isKeyConfigured: Bool {
+        guard let key = KeychainService.load() else { return false }
+        return !key.isEmpty && !key.hasPrefix("$(")
+    }
+
+    static func transform(text: String, instruction: String) async -> String? {
+        let apiKey = KeychainService.load() ?? ""
+        guard !apiKey.isEmpty, let url = URL(string: "https://api.anthropic.com/v1/messages") else { return nil }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        req.timeoutInterval = 60
+
+        let system = "You rewrite the user's text following their instruction. Preserve formatting, structure, and tone unless the instruction asks to change them. Output only the rewritten text, no preamble, no commentary, no quotes around the output."
+        let user = "Instruction: \(instruction)\n\nText:\n\(text)"
+
+        let body: [String: Any] = [
+            "model": "claude-sonnet-4-6",
+            "max_tokens": 4096,
+            "system": system,
+            "messages": [["role": "user", "content": user]]
+        ]
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else { return nil }
+        req.httpBody = httpBody
+
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let content = (json["content"] as? [[String: Any]])?.first,
+              let text = content["text"] as? String
+        else { return nil }
+
+        let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.isEmpty ? nil : result
+    }
+}
+
+// MARK: - AI actions sheet
+
+private struct AIAction: Identifiable {
+    let id = UUID()
+    let label: String
+    let icon: String
+    let instruction: String
+}
+
+private let quickAIActions: [AIAction] = [
+    AIAction(label: "Fix Spelling and Grammar", icon: "checkmark.seal", instruction: "Fix any spelling and grammar mistakes. Make no other changes."),
+    AIAction(label: "Make Longer", icon: "text.append", instruction: "Make this text longer, adding more detail and context while preserving the original voice."),
+]
+
+private let builtInAIActions: [AIAction] = [
+    AIAction(label: "Improve Writing", icon: "wand.and.stars", instruction: "Improve the writing: clearer sentences, stronger word choice, better flow. Preserve the meaning and roughly the same length."),
+    AIAction(label: "Explain This in Simple Terms", icon: "lightbulb", instruction: "Rewrite this so a smart non-expert can understand it easily. Keep it concise."),
+    AIAction(label: "Make Shorter", icon: "text.alignleft", instruction: "Shorten this while preserving the key points. Aim for roughly half the length."),
+    AIAction(label: "Change Tone to Professional", icon: "bubble.left", instruction: "Rewrite this in a polished, professional tone suitable for a business context."),
+]
+
+struct AIActionsSheet: View {
+    let onAction: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var customPrompt: String = ""
+    @FocusState private var promptFocused: Bool
+
+    private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.45))
+                TextField("Search or Ask AI…", text: $customPrompt)
+                    .font(.appBody)
+                    .foregroundColor(.white)
+                    .tint(.white)
+                    .focused($promptFocused)
+                    .submitLabel(.send)
+                    .onSubmit {
+                        let trimmed = customPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty else { return }
+                        onAction(trimmed)
+                    }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(Color.white.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+            )
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 14)
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(spacing: 2) {
+                        ForEach(quickAIActions) { action in
+                            actionRow(action)
+                        }
+                    }
+
+                    Text("Built-In")
+                        .font(.app(size: 13, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.40))
+                        .padding(.horizontal, 20)
+
+                    VStack(spacing: 2) {
+                        ForEach(builtInAIActions) { action in
+                            actionRow(action)
+                        }
+                    }
+                }
+                .padding(.bottom, 24)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(sheetBg)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(sheetBg)
+        .presentationCornerRadius(22)
+    }
+
+    private func actionRow(_ action: AIAction) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            onAction(action.instruction)
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: action.icon)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(BrandColor.amber)
+                    .frame(width: 34, height: 34)
+                    .background(BrandColor.amber.opacity(0.14))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                Text(action.label)
+                    .font(.app(size: 16, weight: .regular))
+                    .foregroundColor(.white)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
