@@ -8,6 +8,19 @@ import SwiftUI
 
 enum BrandColor {
     static let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+
+    /// Golden → amber → deep-orange ramp used by the Generate button's
+    /// glow. Apply via `.foregroundStyle` / `.fill` to give icons and
+    /// shapes the same two-tone warm feel as the primary CTA.
+    static let glowGradient = LinearGradient(
+        colors: [
+            Color(red: 1.00, green: 0.68, blue: 0.20),
+            amber,
+            Color(red: 0.62, green: 0.18, blue: 0.04)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
 }
 
 enum SelectionStyle {
