@@ -457,13 +457,37 @@ struct NoteVoiceSheet: View {
     var body: some View {
         ZStack {
             sheetBg.ignoresSafeArea()
-            voiceUI.transition(.opacity)
+            if selectedDetent == .large {
+                NoteComposerSheet(
+                    initialBody: recording.fullTranscript,
+                    onSave: { body in
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        recording.finishWithText(body)
+                        dismiss()
+                    },
+                    onCancel: {
+                        recording.cancel()
+                        dismiss()
+                    }
+                )
+                .transition(.opacity)
+            } else {
+                voiceUI.transition(.opacity)
+            }
         }
         .animation(.easeInOut(duration: 0.22), value: selectedDetent)
         .presentationDetents([.medium, .large], selection: $selectedDetent)
         .presentationDragIndicator(.visible)
         .presentationBackground(sheetBg)
         .presentationCornerRadius(22)
+        .onChange(of: selectedDetent) { _, newDetent in
+            if newDetent == .large && (recording.isRecording || recording.isPaused) {
+                // Hand off the audio engine to NoteComposerSheet's own
+                // NoteDictation. Pause keeps the accumulated transcript so the
+                // composer can seed from recording.fullTranscript.
+                recording.pause()
+            }
+        }
     }
 
     private func endRecording() {
@@ -552,6 +576,150 @@ struct NoteVoiceSheet: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
         }
+    }
+}
+
+// MARK: - Composer Sheet (large-detent text editor with corner mic)
+
+private struct NoteComposerSheet: View {
+    let initialBody: String
+    let onSave: (String) -> Void
+    let onCancel: () -> Void
+
+    @State private var noteBody: String
+    @State private var bodyBeforeDictation: String = ""
+    @State private var showDiscardAlert: Bool = false
+    @StateObject private var dictation = NoteDictation()
+    @FocusState private var bodyFocused: Bool
+
+    init(initialBody: String, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
+        self.initialBody = initialBody
+        self.onSave = onSave
+        self.onCancel = onCancel
+        self._noteBody = State(initialValue: initialBody)
+    }
+
+    private var canSave: Bool { !noteBody.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    private var isDirty: Bool { noteBody != initialBody }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button {
+                    if isDirty {
+                        showDiscardAlert = true
+                    } else {
+                        dictation.stop()
+                        onCancel()
+                    }
+                } label: {
+                    Text("Cancel")
+                        .font(.appLabel)
+                        .foregroundColor(Color.white.opacity(0.50))
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                Text("New Note")
+                    .font(.appBodyBold)
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                Button {
+                    dictation.stop()
+                    onSave(noteBody)
+                } label: {
+                    Text("Done")
+                        .font(.appLabelBold)
+                        .foregroundColor(canSave ? .white : Color.white.opacity(0.25))
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSave)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 14)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.06))
+                .frame(height: 0.5)
+
+            ZStack(alignment: .bottomTrailing) {
+                ZStack(alignment: .topLeading) {
+                    if noteBody.isEmpty {
+                        Text("Start typing\u{2026}")
+                            .font(.appBody)
+                            .foregroundColor(Color.white.opacity(0.22))
+                            .padding(.horizontal, 24)
+                            .padding(.top, 20)
+                            .allowsHitTesting(false)
+                    }
+                    TextEditor(text: $noteBody)
+                        .font(.appBody)
+                        .lineSpacing(8)
+                        .foregroundColor(Color.white.opacity(0.92))
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .tint(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        .contentMargins(.bottom, 84, for: .scrollContent)
+                        .focused($bodyFocused)
+                }
+
+                DictationControls(
+                    dictation: dictation,
+                    onStart: {
+                        bodyBeforeDictation = noteBody
+                        dictation.start()
+                    },
+                    onCancel: {
+                        dictation.cancel()
+                        noteBody = bodyBeforeDictation
+                    },
+                    onConfirm: {
+                        dictation.stop()
+                    }
+                )
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
+            }
+            .onChange(of: dictation.transcript) { _, newValue in
+                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return }
+                if bodyBeforeDictation.isEmpty {
+                    noteBody = trimmed
+                } else {
+                    let needsSeparator = !bodyBeforeDictation.hasSuffix("\n") && !bodyBeforeDictation.hasSuffix(" ")
+                    noteBody = bodyBeforeDictation + (needsSeparator ? " " : "") + trimmed
+                }
+            }
+            .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+                Button("Open Settings") { openSettings() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
+            }
+        }
+        .alert("Discard changes?", isPresented: $showDiscardAlert) {
+            Button("Keep Editing", role: .cancel) {}
+            Button("Discard", role: .destructive) {
+                dictation.stop()
+                onCancel()
+            }
+        }
+        .task {
+            bodyBeforeDictation = noteBody
+            dictation.start()
+        }
+        .onDisappear { dictation.stop() }
     }
 }
 

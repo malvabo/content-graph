@@ -236,6 +236,19 @@ final class RecordingController: ObservableObject {
         }
     }
 
+    /// Stop recording and route a caller-supplied text (e.g. an edited
+    /// transcript from the composer view) to the registered save handler.
+    func finishWithText(_ text: String) {
+        let final = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let handler = saveHandler
+        teardownEngine()
+        stopTimer()
+        reset()
+        if !final.isEmpty {
+            handler?(final)
+        }
+    }
+
     /// Stop recording and discard the transcript.
     func cancel() {
         task?.cancel()
