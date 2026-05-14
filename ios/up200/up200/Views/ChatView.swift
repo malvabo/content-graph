@@ -81,16 +81,22 @@ struct ChatView: View {
     @State private var selectedProjectIDs: Set<UUID> = []
     @State private var didSeedContext = false
     @State private var sendTask: Task<Void, Never>? = nil
+    @State private var cachedProjects: [GenerationProject] = []
+    @State private var lastDecodedSignature: Data = Data()
     @FocusState private var inputFocused: Bool
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
-    private var projects: [GenerationProject] {
-        (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
-    }
+    private var projects: [GenerationProject] { cachedProjects }
 
     private var selectedProjects: [GenerationProject] {
-        projects.filter { selectedProjectIDs.contains($0.id) }
+        cachedProjects.filter { selectedProjectIDs.contains($0.id) }
+    }
+
+    private func rebuildProjects() {
+        guard lastDecodedSignature != projectsData else { return }
+        cachedProjects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+        lastDecodedSignature = projectsData
     }
 
     var body: some View {
@@ -120,11 +126,13 @@ struct ChatView: View {
         .presentationBackground(bg)
         .onDisappear { sendTask?.cancel() }
         .onAppear {
+            rebuildProjects()
             guard !didSeedContext else { return }
             didSeedContext = true
-            let valid = Set(projects.map { $0.id })
+            let valid = Set(cachedProjects.map { $0.id })
             selectedProjectIDs = initialContextIDs.intersection(valid)
         }
+        .onChange(of: projectsData) { rebuildProjects() }
     }
 
     // MARK: Header
