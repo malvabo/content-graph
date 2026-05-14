@@ -848,7 +848,7 @@ private struct AppTabBar: View {
                         .background(
                             Group {
                                 if selected == tab {
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    Capsule(style: .continuous)
                                         .fill(Color.white.opacity(0.16))
                                 }
                             }
@@ -859,9 +859,9 @@ private struct AppTabBar: View {
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 4)
-            .appLiquidGlass(in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .appLiquidGlass(in: Capsule(style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                Capsule(style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [Color.white.opacity(0.22), Color.white.opacity(0.06)],
@@ -1090,9 +1090,9 @@ struct TopBarPillButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 15, weight: .regular))
+                .font(.system(size: 18, weight: .regular))
                 .foregroundColor(.white)
-                .frame(width: 38, height: 32)
+                .frame(width: 44, height: 38)
                 .background(isActive ? Color.white.opacity(0.12) : Color.clear)
                 .clipShape(Capsule())
         }
