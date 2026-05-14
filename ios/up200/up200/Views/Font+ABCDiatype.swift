@@ -34,3 +34,18 @@ extension Font {
     static let appMicro        = app(size: 12)
     static let appBadge        = app(size: 11, weight: .medium)
 }
+
+struct AppBodyTextStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.appBody)
+            .lineSpacing(8)
+            .foregroundColor(Color.white.opacity(0.92))
+    }
+}
+
+extension View {
+    func appBodyText() -> some View {
+        modifier(AppBodyTextStyle())
+    }
+}

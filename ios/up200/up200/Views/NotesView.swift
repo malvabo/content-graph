@@ -679,9 +679,7 @@ private struct NoteEditorPage: View {
                             .allowsHitTesting(false)
                     }
                     TextEditor(text: $noteBody)
-                        .font(.appBody)
-                        .lineSpacing(8)
-                        .foregroundColor(Color.white.opacity(0.92))
+                        .appBodyText()
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)
                         .tint(.white)

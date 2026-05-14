@@ -645,9 +645,7 @@ private struct TextInputSheet: View {
                                 .allowsHitTesting(false)
                         }
                         TextEditor(text: $bodyText)
-                            .font(.appBody)
-                            .foregroundColor(Color.white.opacity(0.88))
-                            .lineSpacing(3)
+                            .appBodyText()
                             .tint(.white)
                             .scrollContentBackground(.hidden)
                             .background(.clear)
