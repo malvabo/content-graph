@@ -78,6 +78,22 @@ struct LibraryView: View {
                 bg.ignoresSafeArea()
 
                 VStack(spacing: 0) {
+                    InlineTopBar(title: "Library") {
+                        TopBarPill {
+                            TopBarPillButton(
+                                systemImage: showSearch ? "xmark" : "magnifyingglass",
+                                isActive: showSearch
+                            ) {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                withAnimation(.easeInOut(duration: 0.22)) {
+                                    showSearch.toggle()
+                                    if !showSearch { searchText = "" }
+                                    else { searchFocused = true }
+                                }
+                            }
+                        }
+                    }
+
                     Rectangle()
                         .fill(Color.white.opacity(0.06))
                         .frame(height: 0.5)
@@ -107,30 +123,8 @@ struct LibraryView: View {
                     .transition(.opacity)
                 }
             }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    LeadingTitle(text: "Library")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    TopBarPill {
-                        TopBarPillButton(
-                            systemImage: showSearch ? "xmark" : "magnifyingglass",
-                            isActive: showSearch
-                        ) {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            withAnimation(.easeInOut(duration: 0.22)) {
-                                showSearch.toggle()
-                                if !showSearch { searchText = "" }
-                                else { searchFocused = true }
-                            }
-                        }
-                    }
-                }
-            }
             .task { buildGroups() }
             .onChange(of: projectsData) { buildGroups() }
         }
@@ -515,35 +509,8 @@ struct TemplatesView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            List {
-                ForEach(custom) { tpl in
-                    TemplateRow(title: tpl.title)
-                        .onTapGesture { path.append(.edit(tpl.id)) }
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
-                        .listRowSeparatorTint(Color.white.opacity(0.06))
-                        .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
-                }
-                ForEach(builtIn, id: \.title) { tpl in
-                    TemplateRow(title: tpl.title)
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
-                        .listRowSeparatorTint(Color.white.opacity(0.06))
-                        .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
-                }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    LeadingTitle(text: "Templates")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
+            VStack(spacing: 0) {
+                InlineTopBar(title: "Templates") {
                     TopBarPill {
                         TopBarPillButton(systemImage: "plus") {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -551,7 +518,30 @@ struct TemplatesView: View {
                         }
                     }
                 }
+
+                List {
+                    ForEach(custom) { tpl in
+                        TemplateRow(title: tpl.title)
+                            .onTapGesture { path.append(.edit(tpl.id)) }
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                            .listRowSeparatorTint(Color.white.opacity(0.06))
+                            .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                    }
+                    ForEach(builtIn, id: \.title) { tpl in
+                        TemplateRow(title: tpl.title)
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                            .listRowSeparatorTint(Color.white.opacity(0.06))
+                            .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                    }
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
+            .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .onAppear { custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? [] }
             .navigationDestination(for: TemplateDestination.self) { dest in
                 switch dest {
@@ -876,10 +866,17 @@ private struct AppTabBar: View {
             .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(.ultraThinMaterial)
+                    .fill(.regularMaterial)
                     .overlay(
                         RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.22), Color.white.opacity(0.06)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 0.5
+                            )
                     )
             )
 
@@ -889,16 +886,19 @@ private struct AppTabBar: View {
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 22, weight: .regular))
-                    .foregroundColor(Color.white.opacity(0.85))
+                    .foregroundColor(.white)
                     .frame(width: 76, height: 76)
                     .background(
                         Circle()
-                            .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
+                            .fill(.regularMaterial)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
+                            )
                     )
             }
             .buttonStyle(.plain)
         }
-        .environment(\.colorScheme, .dark)
     }
 }
 
@@ -1101,15 +1101,6 @@ struct LaunchView: View {
 
 // MARK: - Top bar primitives
 
-struct LeadingTitle: View {
-    let text: String
-    var body: some View {
-        Text(text)
-            .font(.appBodyBold)
-            .foregroundColor(.white)
-    }
-}
-
 struct TopBarPill<Content: View>: View {
     @ViewBuilder var content: () -> Content
     var body: some View {
@@ -1152,6 +1143,25 @@ struct TopBarPillDivider: View {
         Rectangle()
             .fill(Color.white.opacity(0.10))
             .frame(width: 0.5, height: 18)
+    }
+}
+
+struct InlineTopBar<Trailing: View>: View {
+    let title: String
+    @ViewBuilder var trailing: () -> Trailing
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(.appBodyBold)
+                .foregroundColor(.white)
+                .fixedSize(horizontal: true, vertical: false)
+            Spacer(minLength: 8)
+            trailing()
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
     }
 }
 

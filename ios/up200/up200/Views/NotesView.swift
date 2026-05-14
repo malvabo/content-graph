@@ -971,6 +971,38 @@ struct NotesView: View {
                 Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
 
                 VStack(spacing: 0) {
+                    InlineTopBar(title: "Notes") {
+                        TopBarPill {
+                            TopBarPillButton(systemImage: "square.and.pencil") {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                recording.begin { transcript in
+                                    var note = Note()
+                                    note.body = transcript
+                                    note.updatedAt = Date()
+                                    notes.append(note)
+                                    scheduleSave()
+                                }
+                                recording.showingSheet = true
+                            }
+                            .accessibilityLabel("New note")
+
+                            TopBarPillDivider()
+
+                            TopBarPillButton(
+                                systemImage: showSearch ? "xmark" : "magnifyingglass",
+                                isActive: showSearch
+                            ) {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                withAnimation(.easeInOut(duration: 0.22)) {
+                                    showSearch.toggle()
+                                    if !showSearch { searchText = "" }
+                                    else { searchFocused = true }
+                                }
+                            }
+                            .accessibilityLabel(showSearch ? "Close search" : "Search")
+                        }
+                    }
+
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             FilterChip(label: "All", isSelected: selectedFilter == nil, isDeletable: false) {
@@ -1031,46 +1063,8 @@ struct NotesView: View {
                     .transition(.opacity)
                 }
             }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    LeadingTitle(text: "Notes")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    TopBarPill {
-                        TopBarPillButton(systemImage: "square.and.pencil") {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            recording.begin { transcript in
-                                var note = Note()
-                                note.body = transcript
-                                note.updatedAt = Date()
-                                notes.append(note)
-                                scheduleSave()
-                            }
-                            recording.showingSheet = true
-                        }
-                        .accessibilityLabel("New note")
-
-                        TopBarPillDivider()
-
-                        TopBarPillButton(
-                            systemImage: showSearch ? "xmark" : "magnifyingglass",
-                            isActive: showSearch
-                        ) {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            withAnimation(.easeInOut(duration: 0.22)) {
-                                showSearch.toggle()
-                                if !showSearch { searchText = "" }
-                                else { searchFocused = true }
-                            }
-                        }
-                        .accessibilityLabel(showSearch ? "Close search" : "Search")
-                    }
-                }
-            }
             .navigationDestination(item: $editingNote) { note in
                 NoteEditorPage(
                     note: note,
