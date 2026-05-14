@@ -2012,15 +2012,17 @@ private struct FormatsBlock: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
-            .padding(.bottom, displayText.isEmpty ? 10 : 6)
+            .padding(.bottom, 8)
 
             if !displayText.isEmpty {
                 Text(displayText)
                     .font(.appSubtext)
                     .foregroundColor(Color.white.opacity(0.85))
                     .lineLimit(3)
+                    .contentTransition(.opacity)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 10)
+                    .transition(.opacity)
             }
 
             // Suggestion chip row: refresh · chips · expand
@@ -2029,7 +2031,9 @@ private struct FormatsBlock: View {
                     // Refresh
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        refreshSuggestions()
+                        withAnimation(chipAnim) {
+                            refreshSuggestions()
+                        }
                     } label: {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 13, weight: .medium))
@@ -2044,7 +2048,7 @@ private struct FormatsBlock: View {
                     ForEach(suggestions) { fmt in
                         Button {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            withAnimation(.easeOut(duration: 0.15)) {
+                            withAnimation(chipAnim) {
                                 selectedFormatIDs.insert(fmt.id)
                                 refreshSuggestions()
                             }
@@ -2062,7 +2066,7 @@ private struct FormatsBlock: View {
                                 )
                         }
                         .buttonStyle(.plain)
-                        .transition(.scale.combined(with: .opacity))
+                        .transition(.opacity)
                     }
 
                     // Expand — opens full picker
@@ -2083,8 +2087,11 @@ private struct FormatsBlock: View {
             }
             .padding(.bottom, 14)
         }
+        .animation(chipAnim, value: displayText)
         .onAppear { refreshSuggestions() }
-        .onChange(of: selectedFormatIDs) { refreshSuggestions() }
+        .onChange(of: selectedFormatIDs) {
+            withAnimation(chipAnim) { refreshSuggestions() }
+        }
         .sheet(isPresented: $showPicker) {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
                 .presentationDetents([.large])
@@ -2093,6 +2100,8 @@ private struct FormatsBlock: View {
                 .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
+
+    private var chipAnim: Animation { .easeInOut(duration: 0.28) }
 }
 
 // MARK: - Prompt Field
