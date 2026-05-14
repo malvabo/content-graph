@@ -176,6 +176,7 @@ struct ProjectGroupDetailView: View {
     let initialItems: [GenerationProject]
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var recording: RecordingController
 
     @State private var selectedIndex: Int = 0
     @State private var editText: String = ""
@@ -266,17 +267,37 @@ struct ProjectGroupDetailView: View {
 
                     Spacer()
 
-                    ShareLink(item: editText) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Color.white.opacity(0.08))
-                            .clipShape(Circle())
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(Rectangle())
+                    TopBarPill {
+                        Button {
+                            UIPasteboard.general.string = editText
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            withAnimation(.easeOut(duration: 0.15)) { copied = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                withAnimation { copied = false }
+                            }
+                        } label: {
+                            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(copied ? Color.white.opacity(0.70) : .white)
+                                .frame(width: 44, height: 38)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .animation(.easeOut(duration: 0.2), value: copied)
+                        .accessibilityLabel(copied ? "Copied" : "Copy")
+
+                        TopBarPillDivider()
+
+                        ShareLink(item: editText) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(.white)
+                                .frame(width: 44, height: 38)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Share")
                     }
-                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 4)
@@ -386,22 +407,30 @@ struct ProjectGroupDetailView: View {
                 .disabled(isAIProcessing)
                 .accessibilityLabel("AI actions")
 
+                Spacer()
+
                 Button {
-                    UIPasteboard.general.string = editText
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.easeOut(duration: 0.15)) { copied = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation { copied = false } }
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    recording.begin { transcript in
+                        var note = Note()
+                        note.body = transcript
+                        note.updatedAt = Date()
+                        var existing = NotesStore.load()
+                        existing.append(note)
+                        NotesStore.saveInBackground(existing)
+                    }
+                    recording.showingSheet = true
                 } label: {
-                    Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
-                        .font(.appBodyBold)
-                        .foregroundColor(copied ? Color.white.opacity(0.70) : .white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(copied ? Color.white.opacity(0.07) : Color.white.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 52, height: 52)
+                        .background(Color.white.opacity(0.12))
+                        .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .animation(.easeOut(duration: 0.2), value: copied)
+                .disabled(recording.isRecording || recording.isPaused)
+                .accessibilityLabel("Record voice note")
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
