@@ -289,7 +289,7 @@ struct ChatView: View {
                 HStack(spacing: 4) {
                     Button {
                         if let clip = UIPasteboard.general.string, !clip.isEmpty {
-                            inputText += clip
+                            inputText += String(clip.prefix(50_000))
                         }
                     } label: {
                         Image(systemName: "paperclip")

@@ -824,7 +824,7 @@ private struct TextInputSheet: View {
         HStack(spacing: 0) {
             kbButton(icon: "doc.on.clipboard") {
                 if let clip = UIPasteboard.general.string, !clip.isEmpty {
-                    bodyText += clip
+                    bodyText += String(clip.prefix(50_000))
                     focusedField = .body
                 }
             }
@@ -1630,8 +1630,13 @@ private struct SourcesBlock: View {
         if url.pathExtension.lowercased() == "pdf" {
             return String((PDFDocument(url: url)?.string ?? "").prefix(8000))
         }
-        if let text = try? String(contentsOf: url, encoding: .utf8) { return String(text.prefix(8000)) }
-        if let text = try? String(contentsOf: url, encoding: .isoLatin1) { return String(text.prefix(8000)) }
+        // Cap at 64 KB read — we only keep 8000 chars after decoding, so there
+        // is no point loading a multi-GB log file entirely into memory.
+        guard let fh = try? FileHandle(forReadingFrom: url) else { return "" }
+        defer { try? fh.close() }
+        guard let data = try? fh.read(upToCount: 64_000) else { return "" }
+        if let text = String(data: data, encoding: .utf8) { return String(text.prefix(8000)) }
+        if let text = String(data: data, encoding: .isoLatin1) { return String(text.prefix(8000)) }
         return ""
     }
 
