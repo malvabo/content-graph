@@ -120,7 +120,7 @@ export default function NotesEmptyScreen({ onClose }: { onClose: () => void }) {
           onClick={() => audioInputRef.current?.click()}
         />
         <ActionCard
-          label="Record note"
+          label="Add a voice note"
           icon={<MicIcon />}
           onClick={() => setShowVoice(true)}
         />
@@ -144,7 +144,7 @@ export default function NotesEmptyScreen({ onClose }: { onClose: () => void }) {
           No notes yet
         </div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', maxWidth: 280, lineHeight: 1.5 }}>
-          Import an audio recording or record a new note to get started.
+          Import an audio recording or add a voice note to get started.
         </div>
       </div>
 
