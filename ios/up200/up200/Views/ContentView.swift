@@ -889,7 +889,6 @@ private struct AppTabBar: View {
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .notes
-    @State private var showSplash = true
     @State private var keyboardVisible = false
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
@@ -925,12 +924,6 @@ struct ContentView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
                 keyboardVisible = false
-            }
-
-            if showSplash {
-                LaunchView()
-                    .transition(.opacity)
-                    .zIndex(1)
             }
 
             if bannerController.isVisible {
@@ -975,11 +968,6 @@ struct ContentView: View {
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.showingSheet)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                withAnimation(.easeOut(duration: 0.3)) { showSplash = false }
-            }
-        }
     }
 }
 
@@ -1064,22 +1052,6 @@ private struct PulsingDot: View {
             .scaleEffect(active && pulse ? 1.25 : 1.0)
             .animation(active ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : .default, value: pulse)
             .onAppear { pulse = true }
-    }
-}
-
-// MARK: - Launch View
-
-struct LaunchView: View {
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("up")
-                .font(.system(size: 32, weight: .semibold, design: .rounded))
-                .foregroundColor(.white)
-            ProgressView()
-                .tint(Color.white.opacity(0.6))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 0.10, green: 0.08, blue: 0.07))
     }
 }
 

@@ -53,10 +53,6 @@
 	<string>Voice input for ScriptSense</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Speech recognition is used to transcribe your voice notes</string>
-	<key>UIAppFonts</key>
-	<array>
-		<string>ABCDiatypeVariable-Trial.ttf</string>
-	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

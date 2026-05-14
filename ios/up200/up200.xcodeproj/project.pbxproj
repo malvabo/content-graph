@@ -15,7 +15,6 @@
 		A1000007 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000008 /* Models.swift */; };
 		A1000008 /* APIKeySetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000009 /* APIKeySetupView.swift */; };
 		A1000009 /* Font+ABCDiatype.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011 /* Font+ABCDiatype.swift */; };
-		A1000010 /* ABCDiatypeVariable-Trial.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000012 /* ABCDiatypeVariable-Trial.ttf */; };
 		A1000011 /* OnboardingSceneViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013 /* OnboardingSceneViewController.swift */; };
 		A1000012 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000014 /* OnboardingView.swift */; };
 		A1000013 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000015 /* ChatView.swift */; };
@@ -33,7 +32,6 @@
 		A2000009 /* APIKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeySetupView.swift; sourceTree = "<group>"; };
 		A2000010 /* up200.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = up200.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000011 /* Font+ABCDiatype.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Font+ABCDiatype.swift"; sourceTree = "<group>"; };
-		A2000012 /* ABCDiatypeVariable-Trial.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "ABCDiatypeVariable-Trial.ttf"; sourceTree = "<group>"; };
 		A2000013 /* OnboardingSceneViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingSceneViewController.swift; sourceTree = "<group>"; };
 		A2000014 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		A2000015 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
@@ -97,7 +95,6 @@
 		A3000006 /* Fonts */ = {
 			isa = PBXGroup;
 			children = (
-				A2000012 /* ABCDiatypeVariable-Trial.ttf */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -155,7 +152,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000004 /* Assets.xcassets in Resources */,
-				A1000010 /* ABCDiatypeVariable-Trial.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
