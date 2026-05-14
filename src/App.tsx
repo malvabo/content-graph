@@ -59,6 +59,7 @@ import MobileBottomBar from './components/mobile/MobileBottomBar';
 import MobileLibrary from './components/mobile/MobileLibrary';
 import CreateHome from './components/home/CreateHome';
 import NotesEmptyScreen from './components/home/NotesEmptyScreen';
+import WelcomeScreen from './components/WelcomeScreen';
 import { useIsMobile } from './hooks/useIsMobile';
 import TypewriterLogo from './components/TypewriterLogo';
 import QuickMode from './components/canvas/QuickMode';
@@ -76,7 +77,7 @@ function AppInner() {
   const [showOnboardingOverlay, setShowOnboardingOverlay] = useState(false);
   const [showPostOnboardingNotes, setShowPostOnboardingNotes] = useState(false);
 
-  const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'create', 'capture'];
+  const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'create', 'capture', 'welcome'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'create'; };
   const getHashParam = () => { const h = window.location.hash.slice(1); const i = h.indexOf(':'); return i === -1 ? undefined : h.slice(i + 1) || undefined; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
@@ -241,9 +242,14 @@ function AppInner() {
           ) : (
             <CreateHome onShowOnboarding={() => setShowOnboardingOverlay(true)} />
           )}
+          {activeView === 'welcome' && (
+            <WelcomeScreen
+              onGetStarted={() => { setActiveView('create'); setShowPostOnboardingNotes(true); }}
+            />
+          )}
           {showOnboardingOverlay && (
             <OnboardingScreen
-              onFinish={() => { setShowOnboardingOverlay(false); setShowPostOnboardingNotes(true); }}
+              onFinish={() => setShowOnboardingOverlay(false)}
               onClose={() => setShowOnboardingOverlay(false)}
             />
           )}
