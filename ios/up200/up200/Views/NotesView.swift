@@ -295,18 +295,20 @@ private struct NoteListRow: View {
                         .lineLimit(2)
                     if note.tags.contains("Starred") {
                         Image(systemName: "star.fill")
-                            .font(.system(size: 11))
+                            .font(.system(size: 13))
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [
+                                        Color(red: 1.00, green: 0.68, blue: 0.20),
                                         BrandColor.amber,
-                                        Color(red: 0.75, green: 0.30, blue: 0.05)
+                                        Color(red: 0.62, green: 0.18, blue: 0.04)
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
                             )
-                            .shadow(color: BrandColor.amber.opacity(0.60), radius: 4)
+                            .shadow(color: BrandColor.amber.opacity(0.85), radius: 6)
+                            .shadow(color: Color(red: 1.00, green: 0.68, blue: 0.20).opacity(0.45), radius: 2)
                     }
                 }
 
@@ -464,16 +466,33 @@ struct NoteWaveform: View {
     private let barCount = 38
     private let amber = BrandColor.amber
 
+    private var waveGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(red: 1.00, green: 0.68, blue: 0.20),
+                BrandColor.amber,
+                Color(red: 0.62, green: 0.18, blue: 0.04)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
-            HStack(spacing: 2.5) {
-                ForEach(0..<barCount, id: \.self) { i in
-                    Capsule()
-                        .fill(amber.opacity(barOpacity(index: i)))
-                        .frame(width: 3, height: barHeight(index: i, time: t))
-                }
-            }
+            waveGradient
+                .mask(
+                    HStack(spacing: 2.5) {
+                        ForEach(0..<barCount, id: \.self) { i in
+                            Capsule()
+                                .fill(Color.white.opacity(barOpacity(index: i)))
+                                .frame(width: 3, height: barHeight(index: i, time: t))
+                        }
+                    }
+                )
+                .shadow(color: BrandColor.amber.opacity(0.55), radius: 14)
+                .shadow(color: Color(red: 1.00, green: 0.68, blue: 0.20).opacity(0.30), radius: 4)
         }
         .frame(height: 75)
         .accessibilityHidden(true)
