@@ -111,7 +111,13 @@ struct LibraryView: View {
                     SearchOverlay(
                         query: $searchText,
                         placeholder: "Search library",
-                        isFocused: $searchFocused
+                        isFocused: $searchFocused,
+                        onCancel: {
+                            withAnimation(.easeInOut(duration: 0.22)) {
+                                showSearch = false
+                                searchText = ""
+                            }
+                        }
                     ) {
                         libraryList(
                             filteredGroups,
@@ -1287,6 +1293,7 @@ struct SearchOverlay<Results: View>: View {
     @Binding var query: String
     let placeholder: String
     let isFocused: FocusState<Bool>.Binding
+    var onCancel: (() -> Void)? = nil
     @ViewBuilder var results: () -> Results
 
     var body: some View {
@@ -1298,34 +1305,50 @@ struct SearchOverlay<Results: View>: View {
 
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.appLabel)
-                        .foregroundColor(Color.white.opacity(0.45))
-                    TextField(placeholder, text: $query)
-                        .font(.appLabel)
-                        .foregroundColor(.white)
-                        .tint(.white)
-                        .focused(isFocused)
-                        .submitLabel(.search)
-                    if !query.isEmpty {
-                        Button { query = "" } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.appSubtext)
-                                .foregroundColor(Color.white.opacity(0.40))
+                    HStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.appLabel)
+                            .foregroundColor(Color.white.opacity(0.45))
+                        TextField(placeholder, text: $query)
+                            .font(.appLabel)
+                            .foregroundColor(.white)
+                            .tint(.white)
+                            .focused(isFocused)
+                            .submitLabel(.search)
+                        if !query.isEmpty {
+                            Button { query = "" } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.appSubtext)
+                                    .foregroundColor(Color.white.opacity(0.40))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.white.opacity(0.10))
+                            .overlay(
+                                Capsule(style: .continuous)
+                                    .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                            )
+                    )
+
+                    if let onCancel {
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            isFocused.wrappedValue = false
+                            onCancel()
+                        } label: {
+                            Text("Cancel")
+                                .font(.appLabel)
+                                .foregroundColor(.white)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Cancel search")
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.10))
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
-                        )
-                )
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
                 .padding(.bottom, 12)
