@@ -359,18 +359,13 @@ struct ProjectGroupDetailView: View {
                     let item = items[selectedIndex]
 
                     VStack(alignment: .leading, spacing: 0) {
-                        HStack {
-                            Text(allFormats.first(where: { $0.id == item.outputType })?.label ?? item.outputType)
-                                .font(.appTitle)
-                                .foregroundColor(AppText.primary)
-                            Spacer()
-                            Text(item.date, style: .date)
-                                .font(.appCaption)
-                                .foregroundColor(Color.white.opacity(0.35))
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 16)
-                        .padding(.bottom, 10)
+                        Text(allFormats.first(where: { $0.id == item.outputType })?.label ?? item.outputType)
+                            .font(.appTitle)
+                            .foregroundColor(AppText.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 16)
+                            .padding(.bottom, 10)
 
                         ZStack(alignment: .topLeading) {
                             if editText.isEmpty {
