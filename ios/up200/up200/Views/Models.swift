@@ -305,10 +305,17 @@ final class RecordingController: ObservableObject {
     }
 
     private func teardownEngine() {
-        audioEngine.stop()
-        request?.endAudio()
+        // Remove tap first: synchronizes with the audio render thread so no
+        // in-flight buffer callbacks can append to the request after endAudio.
         audioEngine.inputNode.removeTap(onBus: 0)
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        request?.endAudio()
+        audioEngine.stop()
+        // Deactivate off the main thread: notifyOthersOnDeactivation makes an
+        // XPC round-trip to mediaserverd which can block for tens of ms — fatal
+        // if called on main during a sheet dismiss animation.
+        DispatchQueue.global(qos: .userInitiated).async {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
         audioLevel = 0
         isRecording = false
     }
@@ -371,7 +378,7 @@ final class RecordingController: ObservableObject {
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
             req.append(buffer)
             guard let channels = buffer.floatChannelData else { return }
             let frames = Int(buffer.frameLength)
