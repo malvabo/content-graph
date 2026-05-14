@@ -193,6 +193,7 @@ struct ProjectGroupDetailView: View {
     @State private var selectedIndex: Int = 0
     @State private var editText: String = ""
     @State private var copied = false
+    @State private var copiedResetTask: Task<Void, Never>? = nil
     @State private var showAIMenu = false
     @State private var showChat = false
     @State private var isAIProcessing = false
@@ -285,7 +286,10 @@ struct ProjectGroupDetailView: View {
                             UIPasteboard.general.string = editText
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             withAnimation(.easeOut(duration: 0.15)) { copied = true }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            copiedResetTask?.cancel()
+                            copiedResetTask = Task { @MainActor in
+                                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                                guard !Task.isCancelled else { return }
                                 withAnimation { copied = false }
                             }
                         } label: {
