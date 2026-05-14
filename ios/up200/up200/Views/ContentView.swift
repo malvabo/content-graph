@@ -696,6 +696,9 @@ private struct TemplateEditPage: View {
 
                         // Merged prompt + format tags
                         VStack(alignment: .leading, spacing: 12) {
+                            TemplateTagFlow(items: allFormats, selectedIDs: $formatIDs)
+                                .padding(.horizontal, 20)
+
                             ZStack(alignment: .topLeading) {
                                 if prompt.isEmpty {
                                     Text("Describe what this template should produce\u{2026}")
@@ -714,9 +717,6 @@ private struct TemplateEditPage: View {
                                     .focused($focus, equals: .prompt)
                                     .frame(minHeight: 200)
                             }
-
-                            TemplateTagFlow(items: allFormats, selectedIDs: $formatIDs)
-                                .padding(.horizontal, 20)
                         }
                     }
                     .padding(.top, 4)
