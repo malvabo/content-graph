@@ -296,6 +296,8 @@ struct ChatView: View {
                             .font(.system(size: 17))
                             .foregroundColor(Color.white.opacity(0.45))
                             .frame(width: 40, height: 36)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
 
@@ -307,6 +309,8 @@ struct ChatView: View {
                             .font(.system(size: 17))
                             .foregroundColor(Color.white.opacity(0.45))
                             .frame(width: 40, height: 36)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
 
@@ -326,6 +330,8 @@ struct ChatView: View {
                                     lineWidth: 0.5
                                 )
                             )
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .disabled(!canSend)
@@ -452,8 +458,11 @@ private struct ContextPill: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundColor(Color.white.opacity(0.45))
+                    .frame(minWidth: 28, minHeight: 28)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Remove context")
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
