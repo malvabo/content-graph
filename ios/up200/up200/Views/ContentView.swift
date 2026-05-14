@@ -182,6 +182,7 @@ struct ProjectGroupDetailView: View {
     @State private var editText: String = ""
     @State private var copied = false
     @State private var showAIMenu = false
+    @State private var showChat = false
     @State private var isAIProcessing = false
     @State private var aiFailed = false
     @State private var aiFailReason = ""
@@ -407,6 +408,20 @@ struct ProjectGroupDetailView: View {
                 .disabled(isAIProcessing)
                 .accessibilityLabel("AI actions")
 
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    showChat = true
+                } label: {
+                    Image(systemName: "bubble.left.and.text.bubble.right")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 52, height: 52)
+                        .background(Color.white.opacity(0.12))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Ask AI chat")
+
                 Spacer()
 
                 Button {
@@ -446,6 +461,9 @@ struct ProjectGroupDetailView: View {
                 showAIMenu = false
                 runAITransform(instruction: instruction, label: label, icon: icon, source: editText)
             }
+        }
+        .sheet(isPresented: $showChat) {
+            ChatView()
         }
         .sheet(isPresented: $showAIPreview) {
             AIPreviewSheet(
