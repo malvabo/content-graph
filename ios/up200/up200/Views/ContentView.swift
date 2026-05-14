@@ -871,9 +871,9 @@ private struct AppTabBar: View {
     @Binding var selected: AppTab
 
     private let mainItems: [(AppTab, String, String)] = [
-        (.notes,     "house",            "Home"),
-        (.library,   "books.vertical",   "Library"),
-        (.templates, "square.grid.2x2",  "Templates"),
+        (.notes,     "doc.text",        "Notes"),
+        (.library,   "books.vertical",  "Library"),
+        (.templates, "square.grid.2x2", "Templates"),
     ]
 
     var body: some View {
@@ -904,6 +904,8 @@ private struct AppTabBar: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(label)
+                    .accessibilityAddTraits(selected == tab ? [.isButton, .isSelected] : .isButton)
                 }
             }
             .padding(.horizontal, 4)
@@ -925,21 +927,24 @@ private struct AppTabBar: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 selected = .create
             } label: {
+                let isActive = selected == .create
                 Image(systemName: "plus")
-                    .font(.system(size: 17, weight: selected == .create ? .semibold : .regular))
+                    .font(.system(size: 17, weight: isActive ? .semibold : .regular))
                     .foregroundColor(.white)
                     .frame(width: 50, height: 50)
                     .appLiquidGlass(in: Circle())
                     .overlay(
                         Circle()
-                            .fill(Color.white.opacity(selected == .create ? 0.16 : 0))
+                            .fill(Color.white.opacity(isActive ? 0.16 : 0))
                     )
                     .overlay(
                         Circle()
-                            .stroke(Color.white.opacity(selected == .create ? 0.32 : 0.18), lineWidth: 0.5)
+                            .stroke(Color.white.opacity(isActive ? 0.32 : 0.18), lineWidth: 0.5)
                     )
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Create")
+            .accessibilityAddTraits(selected == .create ? [.isButton, .isSelected] : .isButton)
         }
     }
 }
