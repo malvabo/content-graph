@@ -36,10 +36,17 @@ function getApiModel(model: string): string {
   return map[model] ?? model;
 }
 
+// Defensive trim: keys pasted into Settings before the save-time sanitizer
+// shipped may still carry surrounding whitespace or quotes. The providers
+// all 401 those silently with no actionable error.
+function sanitizeKey(apiKey: string): string {
+  return apiKey.trim().replace(/^['"`]+|['"`]+$/g, '');
+}
+
 async function callAnthropic(apiKey: string, model: string, system: string, input: string, signal?: AbortSignal): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': sanitizeKey(apiKey), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
     body: JSON.stringify({ model: getApiModel(model), max_tokens: 2048, system, messages: [{ role: 'user', content: input }] }),
     signal,
   });
@@ -51,7 +58,7 @@ async function callAnthropic(apiKey: string, model: string, system: string, inpu
 async function callOpenAI(apiKey: string, model: string, system: string, input: string, signal?: AbortSignal): Promise<string> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sanitizeKey(apiKey)}` },
     body: JSON.stringify({ model: getApiModel(model), max_tokens: 2048, messages: [{ role: 'system', content: system }, { role: 'user', content: input }] }),
     signal,
   });
@@ -63,7 +70,7 @@ async function callOpenAI(apiKey: string, model: string, system: string, input: 
 async function callGoogle(apiKey: string, model: string, system: string, input: string, signal?: AbortSignal): Promise<string> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${getApiModel(model)}:generateContent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': sanitizeKey(apiKey) },
     body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ parts: [{ text: input }] }], generationConfig: { maxOutputTokens: 2048 } }),
     signal,
   });
@@ -75,7 +82,7 @@ async function callGoogle(apiKey: string, model: string, system: string, input: 
 async function callGroq(apiKey: string, model: string, system: string, input: string, signal?: AbortSignal): Promise<string> {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sanitizeKey(apiKey)}` },
     body: JSON.stringify({ model: getApiModel(model), max_tokens: 2048, messages: [{ role: 'system', content: system }, { role: 'user', content: input }] }),
     signal,
   });

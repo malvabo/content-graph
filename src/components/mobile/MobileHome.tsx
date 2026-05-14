@@ -772,12 +772,20 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
   const generate = useCallback(async (kind: AssetKind) => {
     if (!note.transcript) return;
+    // Cancel any in-flight generation before starting a new one so a fast tap
+    // through LinkedIn → Twitter doesn't leave the previous fetch streaming
+    // tokens into a state slot we no longer care about.
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setGen({ kind, text: '', loading: true });
     try {
-      const out = await aiExecute(note.transcript, {}, kind);
+      const out = await aiExecute(note.transcript, {}, kind, undefined, controller.signal);
+      if (controller.signal.aborted) return;
       setGen({ kind, text: out, originalText: out, loading: false });
       updateNote(note.id, { lastGeneration: { kind, text: out, createdAt: new Date().toISOString() } });
     } catch (e: any) {
+      if (controller.signal.aborted) return;
       setGen({ kind, text: '', loading: false, error: e?.message || 'Generation failed' });
     }
   }, [note.id, note.transcript, updateNote]);
