@@ -11,9 +11,11 @@ struct ChatMessage: Identifiable {
 // MARK: - Chat Service
 
 private struct ChatService {
-    static func send(messages: [ChatMessage], contextItems: [GenerationProject]) async -> String? {
+    static func send(messages: [ChatMessage], contextItems: [GenerationProject]) async -> Result<String, APICallError> {
         guard let apiKey = KeychainService.load(), !apiKey.isEmpty,
-              let url = URL(string: "https://api.anthropic.com/v1/messages") else { return nil }
+              let url = URL(string: "https://api.anthropic.com/v1/messages") else {
+            return .failure(.http(401, "Missing API key"))
+        }
 
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
@@ -37,18 +39,31 @@ private struct ChatService {
             "system": systemText,
             "messages": apiMessages
         ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else { return nil }
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
+            return .failure(.decode)
+        }
         req.httpBody = httpBody
 
-        guard let (data, resp) = try? await URLSession.shared.data(for: req),
-              (resp as? HTTPURLResponse)?.statusCode == 200,
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let data: Data
+        let resp: URLResponse
+        do {
+            (data, resp) = try await URLSession.shared.data(for: req)
+        } catch {
+            return .failure(.network(error.localizedDescription))
+        }
+
+        let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard status == 200 else {
+            return .failure(.http(status, anthropicErrorMessage(from: data)))
+        }
+
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let content = (json["content"] as? [[String: Any]])?.first,
               let text = content["text"] as? String
-        else { return nil }
+        else { return .failure(.decode) }
 
         let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return result.isEmpty ? nil : result
+        return result.isEmpty ? .failure(.empty) : .success(result)
     }
 }
 
@@ -335,12 +350,14 @@ struct ChatView: View {
         let snapshot = messages
         let ctx = selectedProjects
         Task {
-            let reply = await ChatService.send(messages: snapshot, contextItems: ctx)
+            let outcome = await ChatService.send(messages: snapshot, contextItems: ctx)
             await MainActor.run {
-                messages.append(ChatMessage(
-                    role: "assistant",
-                    content: reply ?? "Something went wrong. Check your API key and try again."
-                ))
+                let content: String
+                switch outcome {
+                case .success(let reply): content = reply
+                case .failure(let err):   content = err.userMessage
+                }
+                messages.append(ChatMessage(role: "assistant", content: content))
                 isLoading = false
             }
         }

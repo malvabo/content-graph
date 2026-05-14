@@ -15,6 +15,47 @@ enum SelectionStyle {
     static let stroke = Color.white.opacity(0.30)
 }
 
+enum APICallError: Error {
+    case network(String)
+    case http(Int, String)
+    case decode
+    case empty
+
+    var userMessage: String {
+        switch self {
+        case .network(let detail):
+            return "Could not reach the API: \(detail)"
+        case .http(401, _):
+            return "Your API key was rejected. Tap the key icon to update it."
+        case .http(403, _):
+            return "Your API key isn't authorised for this model or region."
+        case .http(429, _):
+            return "Rate limit hit. Wait a moment and try again."
+        case .http(529, _), .http(503, _):
+            return "Anthropic is temporarily overloaded. Try again in a moment."
+        case .http(400, let msg):
+            return msg.isEmpty ? "The request was rejected (400)." : "Request rejected: \(msg)"
+        case .http(let code, let msg):
+            return msg.isEmpty ? "Server returned \(code)." : "Server returned \(code): \(msg)"
+        case .decode:
+            return "Unexpected response from Anthropic. Try again."
+        case .empty:
+            return "The model returned an empty response. Try again."
+        }
+    }
+}
+
+/// Reads an Anthropic error message from a non-200 response body.
+/// Anthropic returns `{"type":"error","error":{"type":"...","message":"..."}}`.
+func anthropicErrorMessage(from data: Data) -> String {
+    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+       let err = json["error"] as? [String: Any],
+       let msg = err["message"] as? String {
+        return msg
+    }
+    return String(data: data, encoding: .utf8).map { String($0.prefix(200)) } ?? ""
+}
+
 struct KeychainService {
     private static let account = "com.up200.app.anthropic_api_key"
 
