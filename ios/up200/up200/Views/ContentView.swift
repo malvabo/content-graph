@@ -828,27 +828,27 @@ private struct AppTabBar: View {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         selected = tab
                     } label: {
-                        VStack(spacing: 3) {
+                        VStack(spacing: 2) {
                             if tab == .create {
                                 SparkRaysShape()
                                     .stroke(style: StrokeStyle(
-                                        lineWidth: selected == tab ? 2.0 : 1.6,
+                                        lineWidth: selected == tab ? 1.8 : 1.5,
                                         lineCap: .round
                                     ))
-                                    .frame(width: 20, height: 20)
+                                    .frame(width: 18, height: 18)
                             } else {
                                 Image(systemName: icon)
-                                    .font(.system(size: 19, weight: selected == tab ? .semibold : .regular))
+                                    .font(.system(size: 17, weight: selected == tab ? .semibold : .regular))
                             }
                             Text(label)
-                                .font(.system(size: 11, weight: selected == tab ? .semibold : .regular))
+                                .font(.system(size: 10, weight: selected == tab ? .semibold : .regular))
                         }
                         .foregroundColor(selected == tab ? .white : Color.white.opacity(0.45))
-                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .frame(maxWidth: .infinity, minHeight: 42)
                         .background(
                             Group {
                                 if selected == tab {
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .fill(Color.white.opacity(0.16))
                                 }
                             }
@@ -857,11 +857,11 @@ private struct AppTabBar: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 5)
-            .padding(.vertical, 5)
-            .appLiquidGlass(in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .padding(.horizontal, 4)
+            .padding(.vertical, 4)
+            .appLiquidGlass(in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [Color.white.opacity(0.22), Color.white.opacity(0.06)],
@@ -877,9 +877,9 @@ private struct AppTabBar: View {
                 selected = .create
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 19, weight: .regular))
+                    .font(.system(size: 17, weight: .regular))
                     .foregroundColor(.white)
-                    .frame(width: 60, height: 60)
+                    .frame(width: 50, height: 50)
                     .appLiquidGlass(in: Circle())
                     .overlay(
                         Circle()
