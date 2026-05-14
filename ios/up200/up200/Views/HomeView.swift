@@ -556,6 +556,7 @@ struct ImportSheetView: View {
         ("link",          "Paste a link",   .link),
         ("arrow.up.doc",  "Upload a file",  .file),
         ("pencil",        "Write text",     .text),
+        ("note.text",     "Add note",       .note),
     ]
 
     var body: some View {
@@ -588,26 +589,6 @@ struct ImportSheetView: View {
                     .buttonStyle(.plain)
                 }
             }
-
-            Button {
-                onSelect(.note)
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "note.text")
-                        .font(.appLabel)
-                        .foregroundColor(Color.white.opacity(0.82))
-                    Text("Add note")
-                        .font(.appSmall)
-                        .foregroundColor(Color.white.opacity(0.52))
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(Color.white.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 16)
