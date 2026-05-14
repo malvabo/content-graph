@@ -632,7 +632,9 @@ struct TemplatesView: View {
             .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .onAppear { custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? [] }
+            .onChange(of: customData, initial: true) {
+                custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? []
+            }
             .navigationDestination(for: TemplateDestination.self) { dest in
                 switch dest {
                 case .new:
