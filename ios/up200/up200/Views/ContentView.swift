@@ -871,9 +871,9 @@ private struct AppTabBar: View {
     @Binding var selected: AppTab
 
     private let mainItems: [(AppTab, String, String)] = [
-        (.notes,     "house",                "Home"),
-        (.library,   "tray.full",            "Library"),
-        (.templates, "square.grid.2x2.fill", "Templates"),
+        (.notes,     "house",            "Home"),
+        (.library,   "books.vertical",   "Library"),
+        (.templates, "square.grid.2x2",  "Templates"),
     ]
 
     var body: some View {
@@ -885,7 +885,7 @@ private struct AppTabBar: View {
                         selected = tab
                     } label: {
                         VStack(spacing: 2) {
-                            Image(systemName: icon)
+                            Image(systemName: selected == tab ? "\(icon).fill" : icon)
                                 .font(.system(size: 17, weight: selected == tab ? .semibold : .regular))
                             Text(label)
                                 .font(.system(size: 10, weight: selected == tab ? .semibold : .regular))
@@ -897,6 +897,8 @@ private struct AppTabBar: View {
                                 if selected == tab {
                                     Capsule(style: .continuous)
                                         .fill(Color.white.opacity(0.16))
+                                        .padding(.horizontal, 2)
+                                        .padding(.vertical, 2)
                                 }
                             }
                         )
@@ -924,13 +926,17 @@ private struct AppTabBar: View {
                 selected = .create
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 17, weight: .regular))
+                    .font(.system(size: 17, weight: selected == .create ? .semibold : .regular))
                     .foregroundColor(.white)
                     .frame(width: 50, height: 50)
                     .appLiquidGlass(in: Circle())
                     .overlay(
                         Circle()
-                            .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
+                            .fill(Color.white.opacity(selected == .create ? 0.16 : 0))
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white.opacity(selected == .create ? 0.32 : 0.18), lineWidth: 0.5)
                     )
             }
             .buttonStyle(.plain)
