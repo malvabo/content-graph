@@ -2393,7 +2393,13 @@ struct HomeView: View {
     }
 
     private func saveToLibrary(_ results: [GeneratedResult], sources: [SourceItem]) {
-        var projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+        var projects: [GenerationProject]
+        switch loadBlob([GenerationProject].self, from: projectsData) {
+        case .empty: projects = []
+        case .ok(let existing): projects = existing
+        case .corrupt: return
+        }
+
         let sourceTitle = sources.first?.label ?? "Untitled"
         let now = Date()
         let newProjects: [GenerationProject] = results.enumerated().map { idx, r in
@@ -2407,7 +2413,9 @@ struct HomeView: View {
         }
         lastBatchIDs = newProjects.map { $0.id }
         projects.insert(contentsOf: newProjects, at: 0)
-        projectsData = (try? JSONEncoder().encode(projects)) ?? Data()
+        if let encoded = try? JSONEncoder().encode(projects) {
+            projectsData = encoded
+        }
     }
 }
 
