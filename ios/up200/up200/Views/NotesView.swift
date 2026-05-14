@@ -11,7 +11,7 @@ private final class NoteDictation: ObservableObject {
     @Published var isRecording: Bool = false
     @Published var permissionDenied: Bool = false
     @Published var startupError: String? = nil
-    @Published var audioLevel: Float = 0.0  // RMS, ~0...1
+    var audioLevel: Float = 0.0  // RMS, ~0...1 — plain var, not @Published; waveforms read it via TimelineView
 
     private let audioEngine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
@@ -57,14 +57,17 @@ private final class NoteDictation: ObservableObject {
     }
 
     private func teardown() {
-        audioEngine.inputNode.removeTap(onBus: 0)
-        request?.endAudio()
-        audioEngine.stop()
-        DispatchQueue.global(qos: .userInitiated).async {
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        }
         isRecording = false
         audioLevel = 0
+        let engine = audioEngine
+        let req = request
+        request = nil
+        Task.detached(priority: .userInitiated) {
+            engine.stop()
+            req?.endAudio()
+            engine.inputNode.removeTap(onBus: 0)
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
     }
 
     private func startEngine() {
@@ -90,11 +93,12 @@ private final class NoteDictation: ObservableObject {
 
         task = rec.recognitionTask(with: req) { [weak self] result, error in
             DispatchQueue.main.async {
+                guard let self else { return }
                 if let result {
-                    self?.transcript = result.bestTranscription.formattedString
+                    self.transcript = result.bestTranscription.formattedString
                 }
-                if error != nil || (result?.isFinal ?? false) {
-                    self?.teardown()
+                if (error != nil || (result?.isFinal ?? false)), self.isRecording {
+                    self.teardown()
                 }
             }
         }
@@ -102,7 +106,8 @@ private final class NoteDictation: ObservableObject {
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
+        var lastLevelDispatch: Double = 0
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             req.append(buffer)
             guard let channels = buffer.floatChannelData else { return }
             let frames = Int(buffer.frameLength)
@@ -114,6 +119,9 @@ private final class NoteDictation: ObservableObject {
                 sum += s * s
             }
             let rms = (sum / Float(frames)).squareRoot()
+            let now = CFAbsoluteTimeGetCurrent()
+            guard now - lastLevelDispatch >= 1.0 / 20.0 else { return }
+            lastLevelDispatch = now
             DispatchQueue.main.async { [weak self] in
                 self?.audioLevel = rms
             }
@@ -332,19 +340,22 @@ private struct NoteListRow: View {
 // MARK: - Waveform
 
 private struct Waveform: View {
-    let level: Float
+    let dictation: NoteDictation
 
     private let barCount = 14
     private let amber = BrandColor.amber
 
     var body: some View {
+        // TimelineView drives rendering — we read audioLevel directly here
+        // so no @Published binding is needed and no parent re-renders occur.
         TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
+            let level = dictation.audioLevel
             HStack(spacing: 3) {
                 ForEach(0..<barCount, id: \.self) { i in
                     Capsule()
                         .fill(amber)
-                        .frame(width: 3, height: barHeight(index: i, time: t))
+                        .frame(width: 3, height: barHeight(level: level, index: i, time: t))
                 }
             }
         }
@@ -352,10 +363,9 @@ private struct Waveform: View {
         .accessibilityHidden(true)
     }
 
-    private func barHeight(index: Int, time: Double) -> CGFloat {
+    private func barHeight(level: Float, index: Int, time: Double) -> CGFloat {
         let phase = time * 5.0 + Double(index) * 0.55
         let wave = (sin(phase) + 1.0) / 2.0
-        // Amplify low RMS values so quiet speech still moves the bars.
         let amplified = min(1.6, pow(Double(level), 0.35) * 3.0)
         let scaled = wave * amplified
         return CGFloat(max(4.0, 4.0 + scaled * 22.0))
@@ -416,7 +426,7 @@ private struct DictationControls: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Cancel dictation")
 
-            Waveform(level: dictation.audioLevel)
+            Waveform(dictation: dictation)
                 .padding(.horizontal, 18)
                 .frame(height: 44)
                 .background(
@@ -457,29 +467,30 @@ private struct DictationControls: View {
 // MARK: - Voice Start Sheet
 
 struct NoteWaveform: View {
-    let level: Float
+    // Reads audioLevel from RecordingController directly inside TimelineView.
+    // No level parameter means no @Published binding — NoteVoiceSheet never
+    // re-renders from audio level changes.
+    @EnvironmentObject private var recording: RecordingController
     private let barCount = 38
     private let amber = BrandColor.amber
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
-            BrandColor.glowGradient
-                .mask(
-                    HStack(spacing: 2.5) {
-                        ForEach(0..<barCount, id: \.self) { i in
-                            Capsule()
-                                .fill(Color.white.opacity(barOpacity(index: i)))
-                                .frame(width: 3, height: barHeight(index: i, time: t))
-                        }
-                    }
-                )
+            let level = recording.audioLevel
+            HStack(spacing: 2.5) {
+                ForEach(0..<barCount, id: \.self) { i in
+                    Capsule()
+                        .fill(amber.opacity(barOpacity(index: i)))
+                        .frame(width: 3, height: barHeight(level: level, index: i, time: t))
+                }
+            }
         }
         .frame(height: 75)
         .accessibilityHidden(true)
     }
 
-    private func barHeight(index: Int, time: Double) -> CGFloat {
+    private func barHeight(level: Float, index: Int, time: Double) -> CGFloat {
         let pos = Double(index) / Double(barCount - 1)
         let envelope = sin(pos * .pi)
         let phase1 = time * 4.5 + Double(index) * 0.42
@@ -533,11 +544,12 @@ struct NoteVoiceSheet: View {
         .presentationBackground(sheetBg)
         .presentationCornerRadius(22)
         .onChange(of: selectedDetent) { _, newDetent in
-            // Treat anything other than the .medium voice detent as "expanded
-            // → show editor". `newDetent == .large` was unreliable in practice
-            // (the system sometimes writes back a non-`.large` representation
-            // even after the sheet snaps to the large position).
-            let large = (newDetent != .medium)
+            // Only treat a confirmed snap to .large as "expand to editor".
+            // The previous negation (newDetent != .medium) also fired during
+            // the downward-dismiss drag when iOS emits transient non-.medium
+            // values, which triggered recording.pause() → teardownEngine()
+            // on the main thread mid-gesture → hard freeze.
+            let large = (newDetent == .large)
             if large && (recording.isRecording || recording.isPaused) {
                 recording.pause()
             }
@@ -580,7 +592,7 @@ struct NoteVoiceSheet: View {
 
             Spacer(minLength: 24)
 
-            NoteWaveform(level: recording.audioLevel)
+            NoteWaveform()
                 .padding(.horizontal, 28)
 
             Spacer(minLength: 20)

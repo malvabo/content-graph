@@ -205,7 +205,7 @@ final class RecordingController: ObservableObject {
     @Published var isPaused: Bool = false
     @Published var transcript: String = ""
     @Published var accumulated: String = ""
-    @Published var audioLevel: Float = 0
+    var audioLevel: Float = 0
     @Published var seconds: Int = 0
     @Published var permissionDenied: Bool = false
     @Published var startupError: String? = nil
@@ -318,19 +318,22 @@ final class RecordingController: ObservableObject {
     }
 
     private func teardownEngine() {
-        // Remove tap first: synchronizes with the audio render thread so no
-        // in-flight buffer callbacks can append to the request after endAudio.
-        audioEngine.inputNode.removeTap(onBus: 0)
-        request?.endAudio()
-        audioEngine.stop()
-        // Deactivate off the main thread: notifyOthersOnDeactivation makes an
-        // XPC round-trip to mediaserverd which can block for tens of ms — fatal
-        // if called on main during a sheet dismiss animation.
-        DispatchQueue.global(qos: .userInitiated).async {
+        // Set flags immediately (still on MainActor) so any re-entrant call
+        // from the recognition task callback sees isRecording=false and bails.
+        isRecording = false
+        audioLevel = 0
+        // Capture what we need before hopping off the main actor — AVAudioEngine
+        // and AVAudioSession calls can block 50-300 ms waiting for the audio
+        // subsystem to drain; running them on the main thread freezes gestures.
+        let engine = audioEngine
+        let req = request
+        request = nil
+        Task.detached(priority: .userInitiated) {
+            engine.stop()
+            req?.endAudio()
+            engine.inputNode.removeTap(onBus: 0)
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
-        audioLevel = 0
-        isRecording = false
     }
 
     private func requestAuthAndStart() {
@@ -379,11 +382,16 @@ final class RecordingController: ObservableObject {
 
         task = rec.recognitionTask(with: req) { [weak self] result, error in
             DispatchQueue.main.async {
+                guard let self else { return }
                 if let result {
-                    self?.transcript = result.bestTranscription.formattedString
+                    self.transcript = result.bestTranscription.formattedString
                 }
-                if error != nil || (result?.isFinal ?? false) {
-                    self?.teardownEngine()
+                // Guard against double teardown: if teardownEngine() was already
+                // called (e.g. user tapped End mid-gesture), isRecording and
+                // request are already cleared. A second teardown would race
+                // with the first detached Task inside teardownEngine().
+                if (error != nil || (result?.isFinal ?? false)), self.isRecording || self.isPaused {
+                    self.teardownEngine()
                 }
             }
         }
@@ -391,7 +399,11 @@ final class RecordingController: ObservableObject {
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
+        // Throttle UI updates to 20 Hz. The audio callback fires ~43×/sec
+        // (1024 samples @ 44100 Hz); dispatching to main every call floods the
+        // main queue and freezes gesture handling (e.g. dragging the sheet down).
+        var lastLevelDispatch: Double = 0
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             req.append(buffer)
             guard let channels = buffer.floatChannelData else { return }
             let frames = Int(buffer.frameLength)
@@ -403,6 +415,9 @@ final class RecordingController: ObservableObject {
                 sum += s * s
             }
             let rms = (sum / Float(frames)).squareRoot()
+            let now = CFAbsoluteTimeGetCurrent()
+            guard now - lastLevelDispatch >= 1.0 / 20.0 else { return }
+            lastLevelDispatch = now
             DispatchQueue.main.async {
                 self?.audioLevel = rms
             }
