@@ -135,9 +135,18 @@ struct NotesStore {
     private static let saveQueue = DispatchQueue(label: "com.up200.notes.save", qos: .utility)
 
     static func load() -> [Note] {
-        guard let data = UserDefaults.standard.data(forKey: key) else { return [] }
-        let raw = (try? JSONDecoder().decode([Note].self, from: data)) ?? []
-        return raw.map(Note.migrated)
+        let data = UserDefaults.standard.data(forKey: key) ?? Data()
+        switch loadBlob([Note].self, from: data) {
+        case .empty:
+            return []
+        case .ok(let raw):
+            return raw.map(Note.migrated)
+        case .corrupt:
+            // Bytes exist but can't decode. Return empty so the UI renders,
+            // but `save` will refuse to overwrite — preserving the original
+            // blob for any future recovery path.
+            return []
+        }
     }
 
     static func loadAsync() async -> [Note] {
@@ -149,6 +158,10 @@ struct NotesStore {
     }
 
     static func save(_ notes: [Note]) {
+        let existing = UserDefaults.standard.data(forKey: key) ?? Data()
+        if case .corrupt = loadBlob([Note].self, from: existing) {
+            return
+        }
         guard let data = try? JSONEncoder().encode(notes) else { return }
         UserDefaults.standard.set(data, forKey: key)
     }

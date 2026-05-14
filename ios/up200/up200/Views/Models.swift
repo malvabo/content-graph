@@ -15,6 +15,26 @@ enum SelectionStyle {
     static let stroke = Color.white.opacity(0.30)
 }
 
+/// Result of decoding a JSON blob from persistent storage.
+///
+/// `.empty` and `.ok` are both safe to overwrite; `.corrupt` means the bytes
+/// exist but can't be decoded — typically the schema changed, a write was
+/// interrupted, or the blob was truncated. Callers MUST NOT save fresh
+/// state over a `.corrupt` blob: the existing bytes are the only copy of
+/// the user's data and overwriting them with a default-empty state would
+/// destroy any chance of recovery.
+enum BlobLoad<T> {
+    case empty
+    case ok(T)
+    case corrupt
+}
+
+func loadBlob<T: Decodable>(_ type: T.Type, from data: Data) -> BlobLoad<T> {
+    if data.isEmpty { return .empty }
+    if let value = try? JSONDecoder().decode(type, from: data) { return .ok(value) }
+    return .corrupt
+}
+
 enum APICallError: Error {
     case network(String)
     case http(Int, String)

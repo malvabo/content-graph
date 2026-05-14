@@ -216,7 +216,12 @@ struct ProjectGroupDetailView: View {
         guard items.indices.contains(selectedIndex) else { return }
         let item = items[selectedIndex]
         guard editText != bodyText(for: item) else { return }
-        var projects = allProjects
+        var projects: [GenerationProject]
+        switch loadBlob([GenerationProject].self, from: projectsData) {
+        case .empty: projects = []
+        case .ok(let existing): projects = existing
+        case .corrupt: return
+        }
         if let idx = projects.firstIndex(where: { $0.id == item.id }) {
             projects[idx].content = editText
             projects[idx].preview = String(editText.prefix(120))
@@ -575,7 +580,8 @@ struct TemplatesView: View {
     }
 
     private func saveCustom() {
-        customData = (try? JSONEncoder().encode(custom)) ?? Data()
+        if case .corrupt = loadBlob([CustomTemplate].self, from: customData) { return }
+        if let data = try? JSONEncoder().encode(custom) { customData = data }
     }
 }
 
