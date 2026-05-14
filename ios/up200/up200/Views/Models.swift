@@ -175,6 +175,7 @@ final class RecordingController: ObservableObject {
     @Published var audioLevel: Float = 0
     @Published var seconds: Int = 0
     @Published var permissionDenied: Bool = false
+    @Published var startupError: String? = nil
     @Published var showingSheet: Bool = false
 
     private let audioEngine = AVAudioEngine()
@@ -269,9 +270,7 @@ final class RecordingController: ObservableObject {
     private func teardownEngine() {
         audioEngine.stop()
         request?.endAudio()
-        if audioEngine.inputNode.numberOfInputs > 0 {
-            audioEngine.inputNode.removeTap(onBus: 0)
-        }
+        audioEngine.inputNode.removeTap(onBus: 0)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         audioLevel = 0
         isRecording = false
@@ -281,11 +280,20 @@ final class RecordingController: ObservableObject {
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             DispatchQueue.main.async {
                 guard let self else { return }
-                if status == .authorized {
-                    self.startEngine()
-                } else {
+                guard status == .authorized else {
                     self.permissionDenied = true
                     self.reset()
+                    return
+                }
+                AVAudioApplication.requestRecordPermission { granted in
+                    DispatchQueue.main.async {
+                        guard granted else {
+                            self.permissionDenied = true
+                            self.reset()
+                            return
+                        }
+                        self.startEngine()
+                    }
                 }
             }
         }
@@ -294,13 +302,22 @@ final class RecordingController: ObservableObject {
     private func startEngine() {
         task?.cancel()
         task = nil
+        startupError = nil
 
         let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.record, mode: .measurement, options: .duckOthers)
-        try? session.setActive(true, options: .notifyOthersOnDeactivation)
+        do {
+            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
+            return
+        }
 
         request = SFSpeechAudioBufferRecognitionRequest()
-        guard let req = request, let rec = recognizer else { return }
+        guard let req = request, let rec = recognizer else {
+            startupError = "Speech recognition isn't available on this device."
+            return
+        }
         req.shouldReportPartialResults = true
 
         task = rec.recognitionTask(with: req) { [weak self] result, error in
@@ -316,6 +333,7 @@ final class RecordingController: ObservableObject {
 
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
+        inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             req.append(buffer)
             guard let channels = buffer.floatChannelData else { return }
@@ -334,8 +352,12 @@ final class RecordingController: ObservableObject {
         }
 
         audioEngine.prepare()
-        if (try? audioEngine.start()) != nil {
+        do {
+            try audioEngine.start()
             isRecording = true
+        } catch {
+            startupError = "Couldn't start the microphone: \(error.localizedDescription)"
+            inputNode.removeTap(onBus: 0)
         }
     }
 }
