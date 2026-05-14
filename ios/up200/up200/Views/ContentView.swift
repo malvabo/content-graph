@@ -292,11 +292,11 @@ struct ProjectGroupDetailView: View {
                             Image(systemName: copied ? "checkmark" : "doc.on.doc")
                                 .font(.system(size: 16, weight: .regular))
                                 .foregroundColor(copied ? Color.white.opacity(0.70) : .white)
+                                .contentTransition(.symbolEffect(.replace))
                                 .frame(width: 44, height: 38)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .animation(.easeOut(duration: 0.2), value: copied)
                         .accessibilityLabel(copied ? "Copied" : "Copy")
 
                         TopBarPillDivider()

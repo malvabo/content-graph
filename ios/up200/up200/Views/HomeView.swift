@@ -1740,8 +1740,14 @@ private struct NotePickerSheet: View {
                 }
             }
         }
-        .onAppear {
-            notes = NotesStore.load().filter { !$0.isEmpty }
+        .task {
+            notes = await NotesStore.loadAsync().filter { !$0.isEmpty }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .notesStoreDidChange)) { _ in
+            Task {
+                let fresh = await NotesStore.loadAsync().filter { !$0.isEmpty }
+                await MainActor.run { notes = fresh }
+            }
         }
     }
 }
