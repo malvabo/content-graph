@@ -436,16 +436,18 @@ struct ProjectGroupDetailView: View {
                     }
                     recording.showingSheet = true
                 } label: {
+                    let micBusy = recording.isRecording || recording.isPaused
                     Image(systemName: "mic.fill")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(width: 52, height: 52)
                         .background(Color.white.opacity(0.12))
                         .clipShape(Circle())
+                        .opacity(micBusy ? 0.45 : 1.0)
                 }
                 .buttonStyle(.plain)
                 .disabled(recording.isRecording || recording.isPaused)
-                .accessibilityLabel("Record voice note")
+                .accessibilityLabel((recording.isRecording || recording.isPaused) ? "Recording in progress" : "Record voice note")
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
@@ -463,7 +465,8 @@ struct ProjectGroupDetailView: View {
             }
         }
         .sheet(isPresented: $showChat) {
-            ChatView()
+            let seedID = items.indices.contains(selectedIndex) ? items[selectedIndex].id : nil
+            ChatView(initialContextIDs: seedID.map { Set([$0]) } ?? [])
         }
         .sheet(isPresented: $showAIPreview) {
             AIPreviewSheet(
@@ -1422,7 +1425,6 @@ private let builtInAIActions: [AIAction] = [
 
 struct AIActionsSheet: View {
     let onAction: (_ label: String, _ icon: String, _ instruction: String) -> Void
-    @Environment(\.dismiss) private var dismiss
     @State private var customPrompt: String = ""
     @FocusState private var searchFocused: Bool
 
@@ -1431,7 +1433,7 @@ struct AIActionsSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             AppSearchField(
-                placeholder: "Search or Ask AI…",
+                placeholder: "Search actions…",
                 text: $customPrompt,
                 isFocused: $searchFocused,
                 submitLabel: .send,

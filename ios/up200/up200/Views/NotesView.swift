@@ -132,6 +132,10 @@ private final class NoteDictation: ObservableObject {
 
 // MARK: - Storage
 
+extension Notification.Name {
+    static let notesStoreDidChange = Notification.Name("NotesStoreDidChange")
+}
+
 struct NotesStore {
     static let key = "notes_v1"
     private static let saveQueue = DispatchQueue(label: "com.up200.notes.save", qos: .utility)
@@ -166,6 +170,9 @@ struct NotesStore {
         }
         guard let data = try? JSONEncoder().encode(notes) else { return }
         UserDefaults.standard.set(data, forKey: key)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .notesStoreDidChange, object: nil)
+        }
     }
 
     static func saveInBackground(_ notes: [Note]) {
@@ -1301,6 +1308,17 @@ struct NotesView: View {
             }
         }
         .task { notes = await NotesStore.loadAsync() }
+        .onReceive(NotificationCenter.default.publisher(for: .notesStoreDidChange)) { _ in
+            // Skip if this view has a debounced save in flight; the disk may be
+            // stale relative to in-memory edits and reloading would clobber them.
+            guard pendingSave == nil else { return }
+            Task {
+                let fresh = await NotesStore.loadAsync()
+                await MainActor.run {
+                    if fresh != notes { notes = fresh }
+                }
+            }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .inactive || phase == .background { flushSave() }
         }

@@ -70,6 +70,8 @@ private struct ChatService {
 // MARK: - Chat View
 
 struct ChatView: View {
+    var initialContextIDs: Set<UUID> = []
+
     @Environment(\.dismiss) private var dismiss
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @State private var messages: [ChatMessage] = []
@@ -77,6 +79,7 @@ struct ChatView: View {
     @State private var isLoading = false
     @State private var showResourcePicker = false
     @State private var selectedProjectIDs: Set<UUID> = []
+    @State private var didSeedContext = false
     @FocusState private var inputFocused: Bool
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
@@ -112,6 +115,13 @@ struct ChatView: View {
         }
         .sheet(isPresented: $showResourcePicker) {
             ResourcePickerSheet(projects: projects, selectedIDs: $selectedProjectIDs)
+        }
+        .presentationBackground(bg)
+        .onAppear {
+            guard !didSeedContext else { return }
+            didSeedContext = true
+            let valid = Set(projects.map { $0.id })
+            selectedProjectIDs = initialContextIDs.intersection(valid)
         }
     }
 
