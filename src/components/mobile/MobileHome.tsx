@@ -89,7 +89,7 @@ function SecondaryGenRow({ kind, transcript, onTextChange }: { kind: AssetKind; 
       }
       const finalText = cancelRef.current ? buf : out;
       setText(finalText);
-      setOriginalText(finalText);
+      if (!cancelRef.current) setOriginalText(finalText);
       setIsStreaming(false);
     } catch (e: any) {
       const aborted = e?.name === 'AbortError' || cancelRef.current;
@@ -487,7 +487,7 @@ function NoteCard({ note, onOpen, showTranscript }: { note: VoiceNote; onOpen: (
   const [showPreview, setShowPreview] = useState(true);
   useLayoutEffect(() => {
     const el = titleRef.current;
-    if (!el) { setShowPreview(false); return; }
+    if (!el) return;
     const lh = parseFloat(getComputedStyle(el).lineHeight) || 24;
     const lines = Math.round(el.getBoundingClientRect().height / lh);
     setShowPreview(lines <= 1 && previewText.length > 0);

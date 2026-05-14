@@ -76,7 +76,7 @@ private final class NoteDictation: ObservableObject {
                     self?.transcript = result.bestTranscription.formattedString
                 }
                 if error != nil || (result?.isFinal ?? false) {
-                    self?.isRecording = false
+                    self?.teardown()
                 }
             }
         }
