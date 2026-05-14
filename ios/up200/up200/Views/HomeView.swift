@@ -2269,65 +2269,61 @@ struct HomeView: View {
                     startRadius: 0, endRadius: 320
                 ).ignoresSafeArea()
 
-                ScrollViewReader { proxy in
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 0) {
-                            VStack(spacing: 12) {
-                                SourcesBlock(sources: $sources, pendingSheet: pendingSheet)
-                                FormatsBlock(selectedFormatIDs: $selectedFormatIDs)
-                                PromptField(prompt: $prompt)
-                                BrandCard(selectedBrand: $brand)
+                VStack(spacing: 0) {
+                    InlineTopBar(title: "Create") {
+                        TopBarPill {
+                            TopBarPillButton(systemImage: "sun.max") {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                showOnboarding = true
                             }
-                            .id("top")
-                            .padding(.horizontal, 16)
-                            .padding(.top, 8)
-                            .padding(.bottom, 16)
+                            .accessibilityLabel("Onboarding")
 
-                            AnimatedLightsButton(
-                                title: generateLabel,
-                                showSparks: !isGenerating,
-                                isEnabled: canGenerate
-                            ) {
-                                startGeneration()
+                            TopBarPillDivider()
+
+                            TopBarPillButton(systemImage: "key.horizontal") {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                showKeyUpdate = true
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 40)
+                            .accessibilityLabel("API key")
                         }
                     }
-                    .scrollDismissesKeyboard(.immediately)
-                    .onChange(of: scrollToTopSignal) { _, _ in
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            proxy.scrollTo("top", anchor: .top)
+
+                    ScrollViewReader { proxy in
+                        ScrollView(showsIndicators: false) {
+                            VStack(spacing: 0) {
+                                VStack(spacing: 12) {
+                                    SourcesBlock(sources: $sources, pendingSheet: pendingSheet)
+                                    FormatsBlock(selectedFormatIDs: $selectedFormatIDs)
+                                    PromptField(prompt: $prompt)
+                                    BrandCard(selectedBrand: $brand)
+                                }
+                                .id("top")
+                                .padding(.horizontal, 16)
+                                .padding(.top, 8)
+                                .padding(.bottom, 16)
+
+                                AnimatedLightsButton(
+                                    title: generateLabel,
+                                    showSparks: !isGenerating,
+                                    isEnabled: canGenerate
+                                ) {
+                                    startGeneration()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.bottom, 40)
+                            }
+                        }
+                        .scrollDismissesKeyboard(.immediately)
+                        .onChange(of: scrollToTopSignal) { _, _ in
+                            withAnimation(.easeOut(duration: 0.3)) {
+                                proxy.scrollTo("top", anchor: .top)
+                            }
                         }
                     }
                 }
             }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    LeadingTitle(text: "Create")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    TopBarPill {
-                        TopBarPillButton(systemImage: "sun.max") {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            showOnboarding = true
-                        }
-                        .accessibilityLabel("Onboarding")
-
-                        TopBarPillDivider()
-
-                        TopBarPillButton(systemImage: "key.horizontal") {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            showKeyUpdate = true
-                        }
-                        .accessibilityLabel("API key")
-                    }
-                }
-            }
         }
         .fullScreenCover(item: $resultBatch) { batch in
             ProjectGroupDetailView(groupTitle: batch.title, initialItems: batch.items)
