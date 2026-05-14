@@ -18,6 +18,7 @@ private final class NoteDictation: ObservableObject {
     private var task: SFSpeechRecognitionTask?
     private let recognizer = SFSpeechRecognizer(locale: Locale.current)
         ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var teardownTask: Task<Void, Never>? = nil
 
     func start() {
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
@@ -64,7 +65,7 @@ private final class NoteDictation: ObservableObject {
         let engine = audioEngine
         let req = request
         request = nil
-        Task.detached(priority: .userInitiated) {
+        teardownTask = Task.detached(priority: .userInitiated) {
             engine.stop()
             req?.endAudio()
             engine.inputNode.removeTap(onBus: 0)
@@ -76,7 +77,15 @@ private final class NoteDictation: ObservableObject {
         task?.cancel()
         task = nil
         startupError = nil
+        let prev = teardownTask
+        teardownTask = nil
+        Task { @MainActor [weak self] in
+            await prev?.value
+            self?.activateAndStart()
+        }
+    }
 
+    private func activateAndStart() {
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(.record, mode: .measurement, options: .duckOthers)

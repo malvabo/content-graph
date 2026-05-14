@@ -405,11 +405,12 @@ final class VoiceRecorder: ObservableObject {
     @Published var isRecording = false
     @Published var permissionDenied = false
     @Published var startupError: String? = nil
-    @Published var audioLevel: Float = 0.0
+    var audioLevel: Float = 0.0  // plain var — read inside TimelineView, not @Published
 
     private let audioEngine = AVAudioEngine()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
+    private var teardownTask: Task<Void, Never>? = nil
     private let recognizer = SFSpeechRecognizer(locale: Locale.current)
         ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
 
@@ -443,7 +444,7 @@ final class VoiceRecorder: ObservableObject {
         let engine = audioEngine
         let req = recognitionRequest
         recognitionRequest = nil
-        Task.detached(priority: .userInitiated) {
+        teardownTask = Task.detached(priority: .userInitiated) {
             engine.stop()
             req?.endAudio()
             engine.inputNode.removeTap(onBus: 0)
@@ -455,7 +456,18 @@ final class VoiceRecorder: ObservableObject {
         recognitionTask?.cancel()
         recognitionTask = nil
         startupError = nil
+        // Await any in-flight teardown before activating the session — the
+        // previous stop()'s setActive(false) runs in a detached task (50-300ms)
+        // and will silently cancel a new setActive(true) that races with it.
+        let prev = teardownTask
+        teardownTask = nil
+        Task { @MainActor [weak self] in
+            await prev?.value
+            self?.activateAndStart()
+        }
+    }
 
+    private func activateAndStart() {
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(.record, mode: .measurement, options: .duckOthers)
@@ -509,6 +521,49 @@ final class VoiceRecorder: ObservableObject {
             startupError = "Couldn't start the microphone: \(error.localizedDescription)"
             inputNode.removeTap(onBus: 0)
         }
+    }
+}
+
+// MARK: - Voice Recorder Waveform
+
+// Reads audioLevel directly inside TimelineView so VoiceRecordSheet doesn't
+// re-render at 20 Hz. Mirrors NoteWaveform but reads from VoiceRecorder
+// (not RecordingController) since VoiceRecordSheet has its own audio stack.
+private struct VoiceRecorderWaveform: View {
+    let recorder: VoiceRecorder
+    private let barCount = 38
+    private let amber = BrandColor.amber
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let level = recorder.audioLevel
+            HStack(spacing: 2.5) {
+                ForEach(0..<barCount, id: \.self) { i in
+                    Capsule()
+                        .fill(amber.opacity(barOpacity(index: i)))
+                        .frame(width: 3, height: barHeight(level: level, index: i, time: t))
+                }
+            }
+        }
+        .frame(height: 75)
+        .accessibilityHidden(true)
+    }
+
+    private func barHeight(level: Float, index: Int, time: Double) -> CGFloat {
+        let pos = Double(index) / Double(barCount - 1)
+        let envelope = sin(pos * .pi)
+        let phase1 = time * 4.5 + Double(index) * 0.42
+        let phase2 = time * 2.8 + Double(index) * 0.65
+        let wave = (sin(phase1) * 0.65 + sin(phase2) * 0.35 + 1.0) / 2.0
+        let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
+        let dynamic = wave * amplified * envelope
+        return 3 + CGFloat(dynamic) * 72
+    }
+
+    private func barOpacity(index: Int) -> Double {
+        let pos = Double(index) / Double(barCount - 1)
+        return 0.55 + sin(pos * .pi) * 0.45
     }
 }
 
@@ -1181,11 +1236,11 @@ struct VoiceRecordSheet: View {
 
                 // Waveform or mic button
                 if recorder.isRecording {
-                    NoteWaveform(level: recorder.audioLevel)
+                    VoiceRecorderWaveform(recorder: recorder)
                         .padding(.horizontal, 28)
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 } else if !recorder.transcript.isEmpty {
-                    NoteWaveform(level: 0)
+                    VoiceRecorderWaveform(recorder: recorder)
                         .padding(.horizontal, 28)
                         .opacity(0.3)
                         .transition(.opacity)
