@@ -189,6 +189,7 @@ struct ProjectGroupDetailView: View {
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var recording: RecordingController
+    @EnvironmentObject private var chrome: ChromeController
 
     @State private var selectedIndex: Int = 0
     @State private var editText: String = ""
@@ -530,7 +531,11 @@ struct ProjectGroupDetailView: View {
                  ? "Could not reach the API. Check your network and try again."
                  : aiFailReason)
         }
-        .onDisappear { aiTransformTask?.cancel() }
+        .onAppear { chrome.hideTabBar = true }
+        .onDisappear {
+            chrome.hideTabBar = false
+            aiTransformTask?.cancel()
+        }
     }
 
     private func runAITransform(instruction: String, label: String, icon: String, source: String) {
@@ -1525,7 +1530,7 @@ struct SearchOverlay<Results: View>: View {
         ZStack(alignment: .top) {
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .overlay(Color.black.opacity(0.15))
+                .overlay(Color(red: 0.10, green: 0.08, blue: 0.07).opacity(0.85))
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
