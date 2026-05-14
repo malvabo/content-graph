@@ -397,13 +397,14 @@ export function VoiceRecordSheet({ isOpen, onClose, onSave }: {
   const [recording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [seconds, setSeconds] = useState(0);
+  const [unsupportedMsg, setUnsupportedMsg] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const levelRef = useRef(0);
   const recognitionRef = useRef<{ stop?: () => void } | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      setRecording(false); setTranscript(''); setSeconds(0); levelRef.current = 0;
+      setRecording(false); setTranscript(''); setSeconds(0); setUnsupportedMsg(null); levelRef.current = 0;
       try { recognitionRef.current?.stop?.(); } catch { /* noop */ }
       recognitionRef.current = null;
     }
@@ -507,11 +508,18 @@ export function VoiceRecordSheet({ isOpen, onClose, onSave }: {
   }, [recording, isOpen]);
 
   const startRec = () => {
-    setSeconds(0); setTranscript('');
-    setRecording(true);
     type WindowWithSR = Window & { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown };
     const SRctor = (window as unknown as WindowWithSR).SpeechRecognition ?? (window as unknown as WindowWithSR).webkitSpeechRecognition;
-    if (!SRctor) return;
+    if (!SRctor) {
+      // Without SpeechRecognition this sheet has no transcription fallback,
+      // so entering 'recording' would leave the user stuck at "Tap orb to
+      // record" forever after stopping. Tell them up front.
+      setUnsupportedMsg('Voice recording isn\'t supported on this browser. Try Safari on iOS or Chrome on desktop.');
+      return;
+    }
+    setUnsupportedMsg(null);
+    setSeconds(0); setTranscript('');
+    setRecording(true);
     type RecLike = { continuous: boolean; interimResults: boolean; onresult: (e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void; start: () => void; stop: () => void };
     const rec = new (SRctor as unknown as new () => RecLike)();
     rec.continuous = true; rec.interimResults = true;
@@ -550,6 +558,13 @@ export function VoiceRecordSheet({ isOpen, onClose, onSave }: {
           }}>
             {recording ? timeLabel : 'Tap orb to record'}
           </div>
+          {unsupportedMsg && (
+            <div style={{
+              width: '100%', padding: '12px 14px',
+              borderRadius: 14, background: 'rgba(220,90,60,0.10)', border: '1px solid rgba(220,90,60,0.25)',
+              color: 'rgba(255,200,190,0.95)', fontSize: 13, lineHeight: 1.5, textAlign: 'center',
+            }}>{unsupportedMsg}</div>
+          )}
           {transcript && (
             <div style={{
               width: '100%', maxHeight: 140, overflowY: 'auto', padding: '12px 14px',

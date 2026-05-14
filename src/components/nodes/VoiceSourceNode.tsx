@@ -4,6 +4,7 @@ import { useGraphStore } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useVoiceStore } from '../../store/voiceStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { transcribeWithGroq } from '../../lib/groqTranscribe';
 import { generateSourceTitle } from '../../utils/sourceUtils';
 
 export const SAMPLE_VOICE_CONTENT = "Movement in Gemini is not merely decorative; it's an essential guiding element. Each animation has a defined start and end point, creating a sense of directional flow that mirrors user actions. This sense of responsiveness helps users intuitively understand that the system is working with them. Inner activity within the motion conveys thinking, analysis, and intelligence, making Gemini's processing feel more transparent. Motion allows users to see information coming together, visualizing Gemini's conversations and listening abilities.";
@@ -18,29 +19,6 @@ function pickMimeType(): string | undefined {
   const MR: any = (window as any).MediaRecorder;
   if (!MR?.isTypeSupported) return undefined;
   return types.find(t => MR.isTypeSupported(t));
-}
-
-async function transcribeWithGroq(blob: Blob, apiKey: string): Promise<string> {
-  const key = apiKey.trim().replace(/^['"\`]+|['"\`]+$/g, '');
-  if (!key) throw new Error('Groq API key missing. Add it in Settings → API Keys → Groq.');
-  if (!key.startsWith('gsk_')) throw new Error('That doesn\'t look like a Groq key — it should start with "gsk_".');
-  const form = new FormData();
-  form.append('file', blob, 'recording.webm');
-  form.append('model', 'whisper-large-v3');
-  form.append('response_format', 'json');
-  const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}` },
-    body: form,
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    if (res.status === 401) throw new Error('Invalid Groq API key. Re-copy it from https://console.groq.com/keys.');
-    if (res.status === 429) throw new Error('Groq rate limit hit. Wait a moment and retry.');
-    throw new Error(`Groq ${res.status}: ${body || 'transcription failed'}`);
-  }
-  const data = await res.json();
-  return (data.text || '').trim();
 }
 
 // ─── Recording overlay (portal) ─────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useVoiceStore, type VoiceNote } from '../../store/voiceStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useAuthStore } from '../../store/authStore';
+import { transcribeWithGroq } from '../../lib/groqTranscribe';
 import { aiExecute } from '../../utils/aiExecutor';
 import TypewriterLogo from '../TypewriterLogo';
 
@@ -289,19 +290,6 @@ function SecondaryGenRow({ kind, transcript, onTextChange }: { kind: AssetKind; 
 }
 
 /** Groq Whisper fallback when live Web Speech produced no transcript. */
-async function transcribeWithGroq(blob: Blob, apiKey: string): Promise<string> {
-  const form = new FormData();
-  form.append('file', blob, 'recording.webm');
-  form.append('model', 'whisper-large-v3');
-  form.append('response_format', 'json');
-  const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-    method: 'POST', headers: { Authorization: `Bearer ${apiKey}` }, body: form,
-  });
-  if (!res.ok) throw new Error(`Groq ${res.status}`);
-  const data = await res.json();
-  return (data.text || '').trim();
-}
-
 function pickMimeType(): string | undefined {
   const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
   const MR: any = (window as any).MediaRecorder;

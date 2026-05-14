@@ -370,10 +370,14 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
       mediaRef.current = stream;
       const mime = pickMimeType();
       const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      // Per-recording chunks array so late `dataavailable` events (e.g. iOS
+      // Safari fires one after stop() resolves) can't contaminate the next
+      // recording's blob. chunksRef points at the live array; stopRecording
+      // detaches it before clearing.
+      const localChunks: BlobPart[] = [];
+      chunksRef.current = localChunks;
       mr.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
+        if (e.data && e.data.size > 0) localChunks.push(e.data);
       };
       mr.start(1000);
       recorderRef.current = mr;
@@ -420,9 +424,12 @@ export default function VoiceLibrary({ onUseInWorkflow, onSendToScript }: { onUs
     const duration = Date.now() - startTimeRef.current;
     let transcript = [finalRef.current.trim(), interimRef.current.trim()].filter(Boolean).join(' ').trim();
 
-    const mimeType = (chunksRef.current[0] as Blob | undefined)?.type || 'audio/webm';
-    const blob = chunksRef.current.length ? new Blob(chunksRef.current, { type: mimeType }) : null;
+    // Snapshot then detach so late `dataavailable` chunks from this recorder
+    // push into the orphan array, never the next recording's.
+    const recordedChunks = chunksRef.current;
     chunksRef.current = [];
+    const mimeType = (recordedChunks[0] as Blob | undefined)?.type || 'audio/webm';
+    const blob = recordedChunks.length ? new Blob(recordedChunks, { type: mimeType }) : null;
 
     setRecording(false);
 
