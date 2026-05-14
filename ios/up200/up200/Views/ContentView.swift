@@ -694,27 +694,8 @@ private struct TemplateEditPage: View {
                         .padding(.horizontal, 20)
                         .focused($focus, equals: .title)
 
-                        // Format chips — wrapping flow
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Choose formats of the output")
-                                .font(.app(size: 13, weight: .medium))
-                                .foregroundColor(Color.white.opacity(0.40))
-                                .padding(.horizontal, 20)
-                            TemplateTagFlow(items: allFormats, selectedIDs: $formatIDs)
-                                .padding(.horizontal, 20)
-                        }
-
-                        Rectangle()
-                            .fill(Color.white.opacity(0.06))
-                            .frame(height: 0.5)
-                            .padding(.horizontal, 20)
-
-                        // Prompt text
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Prompt")
-                                .font(.app(size: 13, weight: .medium))
-                                .foregroundColor(Color.white.opacity(0.40))
-                                .padding(.horizontal, 20)
+                        // Merged prompt + format tags
+                        VStack(alignment: .leading, spacing: 12) {
                             ZStack(alignment: .topLeading) {
                                 if prompt.isEmpty {
                                     Text("Describe what this template should produce\u{2026}")
@@ -734,6 +715,9 @@ private struct TemplateEditPage: View {
                                     .focused($focus, equals: .prompt)
                                     .frame(minHeight: 200)
                             }
+
+                            TemplateTagFlow(items: allFormats, selectedIDs: $formatIDs)
+                                .padding(.horizontal, 20)
                         }
                     }
                     .padding(.top, 4)
