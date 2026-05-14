@@ -425,26 +425,7 @@ private struct ContextPill: View {
     let onRemove: () -> Void
 
     var body: some View {
-        HStack(spacing: 6) {
-            Text(title)
-                .font(.app(size: 12, weight: .medium))
-                .foregroundColor(Color.white.opacity(0.75))
-                .lineLimit(1)
-            Button(action: onRemove) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(Color.white.opacity(0.45))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Color.white.opacity(0.07))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-        )
+        Pill(title: title, style: .neutral, size: .compact, onRemove: onRemove)
     }
 }
 
