@@ -1463,6 +1463,7 @@ private struct SourcesBlock: View {
     @State private var showFilePicker = false
     @State private var showPhotoPicker = false
     @State private var photoPickerItem: PhotosPickerItem? = nil
+    @State private var photoExtractTask: Task<Void, Never>? = nil
     @State private var expanded: Bool = true
 
     var body: some View {
@@ -1600,8 +1601,10 @@ private struct SourcesBlock: View {
         .photosPicker(isPresented: $showPhotoPicker, selection: $photoPickerItem, matching: .images)
         .onChange(of: photoPickerItem) { _, item in
             guard let item else { return }
-            Task {
+            photoExtractTask?.cancel()
+            photoExtractTask = Task {
                 let content = await extractTextFromPhoto(item: item)
+                guard !Task.isCancelled else { return }
                 await MainActor.run {
                     withAnimation(.spring(duration: 0.25)) {
                         sources.append(SourceItem(type: .image, label: "Image", content: content))

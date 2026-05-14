@@ -105,10 +105,13 @@ final class NoteDictation: ObservableObject {
         task = rec.recognitionTask(with: req) { [weak self] result, error in
             DispatchQueue.main.async {
                 guard let self else { return }
+                // Late callbacks after cancel() would otherwise overwrite the
+                // intentionally cleared transcript with stale text.
+                guard self.isRecording else { return }
                 if let result {
                     self.transcript = result.bestTranscription.formattedString
                 }
-                if (error != nil || (result?.isFinal ?? false)), self.isRecording {
+                if error != nil || (result?.isFinal ?? false) {
                     self.teardown()
                 }
             }

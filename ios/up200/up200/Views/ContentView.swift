@@ -535,6 +535,7 @@ struct ProjectGroupDetailView: View {
         .onDisappear {
             chrome.hideTabBar = false
             aiTransformTask?.cancel()
+            copiedResetTask?.cancel()
         }
     }
 

@@ -409,6 +409,9 @@ final class RecordingController: ObservableObject {
         task = rec.recognitionTask(with: req) { [weak self] result, error in
             DispatchQueue.main.async {
                 guard let self else { return }
+                // Drop late callbacks after cancel/reset — they would otherwise
+                // overwrite an intentionally cleared transcript with stale text.
+                guard self.isRecording || self.isPaused else { return }
                 if let result {
                     self.transcript = result.bestTranscription.formattedString
                 }
@@ -416,7 +419,7 @@ final class RecordingController: ObservableObject {
                 // called (e.g. user tapped End mid-gesture), isRecording and
                 // request are already cleared. A second teardown would race
                 // with the first detached Task inside teardownEngine().
-                if (error != nil || (result?.isFinal ?? false)), self.isRecording || self.isPaused {
+                if error != nil || (result?.isFinal ?? false) {
                     self.teardownEngine()
                 }
             }
