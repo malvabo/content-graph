@@ -1156,6 +1156,108 @@ struct InlineTopBar<Trailing: View>: View {
     }
 }
 
+struct AppSearchField: View {
+    let placeholder: String
+    @Binding var text: String
+    let isFocused: FocusState<Bool>.Binding
+    var submitLabel: SubmitLabel = .search
+    var onSubmit: (() -> Void)? = nil
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.appLabel)
+                .foregroundColor(Color.white.opacity(0.45))
+            TextField(placeholder, text: $text)
+                .font(.appLabel)
+                .foregroundColor(.white)
+                .tint(.white)
+                .focused(isFocused)
+                .submitLabel(submitLabel)
+                .onSubmit { onSubmit?() }
+            if !text.isEmpty {
+                Button { text = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.appSubtext)
+                        .foregroundColor(Color.white.opacity(0.40))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            Capsule(style: .continuous)
+                .fill(Color.white.opacity(0.08))
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                )
+        )
+    }
+}
+
+struct AppPickerSheet<Results: View>: View {
+    let title: String
+    @Binding var query: String
+    let placeholder: String
+    var submitLabel: SubmitLabel = .search
+    var onSubmit: (() -> Void)? = nil
+    let onClose: () -> Void
+    @ViewBuilder var results: () -> Results
+
+    @FocusState private var fieldFocused: Bool
+
+    private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .font(.appBodyBold)
+                    .foregroundColor(.white)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.55))
+                        .frame(width: 30, height: 30)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close")
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+
+            AppSearchField(
+                placeholder: placeholder,
+                text: $query,
+                isFocused: $fieldFocused,
+                submitLabel: submitLabel,
+                onSubmit: onSubmit
+            )
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
+
+            results()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(sheetBg)
+        .presentationBackground(sheetBg)
+        .presentationCornerRadius(22)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                fieldFocused = true
+            }
+        }
+    }
+}
+
 struct SearchOverlay<Results: View>: View {
     @Binding var query: String
     let placeholder: String
@@ -1297,41 +1399,16 @@ struct AIActionsSheet: View {
     let onAction: (_ label: String, _ icon: String, _ instruction: String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var customPrompt: String = ""
-    @FocusState private var promptFocused: Bool
-
-    private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.45))
-                TextField("Search or Ask AI…", text: $customPrompt)
-                    .font(.appBody)
-                    .foregroundColor(.white)
-                    .tint(.white)
-                    .focused($promptFocused)
-                    .submitLabel(.send)
-                    .onSubmit {
-                        let trimmed = customPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !trimmed.isEmpty else { return }
-                        let short = String(trimmed.prefix(40))
-                        onAction("Ask AI: \(short)", "sparkles", trimmed)
-                    }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(Color.white.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
-            )
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 14)
-
+        AppPickerSheet(
+            title: "Ask AI",
+            query: $customPrompt,
+            placeholder: "Search or Ask AI…",
+            submitLabel: .send,
+            onSubmit: submitCustom,
+            onClose: { dismiss() }
+        ) {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(spacing: 2) {
@@ -1354,12 +1431,15 @@ struct AIActionsSheet: View {
                 .padding(.bottom, 24)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(sheetBg)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .presentationBackground(sheetBg)
-        .presentationCornerRadius(22)
+    }
+
+    private func submitCustom() {
+        let trimmed = customPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let short = String(trimmed.prefix(40))
+        onAction("Ask AI: \(short)", "sparkles", trimmed)
     }
 
     private func actionRow(_ action: AIAction) -> some View {
