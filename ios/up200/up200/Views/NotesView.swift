@@ -846,18 +846,17 @@ struct NotesView: View {
         notes.sorted { $0.updatedAt > $1.updatedAt }
     }
 
-    private var filteredNotes: [Note] {
-        var result = sortedNotes
-        if !searchText.isEmpty {
-            let q = searchText.lowercased()
-            result = result.filter {
-                $0.displayTitle.lowercased().contains(q) || $0.body.lowercased().contains(q)
-            }
+    private var tagFilteredNotes: [Note] {
+        guard let tag = selectedFilter else { return sortedNotes }
+        return sortedNotes.filter { $0.tags.contains(tag) }
+    }
+
+    private var searchedNotes: [Note] {
+        let q = searchText.lowercased()
+        guard !q.isEmpty else { return tagFilteredNotes }
+        return tagFilteredNotes.filter {
+            $0.displayTitle.lowercased().contains(q) || $0.body.lowercased().contains(q)
         }
-        if let tag = selectedFilter {
-            result = result.filter { $0.tags.contains(tag) }
-        }
-        return result
     }
 
     private func delete(_ note: Note) {
@@ -891,41 +890,87 @@ struct NotesView: View {
         if selectedFilter == tag { selectedFilter = nil }
     }
 
+    @ViewBuilder
+    private func notesList(_ items: [Note], emptyTitle: String, emptySubtitle: String?) -> some View {
+        if items.isEmpty {
+            VStack {
+                Spacer()
+                VStack(spacing: 12) {
+                    Image(systemName: (searchText.isEmpty && selectedFilter == nil && !showSearch) ? "note.text" : "magnifyingglass")
+                        .font(.system(size: 36))
+                        .foregroundColor(Color.white.opacity(0.20))
+                    Text(emptyTitle)
+                        .foregroundColor(Color.white.opacity(0.30))
+                    if let sub = emptySubtitle {
+                        Text(sub)
+                            .font(.footnote)
+                            .foregroundColor(Color.white.opacity(0.20))
+                    }
+                }
+                Spacer()
+            }
+        } else {
+            List {
+                ForEach(items) { note in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        editingNote = note
+                    } label: {
+                        NoteListRow(note: note)
+                    }
+                    .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            delete(note)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .swipeActions(edge: .leading) {
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            toggleTag("Starred", for: note)
+                        } label: {
+                            Label(
+                                note.tags.contains("Starred") ? "Unstar" : "Star",
+                                systemImage: note.tags.contains("Starred") ? "star.slash" : "star.fill"
+                            )
+                        }
+                        .tint(amber)
+                    }
+                    .contextMenu {
+                        ForEach(allTags.filter { $0 != "Starred" }, id: \.self) { tag in
+                            Button {
+                                toggleTag(tag, for: note)
+                            } label: {
+                                Label(
+                                    note.tags.contains(tag) ? "Remove \"\(tag)\"" : "Tag as \"\(tag)\"",
+                                    systemImage: note.tags.contains(tag) ? "tag.slash" : "tag"
+                                )
+                            }
+                        }
+                        Divider()
+                        Button(role: .destructive) { delete(note) } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    if showSearch {
-                        HStack(spacing: 10) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.appLabel)
-                                .foregroundColor(Color.white.opacity(0.35))
-                            TextField("Search notes", text: $searchText)
-                                .font(.appLabel)
-                                .foregroundColor(.white)
-                                .tint(.white)
-                                .focused($searchFocused)
-                            if !searchText.isEmpty {
-                                Button { searchText = "" } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .font(.appSubtext)
-                                        .foregroundColor(Color.white.opacity(0.30))
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.07))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        .padding(.bottom, 6)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             FilterChip(label: "All", isSelected: selectedFilter == nil, isDeletable: false) {
@@ -961,75 +1006,29 @@ struct NotesView: View {
                         .fill(Color.white.opacity(0.06))
                         .frame(height: 0.5)
 
-                    if filteredNotes.isEmpty {
-                        Spacer()
-                        VStack(spacing: 12) {
-                            Image(systemName: (searchText.isEmpty && selectedFilter == nil) ? "note.text" : "magnifyingglass")
-                                .font(.system(size: 36))
-                                .foregroundColor(Color.white.opacity(0.20))
-                            Text((searchText.isEmpty && selectedFilter == nil) ? "No notes yet" : "No results")
-                                .foregroundColor(Color.white.opacity(0.30))
-                            if searchText.isEmpty && selectedFilter == nil {
-                                Text("Tap the pencil to write your first note")
-                                    .font(.footnote)
-                                    .foregroundColor(Color.white.opacity(0.20))
-                            }
-                        }
-                        Spacer()
-                    } else {
-                        List {
-                            ForEach(filteredNotes) { note in
-                                Button {
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    editingNote = note
-                                } label: {
-                                    NoteListRow(note: note)
-                                }
-                                .buttonStyle(.plain)
-                                .listRowInsets(EdgeInsets())
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        delete(note)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                                .swipeActions(edge: .leading) {
-                                    Button {
-                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                        toggleTag("Starred", for: note)
-                                    } label: {
-                                        Label(
-                                            note.tags.contains("Starred") ? "Unstar" : "Star",
-                                            systemImage: note.tags.contains("Starred") ? "star.slash" : "star.fill"
-                                        )
-                                    }
-                                    .tint(amber)
-                                }
-                                .contextMenu {
-                                    ForEach(allTags.filter { $0 != "Starred" }, id: \.self) { tag in
-                                        Button {
-                                            toggleTag(tag, for: note)
-                                        } label: {
-                                            Label(
-                                                note.tags.contains(tag) ? "Remove \"\(tag)\"" : "Tag as \"\(tag)\"",
-                                                systemImage: note.tags.contains(tag) ? "tag.slash" : "tag"
-                                            )
-                                        }
-                                    }
-                                    Divider()
-                                    Button(role: .destructive) { delete(note) } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                            }
-                        }
-                        .listStyle(.plain)
-                        .scrollContentBackground(.hidden)
-                        .background(Color.clear)
+                    notesList(
+                        tagFilteredNotes,
+                        emptyTitle: selectedFilter == nil ? "No notes yet" : "No results",
+                        emptySubtitle: selectedFilter == nil ? "Tap the pencil to write your first note" : nil
+                    )
+                }
+                .blur(radius: showSearch ? 18 : 0)
+                .allowsHitTesting(!showSearch)
+                .animation(.easeInOut(duration: 0.22), value: showSearch)
+
+                if showSearch {
+                    SearchOverlay(
+                        query: $searchText,
+                        placeholder: "Search notes",
+                        isFocused: $searchFocused
+                    ) {
+                        notesList(
+                            searchedNotes,
+                            emptyTitle: searchText.isEmpty ? "Start typing" : "No results",
+                            emptySubtitle: nil
+                        )
                     }
+                    .transition(.opacity)
                 }
             }
             .navigationTitle("")
