@@ -6,7 +6,7 @@ import UIKit
 // MARK: - Voice Dictation
 
 @MainActor
-private final class NoteDictation: ObservableObject {
+final class NoteDictation: ObservableObject {
     @Published var transcript: String = ""
     @Published var isRecording: Bool = false
     @Published var permissionDenied: Bool = false
@@ -385,7 +385,7 @@ private struct Waveform: View {
 
 // MARK: - Dictation Controls
 
-private struct DictationControls: View {
+struct DictationControls: View {
     @ObservedObject var dictation: NoteDictation
     let onStart: () -> Void
     let onCancel: () -> Void

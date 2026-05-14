@@ -680,6 +680,11 @@ private struct TemplateEditPage: View {
     @State private var existingSubtitle: String
     @State private var prompt: String
     @State private var formatIDs: Set<String>
+    @State private var promptBeforeDictation: String = ""
+    @State private var isEnhancing: Bool = false
+    @State private var enhanceFailed: Bool = false
+    @State private var enhanceFailReason: String = ""
+    @StateObject private var dictation = NoteDictation()
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
@@ -701,6 +706,10 @@ private struct TemplateEditPage: View {
 
     private var isNew: Bool { originalID == nil }
 
+    private var canEnhance: Bool {
+        !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isEnhancing
+    }
+
     private func persist() {
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         var tpl = CustomTemplate(title: title, subtitle: existingSubtitle)
@@ -708,6 +717,38 @@ private struct TemplateEditPage: View {
         tpl.prompt = prompt
         tpl.formatIDs = Array(formatIDs)
         onSave(tpl)
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func enhancePrompt() {
+        let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !isEnhancing else { return }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        isEnhancing = true
+        let titleSnapshot = title
+        let formatLabels = allFormats.filter { formatIDs.contains($0.id) }.map(\.label)
+        Task {
+            let result = await TemplatePromptEnhancer.enhance(
+                title: titleSnapshot,
+                currentPrompt: trimmed,
+                formats: formatLabels
+            )
+            await MainActor.run {
+                isEnhancing = false
+                switch result {
+                case .success(let improved):
+                    withAnimation(.easeOut(duration: 0.2)) { prompt = improved }
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                case .failure(let err):
+                    enhanceFailReason = err.userMessage
+                    enhanceFailed = true
+                }
+            }
+        }
     }
 
     var body: some View {
@@ -797,10 +838,34 @@ private struct TemplateEditPage: View {
                         }
                     }
                     .padding(.top, 4)
-                    .padding(.bottom, 48)
+                    .padding(.bottom, 96)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            bottomBar
+        }
+        .onChange(of: dictation.transcript) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            if promptBeforeDictation.isEmpty {
+                prompt = trimmed
+            } else {
+                let needsSeparator = !promptBeforeDictation.hasSuffix("\n") && !promptBeforeDictation.hasSuffix(" ")
+                prompt = promptBeforeDictation + (needsSeparator ? " " : "") + trimmed
+            }
+        }
+        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+            Button("Open Settings") { openSettings() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enable Microphone and Speech Recognition in Settings to dictate.")
+        }
+        .alert("Couldn't enhance prompt", isPresented: $enhanceFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(enhanceFailReason)
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -808,8 +873,126 @@ private struct TemplateEditPage: View {
         .onAppear { chrome.hideTabBar = true }
         .onDisappear {
             chrome.hideTabBar = false
+            dictation.stop()
             persist()
         }
+    }
+
+    private var bottomBar: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Button(action: enhancePrompt) {
+                HStack(spacing: 6) {
+                    if isEnhancing {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .controlSize(.mini)
+                            .tint(amber)
+                    } else {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    Text(isEnhancing ? "Enhancing\u{2026}" : "Enhance prompt")
+                        .font(.appSubtextMedium)
+                }
+                .foregroundColor(canEnhance ? amber : Color.white.opacity(0.30))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color.white.opacity(canEnhance ? 0.06 : 0.03))
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule().stroke(
+                        Color.white.opacity(canEnhance ? 0.10 : 0.04),
+                        lineWidth: 0.5
+                    )
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(!canEnhance)
+            .animation(.easeOut(duration: 0.15), value: canEnhance)
+
+            Spacer(minLength: 8)
+
+            DictationControls(
+                dictation: dictation,
+                onStart: {
+                    promptBeforeDictation = prompt
+                    dictation.start()
+                },
+                onCancel: {
+                    dictation.cancel()
+                    prompt = promptBeforeDictation
+                },
+                onConfirm: {
+                    dictation.stop()
+                }
+            )
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+        .background(
+            LinearGradient(
+                colors: [bg.opacity(0), bg],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+    }
+}
+
+private struct TemplatePromptEnhancer {
+    static func enhance(title: String, currentPrompt: String, formats: [String]) async -> Result<String, APICallError> {
+        guard let apiKey = KeychainService.load(), !apiKey.isEmpty,
+              let url = URL(string: "https://api.anthropic.com/v1/messages") else {
+            return .failure(.http(401, "Missing API key"))
+        }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        req.timeoutInterval = 60
+
+        let system = "You rewrite content-generation template prompts so an AI can follow them reliably. Keep the user's intent, voice, and any concrete requirements they specified. Make the instructions clearer, more specific, and actionable — never add new requirements they didn't imply. Output only the improved prompt text, no preamble, no quotes, no explanation."
+
+        var userParts: [String] = []
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedTitle.isEmpty { userParts.append("Template name: \(trimmedTitle)") }
+        if !formats.isEmpty { userParts.append("Target output formats: \(formats.joined(separator: ", "))") }
+        userParts.append("Draft instructions:\n\n\(currentPrompt)")
+
+        let body: [String: Any] = [
+            "model": "claude-sonnet-4-6",
+            "max_tokens": 600,
+            "system": system,
+            "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]]
+        ]
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
+            return .failure(.decode)
+        }
+        req.httpBody = httpBody
+
+        let data: Data
+        let resp: URLResponse
+        do {
+            (data, resp) = try await URLSession.shared.data(for: req)
+        } catch {
+            return .failure(.network(error.localizedDescription))
+        }
+
+        let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard status == 200 else {
+            return .failure(.http(status, anthropicErrorMessage(from: data)))
+        }
+
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let content = (json["content"] as? [[String: Any]])?.first,
+              let text = content["text"] as? String
+        else { return .failure(.decode) }
+
+        let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.isEmpty ? .failure(.empty) : .success(result)
     }
 }
 
