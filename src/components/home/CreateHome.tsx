@@ -534,7 +534,16 @@ export function VoiceRecordSheet({ isOpen, onClose, onSave }: {
     setRecording(false);
     try { recognitionRef.current?.stop?.(); } catch { /* noop */ }
   };
-  const toggle = () => recording ? stopRec() : startRec();
+  // Guard against rapid double-tap on the orb: React may not have re-rendered
+  // by the time a second tap fires, so both reads of `recording` are still
+  // false and we'd spin up two SpeechRecognition instances.
+  const toggleGuardRef = useRef(false);
+  const toggle = () => {
+    if (toggleGuardRef.current) return;
+    toggleGuardRef.current = true;
+    setTimeout(() => { toggleGuardRef.current = false; }, 250);
+    recording ? stopRec() : startRec();
+  };
   const handleDone = () => {
     const t = transcript.trim();
     if (!t) { onClose(); return; }

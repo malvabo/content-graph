@@ -69,7 +69,7 @@ export default function MobileBottomBar({ active, onChange }: Props) {
             key={tab.id}
             onClick={() => onChange(tab.id)}
             aria-label={tab.label}
-            aria-pressed={on}
+            aria-current={on ? 'page' : undefined}
             style={{
               flex: 1, display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', gap: 4,
