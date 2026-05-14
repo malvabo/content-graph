@@ -1136,7 +1136,9 @@ private struct LinkInputSheet: View {
     }
 
     private func fetchPageContent(from url: URL) async -> (label: String, content: String) {
-        guard let (data, _) = try? await URLSession.shared.data(from: url),
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 10
+        guard let (data, _) = try? await URLSession.shared.data(for: req),
               let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1)
         else { return (domainLabel(from: url), "") }
         let label = extractTitle(from: html) ?? domainLabel(from: url)
@@ -2439,9 +2441,14 @@ struct HomeView: View {
                     if firstError == nil { firstError = err }
                 }
             }
+            let cancelled = Task.isCancelled
             await MainActor.run {
                 isGenerating = false
                 generationTask = nil
+                if cancelled {
+                    bannerController.isVisible = false
+                    return
+                }
                 if results.isEmpty {
                     bannerController.isVisible = false
                     generationFailReason = firstError?.userMessage ?? ""

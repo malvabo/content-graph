@@ -83,6 +83,8 @@ struct ChatView: View {
     @State private var sendTask: Task<Void, Never>? = nil
     @State private var cachedProjects: [GenerationProject] = []
     @State private var lastDecodedSignature: Data = Data()
+    @State private var chatFailed: Bool = false
+    @State private var chatFailReason: String = ""
     @FocusState private var inputFocused: Bool
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
@@ -124,6 +126,13 @@ struct ChatView: View {
         }
         .sheet(isPresented: $showResourcePicker) {
             ResourcePickerSheet(projects: projects, selectedIDs: $selectedProjectIDs)
+        }
+        .alert("Message failed", isPresented: $chatFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(chatFailReason.isEmpty
+                 ? "Could not reach the API. Check your network connection and try again."
+                 : chatFailReason)
         }
         .presentationBackground(bg)
         .onDisappear { sendTask?.cancel() }
@@ -369,15 +378,18 @@ struct ChatView: View {
         let ctx = selectedProjects
         sendTask = Task {
             let outcome = await ChatService.send(messages: snapshot, contextItems: ctx)
-            guard !Task.isCancelled else { return }
             await MainActor.run {
-                let content: String
-                switch outcome {
-                case .success(let reply): content = reply
-                case .failure(let err):   content = err.userMessage
-                }
-                messages.append(ChatMessage(role: "assistant", content: content))
                 isLoading = false
+                guard !Task.isCancelled else { return }
+                switch outcome {
+                case .success(let reply):
+                    messages.append(ChatMessage(role: "assistant", content: reply))
+                case .failure(let err):
+                    // Surface as an alert so the error doesn't masquerade as
+                    // a model response in the chat history.
+                    chatFailReason = err.userMessage
+                    chatFailed = true
+                }
             }
         }
     }

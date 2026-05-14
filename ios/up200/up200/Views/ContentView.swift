@@ -555,9 +555,12 @@ struct ProjectGroupDetailView: View {
         isAIProcessing = true
         aiTransformTask = Task {
             let outcome = await AITransformService.transform(text: source, instruction: trimmedInstruction)
-            guard !Task.isCancelled else { return }
             await MainActor.run {
+                // Always clear the loading flag — even on cancellation — so a
+                // subsequent transform can run instead of being blocked by a
+                // stuck isAIProcessing=true.
                 isAIProcessing = false
+                guard !Task.isCancelled else { return }
                 switch outcome {
                 case .success(let result):
                     aiPreviewText = result
