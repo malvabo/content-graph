@@ -1022,6 +1022,13 @@ struct ContentView: View {
                         recordingController.finish()
                     }
                 )
+                // safeAreaInset content is rendered as a sibling layer to the
+                // modified view, so it does NOT inherit the .environmentObject
+                // applied to the TabView above. Without this explicit forward,
+                // RecordingMiniBar's @EnvironmentObject lookup fatal-errors on
+                // launch ("No ObservableObject of type RecordingController
+                // found").
+                .environmentObject(recordingController)
                 .padding(.horizontal, 12)
                 .padding(.top, 8)
                 .padding(.bottom, 8)
