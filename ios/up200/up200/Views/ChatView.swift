@@ -116,6 +116,8 @@ struct ChatView: View {
                     messageList
                 }
             }
+            .contentShape(Rectangle())
+            .onTapGesture { inputFocused = false }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 inputArea
             }
@@ -155,19 +157,9 @@ struct ChatView: View {
 
             Spacer(minLength: 8)
 
-            HStack(spacing: 6) {
-                Text("BETA")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(Color.white.opacity(0.70))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.white.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-
-                Text("New chat")
-                    .font(.app(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-            }
+            Text("New chat")
+                .font(.app(size: 17, weight: .semibold))
+                .foregroundColor(.white)
 
             Spacer(minLength: 8)
 
@@ -396,7 +388,7 @@ private struct MessageBubble: View {
             if isUser { Spacer(minLength: 56) }
 
             Text(message.content)
-                .font(.app(size: 15))
+                .font(.appBody)
                 .foregroundColor(isUser ? .white : Color.white.opacity(0.88))
                 .lineSpacing(3)
                 .padding(.horizontal, 14)
