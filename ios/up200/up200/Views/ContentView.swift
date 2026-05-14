@@ -972,32 +972,38 @@ struct ContentView: View {
                 NoteVoiceSheet()
                     .environmentObject(recordingController)
             }
-            // Mini bar sits in its own safeAreaInset so it stacks naturally
-            // above the tab bar inset — no fixed pixel math needed.
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if (recordingController.isRecording || recordingController.isPaused) && !recordingController.showingSheet {
-                    RecordingMiniBar(
-                        onTap: {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            selectedTab = .notes
-                            recordingController.showingSheet = true
-                        },
-                        onStop: {
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            recordingController.finish()
-                        }
-                    )
-                    .padding(.horizontal, 12)
-                    .padding(.top, 8)
-                    .padding(.bottom, 8)
-                }
-            }
+            // Tab bar is the inner inset (anchored at screen bottom).
+            // Mini bar is the outer inset (stacks above the tab bar naturally).
+            // This ordering ensures correct visual stacking on all iOS versions:
+            // outer inset content appears above inner inset content.
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !keyboardVisible && !chromeController.hideTabBar {
                     AppTabBar(selected: $selectedTab)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 8)
                 }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                let show = (recordingController.isRecording || recordingController.isPaused) && !recordingController.showingSheet
+                RecordingMiniBar(
+                    onTap: {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        selectedTab = .notes
+                        recordingController.showingSheet = true
+                    },
+                    onStop: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        recordingController.finish()
+                    }
+                )
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 8)
+                .opacity(show ? 1 : 0)
+                .frame(height: show ? nil : 0, alignment: .top)
+                .clipped()
+                .animation(.spring(response: 0.38, dampingFraction: 0.82), value: show)
+                .transaction { $0.disablesAnimations = !show && recordingController.showingSheet }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 keyboardVisible = true
@@ -1026,7 +1032,6 @@ struct ContentView: View {
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
-        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.showingSheet)
     }
 }
 
