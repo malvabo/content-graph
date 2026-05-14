@@ -1077,85 +1077,100 @@ private struct ChipFlowLayout: Layout {
 
 // MARK: - Custom Tab Bar
 
+private struct PressableTabButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .opacity(configuration.isPressed ? 0.75 : 1.0)
+            .animation(.spring(response: 0.22, dampingFraction: 0.78),
+                       value: configuration.isPressed)
+    }
+}
+
 private struct AppTabBar: View {
     @Binding var selected: AppTab
+    let pillNS: Namespace.ID
 
-    private let mainItems: [(AppTab, String, String, String)] = [
-        (.notes,     "doc.text",        "doc.text.fill",        "Notes"),
-        (.library,   "books.vertical",  "books.vertical.fill",  "Library"),
-        (.templates, "square.grid.2x2", "square.grid.2x2.fill", "Templates"),
+    @State private var impact = UIImpactFeedbackGenerator(style: .light)
+
+    private let mainItems: [(AppTab, String, String)] = [
+        (.notes,     "doc.text",        "Notes"),
+        (.library,   "books.vertical",  "Library"),
+        (.templates, "square.grid.2x2", "Templates"),
     ]
+
+    private static let selectSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
 
     var body: some View {
         HStack(spacing: 10) {
             HStack(spacing: 4) {
-                ForEach(mainItems, id: \.0.rawValue) { tab, icon, filled, label in
+                ForEach(mainItems, id: \.0.rawValue) { tab, icon, label in
                     Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        selected = tab
+                        impact.impactOccurred()
+                        withAnimation(Self.selectSpring) {
+                            selected = tab
+                        }
                     } label: {
                         VStack(spacing: 2) {
-                            Image(systemName: selected == tab ? filled : icon)
+                            Image(systemName: icon)
+                                .symbolVariant(selected == tab ? .fill : .none)
+                                .contentTransition(.symbolEffect(.replace))
                                 .font(.system(size: 17, weight: selected == tab ? .semibold : .regular))
                             Text(label)
                                 .font(.system(size: 10, weight: selected == tab ? .semibold : .regular))
                         }
                         .foregroundColor(selected == tab ? .white : Color.white.opacity(0.45))
-                        .frame(maxWidth: .infinity, minHeight: 42)
+                        .frame(maxWidth: .infinity, minHeight: 44)
                         .background(
-                            Group {
+                            ZStack {
                                 if selected == tab {
                                     Capsule(style: .continuous)
-                                        .fill(Color.white.opacity(0.16))
-                                        .padding(.horizontal, 2)
-                                        .padding(.vertical, 2)
+                                        .fill(Color.white.opacity(0.14))
+                                        .overlay(
+                                            Capsule(style: .continuous)
+                                                .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
+                                        )
+                                        .matchedGeometryEffect(id: "tabPill", in: pillNS)
                                 }
                             }
                         )
+                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressableTabButtonStyle())
                     .accessibilityLabel(label)
                     .accessibilityAddTraits(selected == tab ? [.isButton, .isSelected] : .isButton)
                 }
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 4)
-            .appLiquidGlass(in: Capsule(style: .continuous))
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.22), Color.white.opacity(0.06)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 0.5
-                    )
-            )
+            .background(.ultraThinMaterial, in: Capsule(style: .continuous))
 
             Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                selected = .create
+                impact.impactOccurred()
+                withAnimation(Self.selectSpring) {
+                    selected = .create
+                }
             } label: {
                 let isActive = selected == .create
                 Image(systemName: "plus")
                     .font(.system(size: 17, weight: isActive ? .semibold : .regular))
                     .foregroundColor(AppText.primary)
                     .frame(width: 50, height: 50)
-                    .appLiquidGlass(in: Circle())
+                    .background(
+                        Circle().fill(Color.white.opacity(isActive ? 0.14 : 0))
+                    )
+                    .background(.ultraThinMaterial, in: Circle())
                     .overlay(
                         Circle()
-                            .fill(Color.white.opacity(isActive ? 0.16 : 0))
+                            .stroke(Color.white.opacity(isActive ? 0.28 : 0.16), lineWidth: 0.5)
                     )
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white.opacity(isActive ? 0.32 : 0.18), lineWidth: 0.5)
-                    )
+                    .contentShape(Circle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableTabButtonStyle())
             .accessibilityLabel("Create")
             .accessibilityAddTraits(selected == .create ? [.isButton, .isSelected] : .isButton)
         }
+        .onAppear { impact.prepare() }
     }
 }
 
@@ -1167,6 +1182,7 @@ struct ContentView: View {
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
     @StateObject private var recordingController = RecordingController()
+    @Namespace private var tabPillNS
 
     init() {
         UITabBar.appearance().isHidden = true
@@ -1193,7 +1209,7 @@ struct ContentView: View {
             // outer inset content appears above inner inset content.
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !keyboardVisible && !chromeController.hideTabBar {
-                    AppTabBar(selected: $selectedTab)
+                    AppTabBar(selected: $selectedTab, pillNS: tabPillNS)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 8)
                 }
