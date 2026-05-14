@@ -1042,7 +1042,6 @@ struct NotesView: View {
                         emptySubtitle: selectedFilter == nil ? "Tap the pencil to write your first note" : nil
                     )
                 }
-                .blur(radius: showSearch ? 18 : 0)
                 .allowsHitTesting(!showSearch)
                 .animation(.easeInOut(duration: 0.22), value: showSearch)
 

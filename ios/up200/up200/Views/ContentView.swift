@@ -104,7 +104,6 @@ struct LibraryView: View {
                         emptySubtitle: "Your content outputs will appear here"
                     )
                 }
-                .blur(radius: showSearch ? 18 : 0)
                 .allowsHitTesting(!showSearch)
                 .animation(.easeInOut(duration: 0.22), value: showSearch)
 
@@ -1165,8 +1164,9 @@ struct SearchOverlay<Results: View>: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            Color.black.opacity(0.35)
-                .background(.ultraThinMaterial)
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .overlay(Color.black.opacity(0.15))
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
