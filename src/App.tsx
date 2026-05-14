@@ -58,6 +58,7 @@ import InfographicsPanel from './components/canvas/InfographicsPanel';
 import MobileBottomBar from './components/mobile/MobileBottomBar';
 import MobileLibrary from './components/mobile/MobileLibrary';
 import CreateHome from './components/home/CreateHome';
+import NotesEmptyScreen from './components/home/NotesEmptyScreen';
 import { useIsMobile } from './hooks/useIsMobile';
 import TypewriterLogo from './components/TypewriterLogo';
 import QuickMode from './components/canvas/QuickMode';
@@ -73,6 +74,7 @@ function AppInner() {
     () => !localStorage.getItem('onboarding_complete')
   );
   const [showOnboardingOverlay, setShowOnboardingOverlay] = useState(false);
+  const [showPostOnboardingNotes, setShowPostOnboardingNotes] = useState(false);
 
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'create', 'capture'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'create'; };
@@ -241,9 +243,12 @@ function AppInner() {
           )}
           {showOnboardingOverlay && (
             <OnboardingScreen
-              onFinish={() => setShowOnboardingOverlay(false)}
+              onFinish={() => { setShowOnboardingOverlay(false); setShowPostOnboardingNotes(true); }}
               onClose={() => setShowOnboardingOverlay(false)}
             />
+          )}
+          {showPostOnboardingNotes && (
+            <NotesEmptyScreen onClose={() => setShowPostOnboardingNotes(false)} />
           )}
         </div>
         <MobileBottomBar active={activeView} onChange={setActiveView} />
