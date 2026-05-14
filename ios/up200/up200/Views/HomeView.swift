@@ -556,7 +556,6 @@ struct ImportSheetView: View {
         ("link",          "Paste a link",   .link),
         ("arrow.up.doc",  "Upload a file",  .file),
         ("pencil",        "Write text",     .text),
-        ("waveform",      "Voice note",     .voice),
     ]
 
     var body: some View {
