@@ -1544,9 +1544,6 @@ private struct NotePickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var notes: [Note] = []
-    @FocusState private var searchFocused: Bool
-
-    private let sheetBackground = Color(red: 0.10, green: 0.08, blue: 0.07)
 
     private var filtered: [Note] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1558,48 +1555,26 @@ private struct NotePickerSheet: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .font(.appLabel)
-                    .foregroundColor(Color.white.opacity(0.35))
-                TextField("Search notes", text: $query)
-                    .font(.appLabel)
-                    .foregroundColor(.white)
-                    .tint(.white)
-                    .focused($searchFocused)
-                if !query.isEmpty {
-                    Button { query = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
+        AppPickerSheet(
+            title: "Pick a note",
+            query: $query,
+            placeholder: "Search notes",
+            onClose: { dismiss() }
+        ) {
+            if filtered.isEmpty {
+                VStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "note.text")
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundColor(Color.white.opacity(0.18))
+                        Text(notes.isEmpty ? "No notes yet" : "No results")
                             .font(.appSubtext)
                             .foregroundColor(Color.white.opacity(0.30))
                     }
-                    .buttonStyle(.plain)
+                    Spacer()
                 }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color.white.opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 10)
-
-            Rectangle()
-                .fill(Color.white.opacity(0.06))
-                .frame(height: 0.5)
-
-            if filtered.isEmpty {
-                Spacer()
-                VStack(spacing: 8) {
-                    Image(systemName: "note.text")
-                        .font(.system(size: 32, weight: .light))
-                        .foregroundColor(Color.white.opacity(0.18))
-                    Text(notes.isEmpty ? "No notes yet" : "No results")
-                        .font(.appSubtext)
-                        .foregroundColor(Color.white.opacity(0.30))
-                }
-                Spacer()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(showsIndicators: false) {
                     LazyVStack(spacing: 0) {
@@ -1642,10 +1617,8 @@ private struct NotePickerSheet: View {
                 }
             }
         }
-        .background(sheetBackground)
         .onAppear {
             notes = NotesStore.load().filter { !$0.isEmpty }
-            searchFocused = true
         }
     }
 }
@@ -1700,49 +1673,12 @@ private struct FormatPickerSheet: View {
     private var isDirty: Bool { draft != selectedFormatIDs }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Text("Choose formats")
-                    .font(.appBodyBold)
-                    .foregroundColor(.white)
-                Spacer()
-                Button("Cancel") { dismiss() }
-                    .font(.appLabel)
-                    .foregroundColor(Color.white.opacity(0.55))
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
-            .padding(.bottom, 12)
-
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .font(.appLabel)
-                    .foregroundColor(Color.white.opacity(0.35))
-                TextField("Search formats and templates", text: $search)
-                    .font(.appSubtext)
-                    .foregroundColor(.white)
-                    .autocorrectionDisabled()
-                    .submitLabel(.search)
-                if !search.isEmpty {
-                    Button { search = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.appSubtext)
-                            .foregroundColor(Color.white.opacity(0.30))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(Color.white.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
-            )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 10)
-
+        AppPickerSheet(
+            title: "Choose formats",
+            query: $search,
+            placeholder: "Search formats and templates",
+            onClose: { dismiss() }
+        ) {
             if filteredTemplates.isEmpty && filteredFormats.isEmpty {
                 ContentUnavailableView.search(text: search)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
