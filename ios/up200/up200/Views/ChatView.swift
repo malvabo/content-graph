@@ -436,7 +436,8 @@ private struct TypingIndicator: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .task {
             while true {
-                try await Task.sleep(nanoseconds: 380_000_000)
+                do { try await Task.sleep(nanoseconds: 380_000_000) }
+                catch { break }
                 phase = (phase + 1) % 3
             }
         }

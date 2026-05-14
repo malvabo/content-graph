@@ -797,6 +797,13 @@ private struct NoteComposerSheet: View {
         }
         .task {
             bodyBeforeDictation = noteBody
+            // Delay auto-start to let RecordingController's async audio
+            // teardown finish (setActive false runs in a detached task,
+            // 50-300 ms). Starting dictation immediately races setActive(true)
+            // against that setActive(false) on a background thread; if teardown
+            // wins last the session is deactivated and dictation silently fails.
+            do { try await Task.sleep(nanoseconds: 400_000_000) }
+            catch { return }
             dictation.start()
         }
         .onDisappear { dictation.stop() }
