@@ -1008,6 +1008,8 @@ private struct RecordingMiniBar: View {
     let onStop: () -> Void
 
     private let amber = BrandColor.amber
+    @State private var dragOffset: CGSize = .zero
+    @GestureState private var dragTranslation: CGSize = .zero
 
     private var timeLabel: String {
         String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)
@@ -1041,16 +1043,27 @@ private struct RecordingMiniBar: View {
             .padding(.trailing, 6)
             .frame(height: 52)
             .background(
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                Capsule(style: .continuous)
                     .fill(Color(red: 0.18, green: 0.14, blue: 0.12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 26, style: .continuous)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
-                    )
                     .shadow(color: Color.black.opacity(0.45), radius: 18, y: 6)
             )
         }
         .buttonStyle(.plain)
+        .offset(
+            x: dragOffset.width + dragTranslation.width,
+            y: dragOffset.height + dragTranslation.height
+        )
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 10)
+                .updating($dragTranslation) { value, state, _ in
+                    state = value.translation
+                }
+                .onEnded { value in
+                    dragOffset.width += value.translation.width
+                    dragOffset.height += value.translation.height
+                }
+        )
+        .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.86), value: dragTranslation)
         .accessibilityLabel(recording.isPaused ? "Paused recording" : "Recording in progress")
         .accessibilityHint("Tap to expand, stop button to finish")
     }
