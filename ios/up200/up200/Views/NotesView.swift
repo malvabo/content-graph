@@ -288,7 +288,7 @@ private struct NoteListRow: View {
             NoteThumb(note: note)
 
             VStack(alignment: .leading, spacing: 5) {
-                HStack(spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(note.displayTitle)
                         .font(.appNavTitle)
                         .foregroundColor(Color.white.opacity(0.88))
