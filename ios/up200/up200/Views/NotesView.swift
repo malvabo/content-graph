@@ -59,6 +59,8 @@ private final class NoteDictation: ObservableObject {
     private func teardown() {
         isRecording = false
         audioLevel = 0
+        task?.cancel()
+        task = nil
         let engine = audioEngine
         let req = request
         request = nil

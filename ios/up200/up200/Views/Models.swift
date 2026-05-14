@@ -92,7 +92,8 @@ func anthropicErrorMessage(from data: Data) -> String {
 struct KeychainService {
     private static let account = "com.up200.app.anthropic_api_key"
 
-    static func save(_ value: String) {
+    @discardableResult
+    static func save(_ value: String) -> Bool {
         let data = Data(value.utf8)
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
@@ -100,7 +101,7 @@ struct KeychainService {
             kSecValueData: data
         ]
         SecItemDelete(query as CFDictionary)
-        SecItemAdd(query as CFDictionary, nil)
+        return SecItemAdd(query as CFDictionary, nil) == errSecSuccess
     }
 
     static func load() -> String? {
@@ -322,6 +323,10 @@ final class RecordingController: ObservableObject {
         // from the recognition task callback sees isRecording=false and bails.
         isRecording = false
         audioLevel = 0
+        // Cancel the recognition task so its callback stops firing and can't
+        // update transcript or trigger a second teardown after this one.
+        task?.cancel()
+        task = nil
         // Capture what we need before hopping off the main actor — AVAudioEngine
         // and AVAudioSession calls can block 50-300 ms waiting for the audio
         // subsystem to drain; running them on the main thread freezes gestures.
