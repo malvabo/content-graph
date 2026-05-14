@@ -34,7 +34,7 @@ struct APIKeySetupView: View {
                     VStack(spacing: 10) {
                         Text("Enter your API key")
                             .font(.app(size: 24, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(AppText.primary)
                         Text("Get one free at console.anthropic.com\nunder API Keys. It starts with sk-ant-")
                             .font(.app(size: 15))
                             .foregroundColor(Color.white.opacity(0.45))
@@ -49,7 +49,7 @@ struct APIKeySetupView: View {
                                 .foregroundColor(Color.white.opacity(0.35))
                             SecureField("sk-ant-api03-…", text: $keyText)
                                 .font(.system(size: 15, design: .monospaced))
-                                .foregroundColor(.white)
+                                .foregroundColor(AppText.primary)
                                 .autocorrectionDisabled()
                                 .textInputAutocapitalization(.never)
                                 .focused($focused)

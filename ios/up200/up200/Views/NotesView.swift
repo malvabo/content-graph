@@ -630,7 +630,7 @@ struct NoteVoiceSheet: View {
                             .font(.system(size: 17, weight: .semibold))
                             .frame(minWidth: 60)
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
                     .background(Color.white.opacity(0.12))
@@ -708,7 +708,7 @@ private struct NoteComposerSheet: View {
 
                 Text("New Note")
                     .font(.appBodyBold)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
 
                 Spacer()
 
@@ -917,7 +917,7 @@ private struct NoteEditorPage: View {
                     axis: .vertical
                 )
                 .font(.appTitle)
-                .foregroundColor(.white)
+                .foregroundColor(AppText.primary)
                 .tint(.white)
                 .lineLimit(1...3)
                 .padding(.horizontal, 20)
@@ -998,7 +998,7 @@ private struct NoteEditorPage: View {
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                     .frame(width: 36, height: 36)
                     .background(Color.white.opacity(0.08))
                     .clipShape(Circle())
@@ -1014,7 +1014,7 @@ private struct NoteEditorPage: View {
                 ShareLink(item: combined) {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppText.primary)
                         .frame(width: 36, height: 36)
                         .background(Color.white.opacity(0.08))
                         .clipShape(Circle())
@@ -1032,7 +1032,7 @@ private struct NoteEditorPage: View {
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                     .frame(width: 36, height: 36)
                     .background(Color.white.opacity(0.08))
                     .clipShape(Circle())
@@ -1386,7 +1386,7 @@ private struct NewTagSheet: View {
             VStack(spacing: 0) {
                 TextField("Tag name", text: $newTagName)
                     .font(.appBody)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                     .tint(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)

@@ -322,7 +322,7 @@ struct GenerationBanner: View {
                 } else {
                     Image(systemName: "checkmark")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppText.primary)
                 }
             }
             .frame(width: 36, height: 36)
@@ -331,7 +331,7 @@ struct GenerationBanner: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(isReady ? "Content ready" : "Creating your content")
                     .font(.appSubtextBold)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                     .lineLimit(1)
                 Text(formatLabels.joined(separator: " · "))
                     .font(.appMicro)
@@ -356,7 +356,7 @@ struct GenerationBanner: View {
                             .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
                         Text("Open")
                             .font(.appCaptionMedium)
-                            .foregroundColor(.white)
+                            .foregroundColor(AppText.primary)
                     }
                     .frame(width: 68, height: 32)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -730,7 +730,7 @@ private struct TextInputSheet: View {
                 VStack(alignment: .leading, spacing: 0) {
                     TextField("Title", text: $titleText)
                         .font(.appTitle)
-                        .foregroundColor(.white)
+                        .foregroundColor(AppText.primary)
                         .tint(.white)
                         .focused($focusedField, equals: .title)
                         .submitLabel(.next)
@@ -793,7 +793,7 @@ private struct TextInputSheet: View {
 
             Text("Text source")
                 .font(.appBodyBold)
-                .foregroundColor(.white)
+                .foregroundColor(AppText.primary)
 
             Spacer(minLength: 8)
 
@@ -983,7 +983,7 @@ private struct LinkInputSheet: View {
                 Spacer()
                 Text(stagedURLs.count > 1 ? "Link sources" : "Link source")
                     .font(.appLabelBold)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                 Spacer()
                 Button {
                     guard !isFetching else { return }
@@ -1312,7 +1312,7 @@ struct VoiceRecordSheet: View {
                                     .font(.system(size: 17, weight: .semibold))
                                     .frame(minWidth: 60)
                             }
-                            .foregroundColor(.white)
+                            .foregroundColor(AppText.primary)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
                             .background(Color.white.opacity(0.12))
@@ -1976,7 +1976,7 @@ private struct FormatPickerSheet: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(template.name)
                         .font(.appSubtextBold)
-                        .foregroundColor(.white)
+                        .foregroundColor(AppText.primary)
                     Text(template.description)
                         .font(.appCaption)
                         .foregroundColor(Color.white.opacity(0.50))
@@ -2016,7 +2016,7 @@ private struct FormatPickerSheet: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(format.label)
                         .font(.appSubtextBold)
-                        .foregroundColor(.white)
+                        .foregroundColor(AppText.primary)
                     Text(format.description)
                         .font(.appCaption)
                         .foregroundColor(Color.white.opacity(0.50))

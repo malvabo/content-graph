@@ -36,7 +36,7 @@ struct OnboardingView: View {
                         Text(String(brandFull.prefix(brandTypedLength)))
                             .font(.system(size: 52, weight: .regular, design: .monospaced))
                             .kerning(-0.5)
-                            .foregroundColor(.white)
+                            .foregroundColor(AppText.primary)
                         Rectangle()
                             .fill(BrandColor.amber)
                             .frame(width: 2, height: 44)

@@ -28,6 +28,14 @@ enum SelectionStyle {
     static let stroke = Color.white.opacity(0.30)
 }
 
+/// Text-on-dark color tokens. Centralized so the off-white shade can be
+/// tuned in one place. Text sitting on colored fills (amber CTAs, etc.)
+/// should keep pure `.white` for contrast — these tokens are only for
+/// content on the dark app background or translucent-white-on-dark chrome.
+enum AppText {
+    static let primary = Color.white.opacity(0.92)
+}
+
 /// Result of decoding a JSON blob from persistent storage.
 ///
 /// `.empty` and `.ok` are both safe to overwrite; `.corrupt` means the bytes

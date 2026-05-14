@@ -159,7 +159,7 @@ struct ChatView: View {
 
             Text("New chat")
                 .font(.app(size: 17, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(AppText.primary)
 
             Spacer(minLength: 8)
 
@@ -276,7 +276,7 @@ struct ChatView: View {
                     }
                     TextEditor(text: $inputText)
                         .font(.app(size: 16))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppText.primary)
                         .scrollContentBackground(.hidden)
                         .background(.clear)
                         .tint(.white)
@@ -487,7 +487,7 @@ private struct ResourcePickerSheet: View {
                 Spacer(minLength: 0)
                 Text("Add context")
                     .font(.app(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                 Spacer(minLength: 0)
                 Color.clear.frame(width: 28, height: 28)
             }
@@ -566,7 +566,7 @@ private struct ResourcePickerSheet: View {
             Button { dismiss() } label: {
                 Text(selectedIDs.isEmpty ? "No context" : "Done — \(selectedIDs.count) added")
                     .font(.app(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
                     .background(Color.white.opacity(0.10))

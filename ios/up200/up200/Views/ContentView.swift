@@ -270,7 +270,7 @@ struct ProjectGroupDetailView: View {
                     } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(AppText.primary)
                             .frame(width: 36, height: 36)
                             .background(Color.white.opacity(0.08))
                             .clipShape(Circle())
@@ -281,7 +281,7 @@ struct ProjectGroupDetailView: View {
 
                     Text(groupTitle)
                         .font(.appBodyBold)
-                        .foregroundColor(.white)
+                        .foregroundColor(AppText.primary)
                         .lineLimit(1)
                         .truncationMode(.tail)
 
@@ -314,7 +314,7 @@ struct ProjectGroupDetailView: View {
                         ShareLink(item: editText) {
                             Image(systemName: "square.and.arrow.up")
                                 .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(.white)
+                                .foregroundColor(AppText.primary)
                                 .frame(width: 44, height: 38)
                                 .contentShape(Rectangle())
                         }
@@ -362,7 +362,7 @@ struct ProjectGroupDetailView: View {
                         HStack {
                             Text(allFormats.first(where: { $0.id == item.outputType })?.label ?? item.outputType)
                                 .font(.appTitle)
-                                .foregroundColor(.white)
+                                .foregroundColor(AppText.primary)
                             Spacer()
                             Text(item.date, style: .date)
                                 .font(.appCaption)
@@ -421,7 +421,7 @@ struct ProjectGroupDetailView: View {
                         } else {
                             Image(systemName: "sparkles")
                                 .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(.white)
+                                .foregroundColor(AppText.primary)
                         }
                     }
                     .frame(width: 52, height: 52)
@@ -438,7 +438,7 @@ struct ProjectGroupDetailView: View {
                 } label: {
                     Image(systemName: "bubble.left.and.text.bubble.right")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppText.primary)
                         .frame(width: 52, height: 52)
                         .background(Color.white.opacity(0.12))
                         .clipShape(Circle())
@@ -463,7 +463,7 @@ struct ProjectGroupDetailView: View {
                     let micBusy = recording.isRecording || recording.isPaused
                     Image(systemName: "mic.fill")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppText.primary)
                         .frame(width: 52, height: 52)
                         .background(Color.white.opacity(0.12))
                         .clipShape(Circle())
@@ -728,7 +728,7 @@ private struct TemplateEditPage: View {
                     } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(AppText.primary)
                             .frame(width: 36, height: 36)
                             .background(Color.white.opacity(0.08))
                             .clipShape(Circle())
@@ -770,7 +770,7 @@ private struct TemplateEditPage: View {
                             axis: .vertical
                         )
                         .font(.appTitle)
-                        .foregroundColor(.white)
+                        .foregroundColor(AppText.primary)
                         .tint(.white)
                         .lineLimit(1...3)
                         .padding(.horizontal, 20)
@@ -951,7 +951,7 @@ private struct AppTabBar: View {
                 let isActive = selected == .create
                 Image(systemName: "plus")
                     .font(.system(size: 17, weight: isActive ? .semibold : .regular))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                     .frame(width: 50, height: 50)
                     .appLiquidGlass(in: Circle())
                     .overlay(
@@ -1090,7 +1090,7 @@ private struct RecordingMiniBar: View {
                     .frame(width: 10, height: 10)
                 Text(recording.isPaused ? "Paused" : "Recording")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                 Text(timeLabel)
                     .font(.system(size: 13, design: .monospaced))
                     .foregroundColor(Color.white.opacity(0.55))
@@ -1183,7 +1183,7 @@ struct TopBarPillButton: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: 18, weight: .regular))
-                .foregroundColor(.white)
+                .foregroundColor(AppText.primary)
                 .frame(width: 44, height: 38)
                 .background(isActive ? Color.white.opacity(0.12) : Color.clear)
                 .clipShape(Capsule())
@@ -1222,7 +1222,7 @@ struct InlineTopBar<Trailing: View>: View {
         HStack(spacing: 12) {
             Text(title)
                 .font(.app(size: 30, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(AppText.primary)
                 .fixedSize(horizontal: true, vertical: false)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
@@ -1248,7 +1248,7 @@ struct AppSearchField: View {
                 .foregroundColor(Color.white.opacity(0.45))
             TextField(placeholder, text: $text)
                 .font(.appLabel)
-                .foregroundColor(.white)
+                .foregroundColor(AppText.primary)
                 .tint(.white)
                 .focused(isFocused)
                 .submitLabel(submitLabel)
@@ -1294,7 +1294,7 @@ struct AppPickerSheet<Results: View>: View {
             HStack(spacing: 12) {
                 Text(title)
                     .font(.appBodyBold)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 Button(action: onClose) {
@@ -1358,7 +1358,7 @@ struct SearchOverlay<Results: View>: View {
                             .foregroundColor(Color.white.opacity(0.45))
                         TextField(placeholder, text: $query)
                             .font(.appLabel)
-                            .foregroundColor(.white)
+                            .foregroundColor(AppText.primary)
                             .tint(.white)
                             .focused(isFocused)
                             .submitLabel(.search)
@@ -1391,7 +1391,7 @@ struct SearchOverlay<Results: View>: View {
                         } label: {
                             Text("Cancel")
                                 .font(.appLabel)
-                                .foregroundColor(.white)
+                                .foregroundColor(AppText.primary)
                                 .padding(.horizontal, 4)
                                 .padding(.vertical, 10)
                                 .contentShape(Rectangle())
@@ -1565,7 +1565,7 @@ struct AIPreviewSheet: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 Text(actionLabel)
                     .font(.appBodyBold)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Spacer()
@@ -1623,7 +1623,7 @@ struct AIPreviewSheet: View {
                 } label: {
                     Text(didCopy ? "Copied" : "Copy")
                         .font(.appBodyBold)
-                        .foregroundColor(.white)
+                        .foregroundColor(AppText.primary)
                         .padding(.horizontal, 22)
                         .frame(height: 40)
                         .overlay(Capsule().stroke(Color.white.opacity(0.20), lineWidth: 0.5))
