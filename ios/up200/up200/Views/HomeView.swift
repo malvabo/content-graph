@@ -431,6 +431,7 @@ final class VoiceRecorder: ObservableObject {
         if audioEngine.inputNode.numberOfInputs > 0 {
             audioEngine.inputNode.removeTap(onBus: 0)
         }
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         isRecording = false
         audioLevel = 0
     }
@@ -453,7 +454,7 @@ final class VoiceRecorder: ObservableObject {
                     self?.transcript = result.bestTranscription.formattedString
                 }
                 if error != nil || (result?.isFinal ?? false) {
-                    self?.isRecording = false
+                    self?.stop()
                 }
             }
         }
