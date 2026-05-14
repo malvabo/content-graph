@@ -296,7 +296,17 @@ private struct NoteListRow: View {
                     if note.tags.contains("Starred") {
                         Image(systemName: "star.fill")
                             .font(.system(size: 11))
-                            .foregroundColor(amber)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [
+                                        BrandColor.amber,
+                                        Color(red: 0.75, green: 0.30, blue: 0.05)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .shadow(color: BrandColor.amber.opacity(0.60), radius: 4)
                     }
                 }
 
