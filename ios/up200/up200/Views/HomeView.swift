@@ -2086,65 +2086,63 @@ private struct FormatsBlock: View {
                     .transition(.opacity)
             }
 
-            // Suggestion chip row: refresh · chips · expand
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    // Refresh
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        withAnimation(chipAnim) {
-                            refreshSuggestions()
-                        }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.45))
-                            .frame(width: 36, height: 36)
-                            .background(Color.white.opacity(0.06))
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-
-                    // Format suggestions
-                    ForEach(suggestions) { fmt in
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            withAnimation(chipAnim) {
-                                selectedFormatIDs.insert(fmt.id)
-                                refreshSuggestions()
+            // Suggestion chip row with the expand button floating over the
+            // trailing edge. Chips fade to transparent behind it via a mask.
+            ZStack(alignment: .trailing) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(suggestions) { fmt in
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                withAnimation(chipAnim) {
+                                    selectedFormatIDs.insert(fmt.id)
+                                    refreshSuggestions()
+                                }
+                            } label: {
+                                Text(fmt.label)
+                                    .font(.appCaptionMedium)
+                                    .foregroundColor(Color.white.opacity(0.65))
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 9)
+                                    .background(Color.white.opacity(0.06))
+                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                                    )
                             }
-                        } label: {
-                            Text(fmt.label)
-                                .font(.appCaptionMedium)
-                                .foregroundColor(Color.white.opacity(0.65))
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 9)
-                                .background(Color.white.opacity(0.06))
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
-                                )
+                            .buttonStyle(.plain)
+                            .transition(.opacity)
                         }
-                        .buttonStyle(.plain)
-                        .transition(.opacity)
                     }
-
-                    // Expand — opens full picker
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        showPicker = true
-                    } label: {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.45))
-                            .frame(width: 36, height: 36)
-                            .background(Color.white.opacity(0.06))
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
+                    .padding(.leading, 16)
+                    .padding(.trailing, 56)
                 }
-                .padding(.horizontal, 16)
+                .mask(
+                    HStack(spacing: 0) {
+                        Rectangle()
+                        LinearGradient(
+                            colors: [.black, .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: 44)
+                    }
+                )
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    showPicker = true
+                } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.45))
+                        .frame(width: 36, height: 36)
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 16)
             }
             .padding(.bottom, 14)
         }
