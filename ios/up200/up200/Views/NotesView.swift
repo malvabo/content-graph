@@ -481,6 +481,7 @@ struct NoteVoiceSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var recording: RecordingController
     @State private var selectedDetent: PresentationDetent = .medium
+    @State private var showingComposer: Bool = false
 
     private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
@@ -491,7 +492,7 @@ struct NoteVoiceSheet: View {
     var body: some View {
         ZStack {
             sheetBg.ignoresSafeArea()
-            if selectedDetent == .large {
+            if showingComposer {
                 NoteComposerSheet(
                     initialBody: recording.fullTranscript,
                     onSave: { body in
@@ -504,22 +505,25 @@ struct NoteVoiceSheet: View {
                         dismiss()
                     }
                 )
-                .transition(.opacity)
             } else {
-                voiceUI.transition(.opacity)
+                voiceUI
             }
         }
-        .animation(.easeInOut(duration: 0.22), value: selectedDetent)
         .presentationDetents([.medium, .large], selection: $selectedDetent)
         .presentationDragIndicator(.visible)
         .presentationBackground(sheetBg)
         .presentationCornerRadius(22)
         .onChange(of: selectedDetent) { _, newDetent in
-            if newDetent == .large && (recording.isRecording || recording.isPaused) {
-                // Hand off the audio engine to NoteComposerSheet's own
-                // NoteDictation. Pause keeps the accumulated transcript so the
-                // composer can seed from recording.fullTranscript.
+            // Treat anything other than the .medium voice detent as "expanded
+            // → show editor". `newDetent == .large` was unreliable in practice
+            // (the system sometimes writes back a non-`.large` representation
+            // even after the sheet snaps to the large position).
+            let large = (newDetent != .medium)
+            if large && (recording.isRecording || recording.isPaused) {
                 recording.pause()
+            }
+            withAnimation(.easeInOut(duration: 0.22)) {
+                showingComposer = large
             }
         }
     }
