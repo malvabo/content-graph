@@ -334,9 +334,7 @@ struct ProjectGroupDetailView: View {
                                     .allowsHitTesting(false)
                             }
                             TextEditor(text: $editText)
-                                .font(.appBody)
-                                .lineSpacing(8)
-                                .foregroundColor(Color.white.opacity(0.88))
+                                .appBodyText()
                                 .scrollContentBackground(.hidden)
                                 .background(Color.clear)
                                 .tint(.white)
@@ -442,6 +440,15 @@ struct ProjectGroupDetailView: View {
                 },
                 onClose: { showAIPreview = false }
             )
+        }
+        .onChange(of: showAIPreview) { _, newValue in
+            if !newValue {
+                aiPreviewText = ""
+                aiPreviewLabel = ""
+                aiPreviewIcon = "sparkles"
+                aiPreviewInstruction = ""
+                aiSourceSnapshot = ""
+            }
         }
         .alert("AI request failed", isPresented: $aiFailed) {
             Button("OK", role: .cancel) {}
@@ -717,8 +724,7 @@ private struct TemplateEditPage: View {
                                         .allowsHitTesting(false)
                                 }
                                 TextEditor(text: $prompt)
-                                    .font(.appBody)
-                                    .foregroundColor(Color.white.opacity(0.92))
+                                    .appBodyText()
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
                                     .tint(.white)
@@ -1156,6 +1162,7 @@ struct InlineTopBar<Trailing: View>: View {
                 .font(.appBodyBold)
                 .foregroundColor(.white)
                 .fixedSize(horizontal: true, vertical: false)
+                .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             trailing()
         }
@@ -1394,7 +1401,7 @@ struct AIPreviewSheet: View {
 
     @State private var didCopy = false
 
-    private let sheetBg = Color(red: 0.16, green: 0.13, blue: 0.11)
+    private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1428,9 +1435,7 @@ struct AIPreviewSheet: View {
             ZStack {
                 ScrollView(showsIndicators: false) {
                     Text(previewText.isEmpty ? " " : previewText)
-                        .font(.appBody)
-                        .foregroundColor(Color.white.opacity(0.92))
-                        .lineSpacing(4)
+                        .appBodyText()
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
