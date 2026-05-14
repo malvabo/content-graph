@@ -1325,6 +1325,7 @@ struct SearchOverlay<Results: View>: View {
                                     .foregroundColor(Color.white.opacity(0.40))
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("Clear search")
                         }
                     }
                     .padding(.horizontal, 14)
@@ -1347,6 +1348,9 @@ struct SearchOverlay<Results: View>: View {
                             Text("Cancel")
                                 .font(.appLabel)
                                 .foregroundColor(.white)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 10)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Cancel search")
