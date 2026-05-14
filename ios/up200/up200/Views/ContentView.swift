@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - App Tab
 
 enum AppTab: String {
-    case notes, create, templates
+    case notes, create, library, templates
 }
 
 // MARK: - Library View
@@ -816,7 +816,7 @@ private struct AppTabBar: View {
 
     private let mainItems: [(AppTab, String, String)] = [
         (.notes,     "house",                "Home"),
-        (.create,    "sparkles",             "Creator"),
+        (.library,   "tray.full",            "Library"),
         (.templates, "square.grid.2x2.fill", "Templates"),
     ]
 
@@ -829,17 +829,8 @@ private struct AppTabBar: View {
                         selected = tab
                     } label: {
                         VStack(spacing: 2) {
-                            if tab == .create {
-                                SparkRaysShape()
-                                    .stroke(style: StrokeStyle(
-                                        lineWidth: selected == tab ? 1.8 : 1.5,
-                                        lineCap: .round
-                                    ))
-                                    .frame(width: 18, height: 18)
-                            } else {
-                                Image(systemName: icon)
-                                    .font(.system(size: 17, weight: selected == tab ? .semibold : .regular))
-                            }
+                            Image(systemName: icon)
+                                .font(.system(size: 17, weight: selected == tab ? .semibold : .regular))
                             Text(label)
                                 .font(.system(size: 10, weight: selected == tab ? .semibold : .regular))
                         }
@@ -909,6 +900,7 @@ struct ContentView: View {
             TabView(selection: $selectedTab) {
                 NotesView().tag(AppTab.notes)
                 HomeView().tag(AppTab.create)
+                LibraryView().tag(AppTab.library)
                 TemplatesView().tag(AppTab.templates)
             }
             .environmentObject(bannerController)
