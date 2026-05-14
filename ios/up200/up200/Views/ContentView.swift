@@ -209,14 +209,19 @@ struct ProjectGroupDetailView: View {
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
-    private var allProjects: [GenerationProject] {
-        (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
-    }
+    @State private var cachedAllProjects: [GenerationProject] = []
+    @State private var lastDecodedSignature: Data = Data()
 
     private var items: [GenerationProject] {
         let ids = Set(initialItems.map { $0.id })
-        let live = allProjects.filter { ids.contains($0.id) }
+        let live = cachedAllProjects.filter { ids.contains($0.id) }
         return live.isEmpty ? initialItems : live.sorted { $0.date > $1.date }
+    }
+
+    private func rebuildAllProjects() {
+        guard lastDecodedSignature != projectsData else { return }
+        cachedAllProjects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+        lastDecodedSignature = projectsData
     }
 
     private func tabLabel(_ item: GenerationProject) -> String {
@@ -394,8 +399,10 @@ struct ProjectGroupDetailView: View {
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
         .task {
+            rebuildAllProjects()
             if items.indices.contains(selectedIndex) { editText = bodyText(for: items[selectedIndex]) }
         }
+        .onChange(of: projectsData) { rebuildAllProjects() }
         .onChange(of: selectedIndex) {
             if items.indices.contains(selectedIndex) { editText = bodyText(for: items[selectedIndex]) }
         }
