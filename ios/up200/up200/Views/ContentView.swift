@@ -1406,16 +1406,23 @@ struct AIActionsSheet: View {
     let onAction: (_ label: String, _ icon: String, _ instruction: String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var customPrompt: String = ""
+    @FocusState private var searchFocused: Bool
+
+    private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
     var body: some View {
-        AppPickerSheet(
-            title: "Ask AI",
-            query: $customPrompt,
-            placeholder: "Search or Ask AI…",
-            submitLabel: .send,
-            onSubmit: submitCustom,
-            onClose: { dismiss() }
-        ) {
+        VStack(spacing: 0) {
+            AppSearchField(
+                placeholder: "Search or Ask AI…",
+                text: $customPrompt,
+                isFocused: $searchFocused,
+                submitLabel: .send,
+                onSubmit: submitCustom
+            )
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
+
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(spacing: 2) {
@@ -1438,6 +1445,10 @@ struct AIActionsSheet: View {
                 .padding(.bottom, 24)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(sheetBg)
+        .presentationBackground(sheetBg)
+        .presentationCornerRadius(32)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
@@ -1456,13 +1467,13 @@ struct AIActionsSheet: View {
         } label: {
             HStack(spacing: 14) {
                 Image(systemName: action.icon)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(BrandColor.amber)
-                    .frame(width: 34, height: 34)
-                    .background(BrandColor.amber.opacity(0.14))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.85))
+                    .frame(width: 36, height: 36)
+                    .background(Color.white.opacity(0.10))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 Text(action.label)
-                    .font(.app(size: 16, weight: .regular))
+                    .font(.appBody)
                     .foregroundColor(.white)
                 Spacer()
             }
