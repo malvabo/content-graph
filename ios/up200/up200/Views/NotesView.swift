@@ -1272,7 +1272,13 @@ struct NotesView: View {
                     SearchOverlay(
                         query: $searchText,
                         placeholder: "Search notes",
-                        isFocused: $searchFocused
+                        isFocused: $searchFocused,
+                        onCancel: {
+                            withAnimation(.easeInOut(duration: 0.22)) {
+                                showSearch = false
+                                searchText = ""
+                            }
+                        }
                     ) {
                         notesList(
                             searchedNotes,
