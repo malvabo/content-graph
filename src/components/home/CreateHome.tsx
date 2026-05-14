@@ -391,7 +391,7 @@ function LinkInputSheet({ isOpen, onClose, onSave }: {
 
 // ─── VoiceRecordSheet (orbiting green blobs) ───────────────────────────────
 
-function VoiceRecordSheet({ isOpen, onClose, onSave }: {
+export function VoiceRecordSheet({ isOpen, onClose, onSave }: {
   isOpen: boolean; onClose: () => void; onSave: (label: string, transcript: string) => void;
 }) {
   const [recording, setRecording] = useState(false);
