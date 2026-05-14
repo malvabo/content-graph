@@ -870,22 +870,22 @@ private struct ChipFlowLayout: Layout {
 private struct AppTabBar: View {
     @Binding var selected: AppTab
 
-    private let mainItems: [(AppTab, String, String)] = [
-        (.notes,     "doc.text",        "Notes"),
-        (.library,   "books.vertical",  "Library"),
-        (.templates, "square.grid.2x2", "Templates"),
+    private let mainItems: [(AppTab, String, String, String)] = [
+        (.notes,     "doc.text",        "doc.text.fill",        "Notes"),
+        (.library,   "books.vertical",  "books.vertical.fill",  "Library"),
+        (.templates, "square.grid.2x2", "square.grid.2x2.fill", "Templates"),
     ]
 
     var body: some View {
         HStack(spacing: 10) {
             HStack(spacing: 4) {
-                ForEach(mainItems, id: \.0.rawValue) { tab, icon, label in
+                ForEach(mainItems, id: \.0.rawValue) { tab, icon, filled, label in
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         selected = tab
                     } label: {
                         VStack(spacing: 2) {
-                            Image(systemName: selected == tab ? "\(icon).fill" : icon)
+                            Image(systemName: selected == tab ? filled : icon)
                                 .font(.system(size: 17, weight: selected == tab ? .semibold : .regular))
                             Text(label)
                                 .font(.system(size: 10, weight: selected == tab ? .semibold : .regular))

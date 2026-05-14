@@ -1113,8 +1113,12 @@ struct NotesView: View {
     private func scheduleSave() {
         pendingSave?.cancel()
         let snapshot = notes
-        let work = DispatchWorkItem {
+        var work: DispatchWorkItem!
+        work = DispatchWorkItem {
             NotesStore.saveInBackground(snapshot)
+            // Only clear the marker if we're still the latest scheduled save.
+            // A newer scheduleSave() would have replaced pendingSave already.
+            if pendingSave === work { pendingSave = nil }
         }
         pendingSave = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
