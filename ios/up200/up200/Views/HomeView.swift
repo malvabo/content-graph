@@ -1562,14 +1562,29 @@ private struct SourcesBlock: View {
         guard let data = try? await item.loadTransferable(type: Data.self),
               let cgImage = UIImage(data: data)?.cgImage else { return "" }
         return await withCheckedContinuation { continuation in
+            var resumed = false
             let request = VNRecognizeTextRequest { req, _ in
+                guard !resumed else { return }
+                resumed = true
                 let text = (req.results as? [VNRecognizedTextObservation])?
                     .compactMap { $0.topCandidates(1).first?.string }
                     .joined(separator: "\n") ?? ""
                 continuation.resume(returning: text)
             }
             request.recognitionLevel = .accurate
-            try? VNImageRequestHandler(cgImage: cgImage).perform([request])
+            // VNImageRequestHandler.perform invokes the request's completion
+            // handler synchronously on success. If it throws, the handler is
+            // never called — so without this catch + safety-net the
+            // continuation would leak on any unrecognised image format.
+            do {
+                try VNImageRequestHandler(cgImage: cgImage).perform([request])
+            } catch {
+                // fall through to safety net
+            }
+            if !resumed {
+                resumed = true
+                continuation.resume(returning: "")
+            }
         }
     }
 }
