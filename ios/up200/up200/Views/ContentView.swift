@@ -1049,9 +1049,10 @@ private struct RecordingMiniBar: View {
                 .updating($dragTranslation) { value, state, _ in
                     state = value.translation
                 }
-                .onEnded { value in
-                    dragOffset.width += value.translation.width
-                    dragOffset.height += value.translation.height
+                .onEnded { _ in
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                        dragOffset = .zero
+                    }
                 }
         )
         .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.86), value: dragTranslation)
