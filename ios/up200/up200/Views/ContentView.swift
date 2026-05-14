@@ -853,19 +853,16 @@ private struct AppTabBar: View {
             }
             .padding(.horizontal, 6)
             .padding(.vertical, 6)
-            .background(
+            .appLiquidGlass(in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(.regularMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.22), Color.white.opacity(0.06)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ),
-                                lineWidth: 0.5
-                            )
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.22), Color.white.opacity(0.06)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 0.5
                     )
             )
 
@@ -877,13 +874,10 @@ private struct AppTabBar: View {
                     .font(.system(size: 22, weight: .regular))
                     .foregroundColor(.white)
                     .frame(width: 76, height: 76)
-                    .background(
+                    .appLiquidGlass(in: Circle())
+                    .overlay(
                         Circle()
-                            .fill(.regularMaterial)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
-                            )
+                            .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
                     )
             }
             .buttonStyle(.plain)
@@ -1136,6 +1130,20 @@ struct TopBarPillDivider: View {
     }
 }
 
+extension View {
+    /// Applies iOS 26 Liquid Glass when available; on older iOS the view
+    /// falls back to a `.regularMaterial` fill behind the same shape so the
+    /// chrome still reads as glass-like.
+    @ViewBuilder
+    func appLiquidGlass<S: Shape>(in shape: S) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular, in: shape)
+        } else {
+            self.background(shape.fill(.regularMaterial))
+        }
+    }
+}
+
 struct InlineTopBar<Trailing: View>: View {
     let title: String
     @ViewBuilder var trailing: () -> Trailing
@@ -1143,7 +1151,7 @@ struct InlineTopBar<Trailing: View>: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(title)
-                .font(.appBodyBold)
+                .font(.app(size: 22, weight: .semibold))
                 .foregroundColor(.white)
                 .fixedSize(horizontal: true, vertical: false)
                 .accessibilityAddTraits(.isHeader)
@@ -1151,8 +1159,8 @@ struct InlineTopBar<Trailing: View>: View {
             trailing()
         }
         .padding(.horizontal, 16)
-        .padding(.top, 8)
-        .padding(.bottom, 10)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
     }
 }
 
