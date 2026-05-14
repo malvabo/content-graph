@@ -346,6 +346,9 @@ final class RecordingController: ObservableObject {
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             DispatchQueue.main.async {
                 guard let self else { return }
+                // Guard: cancel() or finish() may have cleared saveHandler while the
+                // auth dialog was on screen. Don't start the engine for a dead session.
+                guard self.saveHandler != nil else { return }
                 guard status == .authorized else {
                     self.permissionDenied = true
                     self.reset()
@@ -358,6 +361,7 @@ final class RecordingController: ObservableObject {
                             self.reset()
                             return
                         }
+                        guard self.saveHandler != nil else { return }
                         self.startEngine()
                     }
                 }

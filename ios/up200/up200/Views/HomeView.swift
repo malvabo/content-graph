@@ -822,7 +822,7 @@ private struct TextInputSheet: View {
 
     private var keyboardToolbar: some View {
         HStack(spacing: 0) {
-            kbButton(icon: "photo") {
+            kbButton(icon: "doc.on.clipboard") {
                 if let clip = UIPasteboard.general.string, !clip.isEmpty {
                     bodyText += clip
                     focusedField = .body
@@ -975,8 +975,11 @@ private struct LinkInputSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button("Cancel") { dismiss() }
-                    .foregroundColor(Color.white.opacity(0.55))
+                Button("Cancel") {
+                    guard !isFetching else { return }
+                    dismiss()
+                }
+                .foregroundColor(Color.white.opacity(0.55))
                 Spacer()
                 Text(stagedURLs.count > 1 ? "Link sources" : "Link source")
                     .font(.appLabelBold)
@@ -2040,20 +2043,6 @@ private struct FormatPickerSheet: View {
 }
 
 // MARK: - Formats Block
-
-private struct PopularTemplate: Identifiable {
-    let id: String
-    let label: String
-    let formatIDs: [String]
-}
-
-private let popularTemplates: [PopularTemplate] = [
-    PopularTemplate(id: "social-pack", label: "Social pack",   formatIDs: ["linkedin", "twitter", "instagram"]),
-    PopularTemplate(id: "newsletter",  label: "Newsletter",    formatIDs: ["newsletter"]),
-    PopularTemplate(id: "blog",        label: "Blog post",     formatIDs: ["blog"]),
-    PopularTemplate(id: "video",       label: "Video script",  formatIDs: ["youtube", "video"]),
-    PopularTemplate(id: "research",    label: "Research pack", formatIDs: ["newsletter", "blog", "twitter"]),
-]
 
 private struct FormatsBlock: View {
     @Binding var selectedFormatIDs: Set<String>

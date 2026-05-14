@@ -196,6 +196,7 @@ struct ProjectGroupDetailView: View {
     @State private var showAIMenu = false
     @State private var showChat = false
     @State private var isAIProcessing = false
+    @State private var aiTransformTask: Task<Void, Never>? = nil
     @State private var aiFailed = false
     @State private var aiFailReason = ""
     @State private var showAIPreview = false
@@ -523,6 +524,7 @@ struct ProjectGroupDetailView: View {
                  ? "Could not reach the API. Check your network and try again."
                  : aiFailReason)
         }
+        .onDisappear { aiTransformTask?.cancel() }
     }
 
     private func runAITransform(instruction: String, label: String, icon: String, source: String) {
@@ -539,8 +541,9 @@ struct ProjectGroupDetailView: View {
         aiPreviewInstruction = trimmedInstruction
         aiSourceSnapshot = source
         isAIProcessing = true
-        Task {
+        aiTransformTask = Task {
             let outcome = await AITransformService.transform(text: source, instruction: trimmedInstruction)
+            guard !Task.isCancelled else { return }
             await MainActor.run {
                 isAIProcessing = false
                 switch outcome {
@@ -1127,7 +1130,8 @@ private struct PulsingDot: View {
             .opacity(active && pulse ? 0.45 : 1.0)
             .scaleEffect(active && pulse ? 1.25 : 1.0)
             .animation(active ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : .default, value: pulse)
-            .onAppear { pulse = true }
+            .onAppear { pulse = active }
+            .onChange(of: active) { _, newActive in pulse = newActive }
     }
 }
 
