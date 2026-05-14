@@ -1,13 +1,24 @@
 import { useRef, useState } from 'react';
 import { VoiceRecordSheet } from './CreateHome';
 import { useVoiceStore } from '../../store/voiceStore';
+import { useSettingsStore } from '../../store/settingsStore';
+import { transcribeWithGroq } from '../../lib/groqTranscribe';
 
 const BG = '#1A1513';
+
+// Strip extension and clamp to a reasonable title length so the file name
+// "interview-with-jane-2024-10-final-v3.m4a" doesn't blow out the card.
+function titleFromFilename(name: string): string {
+  const base = name.replace(/\.[^./\\]+$/, '').trim();
+  if (!base) return 'Imported audio';
+  return base.length > 60 ? base.slice(0, 60) + '…' : base;
+}
 
 export default function NotesEmptyScreen({ onClose }: { onClose: () => void }) {
   const [showVoice, setShowVoice] = useState(false);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const addNote = useVoiceStore(s => s.addNote);
+  const updateNote = useVoiceStore(s => s.updateNote);
 
   const handleVoiceSave = (label: string, transcript: string) => {
     addNote({
@@ -23,17 +34,54 @@ export default function NotesEmptyScreen({ onClose }: { onClose: () => void }) {
 
   const handleAudioFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (!f) return;
+    // Reset immediately so re-picking the same file fires onChange.
+    e.target.value = '';
+    if (!f || f.size === 0) return;
+
+    const id = crypto.randomUUID();
+    const title = titleFromFilename(f.name);
+    const groqKey = useSettingsStore.getState().groqKey;
+
+    // Without a Groq key the import would land as a transcript-less note,
+    // which other views (workflow push, generation) silently reject. Mark it
+    // failed up front so the user sees a clear next step instead of silence.
+    if (!groqKey) {
+      addNote({
+        id,
+        title,
+        durationMs: 0,
+        transcript: '',
+        status: 'error',
+        errorReason: 'Add a Groq API key in Settings → API Keys → Groq to transcribe imported audio.',
+        createdAt: new Date().toISOString(),
+      });
+      onClose();
+      return;
+    }
+
     addNote({
-      id: crypto.randomUUID(),
-      title: f.name,
+      id,
+      title,
       durationMs: 0,
       transcript: '',
-      status: 'ready',
+      status: 'transcribing',
       createdAt: new Date().toISOString(),
     });
-    e.target.value = '';
     onClose();
+
+    void (async () => {
+      try {
+        const transcript = await transcribeWithGroq(f, groqKey);
+        if (!transcript) {
+          updateNote(id, { status: 'error', errorReason: 'Groq returned an empty transcript. The audio may be silent or unsupported.' });
+          return;
+        }
+        updateNote(id, { transcript, status: 'ready' });
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : 'Transcription failed';
+        updateNote(id, { status: 'error', errorReason: reason });
+      }
+    })();
   };
 
   return (

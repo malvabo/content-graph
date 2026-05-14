@@ -7,6 +7,7 @@ import SearchBar from '../ui/SearchBar';
 import { useGraphStore, type ContentNode } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { transcribeWithGroq } from '../../lib/groqTranscribe';
 import { computeSafePosition } from '../../utils/nodePlacement';
 import ContentModal from '../modals/ContentModal';
 import RecordButton from './RecordButton';
@@ -53,41 +54,6 @@ function pushVoiceNoteToWorkflow(noteId: string, noteTitle: string): 'ok' | 'no-
   useOutputStore.getState().setOutput(id, { text: transcript });
   graphState.setSelectedNodeId(id);
   return 'ok';
-}
-
-async function transcribeWithGroq(blob: Blob, apiKey: string): Promise<string> {
-  // Defensive trim: keys pasted into Settings before the save-time sanitizer
-  // shipped may still carry surrounding whitespace or quotes — Groq rejects
-  // those with a confusing "Invalid API Key" 401.
-  const key = apiKey.trim().replace(/^['"`]+|['"`]+$/g, '');
-  // Fingerprint only — never log the full key. Tells us on failure whether the
-  // key was missing, truncated, or looks shaped right.
-  console.info('[Groq]', { keyLen: key.length, prefix: key.slice(0, 4), suffix: key.slice(-4), blobBytes: blob.size, blobType: blob.type });
-  if (!key) throw new Error('Groq API key missing. Add it in Settings → API Keys → Groq.');
-  if (!key.startsWith('gsk_')) {
-    throw new Error('That doesn\'t look like a Groq key — it should start with "gsk_". Get one from https://console.groq.com/keys.');
-  }
-  const form = new FormData();
-  form.append('file', blob, 'recording.webm');
-  form.append('model', 'whisper-large-v3');
-  form.append('response_format', 'json');
-  const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}` },
-    body: form,
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    if (res.status === 401) {
-      throw new Error('Invalid Groq API key. Re-copy it from https://console.groq.com/keys (no quotes, no trailing spaces) and paste into Settings → API Keys → Groq.');
-    }
-    if (res.status === 429) {
-      throw new Error('Groq rate limit hit. Wait a moment and retry.');
-    }
-    throw new Error(`Groq ${res.status}: ${body || 'transcription failed'}`);
-  }
-  const data = await res.json();
-  return (data.text || '').trim();
 }
 
 function pickMimeType(): string | undefined {

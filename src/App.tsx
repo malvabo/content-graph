@@ -262,7 +262,7 @@ function AppInner() {
               />
             </Suspense>
           )}
-          {showPostOnboardingNotes && (
+          {showPostOnboardingNotes && activeView !== 'welcome' && (
             <Suspense fallback={null}>
               <NotesEmptyScreen onClose={() => setShowPostOnboardingNotes(false)} />
             </Suspense>
