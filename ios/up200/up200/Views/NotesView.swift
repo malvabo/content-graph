@@ -283,22 +283,29 @@ private struct NoteListRow: View {
     let note: Note
     private let amber = BrandColor.amber
 
+    // Build the title as a single Text so a starred-badge sits inline with
+    // the last wrapped line instead of floating at the block's vertical
+    // center. An HStack would place the star next to the whole Text block;
+    // embedding the symbol via Text(Image:) lets SwiftUI's text layout
+    // carry it along with the trailing glyphs.
+    private var titleText: Text {
+        let base = Text(note.displayTitle)
+        guard note.tags.contains("Starred") else { return base }
+        return base
+            + Text(" ")
+            + Text(Image(systemName: "star.fill"))
+                .foregroundStyle(BrandColor.glowGradient)
+    }
+
     var body: some View {
         HStack(spacing: 16) {
             NoteThumb(note: note)
 
             VStack(alignment: .leading, spacing: 5) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(note.displayTitle)
-                        .font(.appNavTitle)
-                        .foregroundColor(Color.white.opacity(0.88))
-                        .lineLimit(2)
-                    if note.tags.contains("Starred") {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 13))
-                            .foregroundStyle(BrandColor.glowGradient)
-                    }
-                }
+                titleText
+                    .font(.appNavTitle)
+                    .foregroundColor(Color.white.opacity(0.88))
+                    .lineLimit(2)
 
                 Text(RowDate.relative(from: note.updatedAt))
                     .font(.appSmall)
