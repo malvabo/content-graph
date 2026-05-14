@@ -1876,17 +1876,12 @@ private struct FormatPickerSheet: View {
     }
 
     private var primaryCTA: some View {
-        Button(action: commit) {
-            Text(ctaLabel)
-                .font(.appBodyBold)
-                .foregroundColor(draft.isEmpty ? Color.white.opacity(0.40) : .white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(draft.isEmpty ? Color.white.opacity(0.07) : amber)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .disabled(draft.isEmpty)
+        AnimatedLightsButton(
+            title: ctaLabel,
+            showSparks: true,
+            isEnabled: !draft.isEmpty,
+            action: commit
+        )
         .animation(.easeOut(duration: 0.2), value: draft.count)
     }
 
