@@ -828,27 +828,27 @@ private struct AppTabBar: View {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         selected = tab
                     } label: {
-                        VStack(spacing: 4) {
+                        VStack(spacing: 3) {
                             if tab == .create {
                                 SparkRaysShape()
                                     .stroke(style: StrokeStyle(
-                                        lineWidth: selected == tab ? 2.2 : 1.8,
+                                        lineWidth: selected == tab ? 2.0 : 1.6,
                                         lineCap: .round
                                     ))
-                                    .frame(width: 24, height: 24)
+                                    .frame(width: 20, height: 20)
                             } else {
                                 Image(systemName: icon)
-                                    .font(.system(size: 22, weight: selected == tab ? .semibold : .regular))
+                                    .font(.system(size: 19, weight: selected == tab ? .semibold : .regular))
                             }
                             Text(label)
-                                .font(.system(size: 13, weight: selected == tab ? .semibold : .regular))
+                                .font(.system(size: 11, weight: selected == tab ? .semibold : .regular))
                         }
                         .foregroundColor(selected == tab ? .white : Color.white.opacity(0.45))
-                        .frame(maxWidth: .infinity, minHeight: 64)
+                        .frame(maxWidth: .infinity, minHeight: 50)
                         .background(
                             Group {
                                 if selected == tab {
-                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
                                         .fill(Color.white.opacity(0.16))
                                 }
                             }
@@ -857,11 +857,11 @@ private struct AppTabBar: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 6)
-            .appLiquidGlass(in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 5)
+            .appLiquidGlass(in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [Color.white.opacity(0.22), Color.white.opacity(0.06)],
@@ -877,9 +877,9 @@ private struct AppTabBar: View {
                 selected = .create
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .regular))
+                    .font(.system(size: 19, weight: .regular))
                     .foregroundColor(.white)
-                    .frame(width: 76, height: 76)
+                    .frame(width: 60, height: 60)
                     .appLiquidGlass(in: Circle())
                     .overlay(
                         Circle()
@@ -1129,7 +1129,7 @@ struct InlineTopBar<Trailing: View>: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(title)
-                .font(.app(size: 22, weight: .semibold))
+                .font(.app(size: 30, weight: .bold))
                 .foregroundColor(.white)
                 .fixedSize(horizontal: true, vertical: false)
                 .accessibilityAddTraits(.isHeader)
@@ -1137,8 +1137,8 @@ struct InlineTopBar<Trailing: View>: View {
             trailing()
         }
         .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .padding(.bottom, 12)
+        .padding(.top, 12)
+        .padding(.bottom, 14)
     }
 }
 
