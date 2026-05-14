@@ -1987,7 +1987,6 @@ private let popularTemplates: [PopularTemplate] = [
 private struct FormatsBlock: View {
     @Binding var selectedFormatIDs: Set<String>
     @State private var showPicker = false
-    @State private var expanded: Bool = true
     @State private var suggestions: [ContentFormat] = []
 
     private var selectedFormats: [ContentFormat] {
@@ -2005,93 +2004,84 @@ private struct FormatsBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header — same style as PromptField/Details
             HStack(spacing: 10) {
-                SectionDisclosure(expanded: $expanded)
                 Text("Format")
                     .font(.appSubtextMedium)
                     .foregroundColor(Color.white.opacity(0.85))
-                if !expanded && !displayText.isEmpty {
-                    Text(displayText)
-                        .font(.appCaption)
-                        .foregroundColor(Color.white.opacity(0.30))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.top, 14)
+            .padding(.bottom, displayText.isEmpty ? 10 : 6)
 
-            if expanded {
-                // Display selected formats as text (matches Details text style)
-                Text(displayText.isEmpty ? "Choose output formats below…" : displayText)
+            if !displayText.isEmpty {
+                Text(displayText)
                     .font(.appSubtext)
-                    .foregroundColor(displayText.isEmpty ? Color.white.opacity(0.22) : Color.white.opacity(0.85))
+                    .foregroundColor(Color.white.opacity(0.85))
                     .lineLimit(3)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 14)
-
-                // Suggestion chip row: refresh · chips · expand
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        // Refresh
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            refreshSuggestions()
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(Color.white.opacity(0.45))
-                                .frame(width: 36, height: 36)
-                                .background(Color.white.opacity(0.06))
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-
-                        // Format suggestions
-                        ForEach(suggestions) { fmt in
-                            Button {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                withAnimation(.easeOut(duration: 0.15)) {
-                                    selectedFormatIDs.insert(fmt.id)
-                                    refreshSuggestions()
-                                }
-                            } label: {
-                                Text(fmt.label)
-                                    .font(.appCaptionMedium)
-                                    .foregroundColor(Color.white.opacity(0.65))
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 9)
-                                    .background(Color.white.opacity(0.06))
-                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                            .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                            .transition(.scale.combined(with: .opacity))
-                        }
-
-                        // Expand — opens full picker
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            showPicker = true
-                        } label: {
-                            Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(Color.white.opacity(0.45))
-                                .frame(width: 36, height: 36)
-                                .background(Color.white.opacity(0.06))
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 16)
-                }
-                .padding(.bottom, 14)
+                    .padding(.bottom, 10)
             }
+
+            // Suggestion chip row: refresh · chips · expand
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    // Refresh
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        refreshSuggestions()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color.white.opacity(0.45))
+                            .frame(width: 36, height: 36)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+
+                    // Format suggestions
+                    ForEach(suggestions) { fmt in
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            withAnimation(.easeOut(duration: 0.15)) {
+                                selectedFormatIDs.insert(fmt.id)
+                                refreshSuggestions()
+                            }
+                        } label: {
+                            Text(fmt.label)
+                                .font(.appCaptionMedium)
+                                .foregroundColor(Color.white.opacity(0.65))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 9)
+                                .background(Color.white.opacity(0.06))
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .transition(.scale.combined(with: .opacity))
+                    }
+
+                    // Expand — opens full picker
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        showPicker = true
+                    } label: {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color.white.opacity(0.45))
+                            .frame(width: 36, height: 36)
+                            .background(Color.white.opacity(0.06))
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 16)
+            }
+            .padding(.bottom, 14)
         }
         .onAppear { refreshSuggestions() }
         .onChange(of: selectedFormatIDs) { refreshSuggestions() }
@@ -2110,48 +2100,26 @@ private struct FormatsBlock: View {
 private struct PromptField: View {
     @Binding var prompt: String
     @FocusState private var focused: Bool
-    @State private var expanded: Bool = true
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                SectionDisclosure(expanded: $expanded)
-                Text("Details")
-                    .font(.appSubtextMedium)
-                    .foregroundColor(Color.white.opacity(0.85))
-                if !expanded && !prompt.isEmpty {
-                    Text(prompt)
-                        .font(.appCaption)
-                        .foregroundColor(Color.white.opacity(0.30))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-
-            if expanded {
-                // Multi-line TextField with axis:.vertical grows with content
-                // and doesn't engage its own scroll, so it plays nicely with
-                // the page-level ScrollView. TextEditor inside a height cap
-                // fights the parent for scroll gestures.
-                TextField(
-                    text: $prompt,
-                    axis: .vertical
-                ) {
-                    Text("Leave empty to generate from sources and format.")
-                        .foregroundStyle(Color.white.opacity(0.22))
-                }
-                .font(.appSubtext)
-                .foregroundColor(Color.white.opacity(0.85))
-                .tint(.white)
-                .lineLimit(3...6)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 14)
-                .focused($focused)
-            }
+        // Multi-line TextField with axis:.vertical grows with content
+        // and doesn't engage its own scroll, so it plays nicely with
+        // the page-level ScrollView. TextEditor inside a height cap
+        // fights the parent for scroll gestures.
+        TextField(
+            text: $prompt,
+            axis: .vertical
+        ) {
+            Text("Leave empty to generate from sources and format.")
+                .foregroundStyle(Color.white.opacity(0.22))
         }
+        .font(.appSubtext)
+        .foregroundColor(Color.white.opacity(0.85))
+        .tint(.white)
+        .lineLimit(3...6)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .focused($focused)
     }
 }
 
