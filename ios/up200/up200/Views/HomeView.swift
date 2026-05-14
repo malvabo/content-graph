@@ -2086,17 +2086,7 @@ private struct FormatsBlock: View {
                                         refreshSuggestions()
                                     }
                                 } label: {
-                                    Text(fmt.label)
-                                        .font(.appCaptionMedium)
-                                        .foregroundColor(Color.white.opacity(0.65))
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 9)
-                                        .background(Color.white.opacity(0.06))
-                                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
-                                        )
+                                    Pill(title: fmt.label, style: .suggestion)
                                 }
                                 .buttonStyle(.plain)
                                 .transition(.scale.combined(with: .opacity))
@@ -2214,19 +2204,11 @@ private struct BrandCard: View {
                         }
                     }
                 } label: {
-                    HStack(spacing: 5) {
-                        Text(selectedBrand)
-                            .font(.appSubtextMedium)
-                            .foregroundColor(Color.white.opacity(0.70))
-                        Image(systemName: "chevron.up.chevron.down")
-                            .font(.app(size: 11, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.35))
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Color.white.opacity(0.09))
-                    .clipShape(Capsule())
-                    .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.5))
+                    Pill(
+                        title: selectedBrand,
+                        style: .neutral,
+                        trailingSystemImage: "chevron.up.chevron.down"
+                    )
                 }
             }
             .padding(.horizontal, 16)

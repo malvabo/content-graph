@@ -284,14 +284,7 @@ struct ProjectGroupDetailView: View {
                         HStack(spacing: 6) {
                             ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
                                 Button { selectTab(idx) } label: {
-                                    Text(tabLabel(item))
-                                        .font(.app(size: 14, weight: selectedIndex == idx ? .semibold : .regular))
-                                        .foregroundColor(selectedIndex == idx ? .white : Color.white.opacity(0.45))
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 7)
-                                        .background(selectedIndex == idx ? Color.white.opacity(0.12) : Color.clear)
-                                        .clipShape(Capsule())
-                                        .overlay(Capsule().stroke(selectedIndex == idx ? Color.white.opacity(0.20) : Color.clear, lineWidth: 0.5))
+                                    Pill(title: tabLabel(item), style: .tab(selectedIndex == idx))
                                 }
                                 .buttonStyle(.plain)
                                 .animation(.easeOut(duration: 0.15), value: selectedIndex)
@@ -768,14 +761,7 @@ private struct TemplateTagFlow: View {
                         else { selectedIDs.insert(fmt.id) }
                     }
                 } label: {
-                    Text(fmt.label)
-                        .font(.app(size: 14, weight: selected ? .semibold : .regular))
-                        .foregroundColor(selected ? .white : Color.white.opacity(0.55))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(selected ? Color.white.opacity(0.14) : Color.white.opacity(0.07))
-                        .clipShape(Capsule())
-                        .overlay(Capsule().stroke(selected ? Color.white.opacity(0.30) : Color.white.opacity(0.10), lineWidth: 0.5))
+                    Pill(title: fmt.label, style: .filter(selected))
                 }
                 .buttonStyle(.plain)
                 .animation(.easeOut(duration: 0.15), value: selected)
@@ -1486,25 +1472,13 @@ struct AIPreviewSheet: View {
                         withAnimation { didCopy = false }
                     }
                 } label: {
-                    Text(didCopy ? "Copied" : "Copy")
-                        .font(.appBodyBold)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 22)
-                        .frame(height: 40)
-                        .overlay(Capsule().stroke(Color.white.opacity(0.20), lineWidth: 0.5))
-                        .clipShape(Capsule())
+                    Pill(title: didCopy ? "Copied" : "Copy", style: .outline, size: .large)
                 }
                 .buttonStyle(.plain)
                 .disabled(isLoading)
 
                 Button(action: onApply) {
-                    Text("Apply")
-                        .font(.appBodyBold)
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 22)
-                        .frame(height: 40)
-                        .background(.white)
-                        .clipShape(Capsule())
+                    Pill(title: "Apply", style: .solid, size: .large)
                 }
                 .buttonStyle(.plain)
                 .disabled(isLoading)

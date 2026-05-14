@@ -800,14 +800,7 @@ private struct FilterChip: View {
 
     var body: some View {
         Button(action: action) {
-            Text(label)
-                .font(.app(size: 14, weight: isSelected ? .semibold : .regular))
-                .foregroundColor(isSelected ? .white : Color.white.opacity(0.55))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(isSelected ? SelectionStyle.fill : Color.white.opacity(0.08))
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(isSelected ? SelectionStyle.stroke : Color.clear, lineWidth: 0.5))
+            Pill(title: label, style: .filter(isSelected))
         }
         .buttonStyle(.plain)
         .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isSelected)
