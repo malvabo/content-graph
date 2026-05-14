@@ -972,6 +972,26 @@ struct ContentView: View {
                 NoteVoiceSheet()
                     .environmentObject(recordingController)
             }
+            // Mini bar sits in its own safeAreaInset so it stacks naturally
+            // above the tab bar inset — no fixed pixel math needed.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if (recordingController.isRecording || recordingController.isPaused) && !recordingController.showingSheet {
+                    RecordingMiniBar(
+                        onTap: {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            selectedTab = .notes
+                            recordingController.showingSheet = true
+                        },
+                        onStop: {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            recordingController.finish()
+                        }
+                    )
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
+                }
+            }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !keyboardVisible && !chromeController.hideTabBar {
                     AppTabBar(selected: $selectedTab)
@@ -1002,27 +1022,6 @@ struct ContentView: View {
                 .padding(.top, 8)
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .zIndex(2)
-            }
-
-            if (recordingController.isRecording || recordingController.isPaused) && !recordingController.showingSheet {
-                VStack {
-                    Spacer()
-                    RecordingMiniBar(
-                        onTap: {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            selectedTab = .notes
-                            recordingController.showingSheet = true
-                        },
-                        onStop: {
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            recordingController.finish()
-                        }
-                    )
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, (!keyboardVisible && !chromeController.hideTabBar) ? 96 : 12)
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-                .zIndex(3)
             }
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)

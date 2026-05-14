@@ -391,7 +391,11 @@ final class RecordingController: ObservableObject {
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
+        // Throttle UI updates to 20 Hz. The audio callback fires ~43×/sec
+        // (1024 samples @ 44100 Hz); dispatching to main every call floods the
+        // main queue and freezes gesture handling (e.g. dragging the sheet down).
+        var lastLevelDispatch: Double = 0
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             req.append(buffer)
             guard let channels = buffer.floatChannelData else { return }
             let frames = Int(buffer.frameLength)
@@ -403,6 +407,9 @@ final class RecordingController: ObservableObject {
                 sum += s * s
             }
             let rms = (sum / Float(frames)).squareRoot()
+            let now = CFAbsoluteTimeGetCurrent()
+            guard now - lastLevelDispatch >= 1.0 / 20.0 else { return }
+            lastLevelDispatch = now
             DispatchQueue.main.async {
                 self?.audioLevel = rms
             }

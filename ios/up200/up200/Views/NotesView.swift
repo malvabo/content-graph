@@ -102,7 +102,8 @@ private final class NoteDictation: ObservableObject {
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
+        var lastLevelDispatch: Double = 0
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             req.append(buffer)
             guard let channels = buffer.floatChannelData else { return }
             let frames = Int(buffer.frameLength)
@@ -114,6 +115,9 @@ private final class NoteDictation: ObservableObject {
                 sum += s * s
             }
             let rms = (sum / Float(frames)).squareRoot()
+            let now = CFAbsoluteTimeGetCurrent()
+            guard now - lastLevelDispatch >= 1.0 / 20.0 else { return }
+            lastLevelDispatch = now
             DispatchQueue.main.async { [weak self] in
                 self?.audioLevel = rms
             }
