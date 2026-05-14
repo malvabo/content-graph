@@ -473,16 +473,17 @@ struct ProjectGroupDetailView: View {
         aiSourceSnapshot = source
         isAIProcessing = true
         Task {
-            let result = await AITransformService.transform(text: source, instruction: trimmedInstruction)
+            let outcome = await AITransformService.transform(text: source, instruction: trimmedInstruction)
             await MainActor.run {
                 isAIProcessing = false
-                if let result, !result.isEmpty {
+                switch outcome {
+                case .success(let result):
                     aiPreviewText = result
                     if !showAIPreview { showAIPreview = true }
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                } else {
+                case .failure(let err):
                     aiFailReason = AITransformService.isKeyConfigured
-                        ? "The model didn't return any text. Try again."
+                        ? err.userMessage
                         : "Add your Anthropic API key in the Create tab first."
                     aiFailed = true
                 }
@@ -1237,9 +1238,11 @@ struct AITransformService {
         return !key.isEmpty && !key.hasPrefix("$(")
     }
 
-    static func transform(text: String, instruction: String) async -> String? {
+    static func transform(text: String, instruction: String) async -> Result<String, APICallError> {
         let apiKey = KeychainService.load() ?? ""
-        guard !apiKey.isEmpty, let url = URL(string: "https://api.anthropic.com/v1/messages") else { return nil }
+        guard !apiKey.isEmpty, let url = URL(string: "https://api.anthropic.com/v1/messages") else {
+            return .failure(.http(401, "Missing API key"))
+        }
 
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
@@ -1257,18 +1260,31 @@ struct AITransformService {
             "system": system,
             "messages": [["role": "user", "content": user]]
         ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else { return nil }
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
+            return .failure(.decode)
+        }
         req.httpBody = httpBody
 
-        guard let (data, resp) = try? await URLSession.shared.data(for: req),
-              (resp as? HTTPURLResponse)?.statusCode == 200,
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let data: Data
+        let resp: URLResponse
+        do {
+            (data, resp) = try await URLSession.shared.data(for: req)
+        } catch {
+            return .failure(.network(error.localizedDescription))
+        }
+
+        let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard status == 200 else {
+            return .failure(.http(status, anthropicErrorMessage(from: data)))
+        }
+
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let content = (json["content"] as? [[String: Any]])?.first,
               let text = content["text"] as? String
-        else { return nil }
+        else { return .failure(.decode) }
 
         let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return result.isEmpty ? nil : result
+        return result.isEmpty ? .failure(.empty) : .success(result)
     }
 }
 

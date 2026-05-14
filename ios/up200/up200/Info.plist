@@ -59,7 +59,5 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<key>ANTHROPIC_API_KEY</key>
-	<string>$(ANTHROPIC_API_KEY)</string>
 </dict>
 </plist>
