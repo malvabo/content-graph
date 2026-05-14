@@ -95,12 +95,45 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
 
+    // ---- background cache ----
+    // The gradient is viewport-sized but static. Draw it once into an offscreen
+    // canvas and blit it each frame instead of recreating 3 gradient objects
+    // per tick (which GC'd thousands of times per second on mobile).
+    const bgCanvas = document.createElement('canvas');
+    const bgCtx = bgCanvas.getContext('2d')!;
+
+    const drawBg = (w: number, h: number) => {
+      bgCanvas.width  = w;
+      bgCanvas.height = h;
+      const gr = bgCtx.createLinearGradient(w * 0.2, 0, w * 0.8, h);
+      gr.addColorStop(0,    'rgb(33,25,20)');
+      gr.addColorStop(0.35, 'rgb(26,20,18)');
+      gr.addColorStop(0.65, 'rgb(20,15,13)');
+      gr.addColorStop(1,    'rgb(15,13,10)');
+      bgCtx.fillStyle = gr;
+      bgCtx.fillRect(0, 0, w, h);
+
+      const radius = Math.max(w, h) * 0.7;
+      const glowTL = bgCtx.createRadialGradient(w * 0.05, h * 0.05, 0, w * 0.05, h * 0.05, radius);
+      glowTL.addColorStop(0, 'rgba(140, 77, 20, 0.35)');
+      glowTL.addColorStop(1, 'rgba(140, 77, 20, 0)');
+      bgCtx.fillStyle = glowTL;
+      bgCtx.fillRect(0, 0, w, h);
+
+      const glowBR = bgCtx.createRadialGradient(w * 1.0, h * 0.85, 0, w * 1.0, h * 0.85, radius);
+      glowBR.addColorStop(0, 'rgba(77, 51, 20, 0.22)');
+      glowBR.addColorStop(1, 'rgba(77, 51, 20, 0)');
+      bgCtx.fillStyle = glowBR;
+      bgCtx.fillRect(0, 0, w, h);
+    };
+
     // ---- resize ----
     const resize = () => {
       canvas.width  = window.innerWidth  * devicePixelRatio;
       canvas.height = window.innerHeight * devicePixelRatio;
       canvas.style.width  = `${window.innerWidth}px`;
       canvas.style.height = `${window.innerHeight}px`;
+      drawBg(canvas.width, canvas.height);
     };
     resize();
     window.addEventListener('resize', resize);
@@ -175,33 +208,6 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
       };
     };
 
-    // ---- draw gradient ----
-    // Warm-dark base + two amber radial glows, matching the iOS scene.
-    const drawGradient = () => {
-      const w = canvas.width;
-      const h = canvas.height;
-      const gr = ctx.createLinearGradient(w * 0.2, 0, w * 0.8, h);
-      gr.addColorStop(0,    'rgb(33,25,20)');
-      gr.addColorStop(0.35, 'rgb(26,20,18)');
-      gr.addColorStop(0.65, 'rgb(20,15,13)');
-      gr.addColorStop(1,    'rgb(15,13,10)');
-      ctx.fillStyle = gr;
-      ctx.fillRect(0, 0, w, h);
-
-      const radius = Math.max(w, h) * 0.7;
-      const glowTL = ctx.createRadialGradient(w * 0.05, h * 0.05, 0, w * 0.05, h * 0.05, radius);
-      glowTL.addColorStop(0, 'rgba(140, 77, 20, 0.35)');
-      glowTL.addColorStop(1, 'rgba(140, 77, 20, 0)');
-      ctx.fillStyle = glowTL;
-      ctx.fillRect(0, 0, w, h);
-
-      const glowBR = ctx.createRadialGradient(w * 1.0, h * 0.85, 0, w * 1.0, h * 0.85, radius);
-      glowBR.addColorStop(0, 'rgba(77, 51, 20, 0.22)');
-      glowBR.addColorStop(1, 'rgba(77, 51, 20, 0)');
-      ctx.fillStyle = glowBR;
-      ctx.fillRect(0, 0, w, h);
-    };
-
     // ---- loop ----
     let start: number | null = null;
 
@@ -215,7 +221,7 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      drawGradient();
+      ctx.drawImage(bgCanvas, 0, 0, cw, ch);
 
       // -- clouds: anchored position, breathing scale + opacity --
       // Cosine waves give natural ease-in-out at the extremes. The phase

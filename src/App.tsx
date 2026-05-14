@@ -1,15 +1,8 @@
 import { ReactFlowProvider } from '@xyflow/react';
-import GraphCanvas from './components/canvas/GraphCanvas';
-import CanvasToolbar from './components/canvas/CanvasToolbar';
-import IconNav from './components/canvas/IconNav';
-import VoiceLibrary from './components/canvas/VoiceLibrary';
-import ScriptSensePanel from './components/canvas/ScriptSensePanel';
-import ScriptLibrary from './components/canvas/ScriptLibrary';
 import { useScriptStore } from './store/scriptStore';
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, lazy, Suspense } from 'react';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Component, type ReactNode } from 'react';
-import MobileWorkflow from './components/canvas/MobileWorkflow';
 import { useAuthStore } from './store/authStore';
 import { useSettingsStore } from './store/settingsStore';
 import { useBrandsStore } from './store/brandsStore';
@@ -17,6 +10,32 @@ import { useGraphStore, type ContentNode } from './store/graphStore';
 import { supabase } from './lib/supabase';
 import { injectCustomFonts } from './utils/customFonts';
 import AuthGate from './components/auth/AuthGate';
+import { useIsMobile } from './hooks/useIsMobile';
+// Heavy view-specific components are lazy-loaded so they don't inflate the
+// initial JS parse cost on startup. Each chunk loads on first navigation.
+import MobileBottomBar from './components/mobile/MobileBottomBar';
+import CreateHome from './components/home/CreateHome';
+import TypewriterLogo from './components/TypewriterLogo';
+
+const GraphCanvas = lazy(() => import('./components/canvas/GraphCanvas'));
+const CanvasToolbar = lazy(() => import('./components/canvas/CanvasToolbar'));
+const IconNav = lazy(() => import('./components/canvas/IconNav'));
+const VoiceLibrary = lazy(() => import('./components/canvas/VoiceLibrary'));
+const ScriptSensePanel = lazy(() => import('./components/canvas/ScriptSensePanel'));
+const ScriptLibrary = lazy(() => import('./components/canvas/ScriptLibrary'));
+const MobileWorkflow = lazy(() => import('./components/canvas/MobileWorkflow'));
+const EmptyCanvasOverlay = lazy(() => import('./components/canvas/EmptyCanvasOverlay'));
+const Intro = lazy(() => import('./components/Intro'));
+const OnboardingScreen = lazy(() => import('./components/OnboardingScreen'));
+const WorkflowLibraryView = lazy(() => import('./components/canvas/WorkflowLibrary'));
+const SettingsPanel = lazy(() => import('./components/canvas/SettingsPanel'));
+const CardsPanel = lazy(() => import('./components/canvas/CardsPanel'));
+const CardsLibrary = lazy(() => import('./components/canvas/CardsLibrary'));
+const InfographicsPanel = lazy(() => import('./components/canvas/InfographicsPanel'));
+const MobileLibrary = lazy(() => import('./components/mobile/MobileLibrary'));
+const NotesEmptyScreen = lazy(() => import('./components/home/NotesEmptyScreen'));
+const WelcomeScreen = lazy(() => import('./components/WelcomeScreen'));
+const QuickMode = lazy(() => import('./components/canvas/QuickMode'));
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; btnHover: boolean }> {
   state = { error: null as Error | null, btnHover: false };
@@ -47,22 +66,6 @@ class ViewErrorBoundary extends Component<{ children: ReactNode; label: string }
     return this.props.children;
   }
 }
-import EmptyCanvasOverlay from './components/canvas/EmptyCanvasOverlay';
-import Intro from './components/Intro';
-import OnboardingScreen from './components/OnboardingScreen';
-import WorkflowLibraryView from './components/canvas/WorkflowLibrary';
-import SettingsPanel from './components/canvas/SettingsPanel';
-import CardsPanel from './components/canvas/CardsPanel';
-import CardsLibrary from './components/canvas/CardsLibrary';
-import InfographicsPanel from './components/canvas/InfographicsPanel';
-import MobileBottomBar from './components/mobile/MobileBottomBar';
-import MobileLibrary from './components/mobile/MobileLibrary';
-import CreateHome from './components/home/CreateHome';
-import NotesEmptyScreen from './components/home/NotesEmptyScreen';
-import WelcomeScreen from './components/WelcomeScreen';
-import { useIsMobile } from './hooks/useIsMobile';
-import TypewriterLogo from './components/TypewriterLogo';
-import QuickMode from './components/canvas/QuickMode';
 
 export default function App() {
   return <ErrorBoundary><ReactFlowProvider><AppInner /></ReactFlowProvider></ErrorBoundary>;
@@ -215,10 +218,12 @@ function AppInner() {
 
 
   if (showOnboarding) return (
-    <OnboardingScreen onFinish={() => {
-      localStorage.setItem('onboarding_complete', '1');
-      setShowOnboarding(false);
-    }} />
+    <Suspense fallback={null}>
+      <OnboardingScreen onFinish={() => {
+        localStorage.setItem('onboarding_complete', '1');
+        setShowOnboarding(false);
+      }} />
+    </Suspense>
   );
 
   if (authLoading) return (
@@ -236,25 +241,31 @@ function AppInner() {
       <div className="flex flex-col" style={{ height: '100dvh' }}>
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {activeView === 'library' ? (
-            <MobileLibrary />
+            <Suspense fallback={null}><MobileLibrary /></Suspense>
           ) : activeView === 'settings' ? (
-            <SettingsPanel />
+            <Suspense fallback={null}><SettingsPanel /></Suspense>
           ) : (
             <CreateHome onShowOnboarding={() => setShowOnboardingOverlay(true)} />
           )}
           {activeView === 'welcome' && (
-            <WelcomeScreen
-              onGetStarted={() => { setActiveView('create'); setShowPostOnboardingNotes(true); }}
-            />
+            <Suspense fallback={null}>
+              <WelcomeScreen
+                onGetStarted={() => { setActiveView('create'); setShowPostOnboardingNotes(true); }}
+              />
+            </Suspense>
           )}
           {showOnboardingOverlay && (
-            <OnboardingScreen
-              onFinish={() => setShowOnboardingOverlay(false)}
-              onClose={() => setShowOnboardingOverlay(false)}
-            />
+            <Suspense fallback={null}>
+              <OnboardingScreen
+                onFinish={() => setShowOnboardingOverlay(false)}
+                onClose={() => setShowOnboardingOverlay(false)}
+              />
+            </Suspense>
           )}
           {showPostOnboardingNotes && (
-            <NotesEmptyScreen onClose={() => setShowPostOnboardingNotes(false)} />
+            <Suspense fallback={null}>
+              <NotesEmptyScreen onClose={() => setShowPostOnboardingNotes(false)} />
+            </Suspense>
           )}
         </div>
         <MobileBottomBar active={activeView} onChange={setActiveView} />
@@ -271,14 +282,17 @@ function AppInner() {
       )}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
         {/* Hide the left nav in full-screen / detail modes; those views carry their own top back bar. */}
-        {activeView !== 'intro' && activeView !== 'workflow' && activeView !== 'cards' && !(activeView === 'infographics' && hashParam) && (
-          <IconNav activeView={activeView} onViewChange={setActiveView} />
-        )}
+        <Suspense fallback={null}>
+          {activeView !== 'intro' && activeView !== 'workflow' && activeView !== 'cards' && !(activeView === 'infographics' && hashParam) && (
+            <IconNav activeView={activeView} onViewChange={setActiveView} />
+          )}
+        </Suspense>
 
         {/* Floating main-content card: rounded, elevated, separated from the
             flush sidebar on the left. */}
         <div className="flex-1 flex flex-col min-h-0" style={{ margin: 8, borderRadius: 8, background: 'var(--color-bg-card)', boxShadow: 'var(--shadow-panel)', border: '1px solid var(--color-border-subtle)', overflow: 'hidden' }}>
 
+        <Suspense fallback={null}>
         {activeView === 'intro' && (
           <div className="flex-1 overflow-auto">
             <Intro onComplete={() => { setActiveView('library'); }} />
@@ -362,6 +376,7 @@ function AppInner() {
             onExitEditor={() => setActiveView('infographics')}
           />
         )}
+        </Suspense>
         </div>
       </div>
     </div>

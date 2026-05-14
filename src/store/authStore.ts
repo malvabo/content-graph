@@ -4,6 +4,28 @@ import type { User, Session } from '@supabase/supabase-js';
 
 let authSub: { unsubscribe: () => void } | null = null;
 
+// Read a non-expired Supabase session from localStorage synchronously so we
+// can skip the auth loading gate for returning users. This avoids the black
+// screen that lasted up to 5 s while getSession() resolved over the network.
+function peekCachedUser(): User | null {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith('sb-') || !key.endsWith('-auth-token')) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      const expiresAt = parsed?.expires_at as number | undefined;
+      if (expiresAt && expiresAt > Math.floor(Date.now() / 1000) + 60) {
+        return (parsed.user as User) ?? null;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+const cachedUser = peekCachedUser();
+
 interface AuthState {
   user: User | null;
   session: Session | null;
@@ -18,17 +40,19 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>()((set) => ({
-  user: null,
+  // Start with the synchronously-peeked user so the app renders immediately
+  // for returning users without waiting for getSession() to complete.
+  user: cachedUser,
   session: null,
-  loading: true,
+  loading: false,
   guest: false,
 
   init: async () => {
     if (!supabase) { set({ loading: false }); return; }
     // Safety net: if getSession() hangs (edge network issues, blocked domain),
-    // release the loading gate after 5s so the app can still render AuthGate.
+    // release the loading gate after 2 s (was 5 s).
     const timeout = new Promise<{ data: { session: null } }>(resolve =>
-      setTimeout(() => resolve({ data: { session: null } }), 5000)
+      setTimeout(() => resolve({ data: { session: null } }), 2000)
     );
     try {
       const { data } = await Promise.race([supabase.auth.getSession(), timeout]);
