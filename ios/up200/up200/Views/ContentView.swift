@@ -711,7 +711,6 @@ private struct TemplateEditPage: View {
                                     .background(Color.clear)
                                     .tint(.white)
                                     .padding(.horizontal, 16)
-                                    .contentMargins(.bottom, 96, for: .scrollContent)
                                     .focused($focus, equals: .prompt)
                                     .frame(minHeight: 200)
                             }
