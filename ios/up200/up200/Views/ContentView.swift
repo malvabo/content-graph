@@ -32,79 +32,79 @@ struct LibraryView: View {
             .sorted { ($0.items.first?.date ?? .distantPast) > ($1.items.first?.date ?? .distantPast) }
     }
 
+    @ViewBuilder
+    private func libraryList(_ groups: [(title: String, items: [GenerationProject])], emptyTitle: String, emptySubtitle: String?) -> some View {
+        if groups.isEmpty {
+            VStack {
+                Spacer()
+                VStack(spacing: 12) {
+                    Image(systemName: searchText.isEmpty && !showSearch ? "tray" : "magnifyingglass")
+                        .font(.system(size: 36))
+                        .foregroundColor(Color.white.opacity(0.20))
+                    Text(emptyTitle)
+                        .foregroundColor(Color.white.opacity(0.30))
+                    if let sub = emptySubtitle {
+                        Text(sub)
+                            .font(.footnote)
+                            .foregroundColor(Color.white.opacity(0.20))
+                    }
+                }
+                Spacer()
+            }
+        } else {
+            ScrollView(showsIndicators: false) {
+                LazyVStack(spacing: 0) {
+                    ForEach(groups, id: \.title) { group in
+                        NavigationLink {
+                            ProjectGroupDetailView(groupTitle: group.title, initialItems: group.items)
+                        } label: {
+                            LibraryGroupRow(title: group.title, items: group.items)
+                        }
+                        .buttonStyle(.plain)
+
+                        Rectangle()
+                            .fill(Color.white.opacity(0.06))
+                            .frame(height: 0.5)
+                            .padding(.leading, 20)
+                    }
+                }
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 bg.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    if showSearch {
-                        HStack(spacing: 10) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.appLabel)
-                                .foregroundColor(Color.white.opacity(0.35))
-                            TextField("Search library", text: $searchText)
-                                .font(.appLabel)
-                                .foregroundColor(.white)
-                                .tint(.white)
-                                .focused($searchFocused)
-                            if !searchText.isEmpty {
-                                Button { searchText = "" } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .font(.appSubtext)
-                                        .foregroundColor(Color.white.opacity(0.30))
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.07))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        .padding(.bottom, 10)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-
                     Rectangle()
                         .fill(Color.white.opacity(0.06))
                         .frame(height: 0.5)
 
-                    if filteredGroups.isEmpty {
-                        Spacer()
-                        VStack(spacing: 12) {
-                            Image(systemName: searchText.isEmpty ? "tray" : "magnifyingglass")
-                                .font(.system(size: 36))
-                                .foregroundColor(Color.white.opacity(0.20))
-                            Text(searchText.isEmpty ? "No generations yet" : "No results")
-                                .foregroundColor(Color.white.opacity(0.30))
-                            if searchText.isEmpty {
-                                Text("Your content outputs will appear here")
-                                    .font(.footnote)
-                                    .foregroundColor(Color.white.opacity(0.20))
-                            }
-                        }
-                        Spacer()
-                    } else {
-                        ScrollView(showsIndicators: false) {
-                            LazyVStack(spacing: 0) {
-                                ForEach(filteredGroups, id: \.title) { group in
-                                    NavigationLink {
-                                        ProjectGroupDetailView(groupTitle: group.title, initialItems: group.items)
-                                    } label: {
-                                        LibraryGroupRow(title: group.title, items: group.items)
-                                    }
-                                    .buttonStyle(.plain)
+                    libraryList(
+                        cachedGroups,
+                        emptyTitle: "No generations yet",
+                        emptySubtitle: "Your content outputs will appear here"
+                    )
+                }
+                .blur(radius: showSearch ? 18 : 0)
+                .allowsHitTesting(!showSearch)
+                .animation(.easeInOut(duration: 0.22), value: showSearch)
 
-                                    Rectangle()
-                                        .fill(Color.white.opacity(0.06))
-                                        .frame(height: 0.5)
-                                        .padding(.leading, 20)
-                                }
-                            }
-                        }
+                if showSearch {
+                    SearchOverlay(
+                        query: $searchText,
+                        placeholder: "Search library",
+                        isFocused: $searchFocused
+                    ) {
+                        libraryList(
+                            filteredGroups,
+                            emptyTitle: searchText.isEmpty ? "Start typing" : "No results",
+                            emptySubtitle: nil
+                        )
                     }
+                    .transition(.opacity)
                 }
             }
             .navigationTitle("")
@@ -1139,6 +1139,63 @@ struct TopBarPillDivider: View {
         Rectangle()
             .fill(Color.white.opacity(0.10))
             .frame(width: 0.5, height: 18)
+    }
+}
+
+struct SearchOverlay<Results: View>: View {
+    @Binding var query: String
+    let placeholder: String
+    let isFocused: FocusState<Bool>.Binding
+    @ViewBuilder var results: () -> Results
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.black.opacity(0.35)
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.appLabel)
+                        .foregroundColor(Color.white.opacity(0.45))
+                    TextField(placeholder, text: $query)
+                        .font(.appLabel)
+                        .foregroundColor(.white)
+                        .tint(.white)
+                        .focused(isFocused)
+                        .submitLabel(.search)
+                    if !query.isEmpty {
+                        Button { query = "" } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.appSubtext)
+                                .foregroundColor(Color.white.opacity(0.40))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.white.opacity(0.10))
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                        )
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 12)
+
+                results()
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                isFocused.wrappedValue = true
+            }
+        }
     }
 }
 
