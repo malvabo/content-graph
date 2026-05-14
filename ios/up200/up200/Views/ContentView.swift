@@ -1485,10 +1485,6 @@ private struct AIAction: Identifiable {
 private let quickAIActions: [AIAction] = [
     AIAction(label: "Fix Spelling and Grammar", icon: "checkmark.seal", instruction: "Fix any spelling and grammar mistakes. Make no other changes."),
     AIAction(label: "Make Longer", icon: "text.append", instruction: "Make this text longer, adding more detail and context while preserving the original voice."),
-]
-
-private let builtInAIActions: [AIAction] = [
-    AIAction(label: "Improve Writing", icon: "wand.and.stars", instruction: "Improve the writing: clearer sentences, stronger word choice, better flow. Preserve the meaning and roughly the same length."),
     AIAction(label: "Explain This in Simple Terms", icon: "lightbulb", instruction: "Rewrite this so a smart non-expert can understand it easily. Keep it concise."),
     AIAction(label: "Make Shorter", icon: "text.alignleft", instruction: "Shorten this while preserving the key points. Aim for roughly half the length."),
     AIAction(label: "Change Tone to Professional", icon: "bubble.left", instruction: "Rewrite this in a polished, professional tone suitable for a business context."),
@@ -1496,45 +1492,18 @@ private let builtInAIActions: [AIAction] = [
 
 struct AIActionsSheet: View {
     let onAction: (_ label: String, _ icon: String, _ instruction: String) -> Void
-    @State private var customPrompt: String = ""
-    @FocusState private var searchFocused: Bool
 
     private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
     var body: some View {
-        VStack(spacing: 0) {
-            AppSearchField(
-                placeholder: "Search actions…",
-                text: $customPrompt,
-                isFocused: $searchFocused,
-                submitLabel: .send,
-                onSubmit: submitCustom
-            )
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
-
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(spacing: 2) {
-                        ForEach(quickAIActions) { action in
-                            actionRow(action)
-                        }
-                    }
-
-                    Text("Built-In")
-                        .font(.app(size: 13, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.40))
-                        .padding(.horizontal, 20)
-
-                    VStack(spacing: 2) {
-                        ForEach(builtInAIActions) { action in
-                            actionRow(action)
-                        }
-                    }
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 2) {
+                ForEach(quickAIActions) { action in
+                    actionRow(action)
                 }
-                .padding(.bottom, 24)
             }
+            .padding(.top, 32)
+            .padding(.bottom, 24)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(sheetBg)
@@ -1542,13 +1511,6 @@ struct AIActionsSheet: View {
         .presentationCornerRadius(32)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-    }
-
-    private func submitCustom() {
-        let trimmed = customPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        let short = String(trimmed.prefix(40))
-        onAction("Ask AI: \(short)", "sparkles", trimmed)
     }
 
     private func actionRow(_ action: AIAction) -> some View {
@@ -1565,7 +1527,7 @@ struct AIActionsSheet: View {
                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 Text(action.label)
                     .font(.appBody)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color.white.opacity(0.92))
                 Spacer()
             }
             .padding(.horizontal, 16)
