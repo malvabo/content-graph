@@ -80,6 +80,7 @@ struct ChatView: View {
     @State private var showResourcePicker = false
     @State private var selectedProjectIDs: Set<UUID> = []
     @State private var didSeedContext = false
+    @State private var sendTask: Task<Void, Never>? = nil
     @FocusState private var inputFocused: Bool
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
@@ -117,6 +118,7 @@ struct ChatView: View {
             ResourcePickerSheet(projects: projects, selectedIDs: $selectedProjectIDs)
         }
         .presentationBackground(bg)
+        .onDisappear { sendTask?.cancel() }
         .onAppear {
             guard !didSeedContext else { return }
             didSeedContext = true
@@ -359,8 +361,9 @@ struct ChatView: View {
         isLoading = true
         let snapshot = messages
         let ctx = selectedProjects
-        Task {
+        sendTask = Task {
             let outcome = await ChatService.send(messages: snapshot, contextItems: ctx)
+            guard !Task.isCancelled else { return }
             await MainActor.run {
                 let content: String
                 switch outcome {
@@ -408,7 +411,6 @@ private struct MessageBubble: View {
 
 private struct TypingIndicator: View {
     @State private var phase = 0
-    private let timer = Timer.publish(every: 0.38, on: .main, in: .common).autoconnect()
 
     var body: some View {
         HStack(spacing: 5) {
@@ -424,7 +426,12 @@ private struct TypingIndicator: View {
         .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .onReceive(timer) { _ in phase = (phase + 1) % 3 }
+        .task {
+            while true {
+                try await Task.sleep(nanoseconds: 380_000_000)
+                phase = (phase + 1) % 3
+            }
+        }
     }
 }
 

@@ -24,12 +24,18 @@ struct LibraryView: View {
     }
 
     private func buildGroups() {
-        let projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
-        var dict: [String: [GenerationProject]] = [:]
-        for p in projects { dict[p.title, default: []].append(p) }
-        cachedGroups = dict
-            .map { (title: $0.key, items: $0.value.sorted { $0.date > $1.date }) }
-            .sorted { ($0.items.first?.date ?? .distantPast) > ($1.items.first?.date ?? .distantPast) }
+        switch loadBlob([GenerationProject].self, from: projectsData) {
+        case .empty:
+            cachedGroups = []
+        case .ok(let projects):
+            var dict: [String: [GenerationProject]] = [:]
+            for p in projects { dict[p.title, default: []].append(p) }
+            cachedGroups = dict
+                .map { (title: $0.key, items: $0.value.sorted { $0.date > $1.date }) }
+                .sorted { ($0.items.first?.date ?? .distantPast) > ($1.items.first?.date ?? .distantPast) }
+        case .corrupt:
+            break // preserve existing cachedGroups; don't silently clear user data
+        }
     }
 
     @ViewBuilder
@@ -520,6 +526,7 @@ struct ProjectGroupDetailView: View {
     }
 
     private func runAITransform(instruction: String, label: String, icon: String, source: String) {
+        guard !isAIProcessing else { return }
         let trimmedInstruction = instruction.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedInstruction.isEmpty else { return }
         guard !source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {

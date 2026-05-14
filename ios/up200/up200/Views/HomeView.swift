@@ -435,12 +435,20 @@ final class VoiceRecorder: ObservableObject {
     }
 
     func stop() {
-        audioEngine.stop()
-        recognitionRequest?.endAudio()
-        audioEngine.inputNode.removeTap(onBus: 0)
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        guard isRecording else { return }
         isRecording = false
         audioLevel = 0
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        let engine = audioEngine
+        let req = recognitionRequest
+        recognitionRequest = nil
+        Task.detached(priority: .userInitiated) {
+            engine.stop()
+            req?.endAudio()
+            engine.inputNode.removeTap(onBus: 0)
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
     }
 
     private func startEngine() {
@@ -466,11 +474,12 @@ final class VoiceRecorder: ObservableObject {
 
         recognitionTask = rec.recognitionTask(with: request) { [weak self] result, error in
             DispatchQueue.main.async {
+                guard let self else { return }
                 if let result {
-                    self?.transcript = result.bestTranscription.formattedString
+                    self.transcript = result.bestTranscription.formattedString
                 }
-                if error != nil || (result?.isFinal ?? false) {
-                    self?.stop()
+                if (error != nil || (result?.isFinal ?? false)), self.isRecording {
+                    self.stop()
                 }
             }
         }
@@ -478,6 +487,7 @@ final class VoiceRecorder: ObservableObject {
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
+        var lastLevelDispatch: Double = 0
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             request.append(buffer)
             guard let channelData = buffer.floatChannelData?[0] else { return }
@@ -485,6 +495,9 @@ final class VoiceRecorder: ObservableObject {
             var rms: Float = 0
             for i in 0..<frames { rms += channelData[i] * channelData[i] }
             let level = sqrt(rms / Float(max(frames, 1)))
+            let now = CFAbsoluteTimeGetCurrent()
+            guard now - lastLevelDispatch >= 1.0 / 20.0 else { return }
+            lastLevelDispatch = now
             DispatchQueue.main.async { self?.audioLevel = level }
         }
 
@@ -1122,7 +1135,6 @@ struct VoiceRecordSheet: View {
     @State private var seconds = 0
     @State private var isGenerating = false
 
-    private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let amber = BrandColor.amber
 
     private var timeLabel: String {
@@ -1289,11 +1301,15 @@ struct VoiceRecordSheet: View {
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: recorder.isRecording)
         .animation(.easeOut(duration: 0.2), value: isGenerating)
-        .task { if autoStart { recorder.start() } }
-        .onDisappear { recorder.stop() }
-        .onReceive(clock) { _ in
-            if recorder.isRecording { seconds += 1 }
+        .task {
+            if autoStart { recorder.start() }
+            while true {
+                do { try await Task.sleep(nanoseconds: 1_000_000_000) }
+                catch { break }
+                if recorder.isRecording { seconds += 1 }
+            }
         }
+        .onDisappear { recorder.stop() }
         .onChange(of: recorder.isRecording) { _, recording in
             if recording { seconds = 0 }
         }

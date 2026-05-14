@@ -61,17 +61,19 @@ struct OnboardingView: View {
                         return
                     }
                     for i in 0..<brandFull.count {
-                        try? await Task.sleep(nanoseconds: 110_000_000)
-                        if Task.isCancelled { return }
+                        do { try await Task.sleep(nanoseconds: 110_000_000) }
+                        catch { return }
                         brandTypedLength = i + 1
                     }
                 }
                 .task {
                     // step-end caret blink: instant on/off every 0.45s,
                     // matches the web TypewriterLogo timing.
-                    while !Task.isCancelled {
-                        try? await Task.sleep(nanoseconds: 450_000_000)
-                        if Task.isCancelled { return }
+                    // Uses `try await` so CancellationError exits immediately
+                    // rather than looping with a swallowed error.
+                    while true {
+                        do { try await Task.sleep(nanoseconds: 450_000_000) }
+                        catch { return }
                         caretOn.toggle()
                     }
                 }
