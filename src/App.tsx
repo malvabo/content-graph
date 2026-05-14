@@ -113,6 +113,16 @@ function AppInner() {
     }
   }, [isMobile, activeView, setActiveView]);
 
+  // Mirror: desktop-only views silently fall through to CreateHome on mobile
+  // (the mobile branch only renders MobileLibrary, SettingsPanel, or
+  // CreateHome). A shared link like #scriptlist or #voice would land the user
+  // on a blank Create with no breadcrumb back. Bounce them home instead.
+  useEffect(() => {
+    if (!isMobile) return;
+    const desktopOnly = new Set(['workflow', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics']);
+    if (desktopOnly.has(activeView)) setActiveView('create');
+  }, [isMobile, activeView, setActiveView]);
+
   // Mobile is a dark-mode-only experience — force the class on mount/change,
   // and restore the user's stored preference when switching back to desktop.
   useEffect(() => {
