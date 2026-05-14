@@ -1634,14 +1634,14 @@ private struct NotePickerSheet: View {
                                         .font(.appSubtext)
                                         .foregroundColor(Color.white.opacity(0.40))
                                         .frame(width: 22)
-                                    VStack(alignment: .leading, spacing: 3) {
+                                    VStack(alignment: .leading, spacing: 4) {
                                         Text(note.displayTitle)
-                                            .font(.appSubtextMedium)
-                                            .foregroundColor(Color.white.opacity(0.85))
+                                            .font(.app(size: 19, weight: .medium))
+                                            .foregroundColor(Color.white.opacity(0.88))
                                             .lineLimit(1)
                                         if !note.preview.isEmpty {
                                             Text(note.preview)
-                                                .font(.appCaption)
+                                                .font(.appMicro)
                                                 .foregroundColor(Color.white.opacity(0.38))
                                                 .lineLimit(1)
                                         }
@@ -1649,7 +1649,7 @@ private struct NotePickerSheet: View {
                                     Spacer()
                                 }
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 13)
+                                .padding(.vertical, 18)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
