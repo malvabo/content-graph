@@ -219,6 +219,7 @@ final class RecordingController: ObservableObject {
         ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var timer: Timer?
     private var saveHandler: ((String) -> Void)?
+    private var teardownTask: Task<Void, Never>? = nil
 
     var fullTranscript: String {
         if accumulated.isEmpty { return transcript }
@@ -333,7 +334,7 @@ final class RecordingController: ObservableObject {
         let engine = audioEngine
         let req = request
         request = nil
-        Task.detached(priority: .userInitiated) {
+        teardownTask = Task.detached(priority: .userInitiated) {
             engine.stop()
             req?.endAudio()
             engine.inputNode.removeTap(onBus: 0)
@@ -368,7 +369,15 @@ final class RecordingController: ObservableObject {
         task?.cancel()
         task = nil
         startupError = nil
+        let prev = teardownTask
+        teardownTask = nil
+        Task { @MainActor [weak self] in
+            await prev?.value
+            self?.activateAndStart()
+        }
+    }
 
+    private func activateAndStart() {
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(.record, mode: .measurement, options: .duckOthers)
