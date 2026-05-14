@@ -196,6 +196,10 @@ final class RecordingController: ObservableObject {
         if isRecording || isPaused {
             finish()
         }
+        // Defensive: an earlier session may have left a tap installed and the
+        // audio session active (e.g. SFSpeechRecognizer emitted isFinal without
+        // a user-driven stop). Re-installing on a tapped input crashes.
+        teardownEngine()
         self.saveHandler = saveHandler
         accumulated = ""
         transcript = ""
@@ -326,7 +330,7 @@ final class RecordingController: ObservableObject {
                     self?.transcript = result.bestTranscription.formattedString
                 }
                 if error != nil || (result?.isFinal ?? false) {
-                    self?.isRecording = false
+                    self?.teardownEngine()
                 }
             }
         }
