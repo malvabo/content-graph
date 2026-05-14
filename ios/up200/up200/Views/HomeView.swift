@@ -404,6 +404,7 @@ final class VoiceRecorder: ObservableObject {
     @Published var transcript = ""
     @Published var isRecording = false
     @Published var permissionDenied = false
+    @Published var startupError: String? = nil
     @Published var audioLevel: Float = 0.0
 
     private let audioEngine = AVAudioEngine()
@@ -416,10 +417,18 @@ final class VoiceRecorder: ObservableObject {
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             DispatchQueue.main.async {
                 guard let self else { return }
-                if status == .authorized {
-                    self.startEngine()
-                } else {
+                guard status == .authorized else {
                     self.permissionDenied = true
+                    return
+                }
+                AVAudioApplication.requestRecordPermission { granted in
+                    DispatchQueue.main.async {
+                        guard granted else {
+                            self.permissionDenied = true
+                            return
+                        }
+                        self.startEngine()
+                    }
                 }
             }
         }
@@ -428,9 +437,7 @@ final class VoiceRecorder: ObservableObject {
     func stop() {
         audioEngine.stop()
         recognitionRequest?.endAudio()
-        if audioEngine.inputNode.numberOfInputs > 0 {
-            audioEngine.inputNode.removeTap(onBus: 0)
-        }
+        audioEngine.inputNode.removeTap(onBus: 0)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         isRecording = false
         audioLevel = 0
@@ -439,13 +446,22 @@ final class VoiceRecorder: ObservableObject {
     private func startEngine() {
         recognitionTask?.cancel()
         recognitionTask = nil
+        startupError = nil
 
         let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.record, mode: .measurement, options: .duckOthers)
-        try? session.setActive(true, options: .notifyOthersOnDeactivation)
+        do {
+            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
+            return
+        }
 
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        guard let request = recognitionRequest, let rec = recognizer else { return }
+        guard let request = recognitionRequest, let rec = recognizer else {
+            startupError = "Speech recognition isn't available on this device."
+            return
+        }
         request.shouldReportPartialResults = true
 
         recognitionTask = rec.recognitionTask(with: request) { [weak self] result, error in
@@ -461,6 +477,7 @@ final class VoiceRecorder: ObservableObject {
 
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
+        inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             request.append(buffer)
             guard let channelData = buffer.floatChannelData?[0] else { return }
@@ -472,8 +489,12 @@ final class VoiceRecorder: ObservableObject {
         }
 
         audioEngine.prepare()
-        if (try? audioEngine.start()) != nil {
+        do {
+            try audioEngine.start()
             isRecording = true
+        } catch {
+            startupError = "Couldn't start the microphone: \(error.localizedDescription)"
+            inputNode.removeTap(onBus: 0)
         }
     }
 }

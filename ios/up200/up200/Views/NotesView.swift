@@ -10,6 +10,7 @@ private final class NoteDictation: ObservableObject {
     @Published var transcript: String = ""
     @Published var isRecording: Bool = false
     @Published var permissionDenied: Bool = false
+    @Published var startupError: String? = nil
     @Published var audioLevel: Float = 0.0  // RMS, ~0...1
 
     private let audioEngine = AVAudioEngine()
@@ -22,12 +23,20 @@ private final class NoteDictation: ObservableObject {
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             DispatchQueue.main.async {
                 guard let self else { return }
-                if status == .authorized {
-                    self.transcript = ""
-                    self.audioLevel = 0
-                    self.startEngine()
-                } else {
+                guard status == .authorized else {
                     self.permissionDenied = true
+                    return
+                }
+                AVAudioApplication.requestRecordPermission { granted in
+                    DispatchQueue.main.async {
+                        guard granted else {
+                            self.permissionDenied = true
+                            return
+                        }
+                        self.transcript = ""
+                        self.audioLevel = 0
+                        self.startEngine()
+                    }
                 }
             }
         }
@@ -50,9 +59,7 @@ private final class NoteDictation: ObservableObject {
     private func teardown() {
         audioEngine.stop()
         request?.endAudio()
-        if audioEngine.inputNode.numberOfInputs > 0 {
-            audioEngine.inputNode.removeTap(onBus: 0)
-        }
+        audioEngine.inputNode.removeTap(onBus: 0)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         isRecording = false
         audioLevel = 0
@@ -61,13 +68,22 @@ private final class NoteDictation: ObservableObject {
     private func startEngine() {
         task?.cancel()
         task = nil
+        startupError = nil
 
         let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.record, mode: .measurement, options: .duckOthers)
-        try? session.setActive(true, options: .notifyOthersOnDeactivation)
+        do {
+            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
+            return
+        }
 
         request = SFSpeechAudioBufferRecognitionRequest()
-        guard let req = request, let rec = recognizer else { return }
+        guard let req = request, let rec = recognizer else {
+            startupError = "Speech recognition isn't available on this device."
+            return
+        }
         req.shouldReportPartialResults = true
 
         task = rec.recognitionTask(with: req) { [weak self] result, error in
@@ -83,6 +99,7 @@ private final class NoteDictation: ObservableObject {
 
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
+        inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             req.append(buffer)
             guard let channels = buffer.floatChannelData else { return }
@@ -101,8 +118,12 @@ private final class NoteDictation: ObservableObject {
         }
 
         audioEngine.prepare()
-        if (try? audioEngine.start()) != nil {
+        do {
+            try audioEngine.start()
             isRecording = true
+        } catch {
+            startupError = "Couldn't start the microphone: \(error.localizedDescription)"
+            inputNode.removeTap(onBus: 0)
         }
     }
 }
@@ -825,6 +846,7 @@ private struct FilterChip: View {
 
 struct NotesView: View {
     @EnvironmentObject private var recording: RecordingController
+    @Environment(\.scenePhase) private var scenePhase
     @State private var notes: [Note] = []
     @State private var editingNote: Note? = nil
     @State private var pendingSave: DispatchWorkItem? = nil
@@ -880,6 +902,13 @@ struct NotesView: View {
         }
         pendingSave = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
+    }
+
+    private func flushSave() {
+        guard let work = pendingSave else { return }
+        work.cancel()
+        pendingSave = nil
+        NotesStore.saveInBackground(notes)
     }
 
     private func removeTag(_ tag: String) {
@@ -1069,7 +1098,7 @@ struct NotesView: View {
                         if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
                             notes[idx] = saved
                         }
-                        scheduleSave()
+                        flushSave()
                     },
                     onDelete: { delete(note) }
                 )
@@ -1085,6 +1114,9 @@ struct NotesView: View {
             }
         }
         .task { notes = await NotesStore.loadAsync() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .inactive || phase == .background { flushSave() }
+        }
     }
 }
 
