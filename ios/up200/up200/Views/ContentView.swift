@@ -316,11 +316,8 @@ struct ProjectGroupDetailView: View {
                             }
                         } label: {
                             Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(copied ? Color.white.opacity(0.70) : .white)
                                 .contentTransition(.symbolEffect(.replace))
-                                .frame(width: 44, height: 38)
-                                .contentShape(Rectangle())
+                                .topBarPillLabel()
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(copied ? "Copied" : "Copy")
@@ -338,10 +335,7 @@ struct ProjectGroupDetailView: View {
                             }
                         } label: {
                             Image(systemName: "ellipsis")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(AppText.primary)
-                                .frame(width: 44, height: 38)
-                                .contentShape(Rectangle())
+                                .topBarPillLabel()
                         }
                         .accessibilityLabel("More")
                     }
@@ -1433,11 +1427,7 @@ struct TopBarPillButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 18, weight: .regular))
-                .foregroundColor(AppText.primary)
-                .frame(width: 44, height: 38)
-                .background(isActive ? Color.white.opacity(0.12) : Color.clear)
-                .clipShape(Capsule())
+                .topBarPillLabel(isActive: isActive)
         }
         .buttonStyle(.plain)
     }
@@ -1448,6 +1438,20 @@ struct TopBarPillDivider: View {
         Rectangle()
             .fill(Color.white.opacity(0.10))
             .frame(width: 0.5, height: 18)
+    }
+}
+
+extension View {
+    /// Styles a glyph to sit inside a `TopBarPill` as one of its segments.
+    /// Use this for `Menu` / `ShareLink` labels where `TopBarPillButton`'s
+    /// action-only API doesn't fit.
+    func topBarPillLabel(isActive: Bool = false) -> some View {
+        self
+            .font(.system(size: 18, weight: .regular))
+            .foregroundColor(AppText.primary)
+            .frame(width: 44, height: 38)
+            .background(isActive ? Color.white.opacity(0.12) : Color.clear)
+            .clipShape(Capsule())
     }
 }
 

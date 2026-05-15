@@ -1013,36 +1013,29 @@ private struct NoteEditorPage: View {
 
             Spacer()
 
-            if hasContent {
-                ShareLink(item: combined) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(AppText.primary)
-                        .frame(width: 36, height: 36)
-                        .background(Color.white.opacity(0.08))
-                        .clipShape(Circle())
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-                }
-            }
+            TopBarPill {
+                if hasContent {
+                    ShareLink(item: combined) {
+                        Image(systemName: "square.and.arrow.up")
+                            .topBarPillLabel()
+                    }
+                    .accessibilityLabel("Share")
 
-            Menu {
-                Button(role: .destructive) {
-                    performDelete()
-                } label: {
-                    Label("Delete Note", systemImage: "trash")
+                    TopBarPillDivider()
                 }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(AppText.primary)
-                    .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(Circle())
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
+
+                Menu {
+                    Button(role: .destructive) {
+                        performDelete()
+                    } label: {
+                        Label("Delete Note", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .topBarPillLabel()
+                }
+                .accessibilityLabel("More")
             }
-            .accessibilityLabel("More")
         }
     }
 }
