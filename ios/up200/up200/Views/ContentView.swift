@@ -267,6 +267,14 @@ struct ProjectGroupDetailView: View {
     }
 
     private func selectTab(_ index: Int) {
+        // If a dictation is in progress, abandon it before switching tabs;
+        // otherwise the next .onChange(of: dictation.transcript) would
+        // overwrite the new tab's text with the previous tab's pre-dictation
+        // snapshot + the partial transcript.
+        if dictation.isRecording {
+            dictation.cancel()
+            editText = editTextBeforeDictation
+        }
         persistCurrent()
         selectedIndex = index
         if items.indices.contains(index) { editText = bodyText(for: items[index]) }
