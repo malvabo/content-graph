@@ -1175,14 +1175,6 @@ struct NotesView: View {
         return sortedNotes.filter { $0.tags.contains(tag) }
     }
 
-    private var pinnedNotes: [Note] {
-        tagFilteredNotes.filter { $0.isPinned }
-    }
-
-    private var unpinnedNotes: [Note] {
-        tagFilteredNotes.filter { !$0.isPinned }
-    }
-
     private var searchedNotes: [Note] {
         let q = searchText.lowercased()
         guard !q.isEmpty else { return tagFilteredNotes }
