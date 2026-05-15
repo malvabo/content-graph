@@ -260,8 +260,14 @@ private enum RowDate {
         }
         let cal = Calendar.current
         if cal.isDateInYesterday(date) { return "Viewed yesterday" }
-        let d = Int(diff / 86400)
-        if d < 7 { return "Viewed \(d) days ago" }
+        // Count calendar days, not 24-hour intervals — otherwise a note from
+        // the day before yesterday at 22:00 reads "1 days ago" instead of 2.
+        let d = cal.dateComponents(
+            [.day],
+            from: cal.startOfDay(for: date),
+            to: cal.startOfDay(for: Date())
+        ).day ?? 0
+        if d < 7 { return "Viewed \(d) day\(d == 1 ? "" : "s") ago" }
         return "Viewed \(monthDay.string(from: date))"
     }
 }
