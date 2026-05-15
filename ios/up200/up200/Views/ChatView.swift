@@ -1,4 +1,6 @@
 import SwiftUI
+import UniformTypeIdentifiers
+import PDFKit
 
 // MARK: - Chat Message Model
 
@@ -8,10 +10,25 @@ struct ChatMessage: Identifiable {
     var content: String
 }
 
+// MARK: - Chat Context Source
+
+/// Unified context attachment. Documents (library projects), notes, and
+/// imported files all flow through the same shape so the chat API call
+/// stays a single code path.
+struct ChatContextSource: Identifiable, Equatable {
+    enum Kind: String { case document, note, file }
+
+    let id: String
+    let kind: Kind
+    let title: String      // displayed in the @-mention and picker
+    let preview: String    // single-line subtitle in the picker
+    let content: String    // full body sent to the API
+}
+
 // MARK: - Chat Service
 
 private struct ChatService {
-    static func send(messages: [ChatMessage], contextItems: [GenerationProject]) async -> Result<String, APICallError> {
+    static func send(messages: [ChatMessage], contextItems: [ChatContextSource]) async -> Result<String, APICallError> {
         guard let apiKey = KeychainService.load(), !apiKey.isEmpty,
               let url = URL(string: "https://api.anthropic.com/v1/messages") else {
             return .failure(.http(401, "Missing API key"))
@@ -27,7 +44,8 @@ private struct ChatService {
         var systemText = "You are a helpful content and writing assistant."
         if !contextItems.isEmpty {
             let ctx = contextItems.map {
-                "[\($0.outputType)] \($0.title):\n\($0.content.isEmpty ? $0.preview : $0.content)"
+                let body = $0.content.isEmpty ? $0.preview : $0.content
+                return "[\($0.kind.rawValue)] \($0.title):\n\(body)"
             }.joined(separator: "\n\n---\n\n")
             systemText += "\n\nThe user has provided these content pieces as context:\n\n\(ctx)"
         }
@@ -77,31 +95,65 @@ struct ChatView: View {
     @State private var messages: [ChatMessage] = []
     @State private var inputText = ""
     @State private var isLoading = false
-    @State private var showResourcePicker = false
-    @State private var selectedProjectIDs: Set<UUID> = []
-    @State private var seededProjectID: UUID? = nil
+    @State private var showMentionPicker = false
+    @State private var showFilePicker = false
+    @State private var selectedContextIDs: Set<String> = []
+    @State private var seededContextID: String? = nil
     @State private var didSeedContext = false
     @State private var sendTask: Task<Void, Never>? = nil
+    @State private var fileImportTask: Task<Void, Never>? = nil
     @State private var cachedProjects: [GenerationProject] = []
     @State private var lastDecodedSignature: Data = Data()
+    @State private var notes: [Note] = []
+    @State private var attachedFiles: [ChatContextSource] = []
     @State private var chatFailed: Bool = false
     @State private var chatFailReason: String = ""
     @FocusState private var inputFocused: Bool
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
-    private var projects: [GenerationProject] { cachedProjects }
-
-    private var selectedProjects: [GenerationProject] {
-        cachedProjects.filter { selectedProjectIDs.contains($0.id) }
+    private var documentSources: [ChatContextSource] {
+        cachedProjects.map { proj in
+            ChatContextSource(
+                id: "doc:\(proj.id.uuidString)",
+                kind: .document,
+                title: proj.outputType,
+                preview: proj.preview,
+                content: proj.content
+            )
+        }
     }
 
-    /// Projects sent as API context — selected pills plus the seeded doc
-    /// referenced via the prefilled `@`-mention.
-    private var contextProjects: [GenerationProject] {
-        var ids = selectedProjectIDs
-        if let s = seededProjectID { ids.insert(s) }
-        return cachedProjects.filter { ids.contains($0.id) }
+    private var noteSources: [ChatContextSource] {
+        notes
+            .filter { !$0.isEmpty }
+            .map { note in
+                ChatContextSource(
+                    id: "note:\(note.id.uuidString)",
+                    kind: .note,
+                    title: note.displayTitle,
+                    preview: note.preview,
+                    content: note.body
+                )
+            }
+    }
+
+    /// Everything pickable from the @ sheet — documents and notes. Files
+    /// live in `attachedFiles` because they're imported per-session.
+    private var availableMentions: [ChatContextSource] {
+        documentSources + noteSources
+    }
+
+    /// Full pool of sources the user has selected this session, used to
+    /// resolve `selectedContextIDs` for both the API and pill removal.
+    private var allSources: [ChatContextSource] {
+        availableMentions + attachedFiles
+    }
+
+    private var contextItems: [ChatContextSource] {
+        var ids = selectedContextIDs
+        if let s = seededContextID { ids.insert(s) }
+        return allSources.filter { ids.contains($0.id) }
     }
 
     private func rebuildProjects() {
@@ -133,8 +185,22 @@ struct ChatView: View {
                 inputArea
             }
         }
-        .sheet(isPresented: $showResourcePicker) {
-            ResourcePickerSheet(projects: projects, selectedIDs: $selectedProjectIDs)
+        .sheet(isPresented: $showMentionPicker) {
+            MentionPickerSheet(
+                documents: documentSources,
+                notes: noteSources,
+                onSelect: { source in
+                    attachMention(source)
+                }
+            )
+        }
+        .fileImporter(
+            isPresented: $showFilePicker,
+            allowedContentTypes: [.text, .plainText, .pdf],
+            allowsMultipleSelection: false
+        ) { result in
+            guard case .success(let urls) = result, let url = urls.first else { return }
+            importFile(at: url)
         }
         .alert("Message failed", isPresented: $chatFailed) {
             Button("OK", role: .cancel) {}
@@ -144,14 +210,22 @@ struct ChatView: View {
                  : chatFailReason)
         }
         .presentationBackground(bg)
-        .onDisappear { sendTask?.cancel() }
+        .onDisappear {
+            sendTask?.cancel()
+            fileImportTask?.cancel()
+        }
         .onAppear {
             rebuildProjects()
+            Task {
+                let loaded = await NotesStore.loadAsync()
+                await MainActor.run { notes = loaded }
+            }
             if !didSeedContext {
                 didSeedContext = true
                 if let id = initialContextIDs.first,
                    let proj = cachedProjects.first(where: { $0.id == id }) {
-                    seededProjectID = id
+                    let sourceID = "doc:\(proj.id.uuidString)"
+                    seededContextID = sourceID
                     inputText = "@\(proj.outputType) "
                 }
             }
@@ -194,13 +268,13 @@ struct ChatView: View {
             Spacer(minLength: 8)
 
             Button {
-                if !projects.isEmpty { showResourcePicker = true }
+                presentMentionPicker()
             } label: {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(
-                        selectedProjectIDs.isEmpty
-                            ? Color.white.opacity(projects.isEmpty ? 0.18 : 0.55)
+                        selectedContextIDs.isEmpty
+                            ? Color.white.opacity(availableMentions.isEmpty ? 0.18 : 0.55)
                             : .white
                     )
                     .frame(width: 32, height: 32)
@@ -278,23 +352,6 @@ struct ChatView: View {
 
     private var inputArea: some View {
         VStack(spacing: 0) {
-            if !selectedProjectIDs.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(selectedProjects) { proj in
-                            ContextPill(title: proj.outputType) {
-                                withAnimation(AppAnimation.quick) {
-                                    _ = selectedProjectIDs.remove(proj.id)
-                                }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 4)
-                }
-            }
-
             VStack(spacing: 0) {
                 ZStack(alignment: .topLeading) {
                     if inputText.isEmpty {
@@ -319,9 +376,9 @@ struct ChatView: View {
 
                 HStack(spacing: 4) {
                     Button {
-                        if let clip = UIPasteboard.general.string, !clip.isEmpty {
-                            inputText += String(clip.prefix(50_000))
-                        }
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        inputFocused = false
+                        showFilePicker = true
                     } label: {
                         Image(systemName: "paperclip")
                             .font(.system(size: 17))
@@ -331,10 +388,10 @@ struct ChatView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Attach file")
 
                     Button {
-                        inputText += "@"
-                        inputFocused = true
+                        presentMentionPicker()
                     } label: {
                         Image(systemName: "at")
                             .font(.system(size: 17))
@@ -344,6 +401,7 @@ struct ChatView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Mention a note or document")
 
                     Spacer()
 
@@ -385,6 +443,64 @@ struct ChatView: View {
 
     // MARK: Actions
 
+    private func presentMentionPicker() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        inputFocused = false
+        showMentionPicker = true
+    }
+
+    private func attachMention(_ source: ChatContextSource) {
+        if !selectedContextIDs.contains(source.id) {
+            selectedContextIDs.insert(source.id)
+        }
+        let mention = "@\(source.title) "
+        // Avoid stacking duplicates when the user re-picks the same item.
+        if !inputText.contains(mention) {
+            // Strip a dangling "@" the user may have typed before opening
+            // the sheet, so we don't leave "@@instagram" behind.
+            if inputText.hasSuffix("@") {
+                inputText.removeLast()
+            }
+            inputText += mention
+        }
+        showMentionPicker = false
+        inputFocused = true
+    }
+
+    private func importFile(at url: URL) {
+        fileImportTask?.cancel()
+        fileImportTask = Task {
+            let name = url.lastPathComponent
+            let content = readFileContent(from: url)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                let source = ChatContextSource(
+                    id: "file:\(UUID().uuidString)",
+                    kind: .file,
+                    title: name,
+                    preview: String(content.prefix(120)),
+                    content: content
+                )
+                attachedFiles.append(source)
+                attachMention(source)
+            }
+        }
+    }
+
+    private func readFileContent(from url: URL) -> String {
+        guard url.startAccessingSecurityScopedResource() else { return "" }
+        defer { url.stopAccessingSecurityScopedResource() }
+        if url.pathExtension.lowercased() == "pdf" {
+            return String((PDFDocument(url: url)?.string ?? "").prefix(8000))
+        }
+        guard let fh = try? FileHandle(forReadingFrom: url) else { return "" }
+        defer { try? fh.close() }
+        guard let data = try? fh.read(upToCount: 64_000) else { return "" }
+        if let text = String(data: data, encoding: .utf8) { return String(text.prefix(8000)) }
+        if let text = String(data: data, encoding: .isoLatin1) { return String(text.prefix(8000)) }
+        return ""
+    }
+
     private var canSend: Bool {
         !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isLoading
     }
@@ -397,7 +513,7 @@ struct ChatView: View {
         inputText = ""
         isLoading = true
         let snapshot = messages
-        let ctx = contextProjects
+        let ctx = contextItems
         sendTask = Task {
             let outcome = await ChatService.send(messages: snapshot, contextItems: ctx)
             await MainActor.run {
@@ -476,45 +592,15 @@ private struct TypingIndicator: View {
     }
 }
 
-// MARK: - Context Pill
+// MARK: - Mention Picker Sheet
 
-private struct ContextPill: View {
-    let title: String
-    let onRemove: () -> Void
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Text(title)
-                .font(.app(size: 12, weight: .medium))
-                .foregroundColor(Color.white.opacity(0.75))
-                .lineLimit(1)
-            Button(action: onRemove) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(Color.white.opacity(0.45))
-                    .frame(minWidth: 28, minHeight: 28)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Remove context")
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Color.white.opacity(0.07))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-        )
-    }
-}
-
-// MARK: - Resource Picker Sheet
-
-private struct ResourcePickerSheet: View {
-    let projects: [GenerationProject]
-    @Binding var selectedIDs: Set<UUID>
+private struct MentionPickerSheet: View {
+    let documents: [ChatContextSource]
+    let notes: [ChatContextSource]
+    let onSelect: (ChatContextSource) -> Void
     @Environment(\.dismiss) private var dismiss
+
+    private var isEmpty: Bool { documents.isEmpty && notes.isEmpty }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -530,7 +616,7 @@ private struct ResourcePickerSheet: View {
                 }
                 .accessibilityLabel("Close")
                 Spacer(minLength: 0)
-                Text("Add context")
+                Text("Mention")
                     .font(.app(size: 16, weight: .semibold))
                     .foregroundColor(AppText.primary)
                 Spacer(minLength: 0)
@@ -544,62 +630,31 @@ private struct ResourcePickerSheet: View {
                 .fill(Color.white.opacity(0.06))
                 .frame(height: 0.5)
 
-            if projects.isEmpty {
+            if isEmpty {
                 Spacer()
                 VStack(spacing: 12) {
                     Image(systemName: "tray")
                         .font(.app(size: 32, weight: .regular))
                         .foregroundColor(Color.white.opacity(0.20))
-                    Text("No library items yet")
+                    Text("Nothing to mention yet")
                         .font(.app(size: 15))
                         .foregroundColor(Color.white.opacity(0.30))
+                    Text("Create a note or document to reference it here.")
+                        .font(.app(size: 13))
+                        .foregroundColor(Color.white.opacity(0.22))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
                 }
                 .frame(maxWidth: .infinity)
                 Spacer()
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 8) {
-                        ForEach(projects) { proj in
-                            let selected = selectedIDs.contains(proj.id)
-                            Button {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                withAnimation(AppAnimation.quick) {
-                                    if selected {
-                                        _ = selectedIDs.remove(proj.id)
-                                    } else {
-                                        _ = selectedIDs.insert(proj.id)
-                                    }
-                                }
-                            } label: {
-                                HStack(spacing: 12) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(proj.outputType)
-                                            .font(.app(size: 14, weight: .semibold))
-                                            .foregroundColor(Color.white.opacity(0.88))
-                                            .lineLimit(1)
-                                        if !proj.preview.isEmpty {
-                                            Text(proj.preview)
-                                                .font(.app(size: 12))
-                                                .foregroundColor(Color.white.opacity(0.40))
-                                                .lineLimit(1)
-                                        }
-                                    }
-                                    Spacer()
-                                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 18))
-                                        .foregroundColor(selected ? .white : AppText.disabled)
-                                }
-                                .padding(14)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(selected ? SelectionStyle.fill : Color.white.opacity(0.04))
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .stroke(selected ? SelectionStyle.stroke : Color.white.opacity(0.06), lineWidth: 0.5)
-                                )
-                            }
-                            .buttonStyle(.plain)
+                    LazyVStack(spacing: 16) {
+                        if !documents.isEmpty {
+                            section(title: "Documents", items: documents)
+                        }
+                        if !notes.isEmpty {
+                            section(title: "Notes", items: notes)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -607,23 +662,68 @@ private struct ResourcePickerSheet: View {
                     .padding(.bottom, 24)
                 }
             }
-
-            Button { dismiss() } label: {
-                Text(selectedIDs.isEmpty ? "No context" : "Done — \(selectedIDs.count) added")
-                    .font(.app(size: 16, weight: .semibold))
-                    .foregroundColor(AppText.primary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.white.opacity(0.10))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 32)
         }
-        .presentationDetents([.large])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(Radius.sheet)
         .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+    }
+
+    @ViewBuilder
+    private func section(title: String, items: [ChatContextSource]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.app(size: 12, weight: .semibold))
+                .foregroundColor(Color.white.opacity(0.45))
+                .textCase(.uppercase)
+                .padding(.horizontal, 4)
+
+            VStack(spacing: 6) {
+                ForEach(items) { item in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onSelect(item)
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: icon(for: item.kind))
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(Color.white.opacity(0.55))
+                                .frame(width: 20)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.title)
+                                    .font(.app(size: 14, weight: .semibold))
+                                    .foregroundColor(Color.white.opacity(0.88))
+                                    .lineLimit(1)
+                                if !item.preview.isEmpty {
+                                    Text(item.preview)
+                                        .font(.app(size: 12))
+                                        .foregroundColor(Color.white.opacity(0.40))
+                                        .lineLimit(1)
+                                }
+                            }
+                            Spacer()
+                        }
+                        .padding(14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color.white.opacity(0.04))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func icon(for kind: ChatContextSource.Kind) -> String {
+        switch kind {
+        case .document: return "doc.text"
+        case .note: return "note.text"
+        case .file: return "paperclip"
+        }
     }
 }
