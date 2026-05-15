@@ -1880,11 +1880,11 @@ struct AIPreviewSheet: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Image(systemName: actionIcon)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(BrandColor.amber)
-                    .frame(width: 34, height: 34)
-                    .background(BrandColor.amber.opacity(0.14))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.85))
+                    .frame(width: 36, height: 36)
+                    .background(Color.white.opacity(0.10))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 Text(actionLabel)
                     .font(.appBodyBold)
                     .foregroundColor(AppText.primary)
@@ -1944,24 +1944,32 @@ struct AIPreviewSheet: View {
                     }
                 } label: {
                     Text(didCopy ? "Copied" : "Copy")
-                        .font(.appBodyBold)
+                        .font(.app(size: 15, weight: .semibold))
                         .foregroundColor(AppText.primary)
-                        .padding(.horizontal, 22)
+                        .padding(.horizontal, 20)
                         .frame(height: 40)
-                        .overlay(Capsule().stroke(Color.white.opacity(0.20), lineWidth: 0.5))
-                        .clipShape(Capsule())
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color.white.opacity(0.06))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.white.opacity(0.13), lineWidth: 0.5)
+                        )
                 }
                 .buttonStyle(.plain)
                 .disabled(isLoading)
 
                 Button(action: onApply) {
                     Text("Apply")
-                        .font(.appBodyBold)
+                        .font(.app(size: 15, weight: .semibold))
                         .foregroundColor(.black)
-                        .padding(.horizontal, 22)
+                        .padding(.horizontal, 20)
                         .frame(height: 40)
-                        .background(.white)
-                        .clipShape(Capsule())
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(.white)
+                        )
                 }
                 .buttonStyle(.plain)
                 .disabled(isLoading)
