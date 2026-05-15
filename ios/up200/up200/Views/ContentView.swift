@@ -1063,24 +1063,21 @@ private struct TemplateEditPage: View {
                             TemplateTagFlow(items: allFormats, selectedIDs: $formatIDs)
                                 .padding(.horizontal, 20)
 
-                            ZStack(alignment: .topLeading) {
-                                if prompt.isEmpty {
-                                    Text("Describe what this template should produce\u{2026}")
-                                        .font(.appBody)
-                                        .foregroundColor(AppText.muted)
-                                        .padding(.horizontal, 24)
-                                        .padding(.top, 8)
-                                        .allowsHitTesting(false)
-                                }
-                                TextEditor(text: $prompt)
-                                    .appBodyText()
-                                    .scrollContentBackground(.hidden)
-                                    .background(Color.clear)
-                                    .tint(.white)
-                                    .padding(.horizontal, 16)
-                                    .focused($focus, equals: .prompt)
-                                    .frame(minHeight: 200)
+                            // TextField with axis:.vertical grows with content
+                            // and lets the page-level ScrollView handle scrolling.
+                            // TextEditor here would engage its own scroll and
+                            // fight the parent for scroll gestures.
+                            TextField(
+                                text: $prompt,
+                                axis: .vertical
+                            ) {
+                                Text("Describe what this template should produce\u{2026}")
+                                    .foregroundColor(AppText.muted)
                             }
+                            .appBodyText()
+                            .tint(.white)
+                            .padding(.horizontal, 20)
+                            .focused($focus, equals: .prompt)
                         }
                     }
                     .padding(.top, 4)
