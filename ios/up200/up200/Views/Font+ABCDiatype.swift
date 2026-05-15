@@ -14,8 +14,8 @@ extension Font {
     static let appRowTitle     = app(size: 17, weight: .semibold)
 
     // Body
-    static let appBody         = app(size: 19)
-    static let appBodyBold     = app(size: 19, weight: .semibold)
+    static let appBody         = app(size: 17)
+    static let appBodyBold     = app(size: 17, weight: .semibold)
 
     // Label  (UI controls, buttons)
     static let appLabel        = app(size: 16)
