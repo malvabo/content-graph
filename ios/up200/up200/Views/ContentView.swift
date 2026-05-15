@@ -1587,6 +1587,10 @@ private struct SimpleAppTabBar: View {
     @State private var impact = UIImpactFeedbackGenerator(style: .light)
 
     private static let selectSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
+    /// Slightly springier than the tab-select feel — small overshoot so
+    /// the options land at their fan positions with a touch of bounce,
+    /// reinforcing the "popping out of the plus" read.
+    static let menuSpring = Animation.spring(response: 0.44, dampingFraction: 0.70)
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1643,7 +1647,7 @@ private struct SimpleAppTabBar: View {
     private var plusButton: some View {
         Button {
             impact.impactOccurred()
-            withAnimation(.spring(response: 0.36, dampingFraction: 0.78)) {
+            withAnimation(SimpleAppTabBar.menuSpring) {
                 showCreateMenu.toggle()
             }
         } label: {
@@ -1680,30 +1684,44 @@ private struct SimpleAppTabBar: View {
 // MARK: - Create Menu
 
 private struct CreateMenuOverlay: View {
+    /// Drives the animation: false collapses both options to the plus
+    /// button's center; true fans them out into their final positions.
+    let show: Bool
     let onAddNote: () -> Void
     let onCreateContent: () -> Void
     let onDismiss: () -> Void
 
+    // Final fan-out positions, measured outward from the plus button's
+    // visual center. The two options stack on top of each other at the
+    // origin when collapsed, so animating these offsets makes the options
+    // appear to physically push out from the plus button.
+    private let optionDX: CGFloat = 78
+    private let optionDY: CGFloat = -100
+
+    // Vertical distance from the screen bottom to the plus button's
+    // center: AppTabBar bottom padding (6) + half of the 64pt plus
+    // button (32). The overlay's bottom-aligned ZStack uses this as
+    // padding so both options spawn at the plus button's center.
+    private let plusCenterFromBottom: CGFloat = 38
+
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.black.opacity(0.45)
+            Color.black.opacity(show ? 0.45 : 0)
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture { onDismiss() }
-                .transition(.opacity)
 
-            HStack(spacing: 24) {
+            ZStack {
                 CreateMenuOption(
                     icon: "mic.fill",
                     title: "Add a note",
                     subtitle: "Voice note",
                     action: onAddNote
                 )
-                .transition(
-                    .scale(scale: 0.5, anchor: .bottomTrailing)
-                    .combined(with: .opacity)
-                    .combined(with: .offset(x: 40, y: 40))
-                )
+                .scaleEffect(show ? 1 : 0.18, anchor: .bottomTrailing)
+                .opacity(show ? 1 : 0)
+                .offset(x: show ? -optionDX : 0, y: show ? optionDY : 0)
+                .blur(radius: show ? 0 : 4)
 
                 CreateMenuOption(
                     icon: "sparkles",
@@ -1711,15 +1729,14 @@ private struct CreateMenuOverlay: View {
                     subtitle: "Generate",
                     action: onCreateContent
                 )
-                .transition(
-                    .scale(scale: 0.5, anchor: .bottomLeading)
-                    .combined(with: .opacity)
-                    .combined(with: .offset(x: -40, y: 40))
-                )
+                .scaleEffect(show ? 1 : 0.18, anchor: .bottomLeading)
+                .opacity(show ? 1 : 0)
+                .offset(x: show ? optionDX : 0, y: show ? optionDY : 0)
+                .blur(radius: show ? 0 : 4)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 110)
+            .padding(.bottom, plusCenterFromBottom)
         }
+        .allowsHitTesting(show)
     }
 }
 
@@ -1881,37 +1898,35 @@ struct ContentView: View {
                 .zIndex(2)
             }
 
-            if showCreateMenu {
-                CreateMenuOverlay(
-                    onAddNote: {
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) {
-                            showCreateMenu = false
-                        }
-                        selectedTab = .notes
-                        newNoteTrigger &+= 1
-                    },
-                    onCreateContent: {
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) {
-                            showCreateMenu = false
-                        }
-                        // Defer slightly so the menu close animation reads
-                        // before the fullScreenCover slides in.
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-                            showCreate = true
-                        }
-                    },
-                    onDismiss: {
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) {
-                            showCreateMenu = false
-                        }
+            CreateMenuOverlay(
+                show: showCreateMenu,
+                onAddNote: {
+                    withAnimation(SimpleAppTabBar.menuSpring) {
+                        showCreateMenu = false
                     }
-                )
-                .zIndex(3)
-            }
+                    selectedTab = .notes
+                    newNoteTrigger &+= 1
+                },
+                onCreateContent: {
+                    withAnimation(SimpleAppTabBar.menuSpring) {
+                        showCreateMenu = false
+                    }
+                    // Defer slightly so the menu close animation reads
+                    // before the fullScreenCover slides in.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                        showCreate = true
+                    }
+                },
+                onDismiss: {
+                    withAnimation(SimpleAppTabBar.menuSpring) {
+                        showCreateMenu = false
+                    }
+                }
+            )
+            .zIndex(3)
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
-        .animation(.spring(response: 0.40, dampingFraction: 0.78), value: showCreateMenu)
         .onChange(of: simpleMode) { _, isSimple in
             // Classic mode owns .create / .profile tabs; Simple mode doesn't
             // even include them in its TabView, so if the user was sitting on
