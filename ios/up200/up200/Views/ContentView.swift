@@ -931,7 +931,7 @@ private struct TemplateEditPage: View {
     @State private var title: String
     @State private var existingSubtitle: String
     @State private var prompt: String
-    @State private var formatIDs: Set<String>
+    @State private var selectedFormatID: String?
     @State private var promptBeforeDictation: String = ""
     @State private var isEnhancing: Bool = false
     @State private var enhanceFailed: Bool = false
@@ -953,7 +953,7 @@ private struct TemplateEditPage: View {
         _title = State(initialValue: template?.title ?? "")
         _existingSubtitle = State(initialValue: template?.subtitle ?? "")
         _prompt = State(initialValue: template?.prompt ?? "")
-        _formatIDs = State(initialValue: Set(template?.formatIDs ?? []))
+        _selectedFormatID = State(initialValue: template?.formatIDs.first)
     }
 
     private var isNew: Bool { originalID == nil }
@@ -976,7 +976,7 @@ private struct TemplateEditPage: View {
         var tpl = CustomTemplate(title: finalTitle, subtitle: existingSubtitle)
         if let id = originalID { tpl.id = id }
         tpl.prompt = prompt
-        tpl.formatIDs = Array(formatIDs)
+        tpl.formatIDs = selectedFormatID.map { [$0] } ?? []
         onSave(tpl)
     }
 
@@ -998,7 +998,7 @@ private struct TemplateEditPage: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         isEnhancing = true
         let titleSnapshot = title
-        let formatLabels = allFormats.filter { formatIDs.contains($0.id) }.map(\.label)
+        let formatLabels = allFormats.filter { selectedFormatID == $0.id }.map(\.label)
         Task {
             async let promptResult = TemplatePromptEnhancer.enhance(
                 title: titleSnapshot,
@@ -1083,9 +1083,9 @@ private struct TemplateEditPage: View {
                             .padding(.horizontal, 20)
                             .animation(AppAnimation.quick, value: title)
 
-                        // Merged prompt + format tags
-                        VStack(alignment: .leading, spacing: 12) {
-                            TemplateTagFlow(items: allFormats, selectedIDs: $formatIDs)
+                        // Content type dropdown + prompt
+                        VStack(alignment: .leading, spacing: 16) {
+                            TemplateFormatPicker(selectedFormatID: $selectedFormatID)
                                 .padding(.horizontal, 20)
 
                             // TextField with axis:.vertical grows with content
@@ -1322,70 +1322,55 @@ private struct TemplatePromptEnhancer {
     }
 }
 
-private struct TemplateTagFlow: View {
-    let items: [ContentFormat]
-    @Binding var selectedIDs: Set<String>
+private struct TemplateFormatPicker: View {
+    @Binding var selectedFormatID: String?
+
+    private var selectedLabel: String {
+        if let id = selectedFormatID,
+           let fmt = allFormats.first(where: { $0.id == id }) {
+            return fmt.label
+        }
+        return "Choose"
+    }
+
+    private var hasSelection: Bool { selectedFormatID != nil }
 
     var body: some View {
-        ChipFlowLayout(spacing: 8) {
-            ForEach(items) { fmt in
-                let selected = selectedIDs.contains(fmt.id)
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(AppAnimation.quick) {
-                        if selected { selectedIDs.remove(fmt.id) }
-                        else { selectedIDs.insert(fmt.id) }
+        HStack(spacing: 12) {
+            Text("Content type")
+                .font(.appSubtextMedium)
+                .foregroundColor(Color.white.opacity(0.85))
+
+            Spacer()
+
+            Menu {
+                ForEach(allFormats) { fmt in
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        selectedFormatID = fmt.id
+                    } label: {
+                        if selectedFormatID == fmt.id {
+                            Label(fmt.label, systemImage: "checkmark")
+                        } else {
+                            Text(fmt.label)
+                        }
                     }
-                } label: {
-                    Text(fmt.label)
-                        .font(.app(size: 14, weight: selected ? .semibold : .regular))
-                        .foregroundColor(selected ? .white : AppText.secondary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(selected ? Color.white.opacity(0.14) : Color.white.opacity(0.07))
-                        .clipShape(Capsule())
-                        .overlay(Capsule().stroke(selected ? Color.white.opacity(0.30) : Color.white.opacity(0.10), lineWidth: 0.5))
                 }
-                .buttonStyle(.plain)
-                .animation(AppAnimation.quick, value: selected)
+            } label: {
+                HStack(spacing: 5) {
+                    Text(selectedLabel)
+                        .font(.appSubtextMedium)
+                        .foregroundColor(Color.white.opacity(hasSelection ? 0.70 : 0.45))
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.app(size: 11, weight: .semibold))
+                        .foregroundColor(AppText.tertiary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(Color.white.opacity(0.09))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.5))
             }
-        }
-    }
-}
-
-private struct ChipFlowLayout: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.width ?? 0
-        var height: CGFloat = 0
-        var x: CGFloat = 0
-        var rowH: CGFloat = 0
-        for sub in subviews {
-            let size = sub.sizeThatFits(.unspecified)
-            if x + size.width > width && x > 0 {
-                height += rowH + spacing
-                x = 0; rowH = 0
-            }
-            x += size.width + spacing
-            rowH = max(rowH, size.height)
-        }
-        return CGSize(width: width, height: height + rowH)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var rowH: CGFloat = 0
-        for sub in subviews {
-            let size = sub.sizeThatFits(.unspecified)
-            if x + size.width > bounds.maxX && x > bounds.minX {
-                y += rowH + spacing
-                x = bounds.minX; rowH = 0
-            }
-            sub.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing
-            rowH = max(rowH, size.height)
         }
     }
 }
