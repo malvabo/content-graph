@@ -1079,6 +1079,69 @@ private struct FilterChip: View {
     }
 }
 
+// MARK: - Pinned Note Card
+
+private struct PinnedNoteCard: View {
+    let note: Note
+
+    var body: some View {
+        HStack(spacing: 12) {
+            PinnedNoteThumb(note: note)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(note.displayTitle)
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.92))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                Text(RowDate.relative(from: note.updatedAt))
+                    .font(.appMicro)
+                    .foregroundColor(AppText.tertiary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .frame(width: 240, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct PinnedNoteThumb: View {
+    let note: Note
+
+    var body: some View {
+        let widths = Self.lineWidths(for: note.id)
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(Color.white.opacity(0.07))
+            .overlay(
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(0..<5, id: \.self) { i in
+                        Capsule()
+                            .fill(Color.white.opacity(i == 0 ? 0.55 : 0.20))
+                            .frame(width: widths[i], height: i == 0 ? 2.5 : 1.5)
+                    }
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+            )
+            .frame(width: 42, height: 52)
+    }
+
+    private static func lineWidths(for id: UUID) -> [CGFloat] {
+        var h = id.hashValue
+        return (0..<5).map { _ in
+            h = h &* 1664525 &+ 1013904223
+            return 8 + CGFloat(h & 0x17)
+        }
+    }
+}
+
 // MARK: - Notes View
 
 struct NotesView: View {
@@ -1108,6 +1171,14 @@ struct NotesView: View {
         return sortedNotes.filter { $0.tags.contains(tag) }
     }
 
+    private var pinnedNotes: [Note] {
+        tagFilteredNotes.filter { $0.isPinned }
+    }
+
+    private var unpinnedNotes: [Note] {
+        tagFilteredNotes.filter { !$0.isPinned }
+    }
+
     private var searchedNotes: [Note] {
         let q = searchText.lowercased()
         guard !q.isEmpty else { return tagFilteredNotes }
@@ -1128,6 +1199,12 @@ struct NotesView: View {
         } else {
             notes[idx].tags.append(tag)
         }
+        scheduleSave()
+    }
+
+    private func togglePin(_ note: Note) {
+        guard let idx = notes.firstIndex(where: { $0.id == note.id }) else { return }
+        notes[idx].isPinned.toggle()
         scheduleSave()
     }
 
@@ -1159,8 +1236,11 @@ struct NotesView: View {
     }
 
     @ViewBuilder
-    private func notesList(_ items: [Note], emptyTitle: String, emptySubtitle: String?) -> some View {
-        if items.isEmpty {
+    private func notesList(_ items: [Note], splitPinned: Bool = false, emptyTitle: String, emptySubtitle: String?) -> some View {
+        let pinned = splitPinned ? items.filter { $0.isPinned } : []
+        let main = splitPinned ? items.filter { !$0.isPinned } : items
+
+        if pinned.isEmpty && main.isEmpty {
             VStack {
                 Spacer()
                 VStack(spacing: 12) {
@@ -1179,46 +1259,58 @@ struct NotesView: View {
             }
         } else {
             List {
-                ForEach(items) { note in
+                if !pinned.isEmpty {
+                    sectionHeader("Pinned")
+                    pinnedGridRow(pinned)
+                    if !main.isEmpty {
+                        sectionHeader("Earlier", topPadding: 18)
+                    }
+                }
+                ForEach(main) { note in
+                    noteRow(note)
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+            .animation(AppAnimation.standard, value: pinned.map(\.id))
+        }
+    }
+
+    @ViewBuilder
+    private func sectionHeader(_ title: String, topPadding: CGFloat = 6) -> some View {
+        Text(title)
+            .font(.app(size: 15, weight: .semibold))
+            .foregroundColor(AppText.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, topPadding)
+            .padding(.bottom, 4)
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+    }
+
+    @ViewBuilder
+    private func pinnedGridRow(_ pinned: [Note]) -> some View {
+        let rowCount = min(3, max(1, pinned.count))
+        let rows = Array(repeating: GridItem(.fixed(56), spacing: 12), count: rowCount)
+
+        ScrollView(.horizontal, showsIndicators: false) {
+            LazyHGrid(rows: rows, spacing: 12) {
+                ForEach(pinned) { note in
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         editingNote = note
                     } label: {
-                        NoteListRow(note: note)
+                        PinnedNoteCard(note: note)
                     }
                     .buttonStyle(.plain)
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
-                            delete(note)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
-                    .swipeActions(edge: .leading) {
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            toggleTag("Starred", for: note)
-                        } label: {
-                            Label(
-                                note.tags.contains("Starred") ? "Unstar" : "Star",
-                                systemImage: note.tags.contains("Starred") ? "star.slash" : "star.fill"
-                            )
-                        }
-                        .tint(amber)
-                    }
                     .contextMenu {
-                        ForEach(allTags.filter { $0 != "Starred" }, id: \.self) { tag in
-                            Button {
-                                toggleTag(tag, for: note)
-                            } label: {
-                                Label(
-                                    note.tags.contains(tag) ? "Remove \"\(tag)\"" : "Tag as \"\(tag)\"",
-                                    systemImage: note.tags.contains(tag) ? "tag.slash" : "tag"
-                                )
-                            }
+                        Button {
+                            togglePin(note)
+                        } label: {
+                            Label("Unpin", systemImage: "pin.slash")
                         }
                         Divider()
                         Button(role: .destructive) { delete(note) } label: {
@@ -1227,9 +1319,80 @@ struct NotesView: View {
                     }
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color.clear)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
+        }
+        .listRowInsets(EdgeInsets())
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+
+    @ViewBuilder
+    private func noteRow(_ note: Note) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            editingNote = note
+        } label: {
+            NoteListRow(note: note)
+        }
+        .buttonStyle(.plain)
+        .listRowInsets(EdgeInsets())
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                delete(note)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .swipeActions(edge: .leading) {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                togglePin(note)
+            } label: {
+                Label(
+                    note.isPinned ? "Unpin" : "Pin",
+                    systemImage: note.isPinned ? "pin.slash.fill" : "pin.fill"
+                )
+            }
+            .tint(.orange)
+
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                toggleTag("Starred", for: note)
+            } label: {
+                Label(
+                    note.tags.contains("Starred") ? "Unstar" : "Star",
+                    systemImage: note.tags.contains("Starred") ? "star.slash" : "star.fill"
+                )
+            }
+            .tint(amber)
+        }
+        .contextMenu {
+            Button {
+                togglePin(note)
+            } label: {
+                Label(
+                    note.isPinned ? "Unpin" : "Pin",
+                    systemImage: note.isPinned ? "pin.slash" : "pin"
+                )
+            }
+            Divider()
+            ForEach(allTags.filter { $0 != "Starred" }, id: \.self) { tag in
+                Button {
+                    toggleTag(tag, for: note)
+                } label: {
+                    Label(
+                        note.tags.contains(tag) ? "Remove \"\(tag)\"" : "Tag as \"\(tag)\"",
+                        systemImage: note.tags.contains(tag) ? "tag.slash" : "tag"
+                    )
+                }
+            }
+            Divider()
+            Button(role: .destructive) { delete(note) } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
 
@@ -1308,6 +1471,7 @@ struct NotesView: View {
 
                     notesList(
                         tagFilteredNotes,
+                        splitPinned: true,
                         emptyTitle: selectedFilter == nil ? "No notes yet" : "No results",
                         emptySubtitle: selectedFilter == nil ? "Tap the pencil to write your first note" : nil
                     )
