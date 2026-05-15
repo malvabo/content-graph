@@ -666,8 +666,8 @@ struct ImportSheetView: View {
             Text("Import content")
                 .font(.appNavTitle)
                 .foregroundColor(Color.white.opacity(0.88))
-                .padding(.top, 16)
-                .padding(.bottom, 2)
+                .padding(.top, 20)
+                .padding(.bottom, 14)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 ForEach(sourceItems, id: \.type) { item in
@@ -1625,7 +1625,7 @@ private struct SourcesBlock: View {
                 }
             }
             .presentationDetents(
-                sheet == .picker ? [.height(270)] :
+                sheet == .picker ? [.height(286)] :
                 sheet == .note ? [.fraction(0.55)] :
                 [.large]
             )
