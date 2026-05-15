@@ -248,27 +248,13 @@ private enum RowDate {
     }
 
     static func relative(from date: Date) -> String {
-        let diff = Date().timeIntervalSince(date)
-        if diff < 60 { return "Just now" }
-        if diff < 3600 {
-            let m = Int(diff / 60)
-            return "Viewed \(m) minute\(m == 1 ? "" : "s") ago"
-        }
-        if diff < 86400 {
-            let h = Int(diff / 3600)
-            return "Viewed \(h) hour\(h == 1 ? "" : "s") ago"
-        }
         let cal = Calendar.current
-        if cal.isDateInYesterday(date) { return "Viewed yesterday" }
-        // Count calendar days, not 24-hour intervals — otherwise a note from
-        // the day before yesterday at 22:00 reads "1 days ago" instead of 2.
-        let d = cal.dateComponents(
-            [.day],
-            from: cal.startOfDay(for: date),
-            to: cal.startOfDay(for: Date())
-        ).day ?? 0
-        if d < 7 { return "Viewed \(d) day\(d == 1 ? "" : "s") ago" }
-        return "Viewed \(monthDay.string(from: date))"
+        if cal.isDateInToday(date) { return time.string(from: date) }
+        let now = Date()
+        if cal.component(.year, from: date) == cal.component(.year, from: now) {
+            return monthDay.string(from: date)
+        }
+        return full.string(from: date)
     }
 }
 
