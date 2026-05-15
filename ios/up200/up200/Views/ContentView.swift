@@ -1416,16 +1416,16 @@ private struct AppTabBar: View {
                             selected = tab
                         }
                     } label: {
-                        VStack(spacing: 4) {
+                        VStack(spacing: 3) {
                             Image(systemName: icon)
                                 .symbolVariant(selected == tab ? .fill : .none)
-                                .font(.system(size: 22, weight: .regular))
+                                .font(.system(size: 19, weight: .regular))
                                 .transaction { $0.animation = nil }
                             Text(label)
-                                .font(.system(size: 12, weight: .regular))
+                                .font(.system(size: 11, weight: .regular))
                         }
                         .foregroundColor(selected == tab ? .white : Color.white.opacity(0.45))
-                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .frame(maxWidth: .infinity, minHeight: 48)
                         .background(
                             ZStack {
                                 if selected == tab {
@@ -1471,9 +1471,9 @@ private struct AppTabBar: View {
             } label: {
                 let isActive = selected == .create
                 Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .regular))
+                    .font(.system(size: 19, weight: .regular))
                     .foregroundColor(AppText.primary)
-                    .frame(width: 68, height: 68)
+                    .frame(width: 60, height: 60)
                     .background(
                         Circle().fill(Color.white.opacity(isActive ? 0.14 : 0))
                     )
