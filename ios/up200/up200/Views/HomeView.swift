@@ -1508,6 +1508,7 @@ private struct SourcesBlock: View {
     @State private var activeSheet: SourceSheet? = nil
     @State private var showFilePicker = false
     @State private var showPhotoPicker = false
+    @State private var showNotePicker = false
     @State private var photoPickerItem: PhotosPickerItem? = nil
     @State private var photoExtractTask: Task<Void, Never>? = nil
     @State private var fileImportTask: Task<Void, Never>? = nil
@@ -1589,7 +1590,9 @@ private struct SourcesBlock: View {
                         case .text:  activeSheet = .text
                         case .link:  activeSheet = .link
                         case .voice: activeSheet = .voice
-                        case .note:  activeSheet = .note
+                        case .note:
+                            activeSheet = nil
+                            showNotePicker = true
                         case .file:
                             activeSheet = nil
                             showFilePicker = true
@@ -1617,21 +1620,34 @@ private struct SourcesBlock: View {
                         }
                     }
                 case .note:
-                    NotePickerSheet { note in
-                        withAnimation(.spring(duration: 0.25)) {
-                            sources.append(SourceItem(type: .note, label: note.displayTitle, content: note.body))
+                    // The note picker is presented as a separate floating
+                    // modal (see `.fullScreenCover` below). If `.note` somehow
+                    // lands here, redirect to that flow instead of showing a
+                    // blank sheet.
+                    Color.clear
+                        .onAppear {
+                            activeSheet = nil
+                            showNotePicker = true
                         }
-                    }
                 }
             }
             .presentationDetents(
-                sheet == .picker ? [.height(286)] :
-                sheet == .note ? [.fraction(0.55)] :
-                [.large]
+                sheet == .picker ? [.height(286)] : [.large]
             )
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(sheet == .text ? 10 : 22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        }
+        .fullScreenCover(isPresented: $showNotePicker) {
+            NotePickerSheet(
+                onSelect: { note in
+                    withAnimation(.spring(duration: 0.25)) {
+                        sources.append(SourceItem(type: .note, label: note.displayTitle, content: note.body))
+                    }
+                },
+                onClose: { showNotePicker = false }
+            )
+            .presentationBackground(.clear)
         }
         .fileImporter(
             isPresented: $showFilePicker,
@@ -1673,7 +1689,11 @@ private struct SourcesBlock: View {
         .task(id: pendingSheet.wrappedValue) {
             guard let s = pendingSheet.wrappedValue else { return }
             pendingSheet.wrappedValue = nil
-            activeSheet = s
+            if s == .note {
+                showNotePicker = true
+            } else {
+                activeSheet = s
+            }
         }
     }
 
@@ -1726,12 +1746,27 @@ private struct SourcesBlock: View {
 
 // MARK: - Note Picker Sheet
 
+// Floating card modal that sits over the Create page. It does not fill the
+// screen the way a system .sheet does — the dim backdrop + centred card
+// match the inline picker used elsewhere when typing `@` to attach context.
 private struct NotePickerSheet: View {
     var onSelect: (Note) -> Void
-    @Environment(\.dismiss) private var dismiss
+    var onClose: () -> Void
+
     @State private var query = ""
     @State private var notes: [Note] = []
     @State private var reloadTask: Task<Void, Never>? = nil
+    @FocusState private var fieldFocused: Bool
+
+    private let cardBg = Color(red: 0.10, green: 0.08, blue: 0.07)
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .none
+        f.doesRelativeDateFormatting = true
+        return f
+    }()
 
     private var filtered: [Note] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1743,59 +1778,119 @@ private struct NotePickerSheet: View {
     }
 
     var body: some View {
-        AppPickerSheet(
-            title: "Pick a note",
-            query: $query,
-            placeholder: "Search notes",
-            onClose: { dismiss() }
-        ) {
-            if filtered.isEmpty {
-                VStack {
+        ZStack {
+            Color.black.opacity(0.55)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    fieldFocused = false
+                    onClose()
+                }
+
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    Text("Pick a note")
+                        .font(.appBodyBold)
+                        .foregroundColor(AppText.primary)
+                        .accessibilityAddTraits(.isHeader)
                     Spacer()
+                    Button {
+                        fieldFocused = false
+                        onClose()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(AppText.secondary)
+                            .frame(width: 30, height: 30)
+                            .background(Color.white.opacity(0.10))
+                            .clipShape(Circle())
+                            .appIconHitArea()
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Close")
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
+
+                AppSearchField(
+                    placeholder: "Search notes",
+                    text: $query,
+                    isFocused: $fieldFocused
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+
+                if filtered.isEmpty {
                     VStack(spacing: 8) {
+                        Spacer().frame(height: 28)
                         Image(systemName: "note.text")
                             .font(.system(size: 32, weight: .light))
                             .foregroundColor(Color.white.opacity(0.18))
                         Text(notes.isEmpty ? "No notes yet" : "No results")
                             .font(.appSubtext)
                             .foregroundColor(Color.white.opacity(0.30))
+                        Spacer().frame(height: 28)
                     }
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 0) {
-                        ForEach(filtered) { note in
-                            Button {
-                                onSelect(note)
-                                dismiss()
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "note.text")
-                                        .font(.system(size: 14, weight: .regular))
-                                        .foregroundColor(Color.white.opacity(0.45))
-                                        .frame(width: 20)
-                                    Text(note.displayTitle)
-                                        .font(.app(size: 15, weight: .medium))
-                                        .foregroundColor(Color.white.opacity(0.88))
-                                        .lineLimit(1)
-                                    Spacer(minLength: 0)
+                    .frame(maxWidth: .infinity)
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(filtered.enumerated()), id: \.element.id) { idx, note in
+                                Button {
+                                    onSelect(note)
+                                    fieldFocused = false
+                                    onClose()
+                                } label: {
+                                    HStack(alignment: .top, spacing: 14) {
+                                        Image(systemName: "note.text")
+                                            .font(.system(size: 16, weight: .regular))
+                                            .foregroundColor(Color.white.opacity(0.55))
+                                            .frame(width: 24, height: 24)
+                                            .padding(.top, 1)
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(note.displayTitle)
+                                                .font(.app(size: 16, weight: .medium))
+                                                .foregroundColor(Color.white.opacity(0.92))
+                                                .lineLimit(2)
+                                                .multilineTextAlignment(.leading)
+                                            Text(Self.dateFormatter.string(from: note.updatedAt))
+                                                .font(.appSmall)
+                                                .foregroundColor(AppText.tertiary)
+                                        }
+                                        Spacer(minLength: 0)
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 14)
+                                    .contentShape(Rectangle())
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 11)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
+                                .buttonStyle(.plain)
 
-                            Rectangle()
-                                .fill(Color.white.opacity(0.05))
-                                .frame(height: 0.5)
-                                .padding(.leading, 48)
+                                if idx < filtered.count - 1 {
+                                    Rectangle()
+                                        .fill(Color.white.opacity(0.05))
+                                        .frame(height: 0.5)
+                                        .padding(.leading, 54)
+                                }
+                            }
                         }
                     }
                 }
             }
+            .frame(maxWidth: 460, maxHeight: 520)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                    .fill(cardBg)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+            )
+            .shadow(color: Color.black.opacity(0.45), radius: 30, y: 10)
+            .padding(.horizontal, 14)
+            .padding(.top, 72)
+            .padding(.bottom, 24)
+            .frame(maxHeight: .infinity, alignment: .top)
         }
         .task {
             notes = await NotesStore.loadAsync().filter { !$0.isEmpty }
@@ -1806,6 +1901,11 @@ private struct NotePickerSheet: View {
                 let fresh = await NotesStore.loadAsync().filter { !$0.isEmpty }
                 guard !Task.isCancelled else { return }
                 await MainActor.run { notes = fresh }
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                fieldFocused = true
             }
         }
     }
