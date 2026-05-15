@@ -917,7 +917,7 @@ private struct TemplateEditPage: View {
     @EnvironmentObject private var chrome: ChromeController
     @FocusState private var focus: Field?
 
-    private enum Field { case title, prompt }
+    private enum Field { case prompt }
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
     private let amber = BrandColor.amber
 
@@ -938,12 +938,28 @@ private struct TemplateEditPage: View {
     }
 
     private func persist() {
-        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        var tpl = CustomTemplate(title: title, subtitle: existingSubtitle)
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalTitle: String
+        if !trimmedTitle.isEmpty {
+            finalTitle = trimmedTitle
+        } else if !trimmedPrompt.isEmpty {
+            finalTitle = Self.fallbackTitle(from: trimmedPrompt)
+        } else {
+            return
+        }
+        var tpl = CustomTemplate(title: finalTitle, subtitle: existingSubtitle)
         if let id = originalID { tpl.id = id }
         tpl.prompt = prompt
         tpl.formatIDs = Array(formatIDs)
         onSave(tpl)
+    }
+
+    private static func fallbackTitle(from prompt: String) -> String {
+        let words = prompt.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).map(String.init)
+        let pick = words.prefix(5).joined(separator: " ")
+        let cleaned = pick.trimmingCharacters(in: .punctuationCharacters)
+        return cleaned.isEmpty ? "Untitled template" : String(cleaned.prefix(48))
     }
 
     private func openSettings() {
@@ -959,20 +975,28 @@ private struct TemplateEditPage: View {
         let titleSnapshot = title
         let formatLabels = allFormats.filter { formatIDs.contains($0.id) }.map(\.label)
         Task {
-            let result = await TemplatePromptEnhancer.enhance(
+            async let promptResult = TemplatePromptEnhancer.enhance(
                 title: titleSnapshot,
                 currentPrompt: trimmed,
                 formats: formatLabels
             )
+            async let titleResult = TemplatePromptEnhancer.generateTitle(
+                prompt: trimmed,
+                formats: formatLabels
+            )
+            let (p, t) = await (promptResult, titleResult)
             await MainActor.run {
                 isEnhancing = false
-                switch result {
+                switch p {
                 case .success(let improved):
                     withAnimation(.easeOut(duration: 0.2)) { prompt = improved }
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                 case .failure(let err):
                     enhanceFailReason = err.userMessage
                     enhanceFailed = true
+                }
+                if case .success(let newTitle) = t {
+                    withAnimation(.easeOut(duration: 0.2)) { title = newTitle }
                 }
             }
         }
@@ -1024,20 +1048,15 @@ private struct TemplateEditPage: View {
                 .padding(.bottom, 12)
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 20) {
-                        // Large title
-                        TextField(
-                            "",
-                            text: $title,
-                            prompt: Text("Template name").foregroundColor(AppText.disabled),
-                            axis: .vertical
-                        )
-                        .font(.appTitle)
-                        .foregroundColor(AppText.primary)
-                        .tint(.white)
-                        .lineLimit(1...3)
-                        .padding(.horizontal, 20)
-                        .focused($focus, equals: .title)
+                    VStack(alignment: .leading, spacing: 32) {
+                        // Auto-generated title
+                        Text(title.isEmpty ? "Untitled" : title)
+                            .font(.appTitle)
+                            .foregroundColor(title.isEmpty ? AppText.disabled : AppText.primary)
+                            .lineLimit(3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 20)
+                            .animation(AppAnimation.quick, value: title)
 
                         // Merged prompt + format tags
                         VStack(alignment: .leading, spacing: 12) {
@@ -1224,6 +1243,60 @@ private struct TemplatePromptEnhancer {
 
         let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return result.isEmpty ? .failure(.empty) : .success(result)
+    }
+
+    static func generateTitle(prompt: String, formats: [String]) async -> Result<String, APICallError> {
+        guard let apiKey = KeychainService.load(), !apiKey.isEmpty,
+              let url = URL(string: "https://api.anthropic.com/v1/messages") else {
+            return .failure(.http(401, "Missing API key"))
+        }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        req.timeoutInterval = 30
+
+        let system = "You name content-generation prompt templates. Read the draft instructions and return a short, descriptive title that captures what the template produces. Title Case, 2–5 words, no quotes, no trailing punctuation, no preamble. Output only the title."
+
+        var userParts: [String] = []
+        if !formats.isEmpty { userParts.append("Target output formats: \(formats.joined(separator: ", "))") }
+        userParts.append("Draft instructions:\n\n\(prompt)")
+
+        let body: [String: Any] = [
+            "model": "claude-sonnet-4-6",
+            "max_tokens": 30,
+            "system": system,
+            "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]]
+        ]
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
+            return .failure(.decode)
+        }
+        req.httpBody = httpBody
+
+        let data: Data
+        let resp: URLResponse
+        do {
+            (data, resp) = try await URLSession.shared.data(for: req)
+        } catch {
+            return .failure(.network(error.localizedDescription))
+        }
+
+        let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard status == 200 else {
+            return .failure(.http(status, anthropicErrorMessage(from: data)))
+        }
+
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let content = (json["content"] as? [[String: Any]])?.first,
+              let text = content["text"] as? String
+        else { return .failure(.decode) }
+
+        let cleaned = text
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\"'“”‘’`.,"))
+        return cleaned.isEmpty ? .failure(.empty) : .success(cleaned)
     }
 }
 
