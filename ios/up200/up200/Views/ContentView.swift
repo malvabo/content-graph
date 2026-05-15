@@ -2618,12 +2618,14 @@ struct SearchOverlay<Results: View>: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // `.regularMaterial` adds a real light tint on dark backgrounds —
-            // unlike `.ultraThinMaterial`, which is near-invisible against this
-            // app's solid-dark backdrop and produced no perceptible glass at
-            // all. No extra colour overlay so the material isn't flattened.
-            Rectangle()
-                .fill(.regularMaterial)
+            // Drop the material entirely — when both layers (underlying chrome
+            // and foreground results) are the same brightness, the eye can't
+            // perceive blur and the surface reads as a flat panel anyway. Use
+            // `AppBackground.surface` (raised-card token: white on light,
+            // near-black on dark) so the search overlay is unambiguously a
+            // lifted plane in both modes. This is the same idiom Linear /
+            // Notion / Things use for their command-palette search.
+            AppBackground.surface
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
