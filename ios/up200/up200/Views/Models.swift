@@ -21,6 +21,19 @@ enum BrandColor {
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
+
+    /// Same warm ramp as `glowGradient`, raised in value so small foreground
+    /// glyphs (mic, recorder icons) read as a brighter, more saturated version
+    /// of the Generate button's center glow.
+    static let glowGradientBright = LinearGradient(
+        colors: [
+            Color(red: 1.00, green: 0.84, blue: 0.42),
+            Color(red: 1.00, green: 0.62, blue: 0.22),
+            Color(red: 0.92, green: 0.36, blue: 0.10)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
 }
 
 enum SelectionStyle {
