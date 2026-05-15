@@ -1123,7 +1123,7 @@ private struct PinnedNoteCard: View {
 
 struct NotesView: View {
     var newNoteTrigger: Int = 0
-    var onProfileTap: () -> Void = {}
+    var onProfileTap: (() -> Void)? = nil
     @EnvironmentObject private var recording: RecordingController
     @Environment(\.scenePhase) private var scenePhase
     @State private var notes: [Note] = []
@@ -1392,6 +1392,19 @@ struct NotesView: View {
                 VStack(spacing: 0) {
                     InlineTopBar(title: "Notes") {
                         TopBarPill {
+                            // Classic mode (no profile callback): pencil starts
+                            // an audio note from this bar. Simple mode has the
+                            // central plus menu instead, so no pencil here.
+                            if onProfileTap == nil {
+                                TopBarPillButton(systemImage: "square.and.pencil") {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    startAudioNote()
+                                }
+                                .accessibilityLabel("New note")
+
+                                TopBarPillDivider()
+                            }
+
                             TopBarPillButton(
                                 systemImage: showSearch ? "xmark" : "magnifyingglass",
                                 isActive: showSearch
@@ -1412,12 +1425,14 @@ struct NotesView: View {
                             .accessibilityLabel(showSearch ? "Close search" : "Search")
                         }
 
-                        TopBarPill {
-                            TopBarPillButton(systemImage: "person.crop.circle") {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                onProfileTap()
+                        if let onProfileTap {
+                            TopBarPill {
+                                TopBarPillButton(systemImage: "person.crop.circle") {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    onProfileTap()
+                                }
+                                .accessibilityLabel("Profile")
                             }
-                            .accessibilityLabel("Profile")
                         }
                     }
 
