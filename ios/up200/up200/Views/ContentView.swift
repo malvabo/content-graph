@@ -1690,21 +1690,30 @@ struct AIActionsSheet: View {
 
     private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
+    private var fittedHeight: CGFloat {
+        let rowHeight: CGFloat = 52
+        let rowSpacing: CGFloat = 2
+        let count = CGFloat(quickAIActions.count)
+        return rowHeight * count
+            + rowSpacing * max(0, count - 1)
+            + 32  // top padding
+            + 24  // bottom padding
+            + 24  // drag indicator
+    }
+
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 2) {
-                ForEach(quickAIActions) { action in
-                    actionRow(action)
-                }
+        VStack(spacing: 2) {
+            ForEach(quickAIActions) { action in
+                actionRow(action)
             }
-            .padding(.top, 32)
-            .padding(.bottom, 24)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, 32)
+        .padding(.bottom, 24)
+        .frame(maxWidth: .infinity, alignment: .top)
         .background(sheetBg)
         .presentationBackground(sheetBg)
         .presentationCornerRadius(32)
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.height(fittedHeight)])
         .presentationDragIndicator(.visible)
     }
 
