@@ -754,6 +754,7 @@ struct ProfileView: View {
     @State private var custom: [CustomTemplate] = []
     @State private var path: [ProfileDestination] = []
     @State private var showLogOutConfirm = false
+    @EnvironmentObject private var chrome: ChromeController
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
     private let logoutRed = Color(red: 0.95, green: 0.40, blue: 0.32)
@@ -817,6 +818,14 @@ struct ProfileView: View {
             .onChange(of: selectedTab) { _, new in
                 if new != .profile { path.removeAll() }
             }
+            // Drive hideTabBar from the nav path so the bar is hidden for
+            // every pushed page (Templates list, Template edit) without
+            // relying on each page's onAppear/onDisappear — those can race
+            // on iOS 18's NavigationStack and leak the bar back in.
+            .onChange(of: path, initial: true) { _, newPath in
+                chrome.hideTabBar = !newPath.isEmpty
+            }
+            .onDisappear { chrome.hideTabBar = false }
             .navigationDestination(for: ProfileDestination.self) { dest in
                 switch dest {
                 case .templates:
@@ -918,7 +927,6 @@ private struct TemplatesListPage: View {
     @Binding var path: [ProfileDestination]
 
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var chrome: ChromeController
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
     var body: some View {
@@ -981,8 +989,6 @@ private struct TemplatesListPage: View {
         .background(bg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .onAppear { chrome.hideTabBar = true }
-        .onDisappear { chrome.hideTabBar = false }
     }
 }
 
@@ -1015,7 +1021,6 @@ private struct TemplateEditPage: View {
     @StateObject private var dictation = NoteDictation()
 
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var chrome: ChromeController
     @FocusState private var focus: Field?
 
     private enum Field { case prompt }
@@ -1219,9 +1224,7 @@ private struct TemplateEditPage: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .onAppear { chrome.hideTabBar = true }
         .onDisappear {
-            chrome.hideTabBar = false
             dictation.stop()
             persist()
         }
