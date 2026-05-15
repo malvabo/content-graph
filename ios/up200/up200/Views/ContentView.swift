@@ -525,8 +525,8 @@ struct ProjectGroupDetailView: View {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             showChat = true
                         } label: {
-                            Image(systemName: "bubble.left.and.text.bubble.right")
-                                .font(.system(size: 17, weight: .semibold))
+                            Image(systemName: "message")
+                                .font(.system(size: 17, weight: .regular))
                                 .foregroundColor(AppText.primary)
                                 .frame(width: 52, height: 52)
                                 .background(Color.white.opacity(0.12))
