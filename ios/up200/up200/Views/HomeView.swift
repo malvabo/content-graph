@@ -2103,6 +2103,7 @@ private struct FormatPickerSheet: View {
 
 private struct FormatsBlock: View {
     @Binding var selectedFormatIDs: Set<String>
+    @Binding var prompt: String
     @State private var showPicker = false
     @State private var suggestions: [ContentFormat] = []
 
@@ -2130,17 +2131,6 @@ private struct FormatsBlock: View {
             .padding(.horizontal, 16)
             .padding(.top, 14)
             .padding(.bottom, 8)
-
-            if !displayText.isEmpty {
-                Text(displayText)
-                    .font(.appSubtext)
-                    .foregroundColor(Color.white.opacity(0.85))
-                    .lineLimit(3)
-                    .contentTransition(.opacity)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 10)
-                    .transition(.opacity)
-            }
 
             // Suggestion chip row with the expand button floating over the
             // trailing edge. Chips fade to transparent behind it via a mask;
@@ -2217,6 +2207,7 @@ private struct FormatsBlock: View {
         .onAppear { refreshSuggestions() }
         .onChange(of: selectedFormatIDs) {
             withAnimation(chipAnim) { refreshSuggestions() }
+            prompt = displayText
         }
         .sheet(isPresented: $showPicker) {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
@@ -2370,7 +2361,7 @@ struct HomeView: View {
                                     SourcesBlock(sources: $sources, pendingSheet: pendingSheet)
                                     GlassCard {
                                         VStack(spacing: 0) {
-                                            FormatsBlock(selectedFormatIDs: $selectedFormatIDs)
+                                            FormatsBlock(selectedFormatIDs: $selectedFormatIDs, prompt: $prompt)
                                             PromptField(prompt: $prompt)
                                         }
                                     }
