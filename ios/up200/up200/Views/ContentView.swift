@@ -1193,8 +1193,8 @@ private struct AppTabBar: View {
                         VStack(spacing: 2) {
                             Image(systemName: icon)
                                 .symbolVariant(selected == tab ? .fill : .none)
-                                .contentTransition(.symbolEffect(.replace))
                                 .font(.system(size: 17, weight: .regular))
+                                .transaction { $0.animation = nil }
                             Text(label)
                                 .font(.system(size: 10, weight: .regular))
                         }
