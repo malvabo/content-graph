@@ -1683,6 +1683,8 @@ struct DrawingCanvasView: View {
     @State private var transcript: String = ""
     @State private var showsRecorder: Bool = false
     @State private var hasInk: Bool = false
+    @State private var canUndo: Bool = false
+    @State private var canRedo: Bool = false
 
     private var canSave: Bool {
         hasInk || !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -1712,7 +1714,7 @@ struct DrawingCanvasView: View {
     }
 
     private var topBar: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 8) {
             Button {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 if dictation.isRecording { dictation.cancel() }
@@ -1728,6 +1730,8 @@ struct DrawingCanvasView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Cancel")
+
+            undoRedoCluster
 
             Spacer()
 
@@ -1760,9 +1764,64 @@ struct DrawingCanvasView: View {
         }
     }
 
+    private var undoRedoCluster: some View {
+        HStack(spacing: 4) {
+            undoRedoButton(
+                systemImage: "arrow.uturn.backward",
+                enabled: canUndo,
+                accessibilityLabel: "Undo"
+            ) {
+                canvasView.undoManager?.undo()
+                refreshUndoState()
+            }
+            undoRedoButton(
+                systemImage: "arrow.uturn.forward",
+                enabled: canRedo,
+                accessibilityLabel: "Redo"
+            ) {
+                canvasView.undoManager?.redo()
+                refreshUndoState()
+            }
+        }
+    }
+
+    private func undoRedoButton(
+        systemImage: String,
+        enabled: Bool,
+        accessibilityLabel: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            action()
+        } label: {
+            Image(systemName: systemImage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(enabled ? AppText.primary : AppInk.solid(0.22))
+                .frame(width: 36, height: 36)
+                .background(Circle().fill(AppBackground.surface))
+                .overlay(Circle().stroke(AppInk.solid(0.10), lineWidth: 0.5))
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private func refreshUndoState() {
+        // Read on the next runloop so PKCanvasView's own undo registration
+        // for the just-finished stroke has time to land — reading inline
+        // sometimes returned the pre-stroke state.
+        DispatchQueue.main.async {
+            let mgr = canvasView.undoManager
+            canUndo = mgr?.canUndo ?? false
+            canRedo = mgr?.canRedo ?? false
+        }
+    }
+
     private var canvasArea: some View {
         PencilKitCanvas(canvasView: $canvasView, initialDrawing: initialNote?.drawingData, onChange: { drawing in
             hasInk = !drawing.bounds.isEmpty
+            refreshUndoState()
         })
         .background(
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
