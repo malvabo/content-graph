@@ -415,7 +415,7 @@ struct DictationControls: View {
         } label: {
             Image(systemName: "mic.fill")
                 .font(.system(size: 19, weight: .semibold))
-                .foregroundColor(amber)
+                .foregroundStyle(BrandColor.glowGradientBright)
                 .frame(width: 56, height: 56)
                 .background(glassCircle)
         }
