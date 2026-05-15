@@ -610,8 +610,10 @@ struct NoteVoiceSheet: View {
                             .frame(width: 28, height: 28)
                             .background(Color.white.opacity(0.12))
                             .clipShape(Circle())
+                            .appIconHitArea()
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Dismiss")
                 }
             }
             .padding(.horizontal, 20)
@@ -1460,8 +1462,10 @@ struct NotesView: View {
                                     .frame(width: 34, height: 34)
                                     .background(Color.white.opacity(0.08))
                                     .clipShape(Circle())
+                                    .appIconHitArea()
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("Add tag")
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)

@@ -1584,6 +1584,7 @@ struct AppPickerSheet<Results: View>: View {
                         .frame(width: 30, height: 30)
                         .background(Color.white.opacity(0.10))
                         .clipShape(Circle())
+                        .appIconHitArea()
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close")

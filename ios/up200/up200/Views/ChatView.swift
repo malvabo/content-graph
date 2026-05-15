@@ -160,6 +160,7 @@ struct ChatView: View {
                     .frame(width: 32, height: 32)
                     .background(Color.white.opacity(0.08))
                     .clipShape(Circle())
+                    .appIconHitArea()
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Close")
@@ -185,6 +186,7 @@ struct ChatView: View {
                     .frame(width: 32, height: 32)
                     .background(Color.white.opacity(0.07))
                     .clipShape(Circle())
+                    .appIconHitArea()
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Library context")
@@ -504,7 +506,9 @@ private struct ResourcePickerSheet: View {
                         .frame(width: 28, height: 28)
                         .background(Color.white.opacity(0.10))
                         .clipShape(Circle())
+                        .appIconHitArea()
                 }
+                .accessibilityLabel("Close")
                 Spacer(minLength: 0)
                 Text("Add context")
                     .font(.app(size: 16, weight: .semibold))
