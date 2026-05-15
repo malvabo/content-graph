@@ -2011,7 +2011,7 @@ private struct RecordingMiniBar: View {
             .frame(height: 52)
             .background(
                 Capsule(style: .continuous)
-                    .fill(Color(red: 0.18, green: 0.14, blue: 0.12))
+                    .fill(AppBackground.capsule)
                     .shadow(color: Color.black.opacity(0.45), radius: 18, y: 6)
             )
         }

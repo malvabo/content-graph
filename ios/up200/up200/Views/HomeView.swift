@@ -338,7 +338,7 @@ struct GenerationBanner: View {
                 Button(action: onTap) {
                     ZStack {
                         RoundedRectangle(cornerRadius: Radius.input, style: .continuous)
-                            .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
+                            .fill(AppBackground.surfaceCool)
                         Ellipse()
                             .fill(BrandColor.amber.opacity(0.55))
                             .frame(width: 80, height: 36)
@@ -372,7 +372,7 @@ struct GenerationBanner: View {
         .background(
             ZStack {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color(red: 0.11, green: 0.09, blue: 0.08))
+                    .fill(AppBackground.surface)
                 Ellipse()
                     .fill(BrandColor.amber.opacity(0.06))
                     .blur(radius: 20)
@@ -602,8 +602,8 @@ struct AnimatedLightsButton: View {
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
                     .fill(
                         isEnabled
-                        ? Color(red: 0.24, green: 0.14, blue: 0.07)
-                        : Color(red: 0.14, green: 0.11, blue: 0.09)
+                        ? AppBackground.ctaEnabled
+                        : AppBackground.ctaDisabled
                     )
 
                 if isEnabled {

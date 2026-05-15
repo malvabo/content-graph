@@ -64,6 +64,42 @@ enum AppBackground {
             ? UIColor(red: 0.30, green: 0.20, blue: 0.08, alpha: 0.22)
             : UIColor(red: 0.82, green: 0.81, blue: 0.83, alpha: 0.45)
     })
+
+    /// Raised card / pill surface that sits on top of `primary`. Dark
+    /// near-black on dark; very light off-white on light so cards still
+    /// read as a distinct surface above the page wash.
+    static let surface = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.11, green: 0.09, blue: 0.08, alpha: 1.0)
+            : UIColor(white: 1.0, alpha: 1.0)
+    })
+
+    /// Slightly cooler/deeper card variant used by the prompt-field pill.
+    static let surfaceCool = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.06, green: 0.07, blue: 0.10, alpha: 1.0)
+            : UIColor(red: 0.97, green: 0.97, blue: 0.98, alpha: 1.0)
+    })
+
+    /// Capsule / button surface used by the floating capsule control.
+    static let capsule = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.18, green: 0.14, blue: 0.12, alpha: 1.0)
+            : UIColor(red: 0.98, green: 0.97, blue: 0.96, alpha: 1.0)
+    })
+
+    /// Generate CTA base fill — enabled vs disabled. The amber radial
+    /// glow on top does most of the work; this is just the warm rim.
+    static let ctaEnabled = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.24, green: 0.14, blue: 0.07, alpha: 1.0)
+            : UIColor(red: 0.98, green: 0.92, blue: 0.84, alpha: 1.0)
+    })
+    static let ctaDisabled = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.14, green: 0.11, blue: 0.09, alpha: 1.0)
+            : UIColor(red: 0.93, green: 0.92, blue: 0.91, alpha: 1.0)
+    })
 }
 
 /// Text color tokens. Centralized so emphasis levels can be tuned in one
