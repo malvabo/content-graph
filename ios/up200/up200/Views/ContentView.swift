@@ -1282,7 +1282,7 @@ struct ContentView: View {
                 if !keyboardVisible && !chromeController.hideTabBar {
                     AppTabBar(selected: $selectedTab, pillNS: tabPillNS)
                         .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, -2)
                 }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
