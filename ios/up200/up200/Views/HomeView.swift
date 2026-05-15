@@ -2097,7 +2097,9 @@ private struct FormatsBlock: View {
             }
 
             // Suggestion chip row with the expand button floating over the
-            // trailing edge. Chips fade to transparent behind it via a mask.
+            // trailing edge. Chips fade to transparent behind it via a mask;
+            // the expand button gets its own opaque material backing so any
+            // chip still partially visible at the fade edge can't bleed through.
             ZStack(alignment: .trailing) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -2113,11 +2115,10 @@ private struct FormatsBlock: View {
                                     .font(.appCaptionMedium)
                                     .foregroundColor(Color.white.opacity(0.65))
                                     .padding(.horizontal, 14)
-                                    .padding(.vertical, 9)
-                                    .background(Color.white.opacity(0.06))
-                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                    .padding(.vertical, 11)
+                                    .background(Color.white.opacity(0.06), in: Capsule(style: .continuous))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        Capsule(style: .continuous)
                                             .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
                                     )
                             }
@@ -2126,17 +2127,20 @@ private struct FormatsBlock: View {
                         }
                     }
                     .padding(.leading, 16)
-                    .padding(.trailing, 56)
+                    .padding(.trailing, 64)
                 }
                 .mask(
                     HStack(spacing: 0) {
                         Rectangle()
                         LinearGradient(
-                            colors: [.black, .clear],
+                            stops: [
+                                .init(color: .black, location: 0.0),
+                                .init(color: .clear, location: 0.55)
+                            ],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
-                        .frame(width: 44)
+                        .frame(width: 72)
                     }
                 )
 
@@ -2146,10 +2150,17 @@ private struct FormatsBlock: View {
                 } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.45))
+                        .foregroundColor(Color.white.opacity(0.55))
                         .frame(width: 36, height: 36)
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .fill(Color.white.opacity(0.06))
+                        )
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                        )
                 }
                 .buttonStyle(.plain)
                 .padding(.trailing, 16)
