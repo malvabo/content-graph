@@ -1580,7 +1580,6 @@ struct ContentView: View {
 
             if bannerController.isVisible {
                 GenerationBanner(
-                    formatLabels: bannerController.formatLabels,
                     isReady: bannerController.isReady,
                     onTap: {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()

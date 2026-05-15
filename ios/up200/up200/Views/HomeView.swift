@@ -271,7 +271,6 @@ private struct ContentGenerator {
 // MARK: - Generation Banner
 
 struct GenerationBanner: View {
-    let formatLabels: [String]
     let isReady: Bool
     var onTap: () -> Void
     var onDismiss: () -> Void
@@ -328,16 +327,10 @@ struct GenerationBanner: View {
             .frame(width: 36, height: 36)
             .clipShape(Circle())
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(isReady ? "Content ready" : "Creating your content")
-                    .font(.appSubtextBold)
-                    .foregroundColor(AppText.primary)
-                    .lineLimit(1)
-                Text(formatLabels.joined(separator: " · "))
-                    .font(.appMicro)
-                    .foregroundColor(Color.white.opacity(0.50))
-                    .lineLimit(1)
-            }
+            Text(isReady ? "Content ready" : "Creating your content")
+                .font(.appSubtextBold)
+                .foregroundColor(AppText.primary)
+                .lineLimit(1)
 
             Spacer(minLength: 0)
 
@@ -2466,7 +2459,6 @@ struct HomeView: View {
 
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         isGenerating = true
-        bannerController.formatLabels = selectedFormatIDs.compactMap { id in allFormats.first { $0.id == id }?.label }
         bannerController.isReady = false
         bannerController.isVisible = true
         bannerController.onOpen = { [self] in
