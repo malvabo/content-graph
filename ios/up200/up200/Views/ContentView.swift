@@ -91,10 +91,16 @@ struct LibraryView: View {
                                 isActive: showSearch
                             ) {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                // Keep the focus assignment OUT of withAnimation
+                                // — pulling a FocusState change into the
+                                // animation context makes SwiftUI animate the
+                                // keyboard appearance with the same easeInOut,
+                                // which drags the overlay layout up from the
+                                // bottom instead of letting it fade in cleanly.
+                                // SearchOverlay's onAppear handles focus.
                                 withAnimation(AppAnimation.standard) {
                                     showSearch.toggle()
                                     if !showSearch { searchText = "" }
-                                    else { searchFocused = true }
                                 }
                             }
                         }
@@ -1626,9 +1632,12 @@ struct SearchOverlay<Results: View>: View {
 
     var body: some View {
         ZStack(alignment: .top) {
+            // No tint on top of the material — on this already-dark app even a
+            // 30 % wash blacks out the blur. Let the material work unobstructed
+            // so the filter chips and list chrome behind it read as a blurred
+            // glass surface.
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .overlay(Color(red: 0.10, green: 0.08, blue: 0.07).opacity(0.30))
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
