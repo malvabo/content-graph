@@ -266,12 +266,12 @@ private struct NoteThumb: View {
     var body: some View {
         let widths = Self.lineWidths(for: note.id)
         RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(Color.white.opacity(0.07))
+            .fill(AppInk.solid.opacity(0.07))
             .overlay(
                 VStack(alignment: .leading, spacing: 3) {
                     ForEach(0..<5, id: \.self) { i in
                         Capsule()
-                            .fill(Color.white.opacity(i == 0 ? 0.55 : 0.20))
+                            .fill(AppInk.solid.opacity(i == 0 ? 0.55 : 0.20))
                             .frame(width: widths[i], height: i == 0 ? 2.5 : 1.5)
                     }
                 }
@@ -280,7 +280,7 @@ private struct NoteThumb: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+                    .stroke(AppInk.solid.opacity(0.09), lineWidth: 0.5)
             )
             .frame(width: 42, height: 52)
     }
@@ -325,7 +325,7 @@ private struct NoteListRow: View {
             VStack(alignment: .leading, spacing: 5) {
                 titleText
                     .font(.appRowTitle)
-                    .foregroundColor(Color.white.opacity(0.88))
+                    .foregroundColor(AppInk.solid.opacity(0.88))
                     .lineLimit(2)
 
                 Text(RowDate.relative(from: note.updatedAt))
@@ -394,7 +394,7 @@ struct DictationControls: View {
     let onConfirm: () -> Void
 
     private let amber = BrandColor.amber
-    private let stroke = Color.white.opacity(0.15)
+    private let stroke = AppInk.solid.opacity(0.15)
     private let glassShadow = Color.black.opacity(0.22)
 
     var body: some View {
@@ -432,7 +432,7 @@ struct DictationControls: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.65))
+                    .foregroundColor(AppInk.solid.opacity(0.65))
                     .frame(width: 44, height: 44)
                     .background(glassCircle)
             }
@@ -594,7 +594,7 @@ struct NoteVoiceSheet: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(AppText.secondary)
                             .frame(width: 28, height: 28)
-                            .background(Color.white.opacity(0.12))
+                            .background(AppInk.solid.opacity(0.12))
                             .clipShape(Circle())
                             .appIconHitArea()
                     }
@@ -614,7 +614,7 @@ struct NoteVoiceSheet: View {
 
             Text(timeLabel)
                 .font(.system(size: 22, weight: .medium, design: .monospaced))
-                .foregroundColor(Color.white.opacity(0.70))
+                .foregroundColor(AppInk.solid.opacity(0.70))
 
             Spacer(minLength: 24)
 
@@ -637,7 +637,7 @@ struct NoteVoiceSheet: View {
                     .foregroundColor(AppText.primary)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
-                    .background(Color.white.opacity(0.12))
+                    .background(AppInk.solid.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
                 }
                 .buttonStyle(.plain)
@@ -704,7 +704,7 @@ private struct NoteComposerSheet: View {
                 } label: {
                     Text("Cancel")
                         .font(.appLabel)
-                        .foregroundColor(Color.white.opacity(0.50))
+                        .foregroundColor(AppInk.solid.opacity(0.50))
                 }
                 .buttonStyle(.plain)
 
@@ -732,7 +732,7 @@ private struct NoteComposerSheet: View {
             .padding(.bottom, 14)
 
             Rectangle()
-                .fill(Color.white.opacity(0.06))
+                .fill(AppInk.solid.opacity(0.06))
                 .frame(height: 0.5)
 
             ZStack(alignment: .bottomTrailing) {
@@ -748,7 +748,7 @@ private struct NoteComposerSheet: View {
                     TextEditor(text: $noteBody)
                         .font(.appBody)
                         .lineSpacing(8)
-                        .foregroundColor(Color.white.opacity(0.92))
+                        .foregroundColor(AppInk.solid.opacity(0.92))
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)
                         .tint(.white)
@@ -934,7 +934,7 @@ private struct NoteEditorPage: View {
                 TextField(
                     "",
                     text: $title,
-                    prompt: Text("Title").foregroundColor(Color.white.opacity(0.25)),
+                    prompt: Text("Title").foregroundColor(AppInk.solid.opacity(0.25)),
                     axis: .vertical
                 )
                 .font(.appTitle)
@@ -1021,7 +1021,7 @@ private struct NoteEditorPage: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(AppText.primary)
                     .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.08))
+                    .background(AppInk.solid.opacity(0.08))
                     .clipShape(Circle())
                     .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
@@ -1074,7 +1074,7 @@ private struct FilterChip: View {
                 .foregroundColor(isSelected ? .white : AppText.secondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(isSelected ? SelectionStyle.fill : Color.white.opacity(0.08))
+                .background(isSelected ? SelectionStyle.fill : AppInk.solid.opacity(0.08))
                 .clipShape(Capsule())
                 .overlay(Capsule().stroke(isSelected ? SelectionStyle.stroke : Color.clear, lineWidth: 0.5))
         }
@@ -1205,13 +1205,13 @@ struct NotesView: View {
                 VStack(spacing: 12) {
                     Image(systemName: (searchText.isEmpty && selectedFilter == nil && !showSearch) ? "note.text" : "magnifyingglass")
                         .font(.system(size: 36))
-                        .foregroundColor(Color.white.opacity(0.20))
+                        .foregroundColor(AppInk.solid.opacity(0.20))
                     Text(emptyTitle)
-                        .foregroundColor(Color.white.opacity(0.30))
+                        .foregroundColor(AppInk.solid.opacity(0.30))
                     if let sub = emptySubtitle {
                         Text(sub)
                             .font(.footnote)
-                            .foregroundColor(Color.white.opacity(0.20))
+                            .foregroundColor(AppInk.solid.opacity(0.20))
                     }
                 }
                 Spacer()
@@ -1410,7 +1410,7 @@ struct NotesView: View {
                                     .font(.system(size: 13, weight: .semibold))
                                     .foregroundColor(AppText.secondary)
                                     .frame(width: 34, height: 34)
-                                    .background(Color.white.opacity(0.08))
+                                    .background(AppInk.solid.opacity(0.08))
                                     .clipShape(Circle())
                                     .appIconHitArea()
                             }
@@ -1422,7 +1422,7 @@ struct NotesView: View {
                     }
 
                     Rectangle()
-                        .fill(Color.white.opacity(0.06))
+                        .fill(AppInk.solid.opacity(0.06))
                         .frame(height: 0.5)
 
                     notesList(
@@ -1523,7 +1523,7 @@ private struct NewTagSheet: View {
                     .tint(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
-                    .background(Color.white.opacity(0.07))
+                    .background(AppInk.solid.opacity(0.07))
                     .clipShape(RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
                     .padding(.horizontal, 20)
                     .padding(.top, 24)

@@ -180,7 +180,7 @@ struct ChatView: View {
                 header
 
                 Rectangle()
-                    .fill(Color.white.opacity(0.06))
+                    .fill(AppInk.solid.opacity(0.06))
                     .frame(height: 0.5)
 
                 if messages.isEmpty {
@@ -260,9 +260,9 @@ struct ChatView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.65))
+                    .foregroundColor(AppInk.solid.opacity(0.65))
                     .frame(width: 32, height: 32)
-                    .background(Color.white.opacity(0.08))
+                    .background(AppInk.solid.opacity(0.08))
                     .clipShape(Circle())
                     .appIconHitArea()
             }
@@ -284,11 +284,11 @@ struct ChatView: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(
                         selectedContextIDs.isEmpty
-                            ? Color.white.opacity(availableMentions.isEmpty ? 0.18 : 0.55)
+                            ? AppInk.solid.opacity(availableMentions.isEmpty ? 0.18 : 0.55)
                             : .white
                     )
                     .frame(width: 32, height: 32)
-                    .background(Color.white.opacity(0.07))
+                    .background(AppInk.solid.opacity(0.07))
                     .clipShape(Circle())
                     .appIconHitArea()
             }
@@ -311,10 +311,10 @@ struct ChatView: View {
                     .foregroundColor(AppText.tertiary)
                 Text("Welcome to Chat")
                     .font(.app(size: 20, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.88))
+                    .foregroundColor(AppInk.solid.opacity(0.88))
                 Text("Ask anything or tell me what you need")
                     .font(.app(size: 15))
-                    .foregroundColor(Color.white.opacity(0.42))
+                    .foregroundColor(AppInk.solid.opacity(0.42))
                     .multilineTextAlignment(.center)
             }
             Spacer()
@@ -367,7 +367,7 @@ struct ChatView: View {
                     if inputText.isEmpty {
                         Text("Ask anything\u{2026}")
                             .font(.app(size: 16))
-                            .foregroundColor(Color.white.opacity(0.28))
+                            .foregroundColor(AppInk.solid.opacity(0.28))
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
                             .allowsHitTesting(false)
@@ -390,7 +390,7 @@ struct ChatView: View {
                     } label: {
                         Image(systemName: "paperclip")
                             .font(.system(size: 15))
-                            .foregroundColor(Color.white.opacity(0.45))
+                            .foregroundColor(AppInk.solid.opacity(0.45))
                             .frame(width: 28, height: 28)
                             .frame(minWidth: 36, minHeight: 36)
                             .contentShape(Rectangle())
@@ -403,7 +403,7 @@ struct ChatView: View {
                     } label: {
                         Image(systemName: "at")
                             .font(.system(size: 15))
-                            .foregroundColor(Color.white.opacity(0.45))
+                            .foregroundColor(AppInk.solid.opacity(0.45))
                             .frame(width: 28, height: 28)
                             .frame(minWidth: 36, minHeight: 36)
                             .contentShape(Rectangle())
@@ -417,13 +417,13 @@ struct ChatView: View {
                         let ready = canSend
                         Image(systemName: "arrow.up")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(ready ? .white : Color.white.opacity(0.28))
+                            .foregroundColor(ready ? .white : AppInk.solid.opacity(0.28))
                             .frame(width: 28, height: 28)
-                            .background(ready ? Color.white.opacity(0.18) : Color.white.opacity(0.06))
+                            .background(ready ? AppInk.solid.opacity(0.18) : AppInk.solid.opacity(0.06))
                             .clipShape(Circle())
                             .overlay(
                                 Circle().stroke(
-                                    ready ? Color.white.opacity(0.22) : Color.white.opacity(0.08),
+                                    ready ? AppInk.solid.opacity(0.22) : AppInk.solid.opacity(0.08),
                                     lineWidth: 0.5
                                 )
                             )
@@ -436,11 +436,11 @@ struct ChatView: View {
                 .padding(.horizontal, 8)
                 .padding(.bottom, 4)
             }
-            .background(Color.white.opacity(0.06))
+            .background(AppInk.solid.opacity(0.06))
             .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                    .stroke(AppInk.solid.opacity(0.10), lineWidth: 0.5)
             )
             .padding(.horizontal, 12)
             .padding(.top, 4)
@@ -557,11 +557,11 @@ private struct MessageBubble: View {
                 .lineSpacing(3)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(isUser ? Color.white.opacity(0.12) : Color.white.opacity(0.05))
+                .background(isUser ? AppInk.solid.opacity(0.12) : AppInk.solid.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
-                        .stroke(Color.white.opacity(isUser ? 0.14 : 0.08), lineWidth: 0.5)
+                        .stroke(AppInk.solid.opacity(isUser ? 0.14 : 0.08), lineWidth: 0.5)
                 )
                 .textSelection(.enabled)
 
@@ -580,14 +580,14 @@ private struct TypingIndicator: View {
         HStack(spacing: 5) {
             ForEach(0..<3, id: \.self) { i in
                 Circle()
-                    .fill(Color.white.opacity(phase == i ? 0.60 : 0.18))
+                    .fill(AppInk.solid.opacity(phase == i ? 0.60 : 0.18))
                     .frame(width: 6, height: 6)
                     .animation(.easeInOut(duration: 0.28), value: phase)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.white.opacity(0.05))
+        .background(AppInk.solid.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
         .frame(maxWidth: .infinity, alignment: .leading)
         .task {
@@ -616,9 +616,9 @@ private struct MentionPickerSheet: View {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
                         .font(.app(size: 13, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.60))
+                        .foregroundColor(AppInk.solid.opacity(0.60))
                         .frame(width: 28, height: 28)
-                        .background(Color.white.opacity(0.10))
+                        .background(AppInk.solid.opacity(0.10))
                         .clipShape(Circle())
                         .appIconHitArea()
                 }
@@ -635,7 +635,7 @@ private struct MentionPickerSheet: View {
             .padding(.bottom, 14)
 
             Rectangle()
-                .fill(Color.white.opacity(0.06))
+                .fill(AppInk.solid.opacity(0.06))
                 .frame(height: 0.5)
 
             if isEmpty {
@@ -643,13 +643,13 @@ private struct MentionPickerSheet: View {
                 VStack(spacing: 12) {
                     Image(systemName: "tray")
                         .font(.app(size: 32, weight: .regular))
-                        .foregroundColor(Color.white.opacity(0.20))
+                        .foregroundColor(AppInk.solid.opacity(0.20))
                     Text("Nothing to mention yet")
                         .font(.app(size: 15))
-                        .foregroundColor(Color.white.opacity(0.30))
+                        .foregroundColor(AppInk.solid.opacity(0.30))
                     Text("Create a note or document to reference it here.")
                         .font(.app(size: 13))
-                        .foregroundColor(Color.white.opacity(0.22))
+                        .foregroundColor(AppInk.solid.opacity(0.22))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
                 }
@@ -682,7 +682,7 @@ private struct MentionPickerSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.app(size: 12, weight: .semibold))
-                .foregroundColor(Color.white.opacity(0.45))
+                .foregroundColor(AppInk.solid.opacity(0.45))
                 .textCase(.uppercase)
                 .padding(.horizontal, 4)
 
@@ -695,17 +695,17 @@ private struct MentionPickerSheet: View {
                         HStack(spacing: 12) {
                             Image(systemName: icon(for: item.kind))
                                 .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(Color.white.opacity(0.55))
+                                .foregroundColor(AppInk.solid.opacity(0.55))
                                 .frame(width: 20)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.title)
                                     .font(.app(size: 14, weight: .semibold))
-                                    .foregroundColor(Color.white.opacity(0.88))
+                                    .foregroundColor(AppInk.solid.opacity(0.88))
                                     .lineLimit(1)
                                 if !item.preview.isEmpty {
                                     Text(item.preview)
                                         .font(.app(size: 12))
-                                        .foregroundColor(Color.white.opacity(0.40))
+                                        .foregroundColor(AppInk.solid.opacity(0.40))
                                         .lineLimit(1)
                                 }
                             }
@@ -714,11 +714,11 @@ private struct MentionPickerSheet: View {
                         .padding(14)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Color.white.opacity(0.04))
+                                .fill(AppInk.solid.opacity(0.04))
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                                .stroke(AppInk.solid.opacity(0.06), lineWidth: 0.5)
                         )
                     }
                     .buttonStyle(.plain)

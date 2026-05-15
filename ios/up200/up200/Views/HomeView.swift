@@ -297,7 +297,7 @@ struct GenerationBanner: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color.white.opacity(0.06))
+                    .fill(AppInk.solid.opacity(0.06))
                     .frame(width: 36, height: 36)
                 if !isReady {
                     TimelineView(.animation(minimumInterval: 1.0/30.0)) { tl in
@@ -310,7 +310,7 @@ struct GenerationBanner: View {
                                 let y = cfg.radius * sin(angle)
                                 let pulse = (sin(t * cfg.speed * 2.3 + cfg.phase) + 1) / 2
                                 Circle()
-                                    .fill(Color.white.opacity(cfg.opacity * (0.5 + 0.5 * pulse)))
+                                    .fill(AppInk.solid.opacity(cfg.opacity * (0.5 + 0.5 * pulse)))
                                     .frame(width: cfg.size * (0.75 + 0.25 * pulse),
                                            height: cfg.size * (0.75 + 0.25 * pulse))
                                     .blur(radius: 0.8)
@@ -346,7 +346,7 @@ struct GenerationBanner: View {
                             .offset(x: glowPhase ? 10 : -10)
                             .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: glowPhase)
                         RoundedRectangle(cornerRadius: Radius.input, style: .continuous)
-                            .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                            .stroke(AppInk.solid.opacity(0.14), lineWidth: 0.5)
                         Text("Open")
                             .font(.appCaptionMedium)
                             .foregroundColor(AppText.primary)
@@ -359,9 +359,9 @@ struct GenerationBanner: View {
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.50))
+                        .foregroundColor(AppInk.solid.opacity(0.50))
                         .frame(width: 26, height: 26)
-                        .background(Color.white.opacity(0.08))
+                        .background(AppInk.solid.opacity(0.08))
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
@@ -377,7 +377,7 @@ struct GenerationBanner: View {
                     .fill(BrandColor.amber.opacity(0.06))
                     .blur(radius: 20)
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+                    .stroke(AppInk.solid.opacity(0.09), lineWidth: 0.5)
             }
         )
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -620,7 +620,7 @@ struct AnimatedLightsButton: View {
                 }
 
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .stroke(Color.white.opacity(isEnabled ? 0.28 : 0.10), lineWidth: 0.75)
+                    .stroke(AppInk.solid.opacity(isEnabled ? 0.28 : 0.10), lineWidth: 0.75)
 
                 HStack(spacing: 8) {
                     if showSparks {
@@ -665,7 +665,7 @@ struct ImportSheetView: View {
         VStack(spacing: 10) {
             Text("Import content")
                 .font(.appNavTitle)
-                .foregroundColor(Color.white.opacity(0.88))
+                .foregroundColor(AppInk.solid.opacity(0.88))
                 .padding(.top, 20)
                 .padding(.bottom, 14)
 
@@ -677,15 +677,15 @@ struct ImportSheetView: View {
                         VStack(spacing: 12) {
                             Image(systemName: item.icon)
                                 .font(.appLabel)
-                                .foregroundColor(Color.white.opacity(0.82))
+                                .foregroundColor(AppInk.solid.opacity(0.82))
                             Text(item.label)
                                 .font(.appSmall)
-                                .foregroundColor(Color.white.opacity(0.52))
+                                .foregroundColor(AppInk.solid.opacity(0.52))
                                 .multilineTextAlignment(.center)
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 88)
-                        .background(Color.white.opacity(0.06))
+                        .background(AppInk.solid.opacity(0.06))
                         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                     }
                     .buttonStyle(.plain)
@@ -729,7 +729,7 @@ private struct TextInputSheet: View {
                 header
 
                 Rectangle()
-                    .fill(Color.white.opacity(0.06))
+                    .fill(AppInk.solid.opacity(0.06))
                     .frame(height: 0.5)
 
                 ScrollView(showsIndicators: false) {
@@ -750,7 +750,7 @@ private struct TextInputSheet: View {
                             if bodyText.isEmpty {
                                 Text("Start writing\u{2026}")
                                     .font(.appBody)
-                                    .foregroundColor(Color.white.opacity(0.28))
+                                    .foregroundColor(AppInk.solid.opacity(0.28))
                                     .padding(.horizontal, 20)
                                     .padding(.top, 2)
                                     .allowsHitTesting(false)
@@ -825,9 +825,9 @@ private struct TextInputSheet: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.65))
+                    .foregroundColor(AppInk.solid.opacity(0.65))
                     .frame(width: 32, height: 32)
-                    .background(Color.white.opacity(0.08))
+                    .background(AppInk.solid.opacity(0.08))
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
@@ -848,11 +848,11 @@ private struct TextInputSheet: View {
                     } else {
                         Image(systemName: "checkmark")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(canSave ? .white : Color.white.opacity(0.28))
+                            .foregroundColor(canSave ? .white : AppInk.solid.opacity(0.28))
                     }
                 }
                 .frame(width: 32, height: 32)
-                .background(canSave ? Color.white.opacity(0.12) : Color.white.opacity(0.05))
+                .background(canSave ? AppInk.solid.opacity(0.12) : AppInk.solid.opacity(0.05))
                 .clipShape(Circle())
             }
             .buttonStyle(.plain)
@@ -900,7 +900,7 @@ private struct TextInputSheet: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 17))
-                .foregroundColor(Color.white.opacity(0.60))
+                .foregroundColor(AppInk.solid.opacity(0.60))
                 .frame(width: 44, height: 36)
         }
         .buttonStyle(.plain)
@@ -1040,7 +1040,7 @@ private struct LinkInputSheet: View {
                             .frame(width: 40)
                     } else {
                         Text("Save")
-                            .foregroundColor(canSave ? Color.white.opacity(0.88) : AppText.disabled)
+                            .foregroundColor(canSave ? AppInk.solid.opacity(0.88) : AppText.disabled)
                     }
                 }
                 .disabled(!canSave || isFetching)
@@ -1050,7 +1050,7 @@ private struct LinkInputSheet: View {
             .padding(.bottom, 14)
 
             Rectangle()
-                .fill(Color.white.opacity(0.07))
+                .fill(AppInk.solid.opacity(0.07))
                 .frame(height: 0.5)
 
             HStack(spacing: 10) {
@@ -1059,7 +1059,7 @@ private struct LinkInputSheet: View {
                     .foregroundColor(AppText.tertiary)
                 TextField("https://", text: $urlText)
                     .font(.appLabel)
-                    .foregroundColor(Color.white.opacity(0.88))
+                    .foregroundColor(AppInk.solid.opacity(0.88))
                     .autocapitalization(.none)
                     .keyboardType(.URL)
                     .autocorrectionDisabled()
@@ -1071,7 +1071,7 @@ private struct LinkInputSheet: View {
                         .font(.app(size: 14, weight: .semibold))
                         .foregroundColor(canStage ? .white : AppText.disabled)
                         .frame(width: 30, height: 30)
-                        .background(canStage ? Color.white.opacity(0.12) : Color.white.opacity(0.04))
+                        .background(canStage ? AppInk.solid.opacity(0.12) : AppInk.solid.opacity(0.04))
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
@@ -1083,7 +1083,7 @@ private struct LinkInputSheet: View {
 
             if !stagedURLs.isEmpty {
                 Rectangle()
-                    .fill(Color.white.opacity(0.07))
+                    .fill(AppInk.solid.opacity(0.07))
                     .frame(height: 0.5)
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
@@ -1091,11 +1091,11 @@ private struct LinkInputSheet: View {
                             HStack(spacing: 12) {
                                 Image(systemName: "link")
                                     .font(.appCaption)
-                                    .foregroundColor(Color.white.opacity(0.45))
+                                    .foregroundColor(AppInk.solid.opacity(0.45))
                                     .frame(width: 20)
                                 Text(link)
                                     .font(.appSmall)
-                                    .foregroundColor(Color.white.opacity(0.80))
+                                    .foregroundColor(AppInk.solid.opacity(0.80))
                                     .lineLimit(1)
                                     .truncationMode(.middle)
                                 Spacer(minLength: 8)
@@ -1106,7 +1106,7 @@ private struct LinkInputSheet: View {
                                 } label: {
                                     Image(systemName: "xmark")
                                         .font(.appBadge)
-                                        .foregroundColor(Color.white.opacity(0.30))
+                                        .foregroundColor(AppInk.solid.opacity(0.30))
                                         .frame(width: 32, height: 32)
                                         .contentShape(Rectangle())
                                 }
@@ -1117,7 +1117,7 @@ private struct LinkInputSheet: View {
 
                             if idx < stagedURLs.count - 1 {
                                 Rectangle()
-                                    .fill(Color.white.opacity(0.05))
+                                    .fill(AppInk.solid.opacity(0.05))
                                     .frame(height: 0.5)
                             }
                         }
@@ -1272,7 +1272,7 @@ struct VoiceRecordSheet: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(AppText.secondary)
                             .frame(width: 44, height: 44)
-                            .background(Color.white.opacity(0.12))
+                            .background(AppInk.solid.opacity(0.12))
                             .clipShape(Circle())
                     }
                     .buttonStyle(.plain)
@@ -1316,12 +1316,12 @@ struct VoiceRecordSheet: View {
                 if recorder.isRecording || !recorder.transcript.isEmpty {
                     Text(timeLabel)
                         .font(.system(size: 22, weight: .medium, design: .monospaced))
-                        .foregroundColor(Color.white.opacity(0.70))
+                        .foregroundColor(AppInk.solid.opacity(0.70))
                         .transition(.opacity)
                 } else {
                     Text("Tap to record")
                         .font(.appBody)
-                        .foregroundColor(Color.white.opacity(0.40))
+                        .foregroundColor(AppInk.solid.opacity(0.40))
                         .transition(.opacity)
                 }
 
@@ -1329,7 +1329,7 @@ struct VoiceRecordSheet: View {
                     ScrollView(showsIndicators: false) {
                         Text(recorder.transcript)
                             .font(.appSmall)
-                            .foregroundColor(Color.white.opacity(0.50))
+                            .foregroundColor(AppInk.solid.opacity(0.50))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
                             .padding(.top, 16)
@@ -1345,7 +1345,7 @@ struct VoiceRecordSheet: View {
                 if isGenerating {
                     Label("Generating title\u{2026}", systemImage: "sparkles")
                         .font(.appSubtext)
-                        .foregroundColor(Color.white.opacity(0.50))
+                        .foregroundColor(AppInk.solid.opacity(0.50))
                         .padding(.bottom, 40)
                         .transition(.opacity)
                 } else if recorder.isRecording {
@@ -1361,7 +1361,7 @@ struct VoiceRecordSheet: View {
                             .foregroundColor(AppText.primary)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(Color.white.opacity(0.12))
+                            .background(AppInk.solid.opacity(0.12))
                             .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
                         }
                         .buttonStyle(.plain)
@@ -1463,10 +1463,10 @@ private struct GlassCard<Content: View>: View {
         content
             .background(
                 RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
-                    .fill(Color.white.opacity(0.04))
+                    .fill(AppInk.solid.opacity(0.04))
                     .overlay(
                         RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                            .stroke(AppInk.solid.opacity(0.06), lineWidth: 0.5)
                     )
             )
             .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
@@ -1521,20 +1521,20 @@ private struct SourcesBlock: View {
                     SectionDisclosure(expanded: $expanded)
                     Text("Sources")
                         .font(.appSubtextMedium)
-                        .foregroundColor(Color.white.opacity(0.85))
+                        .foregroundColor(AppInk.solid.opacity(0.85))
                     if !expanded && !sources.isEmpty {
                         Text("\(sources.count)")
                             .font(.appCaption)
-                            .foregroundColor(Color.white.opacity(0.40))
+                            .foregroundColor(AppInk.solid.opacity(0.40))
                     }
                     Spacer()
                     Button { activeSheet = .picker } label: {
                         Image(systemName: "plus")
                             .font(.appCaptionMedium)
-                            .foregroundColor(Color.white.opacity(0.80))
+                            .foregroundColor(AppInk.solid.opacity(0.80))
                             .frame(width: 30, height: 30)
-                            .background(Color.white.opacity(0.09))
-                            .overlay(Circle().stroke(Color.white.opacity(0.10), lineWidth: 0.5))
+                            .background(AppInk.solid.opacity(0.09))
+                            .overlay(Circle().stroke(AppInk.solid.opacity(0.10), lineWidth: 0.5))
                             .clipShape(Circle())
                     }
                     .buttonStyle(.plain)
@@ -1547,17 +1547,17 @@ private struct SourcesBlock: View {
                     ForEach(sources) { item in
                     VStack(spacing: 0) {
                         Rectangle()
-                            .fill(Color.white.opacity(0.06))
+                            .fill(AppInk.solid.opacity(0.06))
                             .frame(height: 0.5)
 
                         HStack(spacing: 12) {
                             Image(systemName: item.icon)
                                 .font(.appSubtext)
-                                .foregroundColor(Color.white.opacity(0.45))
+                                .foregroundColor(AppInk.solid.opacity(0.45))
                                 .frame(width: 20)
                             Text(item.label)
                                 .font(.appSubtext)
-                                .foregroundColor(Color.white.opacity(0.80))
+                                .foregroundColor(AppInk.solid.opacity(0.80))
                                 .lineLimit(1)
                             Spacer()
                             Button {
@@ -1567,7 +1567,7 @@ private struct SourcesBlock: View {
                             } label: {
                                 Image(systemName: "xmark")
                                     .font(.appBadge)
-                                    .foregroundColor(Color.white.opacity(0.28))
+                                    .foregroundColor(AppInk.solid.opacity(0.28))
                                     .frame(width: 32, height: 32)
                                     .contentShape(Rectangle())
                             }
@@ -1802,7 +1802,7 @@ private struct NotePickerSheet: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(AppText.secondary)
                             .frame(width: 30, height: 30)
-                            .background(Color.white.opacity(0.10))
+                            .background(AppInk.solid.opacity(0.10))
                             .clipShape(Circle())
                             .appIconHitArea()
                     }
@@ -1826,10 +1826,10 @@ private struct NotePickerSheet: View {
                         Spacer().frame(height: 28)
                         Image(systemName: "note.text")
                             .font(.system(size: 32, weight: .light))
-                            .foregroundColor(Color.white.opacity(0.18))
+                            .foregroundColor(AppInk.solid.opacity(0.18))
                         Text(notes.isEmpty ? "No notes yet" : "No results")
                             .font(.appSubtext)
-                            .foregroundColor(Color.white.opacity(0.30))
+                            .foregroundColor(AppInk.solid.opacity(0.30))
                         Spacer().frame(height: 28)
                     }
                     .frame(maxWidth: .infinity)
@@ -1845,13 +1845,13 @@ private struct NotePickerSheet: View {
                                     HStack(alignment: .top, spacing: 14) {
                                         Image(systemName: "note.text")
                                             .font(.system(size: 16, weight: .regular))
-                                            .foregroundColor(Color.white.opacity(0.55))
+                                            .foregroundColor(AppInk.solid.opacity(0.55))
                                             .frame(width: 24, height: 24)
                                             .padding(.top, 1)
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text(note.displayTitle)
                                                 .font(.app(size: 16, weight: .medium))
-                                                .foregroundColor(Color.white.opacity(0.92))
+                                                .foregroundColor(AppInk.solid.opacity(0.92))
                                                 .lineLimit(2)
                                                 .multilineTextAlignment(.leading)
                                             Text(Self.dateFormatter.string(from: note.updatedAt))
@@ -1868,7 +1868,7 @@ private struct NotePickerSheet: View {
 
                                 if idx < filtered.count - 1 {
                                     Rectangle()
-                                        .fill(Color.white.opacity(0.05))
+                                        .fill(AppInk.solid.opacity(0.05))
                                         .frame(height: 0.5)
                                         .padding(.leading, 54)
                                 }
@@ -1884,7 +1884,7 @@ private struct NotePickerSheet: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                    .stroke(AppInk.solid.opacity(0.08), lineWidth: 0.5)
             )
             .shadow(color: Color.black.opacity(0.45), radius: 30, y: 10)
             .padding(.horizontal, 14)
@@ -2048,10 +2048,10 @@ private struct FormatPickerSheet: View {
             HStack(spacing: 6) {
                 Text(showAllTemplates ? "Show less" : "See all templates")
                     .font(.app(size: 14, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.65))
+                    .foregroundColor(AppInk.solid.opacity(0.65))
                 Image(systemName: showAllTemplates ? "chevron.up" : "chevron.down")
                     .font(.appBadge)
-                    .foregroundColor(Color.white.opacity(0.40))
+                    .foregroundColor(AppInk.solid.opacity(0.40))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 8)
@@ -2090,12 +2090,12 @@ private struct FormatPickerSheet: View {
                     .font(.app(size: 11, weight: .bold))
                     .foregroundColor(sheetBackground)
             case .partial:
-                Circle().fill(Color.white.opacity(0.45))
+                Circle().fill(AppInk.solid.opacity(0.45))
                 Image(systemName: "minus")
                     .font(.app(size: 11, weight: .bold))
                     .foregroundColor(sheetBackground)
             case .none:
-                Circle().stroke(Color.white.opacity(0.22), lineWidth: 1.5)
+                Circle().stroke(AppInk.solid.opacity(0.22), lineWidth: 1.5)
             }
         }
         .frame(width: 24, height: 24)
@@ -2135,7 +2135,7 @@ private struct FormatPickerSheet: View {
                         .foregroundColor(AppText.primary)
                     Text(template.description)
                         .font(.appCaption)
-                        .foregroundColor(Color.white.opacity(0.50))
+                        .foregroundColor(AppInk.solid.opacity(0.50))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                 }
@@ -2146,11 +2146,11 @@ private struct FormatPickerSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .fill(Color.white.opacity(fillOpacity))
+                    .fill(AppInk.solid.opacity(fillOpacity))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .stroke(Color.white.opacity(strokeOpacity), lineWidth: 0.5)
+                    .stroke(AppInk.solid.opacity(strokeOpacity), lineWidth: 0.5)
             )
         }
         .buttonStyle(.plain)
@@ -2175,7 +2175,7 @@ private struct FormatPickerSheet: View {
                         .foregroundColor(AppText.primary)
                     Text(format.description)
                         .font(.appCaption)
-                        .foregroundColor(Color.white.opacity(0.50))
+                        .foregroundColor(AppInk.solid.opacity(0.50))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                 }
@@ -2186,11 +2186,11 @@ private struct FormatPickerSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .fill(Color.white.opacity(selected ? 0.10 : 0.04))
+                    .fill(AppInk.solid.opacity(selected ? 0.10 : 0.04))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .stroke(Color.white.opacity(selected ? 0.30 : 0.06), lineWidth: 0.5)
+                    .stroke(AppInk.solid.opacity(selected ? 0.30 : 0.06), lineWidth: 0.5)
             )
         }
         .buttonStyle(.plain)
@@ -2225,7 +2225,7 @@ private struct FormatsBlock: View {
             HStack(spacing: 10) {
                 Text("Format")
                     .font(.appSubtextMedium)
-                    .foregroundColor(Color.white.opacity(0.85))
+                    .foregroundColor(AppInk.solid.opacity(0.85))
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
@@ -2249,13 +2249,13 @@ private struct FormatsBlock: View {
                             } label: {
                                 Text(fmt.label)
                                     .font(.appCaptionMedium)
-                                    .foregroundColor(Color.white.opacity(0.65))
+                                    .foregroundColor(AppInk.solid.opacity(0.65))
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 11)
-                                    .background(Color.white.opacity(0.06), in: Capsule(style: .continuous))
+                                    .background(AppInk.solid.opacity(0.06), in: Capsule(style: .continuous))
                                     .overlay(
                                         Capsule(style: .continuous)
-                                            .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                                            .stroke(AppInk.solid.opacity(0.08), lineWidth: 0.5)
                                     )
                             }
                             .buttonStyle(.plain)
@@ -2286,16 +2286,16 @@ private struct FormatsBlock: View {
                 } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.55))
+                        .foregroundColor(AppInk.solid.opacity(0.55))
                         .frame(width: 36, height: 36)
                         .background(.ultraThinMaterial, in: Capsule(style: .continuous))
                         .overlay(
                             Capsule(style: .continuous)
-                                .fill(Color.white.opacity(0.06))
+                                .fill(AppInk.solid.opacity(0.06))
                         )
                         .overlay(
                             Capsule(style: .continuous)
-                                .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                                .stroke(AppInk.solid.opacity(0.10), lineWidth: 0.5)
                         )
                 }
                 .buttonStyle(.plain)
@@ -2337,10 +2337,10 @@ private struct PromptField: View {
             axis: .vertical
         ) {
             Text("Leave empty to generate from sources and format.")
-                .foregroundStyle(Color.white.opacity(0.22))
+                .foregroundStyle(AppInk.solid.opacity(0.22))
         }
         .font(.appSubtext)
-        .foregroundColor(Color.white.opacity(0.85))
+        .foregroundColor(AppInk.solid.opacity(0.85))
         .tint(.white)
         .lineLimit(3...6)
         .padding(.horizontal, 16)
@@ -2360,7 +2360,7 @@ private struct BrandCard: View {
             HStack(spacing: 12) {
                 Text("Brand voice")
                     .font(.appSubtextMedium)
-                    .foregroundColor(Color.white.opacity(0.85))
+                    .foregroundColor(AppInk.solid.opacity(0.85))
 
                 Spacer()
 
@@ -2380,16 +2380,16 @@ private struct BrandCard: View {
                     HStack(spacing: 5) {
                         Text(selectedBrand)
                             .font(.appSubtextMedium)
-                            .foregroundColor(Color.white.opacity(0.70))
+                            .foregroundColor(AppInk.solid.opacity(0.70))
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.app(size: 11, weight: .semibold))
                             .foregroundColor(AppText.tertiary)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
-                    .background(Color.white.opacity(0.09))
+                    .background(AppInk.solid.opacity(0.09))
                     .clipShape(Capsule())
-                    .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.5))
+                    .overlay(Capsule().stroke(AppInk.solid.opacity(0.10), lineWidth: 0.5))
                 }
             }
             .padding(.horizontal, 16)

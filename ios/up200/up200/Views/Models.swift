@@ -37,8 +37,20 @@ enum BrandColor {
 }
 
 enum SelectionStyle {
-    static let fill = Color.white.opacity(0.14)
-    static let stroke = Color.white.opacity(0.30)
+    static let fill = AppInk.solid.opacity(0.14)
+    static let stroke = AppInk.solid.opacity(0.30)
+}
+
+/// Adaptive "ink" — the base hue for translucent overlays, separators,
+/// selection fills, and on-background text. White on dark, near-black on
+/// light. Pair with `.opacity(...)` to get the legacy `Color.white.opacity`
+/// look in dark mode while reading correctly on the light background.
+enum AppInk {
+    static let solid = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor.white
+            : UIColor(white: 0.0, alpha: 1.0)
+    })
 }
 
 /// Adaptive app-background tokens. The dark variant matches the original

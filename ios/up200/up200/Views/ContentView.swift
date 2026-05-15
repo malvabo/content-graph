@@ -49,13 +49,13 @@ struct LibraryView: View {
                 VStack(spacing: 12) {
                     Image(systemName: searchText.isEmpty && !showSearch ? "tray" : "magnifyingglass")
                         .font(.system(size: 36))
-                        .foregroundColor(Color.white.opacity(0.20))
+                        .foregroundColor(AppInk.solid.opacity(0.20))
                     Text(emptyTitle)
-                        .foregroundColor(Color.white.opacity(0.30))
+                        .foregroundColor(AppInk.solid.opacity(0.30))
                     if let sub = emptySubtitle {
                         Text(sub)
                             .font(.footnote)
-                            .foregroundColor(Color.white.opacity(0.20))
+                            .foregroundColor(AppInk.solid.opacity(0.20))
                     }
                 }
                 Spacer()
@@ -72,7 +72,7 @@ struct LibraryView: View {
                         .buttonStyle(.plain)
 
                         Rectangle()
-                            .fill(Color.white.opacity(0.06))
+                            .fill(AppInk.solid.opacity(0.06))
                             .frame(height: 0.5)
                             .padding(.leading, 20)
                     }
@@ -128,7 +128,7 @@ struct LibraryView: View {
                     }
 
                     Rectangle()
-                        .fill(Color.white.opacity(0.06))
+                        .fill(AppInk.solid.opacity(0.06))
                         .frame(height: 0.5)
 
                     libraryList(
@@ -200,12 +200,12 @@ private struct LibraryDocCard: View {
     var body: some View {
         let widths = Self.lineWidths(for: seed)
         RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(Color.white.opacity(0.07))
+            .fill(AppInk.solid.opacity(0.07))
             .overlay(
                 VStack(alignment: .leading, spacing: 3) {
                     ForEach(0..<5, id: \.self) { i in
                         Capsule()
-                            .fill(Color.white.opacity(i == 0 ? 0.55 : 0.20))
+                            .fill(AppInk.solid.opacity(i == 0 ? 0.55 : 0.20))
                             .frame(width: widths[i], height: i == 0 ? 2.5 : 1.5)
                     }
                 }
@@ -214,7 +214,7 @@ private struct LibraryDocCard: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+                    .stroke(AppInk.solid.opacity(0.09), lineWidth: 0.5)
             )
             .frame(width: width, height: height)
     }
@@ -261,7 +261,7 @@ private struct LibraryGroupRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.appRowTitle)
-                    .foregroundColor(Color.white.opacity(0.88))
+                    .foregroundColor(AppInk.solid.opacity(0.88))
                     .lineLimit(1)
                 Text("\(outputTypesList(items)) · \(libraryRelativeTime(items.first?.date ?? Date()))")
                     .font(.appMicro)
@@ -389,7 +389,7 @@ struct ProjectGroupDetailView: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(AppText.primary)
                             .frame(width: 36, height: 36)
-                            .background(Color.white.opacity(0.08))
+                            .background(AppInk.solid.opacity(0.08))
                             .clipShape(Circle())
                             .frame(minWidth: 44, minHeight: 44)
                             .contentShape(Rectangle())
@@ -453,12 +453,12 @@ struct ProjectGroupDetailView: View {
                                 Button { selectTab(idx) } label: {
                                     Text(tabLabel(item))
                                         .font(.app(size: 14, weight: selectedIndex == idx ? .semibold : .regular))
-                                        .foregroundColor(selectedIndex == idx ? .white : Color.white.opacity(0.45))
+                                        .foregroundColor(selectedIndex == idx ? .white : AppInk.solid.opacity(0.45))
                                         .padding(.horizontal, 14)
                                         .padding(.vertical, 7)
-                                        .background(selectedIndex == idx ? Color.white.opacity(0.12) : Color.clear)
+                                        .background(selectedIndex == idx ? AppInk.solid.opacity(0.12) : Color.clear)
                                         .clipShape(Capsule())
-                                        .overlay(Capsule().stroke(selectedIndex == idx ? Color.white.opacity(0.20) : Color.clear, lineWidth: 0.5))
+                                        .overlay(Capsule().stroke(selectedIndex == idx ? AppInk.solid.opacity(0.20) : Color.clear, lineWidth: 0.5))
                                 }
                                 .buttonStyle(.plain)
                                 .animation(AppAnimation.quick, value: selectedIndex)
@@ -469,7 +469,7 @@ struct ProjectGroupDetailView: View {
                     }
 
                     Rectangle()
-                        .fill(Color.white.opacity(0.06))
+                        .fill(AppInk.solid.opacity(0.06))
                         .frame(height: 0.5)
                 }
 
@@ -599,7 +599,7 @@ struct ProjectGroupDetailView: View {
                                 }
                             }
                             .frame(width: 52, height: 52)
-                            .background(Color.white.opacity(0.12))
+                            .background(AppInk.solid.opacity(0.12))
                             .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
@@ -614,7 +614,7 @@ struct ProjectGroupDetailView: View {
                                 .font(.system(size: 17, weight: .regular))
                                 .foregroundColor(AppText.primary)
                                 .frame(width: 52, height: 52)
-                                .background(Color.white.opacity(0.12))
+                                .background(AppInk.solid.opacity(0.12))
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
@@ -631,7 +631,7 @@ struct ProjectGroupDetailView: View {
                                 .font(.system(size: 17, weight: .semibold))
                                 .foregroundColor(AppText.primary)
                                 .frame(width: 52, height: 52)
-                                .background(Color.white.opacity(0.12))
+                                .background(AppInk.solid.opacity(0.12))
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
@@ -815,7 +815,7 @@ struct ProfileView: View {
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
-                    .listRowSeparatorTint(Color.white.opacity(0.06))
+                    .listRowSeparatorTint(AppInk.solid.opacity(0.06))
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
 
                     SettingsRow(
@@ -827,7 +827,7 @@ struct ProfileView: View {
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
-                    .listRowSeparatorTint(Color.white.opacity(0.06))
+                    .listRowSeparatorTint(AppInk.solid.opacity(0.06))
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
 
                     SettingsRow(
@@ -839,7 +839,7 @@ struct ProfileView: View {
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
-                    .listRowSeparatorTint(Color.white.opacity(0.06))
+                    .listRowSeparatorTint(AppInk.solid.opacity(0.06))
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
 
                     SettingsRow(
@@ -863,7 +863,7 @@ struct ProfileView: View {
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
-                    .listRowSeparatorTint(Color.white.opacity(0.06))
+                    .listRowSeparatorTint(AppInk.solid.opacity(0.06))
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
 
                     SettingsRow(
@@ -877,7 +877,7 @@ struct ProfileView: View {
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
-                    .listRowSeparatorTint(Color.white.opacity(0.06))
+                    .listRowSeparatorTint(AppInk.solid.opacity(0.06))
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
                 }
                 .listStyle(.plain)
@@ -1019,7 +1019,7 @@ private struct TemplatesListPage: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(AppText.primary)
                         .frame(width: 36, height: 36)
-                        .background(Color.white.opacity(0.08))
+                        .background(AppInk.solid.opacity(0.08))
                         .clipShape(Circle())
                         .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
@@ -1051,14 +1051,14 @@ private struct TemplatesListPage: View {
                         .onTapGesture { path.append(.templateEdit(tpl.id)) }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
-                        .listRowSeparatorTint(Color.white.opacity(0.06))
+                        .listRowSeparatorTint(AppInk.solid.opacity(0.06))
                         .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
                 }
                 ForEach(builtInTemplates, id: \.title) { tpl in
                     TemplateRow(title: tpl.title)
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
-                        .listRowSeparatorTint(Color.white.opacity(0.06))
+                        .listRowSeparatorTint(AppInk.solid.opacity(0.06))
                         .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
                 }
             }
@@ -1079,7 +1079,7 @@ private struct TemplateRow: View {
     var body: some View {
         Text(title)
             .font(.appRowTitle)
-            .foregroundColor(Color.white.opacity(0.82))
+            .foregroundColor(AppInk.solid.opacity(0.82))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -1215,7 +1215,7 @@ private struct TemplateEditPage: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(AppText.primary)
                             .frame(width: 36, height: 36)
-                            .background(Color.white.opacity(0.08))
+                            .background(AppInk.solid.opacity(0.08))
                             .clipShape(Circle())
                             .frame(minWidth: 44, minHeight: 44)
                             .contentShape(Rectangle())
@@ -1233,7 +1233,7 @@ private struct TemplateEditPage: View {
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(Color.red.opacity(0.75))
                                 .frame(width: 36, height: 36)
-                                .background(Color.white.opacity(0.08))
+                                .background(AppInk.solid.opacity(0.08))
                                 .clipShape(Circle())
                                 .frame(minWidth: 44, minHeight: 44)
                                 .contentShape(Rectangle())
@@ -1330,7 +1330,7 @@ private struct TemplateEditPage: View {
                     Text(isEnhancing ? "Enhancing\u{2026}" : "Enhance prompt")
                         .font(.appSubtextMedium)
                 }
-                .foregroundColor(canEnhance ? amber : Color.white.opacity(0.30))
+                .foregroundColor(canEnhance ? amber : AppInk.solid.opacity(0.30))
                 .padding(.horizontal, 18)
                 .frame(height: 56)
                 .background(
@@ -1338,7 +1338,7 @@ private struct TemplateEditPage: View {
                         .fill(.regularMaterial)
                         .overlay(
                             Capsule().stroke(
-                                Color.white.opacity(0.15),
+                                AppInk.solid.opacity(0.15),
                                 lineWidth: 0.5
                             )
                         )
@@ -1524,16 +1524,16 @@ private struct ClassicAppTabBar: View {
                             Text(label)
                                 .font(.system(size: 11, weight: .regular))
                         }
-                        .foregroundColor(selected == tab ? .white : Color.white.opacity(0.45))
+                        .foregroundColor(selected == tab ? .white : AppInk.solid.opacity(0.45))
                         .frame(maxWidth: .infinity, minHeight: 48)
                         .background(
                             ZStack {
                                 if selected == tab {
                                     Capsule(style: .continuous)
-                                        .fill(Color.white.opacity(0.14))
+                                        .fill(AppInk.solid.opacity(0.14))
                                         .overlay(
                                             Capsule(style: .continuous)
-                                                .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
+                                                .stroke(AppInk.solid.opacity(0.18), lineWidth: 0.5)
                                         )
                                         .padding(.horizontal, 2)
                                         .padding(.vertical, 1)
@@ -1555,7 +1555,7 @@ private struct ClassicAppTabBar: View {
                 Capsule(style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [Color.white.opacity(0.28), Color.white.opacity(0.08)],
+                            colors: [AppInk.solid.opacity(0.28), AppInk.solid.opacity(0.08)],
                             startPoint: .top,
                             endPoint: .bottom
                         ),
@@ -1575,7 +1575,7 @@ private struct ClassicAppTabBar: View {
                     .foregroundColor(AppText.primary)
                     .frame(width: 60, height: 60)
                     .background(
-                        Circle().fill(Color.white.opacity(isActive ? 0.14 : 0))
+                        Circle().fill(AppInk.solid.opacity(isActive ? 0.14 : 0))
                     )
                     .appLiquidGlass(in: Circle())
                     .overlay(
@@ -1583,8 +1583,8 @@ private struct ClassicAppTabBar: View {
                             .stroke(
                                 LinearGradient(
                                     colors: [
-                                        Color.white.opacity(isActive ? 0.40 : 0.28),
-                                        Color.white.opacity(isActive ? 0.14 : 0.08)
+                                        AppInk.solid.opacity(isActive ? 0.40 : 0.28),
+                                        AppInk.solid.opacity(isActive ? 0.14 : 0.08)
                                     ],
                                     startPoint: .top,
                                     endPoint: .bottom
@@ -1622,7 +1622,7 @@ private struct SimpleHomePage: View {
                     SimpleHomeHeader(section: $section, onProfileTap: onProfileTap)
 
                     Rectangle()
-                        .fill(Color.white.opacity(0.06))
+                        .fill(AppInk.solid.opacity(0.06))
                         .frame(height: 0.5)
 
                     Group {
@@ -1672,7 +1672,7 @@ private struct SimpleHomeHeader: View {
         .appLiquidGlass(in: Capsule(style: .continuous))
         .overlay(
             Capsule(style: .continuous)
-                .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                .stroke(AppInk.solid.opacity(0.12), lineWidth: 0.5)
         )
     }
 
@@ -1689,7 +1689,7 @@ private struct SimpleHomeHeader: View {
                 .padding(.vertical, 8)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(Color.white.opacity(section == tab ? 0.14 : 0))
+                        .fill(AppInk.solid.opacity(section == tab ? 0.14 : 0))
                 )
                 .contentShape(Rectangle())
         }
@@ -1735,7 +1735,7 @@ private struct SimpleCreateBar: View {
                 .rotationEffect(.degrees(showCreateMenu ? 45 : 0))
                 .frame(width: 64, height: 64)
                 .background(
-                    Circle().fill(Color.white.opacity(showCreateMenu ? 0.18 : 0.06))
+                    Circle().fill(AppInk.solid.opacity(showCreateMenu ? 0.18 : 0.06))
                 )
                 .appLiquidGlass(in: Circle())
                 .overlay(
@@ -1743,8 +1743,8 @@ private struct SimpleCreateBar: View {
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(showCreateMenu ? 0.45 : 0.32),
-                                    Color.white.opacity(showCreateMenu ? 0.18 : 0.10)
+                                    AppInk.solid.opacity(showCreateMenu ? 0.45 : 0.32),
+                                    AppInk.solid.opacity(showCreateMenu ? 0.18 : 0.10)
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -1844,14 +1844,14 @@ private struct CreateMenuOption: View {
             .padding(.vertical, 12)
             .background(
                 Capsule(style: .continuous)
-                    .fill(Color.white.opacity(0.12))
+                    .fill(AppInk.solid.opacity(0.12))
             )
             .appLiquidGlass(in: Capsule(style: .continuous))
             .overlay(
                 Capsule(style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [Color.white.opacity(0.42), Color.white.opacity(0.14)],
+                            colors: [AppInk.solid.opacity(0.42), AppInk.solid.opacity(0.14)],
                             startPoint: .top,
                             endPoint: .bottom
                         ),
@@ -2139,10 +2139,10 @@ struct TopBarPill<Content: View>: View {
         HStack(spacing: 0) { content() }
             .background(
                 Capsule(style: .continuous)
-                    .fill(Color.white.opacity(0.08))
+                    .fill(AppInk.solid.opacity(0.08))
                     .overlay(
                         Capsule(style: .continuous)
-                            .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                            .stroke(AppInk.solid.opacity(0.10), lineWidth: 0.5)
                     )
             )
     }
@@ -2169,7 +2169,7 @@ struct TopBarPillButton: View {
 struct TopBarPillDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color.white.opacity(0.10))
+            .fill(AppInk.solid.opacity(0.10))
             .frame(width: 0.5, height: 18)
     }
 }
@@ -2183,7 +2183,7 @@ extension View {
             .font(.system(size: 18, weight: .regular))
             .foregroundColor(AppText.primary)
             .frame(width: 44, height: 38)
-            .background(isActive ? Color.white.opacity(0.12) : Color.clear)
+            .background(isActive ? AppInk.solid.opacity(0.12) : Color.clear)
             .clipShape(Capsule())
     }
 }
@@ -2233,7 +2233,7 @@ struct AppSearchField: View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
                 .font(.appLabel)
-                .foregroundColor(Color.white.opacity(0.45))
+                .foregroundColor(AppInk.solid.opacity(0.45))
             TextField(placeholder, text: $text)
                 .font(.appLabel)
                 .foregroundColor(AppText.primary)
@@ -2245,7 +2245,7 @@ struct AppSearchField: View {
                 Button { text = "" } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.appSubtext)
-                        .foregroundColor(Color.white.opacity(0.40))
+                        .foregroundColor(AppInk.solid.opacity(0.40))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Clear search")
@@ -2255,10 +2255,10 @@ struct AppSearchField: View {
         .padding(.vertical, 10)
         .background(
             Capsule(style: .continuous)
-                .fill(Color.white.opacity(0.08))
+                .fill(AppInk.solid.opacity(0.08))
                 .overlay(
                     Capsule(style: .continuous)
-                        .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                        .stroke(AppInk.solid.opacity(0.14), lineWidth: 0.5)
                 )
         )
     }
@@ -2290,7 +2290,7 @@ struct AppPickerSheet<Results: View>: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(AppText.secondary)
                         .frame(width: 30, height: 30)
-                        .background(Color.white.opacity(0.10))
+                        .background(AppInk.solid.opacity(0.10))
                         .clipShape(Circle())
                         .appIconHitArea()
                 }
@@ -2347,7 +2347,7 @@ struct SearchOverlay<Results: View>: View {
                     HStack(spacing: 10) {
                         Image(systemName: "magnifyingglass")
                             .font(.appLabel)
-                            .foregroundColor(Color.white.opacity(0.45))
+                            .foregroundColor(AppInk.solid.opacity(0.45))
                         TextField(placeholder, text: $query)
                             .font(.appLabel)
                             .foregroundColor(AppText.primary)
@@ -2358,7 +2358,7 @@ struct SearchOverlay<Results: View>: View {
                             Button { query = "" } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.appSubtext)
-                                    .foregroundColor(Color.white.opacity(0.40))
+                                    .foregroundColor(AppInk.solid.opacity(0.40))
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("Clear search")
@@ -2368,10 +2368,10 @@ struct SearchOverlay<Results: View>: View {
                     .padding(.vertical, 10)
                     .background(
                         Capsule(style: .continuous)
-                            .fill(Color.white.opacity(0.10))
+                            .fill(AppInk.solid.opacity(0.10))
                             .overlay(
                                 Capsule(style: .continuous)
-                                    .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                                    .stroke(AppInk.solid.opacity(0.14), lineWidth: 0.5)
                             )
                     )
 
@@ -2522,13 +2522,13 @@ struct AIActionsSheet: View {
             HStack(spacing: 14) {
                 Image(systemName: action.icon)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.85))
+                    .foregroundColor(AppInk.solid.opacity(0.85))
                     .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.10))
+                    .background(AppInk.solid.opacity(0.10))
                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 Text(action.label)
                     .font(.appBody)
-                    .foregroundColor(Color.white.opacity(0.92))
+                    .foregroundColor(AppInk.solid.opacity(0.92))
                 Spacer()
             }
             .padding(.horizontal, 16)
@@ -2560,9 +2560,9 @@ struct AIPreviewSheet: View {
             HStack(spacing: 12) {
                 Image(systemName: actionIcon)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.85))
+                    .foregroundColor(AppInk.solid.opacity(0.85))
                     .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.10))
+                    .background(AppInk.solid.opacity(0.10))
                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 Text(actionLabel)
                     .font(.appBodyBold)
@@ -2575,7 +2575,7 @@ struct AIPreviewSheet: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(AppText.secondary)
                         .frame(width: 30, height: 30)
-                        .background(Color.white.opacity(0.10))
+                        .background(AppInk.solid.opacity(0.10))
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
@@ -2605,9 +2605,9 @@ struct AIPreviewSheet: View {
                 } label: {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.70))
+                        .foregroundColor(AppInk.solid.opacity(0.70))
                         .frame(width: 40, height: 40)
-                        .background(Color.white.opacity(0.10))
+                        .background(AppInk.solid.opacity(0.10))
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
@@ -2629,11 +2629,11 @@ struct AIPreviewSheet: View {
                         .frame(height: 40)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Color.white.opacity(0.06))
+                                .fill(AppInk.solid.opacity(0.06))
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color.white.opacity(0.13), lineWidth: 0.5)
+                                .stroke(AppInk.solid.opacity(0.13), lineWidth: 0.5)
                         )
                 }
                 .buttonStyle(.plain)

@@ -43,7 +43,7 @@ struct AppBodyTextStyle: ViewModifier {
         content
             .font(.appBody)
             .lineSpacing(8)
-            .foregroundColor(Color.white.opacity(0.92))
+            .foregroundColor(AppInk.solid.opacity(0.92))
     }
 }
 

@@ -37,7 +37,7 @@ struct APIKeySetupView: View {
                             .foregroundColor(AppText.primary)
                         Text("Get one free at console.anthropic.com\nunder API Keys. It starts with sk-ant-")
                             .font(.app(size: 15))
-                            .foregroundColor(Color.white.opacity(0.45))
+                            .foregroundColor(AppInk.solid.opacity(0.45))
                             .multilineTextAlignment(.center)
                             .lineSpacing(3)
                     }
@@ -58,11 +58,11 @@ struct APIKeySetupView: View {
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 14)
-                        .background(Color.white.opacity(0.07))
+                        .background(AppInk.solid.opacity(0.07))
                         .clipShape(RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: Radius.input, style: .continuous)
-                                .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                                .stroke(AppInk.solid.opacity(0.10), lineWidth: 0.5)
                         )
 
                         if !keyText.isEmpty && !canSave {
@@ -83,7 +83,7 @@ struct APIKeySetupView: View {
                         .foregroundColor(canSave ? .white : AppText.disabled)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
-                        .background(canSave ? amber : Color.white.opacity(0.07))
+                        .background(canSave ? amber : AppInk.solid.opacity(0.07))
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .buttonStyle(.plain)
