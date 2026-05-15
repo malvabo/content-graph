@@ -147,12 +147,20 @@ struct ChatView: View {
         .onDisappear { sendTask?.cancel() }
         .onAppear {
             rebuildProjects()
-            guard !didSeedContext else { return }
-            didSeedContext = true
-            if let id = initialContextIDs.first,
-               let proj = cachedProjects.first(where: { $0.id == id }) {
-                seededProjectID = id
-                inputText = "@\(proj.outputType) "
+            if !didSeedContext {
+                didSeedContext = true
+                if let id = initialContextIDs.first,
+                   let proj = cachedProjects.first(where: { $0.id == id }) {
+                    seededProjectID = id
+                    inputText = "@\(proj.outputType) "
+                }
+            }
+            // Auto-open the keyboard when the chat screen appears. A short
+            // delay is needed because @FocusState inside a sheet doesn't
+            // reliably take effect until the sheet's presentation transition
+            // has settled.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                inputFocused = true
             }
         }
         .onChange(of: projectsData) { rebuildProjects() }
