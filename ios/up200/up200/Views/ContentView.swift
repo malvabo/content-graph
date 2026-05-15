@@ -1619,7 +1619,7 @@ struct SearchOverlay<Results: View>: View {
         ZStack(alignment: .top) {
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .overlay(Color(red: 0.10, green: 0.08, blue: 0.07).opacity(0.85))
+                .overlay(Color(red: 0.10, green: 0.08, blue: 0.07).opacity(0.30))
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
