@@ -19,6 +19,7 @@ final class NoteDictation: ObservableObject {
     private let recognizer = SFSpeechRecognizer(locale: Locale.current)
         ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var teardownTask: Task<Void, Never>? = nil
+    private var startupTask: Task<Void, Never>? = nil
 
     func start() {
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
@@ -77,11 +78,13 @@ final class NoteDictation: ObservableObject {
         task?.cancel()
         task = nil
         startupError = nil
+        startupTask?.cancel()
         let prev = teardownTask
         teardownTask = nil
-        Task { @MainActor [weak self] in
+        startupTask = Task { @MainActor [weak self] in
             await prev?.value
-            self?.activateAndStart()
+            guard let self, !Task.isCancelled else { return }
+            self.activateAndStart()
         }
     }
 
@@ -1149,6 +1152,7 @@ struct NotesView: View {
     @State private var customTags: [String] = UserDefaults.standard.stringArray(forKey: "note_custom_tags") ?? []
     @State private var showAddTag = false
     @State private var newTagName = ""
+    @State private var reloadTask: Task<Void, Never>? = nil
     @FocusState private var searchFocused: Bool
 
     private let builtinTags = ["Starred", "Work", "Personal"]
@@ -1522,8 +1526,10 @@ struct NotesView: View {
             // Skip if this view has a debounced save in flight; the disk may be
             // stale relative to in-memory edits and reloading would clobber them.
             guard pendingSave == nil else { return }
-            Task {
+            reloadTask?.cancel()
+            reloadTask = Task {
                 let fresh = await NotesStore.loadAsync()
+                guard !Task.isCancelled else { return }
                 await MainActor.run {
                     if fresh != notes { notes = fresh }
                 }

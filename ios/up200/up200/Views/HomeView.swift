@@ -1466,6 +1466,7 @@ private struct SourcesBlock: View {
     @State private var showPhotoPicker = false
     @State private var photoPickerItem: PhotosPickerItem? = nil
     @State private var photoExtractTask: Task<Void, Never>? = nil
+    @State private var fileImportTask: Task<Void, Never>? = nil
     @State private var expanded: Bool = true
 
     var body: some View {
@@ -1591,8 +1592,10 @@ private struct SourcesBlock: View {
         ) { result in
             guard case .success(let urls) = result, let url = urls.first else { return }
             let name = url.lastPathComponent
-            Task {
+            fileImportTask?.cancel()
+            fileImportTask = Task {
                 let content = readFileContent(from: url)
+                guard !Task.isCancelled else { return }
                 await MainActor.run {
                     withAnimation(.spring(duration: 0.25)) {
                         sources.append(SourceItem(type: .file, label: name, content: content))
@@ -1680,6 +1683,7 @@ private struct NotePickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var notes: [Note] = []
+    @State private var reloadTask: Task<Void, Never>? = nil
 
     private var filtered: [Note] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1757,8 +1761,10 @@ private struct NotePickerSheet: View {
             notes = await NotesStore.loadAsync().filter { !$0.isEmpty }
         }
         .onReceive(NotificationCenter.default.publisher(for: .notesStoreDidChange)) { _ in
-            Task {
+            reloadTask?.cancel()
+            reloadTask = Task {
                 let fresh = await NotesStore.loadAsync().filter { !$0.isEmpty }
+                guard !Task.isCancelled else { return }
                 await MainActor.run { notes = fresh }
             }
         }
