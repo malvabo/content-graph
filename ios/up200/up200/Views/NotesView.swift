@@ -325,7 +325,7 @@ private struct NoteListRow: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 titleText
-                    .font(.appNavTitle)
+                    .font(.app(size: 17, weight: .semibold))
                     .foregroundColor(Color.white.opacity(0.88))
                     .lineLimit(2)
 
@@ -1083,7 +1083,7 @@ private struct PinnedNoteCard: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(note.displayTitle)
-                    .font(.app(size: 17, weight: .semibold))
+                    .font(.app(size: 15, weight: .semibold))
                     .foregroundColor(Color.white.opacity(0.92))
                     .lineLimit(1)
                     .truncationMode(.tail)
