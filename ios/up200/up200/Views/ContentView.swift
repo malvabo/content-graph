@@ -1876,12 +1876,16 @@ private struct SimpleHomeHeader: View {
         } label: {
             Text(label)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(section == tab ? .white : AppText.tertiary)
+                .foregroundColor(section == tab ? AppText.primary : AppText.tertiary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(AppInk.solid(section == tab ? 0.14 : 0))
+                        .fill(section == tab ? AppBackground.surface : Color.clear)
+                        .shadow(
+                            color: AppInk.solid(section == tab ? 0.10 : 0),
+                            radius: 4, y: 1
+                        )
                 )
                 .contentShape(Rectangle())
         }

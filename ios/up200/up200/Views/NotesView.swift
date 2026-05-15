@@ -1028,9 +1028,14 @@ private struct FilterChip: View {
                 .foregroundColor(isSelected ? .white : AppText.secondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(isSelected ? SelectionStyle.fill : AppInk.solid(0.08))
+                .background(isSelected ? BrandColor.amber : AppInk.solid(0.06))
                 .clipShape(Capsule())
-                .overlay(Capsule().stroke(isSelected ? SelectionStyle.stroke : Color.clear, lineWidth: 0.5))
+                .overlay(
+                    Capsule().stroke(
+                        isSelected ? Color.clear : AppInk.solid(0.08),
+                        lineWidth: 0.5
+                    )
+                )
         }
         .buttonStyle(.plain)
         .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isSelected)
