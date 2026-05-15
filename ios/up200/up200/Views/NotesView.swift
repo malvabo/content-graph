@@ -1079,18 +1079,18 @@ private struct PinnedNoteCard: View {
     let note: Note
 
     var body: some View {
-        HStack(spacing: 12) {
-            PinnedNoteThumb(note: note)
+        HStack(spacing: 16) {
+            NoteThumb(note: note)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(note.displayTitle)
                     .font(.appRowTitle)
-                    .foregroundColor(Color.white.opacity(0.92))
+                    .foregroundColor(Color.white.opacity(0.88))
                     .lineLimit(1)
                     .truncationMode(.tail)
 
                 Text(RowDate.relative(from: note.updatedAt))
-                    .font(.appMicro)
+                    .font(.appSmall)
                     .foregroundColor(AppText.tertiary)
                     .lineLimit(1)
             }
@@ -1099,43 +1099,6 @@ private struct PinnedNoteCard: View {
         }
         .frame(width: 312, alignment: .leading)
         .contentShape(Rectangle())
-    }
-}
-
-private struct PinnedNoteThumb: View {
-    let note: Note
-
-    var body: some View {
-        let widths = Self.lineWidths(for: note.id)
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(Color.white.opacity(0.07))
-            .overlay(
-                VStack(alignment: .leading, spacing: 3) {
-                    ForEach(0..<5, id: \.self) { i in
-                        Capsule()
-                            .fill(Color.white.opacity(i == 0 ? 0.55 : 0.20))
-                            .frame(width: widths[i], height: i == 0 ? 2.5 : 1.5)
-                    }
-                }
-                .padding(8)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
-            )
-            .frame(width: 42, height: 52)
-    }
-
-    private static func lineWidths(for id: UUID) -> [CGFloat] {
-        // Same fix as `NoteThumb.lineWidths` — derive a stable seed from the
-        // UUID's bytes instead of the per-launch-randomised `hashValue`.
-        let b = id.uuid
-        var h = Int(b.0) &<< 24 | Int(b.1) &<< 16 | Int(b.2) &<< 8 | Int(b.3)
-        return (0..<5).map { _ in
-            h = h &* 1664525 &+ 1013904223
-            return 8 + CGFloat(h & 0x17)
-        }
     }
 }
 
@@ -1284,7 +1247,7 @@ struct NotesView: View {
     @ViewBuilder
     private func pinnedGridRow(_ pinned: [Note]) -> some View {
         let rowCount = min(3, max(1, pinned.count))
-        let rows = Array(repeating: GridItem(.fixed(56), spacing: 12), count: rowCount)
+        let rows = Array(repeating: GridItem(.fixed(76), spacing: 12), count: rowCount)
 
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHGrid(rows: rows, spacing: 12) {
