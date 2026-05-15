@@ -756,7 +756,11 @@ struct ProfileView: View {
                     TemplatesListPage(custom: custom, path: $path)
                 case .templateNew:
                     TemplateEditPage(template: nil) { newTpl in
-                        custom.insert(newTpl, at: 0)
+                        if let idx = custom.firstIndex(where: { $0.id == newTpl.id }) {
+                            custom[idx] = newTpl
+                        } else {
+                            custom.insert(newTpl, at: 0)
+                        }
                         saveCustom()
                     }
                 case .templateEdit(let id):
@@ -931,7 +935,6 @@ private struct TemplateEditPage: View {
     let onSave: (CustomTemplate) -> Void
     let onDelete: (() -> Void)?
 
-    @State private var title: String
     @State private var existingSubtitle: String
     @State private var prompt: String
     private let originalFormatIDs: [String]
@@ -953,7 +956,6 @@ private struct TemplateEditPage: View {
         self.originalID = template?.id
         self.onSave = onSave
         self.onDelete = onDelete
-        _title = State(initialValue: template?.title ?? "")
         _existingSubtitle = State(initialValue: template?.subtitle ?? "")
         _prompt = State(initialValue: template?.prompt ?? "")
         self.originalFormatIDs = template?.formatIDs ?? []
@@ -965,29 +967,48 @@ private struct TemplateEditPage: View {
         !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isEnhancing
     }
 
+    // Mirror of `Note.displayTitle`: first non-empty line of the body becomes
+    // the title. Visual truncation comes from the parent view's lineLimit.
+    private var derivedTitle: String {
+        let firstLine = prompt.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
+        return firstLine.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private func persist() {
-        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        let finalTitle: String
-        if !trimmedTitle.isEmpty {
-            finalTitle = trimmedTitle
-        } else if !trimmedPrompt.isEmpty {
-            finalTitle = Self.fallbackTitle(from: trimmedPrompt)
-        } else {
-            return
-        }
-        var tpl = CustomTemplate(title: finalTitle, subtitle: existingSubtitle)
-        if let id = originalID { tpl.id = id }
+        guard !derivedTitle.isEmpty else { return }
+        let id = originalID ?? UUID()
+        var tpl = CustomTemplate(title: derivedTitle, subtitle: existingSubtitle)
+        tpl.id = id
         tpl.prompt = prompt
         tpl.formatIDs = originalFormatIDs
         onSave(tpl)
-    }
 
-    private static func fallbackTitle(from prompt: String) -> String {
-        let words = prompt.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).map(String.init)
-        let pick = words.prefix(5).joined(separator: " ")
-        let cleaned = pick.trimmingCharacters(in: .punctuationCharacters)
-        return cleaned.isEmpty ? "Untitled template" : String(cleaned.prefix(48))
+        // If there's enough body, ask the model for a tighter summary title
+        // and update the saved row once it returns. The first-line derivation
+        // above means the template is already in the list immediately.
+        let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lineCount = trimmed.split(whereSeparator: \.isNewline)
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .count
+        guard trimmed.count >= 40 || lineCount >= 2 else { return }
+
+        let snapshotPrompt = prompt
+        let snapshotFormatIDs = originalFormatIDs
+        let snapshotSubtitle = existingSubtitle
+        let formatLabels = allFormats.filter { originalFormatIDs.contains($0.id) }.map(\.label)
+        let save = onSave
+        Task {
+            let result = await TemplatePromptEnhancer.generateTitle(
+                prompt: trimmed,
+                formats: formatLabels
+            )
+            guard case .success(let aiTitle) = result else { return }
+            var updated = CustomTemplate(title: aiTitle, subtitle: snapshotSubtitle)
+            updated.id = id
+            updated.prompt = snapshotPrompt
+            updated.formatIDs = snapshotFormatIDs
+            await MainActor.run { save(updated) }
+        }
     }
 
     private func openSettings() {
@@ -1000,31 +1021,23 @@ private struct TemplateEditPage: View {
         guard !trimmed.isEmpty, !isEnhancing else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         isEnhancing = true
-        let titleSnapshot = title
+        let titleSnapshot = derivedTitle
         let formatLabels = allFormats.filter { originalFormatIDs.contains($0.id) }.map(\.label)
         Task {
-            async let promptResult = TemplatePromptEnhancer.enhance(
+            let result = await TemplatePromptEnhancer.enhance(
                 title: titleSnapshot,
                 currentPrompt: trimmed,
                 formats: formatLabels
             )
-            async let titleResult = TemplatePromptEnhancer.generateTitle(
-                prompt: trimmed,
-                formats: formatLabels
-            )
-            let (p, t) = await (promptResult, titleResult)
             await MainActor.run {
                 isEnhancing = false
-                switch p {
+                switch result {
                 case .success(let improved):
                     withAnimation(.easeOut(duration: 0.2)) { prompt = improved }
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                 case .failure(let err):
                     enhanceFailReason = err.userMessage
                     enhanceFailed = true
-                }
-                if case .success(let newTitle) = t {
-                    withAnimation(.easeOut(duration: 0.2)) { title = newTitle }
                 }
             }
         }
@@ -1077,14 +1090,15 @@ private struct TemplateEditPage: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 32) {
-                        // Auto-generated title
-                        Text(title.isEmpty ? "Untitled" : title)
+                        // Title is derived from the first line of the prompt
+                        // (same rule as `Note.displayTitle`).
+                        Text(derivedTitle.isEmpty ? "Untitled" : derivedTitle)
                             .font(.appTitle)
-                            .foregroundColor(title.isEmpty ? AppText.disabled : AppText.primary)
+                            .foregroundColor(derivedTitle.isEmpty ? AppText.disabled : AppText.primary)
                             .lineLimit(3)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 20)
-                            .animation(AppAnimation.quick, value: title)
+                            .animation(AppAnimation.quick, value: derivedTitle)
 
                         // TextField with axis:.vertical grows with content
                         // and lets the page-level ScrollView handle scrolling.
