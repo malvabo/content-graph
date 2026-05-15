@@ -1179,10 +1179,17 @@ private struct AppTabBar: View {
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 4)
-            .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+            .appLiquidGlass(in: Capsule(style: .continuous))
             .overlay(
                 Capsule(style: .continuous)
-                    .stroke(Color.white.opacity(0.16), lineWidth: 0.5)
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.28), Color.white.opacity(0.08)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 0.5
+                    )
             )
 
             Button {
@@ -1199,10 +1206,20 @@ private struct AppTabBar: View {
                     .background(
                         Circle().fill(Color.white.opacity(isActive ? 0.14 : 0))
                     )
-                    .background(.ultraThinMaterial, in: Circle())
+                    .appLiquidGlass(in: Circle())
                     .overlay(
                         Circle()
-                            .stroke(Color.white.opacity(isActive ? 0.28 : 0.16), lineWidth: 0.5)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(isActive ? 0.40 : 0.28),
+                                        Color.white.opacity(isActive ? 0.14 : 0.08)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 0.5
+                            )
                     )
                     .contentShape(Circle())
             }
