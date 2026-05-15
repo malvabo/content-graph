@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - App Tab
 
 enum AppTab: String {
-    case notes, create, library, templates
+    case notes, create, library, profile
 }
 
 // MARK: - Library View
@@ -666,75 +666,99 @@ struct ProjectGroupDetailView: View {
     }
 }
 
-// MARK: - Templates View
+// MARK: - Profile View
 
-private enum TemplateDestination: Hashable {
-    case new
-    case edit(UUID)
+private enum ProfileDestination: Hashable {
+    case templates
+    case templateNew
+    case templateEdit(UUID)
 }
 
-struct TemplatesView: View {
-    private let builtIn: [(title: String, subtitle: String, icon: String)] = [
-        ("Landing page",     "Structured hero + sections copy",  "doc.richtext"),
-        ("Short note",       "Concise single-topic summary",      "note.text"),
-        ("Newsletter",       "300–500 word scannable digest",     "envelope"),
-        ("LinkedIn post",    "150–300 word hook post",            "person.crop.rectangle"),
-        ("Twitter thread",   "5–10 tweet thread",                 "text.bubble"),
-        ("Brand story",      "Rewrite with consistent voice",     "sparkles"),
-        ("Marketing pack",   "Social, email and ad copy",         "megaphone"),
-        ("Review document",  "Key decisions and action items",    "checkmark.circle"),
-    ]
+private let builtInTemplates: [(title: String, subtitle: String, icon: String)] = [
+    ("Landing page",     "Structured hero + sections copy",  "doc.richtext"),
+    ("Short note",       "Concise single-topic summary",      "note.text"),
+    ("Newsletter",       "300–500 word scannable digest",     "envelope"),
+    ("LinkedIn post",    "150–300 word hook post",            "person.crop.rectangle"),
+    ("Twitter thread",   "5–10 tweet thread",                 "text.bubble"),
+    ("Brand story",      "Rewrite with consistent voice",     "sparkles"),
+    ("Marketing pack",   "Social, email and ad copy",         "megaphone"),
+    ("Review document",  "Key decisions and action items",    "checkmark.circle"),
+]
 
+struct ProfileView: View {
     @AppStorage("custom_templates") private var customData: Data = Data()
+    @AppStorage("notifications_enabled") private var notificationsEnabled: Bool = true
+    @AppStorage("onboarding_complete") private var onboardingComplete: Bool = false
     @State private var custom: [CustomTemplate] = []
-    @State private var path: [TemplateDestination] = []
+    @State private var path: [ProfileDestination] = []
+    @State private var showLogOutConfirm = false
+
+    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let logoutRed = Color(red: 0.95, green: 0.40, blue: 0.32)
 
     var body: some View {
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
-                InlineTopBar(title: "Templates") {
-                    TopBarPill {
-                        TopBarPillButton(systemImage: "plus") {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            path.append(.new)
-                        }
-                    }
-                }
+                InlineTopBar(title: "Profile") { EmptyView() }
 
                 List {
-                    ForEach(custom) { tpl in
-                        TemplateRow(title: tpl.title)
-                            .onTapGesture { path.append(.edit(tpl.id)) }
-                            .listRowInsets(EdgeInsets())
-                            .listRowBackground(Color.clear)
-                            .listRowSeparatorTint(Color.white.opacity(0.06))
-                            .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                    SettingsRow(
+                        title: "Templates",
+                        trailing: .chevron
+                    ) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        path.append(.templates)
                     }
-                    ForEach(builtIn, id: \.title) { tpl in
-                        TemplateRow(title: tpl.title)
-                            .listRowInsets(EdgeInsets())
-                            .listRowBackground(Color.clear)
-                            .listRowSeparatorTint(Color.white.opacity(0.06))
-                            .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(Color.white.opacity(0.06))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+
+                    SettingsRow(
+                        title: "Notifications",
+                        trailing: .value(notificationsEnabled ? "Enabled" : "Disabled")
+                    ) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        notificationsEnabled.toggle()
                     }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(Color.white.opacity(0.06))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+
+                    SettingsRow(
+                        title: "Log out",
+                        trailing: .icon("rectangle.portrait.and.arrow.right"),
+                        titleColor: logoutRed,
+                        trailingColor: logoutRed
+                    ) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        showLogOutConfirm = true
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(Color.white.opacity(0.06))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
             }
-            .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+            .background(bg.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .onChange(of: customData, initial: true) {
                 custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? []
             }
-            .navigationDestination(for: TemplateDestination.self) { dest in
+            .navigationDestination(for: ProfileDestination.self) { dest in
                 switch dest {
-                case .new:
+                case .templates:
+                    TemplatesListPage(custom: custom, path: $path)
+                case .templateNew:
                     TemplateEditPage(template: nil) { newTpl in
                         custom.insert(newTpl, at: 0)
                         saveCustom()
                     }
-                case .edit(let id):
+                case .templateEdit(let id):
                     if let tpl = custom.first(where: { $0.id == id }) {
                         TemplateEditPage(template: tpl) { updated in
                             if let idx = custom.firstIndex(where: { $0.id == id }) {
@@ -748,12 +772,115 @@ struct TemplatesView: View {
                     }
                 }
             }
+            .alert("Log out?", isPresented: $showLogOutConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Log out", role: .destructive) {
+                    KeychainService.delete()
+                    onboardingComplete = false
+                }
+            } message: {
+                Text("Your API key will be removed from this device.")
+            }
         }
     }
 
     private func saveCustom() {
         if case .corrupt = loadBlob([CustomTemplate].self, from: customData) { return }
         if let data = try? JSONEncoder().encode(custom) { customData = data }
+    }
+}
+
+private enum SettingsRowTrailing {
+    case none
+    case chevron
+    case value(String)
+    case icon(String)
+}
+
+private struct SettingsRow: View {
+    let title: String
+    let trailing: SettingsRowTrailing
+    var titleColor: Color = AppText.primary
+    var trailingColor: Color = AppText.tertiary
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .font(.appRowTitle)
+                    .foregroundColor(titleColor)
+                Spacer(minLength: 8)
+                switch trailing {
+                case .none:
+                    EmptyView()
+                case .chevron:
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(trailingColor)
+                case .value(let text):
+                    HStack(spacing: 6) {
+                        Text(text)
+                            .font(.appLabel)
+                            .foregroundColor(trailingColor)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(trailingColor)
+                    }
+                case .icon(let name):
+                    Image(systemName: name)
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(trailingColor)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct TemplatesListPage: View {
+    let custom: [CustomTemplate]
+    @Binding var path: [ProfileDestination]
+
+    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
+
+    var body: some View {
+        VStack(spacing: 0) {
+            InlineTopBar(title: "Templates") {
+                TopBarPill {
+                    TopBarPillButton(systemImage: "plus") {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        path.append(.templateNew)
+                    }
+                }
+            }
+
+            List {
+                ForEach(custom) { tpl in
+                    TemplateRow(title: tpl.title)
+                        .onTapGesture { path.append(.templateEdit(tpl.id)) }
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .listRowSeparatorTint(Color.white.opacity(0.06))
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                }
+                ForEach(builtInTemplates, id: \.title) { tpl in
+                    TemplateRow(title: tpl.title)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .listRowSeparatorTint(Color.white.opacity(0.06))
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+        }
+        .background(bg.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 }
 
@@ -1179,7 +1306,7 @@ private struct AppTabBar: View {
     private let mainItems: [(AppTab, String, String)] = [
         (.notes,     "doc.text",   "Notes"),
         (.library,   "book.closed", "Library"),
-        (.templates, "square.grid.2x2", "Templates"),
+        (.profile,   "person.crop.circle", "Profile"),
     ]
 
     private static let selectSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
@@ -1298,7 +1425,7 @@ struct ContentView: View {
                 NotesView().tag(AppTab.notes)
                 HomeView().tag(AppTab.create)
                 LibraryView().tag(AppTab.library)
-                TemplatesView().tag(AppTab.templates)
+                ProfileView().tag(AppTab.profile)
             }
             .environmentObject(bannerController)
             .environmentObject(chromeController)
