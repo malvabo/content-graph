@@ -1744,7 +1744,7 @@ struct InlineTopBar<Trailing: View>: View {
             Spacer(minLength: 8)
             trailing()
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .padding(.top, 12)
         .padding(.bottom, 14)
     }
