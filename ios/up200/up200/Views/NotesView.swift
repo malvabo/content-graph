@@ -1318,7 +1318,7 @@ struct NotesView: View {
                     systemImage: note.isPinned ? "pin.slash.fill" : "pin.fill"
                 )
             }
-            .tint(BrandColor.glowGradient)
+            .tint(Color(red: 0.62, green: 0.18, blue: 0.04))
         }
         .contextMenu {
             Button {
