@@ -747,6 +747,7 @@ private let builtInTemplates: [(title: String, subtitle: String, icon: String)] 
 ]
 
 struct ProfileView: View {
+    let selectedTab: AppTab
     @AppStorage("custom_templates") private var customData: Data = Data()
     @AppStorage("notifications_enabled") private var notificationsEnabled: Bool = true
     @AppStorage("onboarding_complete") private var onboardingComplete: Bool = false
@@ -809,6 +810,12 @@ struct ProfileView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
             .onChange(of: customData, initial: true) {
                 custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? []
+            }
+            // Returning to the Profile tab should land on the settings root,
+            // not on whatever sub-page the user pushed last time. Reset the
+            // nav stack as soon as the selection leaves this tab.
+            .onChange(of: selectedTab) { _, new in
+                if new != .profile { path.removeAll() }
             }
             .navigationDestination(for: ProfileDestination.self) { dest in
                 switch dest {
@@ -911,6 +918,7 @@ private struct TemplatesListPage: View {
     @Binding var path: [ProfileDestination]
 
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var chrome: ChromeController
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
     var body: some View {
@@ -973,6 +981,8 @@ private struct TemplatesListPage: View {
         .background(bg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .onAppear { chrome.hideTabBar = true }
+        .onDisappear { chrome.hideTabBar = false }
     }
 }
 
@@ -1525,7 +1535,7 @@ struct ContentView: View {
                 NotesView().tag(AppTab.notes)
                 HomeView().tag(AppTab.create)
                 LibraryView().tag(AppTab.library)
-                ProfileView().tag(AppTab.profile)
+                ProfileView(selectedTab: selectedTab).tag(AppTab.profile)
             }
             .environmentObject(bannerController)
             .environmentObject(chromeController)
