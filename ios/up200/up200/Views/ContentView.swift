@@ -484,18 +484,21 @@ struct ProjectGroupDetailView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Group {
                 if dictation.isRecording {
-                    DictationControls(
-                        dictation: dictation,
-                        onStart: {},
-                        onCancel: {
-                            dictation.cancel()
-                            editText = editTextBeforeDictation
-                        },
-                        onConfirm: {
-                            dictation.stop()
-                        }
-                    )
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    HStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        DictationControls(
+                            dictation: dictation,
+                            onStart: {},
+                            onCancel: {
+                                dictation.cancel()
+                                editText = editTextBeforeDictation
+                            },
+                            onConfirm: {
+                                dictation.stop()
+                            }
+                        )
+                        .fixedSize(horizontal: true, vertical: false)
+                    }
                 } else {
                     HStack(spacing: 10) {
                         Button {
