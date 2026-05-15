@@ -2380,9 +2380,6 @@ struct HomeView: View {
                                     GlassCard {
                                         VStack(spacing: 0) {
                                             FormatsBlock(selectedFormatIDs: $selectedFormatIDs)
-                                            Rectangle()
-                                                .fill(Color.white.opacity(0.06))
-                                                .frame(height: 0.5)
                                             PromptField(prompt: $prompt)
                                         }
                                     }
