@@ -358,20 +358,18 @@ struct ChatView: View {
                         Text("Ask anything\u{2026}")
                             .font(.app(size: 16))
                             .foregroundColor(Color.white.opacity(0.28))
-                            .padding(.horizontal, 16)
-                            .padding(.top, 14)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
                             .allowsHitTesting(false)
                     }
-                    TextEditor(text: $inputText)
+                    TextField("", text: $inputText, axis: .vertical)
                         .font(.app(size: 16))
                         .foregroundColor(AppText.primary)
-                        .scrollContentBackground(.hidden)
-                        .background(.clear)
                         .tint(.white)
                         .focused($inputFocused)
-                        .padding(.horizontal, 12)
-                        .padding(.top, 8)
-                        .frame(minHeight: 36, maxHeight: 100)
+                        .lineLimit(1...5)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
                 }
 
                 HStack(spacing: 4) {
@@ -381,10 +379,10 @@ struct ChatView: View {
                         showFilePicker = true
                     } label: {
                         Image(systemName: "paperclip")
-                            .font(.system(size: 17))
+                            .font(.system(size: 15))
                             .foregroundColor(Color.white.opacity(0.45))
-                            .frame(width: 40, height: 36)
-                            .frame(minWidth: 44, minHeight: 44)
+                            .frame(width: 28, height: 28)
+                            .frame(minWidth: 36, minHeight: 36)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -394,10 +392,10 @@ struct ChatView: View {
                         presentMentionPicker()
                     } label: {
                         Image(systemName: "at")
-                            .font(.system(size: 17))
+                            .font(.system(size: 15))
                             .foregroundColor(Color.white.opacity(0.45))
-                            .frame(width: 40, height: 36)
-                            .frame(minWidth: 44, minHeight: 44)
+                            .frame(width: 28, height: 28)
+                            .frame(minWidth: 36, minHeight: 36)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -408,9 +406,9 @@ struct ChatView: View {
                     Button(action: sendMessage) {
                         let ready = canSend
                         Image(systemName: "arrow.up")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(ready ? .white : Color.white.opacity(0.28))
-                            .frame(width: 32, height: 32)
+                            .frame(width: 28, height: 28)
                             .background(ready ? Color.white.opacity(0.18) : Color.white.opacity(0.06))
                             .clipShape(Circle())
                             .overlay(
@@ -419,14 +417,14 @@ struct ChatView: View {
                                     lineWidth: 0.5
                                 )
                             )
-                            .frame(minWidth: 44, minHeight: 44)
+                            .frame(minWidth: 36, minHeight: 36)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .disabled(!canSend)
                 }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 10)
+                .padding(.horizontal, 8)
+                .padding(.bottom, 4)
             }
             .background(Color.white.opacity(0.06))
             .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
@@ -435,8 +433,8 @@ struct ChatView: View {
                     .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
             )
             .padding(.horizontal, 12)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
+            .padding(.top, 4)
+            .padding(.bottom, 10)
         }
         .background(bg)
     }
