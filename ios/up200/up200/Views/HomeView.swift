@@ -83,7 +83,7 @@ private let allTemplates: [ContentTemplate] = [
 
 // MARK: - AI Title Service
 
-private struct AIService {
+struct AIService {
     private static var apiKey: String { KeychainService.load() ?? "" }
 
     static func generateTitle(from text: String) async -> String {

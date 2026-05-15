@@ -889,6 +889,36 @@ private struct NoteEditorPage: View {
         saved.title = ""
         saved.updatedAt = Date()
         onSave(saved)
+
+        // If the user didn't enter a title and there's enough body to make a
+        // useful name, ask the model for a summary title and re-save with it
+        // prepended as the first line — `Note.displayTitle` picks that up.
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedTitle.isEmpty else { return }
+        let trimmedBody = noteBody.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lineCount = trimmedBody.split(whereSeparator: \.isNewline)
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .count
+        guard trimmedBody.count >= 40 || lineCount >= 2 else { return }
+
+        let snapshotBody = noteBody
+        let baseNote = saved
+        let save = onSave
+        Task {
+            let aiTitle = await AIService.generateTitle(from: trimmedBody)
+            let cleaned = aiTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !cleaned.isEmpty else { return }
+            // Avoid prepending a title that just duplicates what `displayTitle`
+            // would already surface (e.g. when the fallback returns a stub
+            // similar to the first line).
+            let firstLine = snapshotBody.split(whereSeparator: \.isNewline).first
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
+            guard cleaned.lowercased() != firstLine.lowercased() else { return }
+            var updated = baseNote
+            updated.body = cleaned + "\n" + snapshotBody
+            updated.updatedAt = Date()
+            await MainActor.run { save(updated) }
+        }
     }
 
     private func performDelete() {
