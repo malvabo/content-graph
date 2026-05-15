@@ -86,6 +86,28 @@ extension View {
     func appIconHitArea() -> some View { modifier(AppIconHitArea()) }
 }
 
+/// Shared dark background with two warm radial glows. Place at the bottom
+/// of a screen-level ZStack so the same atmosphere reads across Create,
+/// Notes, and Library without duplicating the gradient stack.
+struct AmbientBackground: View {
+    var body: some View {
+        ZStack {
+            Color(red: 0.10, green: 0.08, blue: 0.07)
+            RadialGradient(
+                colors: [Color(red: 0.55, green: 0.30, blue: 0.08).opacity(0.35), .clear],
+                center: .init(x: 0.05, y: 0.05),
+                startRadius: 0, endRadius: 380
+            )
+            RadialGradient(
+                colors: [Color(red: 0.30, green: 0.20, blue: 0.08).opacity(0.22), .clear],
+                center: .init(x: 1.0, y: 0.85),
+                startRadius: 0, endRadius: 320
+            )
+        }
+        .ignoresSafeArea()
+    }
+}
+
 /// Result of decoding a JSON blob from persistent storage.
 ///
 /// `.empty` and `.ok` are both safe to overwrite; `.corrupt` means the bytes
