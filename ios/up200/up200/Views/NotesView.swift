@@ -1667,9 +1667,11 @@ private struct NewTagSheet: View {
 
 // MARK: - Drawing canvas (Draw my idea)
 
-/// Full-screen sketch surface with a live audio-dictation pill in the
-/// bottom-right corner. Tapping Save writes a `.drawing` Note with the
-/// serialized PKDrawing and the transcript.
+/// Sketch surface with a transcript pane docked underneath. The canvas
+/// occupies the upper region; a 10pt gutter separates it from a short
+/// text strip on the bottom that surfaces live dictation alongside an
+/// inline mic toggle. Save writes a `.drawing` Note with the serialized
+/// PKDrawing and the transcript as the body.
 struct DrawingCanvasView: View {
     var initialNote: Note? = nil
     var onSave: ((Note) -> Void)? = nil
@@ -1687,22 +1689,20 @@ struct DrawingCanvasView: View {
     }
 
     var body: some View {
-        ZStack {
-            AppBackground.primary.ignoresSafeArea()
+        VStack(spacing: 10) {
+            topBar
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
 
-            PencilKitCanvas(canvasView: $canvasView, initialDrawing: initialNote?.drawingData, onChange: { drawing in
-                hasInk = !drawing.bounds.isEmpty
-            })
-            .ignoresSafeArea(edges: .horizontal)
-            .padding(.top, 64)
-            .padding(.bottom, 96)
+            canvasArea
+                .padding(.horizontal, 12)
+                .frame(maxHeight: .infinity)
 
-            VStack(spacing: 0) {
-                topBar
-                Spacer(minLength: 0)
-                bottomBar
-            }
+            textArea
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
         }
+        .background(AppBackground.primary.ignoresSafeArea())
         .onChange(of: dictation.transcript) { _, new in
             transcript = new
         }
@@ -1758,39 +1758,56 @@ struct DrawingCanvasView: View {
             .buttonStyle(.plain)
             .disabled(!canSave)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
     }
 
-    private var bottomBar: some View {
-        HStack(alignment: .bottom, spacing: 10) {
-            if !transcript.isEmpty {
-                Text(transcript)
-                    .font(.appSubtext)
-                    .foregroundColor(AppText.secondary)
-                    .lineLimit(3)
-                    .truncationMode(.head)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                            .fill(AppBackground.surface)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                            .stroke(AppInk.solid(0.06), lineWidth: 0.5)
-                    )
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-            } else {
-                Spacer(minLength: 0)
+    private var canvasArea: some View {
+        PencilKitCanvas(canvasView: $canvasView, initialDrawing: initialNote?.drawingData, onChange: { drawing in
+            hasInk = !drawing.bounds.isEmpty
+        })
+        .background(
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .fill(AppBackground.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .stroke(AppInk.solid(0.06), lineWidth: 0.5)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+    }
+
+    private var textArea: some View {
+        HStack(alignment: .center, spacing: 12) {
+            ScrollView(.vertical, showsIndicators: false) {
+                Group {
+                    if transcript.isEmpty {
+                        Text(dictation.isRecording
+                             ? "Listening\u{2026}"
+                             : "Tap the mic to add a voice note")
+                            .font(.appSubtext)
+                            .foregroundColor(AppText.tertiary)
+                    } else {
+                        Text(transcript)
+                            .font(.appBody)
+                            .foregroundColor(AppText.primary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .frame(maxHeight: .infinity)
 
             micButton
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 16)
-        .animation(.easeInOut(duration: 0.22), value: transcript.isEmpty)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(height: 120)
+        .background(
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .fill(AppBackground.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .stroke(AppInk.solid(0.06), lineWidth: 0.5)
+        )
     }
 
     private var micButton: some View {
@@ -1806,18 +1823,19 @@ struct DrawingCanvasView: View {
                 if dictation.isRecording {
                     Circle()
                         .stroke(BrandColor.amber.opacity(0.5), lineWidth: 1.5)
-                        .frame(width: 64, height: 64)
+                        .frame(width: 60, height: 60)
                         .scaleEffect(showsRecorder ? 1.25 : 0.85)
                         .opacity(showsRecorder ? 0 : 0.8)
                 }
                 Circle()
                     .fill(dictation.isRecording ? Color.red : BrandColor.amber)
-                    .frame(width: 56, height: 56)
-                    .shadow(color: (dictation.isRecording ? Color.red : BrandColor.amber).opacity(0.35), radius: 16, y: 6)
+                    .frame(width: 52, height: 52)
+                    .shadow(color: (dictation.isRecording ? Color.red : BrandColor.amber).opacity(0.32), radius: 14, y: 5)
                 Image(systemName: dictation.isRecording ? "stop.fill" : "mic.fill")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
             }
+            .frame(width: 64, height: 64, alignment: .center)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(dictation.isRecording ? "Stop recording" : "Start recording")
@@ -1847,7 +1865,6 @@ struct DrawingCanvasView: View {
         if let onSave {
             onSave(note)
         } else {
-            // Default: prepend to the persisted notes list.
             var all = NotesStore.load()
             if let idx = all.firstIndex(where: { $0.id == note.id }) {
                 all[idx] = note
@@ -1876,18 +1893,6 @@ private struct PencilKitCanvas: UIViewRepresentable {
 
         if let data = initialDrawing, let drawing = try? PKDrawing(data: data) {
             canvasView.drawing = drawing
-        }
-
-        // Show the standard tool picker when the canvas becomes first
-        // responder, so users get pen / marker / eraser / color out of the
-        // box without us reinventing a toolbar.
-        DispatchQueue.main.async {
-            if let window = canvasView.window {
-                let picker = PKToolPicker.shared(for: window) ?? PKToolPicker()
-                picker.setVisible(true, forFirstResponder: canvasView)
-                picker.addObserver(canvasView)
-                canvasView.becomeFirstResponder()
-            }
         }
         return canvasView
     }
