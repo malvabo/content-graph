@@ -1092,38 +1092,15 @@ private struct FilterChip: View {
 
 // MARK: - Pinned Note Card
 
-private struct PinnedNoteCard: View {
-    let note: Note
-
-    var body: some View {
-        HStack(spacing: 16) {
-            NoteThumb(note: note)
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text(note.displayTitle)
-                    .font(.appRowTitle)
-                    .foregroundColor(Color.white.opacity(0.88))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-
-                Text(RowDate.relative(from: note.updatedAt))
-                    .font(.appSmall)
-                    .foregroundColor(AppText.tertiary)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .frame(width: 312, alignment: .leading)
-        .contentShape(Rectangle())
-    }
-}
-
 // MARK: - Notes View
 
 struct NotesView: View {
     var newNoteTrigger: Int = 0
     var onProfileTap: (() -> Void)? = nil
+    /// When true, the view is hosted inside another container (the Simple
+    /// home page) that owns the NavigationStack, title, and profile pill —
+    /// so this view skips those pieces of chrome.
+    var embedded: Bool = false
     @EnvironmentObject private var recording: RecordingController
     @Environment(\.scenePhase) private var scenePhase
     @State private var notes: [Note] = []
@@ -1243,7 +1220,9 @@ struct NotesView: View {
             List {
                 if !pinned.isEmpty {
                     sectionHeader("Pinned")
-                    pinnedGridRow(pinned)
+                    ForEach(pinned) { note in
+                        noteRow(note)
+                    }
                     if !main.isEmpty {
                         sectionHeader("Other", topPadding: 18)
                     }
@@ -1271,42 +1250,6 @@ struct NotesView: View {
             .listRowInsets(EdgeInsets())
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-    }
-
-    @ViewBuilder
-    private func pinnedGridRow(_ pinned: [Note]) -> some View {
-        let rowCount = min(3, max(1, pinned.count))
-        let rows = Array(repeating: GridItem(.fixed(56), spacing: 12), count: rowCount)
-
-        ScrollView(.horizontal, showsIndicators: false) {
-            LazyHGrid(rows: rows, spacing: 12) {
-                ForEach(pinned) { note in
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        editingNote = note
-                    } label: {
-                        PinnedNoteCard(note: note)
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        Button {
-                            togglePin(note)
-                        } label: {
-                            Label("Unpin", systemImage: "pin.slash")
-                        }
-                        Divider()
-                        Button(role: .destructive) { delete(note) } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 8)
-        }
-        .listRowInsets(EdgeInsets())
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
     }
 
     @ViewBuilder
@@ -1384,32 +1327,41 @@ struct NotesView: View {
         }
     }
 
+    @ViewBuilder
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AmbientBackground()
+        if embedded {
+            content
+        } else {
+            NavigationStack { content }
+        }
+    }
 
-                VStack(spacing: 0) {
-                    InlineTopBar(title: "Notes") {
-                        TopBarPill {
-                            // Classic mode (no profile callback): pencil starts
-                            // an audio note from this bar. Simple mode has the
-                            // central plus menu instead, so no pencil here.
-                            if onProfileTap == nil {
-                                TopBarPillButton(systemImage: "square.and.pencil") {
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    startAudioNote()
-                                }
-                                .accessibilityLabel("New note")
+    private var content: some View {
+        ZStack {
+            AmbientBackground()
 
-                                TopBarPillDivider()
-                            }
-
-                            TopBarPillButton(
-                                systemImage: showSearch ? "xmark" : "magnifyingglass",
-                                isActive: showSearch
-                            ) {
+            VStack(spacing: 0) {
+                InlineTopBar(title: embedded ? "" : "Notes") {
+                    TopBarPill {
+                        // Classic mode (no profile callback) shows the pencil
+                        // for starting an audio note. The Simple home page
+                        // uses the central plus menu instead, so the pencil
+                        // is suppressed when embedded.
+                        if !embedded && onProfileTap == nil {
+                            TopBarPillButton(systemImage: "square.and.pencil") {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                startAudioNote()
+                            }
+                            .accessibilityLabel("New note")
+
+                            TopBarPillDivider()
+                        }
+
+                        TopBarPillButton(
+                            systemImage: showSearch ? "xmark" : "magnifyingglass",
+                            isActive: showSearch
+                        ) {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 // Keep the focus assignment OUT of withAnimation
                                 // — pulling a FocusState change into the
                                 // animation context makes SwiftUI animate the
@@ -1533,8 +1485,7 @@ struct NotesView: View {
                     showAddTag = false
                 }
             }
-        }
-        .task { notes = await NotesStore.loadAsync() }
+            .task { notes = await NotesStore.loadAsync() }
         .onReceive(NotificationCenter.default.publisher(for: .notesStoreDidChange)) { _ in
             // Skip if this view has a debounced save in flight; the disk may be
             // stale relative to in-memory edits and reloading would clobber them.

@@ -10,6 +10,10 @@ enum AppTab: String {
 
 struct LibraryView: View {
     var onProfileTap: (() -> Void)? = nil
+    /// When true, the view is hosted inside another container (the Simple
+    /// home page) that owns the NavigationStack, title, and profile pill —
+    /// so this view skips those pieces of chrome.
+    var embedded: Bool = false
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @State private var searchText = ""
     @State private var showSearch = false
@@ -77,13 +81,21 @@ struct LibraryView: View {
         }
     }
 
+    @ViewBuilder
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AmbientBackground()
+        if embedded {
+            content
+        } else {
+            NavigationStack { content }
+        }
+    }
 
-                VStack(spacing: 0) {
-                    InlineTopBar(title: "Library") {
+    private var content: some View {
+        ZStack {
+            AmbientBackground()
+
+            VStack(spacing: 0) {
+                InlineTopBar(title: embedded ? "" : "Library") {
                         TopBarPill {
                             TopBarPillButton(
                                 systemImage: showSearch ? "xmark" : "magnifyingglass",
@@ -155,11 +167,10 @@ struct LibraryView: View {
                     .transition(.opacity)
                 }
             }
-            .toolbar(.hidden, for: .navigationBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .task { buildGroups() }
-            .onChange(of: projectsData) { buildGroups() }
-        }
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .task { buildGroups() }
+        .onChange(of: projectsData) { buildGroups() }
     }
 }
 
@@ -758,10 +769,13 @@ private let builtInTemplates: [(title: String, subtitle: String, icon: String)] 
 ]
 
 struct ProfileView: View {
-    /// `nil` means the view is presented modally (Simple mode); a value means
-    /// it lives inside the classic TabView at this tab and should reset its
-    /// nav stack whenever the selection moves elsewhere.
-    var selectedTab: AppTab? = nil
+    /// Bound to ContentView's current tab. In Classic mode this drives the
+    /// nav-path reset when the user leaves the Profile tab. In Simple mode
+    /// (`isModal == true`) it lets the Layout toggle pre-select the Profile
+    /// tab before dismissing, so the user keeps seeing Profile across the
+    /// transition.
+    @Binding var selectedTab: AppTab
+    var isModal: Bool = false
     @Environment(\.dismiss) private var dismiss
     @AppStorage("custom_templates") private var customData: Data = Data()
     @AppStorage("notifications_enabled") private var notificationsEnabled: Bool = true
@@ -772,8 +786,6 @@ struct ProfileView: View {
     @State private var path: [ProfileDestination] = []
     @State private var showLogOutConfirm = false
     @EnvironmentObject private var chrome: ChromeController
-
-    private var isModal: Bool { selectedTab == nil }
 
     private let bg = AppBackground.primary
     private let logoutRed = Color(red: 0.95, green: 0.40, blue: 0.32)
@@ -835,8 +847,19 @@ struct ProfileView: View {
                         trailing: .value(simpleMode ? "Simple" : "Standard")
                     ) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        simpleMode.toggle()
-                        if isModal { dismiss() }
+                        if isModal {
+                            // Simple → Classic: pre-select the Profile tab so
+                            // when the cover dismisses the user lands on the
+                            // (now-classic) Profile tab — preserving context.
+                            selectedTab = .profile
+                            simpleMode.toggle()
+                            dismiss()
+                        } else {
+                            // Classic → Simple: ContentView's onChange will
+                            // open the modal Profile so the user keeps
+                            // seeing it through the transition.
+                            simpleMode.toggle()
+                        }
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
@@ -869,8 +892,9 @@ struct ProfileView: View {
             // Classic mode: returning to the Profile tab should land on the
             // settings root, not whatever sub-page the user pushed last time.
             // Reset the nav stack as soon as the selection leaves this tab.
-            .onChange(of: selectedTab ?? .profile) { _, new in
-                if new != .profile { path.removeAll() }
+            // Skip in modal mode — there's no tab swap to react to.
+            .onChange(of: selectedTab) { _, new in
+                if !isModal && new != .profile { path.removeAll() }
             }
             // Hide the AppTabBar synchronously the moment the path changes, so
             // pushed pages (Templates list / editor) don't briefly show the bar
@@ -1578,76 +1602,130 @@ private struct ClassicAppTabBar: View {
     }
 }
 
-// MARK: - Simple Tab Bar (2 tabs + center plus)
+// MARK: - Simple Home Page (Notes + Library on one screen)
 
-private struct SimpleAppTabBar: View {
-    @Binding var selected: AppTab
+/// The Simple-mode "home" — a single page with top segmented tabs
+/// (Notes / Library) and a Profile icon, hosting the embedded NotesView
+/// or LibraryView below. The bottom bar contributes only the plus button.
+private struct SimpleHomePage: View {
+    var newNoteTrigger: Int = 0
+    var onProfileTap: () -> Void = {}
+
+    @State private var section: AppTab = .notes
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AmbientBackground()
+
+                VStack(spacing: 0) {
+                    SimpleHomeHeader(section: $section, onProfileTap: onProfileTap)
+
+                    Rectangle()
+                        .fill(Color.white.opacity(0.06))
+                        .frame(height: 0.5)
+
+                    Group {
+                        if section == .notes {
+                            NotesView(newNoteTrigger: newNoteTrigger, embedded: true)
+                        } else {
+                            LibraryView(embedded: true)
+                        }
+                    }
+                }
+            }
+            .toolbar(.hidden, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
+        }
+    }
+}
+
+private struct SimpleHomeHeader: View {
+    @Binding var section: AppTab
+    let onProfileTap: () -> Void
+
+    private static let selectSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
+
+    var body: some View {
+        HStack(spacing: 12) {
+            segmentedTabs
+            Spacer(minLength: 8)
+            TopBarPill {
+                TopBarPillButton(systemImage: "person.crop.circle") {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onProfileTap()
+                }
+                .accessibilityLabel("Profile")
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 12)
+    }
+
+    private var segmentedTabs: some View {
+        HStack(spacing: 4) {
+            segment(.notes, label: "Notes")
+            segment(.library, label: "Library")
+        }
+        .padding(4)
+        .appLiquidGlass(in: Capsule(style: .continuous))
+        .overlay(
+            Capsule(style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+        )
+    }
+
+    @ViewBuilder
+    private func segment(_ tab: AppTab, label: String) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(Self.selectSpring) { section = tab }
+        } label: {
+            Text(label)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(section == tab ? .white : AppText.tertiary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.white.opacity(section == tab ? 0.14 : 0))
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(section == tab ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
+// MARK: - Simple bottom create button
+
+/// Bottom chrome in Simple mode: just the floating plus button. The
+/// Notes / Library tabs live in `SimpleHomeHeader` at the top of the
+/// screen, not down here.
+private struct SimpleCreateBar: View {
     @Binding var showCreateMenu: Bool
 
     @State private var impact = UIImpactFeedbackGenerator(style: .light)
 
-    private static let selectSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
     /// Slightly springier than the tab-select feel — small overshoot so
     /// the options land at their fan positions with a touch of bounce,
     /// reinforcing the "popping out of the plus" read.
     static let menuSpring = Animation.spring(response: 0.44, dampingFraction: 0.70)
 
     var body: some View {
-        HStack(spacing: 12) {
-            tabPill(.notes, icon: "doc.text", label: "Notes")
+        HStack {
+            Spacer()
             plusButton
-            tabPill(.library, icon: "book.closed", label: "Library")
+            Spacer()
         }
-        .onAppear { impact.prepare() }
-    }
-
-    @ViewBuilder
-    private func tabPill(_ tab: AppTab, icon: String, label: String) -> some View {
-        Button {
-            impact.impactOccurred()
-            withAnimation(Self.selectSpring) {
-                selected = tab
-            }
-        } label: {
-            VStack(spacing: 3) {
-                Image(systemName: icon)
-                    .symbolVariant(selected == tab ? .fill : .none)
-                    .font(.system(size: 19, weight: .regular))
-                    .transaction { $0.animation = nil }
-                Text(label)
-                    .font(.system(size: 11, weight: .regular))
-            }
-            .foregroundColor(selected == tab ? .white : Color.white.opacity(0.45))
-            .frame(maxWidth: .infinity, minHeight: 48)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 6)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.white.opacity(selected == tab ? 0.14 : 0.04))
-            )
-            .appLiquidGlass(in: Capsule(style: .continuous))
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.28), Color.white.opacity(0.08)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 0.5
-                    )
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
-        .accessibilityAddTraits(selected == tab ? [.isButton, .isSelected] : .isButton)
     }
 
     private var plusButton: some View {
         Button {
             impact.impactOccurred()
-            withAnimation(SimpleAppTabBar.menuSpring) {
+            withAnimation(Self.menuSpring) {
                 showCreateMenu.toggle()
             }
         } label: {
@@ -1678,6 +1756,7 @@ private struct SimpleAppTabBar: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(showCreateMenu ? "Close create menu" : "Create")
+        .onAppear { impact.prepare() }
     }
 }
 
@@ -1691,12 +1770,11 @@ private struct CreateMenuOverlay: View {
     let onCreateContent: () -> Void
     let onDismiss: () -> Void
 
-    // Final fan-out positions, measured outward from the plus button's
-    // visual center. The two options stack on top of each other at the
-    // origin when collapsed, so animating these offsets makes the options
-    // appear to physically push out from the plus button.
-    private let optionDX: CGFloat = 78
-    private let optionDY: CGFloat = -100
+    // The two pills stack vertically above the plus button when shown.
+    // Both collapse to offset (0, 0) at the plus center so they appear
+    // to physically grow out of the plus body.
+    private let topPillDY: CGFloat = -150
+    private let bottomPillDY: CGFloat = -82
 
     // Vertical distance from the screen bottom to the plus button's
     // center: AppTabBar bottom padding (6) + half of the 64pt plus
@@ -1711,27 +1789,30 @@ private struct CreateMenuOverlay: View {
                 .contentShape(Rectangle())
                 .onTapGesture { onDismiss() }
 
-            ZStack {
-                CreateMenuOption(
-                    icon: "mic.fill",
-                    title: "Add a note",
-                    subtitle: "Voice note",
-                    action: onAddNote
-                )
-                .scaleEffect(show ? 1 : 0.18, anchor: .bottomTrailing)
-                .opacity(show ? 1 : 0)
-                .offset(x: show ? -optionDX : 0, y: show ? optionDY : 0)
-                .blur(radius: show ? 0 : 4)
-
+            // Bottom-align the inner ZStack so each option's bottom edge
+            // sits exactly on the plus button's vertical center. Combined
+            // with the .bottom scale anchor below, that makes the collapsed
+            // option a tiny dot at the plus center — so they really do
+            // appear to grow out of the plus body.
+            ZStack(alignment: .bottom) {
                 CreateMenuOption(
                     icon: "sparkles",
                     title: "Create content",
-                    subtitle: "Generate",
                     action: onCreateContent
                 )
-                .scaleEffect(show ? 1 : 0.18, anchor: .bottomLeading)
+                .scaleEffect(show ? 1 : 0.18, anchor: .bottom)
                 .opacity(show ? 1 : 0)
-                .offset(x: show ? optionDX : 0, y: show ? optionDY : 0)
+                .offset(y: show ? topPillDY : 0)
+                .blur(radius: show ? 0 : 4)
+
+                CreateMenuOption(
+                    icon: "mic.fill",
+                    title: "Add a note",
+                    action: onAddNote
+                )
+                .scaleEffect(show ? 1 : 0.18, anchor: .bottom)
+                .opacity(show ? 1 : 0)
+                .offset(y: show ? bottomPillDY : 0)
                 .blur(radius: show ? 0 : 4)
             }
             .padding(.bottom, plusCenterFromBottom)
@@ -1743,7 +1824,6 @@ private struct CreateMenuOverlay: View {
 private struct CreateMenuOption: View {
     let icon: String
     let title: String
-    let subtitle: String
     let action: () -> Void
 
     var body: some View {
@@ -1751,38 +1831,34 @@ private struct CreateMenuOption: View {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             action()
         }) {
-            VStack(spacing: 10) {
+            HStack(spacing: 10) {
                 Image(systemName: icon)
-                    .font(.system(size: 22, weight: .regular))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(AppText.primary)
-                    .frame(width: 56, height: 56)
-                    .background(
-                        Circle().fill(Color.white.opacity(0.10))
-                    )
-                    .appLiquidGlass(in: Circle())
-                    .overlay(
-                        Circle()
-                            .stroke(
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.40), Color.white.opacity(0.12)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ),
-                                lineWidth: 0.5
-                            )
-                    )
-
-                VStack(spacing: 2) {
-                    Text(title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(AppText.primary)
-                    Text(subtitle)
-                        .font(.system(size: 11))
-                        .foregroundColor(AppText.tertiary)
-                }
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(AppText.primary)
+                    .fixedSize(horizontal: true, vertical: false)
             }
-            .frame(width: 120)
-            .contentShape(Rectangle())
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.12))
+            )
+            .appLiquidGlass(in: Capsule(style: .continuous))
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.42), Color.white.opacity(0.14)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 0.5
+                    )
+            )
+            .contentShape(Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
@@ -1825,7 +1901,7 @@ struct ContentView: View {
                         .environmentObject(recordingController)
                 }
                 .fullScreenCover(isPresented: $showProfile) {
-                    ProfileView()
+                    ProfileView(selectedTab: $selectedTab, isModal: true)
                         .environmentObject(chromeController)
                 }
                 // Tab bar is the inner inset (anchored at screen bottom).
@@ -1836,7 +1912,7 @@ struct ContentView: View {
                     if !keyboardVisible && !chromeController.hideTabBar {
                         Group {
                             if simpleMode {
-                                SimpleAppTabBar(selected: $selectedTab, showCreateMenu: $showCreateMenu)
+                                SimpleCreateBar(showCreateMenu: $showCreateMenu)
                             } else {
                                 ClassicAppTabBar(selected: $selectedTab, pillNS: tabPillNS)
                             }
@@ -1901,14 +1977,14 @@ struct ContentView: View {
             CreateMenuOverlay(
                 show: showCreateMenu,
                 onAddNote: {
-                    withAnimation(SimpleAppTabBar.menuSpring) {
+                    withAnimation(SimpleCreateBar.menuSpring) {
                         showCreateMenu = false
                     }
                     selectedTab = .notes
                     newNoteTrigger &+= 1
                 },
                 onCreateContent: {
-                    withAnimation(SimpleAppTabBar.menuSpring) {
+                    withAnimation(SimpleCreateBar.menuSpring) {
                         showCreateMenu = false
                     }
                     // Defer slightly so the menu close animation reads
@@ -1918,7 +1994,7 @@ struct ContentView: View {
                     }
                 },
                 onDismiss: {
-                    withAnimation(SimpleAppTabBar.menuSpring) {
+                    withAnimation(SimpleCreateBar.menuSpring) {
                         showCreateMenu = false
                     }
                 }
@@ -1928,15 +2004,23 @@ struct ContentView: View {
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
         .onChange(of: simpleMode) { _, isSimple in
-            // Classic mode owns .create / .profile tabs; Simple mode doesn't
-            // even include them in its TabView, so if the user was sitting on
-            // one of those tabs when they toggled, snap back to Notes.
-            if isSimple && (selectedTab == .create || selectedTab == .profile) {
-                selectedTab = .notes
-            }
-            // And tear down any Simple-only modals if we're heading back to
-            // Classic, so the user isn't stranded on top of a stale cover.
-            if !isSimple {
+            if isSimple {
+                // Classic → Simple. Simple's TabView doesn't include
+                // .create / .profile, so move the user off those tabs.
+                // For Profile we also re-open it as the Simple-mode modal
+                // so the screen they were on stays visible across the
+                // transition. The Simple → Classic direction is handled
+                // in ProfileView's Layout row, which pre-selects the
+                // Profile tab before dismissing the modal.
+                if selectedTab == .profile {
+                    selectedTab = .notes
+                    showProfile = true
+                } else if selectedTab == .create {
+                    selectedTab = .notes
+                }
+            } else {
+                // Tear down any Simple-only chrome left over from the
+                // previous mode.
                 showCreateMenu = false
                 showCreate = false
                 showProfile = false
@@ -1947,21 +2031,16 @@ struct ContentView: View {
     @ViewBuilder
     private var tabsLayer: some View {
         if simpleMode {
-            TabView(selection: $selectedTab) {
-                NotesView(
-                    newNoteTrigger: newNoteTrigger,
-                    onProfileTap: { showProfile = true }
-                )
-                .tag(AppTab.notes)
-                LibraryView(onProfileTap: { showProfile = true })
-                    .tag(AppTab.library)
-            }
+            SimpleHomePage(
+                newNoteTrigger: newNoteTrigger,
+                onProfileTap: { showProfile = true }
+            )
         } else {
             TabView(selection: $selectedTab) {
                 NotesView().tag(AppTab.notes)
                 HomeView().tag(AppTab.create)
                 LibraryView().tag(AppTab.library)
-                ProfileView(selectedTab: selectedTab).tag(AppTab.profile)
+                ProfileView(selectedTab: $selectedTab).tag(AppTab.profile)
             }
         }
     }
