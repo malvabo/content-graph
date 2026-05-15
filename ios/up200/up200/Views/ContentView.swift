@@ -995,15 +995,19 @@ private struct TemplateEditPage: View {
                         .font(.appSubtextMedium)
                 }
                 .foregroundColor(canEnhance ? amber : Color.white.opacity(0.30))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color.white.opacity(canEnhance ? 0.06 : 0.03))
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule().stroke(
-                        Color.white.opacity(canEnhance ? 0.10 : 0.04),
-                        lineWidth: 0.5
-                    )
+                .padding(.horizontal, 18)
+                .frame(height: 56)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(.regularMaterial)
+                        .overlay(
+                            Capsule().stroke(
+                                Color.white.opacity(0.15),
+                                lineWidth: 0.5
+                            )
+                        )
+                        .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
+                        .opacity(canEnhance ? 1.0 : 0.6)
                 )
             }
             .buttonStyle(.plain)
