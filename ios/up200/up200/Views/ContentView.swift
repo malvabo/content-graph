@@ -2205,6 +2205,10 @@ struct AIPreviewSheet: View {
         .presentationDragIndicator(.visible)
         .presentationBackground(sheetBg)
         .presentationCornerRadius(Radius.sheet)
+        // Let the inner ScrollView consume vertical pans first so the user
+        // can read long previews without the sheet jumping to its large
+        // detent on every swipe up.
+        .presentationContentInteraction(.scrolls)
     }
 }
 
