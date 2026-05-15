@@ -2346,17 +2346,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
-                RadialGradient(
-                    colors: [Color(red: 0.55, green: 0.30, blue: 0.08).opacity(0.35), .clear],
-                    center: .init(x: 0.05, y: 0.05),
-                    startRadius: 0, endRadius: 380
-                ).ignoresSafeArea()
-                RadialGradient(
-                    colors: [Color(red: 0.30, green: 0.20, blue: 0.08).opacity(0.22), .clear],
-                    center: .init(x: 1.0, y: 0.85),
-                    startRadius: 0, endRadius: 320
-                ).ignoresSafeArea()
+                AmbientBackground()
 
                 VStack(spacing: 0) {
                     InlineTopBar(title: "Create") {

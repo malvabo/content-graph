@@ -1350,7 +1350,7 @@ struct NotesView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+                AmbientBackground()
 
                 VStack(spacing: 0) {
                     InlineTopBar(title: "Notes") {

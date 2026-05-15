@@ -15,8 +15,6 @@ struct LibraryView: View {
     @State private var cachedGroups: [(title: String, items: [GenerationProject])] = []
     @FocusState private var searchFocused: Bool
 
-    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
-
     private var filteredGroups: [(title: String, items: [GenerationProject])] {
         guard !searchText.isEmpty else { return cachedGroups }
         let q = searchText.lowercased()
@@ -81,7 +79,7 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                bg.ignoresSafeArea()
+                AmbientBackground()
 
                 VStack(spacing: 0) {
                     InlineTopBar(title: "Library") {
