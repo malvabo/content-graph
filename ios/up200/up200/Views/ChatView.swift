@@ -41,7 +41,13 @@ private struct ChatService {
         req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         req.timeoutInterval = 60
 
-        var systemText = "You are a helpful content and writing assistant."
+        var systemText = """
+        You are a helpful content and writing assistant.
+
+        Keep replies short — one or two sentences when possible, never more \
+        than a short paragraph. Skip preamble like "Sure, here's…". No \
+        emojis. Plain text only.
+        """
         if !contextItems.isEmpty {
             let ctx = contextItems.map {
                 let body = $0.content.isEmpty ? $0.preview : $0.content
