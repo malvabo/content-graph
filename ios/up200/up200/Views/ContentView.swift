@@ -1409,7 +1409,7 @@ private struct AppTabBar: View {
     private static let selectSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             HStack(spacing: 4) {
                 ForEach(mainItems, id: \.0.rawValue) { tab, icon, label in
                     Button {
@@ -1418,16 +1418,16 @@ private struct AppTabBar: View {
                             selected = tab
                         }
                     } label: {
-                        VStack(spacing: 2) {
+                        VStack(spacing: 4) {
                             Image(systemName: icon)
                                 .symbolVariant(selected == tab ? .fill : .none)
-                                .font(.system(size: 17, weight: .regular))
+                                .font(.system(size: 22, weight: .regular))
                                 .transaction { $0.animation = nil }
                             Text(label)
-                                .font(.system(size: 10, weight: .regular))
+                                .font(.system(size: 12, weight: .regular))
                         }
                         .foregroundColor(selected == tab ? .white : Color.white.opacity(0.45))
-                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .frame(maxWidth: .infinity, minHeight: 56)
                         .background(
                             ZStack {
                                 if selected == tab {
@@ -1437,6 +1437,8 @@ private struct AppTabBar: View {
                                             Capsule(style: .continuous)
                                                 .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
                                         )
+                                        .padding(.horizontal, 3)
+                                        .padding(.vertical, 3)
                                         .matchedGeometryEffect(id: "tabPill", in: pillNS)
                                 }
                             }
@@ -1448,8 +1450,8 @@ private struct AppTabBar: View {
                     .accessibilityAddTraits(selected == tab ? [.isButton, .isSelected] : .isButton)
                 }
             }
-            .padding(.horizontal, 4)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
             .appLiquidGlass(in: Capsule(style: .continuous))
             .overlay(
                 Capsule(style: .continuous)
@@ -1471,9 +1473,9 @@ private struct AppTabBar: View {
             } label: {
                 let isActive = selected == .create
                 Image(systemName: "plus")
-                    .font(.system(size: 17, weight: .regular))
+                    .font(.system(size: 22, weight: .regular))
                     .foregroundColor(AppText.primary)
-                    .frame(width: 50, height: 50)
+                    .frame(width: 68, height: 68)
                     .background(
                         Circle().fill(Color.white.opacity(isActive ? 0.14 : 0))
                     )
@@ -1539,7 +1541,7 @@ struct ContentView: View {
                 if !keyboardVisible && !chromeController.hideTabBar {
                     AppTabBar(selected: $selectedTab, pillNS: tabPillNS)
                         .padding(.horizontal, 16)
-                        .padding(.bottom, -2)
+                        .padding(.bottom, 6)
                 }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
