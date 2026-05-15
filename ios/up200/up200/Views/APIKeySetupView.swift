@@ -12,7 +12,7 @@ struct APIKeySetupView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+            AppBackground.primary.ignoresSafeArea()
             RadialGradient(
                 colors: [amber.opacity(0.14), .clear],
                 center: .init(x: 0.5, y: 0.35), startRadius: 0, endRadius: 380

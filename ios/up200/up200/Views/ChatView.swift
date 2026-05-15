@@ -120,7 +120,7 @@ struct ChatView: View {
     @State private var chatFailReason: String = ""
     @FocusState private var inputFocused: Bool
 
-    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let bg = AppBackground.primary
 
     private var documentSources: [ChatContextSource] {
         cachedProjects.map { proj in
@@ -674,7 +674,7 @@ private struct MentionPickerSheet: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(Radius.sheet)
-        .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        .presentationBackground(AppBackground.primary)
     }
 
     @ViewBuilder

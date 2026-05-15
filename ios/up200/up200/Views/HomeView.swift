@@ -711,7 +711,7 @@ private struct TextInputSheet: View {
     @FocusState private var focusedField: InputField?
 
     private enum InputField { case title, body }
-    private let sheetBackground = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let sheetBackground = AppBackground.primary
 
     private var canSave: Bool {
         !titleText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
@@ -1247,7 +1247,7 @@ struct VoiceRecordSheet: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+            AppBackground.primary.ignoresSafeArea()
             RadialGradient(
                 colors: [amber.opacity(recorder.isRecording ? 0.16 : 0.0), .clear],
                 center: .center, startRadius: 0, endRadius: 300
@@ -1636,7 +1636,7 @@ private struct SourcesBlock: View {
             )
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(sheet == .text ? 10 : 22)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+            .presentationBackground(AppBackground.primary)
         }
         .fullScreenCover(isPresented: $showNotePicker) {
             NotePickerSheet(
@@ -1758,7 +1758,7 @@ private struct NotePickerSheet: View {
     @State private var reloadTask: Task<Void, Never>? = nil
     @FocusState private var fieldFocused: Bool
 
-    private let cardBg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let cardBg = AppBackground.primary
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -1927,7 +1927,7 @@ private struct FormatPickerSheet: View {
 
     private enum SelectionState { case none, partial, all }
 
-    private let sheetBackground = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let sheetBackground = AppBackground.primary
     private let amber = BrandColor.amber
 
     private var filteredTemplates: [ContentTemplate] {
@@ -2314,7 +2314,7 @@ private struct FormatsBlock: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(Radius.sheet)
-                .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+                .presentationBackground(AppBackground.primary)
         }
     }
 
@@ -2524,7 +2524,7 @@ struct HomeView: View {
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(Radius.sheet)
-            .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+            .presentationBackground(AppBackground.primary)
         }
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView(onGetStarted: { showOnboarding = false }, onLogin: { showOnboarding = false })

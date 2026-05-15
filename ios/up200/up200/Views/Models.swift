@@ -41,21 +41,56 @@ enum SelectionStyle {
     static let stroke = Color.white.opacity(0.30)
 }
 
-/// Text-on-dark color tokens. Centralized so the off-white shade can be
-/// tuned in one place. Text sitting on colored fills (amber CTAs, etc.)
-/// should keep pure `.white` for contrast — these tokens are only for
-/// content on the dark app background or translucent-white-on-dark chrome.
+/// Adaptive app-background tokens. The dark variant matches the original
+/// hand-tuned dark-brown wash; the light variant is a soft warm-tinted
+/// near-white so existing translucent-white chrome stays visible.
+enum AppBackground {
+    /// Solid app/sheet background.
+    static let primary = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.10, green: 0.08, blue: 0.07, alpha: 1.0)
+            : UIColor(red: 0.95, green: 0.94, blue: 0.93, alpha: 1.0)
+    })
+    /// Top-left radial-glow tint behind the ambient background. Warm amber
+    /// on dark; a cool soft wash on light so the gradient stays subtle.
+    static let glowTopLeft = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.55, green: 0.30, blue: 0.08, alpha: 0.35)
+            : UIColor(red: 0.78, green: 0.78, blue: 0.80, alpha: 0.55)
+    })
+    /// Bottom-right radial-glow tint behind the ambient background.
+    static let glowBottomRight = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.30, green: 0.20, blue: 0.08, alpha: 0.22)
+            : UIColor(red: 0.82, green: 0.81, blue: 0.83, alpha: 0.45)
+    })
+}
+
+/// Text color tokens. Centralized so emphasis levels can be tuned in one
+/// place. Text sitting on colored fills (amber CTAs, etc.) should keep
+/// pure `.white` for contrast — these tokens are for content on the
+/// adaptive app background and translucent chrome.
 enum AppText {
     /// Body / titles — primary reading content.
-    static let primary   = Color.white.opacity(0.92)
+    static let primary   = Color(uiColor: UIColor { t in
+        t.userInterfaceStyle == .dark ? UIColor(white: 1.0, alpha: 0.92) : UIColor(white: 0.0, alpha: 0.88)
+    })
     /// Section labels, secondary actions, default icon foregrounds.
-    static let secondary = Color.white.opacity(0.55)
+    static let secondary = Color(uiColor: UIColor { t in
+        t.userInterfaceStyle == .dark ? UIColor(white: 1.0, alpha: 0.55) : UIColor(white: 0.0, alpha: 0.58)
+    })
     /// Subtitles, helper text, group headers.
-    static let tertiary  = Color.white.opacity(0.35)
+    static let tertiary  = Color(uiColor: UIColor { t in
+        t.userInterfaceStyle == .dark ? UIColor(white: 1.0, alpha: 0.35) : UIColor(white: 0.0, alpha: 0.42)
+    })
     /// Placeholders and very low-emphasis chrome (deep dim).
-    static let muted     = Color.white.opacity(0.22)
+    static let muted     = Color(uiColor: UIColor { t in
+        t.userInterfaceStyle == .dark ? UIColor(white: 1.0, alpha: 0.22) : UIColor(white: 0.0, alpha: 0.28)
+    })
     /// Disabled controls — both labels and icon glyphs.
-    static let disabled  = Color.white.opacity(0.25)
+    static let disabled  = Color(uiColor: UIColor { t in
+        t.userInterfaceStyle == .dark ? UIColor(white: 1.0, alpha: 0.25) : UIColor(white: 0.0, alpha: 0.30)
+    })
 }
 
 /// Canonical corner-radius scale. Pick the role, not the literal — that way
@@ -99,20 +134,21 @@ extension View {
     func appIconHitArea() -> some View { modifier(AppIconHitArea()) }
 }
 
-/// Shared dark background with two warm radial glows. Place at the bottom
+/// Shared app background with two soft radial glows. Place at the bottom
 /// of a screen-level ZStack so the same atmosphere reads across Create,
-/// Notes, and Library without duplicating the gradient stack.
+/// Notes, and Library without duplicating the gradient stack. Adaptive:
+/// warm dark brown on dark, a smooth grey wash on light.
 struct AmbientBackground: View {
     var body: some View {
         ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07)
+            AppBackground.primary
             RadialGradient(
-                colors: [Color(red: 0.55, green: 0.30, blue: 0.08).opacity(0.35), .clear],
+                colors: [AppBackground.glowTopLeft, .clear],
                 center: .init(x: 0.05, y: 0.05),
                 startRadius: 0, endRadius: 380
             )
             RadialGradient(
-                colors: [Color(red: 0.30, green: 0.20, blue: 0.08).opacity(0.22), .clear],
+                colors: [AppBackground.glowBottomRight, .clear],
                 center: .init(x: 1.0, y: 0.85),
                 startRadius: 0, endRadius: 320
             )

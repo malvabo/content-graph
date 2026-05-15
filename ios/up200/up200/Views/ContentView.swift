@@ -292,7 +292,7 @@ struct ProjectGroupDetailView: View {
     @FocusState private var editorFocused: Bool
     @State private var isEditingBody: Bool = false
 
-    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let bg = AppBackground.primary
 
     @State private var cachedAllProjects: [GenerationProject] = []
     @State private var lastDecodedSignature: Data = Data()
@@ -775,7 +775,7 @@ struct ProfileView: View {
 
     private var isModal: Bool { selectedTab == nil }
 
-    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let bg = AppBackground.primary
     private let logoutRed = Color(red: 0.95, green: 0.40, blue: 0.32)
 
     var body: some View {
@@ -982,7 +982,7 @@ private struct TemplatesListPage: View {
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
-    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let bg = AppBackground.primary
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1082,7 +1082,7 @@ private struct TemplateEditPage: View {
     @FocusState private var focus: Field?
 
     private enum Field { case prompt }
-    private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let bg = AppBackground.primary
     private let amber = BrandColor.amber
 
     init(template: CustomTemplate?, onSave: @escaping (CustomTemplate) -> Void, onDelete: (() -> Void)? = nil) {
@@ -2196,7 +2196,7 @@ struct AppPickerSheet<Results: View>: View {
 
     @FocusState private var fieldFocused: Bool
 
-    private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let sheetBg = AppBackground.primary
 
     var body: some View {
         VStack(spacing: 0) {
@@ -2406,7 +2406,7 @@ private let quickAIActions: [AIAction] = [
 struct AIActionsSheet: View {
     let onAction: (_ label: String, _ icon: String, _ instruction: String) -> Void
 
-    private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let sheetBg = AppBackground.primary
 
     private var fittedHeight: CGFloat {
         let rowHeight: CGFloat = 52
@@ -2474,7 +2474,7 @@ struct AIPreviewSheet: View {
 
     @State private var didCopy = false
 
-    private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let sheetBg = AppBackground.primary
 
     var body: some View {
         VStack(spacing: 0) {

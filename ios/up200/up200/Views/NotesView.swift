@@ -526,7 +526,7 @@ struct NoteVoiceSheet: View {
     @State private var selectedDetent: PresentationDetent = .medium
     @State private var showingComposer: Bool = false
 
-    private let sheetBg = Color(red: 0.10, green: 0.08, blue: 0.07)
+    private let sheetBg = AppBackground.primary
 
     private var timeLabel: String {
         String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)
@@ -923,7 +923,7 @@ private struct NoteEditorPage: View {
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+            AppBackground.primary.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
                 topBar
@@ -1580,7 +1580,7 @@ private struct NewTagSheet: View {
                     .onSubmit { if !newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { onAdd() } }
                 Spacer()
             }
-            .background(Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea())
+            .background(AppBackground.primary.ignoresSafeArea())
             .navigationTitle("New Tag")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
@@ -1600,7 +1600,7 @@ private struct NewTagSheet: View {
         .presentationDetents([.height(180)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(Radius.sheet)
-        .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+        .presentationBackground(AppBackground.primary)
         .onAppear { focused = true }
     }
 }
