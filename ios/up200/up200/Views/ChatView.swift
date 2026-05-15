@@ -127,7 +127,7 @@ struct ChatView: View {
             ChatContextSource(
                 id: "doc:\(proj.id.uuidString)",
                 kind: .document,
-                title: proj.outputType,
+                title: proj.title,
                 preview: proj.preview,
                 content: proj.content
             )
@@ -236,7 +236,7 @@ struct ChatView: View {
                    let proj = cachedProjects.first(where: { $0.id == id }) {
                     let sourceID = "doc:\(proj.id.uuidString)"
                     seededContextID = sourceID
-                    inputText = "@\(proj.outputType) "
+                    inputText = "@\(proj.title) "
                 }
             }
             // Auto-open the keyboard when the chat screen appears. A short
