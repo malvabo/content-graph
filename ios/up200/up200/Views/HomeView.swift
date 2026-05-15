@@ -600,7 +600,11 @@ struct AnimatedLightsButton: View {
         Button(action: action) {
             ZStack {
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
+                    .fill(
+                        isEnabled
+                        ? Color(red: 0.24, green: 0.14, blue: 0.07)
+                        : Color(red: 0.14, green: 0.11, blue: 0.09)
+                    )
 
                 if isEnabled {
                     Ellipse()
@@ -616,7 +620,7 @@ struct AnimatedLightsButton: View {
                 }
 
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .stroke(Color.white.opacity(isEnabled ? 0.13 : 0.06), lineWidth: 0.5)
+                    .stroke(Color.white.opacity(isEnabled ? 0.28 : 0.10), lineWidth: 0.75)
 
                 HStack(spacing: 8) {
                     if showSparks {
