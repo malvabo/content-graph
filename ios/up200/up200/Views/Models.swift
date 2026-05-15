@@ -481,6 +481,11 @@ struct KeychainService {
     }
 }
 
+enum NoteKind: String, Codable {
+    case text
+    case drawing
+}
+
 struct Note: Identifiable, Codable, Equatable, Hashable {
     var id = UUID()
     // Legacy field. The composer stores everything in `body`; this stays
@@ -491,15 +496,22 @@ struct Note: Identifiable, Codable, Equatable, Hashable {
     var updatedAt: Date = Date()
     var tags: [String] = []
     var isPinned: Bool = false
+    /// Text vs sketched note. Drawing notes carry a serialized `PKDrawing`
+    /// in `drawingData`; `body` holds any audio transcript captured while
+    /// drawing.
+    var kind: NoteKind = .text
+    var drawingData: Data? = nil
 
     var isEmpty: Bool {
         body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && (drawingData?.isEmpty ?? true)
     }
 
     var displayTitle: String {
         let firstLine = body.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
         let cleaned = firstLine.trimmingCharacters(in: .whitespacesAndNewlines)
-        return cleaned.isEmpty ? "Untitled" : cleaned
+        if !cleaned.isEmpty { return cleaned }
+        return kind == .drawing ? "Sketch" : "Untitled"
     }
 
     var preview: String {
@@ -530,12 +542,14 @@ struct Note: Identifiable, Codable, Equatable, Hashable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        id        = try c.decodeIfPresent(UUID.self,     forKey: .id)        ?? UUID()
-        title     = try c.decodeIfPresent(String.self,   forKey: .title)     ?? ""
-        body      = try c.decodeIfPresent(String.self,   forKey: .body)      ?? ""
-        updatedAt = try c.decodeIfPresent(Date.self,     forKey: .updatedAt) ?? Date()
-        tags      = try c.decodeIfPresent([String].self, forKey: .tags)      ?? []
-        isPinned  = try c.decodeIfPresent(Bool.self,     forKey: .isPinned)  ?? false
+        id          = try c.decodeIfPresent(UUID.self,     forKey: .id)          ?? UUID()
+        title       = try c.decodeIfPresent(String.self,   forKey: .title)       ?? ""
+        body        = try c.decodeIfPresent(String.self,   forKey: .body)        ?? ""
+        updatedAt   = try c.decodeIfPresent(Date.self,     forKey: .updatedAt)   ?? Date()
+        tags        = try c.decodeIfPresent([String].self, forKey: .tags)        ?? []
+        isPinned    = try c.decodeIfPresent(Bool.self,     forKey: .isPinned)    ?? false
+        kind        = try c.decodeIfPresent(NoteKind.self, forKey: .kind)        ?? .text
+        drawingData = try c.decodeIfPresent(Data.self,     forKey: .drawingData)
     }
 }
 

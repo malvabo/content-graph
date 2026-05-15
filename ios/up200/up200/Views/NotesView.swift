@@ -2,6 +2,7 @@ import SwiftUI
 import Speech
 import AVFoundation
 import UIKit
+import PencilKit
 
 // MARK: - Voice Dictation
 
@@ -258,6 +259,93 @@ private enum RowDate {
     }
 }
 
+// MARK: - Note Thumbnail
+
+/// Tiny illustrative thumb leading each row in the notes list. Same
+/// frame / corner / stroke for every row so adjacent items read as a
+/// consistent strip; the inner glyph switches with `Note.kind` — paper
+/// lines for text, chart bars for sketched drawings.
+private struct NoteThumb: View {
+    let note: Note
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(AppInk.solid(0.07))
+            .overlay(thumbContent)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(AppInk.solid(0.09), lineWidth: 0.5)
+            )
+            .frame(width: 42, height: 52)
+    }
+
+    @ViewBuilder
+    private var thumbContent: some View {
+        switch note.kind {
+        case .drawing:
+            ChartThumbContent(seed: note.id)
+        case .text:
+            PaperThumbContent(seed: note.id)
+        }
+    }
+}
+
+/// Stack of five capsule "text lines" with seeded widths — the original
+/// notepad thumb, restored for text notes.
+private struct PaperThumbContent: View {
+    let seed: UUID
+    var body: some View {
+        let widths = Self.lineWidths(for: seed)
+        VStack(alignment: .leading, spacing: 3) {
+            ForEach(0..<5, id: \.self) { i in
+                Capsule()
+                    .fill(AppInk.solid(i == 0 ? 0.55 : 0.20))
+                    .frame(width: widths[i], height: i == 0 ? 2.5 : 1.5)
+            }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private static func lineWidths(for id: UUID) -> [CGFloat] {
+        let b = id.uuid
+        var h = Int(b.0) &<< 24 | Int(b.1) &<< 16 | Int(b.2) &<< 8 | Int(b.3)
+        return (0..<5).map { _ in
+            h = h &* 1664525 &+ 1013904223
+            return 8 + CGFloat(h & 0x17)
+        }
+    }
+}
+
+/// Five bottom-anchored bars with seeded heights — chart-style mark for
+/// sketched / drawn notes so they read as visual entries in the list.
+private struct ChartThumbContent: View {
+    let seed: UUID
+    var body: some View {
+        let heights = Self.barHeights(for: seed)
+        HStack(alignment: .bottom, spacing: 2.5) {
+            ForEach(0..<5, id: \.self) { i in
+                Capsule()
+                    .fill(AppInk.solid(i == heights.tallestIndex ? 0.55 : 0.30))
+                    .frame(width: 3.5, height: heights.values[i])
+            }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+    }
+
+    private static func barHeights(for id: UUID) -> (values: [CGFloat], tallestIndex: Int) {
+        let b = id.uuid
+        var h = Int(b.0) &<< 24 | Int(b.1) &<< 16 | Int(b.2) &<< 8 | Int(b.3)
+        let values: [CGFloat] = (0..<5).map { _ in
+            h = h &* 1664525 &+ 1013904223
+            return 8 + CGFloat(h & 0x1F)        // 8...39 pt tall
+        }
+        let tallest = values.indices.max(by: { values[$0] < values[$1] }) ?? 0
+        return (values, tallest)
+    }
+}
+
 // MARK: - Row
 
 private struct NoteListRow: View {
@@ -279,24 +367,30 @@ private struct NoteListRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            titleText
-                .font(.appRowTitle)
-                .foregroundColor(AppInk.solid(0.88))
-                .lineLimit(1)
-                .truncationMode(.tail)
+        HStack(spacing: 14) {
+            NoteThumb(note: note)
 
-            Text(RowDate.relative(from: note.updatedAt))
-                .font(.appSmall)
-                .foregroundColor(AppText.tertiary)
-
-            let otherTags = note.tags.filter { $0 != "Starred" }
-            if !otherTags.isEmpty {
-                Text(otherTags.joined(separator: " · "))
-                    .font(.appMicro)
-                    .foregroundColor(amber.opacity(0.75))
+            VStack(alignment: .leading, spacing: 5) {
+                titleText
+                    .font(.appRowTitle)
+                    .foregroundColor(AppInk.solid(0.88))
                     .lineLimit(1)
+                    .truncationMode(.tail)
+
+                Text(RowDate.relative(from: note.updatedAt))
+                    .font(.appSmall)
+                    .foregroundColor(AppText.tertiary)
+
+                let otherTags = note.tags.filter { $0 != "Starred" }
+                if !otherTags.isEmpty {
+                    Text(otherTags.joined(separator: " · "))
+                        .font(.appMicro)
+                        .foregroundColor(amber.opacity(0.75))
+                        .lineLimit(1)
+                }
             }
+
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
@@ -1464,16 +1558,32 @@ struct NotesView: View {
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(item: $editingNote) { note in
-                NoteEditorPage(
-                    note: note,
-                    onSave: { saved in
-                        if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
-                            notes[idx] = saved
-                        }
-                        flushSave()
-                    },
-                    onDelete: { delete(note) }
-                )
+                if note.kind == .drawing {
+                    DrawingCanvasView(
+                        initialNote: note,
+                        onSave: { saved in
+                            if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
+                                notes[idx] = saved
+                            } else {
+                                notes.insert(saved, at: 0)
+                            }
+                            flushSave()
+                        },
+                        onCancel: {}
+                    )
+                    .toolbar(.hidden, for: .navigationBar)
+                } else {
+                    NoteEditorPage(
+                        note: note,
+                        onSave: { saved in
+                            if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
+                                notes[idx] = saved
+                            }
+                            flushSave()
+                        },
+                        onDelete: { delete(note) }
+                    )
+                }
             }
             .sheet(isPresented: $showAddTag) {
                 NewTagSheet(newTagName: $newTagName) {
@@ -1552,6 +1662,269 @@ private struct NewTagSheet: View {
         .presentationCornerRadius(Radius.sheet)
         .presentationBackground(AppBackground.primary)
         .onAppear { focused = true }
+    }
+}
+
+// MARK: - Drawing canvas (Draw my idea)
+
+/// Full-screen sketch surface with a live audio-dictation pill in the
+/// bottom-right corner. Tapping Save writes a `.drawing` Note with the
+/// serialized PKDrawing and the transcript.
+struct DrawingCanvasView: View {
+    var initialNote: Note? = nil
+    var onSave: ((Note) -> Void)? = nil
+    var onCancel: (() -> Void)? = nil
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var canvasView = PKCanvasView()
+    @StateObject private var dictation = NoteDictation()
+    @State private var transcript: String = ""
+    @State private var showsRecorder: Bool = false
+    @State private var hasInk: Bool = false
+
+    private var canSave: Bool {
+        hasInk || !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        ZStack {
+            AppBackground.primary.ignoresSafeArea()
+
+            PencilKitCanvas(canvasView: $canvasView, initialDrawing: initialNote?.drawingData, onChange: { drawing in
+                hasInk = !drawing.bounds.isEmpty
+            })
+            .ignoresSafeArea(edges: .horizontal)
+            .padding(.top, 64)
+            .padding(.bottom, 96)
+
+            VStack(spacing: 0) {
+                topBar
+                Spacer(minLength: 0)
+                bottomBar
+            }
+        }
+        .onChange(of: dictation.transcript) { _, new in
+            transcript = new
+        }
+        .onDisappear {
+            if dictation.isRecording { dictation.cancel() }
+        }
+    }
+
+    private var topBar: some View {
+        HStack(spacing: 0) {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                if dictation.isRecording { dictation.cancel() }
+                onCancel?()
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(AppText.primary)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(AppBackground.surface))
+                    .overlay(Circle().stroke(AppInk.solid(0.10), lineWidth: 0.5))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Cancel")
+
+            Spacer()
+
+            Text("Draw my idea")
+                .font(.appNavTitle)
+                .foregroundColor(AppText.primary)
+
+            Spacer()
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                save()
+            } label: {
+                Text("Save")
+                    .font(.appLabelBold)
+                    .foregroundColor(canSave ? .white : AppInk.solid(0.32))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(canSave ? BrandColor.amber : AppInk.solid(0.06))
+                    )
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(canSave ? Color.clear : AppInk.solid(0.10), lineWidth: 0.5)
+                    )
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSave)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+    }
+
+    private var bottomBar: some View {
+        HStack(alignment: .bottom, spacing: 10) {
+            if !transcript.isEmpty {
+                Text(transcript)
+                    .font(.appSubtext)
+                    .foregroundColor(AppText.secondary)
+                    .lineLimit(3)
+                    .truncationMode(.head)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                            .fill(AppBackground.surface)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                            .stroke(AppInk.solid(0.06), lineWidth: 0.5)
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            } else {
+                Spacer(minLength: 0)
+            }
+
+            micButton
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+        .animation(.easeInOut(duration: 0.22), value: transcript.isEmpty)
+    }
+
+    private var micButton: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            if dictation.isRecording {
+                dictation.stop()
+            } else {
+                dictation.start()
+            }
+        } label: {
+            ZStack {
+                if dictation.isRecording {
+                    Circle()
+                        .stroke(BrandColor.amber.opacity(0.5), lineWidth: 1.5)
+                        .frame(width: 64, height: 64)
+                        .scaleEffect(showsRecorder ? 1.25 : 0.85)
+                        .opacity(showsRecorder ? 0 : 0.8)
+                }
+                Circle()
+                    .fill(dictation.isRecording ? Color.red : BrandColor.amber)
+                    .frame(width: 56, height: 56)
+                    .shadow(color: (dictation.isRecording ? Color.red : BrandColor.amber).opacity(0.35), radius: 16, y: 6)
+                Image(systemName: dictation.isRecording ? "stop.fill" : "mic.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(dictation.isRecording ? "Stop recording" : "Start recording")
+        .onChange(of: dictation.isRecording) { _, rec in
+            if rec {
+                withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) {
+                    showsRecorder = true
+                }
+            } else {
+                showsRecorder = false
+            }
+        }
+    }
+
+    private func save() {
+        if dictation.isRecording { dictation.stop() }
+        let data = canvasView.drawing.dataRepresentation()
+        var note = initialNote ?? Note()
+        note.kind = .drawing
+        note.drawingData = data
+        let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            note.body = trimmed
+        }
+        note.updatedAt = Date()
+
+        if let onSave {
+            onSave(note)
+        } else {
+            // Default: prepend to the persisted notes list.
+            var all = NotesStore.load()
+            if let idx = all.firstIndex(where: { $0.id == note.id }) {
+                all[idx] = note
+            } else {
+                all.insert(note, at: 0)
+            }
+            NotesStore.save(all)
+        }
+        dismiss()
+    }
+}
+
+private struct PencilKitCanvas: UIViewRepresentable {
+    @Binding var canvasView: PKCanvasView
+    var initialDrawing: Data?
+    var onChange: ((PKDrawing) -> Void)?
+
+    func makeCoordinator() -> Coordinator { Coordinator(onChange: onChange) }
+
+    func makeUIView(context: Context) -> PKCanvasView {
+        canvasView.tool = PKInkingTool(.pen, color: UIColor.label, width: 3)
+        canvasView.drawingPolicy = .anyInput
+        canvasView.backgroundColor = .clear
+        canvasView.isOpaque = false
+        canvasView.delegate = context.coordinator
+
+        if let data = initialDrawing, let drawing = try? PKDrawing(data: data) {
+            canvasView.drawing = drawing
+        }
+
+        // Show the standard tool picker when the canvas becomes first
+        // responder, so users get pen / marker / eraser / color out of the
+        // box without us reinventing a toolbar.
+        DispatchQueue.main.async {
+            if let window = canvasView.window {
+                let picker = PKToolPicker.shared(for: window) ?? PKToolPicker()
+                picker.setVisible(true, forFirstResponder: canvasView)
+                picker.addObserver(canvasView)
+                canvasView.becomeFirstResponder()
+            }
+        }
+        return canvasView
+    }
+
+    func updateUIView(_ uiView: PKCanvasView, context: Context) {
+        context.coordinator.onChange = onChange
+    }
+
+    final class Coordinator: NSObject, PKCanvasViewDelegate {
+        var onChange: ((PKDrawing) -> Void)?
+        init(onChange: ((PKDrawing) -> Void)?) { self.onChange = onChange }
+        func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
+            onChange?(canvasView.drawing)
+        }
+    }
+}
+
+/// Read-only render of a stored `PKDrawing` for previewing a sketched
+/// note inside the editor.
+struct DrawingPreview: UIViewRepresentable {
+    let data: Data
+
+    func makeUIView(context: Context) -> PKCanvasView {
+        let v = PKCanvasView()
+        v.isUserInteractionEnabled = false
+        v.backgroundColor = .clear
+        v.isOpaque = false
+        if let drawing = try? PKDrawing(data: data) {
+            v.drawing = drawing
+        }
+        return v
+    }
+
+    func updateUIView(_ uiView: PKCanvasView, context: Context) {
+        if let drawing = try? PKDrawing(data: data) {
+            uiView.drawing = drawing
+        }
     }
 }
 

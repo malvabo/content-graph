@@ -2205,6 +2205,7 @@ struct ContentView: View {
     @State private var keyboardVisible = false
     @State private var showCreateMenu = false
     @State private var showCreate = false
+    @State private var showDrawCanvas = false
     @State private var showProfile = false
     @State private var newNoteTrigger = 0
     @StateObject private var bannerController = BannerController()
@@ -2231,6 +2232,9 @@ struct ContentView: View {
                         .environmentObject(bannerController)
                         .environmentObject(chromeController)
                         .environmentObject(recordingController)
+                }
+                .fullScreenCover(isPresented: $showDrawCanvas) {
+                    DrawingCanvasView()
                 }
                 .fullScreenCover(isPresented: $showProfile) {
                     ProfileView(selectedTab: $selectedTab, isModal: true)
@@ -2316,11 +2320,14 @@ struct ContentView: View {
                     newNoteTrigger &+= 1
                 },
                 onDrawIdea: {
-                    // Placeholder: the drawing surface isn't built yet, so
-                    // just close the menu so the tap has a visible result.
-                    // Wire the destination here once the canvas exists.
                     withAnimation(SimpleCreateBar.menuSpring) {
                         showCreateMenu = false
+                    }
+                    selectedTab = .notes
+                    // Defer slightly so the menu close reads before the
+                    // canvas cover slides in.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                        showDrawCanvas = true
                     }
                 },
                 onCreateContent: {
