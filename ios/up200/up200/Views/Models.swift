@@ -264,7 +264,6 @@ struct CustomTemplate: Identifiable, Codable {
 final class BannerController: ObservableObject {
     @Published var isVisible = false
     @Published var isReady = false
-    @Published var formatLabels: [String] = []
     var onOpen: (() -> Void)?
     var onCancel: (() -> Void)?
 }
