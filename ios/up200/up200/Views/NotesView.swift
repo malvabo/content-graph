@@ -1295,7 +1295,12 @@ struct NotesView: View {
             Button(role: .destructive) {
                 delete(note)
             } label: {
-                Label("Delete", systemImage: "trash")
+                Label {
+                    Text("Delete").font(.appSmall)
+                } icon: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 14, weight: .semibold))
+                }
             }
             .tint(
                 LinearGradient(
@@ -1313,10 +1318,12 @@ struct NotesView: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 togglePin(note)
             } label: {
-                Label(
-                    note.isPinned ? "Unpin" : "Pin",
-                    systemImage: note.isPinned ? "pin.slash.fill" : "pin.fill"
-                )
+                Label {
+                    Text(note.isPinned ? "Unpin" : "Pin").font(.appSmall)
+                } icon: {
+                    Image(systemName: note.isPinned ? "pin.slash.fill" : "pin.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                }
             }
             .tint(Color(red: 0.62, green: 0.18, blue: 0.04))
         }
