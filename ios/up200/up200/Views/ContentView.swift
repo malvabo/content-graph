@@ -845,11 +845,35 @@ private struct TemplatesListPage: View {
     let custom: [CustomTemplate]
     @Binding var path: [ProfileDestination]
 
+    @Environment(\.dismiss) private var dismiss
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
     var body: some View {
         VStack(spacing: 0) {
-            InlineTopBar(title: "Templates") {
+            HStack(spacing: 10) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(AppText.primary)
+                        .frame(width: 36, height: 36)
+                        .background(Color.white.opacity(0.08))
+                        .clipShape(Circle())
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                Text("Templates")
+                    .font(.appBodyBold)
+                    .foregroundColor(AppText.primary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                Spacer()
+
                 TopBarPill {
                     TopBarPillButton(systemImage: "plus") {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -857,6 +881,9 @@ private struct TemplatesListPage: View {
                     }
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+            .padding(.bottom, 12)
 
             List {
                 ForEach(custom) { tpl in
