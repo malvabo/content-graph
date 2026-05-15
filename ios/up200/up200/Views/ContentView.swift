@@ -1077,16 +1077,6 @@ private struct ChipFlowLayout: Layout {
 
 // MARK: - Custom Tab Bar
 
-private struct PressableTabButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .opacity(configuration.isPressed ? 0.75 : 1.0)
-            .animation(.spring(response: 0.22, dampingFraction: 0.78),
-                       value: configuration.isPressed)
-    }
-}
-
 private struct AppTabBar: View {
     @Binding var selected: AppTab
     let pillNS: Namespace.ID
@@ -1094,8 +1084,8 @@ private struct AppTabBar: View {
     @State private var impact = UIImpactFeedbackGenerator(style: .light)
 
     private let mainItems: [(AppTab, String, String)] = [
-        (.notes,     "doc.text",        "Notes"),
-        (.library,   "books.vertical",  "Library"),
+        (.notes,     "doc.text",   "Notes"),
+        (.library,   "book.closed", "Library"),
         (.templates, "square.grid.2x2", "Templates"),
     ]
 
@@ -1115,9 +1105,9 @@ private struct AppTabBar: View {
                             Image(systemName: icon)
                                 .symbolVariant(selected == tab ? .fill : .none)
                                 .contentTransition(.symbolEffect(.replace))
-                                .font(.system(size: 17, weight: selected == tab ? .semibold : .regular))
+                                .font(.system(size: 17, weight: .regular))
                             Text(label)
-                                .font(.system(size: 10, weight: selected == tab ? .semibold : .regular))
+                                .font(.system(size: 10, weight: .regular))
                         }
                         .foregroundColor(selected == tab ? .white : Color.white.opacity(0.45))
                         .frame(maxWidth: .infinity, minHeight: 44)
@@ -1136,7 +1126,7 @@ private struct AppTabBar: View {
                         )
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(PressableTabButtonStyle())
+                    .buttonStyle(.plain)
                     .accessibilityLabel(label)
                     .accessibilityAddTraits(selected == tab ? [.isButton, .isSelected] : .isButton)
                 }
@@ -1153,7 +1143,7 @@ private struct AppTabBar: View {
             } label: {
                 let isActive = selected == .create
                 Image(systemName: "plus")
-                    .font(.system(size: 17, weight: isActive ? .semibold : .regular))
+                    .font(.system(size: 17, weight: .regular))
                     .foregroundColor(AppText.primary)
                     .frame(width: 50, height: 50)
                     .background(
@@ -1166,7 +1156,7 @@ private struct AppTabBar: View {
                     )
                     .contentShape(Circle())
             }
-            .buttonStyle(PressableTabButtonStyle())
+            .buttonStyle(.plain)
             .accessibilityLabel("Create")
             .accessibilityAddTraits(selected == .create ? [.isButton, .isSelected] : .isButton)
         }
