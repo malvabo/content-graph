@@ -1876,7 +1876,7 @@ private struct FormatPickerSheet: View {
                     VStack(alignment: .leading, spacing: 22) {
                         if !filteredTemplates.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
-                                sectionHeader("Quick picks")
+                                sectionHeader("My presets")
                                 VStack(spacing: 10) {
                                     ForEach(displayedTemplates) { template in
                                         templateBlock(template)
