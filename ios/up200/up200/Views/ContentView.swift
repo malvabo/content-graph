@@ -118,6 +118,12 @@ struct LibraryView: View {
                 }
                 .allowsHitTesting(!showSearch)
                 .animation(AppAnimation.standard, value: showSearch)
+                // The library list never owns the keyboard (only the SearchOverlay
+                // does), so don't let the keyboard's safe-area inset reshape the
+                // list. Without this, Cancel-ing search makes the keyboard
+                // descend and the list's bottom edge animates outward — which
+                // reads as content jumping up from below during the overlay fade.
+                .ignoresSafeArea(.keyboard)
 
                 if showSearch {
                     SearchOverlay(
