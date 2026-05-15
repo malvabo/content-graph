@@ -495,7 +495,7 @@ struct ProjectGroupDetailView: View {
                             dictation.stop()
                         }
                     )
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                 } else {
                     HStack(spacing: 10) {
                         Button {
