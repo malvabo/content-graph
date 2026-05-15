@@ -707,7 +707,9 @@ private struct TextInputSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var titleText = ""
     @State private var bodyText = ""
+    @State private var bodyBeforeDictation = ""
     @State private var isGenerating = false
+    @StateObject private var dictation = NoteDictation()
     @FocusState private var focusedField: InputField?
 
     private enum InputField { case title, body }
@@ -718,58 +720,102 @@ private struct TextInputSheet: View {
         !bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            header
+        ZStack(alignment: .bottomTrailing) {
+            VStack(spacing: 0) {
+                header
 
-            Rectangle()
-                .fill(Color.white.opacity(0.06))
-                .frame(height: 0.5)
+                Rectangle()
+                    .fill(Color.white.opacity(0.06))
+                    .frame(height: 0.5)
 
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    TextField("Title", text: $titleText)
-                        .font(.appTitle)
-                        .foregroundColor(AppText.primary)
-                        .tint(.white)
-                        .focused($focusedField, equals: .title)
-                        .submitLabel(.next)
-                        .onSubmit { focusedField = .body }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                        .padding(.bottom, 14)
-                        .disabled(isGenerating)
-
-                    ZStack(alignment: .topLeading) {
-                        if bodyText.isEmpty {
-                            Text("Start writing\u{2026}")
-                                .font(.appBody)
-                                .foregroundColor(Color.white.opacity(0.28))
-                                .padding(.horizontal, 20)
-                                .padding(.top, 2)
-                                .allowsHitTesting(false)
-                        }
-                        TextEditor(text: $bodyText)
-                            .appBodyText()
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        TextField("Title", text: $titleText)
+                            .font(.appTitle)
+                            .foregroundColor(AppText.primary)
                             .tint(.white)
-                            .scrollContentBackground(.hidden)
-                            .background(.clear)
-                            .focused($focusedField, equals: .body)
+                            .focused($focusedField, equals: .title)
+                            .submitLabel(.next)
+                            .onSubmit { focusedField = .body }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                            .padding(.bottom, 14)
                             .disabled(isGenerating)
-                            .padding(.horizontal, 16)
-                            .frame(minHeight: 300)
+
+                        ZStack(alignment: .topLeading) {
+                            if bodyText.isEmpty {
+                                Text("Start writing\u{2026}")
+                                    .font(.appBody)
+                                    .foregroundColor(Color.white.opacity(0.28))
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 2)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $bodyText)
+                                .appBodyText()
+                                .tint(.white)
+                                .scrollContentBackground(.hidden)
+                                .background(.clear)
+                                .focused($focusedField, equals: .body)
+                                .disabled(isGenerating)
+                                .padding(.horizontal, 16)
+                                .frame(minHeight: 300)
+                        }
+                    }
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        keyboardToolbar
                     }
                 }
             }
-            .scrollDismissesKeyboard(.interactively)
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    keyboardToolbar
+
+            DictationControls(
+                dictation: dictation,
+                onStart: {
+                    bodyBeforeDictation = bodyText
+                    focusedField = nil
+                    dictation.start()
+                },
+                onCancel: {
+                    dictation.cancel()
+                    bodyText = bodyBeforeDictation
+                },
+                onConfirm: {
+                    dictation.stop()
                 }
-            }
+            )
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
+            .opacity(isGenerating ? 0 : 1)
+            .allowsHitTesting(!isGenerating)
         }
         .background(sheetBackground.ignoresSafeArea())
         .interactiveDismissDisabled(canSave || isGenerating)
+        .onChange(of: dictation.transcript) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            if bodyBeforeDictation.isEmpty {
+                bodyText = trimmed
+            } else {
+                let needsSeparator = !bodyBeforeDictation.hasSuffix("\n") && !bodyBeforeDictation.hasSuffix(" ")
+                bodyText = bodyBeforeDictation + (needsSeparator ? " " : "") + trimmed
+            }
+        }
+        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+            Button("Open Settings") { openSettings() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
+        }
+        .onDisappear { dictation.stop() }
         .task { focusedField = .title }
     }
 
