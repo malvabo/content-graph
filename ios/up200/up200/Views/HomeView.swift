@@ -594,17 +594,18 @@ struct AnimatedLightsButton: View {
     var showSparks: Bool = false
     var isEnabled: Bool = true
     var action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
     @State private var phase = false
+
+    private var disabledFill: Color {
+        colorScheme == .dark ? AppBackground.ctaDisabled : AppBackground.surface
+    }
 
     var body: some View {
         Button(action: action) {
             ZStack {
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .fill(
-                        isEnabled
-                        ? AppBackground.ctaEnabled
-                        : AppBackground.ctaDisabled
-                    )
+                    .fill(isEnabled ? AppBackground.ctaEnabled : disabledFill)
 
                 if isEnabled {
                     Ellipse()
@@ -620,24 +621,33 @@ struct AnimatedLightsButton: View {
                 }
 
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .stroke(AppInk.solid(isEnabled ? 0.28 : 0.10), lineWidth: 0.75)
+                    .stroke(
+                        isEnabled
+                        ? AnyShapeStyle(AppInk.solid(0.28))
+                        : AnyShapeStyle(BrandColor.amber.opacity(0.35)),
+                        lineWidth: isEnabled ? 0.75 : 1
+                    )
 
                 HStack(spacing: 8) {
                     if showSparks {
                         SparkRaysShape()
                             .stroke(
-                                isEnabled ? Color.white : AppText.disabled,
+                                isEnabled ? Color.white : BrandColor.amber.opacity(0.55),
                                 style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round)
                             )
                             .frame(width: 17, height: 17)
                     }
                     Text(title)
                         .font(.app(size: 18, weight: .semibold))
-                        .foregroundColor(isEnabled ? .white : AppText.disabled)
+                        .foregroundColor(isEnabled ? .white : BrandColor.amber.opacity(0.65))
                 }
             }
             .frame(height: 54)
             .clipShape(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
+            .shadow(
+                color: isEnabled ? BrandColor.amber.opacity(0.30) : .clear,
+                radius: 16, y: 6
+            )
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
@@ -1458,18 +1468,29 @@ struct VoiceRecordSheet: View {
 // MARK: - Glass Card
 
 private struct GlassCard<Content: View>: View {
+    @Environment(\.colorScheme) private var colorScheme
     @ViewBuilder let content: Content
     var body: some View {
         content
             .background(
                 RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
-                    .fill(AppInk.solid(0.04))
+                    .fill(colorScheme == .dark
+                          ? AnyShapeStyle(AppInk.solid(0.04))
+                          : AnyShapeStyle(AppBackground.surface))
                     .overlay(
                         RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
-                            .stroke(AppInk.solid(0.06), lineWidth: 0.5)
+                            .stroke(AppInk.solid(colorScheme == .dark ? 0.06 : 0.05), lineWidth: 0.5)
                     )
             )
             .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
+            .shadow(
+                color: AppInk.solid(colorScheme == .dark ? 0 : 0.06),
+                radius: 14, x: 0, y: 6
+            )
+            .shadow(
+                color: AppInk.solid(colorScheme == .dark ? 0 : 0.04),
+                radius: 1.5, x: 0, y: 0.5
+            )
     }
 }
 
