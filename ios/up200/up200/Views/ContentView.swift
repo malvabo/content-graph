@@ -2027,6 +2027,76 @@ private struct CreateMenuOverlay: View {
     }
 }
 
+/// Twinkling sparkles glyph for the "Create content" fan-menu option.
+/// SF Symbol's iterative variable-color drives the per-layer twinkle; a
+/// blurred amber glow behind the glyph breathes in and out so the icon
+/// reads as gently alive even before the user taps it.
+private struct AnimatedMagicIcon: View {
+    var size: CGFloat = 15
+    @State private var glow = false
+
+    var body: some View {
+        ZStack {
+            Image(systemName: "sparkles")
+                .font(.system(size: size + 5, weight: .semibold))
+                .foregroundStyle(BrandColor.glowGradientBright)
+                .blur(radius: 5)
+                .opacity(glow ? 0.55 : 0.22)
+                .scaleEffect(glow ? 1.05 : 0.7)
+
+            Image(systemName: "sparkles")
+                .font(.system(size: size, weight: .semibold))
+                .foregroundStyle(BrandColor.glowGradientBright)
+                .symbolEffect(
+                    .variableColor.iterative.reversing,
+                    options: .repeat(.continuous)
+                )
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
+                glow = true
+            }
+        }
+    }
+}
+
+/// Microphone glyph for the "Add a note" fan-menu option. A soft amber
+/// halo expands outward on a slow loop (recording-style ripple) while
+/// a smaller inner glow breathes underneath the glyph, so the icon
+/// telegraphs voice capture without being literal about it.
+private struct AnimatedMicIcon: View {
+    var size: CGFloat = 15
+    @State private var ring = false
+    @State private var bob = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(BrandColor.amber.opacity(ring ? 0.0 : 0.45), lineWidth: 1.2)
+                .frame(width: 18, height: 18)
+                .scaleEffect(ring ? 2.4 : 0.5)
+
+            Circle()
+                .fill(BrandColor.amber.opacity(bob ? 0.18 : 0.34))
+                .frame(width: 22, height: 22)
+                .blur(radius: 5)
+
+            Image(systemName: "mic.fill")
+                .font(.system(size: size, weight: .semibold))
+                .foregroundColor(AppText.primary)
+                .scaleEffect(bob ? 1.06 : 0.97)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 1.6).repeatForever(autoreverses: false)) {
+                ring = true
+            }
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                bob = true
+            }
+        }
+    }
+}
+
 private struct CreateMenuOption: View {
     let icon: String
     let title: String
@@ -2038,9 +2108,17 @@ private struct CreateMenuOption: View {
             action()
         }) {
             HStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(AppText.primary)
+                Group {
+                    switch icon {
+                    case "sparkles":  AnimatedMagicIcon(size: 15)
+                    case "mic.fill":  AnimatedMicIcon(size: 15)
+                    default:
+                        Image(systemName: icon)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(AppText.primary)
+                    }
+                }
+                .frame(width: 18, height: 18)
                 Text(title)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(AppText.primary)
