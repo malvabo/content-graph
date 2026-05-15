@@ -10,6 +10,90 @@ struct ChatMessage: Identifiable {
     var content: String
 }
 
+// MARK: - Rewrite Suggestion
+
+/// A "before → after" rewrite the assistant proposes against one of the
+/// attached context sources. The user can accept it to overwrite the
+/// matching text in the underlying document, note, or in-session file.
+struct RewriteSuggestion: Equatable {
+    let before: String
+    let after: String
+
+    /// Stable identity derived from the content, so the "applied" state
+    /// survives re-parsing the same message body across body invocations.
+    var stableKey: String { "\(before)|→|\(after)" }
+}
+
+/// One segment of a parsed assistant message — either plain text (rendered
+/// in a normal chat bubble) or a structured rewrite block (rendered as a
+/// card the user can accept).
+private enum AssistantSegment: Identifiable {
+    case text(String)
+    case rewrite(RewriteSuggestion)
+
+    var id: String {
+        switch self {
+        case .text(let t): return "t:\(t.hashValue)"
+        case .rewrite(let r): return "r:\(r.stableKey)"
+        }
+    }
+}
+
+private enum AssistantParser {
+    /// Splits an assistant message into a sequence of text + rewrite
+    /// segments. Rewrites are emitted by the model as
+    /// `<rewrite><before>…</before><after>…</after></rewrite>` blocks
+    /// (chosen over JSON because it avoids escaping multi-line text).
+    static func parse(_ source: String) -> [AssistantSegment] {
+        var result: [AssistantSegment] = []
+        var remaining = source[...]
+
+        while let openRange = remaining.range(of: "<rewrite>") {
+            let pre = remaining[remaining.startIndex..<openRange.lowerBound]
+            let preTrim = String(pre).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !preTrim.isEmpty {
+                result.append(.text(String(pre)))
+            }
+            guard let closeRange = remaining.range(
+                of: "</rewrite>",
+                range: openRange.upperBound..<remaining.endIndex
+            ) else {
+                // Unterminated block — render what's left as text so the
+                // user can still see the model output.
+                result.append(.text(String(remaining[openRange.lowerBound...])))
+                return result
+            }
+            let inner = remaining[openRange.upperBound..<closeRange.lowerBound]
+            if let suggestion = extractSuggestion(from: String(inner)) {
+                result.append(.rewrite(suggestion))
+            }
+            remaining = remaining[closeRange.upperBound...]
+        }
+
+        let tail = String(remaining)
+        if !tail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            result.append(.text(tail))
+        }
+        return result
+    }
+
+    private static func extractSuggestion(from inner: String) -> RewriteSuggestion? {
+        guard let before = field("before", in: inner),
+              let after = field("after", in: inner),
+              !before.isEmpty, !after.isEmpty
+        else { return nil }
+        return RewriteSuggestion(before: before, after: after)
+    }
+
+    private static func field(_ name: String, in s: String) -> String? {
+        guard let open = s.range(of: "<\(name)>"),
+              let close = s.range(of: "</\(name)>", range: open.upperBound..<s.endIndex)
+        else { return nil }
+        return String(s[open.upperBound..<close.lowerBound])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
 // MARK: - Chat Context Source
 
 /// Unified context attachment. Documents (library projects), notes, and
@@ -51,6 +135,27 @@ private struct ChatService {
         options explicitly requested).
         - Bulleted list only when items are genuinely discrete.
         - No emojis. No hedging. No marketing voice. Direct, plain.
+
+        Rewrite suggestions:
+        - When the user asks you to revise, rewrite, edit, fix, tighten, \
+        rephrase, or otherwise replace a specific span of text inside the \
+        attached context, emit the change as a structured rewrite block \
+        instead of (or in addition to) explaining it in prose:
+
+          <rewrite>
+          <before>exact original text from the source</before>
+          <after>your revised text</after>
+          </rewrite>
+
+        - The <before> string MUST appear verbatim in one of the attached \
+        sources — same wording, punctuation, case, and whitespace — so \
+        the app can locate and replace it. Quote a tight span: the \
+        sentence, phrase, or paragraph that actually changes, not the \
+        whole source.
+        - Emit multiple <rewrite> blocks if the user asked for several \
+        edits; each block stands alone.
+        - For broad rewrites of an entire document, do not use this \
+        block — answer normally. The block is for surgical edits.
         """
         if !contextItems.isEmpty {
             let ctx = contextItems.map {
@@ -118,6 +223,8 @@ struct ChatView: View {
     @State private var attachedFiles: [ChatContextSource] = []
     @State private var chatFailed: Bool = false
     @State private var chatFailReason: String = ""
+    @State private var appliedRewriteKeys: Set<String> = []
+    @State private var rewriteFailed: Bool = false
     @FocusState private var inputFocused: Bool
 
     private let bg = AppBackground.primary
@@ -218,6 +325,11 @@ struct ChatView: View {
             Text(chatFailReason.isEmpty
                  ? "Could not reach the API. Check your network connection and try again."
                  : chatFailReason)
+        }
+        .alert("Couldn't apply rewrite", isPresented: $rewriteFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("The original text in the rewrite wasn't found in any attached source. Try re-attaching the document or note and asking again.")
         }
         .presentationBackground(bg)
         .onDisappear {
@@ -330,7 +442,7 @@ struct ChatView: View {
             ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 12) {
                     ForEach(messages) { msg in
-                        MessageBubble(message: msg)
+                        renderMessage(msg)
                             .id(msg.id)
                     }
                     if isLoading {
@@ -513,6 +625,123 @@ struct ChatView: View {
         !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isLoading
     }
 
+    // MARK: Per-message rendering
+
+    @ViewBuilder
+    private func renderMessage(_ msg: ChatMessage) -> some View {
+        if msg.role == "user" {
+            MessageBubble(message: msg)
+        } else {
+            let segments = AssistantParser.parse(msg.content)
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(segments) { segment in
+                    switch segment {
+                    case .text(let text):
+                        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty {
+                            MessageBubble(
+                                message: ChatMessage(role: "assistant", content: trimmed)
+                            )
+                        }
+                    case .rewrite(let suggestion):
+                        RewriteSuggestionCard(
+                            suggestion: suggestion,
+                            isApplied: appliedRewriteKeys.contains(suggestion.stableKey),
+                            onAccept: {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                _ = acceptRewrite(suggestion)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: Rewrite acceptance
+
+    /// Apply a rewrite suggestion against the attached context sources.
+    /// Documents are persisted to `library_projects`; notes to NotesStore;
+    /// in-session imported files mutate their local entry. Returns true
+    /// if at least one source matched and was updated.
+    @discardableResult
+    private func acceptRewrite(_ suggestion: RewriteSuggestion) -> Bool {
+        let before = suggestion.before
+        let after = suggestion.after
+        let attached = contextItems
+        let attachedIds = Set(attached.map { $0.id })
+
+        // Documents — persisted via @AppStorage("library_projects").
+        var newProjects = cachedProjects
+        var projectsChanged = false
+        for idx in newProjects.indices {
+            let sourceId = "doc:\(newProjects[idx].id.uuidString)"
+            guard attachedIds.contains(sourceId) else { continue }
+            if newProjects[idx].content.contains(before) {
+                newProjects[idx].content = newProjects[idx]
+                    .content.replacingOccurrences(of: before, with: after)
+                projectsChanged = true
+            }
+        }
+        if projectsChanged {
+            if let encoded = try? JSONEncoder().encode(newProjects) {
+                projectsData = encoded
+                cachedProjects = newProjects
+            }
+            appliedRewriteKeys.insert(suggestion.stableKey)
+            return true
+        }
+
+        // Notes — persisted via NotesStore.
+        let attachedNoteIds = Set(
+            attached.filter { $0.kind == .note }.map { $0.id }
+        )
+        if !attachedNoteIds.isEmpty {
+            var allNotes = NotesStore.load()
+            var notesChanged = false
+            for idx in allNotes.indices {
+                let sourceId = "note:\(allNotes[idx].id.uuidString)"
+                guard attachedNoteIds.contains(sourceId) else { continue }
+                if allNotes[idx].body.contains(before) {
+                    allNotes[idx].body = allNotes[idx]
+                        .body.replacingOccurrences(of: before, with: after)
+                    allNotes[idx].updatedAt = Date()
+                    notesChanged = true
+                }
+            }
+            if notesChanged {
+                NotesStore.saveInBackground(allNotes)
+                notes = allNotes
+                appliedRewriteKeys.insert(suggestion.stableKey)
+                return true
+            }
+        }
+
+        // In-session imported files — no disk side, just patch the local
+        // attachment so any follow-up turn sees the new content.
+        var filesChanged = false
+        for idx in attachedFiles.indices where attachedIds.contains(attachedFiles[idx].id) {
+            if attachedFiles[idx].content.contains(before) {
+                let f = attachedFiles[idx]
+                attachedFiles[idx] = ChatContextSource(
+                    id: f.id,
+                    kind: f.kind,
+                    title: f.title,
+                    preview: f.preview,
+                    content: f.content.replacingOccurrences(of: before, with: after)
+                )
+                filesChanged = true
+            }
+        }
+        if filesChanged {
+            appliedRewriteKeys.insert(suggestion.stableKey)
+            return true
+        }
+
+        rewriteFailed = true
+        return false
+    }
+
     private func sendMessage() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isLoading else { return }
@@ -568,6 +797,118 @@ private struct MessageBubble: View {
             if !isUser { Spacer(minLength: 56) }
         }
         .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
+    }
+}
+
+// MARK: - Rewrite Suggestion Card
+
+private struct RewriteSuggestionCard: View {
+    let suggestion: RewriteSuggestion
+    let isApplied: Bool
+    let onAccept: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "wand.and.stars")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("Suggested rewrite")
+                    .font(.system(size: 12, weight: .semibold))
+                    .textCase(.uppercase)
+                Spacer(minLength: 0)
+            }
+            .foregroundColor(AppText.tertiary)
+
+            diffBlock(
+                label: "Before",
+                text: suggestion.before,
+                fill: AppInk.solid(0.04),
+                stroke: AppInk.solid(0.08),
+                textColor: AppText.secondary,
+                strike: true
+            )
+
+            HStack(spacing: 0) {
+                Spacer()
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(AppText.tertiary)
+                    .frame(width: 22, height: 22)
+                    .background(
+                        Circle().fill(AppInk.solid(0.06))
+                    )
+                Spacer()
+            }
+
+            diffBlock(
+                label: "After",
+                text: suggestion.after,
+                fill: AppInk.solid(0.08),
+                stroke: BrandColor.amber.opacity(0.35),
+                textColor: AppText.primary,
+                strike: false
+            )
+
+            HStack {
+                Spacer()
+                Button(action: onAccept) {
+                    HStack(spacing: 6) {
+                        Image(systemName: isApplied ? "checkmark.circle.fill" : "arrow.right.circle.fill")
+                            .font(.system(size: 13, weight: .semibold))
+                        Text(isApplied ? "Applied" : "Accept change")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(isApplied ? AppText.secondary : .white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(isApplied ? AppInk.solid(0.10) : BrandColor.amber)
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(isApplied)
+                .accessibilityLabel(isApplied ? "Rewrite applied" : "Accept rewrite")
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppInk.solid(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                .stroke(AppInk.solid(0.10), lineWidth: 0.5)
+        )
+    }
+
+    @ViewBuilder
+    private func diffBlock(
+        label: String,
+        text: String,
+        fill: Color,
+        stroke: Color,
+        textColor: Color,
+        strike: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+                .textCase(.uppercase)
+                .foregroundColor(AppText.tertiary)
+            Text(text)
+                .font(.appBody)
+                .foregroundColor(textColor)
+                .strikethrough(strike, color: AppText.tertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(10)
+                .background(fill)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(stroke, lineWidth: 0.5)
+                )
+                .textSelection(.enabled)
+        }
     }
 }
 
