@@ -1622,7 +1622,7 @@ private struct SourcesBlock: View {
             }
             .presentationDetents(
                 sheet == .picker ? [.height(270)] :
-                sheet == .note ? [.medium, .large] :
+                sheet == .note ? [.fraction(0.55)] :
                 [.large]
             )
             .presentationDragIndicator(.visible)
@@ -1767,27 +1767,19 @@ private struct NotePickerSheet: View {
                                 onSelect(note)
                                 dismiss()
                             } label: {
-                                HStack(spacing: 14) {
+                                HStack(spacing: 12) {
                                     Image(systemName: "note.text")
-                                        .font(.appSubtext)
-                                        .foregroundColor(Color.white.opacity(0.40))
-                                        .frame(width: 22)
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(note.displayTitle)
-                                            .font(.app(size: 19, weight: .medium))
-                                            .foregroundColor(Color.white.opacity(0.88))
-                                            .lineLimit(1)
-                                        if !note.preview.isEmpty {
-                                            Text(note.preview)
-                                                .font(.appMicro)
-                                                .foregroundColor(Color.white.opacity(0.38))
-                                                .lineLimit(1)
-                                        }
-                                    }
-                                    Spacer()
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(Color.white.opacity(0.45))
+                                        .frame(width: 20)
+                                    Text(note.displayTitle)
+                                        .font(.app(size: 15, weight: .medium))
+                                        .foregroundColor(Color.white.opacity(0.88))
+                                        .lineLimit(1)
+                                    Spacer(minLength: 0)
                                 }
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 18)
+                                .padding(.vertical, 11)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -1795,7 +1787,7 @@ private struct NotePickerSheet: View {
                             Rectangle()
                                 .fill(Color.white.opacity(0.05))
                                 .frame(height: 0.5)
-                                .padding(.leading, 52)
+                                .padding(.leading, 48)
                         }
                     }
                 }
