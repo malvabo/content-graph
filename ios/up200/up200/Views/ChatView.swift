@@ -79,6 +79,7 @@ struct ChatView: View {
     @State private var isLoading = false
     @State private var showResourcePicker = false
     @State private var selectedProjectIDs: Set<UUID> = []
+    @State private var seededProjectID: UUID? = nil
     @State private var didSeedContext = false
     @State private var sendTask: Task<Void, Never>? = nil
     @State private var cachedProjects: [GenerationProject] = []
@@ -93,6 +94,14 @@ struct ChatView: View {
 
     private var selectedProjects: [GenerationProject] {
         cachedProjects.filter { selectedProjectIDs.contains($0.id) }
+    }
+
+    /// Projects sent as API context — selected pills plus the seeded doc
+    /// referenced via the prefilled `@`-mention.
+    private var contextProjects: [GenerationProject] {
+        var ids = selectedProjectIDs
+        if let s = seededProjectID { ids.insert(s) }
+        return cachedProjects.filter { ids.contains($0.id) }
     }
 
     private func rebuildProjects() {
@@ -140,8 +149,11 @@ struct ChatView: View {
             rebuildProjects()
             guard !didSeedContext else { return }
             didSeedContext = true
-            let valid = Set(cachedProjects.map { $0.id })
-            selectedProjectIDs = initialContextIDs.intersection(valid)
+            if let id = initialContextIDs.first,
+               let proj = cachedProjects.first(where: { $0.id == id }) {
+                seededProjectID = id
+                inputText = "@\(proj.outputType) "
+            }
         }
         .onChange(of: projectsData) { rebuildProjects() }
     }
@@ -202,7 +214,7 @@ struct ChatView: View {
         VStack(spacing: 0) {
             Spacer()
             VStack(spacing: 12) {
-                Image(systemName: "cursorarrow")
+                Image(systemName: "sparkles")
                     .font(.system(size: 28, weight: .light))
                     .foregroundColor(AppText.tertiary)
                 Text("Welcome to Chat")
@@ -377,7 +389,7 @@ struct ChatView: View {
         inputText = ""
         isLoading = true
         let snapshot = messages
-        let ctx = selectedProjects
+        let ctx = contextProjects
         sendTask = Task {
             let outcome = await ChatService.send(messages: snapshot, contextItems: ctx)
             await MainActor.run {
