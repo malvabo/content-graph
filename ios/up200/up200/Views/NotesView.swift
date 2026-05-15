@@ -1122,6 +1122,8 @@ private struct PinnedNoteCard: View {
 // MARK: - Notes View
 
 struct NotesView: View {
+    var newNoteTrigger: Int = 0
+    var onProfileTap: () -> Void = {}
     @EnvironmentObject private var recording: RecordingController
     @Environment(\.scenePhase) private var scenePhase
     @State private var notes: [Note] = []
@@ -1135,6 +1137,17 @@ struct NotesView: View {
     @State private var newTagName = ""
     @State private var reloadTask: Task<Void, Never>? = nil
     @FocusState private var searchFocused: Bool
+
+    private func startAudioNote() {
+        recording.begin { transcript in
+            var note = Note()
+            note.body = transcript
+            note.updatedAt = Date()
+            notes.append(note)
+            scheduleSave()
+        }
+        recording.showingSheet = true
+    }
 
     private let builtinTags = ["Starred", "Work", "Personal"]
     private var allTags: [String] { builtinTags + customTags }
@@ -1379,21 +1392,6 @@ struct NotesView: View {
                 VStack(spacing: 0) {
                     InlineTopBar(title: "Notes") {
                         TopBarPill {
-                            TopBarPillButton(systemImage: "square.and.pencil") {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                recording.begin { transcript in
-                                    var note = Note()
-                                    note.body = transcript
-                                    note.updatedAt = Date()
-                                    notes.append(note)
-                                    scheduleSave()
-                                }
-                                recording.showingSheet = true
-                            }
-                            .accessibilityLabel("New note")
-
-                            TopBarPillDivider()
-
                             TopBarPillButton(
                                 systemImage: showSearch ? "xmark" : "magnifyingglass",
                                 isActive: showSearch
@@ -1412,6 +1410,14 @@ struct NotesView: View {
                                 }
                             }
                             .accessibilityLabel(showSearch ? "Close search" : "Search")
+                        }
+
+                        TopBarPill {
+                            TopBarPillButton(systemImage: "person.crop.circle") {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                onProfileTap()
+                            }
+                            .accessibilityLabel("Profile")
                         }
                     }
 
@@ -1529,6 +1535,9 @@ struct NotesView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .inactive || phase == .background { flushSave() }
+        }
+        .onChange(of: newNoteTrigger) { _, _ in
+            startAudioNote()
         }
     }
 }
