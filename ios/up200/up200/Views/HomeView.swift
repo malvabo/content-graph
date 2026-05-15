@@ -2403,6 +2403,7 @@ private struct BrandCard: View {
 struct HomeView: View {
     var scrollToTopSignal: Int = 0
     var pendingSheet: Binding<SourceSheet?> = .constant(nil)
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var bannerController: BannerController
 
     @State private var sources: [SourceItem] = []
@@ -2451,6 +2452,14 @@ struct HomeView: View {
                                 showKeyUpdate = true
                             }
                             .accessibilityLabel("API key")
+                        }
+
+                        TopBarPill {
+                            TopBarPillButton(systemImage: "xmark") {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                dismiss()
+                            }
+                            .accessibilityLabel("Close")
                         }
                     }
 

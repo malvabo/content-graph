@@ -3,12 +3,13 @@ import SwiftUI
 // MARK: - App Tab
 
 enum AppTab: String {
-    case notes, create, library, profile
+    case notes, library
 }
 
 // MARK: - Library View
 
 struct LibraryView: View {
+    var onProfileTap: () -> Void = {}
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @State private var searchText = ""
     @State private var showSearch = false
@@ -101,6 +102,14 @@ struct LibraryView: View {
                                     if !showSearch { searchText = "" }
                                 }
                             }
+                        }
+
+                        TopBarPill {
+                            TopBarPillButton(systemImage: "person.crop.circle") {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                onProfileTap()
+                            }
+                            .accessibilityLabel("Profile")
                         }
                     }
 
@@ -747,7 +756,7 @@ private let builtInTemplates: [(title: String, subtitle: String, icon: String)] 
 ]
 
 struct ProfileView: View {
-    let selectedTab: AppTab
+    @Environment(\.dismiss) private var dismiss
     @AppStorage("custom_templates") private var customData: Data = Data()
     @AppStorage("notifications_enabled") private var notificationsEnabled: Bool = true
     @AppStorage("appearance_dark_mode") private var darkModeEnabled: Bool = true
@@ -763,7 +772,15 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
-                InlineTopBar(title: "Profile") { EmptyView() }
+                InlineTopBar(title: "Profile") {
+                    TopBarPill {
+                        TopBarPillButton(systemImage: "xmark") {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            dismiss()
+                        }
+                        .accessibilityLabel("Close")
+                    }
+                }
 
                 List {
                     SettingsRow(
@@ -825,12 +842,6 @@ struct ProfileView: View {
             .onChange(of: customData, initial: true) {
                 custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? []
             }
-            // Returning to the Profile tab should land on the settings root,
-            // not on whatever sub-page the user pushed last time. Reset the
-            // nav stack as soon as the selection leaves this tab.
-            .onChange(of: selectedTab) { _, new in
-                if new != .profile { path.removeAll() }
-            }
             // Hide the AppTabBar synchronously the moment the path changes, so
             // pushed pages (Templates list / editor) don't briefly show the bar
             // while sliding in. The destinations still set hideTabBar in their
@@ -838,6 +849,7 @@ struct ProfileView: View {
             .onChange(of: path, initial: true) { _, newPath in
                 chrome.hideTabBar = !newPath.isEmpty
             }
+            .onDisappear { chrome.hideTabBar = false }
             .navigationDestination(for: ProfileDestination.self) { dest in
                 switch dest {
                 case .templates:
@@ -1428,62 +1440,45 @@ private struct TemplatePromptEnhancer {
 
 private struct AppTabBar: View {
     @Binding var selected: AppTab
-    let pillNS: Namespace.ID
+    @Binding var showCreateMenu: Bool
 
     @State private var impact = UIImpactFeedbackGenerator(style: .light)
-
-    private let mainItems: [(AppTab, String, String)] = [
-        (.notes,     "doc.text",   "Notes"),
-        (.library,   "book.closed", "Library"),
-        (.profile,   "person.crop.circle", "Profile"),
-    ]
 
     private static let selectSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
 
     var body: some View {
         HStack(spacing: 12) {
-            HStack(spacing: 4) {
-                ForEach(mainItems, id: \.0.rawValue) { tab, icon, label in
-                    Button {
-                        impact.impactOccurred()
-                        withAnimation(Self.selectSpring) {
-                            selected = tab
-                        }
-                    } label: {
-                        VStack(spacing: 3) {
-                            Image(systemName: icon)
-                                .symbolVariant(selected == tab ? .fill : .none)
-                                .font(.system(size: 19, weight: .regular))
-                                .transaction { $0.animation = nil }
-                            Text(label)
-                                .font(.system(size: 11, weight: .regular))
-                        }
-                        .foregroundColor(selected == tab ? .white : Color.white.opacity(0.45))
-                        .frame(maxWidth: .infinity, minHeight: 48)
-                        .background(
-                            ZStack {
-                                if selected == tab {
-                                    Capsule(style: .continuous)
-                                        .fill(Color.white.opacity(0.14))
-                                        .overlay(
-                                            Capsule(style: .continuous)
-                                                .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
-                                        )
-                                        .padding(.horizontal, 2)
-                                        .padding(.vertical, 1)
-                                        .matchedGeometryEffect(id: "tabPill", in: pillNS)
-                                }
-                            }
-                        )
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(label)
-                    .accessibilityAddTraits(selected == tab ? [.isButton, .isSelected] : .isButton)
-                }
+            tabPill(.notes, icon: "doc.text", label: "Notes")
+            plusButton
+            tabPill(.library, icon: "book.closed", label: "Library")
+        }
+        .onAppear { impact.prepare() }
+    }
+
+    @ViewBuilder
+    private func tabPill(_ tab: AppTab, icon: String, label: String) -> some View {
+        Button {
+            impact.impactOccurred()
+            withAnimation(Self.selectSpring) {
+                selected = tab
             }
+        } label: {
+            VStack(spacing: 3) {
+                Image(systemName: icon)
+                    .symbolVariant(selected == tab ? .fill : .none)
+                    .font(.system(size: 19, weight: .regular))
+                    .transaction { $0.animation = nil }
+                Text(label)
+                    .font(.system(size: 11, weight: .regular))
+            }
+            .foregroundColor(selected == tab ? .white : Color.white.opacity(0.45))
+            .frame(maxWidth: .infinity, minHeight: 48)
             .padding(.horizontal, 6)
             .padding(.vertical, 6)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(selected == tab ? 0.14 : 0.04))
+            )
             .appLiquidGlass(in: Capsule(style: .continuous))
             .overlay(
                 Capsule(style: .continuous)
@@ -1496,43 +1491,142 @@ private struct AppTabBar: View {
                         lineWidth: 0.5
                     )
             )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(selected == tab ? [.isButton, .isSelected] : .isButton)
+    }
 
-            Button {
-                impact.impactOccurred()
-                withAnimation(Self.selectSpring) {
-                    selected = .create
-                }
-            } label: {
-                let isActive = selected == .create
-                Image(systemName: "plus")
-                    .font(.system(size: 19, weight: .regular))
+    private var plusButton: some View {
+        Button {
+            impact.impactOccurred()
+            withAnimation(.spring(response: 0.36, dampingFraction: 0.78)) {
+                showCreateMenu.toggle()
+            }
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 24, weight: .regular))
+                .foregroundColor(AppText.primary)
+                .rotationEffect(.degrees(showCreateMenu ? 45 : 0))
+                .frame(width: 64, height: 64)
+                .background(
+                    Circle().fill(Color.white.opacity(showCreateMenu ? 0.18 : 0.06))
+                )
+                .appLiquidGlass(in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(showCreateMenu ? 0.45 : 0.32),
+                                    Color.white.opacity(showCreateMenu ? 0.18 : 0.10)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 0.5
+                        )
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(showCreateMenu ? "Close create menu" : "Create")
+    }
+}
+
+// MARK: - Create Menu
+
+private struct CreateMenuOverlay: View {
+    let onAddNote: () -> Void
+    let onCreateContent: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture { onDismiss() }
+                .transition(.opacity)
+
+            HStack(spacing: 24) {
+                CreateMenuOption(
+                    icon: "mic.fill",
+                    title: "Add a note",
+                    subtitle: "Voice note",
+                    action: onAddNote
+                )
+                .transition(
+                    .scale(scale: 0.5, anchor: .bottomTrailing)
+                    .combined(with: .opacity)
+                    .combined(with: .offset(x: 40, y: 40))
+                )
+
+                CreateMenuOption(
+                    icon: "sparkles",
+                    title: "Create content",
+                    subtitle: "Generate",
+                    action: onCreateContent
+                )
+                .transition(
+                    .scale(scale: 0.5, anchor: .bottomLeading)
+                    .combined(with: .opacity)
+                    .combined(with: .offset(x: -40, y: 40))
+                )
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 110)
+        }
+    }
+}
+
+private struct CreateMenuOption: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            action()
+        }) {
+            VStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 22, weight: .regular))
                     .foregroundColor(AppText.primary)
-                    .frame(width: 60, height: 60)
+                    .frame(width: 56, height: 56)
                     .background(
-                        Circle().fill(Color.white.opacity(isActive ? 0.14 : 0))
+                        Circle().fill(Color.white.opacity(0.10))
                     )
                     .appLiquidGlass(in: Circle())
                     .overlay(
                         Circle()
                             .stroke(
                                 LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(isActive ? 0.40 : 0.28),
-                                        Color.white.opacity(isActive ? 0.14 : 0.08)
-                                    ],
+                                    colors: [Color.white.opacity(0.40), Color.white.opacity(0.12)],
                                     startPoint: .top,
                                     endPoint: .bottom
                                 ),
                                 lineWidth: 0.5
                             )
                     )
-                    .contentShape(Circle())
+
+                VStack(spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(AppText.primary)
+                    Text(subtitle)
+                        .font(.system(size: 11))
+                        .foregroundColor(AppText.tertiary)
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Create")
-            .accessibilityAddTraits(selected == .create ? [.isButton, .isSelected] : .isButton)
+            .frame(width: 120)
+            .contentShape(Rectangle())
         }
-        .onAppear { impact.prepare() }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
 }
 
@@ -1541,10 +1635,13 @@ private struct AppTabBar: View {
 struct ContentView: View {
     @State private var selectedTab: AppTab = .notes
     @State private var keyboardVisible = false
+    @State private var showCreateMenu = false
+    @State private var showCreate = false
+    @State private var showProfile = false
+    @State private var newNoteTrigger = 0
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
     @StateObject private var recordingController = RecordingController()
-    @Namespace private var tabPillNS
 
     init() {
         UITabBar.appearance().isHidden = true
@@ -1553,10 +1650,13 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: .top) {
             TabView(selection: $selectedTab) {
-                NotesView().tag(AppTab.notes)
-                HomeView().tag(AppTab.create)
-                LibraryView().tag(AppTab.library)
-                ProfileView(selectedTab: selectedTab).tag(AppTab.profile)
+                NotesView(
+                    newNoteTrigger: newNoteTrigger,
+                    onProfileTap: { showProfile = true }
+                )
+                .tag(AppTab.notes)
+                LibraryView(onProfileTap: { showProfile = true })
+                    .tag(AppTab.library)
             }
             .environmentObject(bannerController)
             .environmentObject(chromeController)
@@ -1565,13 +1665,23 @@ struct ContentView: View {
                 NoteVoiceSheet()
                     .environmentObject(recordingController)
             }
+            .fullScreenCover(isPresented: $showCreate) {
+                HomeView()
+                    .environmentObject(bannerController)
+                    .environmentObject(chromeController)
+                    .environmentObject(recordingController)
+            }
+            .fullScreenCover(isPresented: $showProfile) {
+                ProfileView()
+                    .environmentObject(chromeController)
+            }
             // Tab bar is the inner inset (anchored at screen bottom).
             // Mini bar is the outer inset (stacks above the tab bar naturally).
             // This ordering ensures correct visual stacking on all iOS versions:
             // outer inset content appears above inner inset content.
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if !keyboardVisible && !chromeController.hideTabBar {
-                    AppTabBar(selected: $selectedTab, pillNS: tabPillNS)
+                    AppTabBar(selected: $selectedTab, showCreateMenu: $showCreateMenu)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 6)
                 }
@@ -1628,9 +1738,38 @@ struct ContentView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .zIndex(2)
             }
+
+            if showCreateMenu {
+                CreateMenuOverlay(
+                    onAddNote: {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) {
+                            showCreateMenu = false
+                        }
+                        selectedTab = .notes
+                        newNoteTrigger &+= 1
+                    },
+                    onCreateContent: {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) {
+                            showCreateMenu = false
+                        }
+                        // Defer slightly so the menu close animation reads
+                        // before the fullScreenCover slides in.
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                            showCreate = true
+                        }
+                    },
+                    onDismiss: {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) {
+                            showCreateMenu = false
+                        }
+                    }
+                )
+                .zIndex(3)
+            }
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
+        .animation(.spring(response: 0.40, dampingFraction: 0.78), value: showCreateMenu)
     }
 }
 
