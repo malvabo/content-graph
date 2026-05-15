@@ -170,12 +170,72 @@ private func outputTypesList(_ items: [GenerationProject]) -> String {
     return labels.joined(separator: ", ")
 }
 
+private struct LibraryDocCard: View {
+    let seed: Int
+    var width: CGFloat = 42
+    var height: CGFloat = 52
+
+    var body: some View {
+        let widths = Self.lineWidths(for: seed)
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(Color.white.opacity(0.07))
+            .overlay(
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(0..<5, id: \.self) { i in
+                        Capsule()
+                            .fill(Color.white.opacity(i == 0 ? 0.55 : 0.20))
+                            .frame(width: widths[i], height: i == 0 ? 2.5 : 1.5)
+                    }
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+            )
+            .frame(width: width, height: height)
+    }
+
+    private static func lineWidths(for seed: Int) -> [CGFloat] {
+        var h = seed
+        return (0..<5).map { _ in
+            h = h &* 1664525 &+ 1013904223
+            return 8 + CGFloat(h & 0x17)
+        }
+    }
+}
+
+private struct LibraryGroupThumb: View {
+    let title: String
+    let count: Int
+
+    private var seed: Int {
+        title.unicodeScalars.reduce(0) { $0 &* 31 &+ Int($1.value) }
+    }
+
+    var body: some View {
+        ZStack {
+            if count > 1 {
+                LibraryDocCard(seed: seed &+ 1)
+                    .opacity(0.55)
+                    .rotationEffect(.degrees(-7))
+                    .offset(x: -5, y: 3)
+            }
+            LibraryDocCard(seed: seed)
+        }
+        .frame(width: 52, height: 56)
+    }
+}
+
 private struct LibraryGroupRow: View {
     let title: String
     let items: [GenerationProject]
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
+            LibraryGroupThumb(title: title, count: items.count)
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.appRowTitle)
@@ -189,7 +249,7 @@ private struct LibraryGroupRow: View {
             Spacer()
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.vertical, 12)
     }
 }
 
