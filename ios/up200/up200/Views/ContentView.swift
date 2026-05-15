@@ -188,7 +188,6 @@ struct ProjectGroupDetailView: View {
     let initialItems: [GenerationProject]
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var recording: RecordingController
     @EnvironmentObject private var chrome: ChromeController
 
     @State private var selectedIndex: Int = 0
@@ -207,6 +206,8 @@ struct ProjectGroupDetailView: View {
     @State private var aiPreviewIcon: String = "sparkles"
     @State private var aiPreviewInstruction: String = ""
     @State private var aiSourceSnapshot: String = ""
+    @State private var editTextBeforeDictation: String = ""
+    @StateObject private var dictation = NoteDictation()
     @FocusState private var editorFocused: Bool
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
@@ -425,71 +426,98 @@ struct ProjectGroupDetailView: View {
         .onChange(of: selectedIndex) {
             if items.indices.contains(selectedIndex) { editText = bodyText(for: items[selectedIndex]) }
         }
+        .onChange(of: dictation.transcript) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            if editTextBeforeDictation.isEmpty {
+                editText = trimmed
+            } else {
+                let needsSeparator = !editTextBeforeDictation.hasSuffix("\n") && !editTextBeforeDictation.hasSuffix(" ")
+                editText = editTextBeforeDictation + (needsSeparator ? " " : "") + trimmed
+            }
+        }
+        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enable Microphone and Speech Recognition in Settings to dictate.")
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            HStack(spacing: 10) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    showAIMenu = true
-                } label: {
-                    Group {
-                        if isAIProcessing {
-                            ProgressView()
-                                .controlSize(.small)
-                                .tint(.white)
-                        } else {
-                            Image(systemName: "sparkles")
+            Group {
+                if dictation.isRecording {
+                    DictationControls(
+                        dictation: dictation,
+                        onStart: {},
+                        onCancel: {
+                            dictation.cancel()
+                            editText = editTextBeforeDictation
+                        },
+                        onConfirm: {
+                            dictation.stop()
+                        }
+                    )
+                    .frame(maxWidth: .infinity)
+                } else {
+                    HStack(spacing: 10) {
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            showAIMenu = true
+                        } label: {
+                            Group {
+                                if isAIProcessing {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 17, weight: .semibold))
+                                        .foregroundColor(AppText.primary)
+                                }
+                            }
+                            .frame(width: 52, height: 52)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isAIProcessing)
+                        .accessibilityLabel("AI actions")
+
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            showChat = true
+                        } label: {
+                            Image(systemName: "bubble.left.and.text.bubble.right")
                                 .font(.system(size: 17, weight: .semibold))
                                 .foregroundColor(AppText.primary)
+                                .frame(width: 52, height: 52)
+                                .background(Color.white.opacity(0.12))
+                                .clipShape(Circle())
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Ask AI chat")
+
+                        Spacer()
+
+                        Button {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            editTextBeforeDictation = editText
+                            dictation.start()
+                        } label: {
+                            Image(systemName: "mic.fill")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(AppText.primary)
+                                .frame(width: 52, height: 52)
+                                .background(Color.white.opacity(0.12))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Dictate into this content")
                     }
-                    .frame(width: 52, height: 52)
-                    .background(Color.white.opacity(0.12))
-                    .clipShape(Circle())
                 }
-                .buttonStyle(.plain)
-                .disabled(isAIProcessing)
-                .accessibilityLabel("AI actions")
-
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    showChat = true
-                } label: {
-                    Image(systemName: "bubble.left.and.text.bubble.right")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(AppText.primary)
-                        .frame(width: 52, height: 52)
-                        .background(Color.white.opacity(0.12))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Ask AI chat")
-
-                Spacer()
-
-                Button {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    recording.begin { transcript in
-                        var note = Note()
-                        note.body = transcript
-                        note.updatedAt = Date()
-                        var existing = NotesStore.load()
-                        existing.append(note)
-                        NotesStore.saveInBackground(existing)
-                    }
-                    recording.showingSheet = true
-                } label: {
-                    let micBusy = recording.isRecording || recording.isPaused
-                    Image(systemName: "mic.fill")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(AppText.primary)
-                        .frame(width: 52, height: 52)
-                        .background(Color.white.opacity(0.12))
-                        .clipShape(Circle())
-                        .opacity(micBusy ? 0.45 : 1.0)
-                }
-                .buttonStyle(.plain)
-                .disabled(recording.isRecording || recording.isPaused)
-                .accessibilityLabel((recording.isRecording || recording.isPaused) ? "Recording in progress" : "Record voice note")
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
@@ -499,6 +527,7 @@ struct ProjectGroupDetailView: View {
                     .frame(height: 28).offset(y: -28).allowsHitTesting(false)
             }
             .background(bg)
+            .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
         }
         .sheet(isPresented: $showAIMenu) {
             AIActionsSheet { label, icon, instruction in
@@ -558,6 +587,7 @@ struct ProjectGroupDetailView: View {
             chrome.hideTabBar = false
             aiTransformTask?.cancel()
             copiedResetTask?.cancel()
+            dictation.stop()
         }
     }
 
