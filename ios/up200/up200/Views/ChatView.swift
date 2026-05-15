@@ -419,7 +419,7 @@ private struct MessageBubble: View {
         HStack(alignment: .bottom, spacing: 0) {
             if isUser { Spacer(minLength: 56) }
 
-            Text(message.content)
+            Text(isUser ? AttributedString(message.content) : AppMarkdown.render(message.content))
                 .font(.appBody)
                 .foregroundColor(isUser ? .white : Color.white.opacity(0.88))
                 .lineSpacing(3)

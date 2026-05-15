@@ -215,6 +215,7 @@ struct ProjectGroupDetailView: View {
     @State private var editTextBeforeDictation: String = ""
     @StateObject private var dictation = NoteDictation()
     @FocusState private var editorFocused: Bool
+    @State private var isEditingBody: Bool = false
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
 
@@ -408,14 +409,36 @@ struct ProjectGroupDetailView: View {
                                     .padding(.top, 8)
                                     .allowsHitTesting(false)
                             }
-                            TextEditor(text: $editText)
-                                .appBodyText()
-                                .scrollContentBackground(.hidden)
-                                .background(Color.clear)
-                                .tint(.white)
-                                .padding(.horizontal, 16)
-                                .contentMargins(.bottom, 96, for: .scrollContent)
-                                .focused($editorFocused)
+                            if isEditingBody || dictation.isRecording {
+                                TextEditor(text: $editText)
+                                    .appBodyText()
+                                    .scrollContentBackground(.hidden)
+                                    .background(Color.clear)
+                                    .tint(.white)
+                                    .padding(.horizontal, 16)
+                                    .contentMargins(.bottom, 96, for: .scrollContent)
+                                    .focused($editorFocused)
+                                    .onChange(of: editorFocused) { _, focused in
+                                        if !focused && !dictation.isRecording {
+                                            isEditingBody = false
+                                        }
+                                    }
+                            } else {
+                                ScrollView {
+                                    Text(AppMarkdown.render(editText))
+                                        .appBodyText()
+                                        .textSelection(.enabled)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 20)
+                                        .padding(.top, 8)
+                                        .padding(.bottom, 96)
+                                }
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    isEditingBody = true
+                                    DispatchQueue.main.async { editorFocused = true }
+                                }
+                            }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     }
@@ -1884,7 +1907,7 @@ struct AIPreviewSheet: View {
 
             ZStack {
                 ScrollView(showsIndicators: false) {
-                    Text(previewText.isEmpty ? " " : previewText)
+                    Text(previewText.isEmpty ? AttributedString(" ") : AppMarkdown.render(previewText))
                         .appBodyText()
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 16)
@@ -1958,4 +1981,52 @@ struct AIPreviewSheet: View {
 
 #Preview {
     ContentView()
+}
+
+// MARK: - Markdown rendering
+
+enum AppMarkdown {
+    static func render(_ raw: String) -> AttributedString {
+        let processed = promoteHeadersToBold(raw)
+        let opts = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: .inlineOnlyPreservingWhitespace
+        )
+        if let attr = try? AttributedString(markdown: processed, options: opts) {
+            return attr
+        }
+        return AttributedString(raw)
+    }
+
+    // The inline-only markdown parser doesn't understand "## Header" lines,
+    // so we rewrite them as **Header** before parsing. That way users see a
+    // bolded header instead of literal hashes.
+    private static func promoteHeadersToBold(_ raw: String) -> String {
+        raw.split(separator: "\n", omittingEmptySubsequences: false)
+            .map(boldedHeaderLine)
+            .joined(separator: "\n")
+    }
+
+    private static func boldedHeaderLine(_ line: Substring) -> String {
+        var idx = line.startIndex
+        while idx < line.endIndex, line[idx] == " " { idx = line.index(after: idx) }
+        let indent = line[line.startIndex..<idx]
+        let rest = line[idx...]
+        var hashCount = 0
+        var cursor = rest.startIndex
+        while cursor < rest.endIndex, rest[cursor] == "#", hashCount < 6 {
+            hashCount += 1
+            cursor = rest.index(after: cursor)
+        }
+        guard hashCount >= 1,
+              cursor < rest.endIndex,
+              rest[cursor] == " "
+        else { return String(line) }
+        let content = rest[rest.index(after: cursor)...]
+            .trimmingCharacters(in: .whitespaces)
+        guard !content.isEmpty else { return String(line) }
+        if content.hasPrefix("**") && content.hasSuffix("**") {
+            return "\(indent)\(content)"
+        }
+        return "\(indent)**\(content)**"
+    }
 }
