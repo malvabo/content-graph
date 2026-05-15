@@ -662,7 +662,7 @@ struct ImportSheetView: View {
             Text("Import content")
                 .font(.appNavTitle)
                 .foregroundColor(Color.white.opacity(0.88))
-                .padding(.top, 4)
+                .padding(.top, 16)
                 .padding(.bottom, 2)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
