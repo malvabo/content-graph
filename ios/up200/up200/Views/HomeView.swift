@@ -2470,20 +2470,30 @@ struct HomeView: View {
                     bannerController.isVisible = false
                     generationFailReason = firstError?.userMessage ?? ""
                     generationFailed = true
-                } else {
-                    saveToLibrary(results, sources: capturedSources)
+                } else if saveToLibrary(results, sources: capturedSources) {
                     bannerController.isReady = true
+                } else {
+                    // Persistence refused (corrupt blob) or JSON encode failed.
+                    // Showing "Content ready" here would mislead the user into
+                    // tapping Open and seeing stale content because the new
+                    // batch never landed in projectsData.
+                    bannerController.isVisible = false
+                    generationFailReason = "Couldn't save the generated content. Your library file may be corrupted — try restarting the app."
+                    generationFailed = true
                 }
             }
         }
     }
 
-    private func saveToLibrary(_ results: [GeneratedResult], sources: [SourceItem]) {
+    /// Returns true if the new batch was persisted to projectsData,
+    /// false if the existing blob is corrupt (we refuse to overwrite —
+    /// see BlobLoad doc) or the JSON encode of the combined array fails.
+    private func saveToLibrary(_ results: [GeneratedResult], sources: [SourceItem]) -> Bool {
         var projects: [GenerationProject]
         switch loadBlob([GenerationProject].self, from: projectsData) {
         case .empty: projects = []
         case .ok(let existing): projects = existing
-        case .corrupt: return
+        case .corrupt: return false
         }
 
         let sourceTitle = sources.first?.label ?? "Untitled"
@@ -2497,11 +2507,11 @@ struct HomeView: View {
                 date: now.addingTimeInterval(-Double(idx) * 0.001)
             )
         }
-        lastBatchIDs = newProjects.map { $0.id }
         projects.insert(contentsOf: newProjects, at: 0)
-        if let encoded = try? JSONEncoder().encode(projects) {
-            projectsData = encoded
-        }
+        guard let encoded = try? JSONEncoder().encode(projects) else { return false }
+        projectsData = encoded
+        lastBatchIDs = newProjects.map { $0.id }
+        return true
     }
 }
 
