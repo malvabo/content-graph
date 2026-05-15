@@ -1255,7 +1255,10 @@ struct NotesView: View {
         .buttonStyle(.plain)
         .listRowInsets(EdgeInsets())
         .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
+        .listRowSeparator(.visible)
+        .listRowSeparatorTint(AppInk.solid(0.06))
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+        .alignmentGuide(.listRowSeparatorTrailing) { d in d[.trailing] - 20 }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 delete(note)
