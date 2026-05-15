@@ -1977,18 +1977,24 @@ private struct CreateMenuOverlay: View {
     let onCreateContent: () -> Void
     let onDismiss: () -> Void
 
-    // The three pills stack vertically above the plus button when shown.
-    // All collapse to offset (0, 0) at the plus center so they appear
-    // to physically grow out of the plus body. ~68pt between rows keeps
-    // breathing space between pills without crowding the screen.
-    private let bottomPillDY: CGFloat = -82
-    private let middlePillDY: CGFloat = -150
-    private let topPillDY:    CGFloat = -218
+    // Three pills fan around the plus button in an arc. All collapse to
+    // offset (0, 0) at the plus center so they appear to physically grow
+    // out of the plus body and then peel outward to their final spots.
+    //   • "Add a note"      → upper-left  (~140° from +x)
+    //   • "Draw my idea"    → straight up (~90°)
+    //   • "Create content"  → upper-right (~40°)
+    // x deltas keep pills clear of the screen edges on iPhone-class widths.
+    private let leftPillDX:   CGFloat = -100
+    private let leftPillDY:   CGFloat = -88
+    private let centerPillDX: CGFloat = 0
+    private let centerPillDY: CGFloat = -156
+    private let rightPillDX:  CGFloat = 100
+    private let rightPillDY:  CGFloat = -88
 
     // Vertical distance from the screen bottom to the plus button's
     // center: AppTabBar bottom padding (6) + half of the 64pt plus
     // button (32). The overlay's bottom-aligned ZStack uses this as
-    // padding so both options spawn at the plus button's center.
+    // padding so all options spawn at the plus button's center.
     private let plusCenterFromBottom: CGFloat = 38
 
     var body: some View {
@@ -2011,7 +2017,7 @@ private struct CreateMenuOverlay: View {
                 )
                 .scaleEffect(show ? 1 : 0.18, anchor: .bottom)
                 .opacity(show ? 1 : 0)
-                .offset(y: show ? topPillDY : 0)
+                .offset(x: show ? rightPillDX : 0, y: show ? rightPillDY : 0)
                 .blur(radius: show ? 0 : 4)
 
                 CreateMenuOption(
@@ -2021,7 +2027,7 @@ private struct CreateMenuOverlay: View {
                 )
                 .scaleEffect(show ? 1 : 0.18, anchor: .bottom)
                 .opacity(show ? 1 : 0)
-                .offset(y: show ? middlePillDY : 0)
+                .offset(x: show ? centerPillDX : 0, y: show ? centerPillDY : 0)
                 .blur(radius: show ? 0 : 4)
 
                 CreateMenuOption(
@@ -2031,7 +2037,7 @@ private struct CreateMenuOverlay: View {
                 )
                 .scaleEffect(show ? 1 : 0.18, anchor: .bottom)
                 .opacity(show ? 1 : 0)
-                .offset(y: show ? bottomPillDY : 0)
+                .offset(x: show ? leftPillDX : 0, y: show ? leftPillDY : 0)
                 .blur(radius: show ? 0 : 4)
             }
             .padding(.bottom, plusCenterFromBottom)
