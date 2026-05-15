@@ -1973,14 +1973,17 @@ private struct CreateMenuOverlay: View {
     /// button's center; true fans them out into their final positions.
     let show: Bool
     let onAddNote: () -> Void
+    let onDrawIdea: () -> Void
     let onCreateContent: () -> Void
     let onDismiss: () -> Void
 
-    // The two pills stack vertically above the plus button when shown.
-    // Both collapse to offset (0, 0) at the plus center so they appear
-    // to physically grow out of the plus body.
-    private let topPillDY: CGFloat = -150
+    // The three pills stack vertically above the plus button when shown.
+    // All collapse to offset (0, 0) at the plus center so they appear
+    // to physically grow out of the plus body. ~68pt between rows keeps
+    // breathing space between pills without crowding the screen.
     private let bottomPillDY: CGFloat = -82
+    private let middlePillDY: CGFloat = -150
+    private let topPillDY:    CGFloat = -218
 
     // Vertical distance from the screen bottom to the plus button's
     // center: AppTabBar bottom padding (6) + half of the 64pt plus
@@ -2009,6 +2012,16 @@ private struct CreateMenuOverlay: View {
                 .scaleEffect(show ? 1 : 0.18, anchor: .bottom)
                 .opacity(show ? 1 : 0)
                 .offset(y: show ? topPillDY : 0)
+                .blur(radius: show ? 0 : 4)
+
+                CreateMenuOption(
+                    icon: "scribble.variable",
+                    title: "Draw my idea",
+                    action: onDrawIdea
+                )
+                .scaleEffect(show ? 1 : 0.18, anchor: .bottom)
+                .opacity(show ? 1 : 0)
+                .offset(y: show ? middlePillDY : 0)
                 .blur(radius: show ? 0 : 4)
 
                 CreateMenuOption(
@@ -2097,6 +2110,40 @@ private struct AnimatedMicIcon: View {
     }
 }
 
+/// Scribble glyph for the "Draw my idea" fan-menu option. Uses the
+/// `scribble.variable` SF Symbol with iterative variable-color so the
+/// squiggle draws itself in a slow loop, and adds a soft inky shadow
+/// underneath so the strokes feel freshly laid down.
+private struct AnimatedDrawIcon: View {
+    var size: CGFloat = 15
+    @State private var bob = false
+
+    var body: some View {
+        ZStack {
+            Image(systemName: "scribble.variable")
+                .font(.system(size: size + 4, weight: .semibold))
+                .foregroundColor(AppText.primary)
+                .blur(radius: 5)
+                .opacity(bob ? 0.35 : 0.18)
+                .scaleEffect(bob ? 1.04 : 0.86)
+
+            Image(systemName: "scribble.variable")
+                .font(.system(size: size, weight: .semibold))
+                .foregroundColor(AppText.primary)
+                .symbolEffect(
+                    .variableColor.iterative.reversing,
+                    options: .repeat(.continuous)
+                )
+                .rotationEffect(.degrees(bob ? 2 : -2), anchor: .center)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                bob = true
+            }
+        }
+    }
+}
+
 private struct CreateMenuOption: View {
     let icon: String
     let title: String
@@ -2110,8 +2157,9 @@ private struct CreateMenuOption: View {
             HStack(spacing: 10) {
                 Group {
                     switch icon {
-                    case "sparkles":  AnimatedMagicIcon(size: 15)
-                    case "mic.fill":  AnimatedMicIcon(size: 15)
+                    case "sparkles":          AnimatedMagicIcon(size: 15)
+                    case "mic.fill":          AnimatedMicIcon(size: 15)
+                    case "scribble.variable": AnimatedDrawIcon(size: 15)
                     default:
                         Image(systemName: icon)
                             .font(.system(size: 15, weight: .semibold))
@@ -2266,6 +2314,14 @@ struct ContentView: View {
                     }
                     selectedTab = .notes
                     newNoteTrigger &+= 1
+                },
+                onDrawIdea: {
+                    // Placeholder: the drawing surface isn't built yet, so
+                    // just close the menu so the tap has a visible result.
+                    // Wire the destination here once the canvas exists.
+                    withAnimation(SimpleCreateBar.menuSpring) {
+                        showCreateMenu = false
+                    }
                 },
                 onCreateContent: {
                     withAnimation(SimpleCreateBar.menuSpring) {
