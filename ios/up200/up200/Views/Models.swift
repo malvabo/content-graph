@@ -216,6 +216,171 @@ struct AmbientBackground: View {
     }
 }
 
+// MARK: - Empty-state illustrations
+
+/// Hairline-outline notepad illustration for the Notes empty state.
+/// Spiral binding dots on top, a paper outline with a stack of subtle
+/// "text lines" inside — same elegant outline language as iOS system
+/// empty illustrations (Inbox basket, Reminders empty, etc.).
+struct NotesIllustration: View {
+    var body: some View {
+        ZStack {
+            HStack(spacing: 14) {
+                ForEach(0..<5, id: \.self) { _ in
+                    Circle()
+                        .stroke(AppInk.solid(0.24), lineWidth: 1.2)
+                        .frame(width: 7, height: 7)
+                }
+            }
+            .offset(y: -82)
+
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(AppInk.solid(0.26), lineWidth: 1.4)
+                .frame(width: 134, height: 158)
+                .overlay(
+                    VStack(alignment: .leading, spacing: 14) {
+                        ForEach(0..<5, id: \.self) { i in
+                            Capsule()
+                                .fill(AppInk.solid(0.14))
+                                .frame(width: i == 4 ? 52 : 92, height: 4)
+                        }
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.top, 24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                )
+                .offset(y: 6)
+        }
+        .frame(width: 180, height: 190)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Hairline-outline book-stack illustration for the Library empty state.
+/// Three offset book outlines with a subtle dotted texture on the middle
+/// volume — echoes the "container + perforated surface" of the reference.
+struct LibraryIllustration: View {
+    var body: some View {
+        ZStack {
+            book(width: 96,  height: 124, offset: CGSize(width: -32, height: -10), tint: 0.16, withDots: false)
+            book(width: 108, height: 138, offset: CGSize(width: 0,   height: 4),   tint: 0.22, withDots: true)
+            book(width: 96,  height: 130, offset: CGSize(width: 32,  height: 14),  tint: 0.18, withDots: false)
+        }
+        .frame(width: 200, height: 180)
+        .accessibilityHidden(true)
+    }
+
+    private func book(width: CGFloat, height: CGFloat, offset: CGSize, tint: Double, withDots: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .stroke(AppInk.solid(tint), lineWidth: 1.4)
+            .frame(width: width, height: height)
+            .overlay(
+                VStack(spacing: 0) {
+                    Capsule()
+                        .fill(AppInk.solid(tint * 0.7))
+                        .frame(width: width * 0.5, height: 3)
+                        .padding(.top, 14)
+                    if withDots {
+                        Spacer(minLength: 8)
+                        VStack(spacing: 6) {
+                            ForEach(0..<4, id: \.self) { _ in
+                                HStack(spacing: 6) {
+                                    ForEach(0..<6, id: \.self) { _ in
+                                        Circle()
+                                            .fill(AppInk.solid(tint * 0.55))
+                                            .frame(width: 2.4, height: 2.4)
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(minLength: 8)
+                    } else {
+                        Spacer()
+                    }
+                    Capsule()
+                        .fill(AppInk.solid(tint * 0.7))
+                        .frame(width: width * 0.28, height: 3)
+                        .padding(.bottom, 14)
+                }
+            )
+            .offset(offset)
+    }
+}
+
+/// Outline-style plus CTA used by empty states. Thin hairline stroke,
+/// no fill — preserves the illustration's outline language. Optional
+/// `subtitle` for a one-word affordance like "New note".
+struct EmptyStatePlusButton: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: "plus")
+                    .font(.system(size: 13, weight: .semibold))
+                Text(title)
+                    .font(.appLabelBold)
+            }
+            .foregroundColor(AppText.primary)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 12)
+            .background(
+                Capsule(style: .continuous)
+                    .stroke(AppInk.solid(0.22), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Composed empty-state block: illustration + title + optional subtitle +
+/// optional plus CTA. Keeps the empty branches in NotesView/LibraryView
+/// declarative and visually consistent.
+struct EmptyStateView<Illustration: View>: View {
+    let illustration: Illustration
+    let title: String
+    let subtitle: String?
+    let actionTitle: String?
+    let action: (() -> Void)?
+
+    init(
+        illustration: Illustration,
+        title: String,
+        subtitle: String? = nil,
+        actionTitle: String? = nil,
+        action: (() -> Void)? = nil
+    ) {
+        self.illustration = illustration
+        self.title = title
+        self.subtitle = subtitle
+        self.actionTitle = actionTitle
+        self.action = action
+    }
+
+    var body: some View {
+        VStack(spacing: 22) {
+            illustration
+            VStack(spacing: 6) {
+                Text(title)
+                    .font(.appBodyBold)
+                    .foregroundColor(AppText.secondary)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.appSubtext)
+                        .foregroundColor(AppText.tertiary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            if let actionTitle, let action {
+                EmptyStatePlusButton(title: actionTitle, action: action)
+                    .padding(.top, 4)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
 /// Result of decoding a JSON blob from persistent storage.
 ///
 /// `.empty` and `.ok` are both safe to overwrite; `.corrupt` means the bytes

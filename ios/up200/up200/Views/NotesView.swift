@@ -1177,23 +1177,36 @@ struct NotesView: View {
     private func notesList(_ items: [Note], splitPinned: Bool = false, emptyTitle: String, emptySubtitle: String?) -> some View {
         let pinned = splitPinned ? items.filter { $0.isPinned } : []
         let main = splitPinned ? items.filter { !$0.isPinned } : items
+        // Only show the create CTA in the true "no notes yet" state — for
+        // search/filter empty results the plus would suggest the wrong action.
+        let isPristineEmpty = searchText.isEmpty && selectedFilter == nil && !showSearch
 
         if pinned.isEmpty && main.isEmpty {
-            VStack {
-                Spacer()
-                VStack(spacing: 12) {
-                    Image(systemName: (searchText.isEmpty && selectedFilter == nil && !showSearch) ? "note.text" : "magnifyingglass")
-                        .font(.system(size: 36))
-                        .foregroundColor(AppInk.solid(0.20))
-                    Text(emptyTitle)
-                        .foregroundColor(AppInk.solid(0.30))
-                    if let sub = emptySubtitle {
-                        Text(sub)
-                            .font(.footnote)
+            if isPristineEmpty {
+                EmptyStateView(
+                    illustration: NotesIllustration(),
+                    title: emptyTitle,
+                    subtitle: emptySubtitle,
+                    actionTitle: "New note",
+                    action: { startAudioNote() }
+                )
+            } else {
+                VStack {
+                    Spacer()
+                    VStack(spacing: 12) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 36))
                             .foregroundColor(AppInk.solid(0.20))
+                        Text(emptyTitle)
+                            .foregroundColor(AppInk.solid(0.30))
+                        if let sub = emptySubtitle {
+                            Text(sub)
+                                .font(.footnote)
+                                .foregroundColor(AppInk.solid(0.20))
+                        }
                     }
+                    Spacer()
                 }
-                Spacer()
             }
         } else {
             List {
@@ -1411,7 +1424,7 @@ struct NotesView: View {
                         tagFilteredNotes,
                         splitPinned: true,
                         emptyTitle: selectedFilter == nil ? "No notes yet" : "No results",
-                        emptySubtitle: selectedFilter == nil ? "Tap the pencil to write your first note" : nil
+                        emptySubtitle: selectedFilter == nil ? "Capture an idea to get started" : nil
                     )
                 }
                 .allowsHitTesting(!showSearch)

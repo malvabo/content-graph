@@ -61,22 +61,32 @@ struct LibraryView: View {
 
     @ViewBuilder
     private func libraryList(_ groups: [(title: String, items: [GenerationProject])], emptyTitle: String, emptySubtitle: String?) -> some View {
+        let isPristineEmpty = searchText.isEmpty && !showSearch
+
         if groups.isEmpty {
-            VStack {
-                Spacer()
-                VStack(spacing: 12) {
-                    Image(systemName: searchText.isEmpty && !showSearch ? "tray" : "magnifyingglass")
-                        .font(.system(size: 36))
-                        .foregroundColor(AppInk.solid(0.20))
-                    Text(emptyTitle)
-                        .foregroundColor(AppInk.solid(0.30))
-                    if let sub = emptySubtitle {
-                        Text(sub)
-                            .font(.footnote)
+            if isPristineEmpty {
+                EmptyStateView(
+                    illustration: LibraryIllustration(),
+                    title: emptyTitle,
+                    subtitle: emptySubtitle
+                )
+            } else {
+                VStack {
+                    Spacer()
+                    VStack(spacing: 12) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 36))
                             .foregroundColor(AppInk.solid(0.20))
+                        Text(emptyTitle)
+                            .foregroundColor(AppInk.solid(0.30))
+                        if let sub = emptySubtitle {
+                            Text(sub)
+                                .font(.footnote)
+                                .foregroundColor(AppInk.solid(0.20))
+                        }
                     }
+                    Spacer()
                 }
-                Spacer()
             }
         } else {
             ScrollView(showsIndicators: false) {
