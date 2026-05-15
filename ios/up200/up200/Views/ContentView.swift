@@ -754,6 +754,7 @@ struct ProfileView: View {
     @State private var custom: [CustomTemplate] = []
     @State private var path: [ProfileDestination] = []
     @State private var showLogOutConfirm = false
+    @EnvironmentObject private var chrome: ChromeController
 
     private let bg = Color(red: 0.10, green: 0.08, blue: 0.07)
     private let logoutRed = Color(red: 0.95, green: 0.40, blue: 0.32)
@@ -816,6 +817,13 @@ struct ProfileView: View {
             // nav stack as soon as the selection leaves this tab.
             .onChange(of: selectedTab) { _, new in
                 if new != .profile { path.removeAll() }
+            }
+            // Hide the AppTabBar synchronously the moment the path changes, so
+            // pushed pages (Templates list / editor) don't briefly show the bar
+            // while sliding in. The destinations still set hideTabBar in their
+            // own onAppear for defense in depth.
+            .onChange(of: path, initial: true) { _, newPath in
+                chrome.hideTabBar = !newPath.isEmpty
             }
             .navigationDestination(for: ProfileDestination.self) { dest in
                 switch dest {
