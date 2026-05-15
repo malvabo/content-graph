@@ -750,6 +750,7 @@ struct ProfileView: View {
     let selectedTab: AppTab
     @AppStorage("custom_templates") private var customData: Data = Data()
     @AppStorage("notifications_enabled") private var notificationsEnabled: Bool = true
+    @AppStorage("appearance_dark_mode") private var darkModeEnabled: Bool = true
     @AppStorage("onboarding_complete") private var onboardingComplete: Bool = false
     @State private var custom: [CustomTemplate] = []
     @State private var path: [ProfileDestination] = []
@@ -783,6 +784,18 @@ struct ProfileView: View {
                     ) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         notificationsEnabled.toggle()
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(Color.white.opacity(0.06))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+
+                    SettingsRow(
+                        title: "Appearance",
+                        trailing: .value(darkModeEnabled ? "Dark mode" : "Light mode")
+                    ) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        darkModeEnabled.toggle()
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
