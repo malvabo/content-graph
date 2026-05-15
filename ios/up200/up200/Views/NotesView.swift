@@ -1120,7 +1120,6 @@ struct NotesView: View {
     @FocusState private var searchFocused: Bool
 
     private let builtinTags = ["Starred", "Work", "Personal"]
-    private let amber = BrandColor.amber
     private var allTags: [String] { builtinTags + customTags }
 
     private var sortedNotes: [Note] {
@@ -1298,6 +1297,16 @@ struct NotesView: View {
             } label: {
                 Label("Delete", systemImage: "trash")
             }
+            .tint(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.48, green: 0.06, blue: 0.06),
+                        Color(red: 0.20, green: 0.02, blue: 0.02)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
         }
         .swipeActions(edge: .leading) {
             Button {
@@ -1310,17 +1319,6 @@ struct NotesView: View {
                 )
             }
             .tint(.orange)
-
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                toggleTag("Starred", for: note)
-            } label: {
-                Label(
-                    note.tags.contains("Starred") ? "Unstar" : "Star",
-                    systemImage: note.tags.contains("Starred") ? "star.slash" : "star.fill"
-                )
-            }
-            .tint(amber)
         }
         .contextMenu {
             Button {
