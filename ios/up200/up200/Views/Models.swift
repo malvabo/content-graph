@@ -60,33 +60,36 @@ enum AppInk {
     }
 }
 
-/// Adaptive app-background tokens. The dark variant matches the original
-/// hand-tuned dark-brown wash; the light variant is a soft warm-tinted
-/// near-white so existing translucent-white chrome stays visible.
+/// Adaptive app-background tokens. Dark mode keeps the warm dark-brown
+/// wash that gives the brand its identity; light mode is a clean cool
+/// off-white with a soft warm amber breath in the corners, so the same
+/// "lamp glowing in the corner" feel reads in both modes without going
+/// muddy beige.
 enum AppBackground {
     /// Solid app/sheet background.
     static let primary = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.10, green: 0.08, blue: 0.07, alpha: 1.0)
-            : UIColor(red: 0.95, green: 0.94, blue: 0.93, alpha: 1.0)
+            : UIColor(red: 0.965, green: 0.962, blue: 0.957, alpha: 1.0)
     })
-    /// Top-left radial-glow tint behind the ambient background. Warm amber
-    /// on dark; a cool soft wash on light so the gradient stays subtle.
+    /// Top-left radial-glow tint. Saturated warm amber on dark; a soft
+    /// peach breath on light so the corner glow stays on-brand instead
+    /// of reading as a generic grey wash.
     static let glowTopLeft = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.55, green: 0.30, blue: 0.08, alpha: 0.35)
-            : UIColor(red: 0.78, green: 0.78, blue: 0.80, alpha: 0.55)
+            : UIColor(red: 1.00, green: 0.85, blue: 0.65, alpha: 0.32)
     })
-    /// Bottom-right radial-glow tint behind the ambient background.
+    /// Bottom-right radial-glow tint. Cooler counterweight to the
+    /// top-left warm glow.
     static let glowBottomRight = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.30, green: 0.20, blue: 0.08, alpha: 0.22)
-            : UIColor(red: 0.82, green: 0.81, blue: 0.83, alpha: 0.45)
+            : UIColor(red: 0.86, green: 0.88, blue: 0.92, alpha: 0.40)
     })
 
-    /// Raised card / pill surface that sits on top of `primary`. Dark
-    /// near-black on dark; very light off-white on light so cards still
-    /// read as a distinct surface above the page wash.
+    /// Raised card / pill surface that sits on top of `primary`. Near-black
+    /// on dark; pure white on light so cards read as a clean lifted plane.
     static let surface = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.11, green: 0.09, blue: 0.08, alpha: 1.0)
@@ -97,27 +100,29 @@ enum AppBackground {
     static let surfaceCool = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.06, green: 0.07, blue: 0.10, alpha: 1.0)
-            : UIColor(red: 0.97, green: 0.97, blue: 0.98, alpha: 1.0)
+            : UIColor(red: 0.975, green: 0.975, blue: 0.985, alpha: 1.0)
     })
 
     /// Capsule / button surface used by the floating capsule control.
     static let capsule = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.18, green: 0.14, blue: 0.12, alpha: 1.0)
-            : UIColor(red: 0.98, green: 0.97, blue: 0.96, alpha: 1.0)
+            : UIColor(white: 1.0, alpha: 1.0)
     })
 
-    /// Generate CTA base fill — enabled vs disabled. The amber radial
-    /// glow on top does most of the work; this is just the warm rim.
+    /// Generate CTA base fill. Stays brand-amber in both modes so the
+    /// primary action keeps its identity — the radial glow on top just
+    /// makes the center bloom. Light mode shifts a touch deeper so the
+    /// glow still reads as "lighter than the rim".
     static let ctaEnabled = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.24, green: 0.14, blue: 0.07, alpha: 1.0)
-            : UIColor(red: 0.98, green: 0.92, blue: 0.84, alpha: 1.0)
+            : UIColor(red: 0.78, green: 0.42, blue: 0.10, alpha: 1.0)
     })
     static let ctaDisabled = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.14, green: 0.11, blue: 0.09, alpha: 1.0)
-            : UIColor(red: 0.93, green: 0.92, blue: 0.91, alpha: 1.0)
+            : UIColor(red: 0.90, green: 0.89, blue: 0.87, alpha: 1.0)
     })
 }
 
