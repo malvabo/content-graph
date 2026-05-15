@@ -1097,7 +1097,7 @@ private struct PinnedNoteCard: View {
 
             Spacer(minLength: 0)
         }
-        .frame(width: 240, alignment: .leading)
+        .frame(width: 312, alignment: .leading)
         .contentShape(Rectangle())
     }
 }
