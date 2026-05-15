@@ -243,24 +243,160 @@ private struct LibraryDocCard: View {
     }
 }
 
+private struct LibraryLandingThumb: View {
+    let seed: Int
+
+    var body: some View {
+        let lineWidths = Self.bodyLineWidths(for: seed)
+        RoundedRectangle(cornerRadius: 7, style: .continuous)
+            .fill(AppInk.solid(0.07))
+            .overlay(
+                VStack(spacing: 3) {
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(AppInk.solid(0.32))
+                        .frame(height: 14)
+                    Capsule()
+                        .fill(AppInk.solid(0.55))
+                        .frame(width: 22, height: 2.5)
+                    ForEach(0..<2, id: \.self) { i in
+                        Capsule()
+                            .fill(AppInk.solid(0.20))
+                            .frame(width: lineWidths[i], height: 1.5)
+                    }
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(BrandColor.amber.opacity(0.85))
+                        .frame(width: 14, height: 5)
+                        .padding(.top, 1)
+                    ForEach(2..<4, id: \.self) { i in
+                        Capsule()
+                            .fill(AppInk.solid(0.16))
+                            .frame(width: lineWidths[i], height: 1.2)
+                    }
+                }
+                .padding(.horizontal, 5)
+                .padding(.vertical, 5)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .stroke(AppInk.solid(0.09), lineWidth: 0.5)
+            )
+            .frame(width: 34, height: 56)
+    }
+
+    private static func bodyLineWidths(for seed: Int) -> [CGFloat] {
+        var h = seed
+        return (0..<4).map { _ in
+            h = h &* 1664525 &+ 1013904223
+            return 14 + CGFloat(h & 0x0B)
+        }
+    }
+}
+
+private struct LibraryFolderThumb: View {
+    let seed: Int
+
+    var body: some View {
+        // Folder sits inside the same 52×56 frame as the doc card. The tab
+        // pokes up from the body's top-left; mini doc cards inside fan out
+        // with rotations seeded from the title so each group looks distinct.
+        ZStack(alignment: .topLeading) {
+            // Tab
+            UnevenRoundedRectangle(
+                cornerRadii: .init(topLeading: 3, bottomLeading: 0, bottomTrailing: 0, topTrailing: 3),
+                style: .continuous
+            )
+            .fill(AppInk.solid(0.18))
+            .frame(width: 18, height: 8)
+            .offset(x: 4, y: 0)
+
+            // Body
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(AppInk.solid(0.12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(AppInk.solid(0.14), lineWidth: 0.5)
+                )
+                .frame(width: 46, height: 44)
+                .offset(y: 6)
+
+            // Mini files inside. Placed directly in the outer .topLeading
+            // ZStack so each offset is measured from (0,0) — a nested ZStack
+            // would re-center them and break the layout.
+            miniDoc(seed: seed &+ 31, rotation: -10)
+                .offset(x: 4, y: 14)
+            miniDoc(seed: seed &+ 17, rotation: 4)
+                .offset(x: 16, y: 12)
+            miniDoc(seed: seed &+ 7, rotation: 14)
+                .offset(x: 28, y: 16)
+        }
+        .frame(width: 52, height: 56)
+    }
+
+    @ViewBuilder
+    private func miniDoc(seed: Int, rotation: Double) -> some View {
+        let w = Self.lineWidths(for: seed)
+        RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+            .fill(AppInk.solid(0.22))
+            .overlay(
+                VStack(alignment: .leading, spacing: 1.5) {
+                    Capsule()
+                        .fill(AppInk.solid(0.55))
+                        .frame(width: w[0], height: 1.4)
+                    Capsule()
+                        .fill(AppInk.solid(0.30))
+                        .frame(width: w[1], height: 1.0)
+                    Capsule()
+                        .fill(AppInk.solid(0.30))
+                        .frame(width: w[2], height: 1.0)
+                }
+                .padding(.horizontal, 2)
+                .padding(.top, 3)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                    .stroke(AppInk.solid(0.18), lineWidth: 0.4)
+            )
+            .frame(width: 16, height: 20)
+            .rotationEffect(.degrees(rotation))
+    }
+
+    private static func lineWidths(for seed: Int) -> [CGFloat] {
+        var h = seed
+        return (0..<3).map { _ in
+            h = h &* 1664525 &+ 1013904223
+            return 6 + CGFloat(h & 0x05)
+        }
+    }
+}
+
 private struct LibraryGroupThumb: View {
     let title: String
-    let count: Int
+    let items: [GenerationProject]
 
     private var seed: Int {
         title.unicodeScalars.reduce(0) { $0 &* 31 &+ Int($1.value) }
     }
 
+    // Small per-group tilt so each thumb has a distinct twist instead of
+    // every row reading as the same icon stamped twice.
+    private var twist: Double {
+        let raw = (seed &>> 4) & 0x07
+        return Double(raw) - 3.0
+    }
+
     var body: some View {
-        ZStack {
-            if count > 1 {
-                LibraryDocCard(seed: seed &+ 1)
-                    .opacity(0.55)
-                    .rotationEffect(.degrees(-7))
-                    .offset(x: -5, y: 3)
+        Group {
+            if items.count > 1 {
+                LibraryFolderThumb(seed: seed)
+            } else if items.first?.outputType == "landing" {
+                LibraryLandingThumb(seed: seed)
+            } else {
+                LibraryDocCard(seed: seed)
             }
-            LibraryDocCard(seed: seed)
         }
+        .rotationEffect(.degrees(twist))
         .frame(width: 52, height: 56)
     }
 }
@@ -271,7 +407,7 @@ private struct LibraryGroupRow: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            LibraryGroupThumb(title: title, count: items.count)
+            LibraryGroupThumb(title: title, items: items)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)

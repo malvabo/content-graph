@@ -258,46 +258,6 @@ private enum RowDate {
     }
 }
 
-// MARK: - Note Thumbnail
-
-private struct NoteThumb: View {
-    let note: Note
-
-    var body: some View {
-        let widths = Self.lineWidths(for: note.id)
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(AppInk.solid(0.07))
-            .overlay(
-                VStack(alignment: .leading, spacing: 3) {
-                    ForEach(0..<5, id: \.self) { i in
-                        Capsule()
-                            .fill(AppInk.solid(i == 0 ? 0.55 : 0.20))
-                            .frame(width: widths[i], height: i == 0 ? 2.5 : 1.5)
-                    }
-                }
-                .padding(8)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(AppInk.solid(0.09), lineWidth: 0.5)
-            )
-            .frame(width: 42, height: 52)
-    }
-
-    private static func lineWidths(for id: UUID) -> [CGFloat] {
-        // Seed from the UUID's bytes — `hashValue` is randomised per process
-        // launch, so it would give the same note different line widths every
-        // time the app reopened.
-        let b = id.uuid
-        var h = Int(b.0) &<< 24 | Int(b.1) &<< 16 | Int(b.2) &<< 8 | Int(b.3)
-        return (0..<5).map { _ in
-            h = h &* 1664525 &+ 1013904223
-            return 8 + CGFloat(h & 0x17)
-        }
-    }
-}
-
 // MARK: - Row
 
 private struct NoteListRow: View {
@@ -319,33 +279,27 @@ private struct NoteListRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 16) {
-            NoteThumb(note: note)
+        VStack(alignment: .leading, spacing: 5) {
+            titleText
+                .font(.appRowTitle)
+                .foregroundColor(AppInk.solid(0.88))
+                .lineLimit(2)
 
-            VStack(alignment: .leading, spacing: 5) {
-                titleText
-                    .font(.appRowTitle)
-                    .foregroundColor(AppInk.solid(0.88))
-                    .lineLimit(2)
+            Text(RowDate.relative(from: note.updatedAt))
+                .font(.appSmall)
+                .foregroundColor(AppText.tertiary)
 
-                Text(RowDate.relative(from: note.updatedAt))
-                    .font(.appSmall)
-                    .foregroundColor(AppText.tertiary)
-
-                let otherTags = note.tags.filter { $0 != "Starred" }
-                if !otherTags.isEmpty {
-                    Text(otherTags.joined(separator: " · "))
-                        .font(.appMicro)
-                        .foregroundColor(amber.opacity(0.75))
-                        .lineLimit(1)
-                }
+            let otherTags = note.tags.filter { $0 != "Starred" }
+            if !otherTags.isEmpty {
+                Text(otherTags.joined(separator: " · "))
+                    .font(.appMicro)
+                    .foregroundColor(amber.opacity(0.75))
+                    .lineLimit(1)
             }
-
-            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
         .contentShape(Rectangle())
     }
 }
