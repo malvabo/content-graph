@@ -1156,6 +1156,10 @@ private struct AppTabBar: View {
             .padding(.horizontal, 4)
             .padding(.vertical, 4)
             .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(Color.white.opacity(0.16), lineWidth: 0.5)
+            )
 
             Button {
                 impact.impactOccurred()
