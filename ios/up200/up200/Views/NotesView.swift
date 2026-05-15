@@ -283,7 +283,8 @@ private struct NoteListRow: View {
             titleText
                 .font(.appRowTitle)
                 .foregroundColor(AppInk.solid(0.88))
-                .lineLimit(2)
+                .lineLimit(1)
+                .truncationMode(.tail)
 
             Text(RowDate.relative(from: note.updatedAt))
                 .font(.appSmall)
