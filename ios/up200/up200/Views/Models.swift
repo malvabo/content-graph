@@ -33,7 +33,57 @@ enum SelectionStyle {
 /// should keep pure `.white` for contrast — these tokens are only for
 /// content on the dark app background or translucent-white-on-dark chrome.
 enum AppText {
-    static let primary = Color.white.opacity(0.92)
+    /// Body / titles — primary reading content.
+    static let primary   = Color.white.opacity(0.92)
+    /// Section labels, secondary actions, default icon foregrounds.
+    static let secondary = Color.white.opacity(0.55)
+    /// Subtitles, helper text, group headers.
+    static let tertiary  = Color.white.opacity(0.35)
+    /// Placeholders and very low-emphasis chrome (deep dim).
+    static let muted     = Color.white.opacity(0.22)
+    /// Disabled controls — both labels and icon glyphs.
+    static let disabled  = Color.white.opacity(0.25)
+}
+
+/// Canonical corner-radius scale. Pick the role, not the literal — that way
+/// raising the "card" radius from 16 → 18 is one diff instead of forty.
+enum Radius {
+    /// Inputs and small chips (text fields, search bar pills).
+    static let input: CGFloat = 12
+    /// Cards, buttons, content blocks.
+    static let card: CGFloat = 16
+    /// Message bubbles and large containers.
+    static let bubble: CGFloat = 18
+    /// Sheets and large CTA buttons (the AnimatedLightsButton, format picker sheet).
+    static let sheet: CGFloat = 22
+    /// Voice-recorder controls and capsule buttons.
+    static let pill: CGFloat = 28
+}
+
+/// Canonical animation timings. Comments describe the feel — pick by intent.
+enum AppAnimation {
+    /// Snappy feedback: tap haptics, button state flips. ~150 ms.
+    static let quick    = Animation.easeOut(duration: 0.15)
+    /// Standard transitions: section toggles, sheet detents. ~220 ms.
+    static let standard = Animation.easeInOut(duration: 0.22)
+    /// Entrances and reveals: onboarding stage in, large layout shifts.
+    static let entrance = Animation.easeOut(duration: 0.6)
+}
+
+/// Reusable circular icon-button hit-area treatment. Visible chrome stays the
+/// caller's; the modifier just guarantees a 44×44 tap target with a
+/// rectangular hit shape, satisfying Apple HIG and our own consistency rules.
+struct AppIconHitArea: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+    }
+}
+
+extension View {
+    /// Apply on a Button label or Image to enforce the 44pt touch target.
+    func appIconHitArea() -> some View { modifier(AppIconHitArea()) }
 }
 
 /// Result of decoding a JSON blob from persistent storage.

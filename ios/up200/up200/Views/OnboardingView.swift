@@ -91,7 +91,7 @@ struct OnboardingView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
                             .background(Color.white.opacity(0.94))
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                     }
                     .buttonStyle(.plain)
 
@@ -105,9 +105,9 @@ struct OnboardingView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
                             .background(Color.white.opacity(0.07))
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                             .overlay(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                                     .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
                             )
                     }

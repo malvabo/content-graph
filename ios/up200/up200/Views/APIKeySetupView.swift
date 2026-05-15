@@ -46,7 +46,7 @@ struct APIKeySetupView: View {
                         HStack(spacing: 10) {
                             Image(systemName: "key")
                                 .font(.app(size: 14))
-                                .foregroundColor(Color.white.opacity(0.35))
+                                .foregroundColor(AppText.tertiary)
                             SecureField("sk-ant-api03-…", text: $keyText)
                                 .font(.system(size: 15, design: .monospaced))
                                 .foregroundColor(AppText.primary)
@@ -59,9 +59,9 @@ struct APIKeySetupView: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 14)
                         .background(Color.white.opacity(0.07))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            RoundedRectangle(cornerRadius: Radius.input, style: .continuous)
                                 .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
                         )
 
@@ -80,7 +80,7 @@ struct APIKeySetupView: View {
                 Button(action: save) {
                     Text("Save & continue")
                         .font(.app(size: 17, weight: .semibold))
-                        .foregroundColor(canSave ? .white : Color.white.opacity(0.25))
+                        .foregroundColor(canSave ? .white : AppText.disabled)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
                         .background(canSave ? amber : Color.white.opacity(0.07))
@@ -90,7 +90,7 @@ struct APIKeySetupView: View {
                 .disabled(!canSave)
                 .padding(.horizontal, 28)
                 .padding(.bottom, 52)
-                .animation(.easeOut(duration: 0.15), value: canSave)
+                .animation(AppAnimation.quick, value: canSave)
             }
         }
         .task { focused = true }

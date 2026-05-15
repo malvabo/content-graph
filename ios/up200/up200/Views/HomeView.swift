@@ -344,7 +344,7 @@ struct GenerationBanner: View {
             if isReady {
                 Button(action: onTap) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: Radius.input, style: .continuous)
                             .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
                         Ellipse()
                             .fill(BrandColor.amber.opacity(0.55))
@@ -352,14 +352,14 @@ struct GenerationBanner: View {
                             .blur(radius: 16)
                             .offset(x: glowPhase ? 10 : -10)
                             .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: glowPhase)
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: Radius.input, style: .continuous)
                             .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
                         Text("Open")
                             .font(.appCaptionMedium)
                             .foregroundColor(AppText.primary)
                     }
                     .frame(width: 68, height: 32)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
                 }
                 .buttonStyle(.plain)
             } else {
@@ -606,7 +606,7 @@ struct AnimatedLightsButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
                     .fill(Color(red: 0.06, green: 0.07, blue: 0.10))
 
                 if isEnabled {
@@ -622,25 +622,25 @@ struct AnimatedLightsButton: View {
                         .offset(x: phase ? 80 : -80)
                 }
 
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
                     .stroke(Color.white.opacity(isEnabled ? 0.13 : 0.06), lineWidth: 0.5)
 
                 HStack(spacing: 8) {
                     if showSparks {
                         SparkRaysShape()
                             .stroke(
-                                isEnabled ? Color.white : Color.white.opacity(0.25),
+                                isEnabled ? Color.white : AppText.disabled,
                                 style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round)
                             )
                             .frame(width: 17, height: 17)
                     }
                     Text(title)
                         .font(.app(size: 18, weight: .semibold))
-                        .foregroundColor(isEnabled ? .white : Color.white.opacity(0.25))
+                        .foregroundColor(isEnabled ? .white : AppText.disabled)
                 }
             }
             .frame(height: 54)
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
@@ -689,7 +689,7 @@ struct ImportSheetView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 88)
                         .background(Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                     }
                     .buttonStyle(.plain)
                 }
@@ -979,7 +979,7 @@ private struct LinkInputSheet: View {
                     guard !isFetching else { return }
                     dismiss()
                 }
-                .foregroundColor(Color.white.opacity(0.55))
+                .foregroundColor(AppText.secondary)
                 Spacer()
                 Text(stagedURLs.count > 1 ? "Link sources" : "Link source")
                     .font(.appLabelBold)
@@ -992,11 +992,11 @@ private struct LinkInputSheet: View {
                     if isFetching {
                         ProgressView()
                             .scaleEffect(0.75)
-                            .tint(Color.white.opacity(0.55))
+                            .tint(AppText.secondary)
                             .frame(width: 40)
                     } else {
                         Text("Save")
-                            .foregroundColor(canSave ? Color.white.opacity(0.88) : Color.white.opacity(0.25))
+                            .foregroundColor(canSave ? Color.white.opacity(0.88) : AppText.disabled)
                     }
                 }
                 .disabled(!canSave || isFetching)
@@ -1012,7 +1012,7 @@ private struct LinkInputSheet: View {
             HStack(spacing: 10) {
                 Image(systemName: "link")
                     .font(.appSubtext)
-                    .foregroundColor(Color.white.opacity(0.35))
+                    .foregroundColor(AppText.tertiary)
                 TextField("https://", text: $urlText)
                     .font(.appLabel)
                     .foregroundColor(Color.white.opacity(0.88))
@@ -1025,7 +1025,7 @@ private struct LinkInputSheet: View {
                 Button { stageCurrent() } label: {
                     Image(systemName: "plus")
                         .font(.app(size: 14, weight: .semibold))
-                        .foregroundColor(canStage ? .white : Color.white.opacity(0.25))
+                        .foregroundColor(canStage ? .white : AppText.disabled)
                         .frame(width: 30, height: 30)
                         .background(canStage ? Color.white.opacity(0.12) : Color.white.opacity(0.04))
                         .clipShape(Circle())
@@ -1089,7 +1089,7 @@ private struct LinkInputSheet: View {
                     Image(systemName: "globe").font(.appMicro)
                     Text("Fetching page content\u{2026}").font(.appCaption)
                 }
-                .foregroundColor(Color.white.opacity(0.35))
+                .foregroundColor(AppText.tertiary)
                 .padding(.bottom, 12)
             }
         }
@@ -1217,7 +1217,7 @@ struct VoiceRecordSheet: View {
                     Spacer()
                     Text(recorder.isRecording ? "Recording…" : recorder.transcript.isEmpty ? "Voice Note" : "Done recording")
                         .font(.subheadline)
-                        .foregroundColor(Color.white.opacity(0.35))
+                        .foregroundColor(AppText.tertiary)
                     Spacer()
                     Button {
                         guard !isGenerating else { return }
@@ -1226,7 +1226,7 @@ struct VoiceRecordSheet: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.55))
+                            .foregroundColor(AppText.secondary)
                             .frame(width: 44, height: 44)
                             .background(Color.white.opacity(0.12))
                             .clipShape(Circle())
@@ -1318,7 +1318,7 @@ struct VoiceRecordSheet: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
                             .background(Color.white.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
                         }
                         .buttonStyle(.plain)
 
@@ -1333,7 +1333,7 @@ struct VoiceRecordSheet: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
                             .background(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
                         }
                         .buttonStyle(.plain)
                     }
@@ -1348,7 +1348,7 @@ struct VoiceRecordSheet: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
                             .background(amber)
-                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 20)
@@ -1418,14 +1418,14 @@ private struct GlassCard<Content: View>: View {
     var body: some View {
         content
             .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
                     .fill(Color.white.opacity(0.04))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
                             .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
                     )
             )
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
     }
 }
 
@@ -1445,7 +1445,7 @@ private struct SectionDisclosure: View {
         } label: {
             Image(systemName: "chevron.right")
                 .font(.app(size: 11, weight: .semibold))
-                .foregroundColor(Color.white.opacity(0.55))
+                .foregroundColor(AppText.secondary)
                 .rotationEffect(.degrees(expanded ? 90 : 0))
                 .frame(width: 16, height: 32)
                 .contentShape(Rectangle())
@@ -1930,7 +1930,7 @@ private struct FormatPickerSheet: View {
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
             .font(.appCaptionMedium)
-            .foregroundColor(Color.white.opacity(0.55))
+            .foregroundColor(AppText.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -1974,7 +1974,7 @@ private struct FormatPickerSheet: View {
             }
         }()
         Button {
-            withAnimation(.easeInOut(duration: 0.22)) {
+            withAnimation(AppAnimation.standard) {
                 if state == .all {
                     draft.subtract(template.formatIDs)
                 } else {
@@ -1999,11 +1999,11 @@ private struct FormatPickerSheet: View {
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                     .fill(Color.white.opacity(fillOpacity))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                     .stroke(Color.white.opacity(strokeOpacity), lineWidth: 0.5)
             )
         }
@@ -2017,7 +2017,7 @@ private struct FormatPickerSheet: View {
     private func formatBlock(_ format: ContentFormat) -> some View {
         let selected = draft.contains(format.id)
         Button {
-            withAnimation(.easeInOut(duration: 0.22)) {
+            withAnimation(AppAnimation.standard) {
                 if selected { draft.remove(format.id) }
                 else { draft.insert(format.id) }
             }
@@ -2039,11 +2039,11 @@ private struct FormatPickerSheet: View {
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                     .fill(Color.white.opacity(selected ? 0.10 : 0.04))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                     .stroke(Color.white.opacity(selected ? 0.30 : 0.06), lineWidth: 0.5)
             )
         }
@@ -2165,7 +2165,7 @@ private struct FormatsBlock: View {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
-                .presentationCornerRadius(22)
+                .presentationCornerRadius(Radius.sheet)
                 .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
     }
@@ -2235,7 +2235,7 @@ private struct BrandCard: View {
                             .foregroundColor(Color.white.opacity(0.70))
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.app(size: 11, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.35))
+                            .foregroundColor(AppText.tertiary)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
@@ -2376,7 +2376,7 @@ struct HomeView: View {
             }
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
-            .presentationCornerRadius(22)
+            .presentationCornerRadius(Radius.sheet)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         }
         .fullScreenCover(isPresented: $showOnboarding) {

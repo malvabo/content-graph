@@ -202,7 +202,7 @@ struct ChatView: View {
             VStack(spacing: 12) {
                 Image(systemName: "cursorarrow")
                     .font(.system(size: 28, weight: .light))
-                    .foregroundColor(Color.white.opacity(0.35))
+                    .foregroundColor(AppText.tertiary)
                 Text("Welcome to Chat")
                     .font(.app(size: 20, weight: .semibold))
                     .foregroundColor(Color.white.opacity(0.88))
@@ -261,7 +261,7 @@ struct ChatView: View {
                     HStack(spacing: 8) {
                         ForEach(selectedProjects) { proj in
                             ContextPill(title: proj.outputType) {
-                                withAnimation(.easeOut(duration: 0.15)) {
+                                withAnimation(AppAnimation.quick) {
                                     _ = selectedProjectIDs.remove(proj.id)
                                 }
                             }
@@ -349,9 +349,9 @@ struct ChatView: View {
                 .padding(.bottom, 10)
             }
             .background(Color.white.opacity(0.06))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
                     .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
             )
             .padding(.horizontal, 12)
@@ -412,9 +412,9 @@ private struct MessageBubble: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(isUser ? Color.white.opacity(0.12) : Color.white.opacity(0.05))
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
                         .stroke(Color.white.opacity(isUser ? 0.14 : 0.08), lineWidth: 0.5)
                 )
                 .textSelection(.enabled)
@@ -442,7 +442,7 @@ private struct TypingIndicator: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
         .frame(maxWidth: .infinity, alignment: .leading)
         .task {
             while true {
@@ -539,7 +539,7 @@ private struct ResourcePickerSheet: View {
                             let selected = selectedIDs.contains(proj.id)
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                withAnimation(.easeOut(duration: 0.15)) {
+                                withAnimation(AppAnimation.quick) {
                                     if selected {
                                         _ = selectedIDs.remove(proj.id)
                                     } else {
@@ -563,7 +563,7 @@ private struct ResourcePickerSheet: View {
                                     Spacer()
                                     Image(systemName: selected ? "checkmark.circle.fill" : "circle")
                                         .font(.system(size: 18))
-                                        .foregroundColor(selected ? .white : Color.white.opacity(0.25))
+                                        .foregroundColor(selected ? .white : AppText.disabled)
                                 }
                                 .padding(14)
                                 .background(
@@ -599,7 +599,7 @@ private struct ResourcePickerSheet: View {
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
-        .presentationCornerRadius(22)
+        .presentationCornerRadius(Radius.sheet)
         .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
     }
 }

@@ -91,7 +91,7 @@ struct LibraryView: View {
                                 isActive: showSearch
                             ) {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                withAnimation(.easeInOut(duration: 0.22)) {
+                                withAnimation(AppAnimation.standard) {
                                     showSearch.toggle()
                                     if !showSearch { searchText = "" }
                                     else { searchFocused = true }
@@ -111,7 +111,7 @@ struct LibraryView: View {
                     )
                 }
                 .allowsHitTesting(!showSearch)
-                .animation(.easeInOut(duration: 0.22), value: showSearch)
+                .animation(AppAnimation.standard, value: showSearch)
 
                 if showSearch {
                     SearchOverlay(
@@ -119,7 +119,7 @@ struct LibraryView: View {
                         placeholder: "Search library",
                         isFocused: $searchFocused,
                         onCancel: {
-                            withAnimation(.easeInOut(duration: 0.22)) {
+                            withAnimation(AppAnimation.standard) {
                                 showSearch = false
                                 searchText = ""
                             }
@@ -173,7 +173,7 @@ private struct LibraryGroupRow: View {
                     .lineLimit(1)
                 Text("\(outputTypesList(items)) · \(libraryRelativeTime(items.first?.date ?? Date()))")
                     .font(.appMicro)
-                    .foregroundColor(Color.white.opacity(0.35))
+                    .foregroundColor(AppText.tertiary)
                     .lineLimit(1)
             }
             Spacer()
@@ -292,7 +292,7 @@ struct ProjectGroupDetailView: View {
                         Button {
                             UIPasteboard.general.string = editText
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            withAnimation(.easeOut(duration: 0.15)) { copied = true }
+                            withAnimation(AppAnimation.quick) { copied = true }
                             copiedResetTask?.cancel()
                             copiedResetTask = Task { @MainActor in
                                 try? await Task.sleep(nanoseconds: 2_000_000_000)
@@ -343,7 +343,7 @@ struct ProjectGroupDetailView: View {
                                         .overlay(Capsule().stroke(selectedIndex == idx ? Color.white.opacity(0.20) : Color.clear, lineWidth: 0.5))
                                 }
                                 .buttonStyle(.plain)
-                                .animation(.easeOut(duration: 0.15), value: selectedIndex)
+                                .animation(AppAnimation.quick, value: selectedIndex)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -372,7 +372,7 @@ struct ProjectGroupDetailView: View {
                             if editText.isEmpty {
                                 Text("No content")
                                     .font(.appBody)
-                                    .foregroundColor(Color.white.opacity(0.22))
+                                    .foregroundColor(AppText.muted)
                                     .padding(.horizontal, 24)
                                     .padding(.top, 8)
                                     .allowsHitTesting(false)
@@ -813,7 +813,7 @@ private struct TemplateEditPage: View {
                         TextField(
                             "",
                             text: $title,
-                            prompt: Text("Template name").foregroundColor(Color.white.opacity(0.25)),
+                            prompt: Text("Template name").foregroundColor(AppText.disabled),
                             axis: .vertical
                         )
                         .font(.appTitle)
@@ -832,7 +832,7 @@ private struct TemplateEditPage: View {
                                 if prompt.isEmpty {
                                     Text("Describe what this template should produce\u{2026}")
                                         .font(.appBody)
-                                        .foregroundColor(Color.white.opacity(0.22))
+                                        .foregroundColor(AppText.muted)
                                         .padding(.horizontal, 24)
                                         .padding(.top, 8)
                                         .allowsHitTesting(false)
@@ -919,7 +919,7 @@ private struct TemplateEditPage: View {
             }
             .buttonStyle(.plain)
             .disabled(!canEnhance)
-            .animation(.easeOut(duration: 0.15), value: canEnhance)
+            .animation(AppAnimation.quick, value: canEnhance)
 
             Spacer(minLength: 8)
 
@@ -1017,14 +1017,14 @@ private struct TemplateTagFlow: View {
                 let selected = selectedIDs.contains(fmt.id)
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.easeOut(duration: 0.15)) {
+                    withAnimation(AppAnimation.quick) {
                         if selected { selectedIDs.remove(fmt.id) }
                         else { selectedIDs.insert(fmt.id) }
                     }
                 } label: {
                     Text(fmt.label)
                         .font(.app(size: 14, weight: selected ? .semibold : .regular))
-                        .foregroundColor(selected ? .white : Color.white.opacity(0.55))
+                        .foregroundColor(selected ? .white : AppText.secondary)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(selected ? Color.white.opacity(0.14) : Color.white.opacity(0.07))
@@ -1032,7 +1032,7 @@ private struct TemplateTagFlow: View {
                         .overlay(Capsule().stroke(selected ? Color.white.opacity(0.30) : Color.white.opacity(0.10), lineWidth: 0.5))
                 }
                 .buttonStyle(.plain)
-                .animation(.easeOut(duration: 0.15), value: selected)
+                .animation(AppAnimation.quick, value: selected)
             }
         }
     }
@@ -1298,7 +1298,7 @@ private struct RecordingMiniBar: View {
                     .foregroundColor(AppText.primary)
                 Text(timeLabel)
                     .font(.system(size: 13, design: .monospaced))
-                    .foregroundColor(Color.white.opacity(0.55))
+                    .foregroundColor(AppText.secondary)
                 Spacer(minLength: 8)
                 Button {
                     onStop()
@@ -1505,7 +1505,7 @@ struct AppPickerSheet<Results: View>: View {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.55))
+                        .foregroundColor(AppText.secondary)
                         .frame(width: 30, height: 30)
                         .background(Color.white.opacity(0.10))
                         .clipShape(Circle())
@@ -1532,7 +1532,7 @@ struct AppPickerSheet<Results: View>: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(sheetBg)
         .presentationBackground(sheetBg)
-        .presentationCornerRadius(22)
+        .presentationCornerRadius(Radius.sheet)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 fieldFocused = true
@@ -1777,7 +1777,7 @@ struct AIPreviewSheet: View {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.55))
+                        .foregroundColor(AppText.secondary)
                         .frame(width: 30, height: 30)
                         .background(Color.white.opacity(0.10))
                         .clipShape(Circle())
@@ -1821,7 +1821,7 @@ struct AIPreviewSheet: View {
 
                 Button {
                     onCopy()
-                    withAnimation(.easeOut(duration: 0.15)) { didCopy = true }
+                    withAnimation(AppAnimation.quick) { didCopy = true }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         withAnimation { didCopy = false }
                     }
@@ -1858,7 +1858,7 @@ struct AIPreviewSheet: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationBackground(sheetBg)
-        .presentationCornerRadius(22)
+        .presentationCornerRadius(Radius.sheet)
     }
 }
 

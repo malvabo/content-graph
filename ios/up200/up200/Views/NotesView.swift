@@ -331,7 +331,7 @@ private struct NoteListRow: View {
 
                 Text(RowDate.relative(from: note.updatedAt))
                     .font(.appSmall)
-                    .foregroundColor(Color.white.opacity(0.35))
+                    .foregroundColor(AppText.tertiary)
 
                 let otherTags = note.tags.filter { $0 != "Starred" }
                 if !otherTags.isEmpty {
@@ -556,7 +556,7 @@ struct NoteVoiceSheet: View {
         .presentationDetents([.medium, .large], selection: $selectedDetent)
         .presentationDragIndicator(.visible)
         .presentationBackground(sheetBg)
-        .presentationCornerRadius(22)
+        .presentationCornerRadius(Radius.sheet)
         .onChange(of: selectedDetent) { _, newDetent in
             // Only treat a confirmed snap to .large as "expand to editor".
             // The previous negation (newDetent != .medium) also fired during
@@ -567,7 +567,7 @@ struct NoteVoiceSheet: View {
             if large && (recording.isRecording || recording.isPaused) {
                 recording.pause()
             }
-            withAnimation(.easeInOut(duration: 0.22)) {
+            withAnimation(AppAnimation.standard) {
                 showingComposer = large
             }
         }
@@ -584,7 +584,7 @@ struct NoteVoiceSheet: View {
             ZStack {
                 Text("Swipe down to keep recording")
                     .font(.subheadline)
-                    .foregroundColor(Color.white.opacity(0.35))
+                    .foregroundColor(AppText.tertiary)
                     .frame(maxWidth: .infinity)
                 HStack {
                     Spacer()
@@ -593,7 +593,7 @@ struct NoteVoiceSheet: View {
                     } label: {
                         Image(systemName: "chevron.down")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.55))
+                            .foregroundColor(AppText.secondary)
                             .frame(width: 28, height: 28)
                             .background(Color.white.opacity(0.12))
                             .clipShape(Circle())
@@ -637,7 +637,7 @@ struct NoteVoiceSheet: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
                     .background(Color.white.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
                 }
                 .buttonStyle(.plain)
 
@@ -652,7 +652,7 @@ struct NoteVoiceSheet: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
                     .background(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
@@ -721,7 +721,7 @@ private struct NoteComposerSheet: View {
                 } label: {
                     Text("Done")
                         .font(.appLabelBold)
-                        .foregroundColor(canSave ? .white : Color.white.opacity(0.25))
+                        .foregroundColor(canSave ? .white : AppText.disabled)
                 }
                 .buttonStyle(.plain)
                 .disabled(!canSave)
@@ -739,7 +739,7 @@ private struct NoteComposerSheet: View {
                     if noteBody.isEmpty {
                         Text("Start typing\u{2026}")
                             .font(.appBody)
-                            .foregroundColor(Color.white.opacity(0.22))
+                            .foregroundColor(AppText.muted)
                             .padding(.horizontal, 24)
                             .padding(.top, 20)
                             .allowsHitTesting(false)
@@ -931,7 +931,7 @@ private struct NoteEditorPage: View {
                     if noteBody.isEmpty {
                         Text("Start typing\u{2026}")
                             .font(.appBody)
-                            .foregroundColor(Color.white.opacity(0.22))
+                            .foregroundColor(AppText.muted)
                             .padding(.horizontal, 24)
                             .padding(.top, 8)
                             .allowsHitTesting(false)
@@ -1060,7 +1060,7 @@ private struct FilterChip: View {
         Button(action: action) {
             Text(label)
                 .font(.app(size: 14, weight: isSelected ? .semibold : .regular))
-                .foregroundColor(isSelected ? .white : Color.white.opacity(0.55))
+                .foregroundColor(isSelected ? .white : AppText.secondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .background(isSelected ? SelectionStyle.fill : Color.white.opacity(0.08))
@@ -1261,7 +1261,7 @@ struct NotesView: View {
                                 isActive: showSearch
                             ) {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                withAnimation(.easeInOut(duration: 0.22)) {
+                                withAnimation(AppAnimation.standard) {
                                     showSearch.toggle()
                                     if !showSearch { searchText = "" }
                                     else { searchFocused = true }
@@ -1291,7 +1291,7 @@ struct NotesView: View {
                             } label: {
                                 Image(systemName: "plus")
                                     .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(Color.white.opacity(0.55))
+                                    .foregroundColor(AppText.secondary)
                                     .frame(width: 34, height: 34)
                                     .background(Color.white.opacity(0.08))
                                     .clipShape(Circle())
@@ -1313,7 +1313,7 @@ struct NotesView: View {
                     )
                 }
                 .allowsHitTesting(!showSearch)
-                .animation(.easeInOut(duration: 0.22), value: showSearch)
+                .animation(AppAnimation.standard, value: showSearch)
 
                 if showSearch {
                     SearchOverlay(
@@ -1321,7 +1321,7 @@ struct NotesView: View {
                         placeholder: "Search notes",
                         isFocused: $searchFocused,
                         onCancel: {
-                            withAnimation(.easeInOut(duration: 0.22)) {
+                            withAnimation(AppAnimation.standard) {
                                 showSearch = false
                                 searchText = ""
                             }
@@ -1394,7 +1394,7 @@ private struct NewTagSheet: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
                     .background(Color.white.opacity(0.07))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
                     .padding(.horizontal, 20)
                     .padding(.top, 24)
                     .focused($focused)
@@ -1409,7 +1409,7 @@ private struct NewTagSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
-                        .foregroundColor(Color.white.opacity(0.55))
+                        .foregroundColor(AppText.secondary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Add") { onAdd() }
@@ -1420,7 +1420,7 @@ private struct NewTagSheet: View {
         }
         .presentationDetents([.height(180)])
         .presentationDragIndicator(.visible)
-        .presentationCornerRadius(22)
+        .presentationCornerRadius(Radius.sheet)
         .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
         .onAppear { focused = true }
     }
