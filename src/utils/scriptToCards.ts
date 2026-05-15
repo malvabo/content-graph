@@ -49,6 +49,13 @@ export async function fetchScriptCards(script: string, signal?: AbortSignal): Pr
   throw new Error('No API key configured. Add one in Settings.');
 }
 
+// `body` ends up in dangerouslySetInnerHTML via CardsPanel, so anything from
+// the LLM has to be escaped — a prompt-injected script could otherwise hand
+// us "<img onerror=...>" inside a keyword or anchor and that would execute.
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+}
+
 export function parseScriptCards(raw: string) {
   const cleaned = raw.replace(/```[a-z]*\n?/g, '').trim();
   const parsed: { title?: string; anchor?: string; keywords?: string }[] = JSON.parse(cleaned);
@@ -56,8 +63,8 @@ export function parseScriptCards(raw: string) {
     id: `c${Date.now().toString(36)}-${i}`,
     headline: item.title ?? `Card ${i + 1}`,
     body: [
-      item.anchor,
-      item.keywords ? `<span class="card-tags">${item.keywords.split(/\s*·\s*|\s*•\s*/).filter(Boolean).map((t: string) => `<span class="card-tag">${t.trim()}</span>`).join('')}</span>` : '',
+      item.anchor ? escapeHtml(item.anchor) : '',
+      item.keywords ? `<span class="card-tags">${item.keywords.split(/\s*·\s*|\s*•\s*/).filter(Boolean).map((t: string) => `<span class="card-tag">${escapeHtml(t.trim())}</span>`).join('')}</span>` : '',
     ].filter(Boolean).join('<br>'),
   }));
 }
