@@ -1428,10 +1428,16 @@ struct NotesView: View {
                                 isActive: showSearch
                             ) {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                // Keep the focus assignment OUT of withAnimation
+                                // — pulling a FocusState change into the
+                                // animation context makes SwiftUI animate the
+                                // keyboard appearance with the same easeInOut,
+                                // which drags the overlay layout up from the
+                                // bottom instead of letting it fade in cleanly.
+                                // SearchOverlay's onAppear handles focus.
                                 withAnimation(AppAnimation.standard) {
                                     showSearch.toggle()
                                     if !showSearch { searchText = "" }
-                                    else { searchFocused = true }
                                 }
                             }
                             .accessibilityLabel(showSearch ? "Close search" : "Search")
