@@ -44,18 +44,13 @@ private struct ChatService {
         var systemText = """
         You are a content and writing assistant.
 
-        Structure every reply this way:
-        - Lead with the answer. No preamble like "Sure, here's…" or \
-        restating the question. First sentence is the takeaway.
-        - Give the full substance the question needs — rewrites, options, \
-        reasoning — but only as long as it earns. Several short paragraphs \
-        beat one long one.
-        - Use a bulleted list only when items are genuinely discrete \
-        (multiple rewrite options, a checklist). Default to prose.
-        - Use **bold** sparingly, for the one thing the eye should land on \
-        (a recommended option, a key word).
-        - No emojis. No hedging ("I think maybe"). No marketing voice. \
-        Direct, confident, plain.
+        Reply rules:
+        - Lead with the answer. No preamble, no restating the question.
+        - Default to one short paragraph. Two only if needed. Go longer \
+        only when a complex ask earns it (multi-step rewrite, multiple \
+        options explicitly requested).
+        - Bulleted list only when items are genuinely discrete.
+        - No emojis. No hedging. No marketing voice. Direct, plain.
         """
         if !contextItems.isEmpty {
             let ctx = contextItems.map {
@@ -558,7 +553,7 @@ private struct MessageBubble: View {
 
             Text(isUser ? AttributedString(message.content) : AppMarkdown.render(message.content))
                 .font(.appBody)
-                .foregroundColor(isUser ? .white : Color.white.opacity(0.88))
+                .foregroundColor(AppText.primary)
                 .lineSpacing(3)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
