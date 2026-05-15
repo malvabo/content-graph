@@ -291,7 +291,11 @@ private struct NoteThumb: View {
     }
 
     private static func lineWidths(for id: UUID) -> [CGFloat] {
-        var h = id.hashValue
+        // Seed from the UUID's bytes — `hashValue` is randomised per process
+        // launch, so it would give the same note different line widths every
+        // time the app reopened.
+        let b = id.uuid
+        var h = Int(b.0) &<< 24 | Int(b.1) &<< 16 | Int(b.2) &<< 8 | Int(b.3)
         return (0..<6).map { _ in
             h = h &* 1664525 &+ 1013904223
             return 10 + CGFloat(h & 0x1F)
@@ -1127,7 +1131,10 @@ private struct PinnedNoteThumb: View {
     }
 
     private static func lineWidths(for id: UUID) -> [CGFloat] {
-        var h = id.hashValue
+        // Same fix as `NoteThumb.lineWidths` — derive a stable seed from the
+        // UUID's bytes instead of the per-launch-randomised `hashValue`.
+        let b = id.uuid
+        var h = Int(b.0) &<< 24 | Int(b.1) &<< 16 | Int(b.2) &<< 8 | Int(b.3)
         return (0..<5).map { _ in
             h = h &* 1664525 &+ 1013904223
             return 8 + CGFloat(h & 0x17)
