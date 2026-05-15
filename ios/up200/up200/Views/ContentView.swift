@@ -1448,8 +1448,8 @@ private struct AppTabBar: View {
                                             Capsule(style: .continuous)
                                                 .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
                                         )
-                                        .padding(.horizontal, 3)
-                                        .padding(.vertical, 3)
+                                        .padding(.horizontal, 2)
+                                        .padding(.vertical, 1)
                                         .matchedGeometryEffect(id: "tabPill", in: pillNS)
                                 }
                             }
