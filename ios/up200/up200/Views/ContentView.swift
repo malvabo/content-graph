@@ -251,6 +251,20 @@ struct ProjectGroupDetailView: View {
         if let data = try? JSONEncoder().encode(projects) { projectsData = data }
     }
 
+    private func deleteGroup() {
+        var projects: [GenerationProject]
+        switch loadBlob([GenerationProject].self, from: projectsData) {
+        case .empty: projects = []
+        case .ok(let existing): projects = existing
+        case .corrupt: return
+        }
+        let idsToDelete = Set(initialItems.map { $0.id })
+        projects.removeAll { idsToDelete.contains($0.id) }
+        if let data = try? JSONEncoder().encode(projects) { projectsData = data }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        dismiss()
+    }
+
     private func selectTab(_ index: Int) {
         persistCurrent()
         selectedIndex = index
@@ -312,15 +326,23 @@ struct ProjectGroupDetailView: View {
 
                         TopBarPillDivider()
 
-                        ShareLink(item: editText) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 16, weight: .regular))
+                        Menu {
+                            ShareLink(item: editText) {
+                                Label("Share", systemImage: "square.and.arrow.up")
+                            }
+                            Button(role: .destructive) {
+                                deleteGroup()
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(AppText.primary)
                                 .frame(width: 44, height: 38)
                                 .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Share")
+                        .accessibilityLabel("More")
                     }
                 }
                 .padding(.horizontal, 16)
