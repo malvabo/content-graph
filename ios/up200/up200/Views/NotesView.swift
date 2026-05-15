@@ -869,13 +869,6 @@ private struct NoteEditorPage: View {
         !combined.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private var dateString: String {
-        let f = DateFormatter()
-        f.dateStyle = .medium
-        f.timeStyle = .short
-        return f.string(from: original.updatedAt)
-    }
-
     private func openSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
@@ -937,12 +930,6 @@ private struct NoteEditorPage: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 4)
                     .padding(.bottom, 12)
-
-                Text(dateString)
-                    .font(.appCaption)
-                    .foregroundColor(Color.white.opacity(0.40))
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
 
                 TextField(
                     "",
