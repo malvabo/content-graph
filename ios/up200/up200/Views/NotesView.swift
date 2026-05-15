@@ -1101,19 +1101,39 @@ struct NotesView: View {
     /// home page) that owns the NavigationStack, title, and profile pill —
     /// so this view skips those pieces of chrome.
     var embedded: Bool = false
+    /// When the host provides these bindings (Simple mode), search lives
+    /// in the host's chrome and both views write through the same state.
+    /// When nil, the view uses its own internal storage (Classic mode).
+    var externalShowSearch: Binding<Bool>? = nil
+    var externalSearchText: Binding<String>? = nil
     @EnvironmentObject private var recording: RecordingController
     @Environment(\.scenePhase) private var scenePhase
     @State private var notes: [Note] = []
     @State private var editingNote: Note? = nil
     @State private var pendingSave: DispatchWorkItem? = nil
-    @State private var searchText = ""
-    @State private var showSearch = false
+    @State private var localSearchText = ""
+    @State private var localShowSearch = false
     @State private var selectedFilter: String? = nil
     @State private var customTags: [String] = UserDefaults.standard.stringArray(forKey: "note_custom_tags") ?? []
     @State private var showAddTag = false
     @State private var newTagName = ""
     @State private var reloadTask: Task<Void, Never>? = nil
     @FocusState private var searchFocused: Bool
+
+    private var showSearchBinding: Binding<Bool> {
+        externalShowSearch ?? $localShowSearch
+    }
+    private var searchTextBinding: Binding<String> {
+        externalSearchText ?? $localSearchText
+    }
+    private var showSearch: Bool {
+        get { showSearchBinding.wrappedValue }
+        nonmutating set { showSearchBinding.wrappedValue = newValue }
+    }
+    private var searchText: String {
+        get { searchTextBinding.wrappedValue }
+        nonmutating set { searchTextBinding.wrappedValue = newValue }
+    }
 
     private func startAudioNote() {
         recording.begin { transcript in
@@ -1341,27 +1361,29 @@ struct NotesView: View {
             AmbientBackground()
 
             VStack(spacing: 0) {
-                InlineTopBar(title: embedded ? "" : "Notes") {
-                    TopBarPill {
-                        // Classic mode (no profile callback) shows the pencil
-                        // for starting an audio note. The Simple home page
-                        // uses the central plus menu instead, so the pencil
-                        // is suppressed when embedded.
-                        if !embedded && onProfileTap == nil {
-                            TopBarPillButton(systemImage: "square.and.pencil") {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                startAudioNote()
+                // In Simple mode (embedded) the SimpleHomePage header owns
+                // both the search and profile pills, so this view skips its
+                // own top bar entirely.
+                if !embedded {
+                    InlineTopBar(title: "Notes") {
+                        TopBarPill {
+                            // Classic mode (no profile callback) shows the
+                            // pencil for starting an audio note.
+                            if onProfileTap == nil {
+                                TopBarPillButton(systemImage: "square.and.pencil") {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    startAudioNote()
+                                }
+                                .accessibilityLabel("New note")
+
+                                TopBarPillDivider()
                             }
-                            .accessibilityLabel("New note")
 
-                            TopBarPillDivider()
-                        }
-
-                        TopBarPillButton(
-                            systemImage: showSearch ? "xmark" : "magnifyingglass",
-                            isActive: showSearch
-                        ) {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            TopBarPillButton(
+                                systemImage: showSearch ? "xmark" : "magnifyingglass",
+                                isActive: showSearch
+                            ) {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 // Keep the focus assignment OUT of withAnimation
                                 // — pulling a FocusState change into the
                                 // animation context makes SwiftUI animate the
@@ -1387,10 +1409,11 @@ struct NotesView: View {
                             }
                         }
                     }
+                }
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            FilterChip(label: "All", isSelected: selectedFilter == nil, isDeletable: false) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        FilterChip(label: "All", isSelected: selectedFilter == nil, isDeletable: false) {
                                 withAnimation { selectedFilter = nil }
                             }
                             ForEach(allTags, id: \.self) { tag in
@@ -1443,7 +1466,7 @@ struct NotesView: View {
 
                 if showSearch {
                     SearchOverlay(
-                        query: $searchText,
+                        query: searchTextBinding,
                         placeholder: "Search notes",
                         isFocused: $searchFocused,
                         onCancel: {
