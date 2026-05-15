@@ -1862,6 +1862,9 @@ struct DrawingCanvasView: View {
         }
         note.updatedAt = Date()
 
+        let baseNote = note
+        let onSave = self.onSave
+
         if let onSave {
             onSave(note)
         } else {
@@ -1874,6 +1877,43 @@ struct DrawingCanvasView: View {
             NotesStore.save(all)
         }
         dismiss()
+
+        // Same titler text notes use after save: when there's enough
+        // transcript and no user-typed first line, ask the model for a
+        // short summary and re-save with it prepended so the row's
+        // displayTitle reads as a real title instead of "Sketch" or
+        // a raw transcript fragment.
+        let firstLine = trimmed
+            .split(whereSeparator: \.isNewline)
+            .first
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
+        let lineCount = trimmed.split(whereSeparator: \.isNewline)
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .count
+        guard trimmed.count >= 40 || lineCount >= 2 else { return }
+
+        Task.detached {
+            let aiTitle = await AIService.generateTitle(from: trimmed)
+            let cleaned = aiTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !cleaned.isEmpty,
+                  cleaned.lowercased() != firstLine.lowercased() else { return }
+            var titled = baseNote
+            titled.body = cleaned + (trimmed.isEmpty ? "" : "\n" + trimmed)
+            titled.updatedAt = Date()
+            await MainActor.run {
+                if let onSave {
+                    onSave(titled)
+                } else {
+                    var all = NotesStore.load()
+                    if let idx = all.firstIndex(where: { $0.id == titled.id }) {
+                        all[idx] = titled
+                    } else {
+                        all.insert(titled, at: 0)
+                    }
+                    NotesStore.save(all)
+                }
+            }
+        }
     }
 }
 
