@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main
 struct Up200App: App {
@@ -15,31 +16,48 @@ struct Up200App: App {
 
     var body: some Scene {
         WindowGroup {
-            if !onboardingComplete {
-                OnboardingView {
-                    withAnimation(.easeOut(duration: 0.4)) {
-                        onboardingComplete = true
-                    }
-                } onLogin: {
-                    withAnimation(.easeOut(duration: 0.4)) {
-                        onboardingComplete = true
-                    }
-                }
-                .preferredColorScheme(colorScheme)
-            } else {
-                ContentView()
-                    .preferredColorScheme(colorScheme)
-                    .fullScreenCover(isPresented: $needsSetup) {
-                        APIKeySetupView {
-                            needsSetup = false
+            Group {
+                if !onboardingComplete {
+                    OnboardingView {
+                        withAnimation(.easeOut(duration: 0.4)) {
+                            onboardingComplete = true
+                        }
+                    } onLogin: {
+                        withAnimation(.easeOut(duration: 0.4)) {
+                            onboardingComplete = true
                         }
                     }
-                    .task {
-                        let hasKey = await Task.detached(priority: .userInitiated) {
-                            KeychainService.load() != nil
-                        }.value
-                        needsSetup = !hasKey
-                    }
+                } else {
+                    ContentView()
+                        .fullScreenCover(isPresented: $needsSetup) {
+                            APIKeySetupView {
+                                needsSetup = false
+                            }
+                        }
+                        .task {
+                            let hasKey = await Task.detached(priority: .userInitiated) {
+                                KeychainService.load() != nil
+                            }.value
+                            needsSetup = !hasKey
+                        }
+                }
+            }
+            .preferredColorScheme(colorScheme)
+            // Mirror the in-app dark-mode toggle to the window's interface style
+            // so the system status bar (using UIStatusBarStyleDefault) picks dark
+            // content in light mode and light content in dark mode — otherwise it
+            // follows the device's system setting, which may not match the app.
+            .onAppear { applyInterfaceStyle() }
+            .onChange(of: darkModeEnabled) { _, _ in applyInterfaceStyle() }
+        }
+    }
+
+    private func applyInterfaceStyle() {
+        let style: UIUserInterfaceStyle = darkModeEnabled ? .dark : .light
+        for scene in UIApplication.shared.connectedScenes {
+            guard let windowScene = scene as? UIWindowScene else { continue }
+            for window in windowScene.windows {
+                window.overrideUserInterfaceStyle = style
             }
         }
     }
