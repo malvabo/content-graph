@@ -174,7 +174,7 @@ private struct LibraryGroupRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.app(size: 19, weight: .medium))
+                    .font(.appRowTitle)
                     .foregroundColor(Color.white.opacity(0.88))
                     .lineLimit(1)
                 Text("\(outputTypesList(items)) · \(libraryRelativeTime(items.first?.date ?? Date()))")
@@ -733,7 +733,7 @@ private struct TemplateRow: View {
 
     var body: some View {
         Text(title)
-            .font(.app(size: 19, weight: .regular))
+            .font(.appRowTitle)
             .foregroundColor(Color.white.opacity(0.82))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)

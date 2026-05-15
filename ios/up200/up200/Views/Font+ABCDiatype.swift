@@ -10,6 +10,9 @@ extension Font {
     static let appTitle        = app(size: 26, weight: .bold)      // detail screen heading
     static let appNavTitle     = app(size: 19, weight: .semibold)  // nav bar / modal title
 
+    // Row title  (notes / library / templates list rows)
+    static let appRowTitle     = app(size: 17, weight: .semibold)
+
     // Body
     static let appBody         = app(size: 19)
     static let appBodyBold     = app(size: 19, weight: .semibold)
