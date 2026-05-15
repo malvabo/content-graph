@@ -669,7 +669,7 @@ struct ImportSheetView: View {
             Text("Import content")
                 .font(.appNavTitle)
                 .foregroundColor(Color.white.opacity(0.88))
-                .padding(.top, 8)
+                .padding(.top, 4)
                 .padding(.bottom, 2)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
@@ -696,7 +696,8 @@ struct ImportSheetView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.bottom, 16)
+        .padding(.bottom, 8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
 
@@ -1626,7 +1627,11 @@ private struct SourcesBlock: View {
                     }
                 }
             }
-            .presentationDetents((sheet == .picker || sheet == .note) ? [.medium, .large] : [.large])
+            .presentationDetents(
+                sheet == .picker ? [.height(270)] :
+                sheet == .note ? [.medium, .large] :
+                [.large]
+            )
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(sheet == .text ? 10 : 22)
             .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
