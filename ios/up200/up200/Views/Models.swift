@@ -61,31 +61,30 @@ enum AppInk {
 }
 
 /// Adaptive app-background tokens. Dark mode keeps the warm dark-brown
-/// wash that gives the brand its identity; light mode is a clean cool
-/// off-white with a soft warm amber breath in the corners, so the same
-/// "lamp glowing in the corner" feel reads in both modes without going
-/// muddy beige.
+/// wash that gives the brand its identity; light mode is a clean
+/// neutral grey — no warm tint, no peach glow — so the page reads as
+/// a flat off-white plane like Apple's own light surfaces.
 enum AppBackground {
-    /// Solid app/sheet background.
+    /// Solid app/sheet background. Neutral RGB on light so the warm
+    /// brand colors (amber chips, CTA) pop against a true grey ground
+    /// instead of fighting a beige tint.
     static let primary = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.10, green: 0.08, blue: 0.07, alpha: 1.0)
-            : UIColor(red: 0.965, green: 0.962, blue: 0.957, alpha: 1.0)
+            : UIColor(white: 0.96, alpha: 1.0)
     })
-    /// Top-left radial-glow tint. Saturated warm amber on dark; a soft
-    /// peach breath on light so the corner glow stays on-brand instead
-    /// of reading as a generic grey wash.
+    /// Top-left radial-glow tint. Warm amber on dark; a barely-there
+    /// neutral lift on light so the corner doesn't go yellow.
     static let glowTopLeft = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.55, green: 0.30, blue: 0.08, alpha: 0.35)
-            : UIColor(red: 1.00, green: 0.85, blue: 0.65, alpha: 0.32)
+            : UIColor(white: 1.0, alpha: 0.35)
     })
-    /// Bottom-right radial-glow tint. Cooler counterweight to the
-    /// top-left warm glow.
+    /// Bottom-right radial-glow tint.
     static let glowBottomRight = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.30, green: 0.20, blue: 0.08, alpha: 0.22)
-            : UIColor(red: 0.86, green: 0.88, blue: 0.92, alpha: 0.40)
+            : UIColor(white: 0.88, alpha: 0.30)
     })
 
     /// Raised card / pill surface that sits on top of `primary`. Near-black
