@@ -1493,7 +1493,7 @@ struct InlineTopBar<Trailing: View>: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(title)
-                .font(.app(size: 30, weight: .bold))
+                .font(.app(size: 26, weight: .bold))
                 .foregroundColor(AppText.primary)
                 .fixedSize(horizontal: true, vertical: false)
                 .accessibilityAddTraits(.isHeader)

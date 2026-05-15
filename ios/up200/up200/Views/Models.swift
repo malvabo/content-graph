@@ -195,6 +195,7 @@ struct Note: Identifiable, Codable, Equatable, Hashable {
     var body: String = ""
     var updatedAt: Date = Date()
     var tags: [String] = []
+    var isPinned: Bool = false
 
     var isEmpty: Bool {
         body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -226,6 +227,20 @@ struct Note: Identifiable, Codable, Equatable, Hashable {
         }
         out.title = ""
         return out
+    }
+
+    // Custom init tolerates missing keys for fields added after release —
+    // Swift's synthesized decoder requires every key to be present.
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id        = try c.decodeIfPresent(UUID.self,     forKey: .id)        ?? UUID()
+        title     = try c.decodeIfPresent(String.self,   forKey: .title)     ?? ""
+        body      = try c.decodeIfPresent(String.self,   forKey: .body)      ?? ""
+        updatedAt = try c.decodeIfPresent(Date.self,     forKey: .updatedAt) ?? Date()
+        tags      = try c.decodeIfPresent([String].self, forKey: .tags)      ?? []
+        isPinned  = try c.decodeIfPresent(Bool.self,     forKey: .isPinned)  ?? false
     }
 }
 
