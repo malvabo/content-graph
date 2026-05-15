@@ -2618,12 +2618,12 @@ struct SearchOverlay<Results: View>: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // No tint on top of the material — on this already-dark app even a
-            // 30 % wash blacks out the blur. Let the material work unobstructed
-            // so the filter chips and list chrome behind it read as a blurred
-            // glass surface.
+            // `.regularMaterial` adds a real light tint on dark backgrounds —
+            // unlike `.ultraThinMaterial`, which is near-invisible against this
+            // app's solid-dark backdrop and produced no perceptible glass at
+            // all. No extra colour overlay so the material isn't flattened.
             Rectangle()
-                .fill(.ultraThinMaterial)
+                .fill(.regularMaterial)
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
