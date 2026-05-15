@@ -14,11 +14,29 @@ struct LibraryView: View {
     /// home page) that owns the NavigationStack, title, and profile pill —
     /// so this view skips those pieces of chrome.
     var embedded: Bool = false
+    /// See `NotesView.externalShowSearch`.
+    var externalShowSearch: Binding<Bool>? = nil
+    var externalSearchText: Binding<String>? = nil
     @AppStorage("library_projects") private var projectsData: Data = Data()
-    @State private var searchText = ""
-    @State private var showSearch = false
+    @State private var localSearchText = ""
+    @State private var localShowSearch = false
     @State private var cachedGroups: [(title: String, items: [GenerationProject])] = []
     @FocusState private var searchFocused: Bool
+
+    private var showSearchBinding: Binding<Bool> {
+        externalShowSearch ?? $localShowSearch
+    }
+    private var searchTextBinding: Binding<String> {
+        externalSearchText ?? $localSearchText
+    }
+    private var showSearch: Bool {
+        get { showSearchBinding.wrappedValue }
+        nonmutating set { showSearchBinding.wrappedValue = newValue }
+    }
+    private var searchText: String {
+        get { searchTextBinding.wrappedValue }
+        nonmutating set { searchTextBinding.wrappedValue = newValue }
+    }
 
     private var filteredGroups: [(title: String, items: [GenerationProject])] {
         guard !searchText.isEmpty else { return cachedGroups }
@@ -95,20 +113,16 @@ struct LibraryView: View {
             AmbientBackground()
 
             VStack(spacing: 0) {
-                InlineTopBar(title: embedded ? "" : "Library") {
+                // In Simple mode (embedded) the SimpleHomePage header owns
+                // search and profile, so this view skips its own top bar.
+                if !embedded {
+                    InlineTopBar(title: "Library") {
                         TopBarPill {
                             TopBarPillButton(
                                 systemImage: showSearch ? "xmark" : "magnifyingglass",
                                 isActive: showSearch
                             ) {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                // Keep the focus assignment OUT of withAnimation
-                                // — pulling a FocusState change into the
-                                // animation context makes SwiftUI animate the
-                                // keyboard appearance with the same easeInOut,
-                                // which drags the overlay layout up from the
-                                // bottom instead of letting it fade in cleanly.
-                                // SearchOverlay's onAppear handles focus.
                                 withAnimation(AppAnimation.standard) {
                                     showSearch.toggle()
                                     if !showSearch { searchText = "" }
@@ -126,12 +140,13 @@ struct LibraryView: View {
                             }
                         }
                     }
+                }
 
-                    Rectangle()
-                        .fill(AppInk.solid(0.06))
-                        .frame(height: 0.5)
+                Rectangle()
+                    .fill(AppInk.solid(0.06))
+                    .frame(height: 0.5)
 
-                    libraryList(
+                libraryList(
                         cachedGroups,
                         emptyTitle: "No generations yet",
                         emptySubtitle: "Your content outputs will appear here"
@@ -148,7 +163,7 @@ struct LibraryView: View {
 
                 if showSearch {
                     SearchOverlay(
-                        query: $searchText,
+                        query: searchTextBinding,
                         placeholder: "Search library",
                         isFocused: $searchFocused,
                         onCancel: {
@@ -1612,6 +1627,8 @@ private struct SimpleHomePage: View {
     var onProfileTap: () -> Void = {}
 
     @State private var section: AppTab = .notes
+    @State private var showSearch = false
+    @State private var searchText = ""
 
     var body: some View {
         NavigationStack {
@@ -1619,7 +1636,17 @@ private struct SimpleHomePage: View {
                 AmbientBackground()
 
                 VStack(spacing: 0) {
-                    SimpleHomeHeader(section: $section, onProfileTap: onProfileTap)
+                    SimpleHomeHeader(
+                        section: $section,
+                        showSearch: $showSearch,
+                        onProfileTap: onProfileTap,
+                        onSearchToggle: {
+                            withAnimation(AppAnimation.standard) {
+                                showSearch.toggle()
+                                if !showSearch { searchText = "" }
+                            }
+                        }
+                    )
 
                     Rectangle()
                         .fill(AppInk.solid(0.06))
@@ -1627,9 +1654,18 @@ private struct SimpleHomePage: View {
 
                     Group {
                         if section == .notes {
-                            NotesView(newNoteTrigger: newNoteTrigger, embedded: true)
+                            NotesView(
+                                newNoteTrigger: newNoteTrigger,
+                                embedded: true,
+                                externalShowSearch: $showSearch,
+                                externalSearchText: $searchText
+                            )
                         } else {
-                            LibraryView(embedded: true)
+                            LibraryView(
+                                embedded: true,
+                                externalShowSearch: $showSearch,
+                                externalSearchText: $searchText
+                            )
                         }
                     }
                 }
@@ -1637,12 +1673,22 @@ private struct SimpleHomePage: View {
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
         }
+        // Section change should not leak stale search state from the
+        // previously-active section.
+        .onChange(of: section) { _, _ in
+            withAnimation(AppAnimation.standard) {
+                showSearch = false
+                searchText = ""
+            }
+        }
     }
 }
 
 private struct SimpleHomeHeader: View {
     @Binding var section: AppTab
+    @Binding var showSearch: Bool
     let onProfileTap: () -> Void
+    let onSearchToggle: () -> Void
 
     private static let selectSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
 
@@ -1650,6 +1696,16 @@ private struct SimpleHomeHeader: View {
         HStack(spacing: 12) {
             segmentedTabs
             Spacer(minLength: 8)
+            TopBarPill {
+                TopBarPillButton(
+                    systemImage: showSearch ? "xmark" : "magnifyingglass",
+                    isActive: showSearch
+                ) {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onSearchToggle()
+                }
+                .accessibilityLabel(showSearch ? "Close search" : "Search")
+            }
             TopBarPill {
                 TopBarPillButton(systemImage: "person.crop.circle") {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
