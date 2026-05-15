@@ -934,7 +934,7 @@ private struct TemplateEditPage: View {
     @State private var title: String
     @State private var existingSubtitle: String
     @State private var prompt: String
-    @State private var selectedFormatID: String?
+    private let originalFormatIDs: [String]
     @State private var promptBeforeDictation: String = ""
     @State private var isEnhancing: Bool = false
     @State private var enhanceFailed: Bool = false
@@ -956,7 +956,7 @@ private struct TemplateEditPage: View {
         _title = State(initialValue: template?.title ?? "")
         _existingSubtitle = State(initialValue: template?.subtitle ?? "")
         _prompt = State(initialValue: template?.prompt ?? "")
-        _selectedFormatID = State(initialValue: template?.formatIDs.first)
+        self.originalFormatIDs = template?.formatIDs ?? []
     }
 
     private var isNew: Bool { originalID == nil }
@@ -979,7 +979,7 @@ private struct TemplateEditPage: View {
         var tpl = CustomTemplate(title: finalTitle, subtitle: existingSubtitle)
         if let id = originalID { tpl.id = id }
         tpl.prompt = prompt
-        tpl.formatIDs = selectedFormatID.map { [$0] } ?? []
+        tpl.formatIDs = originalFormatIDs
         onSave(tpl)
     }
 
@@ -1001,7 +1001,7 @@ private struct TemplateEditPage: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         isEnhancing = true
         let titleSnapshot = title
-        let formatLabels = allFormats.filter { selectedFormatID == $0.id }.map(\.label)
+        let formatLabels = allFormats.filter { originalFormatIDs.contains($0.id) }.map(\.label)
         Task {
             async let promptResult = TemplatePromptEnhancer.enhance(
                 title: titleSnapshot,
@@ -1086,27 +1086,21 @@ private struct TemplateEditPage: View {
                             .padding(.horizontal, 20)
                             .animation(AppAnimation.quick, value: title)
 
-                        // Content type dropdown + prompt
-                        VStack(alignment: .leading, spacing: 16) {
-                            TemplateFormatPicker(selectedFormatID: $selectedFormatID)
-                                .padding(.horizontal, 20)
-
-                            // TextField with axis:.vertical grows with content
-                            // and lets the page-level ScrollView handle scrolling.
-                            // TextEditor here would engage its own scroll and
-                            // fight the parent for scroll gestures.
-                            TextField(
-                                text: $prompt,
-                                axis: .vertical
-                            ) {
-                                Text("Describe what this template should produce\u{2026}")
-                                    .foregroundColor(AppText.muted)
-                            }
-                            .appBodyText()
-                            .tint(.white)
-                            .padding(.horizontal, 20)
-                            .focused($focus, equals: .prompt)
+                        // TextField with axis:.vertical grows with content
+                        // and lets the page-level ScrollView handle scrolling.
+                        // TextEditor here would engage its own scroll and
+                        // fight the parent for scroll gestures.
+                        TextField(
+                            text: $prompt,
+                            axis: .vertical
+                        ) {
+                            Text("Describe what this template should produce\u{2026}")
+                                .foregroundColor(AppText.muted)
                         }
+                        .appBodyText()
+                        .tint(.white)
+                        .padding(.horizontal, 20)
+                        .focused($focus, equals: .prompt)
                     }
                     .padding(.top, 4)
                     .padding(.bottom, 96)
@@ -1322,59 +1316,6 @@ private struct TemplatePromptEnhancer {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: "\"'“”‘’`.,"))
         return cleaned.isEmpty ? .failure(.empty) : .success(cleaned)
-    }
-}
-
-private struct TemplateFormatPicker: View {
-    @Binding var selectedFormatID: String?
-
-    private var selectedLabel: String {
-        if let id = selectedFormatID,
-           let fmt = allFormats.first(where: { $0.id == id }) {
-            return fmt.label
-        }
-        return "Choose"
-    }
-
-    private var hasSelection: Bool { selectedFormatID != nil }
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Text("Content type")
-                .font(.appSubtextMedium)
-                .foregroundColor(Color.white.opacity(0.85))
-
-            Spacer()
-
-            Menu {
-                ForEach(allFormats) { fmt in
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        selectedFormatID = fmt.id
-                    } label: {
-                        if selectedFormatID == fmt.id {
-                            Label(fmt.label, systemImage: "checkmark")
-                        } else {
-                            Text(fmt.label)
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 5) {
-                    Text(selectedLabel)
-                        .font(.appSubtextMedium)
-                        .foregroundColor(Color.white.opacity(hasSelection ? 0.70 : 0.45))
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.app(size: 11, weight: .semibold))
-                        .foregroundColor(AppText.tertiary)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .background(Color.white.opacity(0.09))
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(Color.white.opacity(0.10), lineWidth: 0.5))
-            }
-        }
     }
 }
 
