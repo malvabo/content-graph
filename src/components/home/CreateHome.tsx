@@ -436,8 +436,14 @@ export function VoiceRecordSheet({ isOpen, onClose, onSave }: {
     const onResize = () => resize();
     window.addEventListener('resize', onResize);
 
+    // Tracks whether the effect cleanup has already run by the time the
+    // getUserMedia promise resolves. Without this, dismissing the sheet during
+    // the OS permission prompt leaves the mic stream and AudioContext alive
+    // because the cleanup ran while `stream` / `audioCtx` were still null.
+    let cancelled = false;
     if (recording) {
       navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(s => {
+        if (cancelled) { s.getTracks().forEach(t => t.stop()); return; }
         stream = s;
         const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         audioCtx = new Ctx();
@@ -500,6 +506,7 @@ export function VoiceRecordSheet({ isOpen, onClose, onSave }: {
     };
     draw();
     return () => {
+      cancelled = true;
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', onResize);
       stream?.getTracks().forEach(tr => tr.stop());
