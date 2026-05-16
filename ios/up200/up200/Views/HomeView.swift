@@ -2395,8 +2395,11 @@ private struct PromptField: View {
             Text("Leave empty to generate from sources and format.")
                 .foregroundStyle(AppInk.solid(0.22))
         }
-        .font(.appSubtext)
-        .foregroundColor(AppInk.solid(0.85))
+        // Match the canonical body-text style (17pt, lineSpacing 8,
+        // primary ink) used everywhere else for reading copy. The prompt
+        // composer is the only multi-line field on this sheet, so it
+        // should read at body rhythm rather than the tighter subtext.
+        .appBodyText()
         .tint(AppText.primary)
         .lineLimit(3...6)
         .padding(.horizontal, 16)
