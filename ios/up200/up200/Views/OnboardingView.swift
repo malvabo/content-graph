@@ -25,7 +25,9 @@ private enum OnboardingStep: Int {
 private enum CapturePhase {
     case prompt      // stars drift inside the blurb; "Press and hold to record"
     case recording   // blurb morphs to a live waveform; "Finish recording" CTA below
-    case choose      // headline question + 3 transform/expand tag options
+    case choose      // headline question + content-type / save / "something else" options
+    case specify     // user picked "Something else" — second recording for what they want
+    case generating  // user picked a content type — pill with orbiting dots, then exit
 }
 
 struct OnboardingView: View {
@@ -46,7 +48,10 @@ struct OnboardingView: View {
     @State private var capturePhase: CapturePhase = .prompt
     @StateObject private var captureRecorder = VoiceRecorder()
     @State private var recordingSeconds: Int = 0
+    @State private var specifySeconds: Int = 0
     @State private var showCaptureMicAlert: Bool = false
+    @State private var chosenContentLabel: String = ""
+    @State private var generatingTask: Task<Void, Never>? = nil
 
     var body: some View {
         ZStack {
@@ -280,17 +285,28 @@ struct OnboardingView: View {
         .task {
             // Tick the on-screen mm:ss only while the recorder is active.
             // Loop exits when the view is torn down (SwiftUI cancels .task).
+            // Two counters because the user may record twice — once for the
+            // idea and again to specify "what do you want to" — and each
+            // phase shows its own elapsed time.
             while !Task.isCancelled {
                 do { try await Task.sleep(nanoseconds: 1_000_000_000) }
                 catch { break }
-                if captureRecorder.isRecording { recordingSeconds += 1 }
+                guard captureRecorder.isRecording else { continue }
+                switch capturePhase {
+                case .recording: recordingSeconds += 1
+                case .specify:   specifySeconds += 1
+                default:         break
+                }
             }
         }
         .onChange(of: captureRecorder.permissionDenied) { _, denied in
             if denied {
                 showCaptureMicAlert = true
                 withAnimation(.easeInOut(duration: 0.35)) {
-                    capturePhase = .prompt
+                    // If the user already cleared the first recording and only
+                    // got blocked on the specify pass, drop them back into the
+                    // choose list rather than restarting the whole flow.
+                    capturePhase = capturePhase == .specify ? .choose : .prompt
                 }
             }
         }
@@ -304,7 +320,11 @@ struct OnboardingView: View {
         } message: {
             Text("Microphone access is needed to capture your first idea. You can also skip and start exploring.")
         }
-        .onDisappear { captureRecorder.stop() }
+        .onDisappear {
+            captureRecorder.stop()
+            generatingTask?.cancel()
+            generatingTask = nil
+        }
     }
 
     @ViewBuilder private var captureHeadline: some View {
@@ -317,19 +337,27 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
                 .transition(.opacity)
-        case .choose:
+        case .choose, .generating:
             VStack(spacing: 6) {
                 Text("Your idea is safe here.")
                     .font(.system(size: 20, weight: .medium, design: .monospaced))
                     .kerning(-0.3)
                     .foregroundColor(AppText.primary)
-                Text("Transform or expand it?")
+                Text("What do you want to create?")
                     .font(.system(size: 20, weight: .medium, design: .monospaced))
                     .kerning(-0.3)
                     .foregroundColor(Color.white.opacity(0.72))
             }
             .multilineTextAlignment(.center)
             .transition(.opacity)
+        case .specify:
+            Text("What do you want to?..")
+                .font(.system(size: 22, weight: .medium, design: .monospaced))
+                .kerning(-0.3)
+                .foregroundColor(AppText.primary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .transition(.opacity)
         }
     }
 
@@ -385,11 +413,48 @@ struct OnboardingView: View {
 
         case .choose:
             VStack(spacing: 12) {
-                captureTagRow(label: "A LinkedIn post", icon: "person.2.fill")
-                captureTagRow(label: "A short article", icon: "doc.text")
-                captureTagRow(label: "A Twitter thread", icon: "text.bubble")
+                captureTagRow(label: "A LinkedIn post", icon: "person.2.fill") {
+                    chooseContent("A LinkedIn post")
+                }
+                captureTagRow(label: "A Twitter thread", icon: "text.bubble") {
+                    chooseContent("A Twitter thread")
+                }
+                captureTagRow(label: "Something else", icon: "sparkles") {
+                    startSpecifyRecording()
+                }
+                captureTagRow(label: "Just save my note for now", icon: "tray.and.arrow.down") {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onGetStarted()
+                }
             }
             .transition(.opacity.combined(with: .move(edge: .bottom)))
+
+        case .specify:
+            VStack(spacing: 18) {
+                OnboardingRecordingWaveform(recorder: captureRecorder)
+                    .frame(height: 180)
+                    .frame(maxWidth: .infinity)
+                    .background(BrandColor.amber.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .stroke(BrandColor.amber.opacity(0.20), lineWidth: 0.5)
+                    )
+
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(BrandColor.amber)
+                        .frame(width: 7, height: 7)
+                    Text("Recording  \(formatCaptureTime(specifySeconds))")
+                        .font(.system(size: 14, weight: .medium, design: .monospaced))
+                        .foregroundColor(BrandColor.amber.opacity(0.92))
+                }
+            }
+            .transition(.opacity)
+
+        case .generating:
+            OnboardingGenerationPill(label: chosenContentLabel)
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
         }
     }
 
@@ -413,14 +478,25 @@ struct OnboardingView: View {
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         case .choose:
             Color.clear.frame(height: 54)
+        case .specify:
+            Button(action: finishSpecifyRecording) {
+                Text("Finish recording")
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.white.opacity(0.94))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .transition(.opacity.combined(with: .move(edge: .bottom)))
+        case .generating:
+            Color.clear.frame(height: 54)
         }
     }
 
-    private func captureTagRow(label: String, icon: String) -> some View {
-        Button(action: {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            onGetStarted()
-        }) {
+    private func captureTagRow(label: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .medium))
@@ -430,9 +506,6 @@ struct OnboardingView: View {
                     .font(.app(size: 16, weight: .medium))
                     .foregroundColor(AppText.primary)
                 Spacer()
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.45))
             }
             .padding(.horizontal, 18)
             .frame(height: 56)
@@ -461,6 +534,39 @@ struct OnboardingView: View {
         captureRecorder.stop()
         withAnimation(.easeInOut(duration: 0.45)) {
             capturePhase = .choose
+        }
+    }
+
+    private func startSpecifyRecording() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        specifySeconds = 0
+        captureRecorder.start()
+        withAnimation(.easeInOut(duration: 0.45)) {
+            capturePhase = .specify
+        }
+    }
+
+    private func finishSpecifyRecording() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        captureRecorder.stop()
+        // After specifying, fall through into the same generating pill the
+        // direct content-type taps use — onboarding always exits via the
+        // same animated handoff regardless of which path got the user here.
+        chooseContent("Your content")
+    }
+
+    private func chooseContent(_ label: String) {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        captureRecorder.stop()
+        chosenContentLabel = label
+        withAnimation(.easeInOut(duration: 0.45)) {
+            capturePhase = .generating
+        }
+        generatingTask?.cancel()
+        generatingTask = Task {
+            do { try await Task.sleep(nanoseconds: 1_800_000_000) }
+            catch { return }
+            await MainActor.run { onGetStarted() }
         }
     }
 
@@ -558,6 +664,86 @@ private struct OnboardingRecordingWaveform: View {
     private func barOpacity(index: Int) -> Double {
         let pos = Double(index) / Double(barCount - 1)
         return 0.55 + sin(pos * .pi) * 0.45
+    }
+}
+
+// MARK: - Onboarding generation pill
+
+/// Compact pill shown while the user "waits" for their first piece of
+/// content. Mirrors the in-app GenerationBanner — orbiting dots on the
+/// left, "Creating your <content>" copy — so the moment the user lands
+/// in the app and sees the real banner, it reads as the same instrument
+/// they just saw at the end of onboarding.
+private struct OnboardingGenerationPill: View {
+    let label: String
+
+    private struct DotConfig {
+        let radius: Double
+        let size: Double
+        let speed: Double
+        let phase: Double
+        let opacity: Double
+    }
+    private let dotConfigs: [DotConfig] = [
+        DotConfig(radius: 9,  size: 3.5, speed: 1.1,  phase: 0.0,  opacity: 0.95),
+        DotConfig(radius: 7,  size: 2.5, speed: 1.7,  phase: 0.4,  opacity: 0.70),
+        DotConfig(radius: 11, size: 2.0, speed: 0.85, phase: 0.9,  opacity: 0.55),
+        DotConfig(radius: 6,  size: 3.0, speed: 2.2,  phase: 1.4,  opacity: 0.80),
+        DotConfig(radius: 10, size: 2.0, speed: 1.45, phase: 1.9,  opacity: 0.60),
+        DotConfig(radius: 8,  size: 2.5, speed: 0.95, phase: 2.5,  opacity: 0.75),
+    ]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.06))
+                    .frame(width: 36, height: 36)
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                    ZStack {
+                        ForEach(dotConfigs.indices, id: \.self) { i in
+                            let cfg = dotConfigs[i]
+                            let angle = t * cfg.speed + cfg.phase
+                            let x = cfg.radius * cos(angle)
+                            let y = cfg.radius * sin(angle)
+                            let pulse = (sin(t * cfg.speed * 2.3 + cfg.phase) + 1) / 2
+                            Circle()
+                                .fill(Color.white.opacity(cfg.opacity * (0.5 + 0.5 * pulse)))
+                                .frame(width: cfg.size * (0.75 + 0.25 * pulse),
+                                       height: cfg.size * (0.75 + 0.25 * pulse))
+                                .blur(radius: 0.8)
+                                .offset(x: x, y: y)
+                        }
+                    }
+                }
+            }
+            .frame(width: 36, height: 36)
+            .clipShape(Circle())
+
+            Text("Creating \(label.lowercased())\u{2026}")
+                .font(.app(size: 15, weight: .semibold))
+                .foregroundColor(AppText.primary)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color.white.opacity(0.05))
+                Ellipse()
+                    .fill(BrandColor.amber.opacity(0.10))
+                    .blur(radius: 22)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: Color.black.opacity(0.40), radius: 16, x: 0, y: 8)
+        .accessibilityLabel("Creating your content")
     }
 }
 
