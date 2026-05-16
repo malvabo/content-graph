@@ -894,13 +894,13 @@ class OnboardingSceneViewController: UIViewController {
 
     private func setupLabelAnchors() {
         // Anchor positions pulled in from the original far-corner values so
-        // a fully-typed pill of the widest label ("FINANCIAL DATA") still
+        // a fully-typed pill of the widest label ("TEAM SYNC NOTES") still
         // fits inside the viewport without the on-screen clamp having to do
         // visible work.
         let defs: [(text: String, pos: SCNVector3, ghost: Bool)] = [
-            ("FINANCIAL DATA", SCNVector3(-3.5,  0.5,  3),  true),
-            ("PEOPLE",         SCNVector3( 5.0,  5.5,  1),  false),
-            ("COMPANIES",      SCNVector3( 5.0, -5.5, -1),  false),
+            ("PRODUCT IDEA",    SCNVector3(-3.5,  0.5,  3),  true),
+            ("FEEDBACK",        SCNVector3( 5.0,  5.5,  1),  false),
+            ("TEAM SYNC NOTES", SCNVector3( 5.0, -5.5, -1),  false),
         ]
 
         for def in defs {
