@@ -1146,17 +1146,12 @@ private struct NoteEditorPage: View {
             Spacer()
 
             TopBarPill {
-                if hasContent {
-                    ShareLink(item: combined) {
-                        Image(systemName: "square.and.arrow.up")
-                            .topBarPillLabel()
-                    }
-                    .accessibilityLabel("Share")
-
-                    TopBarPillDivider()
-                }
-
                 Menu {
+                    if hasContent {
+                        ShareLink(item: combined) {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
+                    }
                     Button(role: .destructive) {
                         performDelete()
                     } label: {
