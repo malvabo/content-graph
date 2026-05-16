@@ -921,36 +921,35 @@ private struct RewriteSuggestionCard: View {
     let onAccept: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             tagLabel("SUGGESTED REWRITE", icon: "wand.and.stars")
 
-            diffBlock(
-                label: "FROM",
-                text: suggestion.before,
-                fill: AppInk.solid(0.04),
-                stroke: AppInk.solid(0.08),
-                textColor: AppText.secondary,
-                strike: true
-            )
+            // FROM → TO is one semantic unit; keep it tight so the hierarchy
+            // reads as [header] [diff] [action] instead of five equal rows.
+            VStack(alignment: .leading, spacing: 6) {
+                diffBlock(
+                    label: "FROM",
+                    text: suggestion.before,
+                    fill: AppInk.solid(0.04),
+                    stroke: AppInk.solid(0.08),
+                    textColor: AppText.secondary,
+                    strike: true
+                )
 
-            HStack(spacing: 0) {
-                Spacer()
                 Image(systemName: "arrow.down")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(AppText.tertiary)
-                    .frame(width: 22, height: 22)
-                    .background(Circle().fill(AppInk.solid(0.06)))
-                Spacer()
-            }
+                    .frame(maxWidth: .infinity, alignment: .center)
 
-            diffBlock(
-                label: "TO",
-                text: suggestion.after,
-                fill: AppInk.solid(0.08),
-                stroke: BrandColor.amber.opacity(0.35),
-                textColor: AppText.primary,
-                strike: false
-            )
+                diffBlock(
+                    label: "TO",
+                    text: suggestion.after,
+                    fill: AppInk.solid(0.08),
+                    stroke: AppInk.solid(0.10),
+                    textColor: AppText.primary,
+                    strike: false
+                )
+            }
 
             Button(action: onAccept) {
                 HStack(spacing: 8) {
@@ -971,7 +970,7 @@ private struct RewriteSuggestionCard: View {
             .disabled(isApplied)
             .accessibilityLabel(isApplied ? "Rewrite applied" : "Accept rewrite")
         }
-        .padding(16)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppInk.solid(0.05))
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
@@ -1005,7 +1004,7 @@ private struct RewriteSuggestionCard: View {
         textColor: Color,
         strike: Bool
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             tagLabel(label)
             // `Text(verbatim:)` so source text containing markdown like
             // `**word**` renders literally instead of as bold — the diff is
@@ -1016,7 +1015,8 @@ private struct RewriteSuggestionCard: View {
                 .strikethrough(strike, color: AppText.tertiary)
                 .lineSpacing(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
                 .background(fill)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
