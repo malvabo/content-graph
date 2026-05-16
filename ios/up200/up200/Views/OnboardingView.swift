@@ -37,6 +37,15 @@ struct OnboardingView: View {
     // to animate against — keeping the workspace screen as instant as the
     // SCN fade is in `applyFeatures`'s reduce-motion path.
     @State private var featuresAppeared: Bool = UIAccessibility.isReduceMotionEnabled
+    // Gate for the step-4 CTA. The button is laid out from t=0 but only
+    // animates in over its own `delay(1.15) + duration(0.5)` window — i.e.
+    // it sits at opacity 0 until t≈1.65 while still being hit-testable
+    // (`.opacity(0)` doesn't disable taps in SwiftUI). Without this gate a
+    // user rage-tapping the bottom of the screen on entry could dismiss
+    // onboarding before ever seeing the workspace preview. Same Reduce
+    // Motion treatment as `featuresAppeared` so the CTA is tappable
+    // immediately when the cascade is being skipped.
+    @State private var ctaReady: Bool = UIAccessibility.isReduceMotionEnabled
     // Typewriter state for the brand mark. Mirrors web's TypewriterLogo —
     // mono font, lowercase "up150", char-by-char typing with a blinking
     // caret that persists after the word is fully typed.
@@ -315,13 +324,26 @@ struct OnboardingView: View {
             .opacity(featuresAppeared ? 1 : 0)
             .offset(y: featuresAppeared ? 0 : 12)
             .animation(.easeOut(duration: 0.5).delay(1.15), value: featuresAppeared)
+            .allowsHitTesting(ctaReady)
 
             Spacer().frame(height: 52)
         }
-        // Toggle the per-element appearance cascade on entry. We don't reset
-        // on disappear because step 4 is the final beat — onGetStarted()
-        // dismisses the whole onboarding view.
-        .onAppear { featuresAppeared = true }
+        // Toggle the per-element appearance cascade on entry, and arm the
+        // CTA gate after the CTA's own animation has finished so the button
+        // can only be tapped once it's actually visible. We don't reset
+        // either flag on disappear because step 4 is the final beat —
+        // onGetStarted() dismisses the whole onboarding view.
+        .onAppear {
+            featuresAppeared = true
+            // CTA animation: easeOut(0.5) with delay(1.15). Arm the gate
+            // ~50ms before the animation visually settles so a fast-finger
+            // user isn't blocked by an off-by-one frame.
+            if !UIAccessibility.isReduceMotionEnabled && !ctaReady {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.60) {
+                    ctaReady = true
+                }
+            }
+        }
     }
 
     /// The mock in the centre: 4 feature cards arranged in two rows around a
