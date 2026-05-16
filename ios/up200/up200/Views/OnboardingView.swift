@@ -245,10 +245,19 @@ struct OnboardingView: View {
 
             Spacer().frame(height: 52)
         }
-        // Same easeIn delay as step 2 so the satellites + connectors finish
-        // their first beats of motion before the headline and CTA resolve —
-        // scene leads, copy follows, just as the previous step does.
-        .transition(.opacity.animation(.easeIn(duration: 0.55).delay(0.35)))
+        // Insertion (step 2 → step 3): hold the headline + CTA until the
+        // satellites + connectors have finished their first beats of motion,
+        // then fade them in — scene leads, copy follows.
+        // Removal (step 3 → step 4): exit fast and with no delay so this
+        // headline doesn't sit over the top of the new "Your new workspace"
+        // headline (same top-center position) while the workspace cascade
+        // is fading in.
+        .transition(
+            .asymmetric(
+                insertion: .opacity.animation(.easeIn(duration: 0.55).delay(0.35)),
+                removal:   .opacity.animation(.easeOut(duration: 0.30))
+            )
+        )
     }
 
     // MARK: Step 4 — app preview (features blurbs around a central +)
