@@ -866,10 +866,10 @@ private struct NoteComposerSheet: View {
 // MARK: - Editor Page (full-page edit for existing notes)
 
 private struct NoteEditorPage: View {
-    let original: Note
     let onSave: (Note) -> Void
     let onDelete: () -> Void
 
+    @State private var original: Note
     @State private var title: String
     @State private var noteBody: String
     @State private var bodyBeforeDictation: String = ""
@@ -884,9 +884,9 @@ private struct NoteEditorPage: View {
 
     init(note: Note, onSave: @escaping (Note) -> Void, onDelete: @escaping () -> Void) {
         let migrated = Note.migrated(note)
-        self.original = migrated
         self.onSave = onSave
         self.onDelete = onDelete
+        self._original = State(initialValue: migrated)
         let (t, b) = Self.split(migrated.body)
         self._title = State(initialValue: t)
         self._noteBody = State(initialValue: b)
@@ -969,6 +969,30 @@ private struct NoteEditorPage: View {
         didDelete = true
         onDelete()
         dismiss()
+    }
+
+    /// Pulls the latest body from disk after the chat sheet closes so a
+    /// rewrite the user accepted in the chat actually shows up in the
+    /// editor underneath. The chat sheet covers this view, so `combined`
+    /// should still match the pre-chat body — if it doesn't, the user
+    /// somehow typed in the editor during the chat, and we keep those
+    /// edits while still refreshing `original` so the next save isn't
+    /// compared against a stale baseline.
+    private func refreshAfterChat() {
+        let id = original.id
+        Task {
+            let fresh = await NotesStore.loadAsync()
+            guard let updated = fresh.first(where: { $0.id == id }) else { return }
+            let migrated = Note.migrated(updated)
+            await MainActor.run {
+                if combined == original.body {
+                    let (t, b) = Self.split(migrated.body)
+                    title = t
+                    noteBody = b
+                }
+                original = migrated
+            }
+        }
     }
 
     var body: some View {
@@ -1061,7 +1085,7 @@ private struct NoteEditorPage: View {
         } message: {
             Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
         }
-        .sheet(isPresented: $showChat) {
+        .sheet(isPresented: $showChat, onDismiss: refreshAfterChat) {
             ChatView(initialNoteContextID: original.id)
         }
         .onAppear { chrome.hideTabBar = true }
