@@ -1256,6 +1256,7 @@ struct NotesView: View {
             note.updatedAt = Date()
             notes.append(note)
             scheduleSave()
+            editingNote = note
         }
         recording.showingSheet = true
     }
