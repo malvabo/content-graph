@@ -181,7 +181,8 @@ struct LibraryView: View {
                                 showSearch = false
                                 searchText = ""
                             }
-                        }
+                        },
+                        omitField: embedded
                     ) {
                         libraryList(
                             filteredGroups,
@@ -1818,6 +1819,7 @@ private struct SimpleHomePage: View {
     @State private var section: AppTab = .notes
     @State private var showSearch = false
     @State private var searchText = ""
+    @FocusState private var searchFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -1828,11 +1830,23 @@ private struct SimpleHomePage: View {
                     SimpleHomeHeader(
                         section: $section,
                         showSearch: $showSearch,
+                        searchText: $searchText,
+                        searchFocused: $searchFocused,
                         onProfileTap: onProfileTap,
                         onSearchToggle: {
                             withAnimation(AppAnimation.standard) {
                                 showSearch.toggle()
                                 if !showSearch { searchText = "" }
+                            }
+                            // Focus is owned by the header now; flip it
+                            // alongside the toggle so the keyboard rises on
+                            // entry and dismisses on exit.
+                            if showSearch {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                    searchFocused = true
+                                }
+                            } else {
+                                searchFocused = false
                             }
                         }
                     )
@@ -1869,6 +1883,7 @@ private struct SimpleHomePage: View {
                 showSearch = false
                 searchText = ""
             }
+            searchFocused = false
         }
     }
 }
@@ -1876,6 +1891,8 @@ private struct SimpleHomePage: View {
 private struct SimpleHomeHeader: View {
     @Binding var section: AppTab
     @Binding var showSearch: Bool
+    @Binding var searchText: String
+    var searchFocused: FocusState<Bool>.Binding
     let onProfileTap: () -> Void
     let onSearchToggle: () -> Void
 
@@ -1883,29 +1900,52 @@ private struct SimpleHomeHeader: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            segmentedTabs
-            Spacer(minLength: 8)
-            TopBarPill {
-                TopBarPillButton(
-                    systemImage: showSearch ? "xmark" : "magnifyingglass",
-                    isActive: showSearch
-                ) {
+            if showSearch {
+                AppSearchField(
+                    placeholder: section == .notes ? "Search notes" : "Search library",
+                    text: $searchText,
+                    isFocused: searchFocused
+                )
+
+                Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     onSearchToggle()
+                } label: {
+                    Text("Cancel")
+                        .font(.appLabel)
+                        .foregroundColor(AppText.primary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 10)
+                        .contentShape(Rectangle())
                 }
-                .accessibilityLabel(showSearch ? "Close search" : "Search")
-            }
-            TopBarPill {
-                TopBarPillButton(systemImage: "person.crop.circle") {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onProfileTap()
+                .buttonStyle(.plain)
+                .accessibilityLabel("Cancel search")
+            } else {
+                segmentedTabs
+                Spacer(minLength: 8)
+                TopBarPill {
+                    TopBarPillButton(
+                        systemImage: "magnifyingglass",
+                        isActive: false
+                    ) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onSearchToggle()
+                    }
+                    .accessibilityLabel("Search")
                 }
-                .accessibilityLabel("Profile")
+                TopBarPill {
+                    TopBarPillButton(systemImage: "person.crop.circle") {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onProfileTap()
+                    }
+                    .accessibilityLabel("Profile")
+                }
             }
         }
         .padding(.horizontal, 20)
         .padding(.top, 12)
         .padding(.bottom, 12)
+        .animation(AppAnimation.standard, value: showSearch)
     }
 
     private var segmentedTabs: some View {
@@ -2452,78 +2492,84 @@ struct SearchOverlay<Results: View>: View {
     let placeholder: String
     let isFocused: FocusState<Bool>.Binding
     var onCancel: (() -> Void)? = nil
+    /// When true, the host (e.g. SimpleHomeHeader) already renders the search
+    /// field inline in the top bar, so this overlay just supplies the blurred
+    /// surface and results below. Keeps focus management with the host.
+    var omitField: Bool = false
     @ViewBuilder var results: () -> Results
 
     var body: some View {
         ZStack(alignment: .top) {
-            // Drop the material entirely — when both layers (underlying chrome
-            // and foreground results) are the same brightness, the eye can't
-            // perceive blur and the surface reads as a flat panel anyway. Use
-            // `AppBackground.surface` (raised-card token: white on light,
-            // near-black on dark) so the search overlay is unambiguously a
-            // lifted plane in both modes. This is the same idiom Linear /
-            // Notion / Things use for their command-palette search.
-            AppBackground.surface
+            // `.regularMaterial` matches the standard iOS `.searchable`
+            // pattern — translucent blur over the underlying chrome rather
+            // than an opaque card. The ambient background's amber radial
+            // tints bleed through, giving the surface a sense of depth.
+            Rectangle()
+                .fill(.regularMaterial)
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                HStack(spacing: 10) {
+                if !omitField {
                     HStack(spacing: 10) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.appLabel)
-                            .foregroundColor(AppInk.solid(0.45))
-                        TextField(placeholder, text: $query)
-                            .font(.appLabel)
-                            .foregroundColor(AppText.primary)
-                            .tint(AppText.primary)
-                            .focused(isFocused)
-                            .submitLabel(.search)
-                        if !query.isEmpty {
-                            Button { query = "" } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.appSubtext)
-                                    .foregroundColor(AppInk.solid(0.40))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Clear search")
-                        }
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(AppInk.solid(0.10))
-                            .overlay(
-                                Capsule(style: .continuous)
-                                    .stroke(AppInk.solid(0.14), lineWidth: 0.5)
-                            )
-                    )
-
-                    if let onCancel {
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            isFocused.wrappedValue = false
-                            onCancel()
-                        } label: {
-                            Text("Cancel")
+                        HStack(spacing: 10) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.appLabel)
+                                .foregroundColor(AppInk.solid(0.45))
+                            TextField(placeholder, text: $query)
                                 .font(.appLabel)
                                 .foregroundColor(AppText.primary)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 10)
-                                .contentShape(Rectangle())
+                                .tint(AppText.primary)
+                                .focused(isFocused)
+                                .submitLabel(.search)
+                            if !query.isEmpty {
+                                Button { query = "" } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.appSubtext)
+                                        .foregroundColor(AppInk.solid(0.40))
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Clear search")
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Cancel search")
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(AppInk.solid(0.10))
+                                .overlay(
+                                    Capsule(style: .continuous)
+                                        .stroke(AppInk.solid(0.14), lineWidth: 0.5)
+                                )
+                        )
+
+                        if let onCancel {
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                isFocused.wrappedValue = false
+                                onCancel()
+                            } label: {
+                                Text("Cancel")
+                                    .font(.appLabel)
+                                    .foregroundColor(AppText.primary)
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 10)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Cancel search")
+                        }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    .padding(.bottom, 12)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
-                .padding(.bottom, 12)
 
                 results()
             }
         }
         .onAppear {
+            // Host owns focus when the field is inline; don't fight it.
+            guard !omitField else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 isFocused.wrappedValue = true
             }

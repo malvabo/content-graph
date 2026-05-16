@@ -1578,7 +1578,8 @@ struct NotesView: View {
                                 showSearch = false
                                 searchText = ""
                             }
-                        }
+                        },
+                        omitField: embedded
                     ) {
                         notesList(
                             searchedNotes,
