@@ -270,53 +270,6 @@ struct ChatView: View {
         availableMentions + attachedFiles
     }
 
-    /// Render `inputText` with each known `@<source title>` mention given a
-    /// subtle background highlight, so mentions read as inline tags inside
-    /// the composer. Titles can contain spaces, so we can't use a regex —
-    /// instead we match each known source title literally, longest-first
-    /// so "@New topic" wins over a stray "@New" prefix.
-    private var highlightedInputText: AttributedString {
-        let inkColor = UIColor { trait in
-            trait.userInterfaceStyle == .dark
-                ? UIColor(white: 1.0, alpha: 0.92)
-                : UIColor(white: 0.0, alpha: 0.88)
-        }
-        let mentionBg = UIColor { trait in
-            trait.userInterfaceStyle == .dark
-                ? UIColor(white: 1.0, alpha: 0.16)
-                : UIColor(white: 0.0, alpha: 0.08)
-        }
-        let mentionFg = UIColor { trait in
-            trait.userInterfaceStyle == .dark
-                ? UIColor(white: 1.0, alpha: 0.96)
-                : UIColor(white: 0.0, alpha: 0.78)
-        }
-        let ns = NSMutableAttributedString(
-            string: inputText,
-            attributes: [
-                .font: UIFont.systemFont(ofSize: 17),
-                .foregroundColor: inkColor
-            ]
-        )
-        let titles = allSources.map(\.title).sorted { $0.count > $1.count }
-        let nsStr = inputText as NSString
-        for title in titles {
-            let needle = "@\(title)"
-            var cursor = 0
-            while cursor < nsStr.length {
-                let range = nsStr.range(
-                    of: needle,
-                    range: NSRange(location: cursor, length: nsStr.length - cursor)
-                )
-                if range.location == NSNotFound { break }
-                ns.addAttribute(.backgroundColor, value: mentionBg, range: range)
-                ns.addAttribute(.foregroundColor, value: mentionFg, range: range)
-                cursor = range.location + range.length
-            }
-        }
-        return AttributedString(ns)
-    }
-
     private var contextItems: [ChatContextSource] {
         var ids = selectedContextIDs
         if let s = seededContextID { ids.insert(s) }
@@ -562,31 +515,14 @@ struct ChatView: View {
     private var inputArea: some View {
         VStack(spacing: 0) {
             VStack(spacing: 0) {
-                ZStack(alignment: .topLeading) {
-                    if inputText.isEmpty {
-                        Text("Ask anything\u{2026}")
-                            .font(.appBody)
-                            .foregroundColor(AppInk.solid(0.28))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .allowsHitTesting(false)
-                    } else {
-                        Text(highlightedInputText)
-                            .font(.appBody)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .frame(maxWidth: .infinity, alignment: .topLeading)
-                            .allowsHitTesting(false)
-                    }
-                    TextField("", text: $inputText, axis: .vertical)
-                        .font(.appBody)
-                        .foregroundColor(.clear)
-                        .tint(AppText.primary)
-                        .focused($inputFocused)
-                        .lineLimit(1...5)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                }
+                TextField("Ask anything\u{2026}", text: $inputText, axis: .vertical)
+                    .font(.appBody)
+                    .foregroundColor(AppText.primary)
+                    .tint(AppText.primary)
+                    .focused($inputFocused)
+                    .lineLimit(1...5)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
 
                 HStack(spacing: 4) {
                     Button {
