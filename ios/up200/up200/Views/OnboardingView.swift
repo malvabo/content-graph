@@ -4,12 +4,14 @@ import SwiftUI
 
 private struct OnboardingSceneView: UIViewControllerRepresentable {
     var collected: Bool
+    var graph: Bool
 
     func makeUIViewController(context: Context) -> OnboardingSceneViewController {
         OnboardingSceneViewController()
     }
     func updateUIViewController(_ uiViewController: OnboardingSceneViewController, context: Context) {
         uiViewController.setCollected(collected)
+        uiViewController.setShowGraph(graph)
     }
 }
 
@@ -18,6 +20,7 @@ private struct OnboardingSceneView: UIViewControllerRepresentable {
 private enum OnboardingStep {
     case intro      // wide constellation + brand mark + Get started / Log in
     case transform  // collected bulb + "Transform your ideas…" headline + CTA
+    case graph      // bulb + smaller satellite bulbs joined by edges + Finish
 }
 
 struct OnboardingView: View {
@@ -35,15 +38,20 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // Shared scene across both steps — same SceneKit view stays
-            // mounted so the dots can fly inward continuously instead of
-            // cross-fading between two separate scenes.
-            OnboardingSceneView(collected: step == .transform)
-                .ignoresSafeArea()
+            // Shared scene across all steps — same SceneKit view stays
+            // mounted so the dots can fly inward continuously and the
+            // satellite graph can layer in on top of the same bulb, instead
+            // of cross-fading between separate scenes.
+            OnboardingSceneView(
+                collected: step != .intro,
+                graph:     step == .graph
+            )
+            .ignoresSafeArea()
 
             switch step {
-            case .intro:    introOverlay
+            case .intro:     introOverlay
             case .transform: transformOverlay
+            case .graph:     graphOverlay
             }
         }
         .onAppear { appeared = true }
@@ -171,7 +179,9 @@ struct OnboardingView: View {
 
             Button(action: {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                onGetStarted()
+                withAnimation(.easeInOut(duration: 0.45)) {
+                    step = .graph
+                }
             }) {
                 Text("Let's get started")
                     .font(.app(size: 17, weight: .semibold))
@@ -190,6 +200,47 @@ struct OnboardingView: View {
         // user sees the stars converge first, then the text resolves. Matches
         // the "smoothly and quickly" feel — the scene leads, the copy follows.
         .transition(.opacity.animation(.easeIn(duration: 0.45).delay(0.25)))
+    }
+
+    // MARK: Step 3 — bulb with satellites + edges
+
+    private var graphOverlay: some View {
+        VStack(spacing: 0) {
+            Spacer().frame(height: 24)
+
+            // Same mono register as step 2 so the two screens read as one
+            // continuous story rather than a font swap.
+            Text("Every idea connects\ninto one knowledge graph")
+                .font(.system(size: 22, weight: .medium, design: .monospaced))
+                .kerning(-0.3)
+                .foregroundColor(AppText.primary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .padding(.horizontal, 28)
+                .padding(.top, 12)
+
+            Spacer()
+
+            Button(action: {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                onGetStarted()
+            }) {
+                Text("Finish")
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.white.opacity(0.94))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 28)
+
+            Spacer().frame(height: 52)
+        }
+        // Mirrors step 2's delayed fade so the satellite bulbs draw the eye
+        // first, then the copy resolves into place.
+        .transition(.opacity.animation(.easeIn(duration: 0.45).delay(0.35)))
     }
 }
 
