@@ -266,14 +266,17 @@ struct OnboardingView: View {
 
     // MARK: Step 4 — app preview (features blurbs around a central +)
 
-    /// Final preview screen. The SceneKit scene fades to black behind us
-    /// (handled in OnboardingSceneViewController.setStep), and we render a
-    /// small annotated mock of the home UI: a big plus button in the centre
-    /// with the two fan options it pops (Add a note, Create), surrounded by
-    /// four short feature blurbs — Notes, Profile, Library, Plus menu —
-    /// each appearing one at a time so the user reads them in order rather
-    /// than being hit with the whole grid at once. The page ends on the
-    /// final "Let's get started" CTA that exits onboarding into the app.
+    /// Final preview screen. The SceneKit scene fades to transparent behind
+    /// us — the warm-dark page gradient + corner glow layers stay visible
+    /// because they live on `view.layer`, not on `sceneView` — and we render
+    /// a small annotated mock of the home UI on top: a big plus button in
+    /// the centre with the two fan options it pops (Add a note, Create)
+    /// splayed at the same (-DX, -DY) / (+DX, -DY) offsets the real
+    /// `CreateMenuOverlay` uses, surrounded by four short feature blurbs —
+    /// Notes, Profile, Library, Plus menu — each appearing one at a time so
+    /// the user reads them in order rather than being hit with the whole
+    /// grid at once. The page ends on the final "Let's get started" CTA
+    /// that exits onboarding into the app.
     private var featuresOverlay: some View {
         VStack(spacing: 0) {
             Spacer().frame(height: 28)
