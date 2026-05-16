@@ -647,30 +647,22 @@ struct AnimatedLightsButton: View {
     var isEnabled: Bool = true
     var action: () -> Void
     @Environment(\.colorScheme) private var colorScheme
-    @State private var phase = false
 
     private var disabledFill: Color {
         colorScheme == .dark ? AppBackground.ctaDisabled : AppBackground.surface
     }
 
+    // Flat brown-amber fill. Replaces the previous moving golden-amber
+    // gradient (two animated blurred ellipses + an outer amber halo
+    // shadow), which read as a glowing CTA. Single solid colour reads
+    // calmer and matches the design call to drop the glow entirely.
+    private static let enabledFill = Color(red: 0.55, green: 0.27, blue: 0.07)
+
     var body: some View {
         Button(action: action) {
             ZStack {
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .fill(isEnabled ? AppBackground.ctaEnabled : disabledFill)
-
-                if isEnabled {
-                    Ellipse()
-                        .fill(BrandColor.amber.opacity(0.60))
-                        .frame(width: 220, height: 100)
-                        .blur(radius: 44)
-                        .offset(x: phase ? -80 : 80)
-                    Ellipse()
-                        .fill(Color(red: 0.75, green: 0.30, blue: 0.05).opacity(0.45))
-                        .frame(width: 220, height: 100)
-                        .blur(radius: 44)
-                        .offset(x: phase ? 80 : -80)
-                }
+                    .fill(isEnabled ? Self.enabledFill : disabledFill)
 
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
                     .stroke(
@@ -696,18 +688,9 @@ struct AnimatedLightsButton: View {
             }
             .frame(height: 54)
             .clipShape(RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous))
-            .shadow(
-                color: isEnabled ? BrandColor.amber.opacity(0.30) : .clear,
-                radius: 16, y: 6
-            )
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
-        .onAppear {
-            withAnimation(.easeInOut(duration: 5).repeatForever(autoreverses: true)) {
-                phase = true
-            }
-        }
     }
 }
 
