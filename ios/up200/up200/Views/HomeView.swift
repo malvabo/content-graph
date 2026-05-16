@@ -196,7 +196,7 @@ private struct GeneratedResult: Identifiable {
     let content: String
 }
 
-private struct ContentGenerator {
+struct ContentGenerator {
     static var isKeyConfigured: Bool {
         guard let key = KeychainService.load() else { return false }
         return !key.isEmpty && !key.hasPrefix("$(")
