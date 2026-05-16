@@ -27,11 +27,9 @@ struct OnboardingView: View {
 
     @State private var step: OnboardingStep = .intro
     @State private var appeared = false
-    // Typewriter state for the brand mark. Mirrors web's TypewriterLogo —
-    // mono font, lowercase "up150", char-by-char typing with a blinking
-    // caret that persists after the word is fully typed.
+    // Typewriter state for the brand mark — char-by-char typing of
+    // lowercase "up150" in the mono font.
     @State private var brandTypedLength: Int = 0
-    @State private var caretOn: Bool = true
     private let brandFull = "up150"
 
     var body: some View {
@@ -59,18 +57,10 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: 12) {
-                HStack(alignment: .bottom, spacing: 2) {
-                    Text(String(brandFull.prefix(brandTypedLength)))
-                        .font(.system(size: 52, weight: .regular, design: .monospaced))
-                        .kerning(-0.5)
-                        .foregroundColor(AppText.primary)
-                    Rectangle()
-                        .fill(BrandColor.amber)
-                        .frame(width: 2, height: 44)
-                        .cornerRadius(1)
-                        .opacity(caretOn ? 1 : 0)
-                        .padding(.bottom, 6)
-                }
+                Text(String(brandFull.prefix(brandTypedLength)))
+                    .font(.system(size: 52, weight: .regular, design: .monospaced))
+                    .kerning(-0.5)
+                    .foregroundColor(AppText.primary)
 
                 Text("Your AI content graph")
                     .font(.system(size: 17, weight: .regular, design: .rounded))
@@ -91,17 +81,6 @@ struct OnboardingView: View {
                     do { try await Task.sleep(nanoseconds: 110_000_000) }
                     catch { return }
                     brandTypedLength = i + 1
-                }
-            }
-            .task {
-                // step-end caret blink: instant on/off every 0.45s,
-                // matches the web TypewriterLogo timing.
-                // Uses `try await` so CancellationError exits immediately
-                // rather than looping with a swallowed error.
-                while true {
-                    do { try await Task.sleep(nanoseconds: 450_000_000) }
-                    catch { return }
-                    caretOn.toggle()
                 }
             }
 
