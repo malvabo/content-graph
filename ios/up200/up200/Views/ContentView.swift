@@ -307,9 +307,11 @@ private struct LibraryFolderThumb: View {
     let seed: Int
 
     var body: some View {
-        // Folder sits inside the same 52×56 frame as the doc card. The tab
-        // pokes up from the body's top-left; mini doc cards inside fan out
-        // with rotations seeded from the title so each group looks distinct.
+        // Folder sits inside the same 52×56 frame as the doc card. Body is
+        // centered horizontally; the tab pokes up from its top-left. Mini
+        // doc cards fan out inside with a fixed symmetric tilt so the
+        // rotated bounding boxes stay within the body and never spill into
+        // the row's text column.
         ZStack(alignment: .topLeading) {
             // Tab
             UnevenRoundedRectangle(
@@ -318,7 +320,7 @@ private struct LibraryFolderThumb: View {
             )
             .fill(AppInk.solid(0.18))
             .frame(width: 18, height: 8)
-            .offset(x: 4, y: 0)
+            .offset(x: 6, y: 0)
 
             // Body
             RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -328,19 +330,20 @@ private struct LibraryFolderThumb: View {
                         .stroke(AppInk.solid(0.14), lineWidth: 0.5)
                 )
                 .frame(width: 46, height: 44)
-                .offset(y: 6)
+                .offset(x: 3, y: 6)
 
             // Mini files inside. Placed directly in the outer .topLeading
             // ZStack so each offset is measured from (0,0) — a nested ZStack
             // would re-center them and break the layout.
-            miniDoc(seed: seed &+ 31, rotation: -10)
-                .offset(x: 4, y: 14)
-            miniDoc(seed: seed &+ 17, rotation: 4)
-                .offset(x: 16, y: 12)
-            miniDoc(seed: seed &+ 7, rotation: 14)
-                .offset(x: 28, y: 16)
+            miniDoc(seed: seed &+ 31, rotation: -6)
+                .offset(x: 6, y: 20)
+            miniDoc(seed: seed &+ 17, rotation: 0)
+                .offset(x: 18, y: 16)
+            miniDoc(seed: seed &+ 7, rotation: 6)
+                .offset(x: 30, y: 20)
         }
         .frame(width: 52, height: 56)
+        .clipped()
     }
 
     @ViewBuilder
@@ -389,13 +392,6 @@ private struct LibraryGroupThumb: View {
         title.unicodeScalars.reduce(0) { $0 &* 31 &+ Int($1.value) }
     }
 
-    // Small per-group tilt so each thumb has a distinct twist instead of
-    // every row reading as the same icon stamped twice.
-    private var twist: Double {
-        let raw = (seed &>> 4) & 0x07
-        return Double(raw) - 3.0
-    }
-
     var body: some View {
         Group {
             if items.count > 1 {
@@ -406,7 +402,6 @@ private struct LibraryGroupThumb: View {
                 LibraryDocCard(seed: seed)
             }
         }
-        .rotationEffect(.degrees(twist))
         .frame(width: 52, height: 56)
     }
 }
