@@ -24,6 +24,21 @@ class OnboardingSceneViewController: UIViewController {
     private let labelFadeDuration:  CFTimeInterval = 0.7
     private var displayLink: CADisplayLink?
 
+    // Two-step onboarding support. Step 1 = wide constellation (original).
+    // Step 2 = collected bulb: every dot flies into a small sphere at the
+    // origin, clouds + ambient particles fade out, the focal cluster stays
+    // alive with a slow internal swirl. Held as state so the SwiftUI binding
+    // can flip back and forth without re-running setup.
+    private var dotNodes: [SCNNode] = []
+    private var dotHomePositions: [SCNVector3] = []
+    private var dotBulbPositions: [SCNVector3] = []
+    private var cloudNodes: [SCNNode] = []
+    private var deepAtmosphereNode: SCNNode?
+    private var spinNode: SCNNode?
+    private var tiltNode: SCNNode?
+    private var isCollected = false
+    private let collectDuration: TimeInterval = 0.85
+
     // Read once at setup. Drives whether the dot cluster rotates, the cloud
     // blobs breathe, and labels typewriter or appear instantly. We don't
     // observe live changes — the user toggling reduce-motion mid-onboarding
@@ -147,6 +162,8 @@ class OnboardingSceneViewController: UIViewController {
         let tiltNode = SCNNode()           // X rotation
         spinNode.addChildNode(tiltNode)
         spinNode.position = SCNVector3(0, 0, 0)
+        self.spinNode = spinNode
+        self.tiltNode = tiltNode
 
         let sprite = makeParticleSprite()
 
@@ -184,10 +201,25 @@ class OnboardingSceneViewController: UIViewController {
             // 9×6×5 cluster (which left the top/bottom mostly empty). Dot
             // count bumped to 200 above so the larger volume still reads as
             // a dense cloud rather than scattered specks.
-            dot.position = SCNVector3(nx * 10, ny * 14, nz * 6)
+            let home = SCNVector3(nx * 10, ny * 14, nz * 6)
+            dot.position = home
             dot.opacity  = alpha
             dot.constraints = [SCNBillboardConstraint()]
             tiltNode.addChildNode(dot)
+            // Bulb target: same random direction but compressed into a tight
+            // sphere at the origin. Reusing the home direction (instead of
+            // re-randomising) means the inward motion reads as a uniform
+            // implosion — each star falls along its own radius — rather than
+            // a chaotic swap that would draw attention to individual paths.
+            let bulbRadius: Float = 3.2
+            let len = max(0.001, sqrt(home.x * home.x + home.y * home.y + home.z * home.z))
+            let jitter = 0.55 + rng(5000 + placed) * 0.45   // 0.55–1.00
+            let bulb = SCNVector3(home.x / len * bulbRadius * jitter,
+                                  home.y / len * bulbRadius * jitter,
+                                  home.z / len * bulbRadius * jitter)
+            dotNodes.append(dot)
+            dotHomePositions.append(home)
+            dotBulbPositions.append(bulb)
             placed += 1
         }
 
@@ -228,6 +260,7 @@ class OnboardingSceneViewController: UIViewController {
         deepNode.addParticleSystem(deep)
         deepNode.position = SCNVector3(0, 0, -10)
         scene.rootNode.addChildNode(deepNode)
+        deepAtmosphereNode = deepNode
     }
 
     /// Soft circular sprite for particles
@@ -290,6 +323,7 @@ class OnboardingSceneViewController: UIViewController {
             node.position = SCNVector3(def.x, def.y, def.z)
             node.opacity  = def.opacity
             scene.rootNode.addChildNode(node)
+            cloudNodes.append(node)
 
             // All cloud animations skipped under reduce-motion. Blobs render
             // statically at their anchor scale and base opacity.
@@ -416,6 +450,84 @@ class OnboardingSceneViewController: UIViewController {
         return img
     }
 
+    // MARK: - Collected bulb step
+
+    /// Step 2 of onboarding: dots converge into a tight central bulb, clouds
+    /// + ambient particles fade, the cluster keeps a slow internal swirl so it
+    /// still feels alive. Forward-only in the current flow — reversing would
+    /// move dots back but leaves cloud breath loops dropped.
+    func setCollected(_ collected: Bool) {
+        guard collected != isCollected else { return }
+        isCollected = collected
+
+        let dur = collectDuration
+        let dotKey = "dot.collect"
+
+        for (i, dot) in dotNodes.enumerated() {
+            dot.removeAction(forKey: dotKey)
+            let target = collected ? dotBulbPositions[i] : dotHomePositions[i]
+            if reduceMotion {
+                dot.position = target
+                continue
+            }
+            let move = SCNAction.move(to: target, duration: dur)
+            // easeInEaseOut on the collapse looks like fabric being pulled to
+            // the center — soft start, soft settle, no harsh snap when the
+            // dots arrive.
+            move.timingMode = .easeInEaseOut
+            dot.runAction(move, forKey: dotKey)
+        }
+
+        // Clouds: fade out fully while collapsing so the bulb stands alone in
+        // the void. We don't track each cloud's original opacity individually
+        // because every blob's animated opacity loop is already paused — we
+        // just need them to disappear cleanly.
+        for cloud in cloudNodes {
+            cloud.removeAllActions()
+            if reduceMotion {
+                cloud.opacity = collected ? 0 : 0.09
+                continue
+            }
+            cloud.runAction(SCNAction.fadeOpacity(to: collected ? 0 : 0.09, duration: dur))
+        }
+
+        // Ambient deep-atmosphere particles: same fade. Hiding the node also
+        // stops the particle system rendering once it reaches 0, which keeps
+        // GPU work down on the static bulb screen.
+        if let deep = deepAtmosphereNode {
+            deep.removeAllActions()
+            if reduceMotion {
+                deep.opacity = collected ? 0 : 1
+            } else {
+                deep.runAction(SCNAction.fadeOpacity(to: collected ? 0 : 1, duration: dur))
+            }
+        }
+
+        // Slow the rotation as we collect — a compact bulb spinning at the
+        // original 22s/rev rate would look like a fidget spinner. 70s/rev is
+        // calm enough to feel like internal swirl, not orbital motion. The
+        // tilt axis is stopped entirely so the bulb reads as a stable orb.
+        spinNode?.removeAllActions()
+        tiltNode?.removeAllActions()
+        if !reduceMotion {
+            let spinDuration: TimeInterval = collected ? 70 : 22
+            spinNode?.runAction(SCNAction.repeatForever(
+                SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: spinDuration)
+            ))
+            if !collected {
+                tiltNode?.runAction(SCNAction.repeatForever(
+                    SCNAction.rotateBy(x: CGFloat.pi * 2, y: 0, z: 0, duration: 38)
+                ))
+            }
+        }
+
+        // Floating labels are part of the wide-constellation story; hide them
+        // on the bulb step so the user's eye lands on the headline + CTA.
+        for entry in labelAnchors {
+            entry.label.isHidden = collected
+        }
+    }
+
     // MARK: - Floating Labels
 
     private func setupLabelAnchors() {
@@ -473,6 +585,13 @@ class OnboardingSceneViewController: UIViewController {
 
     @objc private func updateLabelPositions() {
         guard sceneView.pointOfView != nil, !labelAnchors.isEmpty else { return }
+
+        // Suppress the floating-label cycle on the collected bulb step —
+        // the labels belong to the wide constellation, not the bulb.
+        if isCollected {
+            for entry in labelAnchors { entry.label.isHidden = true }
+            return
+        }
 
         let cycle = labelTypeDuration + labelHoldDuration + labelFadeDuration
         let elapsed = CACurrentMediaTime() - labelStartTime
