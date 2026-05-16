@@ -1991,20 +1991,19 @@ private struct SimpleHomeHeader: View {
         } label: {
             Text(label)
                 .font(.system(size: 14, weight: .semibold))
-                // White text on the active pill — same contrast pair the
-                // FilterChip "All" uses, so both highlighted controls on
-                // this page share a single selection idiom.
-                .foregroundColor(selected ? .white : AppText.tertiary)
+                .foregroundColor(selected ? AppText.primary : AppText.tertiary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(
-                    Capsule(style: .continuous)
-                        // BrandColor.amber is the brand "lifted" fill —
-                        // matches the selected FilterChip pill above the
-                        // list. Drops the dark `AppBackground.surface` fill
-                        // that read as a charcoal-grey submerged tab.
-                        .fill(selected ? BrandColor.amber : Color.clear)
-                )
+                .background {
+                    if selected {
+                        Capsule(style: .continuous)
+                            .fill(AppInk.solid(0.14))
+                            .overlay(
+                                Capsule(style: .continuous)
+                                    .stroke(AppInk.solid(0.28), lineWidth: 1)
+                            )
+                    }
+                }
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

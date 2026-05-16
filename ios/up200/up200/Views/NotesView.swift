@@ -1216,15 +1216,14 @@ private struct FilterChip: View {
         Button(action: action) {
             Text(label)
                 .font(.app(size: 14, weight: isSelected ? .semibold : .regular))
-                .foregroundColor(isSelected ? .white : AppText.secondary)
+                .foregroundColor(isSelected ? AppText.primary : AppText.secondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(isSelected ? BrandColor.amber : AppInk.solid(0.06))
-                .clipShape(Capsule())
+                .appLiquidGlass(in: Capsule(style: .continuous))
                 .overlay(
-                    Capsule().stroke(
-                        isSelected ? Color.clear : AppInk.solid(0.08),
-                        lineWidth: 0.5
+                    Capsule(style: .continuous).stroke(
+                        isSelected ? AppInk.solid(0.28) : AppInk.solid(0.08),
+                        lineWidth: isSelected ? 1 : 0.5
                     )
                 )
         }
