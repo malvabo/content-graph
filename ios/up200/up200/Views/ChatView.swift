@@ -226,6 +226,8 @@ struct ChatView: View {
     @State private var chatFailReason: String = ""
     @State private var appliedRewriteKeys: Set<String> = []
     @State private var rewriteFailed: Bool = false
+    @StateObject private var dictation = NoteDictation()
+    @State private var inputTextBeforeDictation: String = ""
     @FocusState private var inputFocused: Bool
 
     private let bg = AppBackground.primary
@@ -292,7 +294,7 @@ struct ChatView: View {
         let ns = NSMutableAttributedString(
             string: inputText,
             attributes: [
-                .font: UIFont.systemFont(ofSize: 16),
+                .font: UIFont.systemFont(ofSize: 17),
                 .foregroundColor: inkColor
             ]
         )
@@ -400,10 +402,31 @@ struct ChatView: View {
         } message: {
             Text("The original text in the rewrite wasn't found in any attached source. Try re-attaching the document or note and asking again.")
         }
+        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enable Microphone and Speech Recognition in Settings to dictate.")
+        }
+        .onChange(of: dictation.transcript) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            if inputTextBeforeDictation.isEmpty {
+                inputText = trimmed
+            } else {
+                let needsSeparator = !inputTextBeforeDictation.hasSuffix("\n") && !inputTextBeforeDictation.hasSuffix(" ")
+                inputText = inputTextBeforeDictation + (needsSeparator ? " " : "") + trimmed
+            }
+        }
         .presentationBackground(bg)
         .onDisappear {
             sendTask?.cancel()
             fileImportTask?.cancel()
+            dictation.cancel()
         }
         .onAppear {
             rebuildProjects()
@@ -542,21 +565,21 @@ struct ChatView: View {
                 ZStack(alignment: .topLeading) {
                     if inputText.isEmpty {
                         Text("Ask anything\u{2026}")
-                            .font(.app(size: 16))
+                            .font(.appBody)
                             .foregroundColor(AppInk.solid(0.28))
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
                             .allowsHitTesting(false)
                     } else {
                         Text(highlightedInputText)
-                            .font(.app(size: 16))
+                            .font(.appBody)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
                             .frame(maxWidth: .infinity, alignment: .topLeading)
                             .allowsHitTesting(false)
                     }
                     TextField("", text: $inputText, axis: .vertical)
-                        .font(.app(size: 16))
+                        .font(.appBody)
                         .foregroundColor(.clear)
                         .tint(AppText.primary)
                         .focused($inputFocused)
@@ -591,6 +614,28 @@ struct ChatView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Mention a note or document")
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        if dictation.isRecording {
+                            dictation.stop()
+                        } else {
+                            inputTextBeforeDictation = inputText
+                            inputFocused = false
+                            dictation.start()
+                        }
+                    } label: {
+                        let recording = dictation.isRecording
+                        Image(systemName: recording ? "stop.fill" : "mic.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(recording ? .white : AppInk.solid(0.45))
+                            .frame(width: 32, height: 32)
+                            .background(recording ? BrandColor.amber : Color.clear)
+                            .clipShape(Circle())
+                            .appIconHitArea()
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(dictation.isRecording ? "Stop dictation" : "Start dictation")
 
                     Spacer()
 
