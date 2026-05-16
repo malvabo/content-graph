@@ -232,13 +232,13 @@ struct NotesIllustration: View {
         ZStack {
             // Paper. Center at y=6, height 158 → top edge sits at y=-73.
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(AppInk.solid(0.26), lineWidth: 1.4)
+                .stroke(AppInk.solid(0.18), lineWidth: 1.4)
                 .frame(width: 134, height: 158)
                 .overlay(
                     VStack(alignment: .leading, spacing: 14) {
                         ForEach(0..<5, id: \.self) { i in
                             Capsule()
-                                .fill(AppInk.solid(0.14))
+                                .fill(AppInk.solid(0.10))
                                 .frame(width: i == 4 ? 52 : 92, height: 4)
                         }
                     }
@@ -255,7 +255,7 @@ struct NotesIllustration: View {
             HStack(spacing: 14) {
                 ForEach(0..<5, id: \.self) { _ in
                     Circle()
-                        .stroke(AppInk.solid(0.32), lineWidth: 1.4)
+                        .stroke(AppInk.solid(0.22), lineWidth: 1.4)
                         .frame(width: 8, height: 8)
                 }
             }
@@ -326,12 +326,16 @@ struct EmptyStatePlusButton: View {
                 Text(title)
                     .font(.appLabelBold)
             }
-            .foregroundColor(AppText.primary)
+            .foregroundColor(AppText.secondary)
             .padding(.horizontal, 22)
             .padding(.vertical, 12)
             .background(
                 Capsule(style: .continuous)
-                    .stroke(AppInk.solid(0.22), lineWidth: 1)
+                    .fill(AppInk.solid(0.04))
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(AppInk.solid(0.14), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -368,11 +372,11 @@ struct EmptyStateView<Illustration: View>: View {
             VStack(spacing: 6) {
                 Text(title)
                     .font(.appBodyBold)
-                    .foregroundColor(AppText.secondary)
+                    .foregroundColor(AppText.tertiary)
                 if let subtitle {
                     Text(subtitle)
                         .font(.appSubtext)
-                        .foregroundColor(AppText.tertiary)
+                        .foregroundColor(AppText.muted)
                         .multilineTextAlignment(.center)
                 }
             }
