@@ -1978,7 +1978,7 @@ private struct SimpleHomeHeader: View {
         .appLiquidGlass(in: Capsule(style: .continuous))
         .overlay(
             Capsule(style: .continuous)
-                .stroke(AppInk.solid(0.12), lineWidth: 0.5)
+                .stroke(AppInk.solid(0.08), lineWidth: 0.5)
         )
     }
 
@@ -1997,10 +1997,10 @@ private struct SimpleHomeHeader: View {
                 .background {
                     if selected {
                         Capsule(style: .continuous)
-                            .fill(AppInk.solid(0.14))
+                            .fill(AppInk.solid(0.10))
                             .overlay(
                                 Capsule(style: .continuous)
-                                    .stroke(AppInk.solid(0.28), lineWidth: 1)
+                                    .stroke(AppInk.solid(0.20), lineWidth: 1)
                             )
                     }
                 }
