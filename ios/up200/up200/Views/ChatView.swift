@@ -435,9 +435,9 @@ struct ChatView: View {
                 dismiss()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundColor(AppInk.solid(0.65))
-                    .frame(width: 32, height: 32)
+                    .frame(width: 36, height: 36)
                     .background(AppInk.solid(0.08))
                     .clipShape(Circle())
                     .appIconHitArea()
@@ -457,13 +457,13 @@ struct ChatView: View {
                 presentMentionPicker()
             } label: {
                 Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(
                         selectedContextIDs.isEmpty
                             ? AppInk.solid(availableMentions.isEmpty ? 0.18 : 0.55)
                             : .white
                     )
-                    .frame(width: 32, height: 32)
+                    .frame(width: 36, height: 36)
                     .background(AppInk.solid(0.07))
                     .clipShape(Circle())
                     .appIconHitArea()
@@ -572,11 +572,10 @@ struct ChatView: View {
                         showFilePicker = true
                     } label: {
                         Image(systemName: "paperclip")
-                            .font(.system(size: 15))
+                            .font(.system(size: 17))
                             .foregroundColor(AppInk.solid(0.45))
-                            .frame(width: 28, height: 28)
-                            .frame(minWidth: 36, minHeight: 36)
-                            .contentShape(Rectangle())
+                            .frame(width: 32, height: 32)
+                            .appIconHitArea()
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Attach file")
@@ -585,11 +584,10 @@ struct ChatView: View {
                         presentMentionPicker()
                     } label: {
                         Image(systemName: "at")
-                            .font(.system(size: 15))
+                            .font(.system(size: 17))
                             .foregroundColor(AppInk.solid(0.45))
-                            .frame(width: 28, height: 28)
-                            .frame(minWidth: 36, minHeight: 36)
-                            .contentShape(Rectangle())
+                            .frame(width: 32, height: 32)
+                            .appIconHitArea()
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Mention a note or document")
@@ -599,9 +597,9 @@ struct ChatView: View {
                     Button(action: sendMessage) {
                         let ready = canSend
                         Image(systemName: "arrow.up")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(ready ? .white : AppInk.solid(0.28))
-                            .frame(width: 28, height: 28)
+                            .frame(width: 32, height: 32)
                             .background(ready ? AppInk.solid(0.18) : AppInk.solid(0.06))
                             .clipShape(Circle())
                             .overlay(
@@ -610,8 +608,7 @@ struct ChatView: View {
                                     lineWidth: 0.5
                                 )
                             )
-                            .frame(minWidth: 36, minHeight: 36)
-                            .contentShape(Rectangle())
+                            .appIconHitArea()
                     }
                     .buttonStyle(.plain)
                     .disabled(!canSend)
