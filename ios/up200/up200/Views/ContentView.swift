@@ -1996,16 +1996,13 @@ private struct SimpleHomeHeader: View {
 
 /// Bottom chrome in Simple mode: a single floating capture button parked
 /// at the bottom-right corner. Tapping it begins voice recording right
-/// away — no intermediate menu. Styled as a "ready-to-record" affordance:
-/// amber-tinted glass, soft breathing glow, `livephoto` concentric rings
-/// as the glyph (recorder-coded but visually distinct from the typical
-/// mic / record-dot icons).
+/// away — no intermediate menu. Styled as a flat amber-tinted glass disc
+/// with `livephoto` concentric rings as the glyph (recorder-coded but
+/// visually distinct from the typical mic / record-dot icons).
 private struct SimpleCreateBar: View {
     let onTap: () -> Void
 
     @State private var impact = UIImpactFeedbackGenerator(style: .light)
-    /// Slow breath that swells the amber halo when idle.
-    @State private var idlePulse: Bool = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -2042,26 +2039,11 @@ private struct SimpleCreateBar: View {
                             lineWidth: 0.6
                         )
                 )
-                .shadow(color: BrandColor.amber.opacity(0.18), radius: 10, y: 4)
-                .shadow(
-                    color: BrandColor.amber.opacity(idlePulse ? 0.30 : 0.10),
-                    radius: idlePulse ? 22 : 12,
-                    y: 0
-                )
-                .animation(
-                    .easeInOut(duration: 1.6).repeatForever(autoreverses: true),
-                    value: idlePulse
-                )
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Record a note")
-        .onAppear {
-            impact.prepare()
-            // Kick the breathing pulse on the next runloop so the initial
-            // state is "narrow halo" and the first transition is a swell.
-            DispatchQueue.main.async { idlePulse = true }
-        }
+        .onAppear { impact.prepare() }
     }
 }
 
