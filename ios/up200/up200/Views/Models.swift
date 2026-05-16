@@ -73,17 +73,21 @@ enum AppBackground {
             ? UIColor(red: 0.10, green: 0.08, blue: 0.07, alpha: 1.0)
             : UIColor(white: 0.96, alpha: 1.0)
     })
-    /// Top-left radial-glow tint. Warm amber on dark; a barely-there
-    /// neutral lift on light so the corner doesn't go yellow.
+    /// Top-left radial-glow tint. Bright amber on dark — kept at a low
+    /// alpha so the corner reads as a hint of warm light rather than the
+    /// previous brown wash; a barely-there neutral lift on light so the
+    /// corner doesn't go yellow.
     static let glowTopLeft = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.55, green: 0.30, blue: 0.08, alpha: 0.35)
+            ? UIColor(red: 0.95, green: 0.62, blue: 0.15, alpha: 0.18)
             : UIColor(white: 1.0, alpha: 0.35)
     })
-    /// Bottom-right radial-glow tint.
+    /// Bottom-right radial-glow tint. Same amber hue as the top-left
+    /// glow, lower alpha — far enough off the warm corner that it adds
+    /// depth without doubling the wash.
     static let glowBottomRight = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.30, green: 0.20, blue: 0.08, alpha: 0.22)
+            ? UIColor(red: 0.85, green: 0.50, blue: 0.10, alpha: 0.10)
             : UIColor(white: 0.88, alpha: 0.30)
     })
 
