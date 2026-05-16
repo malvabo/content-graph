@@ -830,9 +830,10 @@ private struct MessageBubble: View {
             if isUser { Spacer(minLength: 56) }
 
             Text(isUser ? AttributedString(message.content) : AppMarkdown.render(message.content))
-                .font(.appBody)
-                .foregroundColor(AppText.primary)
-                .lineSpacing(3)
+                // Canonical body-text rhythm (17pt, lineSpacing 8) — same
+                // modifier note bodies and other reading copy use, so chat
+                // doesn't read denser than the rest of the app.
+                .appBodyText()
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(isUser ? AppInk.solid(0.12) : AppInk.solid(0.05))
@@ -894,12 +895,16 @@ private struct RewriteSuggestionCard: View {
                     Text(isApplied ? "Applied" : "Accept")
                         .font(.app(size: 15, weight: .semibold))
                 }
-                .foregroundColor(isApplied ? AppText.secondary : .black)
+                // Same brown-amber / white-text combination as the Generate
+                // button. Drops the prior near-white BrandColor.amber fill
+                // so the app has a single primary-CTA visual rather than
+                // one white pill per surface.
+                .foregroundColor(isApplied ? AppText.secondary : .white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
                 .background(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(isApplied ? AppInk.solid(0.08) : BrandColor.amber)
+                        .fill(isApplied ? AppInk.solid(0.08) : BrandColor.ctaPrimary)
                 )
             }
             .buttonStyle(.plain)
@@ -916,16 +921,18 @@ private struct RewriteSuggestionCard: View {
         )
     }
 
-    /// Small uppercase monospaced label, mirroring the onboarding pill tags.
+    /// Uppercase monospaced label for SUGGESTED REWRITE / FROM / TO. Sized
+    /// up from the prior 10pt to 12pt because at 10 the labels were
+    /// effectively unreadable against the dim secondary background.
     @ViewBuilder
     private func tagLabel(_ text: String, icon: String? = nil) -> some View {
         HStack(spacing: 6) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
             }
             Text(text)
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .kerning(0.6)
         }
         .foregroundColor(AppText.tertiary)
@@ -949,7 +956,11 @@ private struct RewriteSuggestionCard: View {
                 .font(.system(size: 14, weight: .regular, design: .monospaced))
                 .foregroundColor(textColor)
                 .strikethrough(strike, color: AppText.tertiary)
-                .lineSpacing(2)
+                // ~1.4 line height. SwiftUI's default for 14pt mono is
+                // ~17pt baseline-to-baseline; +5pt of `lineSpacing` puts
+                // the diff at roughly 14 * 1.55 ≈ comfortable reading
+                // rhythm, well above the prior cramped 1.36×.
+                .lineSpacing(5)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)

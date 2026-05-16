@@ -9,6 +9,12 @@ import SwiftUI
 enum BrandColor {
     static let amber = Color(red: 0.78, green: 0.78, blue: 0.80)
 
+    /// Primary CTA fill — solid brown-amber, used by the Generate button
+    /// and the Accept-rewrite button. Single shared token so every
+    /// "primary action" surface reads as the same colour rather than
+    /// each screen rolling its own.
+    static let ctaPrimary = Color(red: 0.55, green: 0.27, blue: 0.07)
+
     /// Golden → amber → deep-orange ramp used by the Generate button's
     /// glow. Apply via `.foregroundStyle` / `.fill` to give icons and
     /// shapes the same two-tone warm feel as the primary CTA.
