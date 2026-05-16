@@ -677,7 +677,10 @@ struct OnboardingView: View {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         var notes = NotesStore.load()
-        notes.insert(Note(body: trimmed, updatedAt: Date()), at: 0)
+        var note = Note()
+        note.body = trimmed
+        note.updatedAt = Date()
+        notes.insert(note, at: 0)
         NotesStore.save(notes)
     }
 
