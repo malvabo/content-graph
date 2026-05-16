@@ -284,9 +284,15 @@ struct LibraryIllustration: View {
     }
 
     private func card(width: CGFloat, height: CGFloat, offset: CGSize, tint: Double) -> some View {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .stroke(AppInk.solid(tint), lineWidth: 1.4)
+        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+        return shape
+            // Opaque app-background fill so each card occludes the cards behind
+            // it. Without this the lower cards' body lines bleed through the
+            // upper outlines and the stack reads as a tangle of intersecting
+            // strokes instead of overlapping sheets.
+            .fill(AppBackground.primary)
             .frame(width: width, height: height)
+            .overlay(shape.stroke(AppInk.solid(tint), lineWidth: 1.4))
             .overlay(
                 VStack(alignment: .leading, spacing: 8) {
                     // Title bar — heavier weight, ~half-width, so it reads
