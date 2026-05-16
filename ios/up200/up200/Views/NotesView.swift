@@ -875,6 +875,7 @@ private struct NoteEditorPage: View {
     @State private var bodyBeforeDictation: String = ""
     @State private var didDelete: Bool = false
     @State private var showChat: Bool = false
+    @State private var showCreate: Bool = false
     @StateObject private var dictation = NoteDictation()
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
@@ -1063,11 +1064,14 @@ private struct NoteEditorPage: View {
             }
 
             if !dictation.isRecording {
-                chatButton
-                    .padding(.leading, 20)
-                    .padding(.bottom, 20)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                    .transition(.scale(scale: 0.85).combined(with: .opacity))
+                HStack(spacing: 12) {
+                    magicButton
+                    chatButton
+                }
+                .padding(.leading, 20)
+                .padding(.bottom, 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
@@ -1092,6 +1096,9 @@ private struct NoteEditorPage: View {
         }
         .sheet(isPresented: $showChat, onDismiss: refreshAfterChat) {
             ChatView(initialNoteContextID: original.id)
+        }
+        .fullScreenCover(isPresented: $showCreate) {
+            HomeView(isModal: true, initialSources: [noteAsSource])
         }
         .onAppear { chrome.hideTabBar = true }
         .onDisappear {
@@ -1122,6 +1129,32 @@ private struct NoteEditorPage: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Ask AI chat about this note")
+    }
+
+    private var magicButton: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            showCreate = true
+        } label: {
+            Image(systemName: "wand.and.stars")
+                .font(.system(size: 19, weight: .regular))
+                .foregroundColor(AppText.primary)
+                .frame(width: 56, height: 56)
+                .background(
+                    Circle()
+                        .fill(.regularMaterial)
+                        .overlay(Circle().stroke(AppInk.solid(0.15), lineWidth: 0.5))
+                        .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Create from this note")
+    }
+
+    private var noteAsSource: SourceItem {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let label = trimmed.isEmpty ? original.displayTitle : trimmed
+        return SourceItem(type: .note, label: label, content: combined)
     }
 
     private var topBar: some View {
