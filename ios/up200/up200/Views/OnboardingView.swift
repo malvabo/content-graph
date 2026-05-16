@@ -384,29 +384,42 @@ struct OnboardingView: View {
     @ViewBuilder private var captureCenter: some View {
         switch capturePhase {
         case .prompt:
-            VStack(spacing: 18) {
-                StarfieldBlurb(active: true)
-                    .frame(height: 180)
-                    .background(Color.white.opacity(0.04))
-                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-                    )
-                    // Long-press initiates recording. minimumDuration is short
-                    // enough that the gesture feels like a confirm-tap, not a
-                    // hold — once .recording starts, the user can let go and
-                    // tap "Finish recording" below.
-                    .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 30) {
-                        startCaptureRecording()
-                    }
-
-                Text("Press and hold to start recording\nyour first idea")
-                    .font(.system(size: 14, weight: .regular, design: .rounded))
-                    .foregroundColor(Color.white.opacity(0.58))
-                    .multilineTextAlignment(.center)
-            }
-            .transition(.opacity)
+            // The cloud has no edges. The blurb's intrinsic frame is taller
+            // than the captureCenter slot, and the negative h-padding /
+            // b-padding lets it bleed past the surrounding paddings — the
+            // sides clear the captureCenter's horizontal inset, the bottom
+            // slips beneath the CTA layout box and past the screen edge.
+            // The press-and-hold caption is overlaid at the top of the
+            // visible portion of the cloud rather than placed below the
+            // blurb, since the blurb's "below" extends off-screen and a
+            // text element placed there would never be seen.
+            StarfieldBlurb(active: true)
+                .frame(height: 660)
+                // contentShape goes here, *before* the negative paddings,
+                // so the press-and-hold hit area is the full rendered
+                // cloud rectangle. Were it applied after, the negative
+                // padding would shrink the hit target down to the
+                // collapsed layout box and the user could tap on a star
+                // without anything firing.
+                .contentShape(Rectangle())
+                // Long-press initiates recording. minimumDuration is short
+                // enough that the gesture feels like a confirm-tap, not a
+                // hold — once .recording starts, the user can let go and
+                // tap "Finish recording" below.
+                .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 30) {
+                    startCaptureRecording()
+                }
+                .padding(.horizontal, -24)
+                .padding(.bottom, -320)
+                .overlay(alignment: .top) {
+                    Text("Press and hold to start recording\nyour first idea")
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.58))
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 18)
+                        .allowsHitTesting(false)
+                }
+                .transition(.opacity)
 
         case .recording:
             VStack(spacing: 18) {
@@ -708,7 +721,12 @@ private struct OnboardingResultBatch: Identifiable {
 /// star count and seeded layout so the field looks stable across redraws.
 private struct StarfieldBlurb: View {
     let active: Bool
-    private let starCount = 64
+    // Higher density + larger stars than the "viewed-through-a-window"
+    // version this replaced. The user reads themselves as inside the
+    // cloud now: more stars per square point, each one noticeably bigger,
+    // with a wider drift radius that makes the nearer stars feel like
+    // they're orbiting the camera rather than dotting a distant field.
+    private let starCount = 160
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
@@ -722,15 +740,15 @@ private struct StarfieldBlurb: View {
                     // Each star drifts on its own lazy ellipse — phases are
                     // index-offset so the field never moves in unison.
                     let phase = t * 0.22 + Double(i) * 0.41
-                    let dx = sin(phase) * 5.5
-                    let dy = cos(phase * 1.27) * 4.0
+                    let dx = sin(phase) * 9.0
+                    let dy = cos(phase * 1.27) * 6.5
 
                     let x = rx * size.width + dx
                     let y = ry * size.height + dy
 
                     let pulse = 0.65 + 0.35 * sin(t * 1.6 + Double(i) * 0.31)
-                    let radius = (0.75 + ra * 1.45) * (active ? 1.0 : 0.85)
-                    let alpha = (0.32 + ra * 0.52) * pulse * (active ? 1.0 : 0.5)
+                    let radius = (1.5 + ra * 2.4) * (active ? 1.0 : 0.85)
+                    let alpha = (0.38 + ra * 0.55) * pulse * (active ? 1.0 : 0.5)
 
                     let rect = CGRect(x: x - radius, y: y - radius,
                                       width: radius * 2, height: radius * 2)
