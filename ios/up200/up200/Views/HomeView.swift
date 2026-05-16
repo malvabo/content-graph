@@ -652,17 +652,14 @@ struct AnimatedLightsButton: View {
         colorScheme == .dark ? AppBackground.ctaDisabled : AppBackground.surface
     }
 
-    // Flat brown-amber fill. Replaces the previous moving golden-amber
-    // gradient (two animated blurred ellipses + an outer amber halo
-    // shadow), which read as a glowing CTA. Single solid colour reads
-    // calmer and matches the design call to drop the glow entirely.
-    private static let enabledFill = Color(red: 0.55, green: 0.27, blue: 0.07)
-
     var body: some View {
         Button(action: action) {
             ZStack {
+                // Flat brown-amber CTA fill — shared token, also used by
+                // the Accept-rewrite button in chat so the two primary
+                // actions read as one visual.
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .fill(isEnabled ? Self.enabledFill : disabledFill)
+                    .fill(isEnabled ? BrandColor.ctaPrimary : disabledFill)
 
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
                     .stroke(
