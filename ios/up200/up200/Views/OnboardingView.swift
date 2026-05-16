@@ -679,6 +679,14 @@ private struct OnboardingRecordingWaveform: View {
 private struct OnboardingGenerationPill: View {
     let label: String
 
+    /// "A LinkedIn post" → "a LinkedIn post" — lowercases only the first
+    /// character so brand names ("LinkedIn", "Twitter") keep their casing
+    /// when the label is interpolated into "Creating <label>…".
+    private var phrasedLabel: String {
+        guard let first = label.first else { return label }
+        return first.lowercased() + label.dropFirst()
+    }
+
     private struct DotConfig {
         let radius: Double
         let size: Double
@@ -697,6 +705,7 @@ private struct OnboardingGenerationPill: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            Spacer(minLength: 0)
             ZStack {
                 Circle()
                     .fill(Color.white.opacity(0.06))
@@ -723,7 +732,7 @@ private struct OnboardingGenerationPill: View {
             .frame(width: 36, height: 36)
             .clipShape(Circle())
 
-            Text("Creating \(label.lowercased())\u{2026}")
+            Text("Creating \(phrasedLabel)\u{2026}")
                 .font(.app(size: 15, weight: .semibold))
                 .foregroundColor(AppText.primary)
                 .lineLimit(1)
@@ -745,7 +754,7 @@ private struct OnboardingGenerationPill: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .shadow(color: Color.black.opacity(0.40), radius: 16, x: 0, y: 8)
-        .accessibilityLabel("Creating your content")
+        .accessibilityLabel("Creating \(phrasedLabel)")
     }
 }
 
