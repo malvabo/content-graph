@@ -542,7 +542,10 @@ struct NoteWaveform: View {
             HStack(spacing: 2.5) {
                 ForEach(0..<barCount, id: \.self) { i in
                     Capsule()
-                        .fill(BrandColor.glowGradient)
+                        // glowGradientBright skips the neutral-grey middle stop
+                        // of `glowGradient`, so the tall center bars read as
+                        // warm amber instead of washed-out white.
+                        .fill(BrandColor.glowGradientBright)
                         .frame(width: 3, height: barHeight(level: level, index: i, time: t))
                         .opacity(barOpacity(index: i))
                 }
