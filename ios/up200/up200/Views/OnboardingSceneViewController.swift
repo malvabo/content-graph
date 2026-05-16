@@ -582,10 +582,10 @@ class OnboardingSceneViewController: UIViewController {
     }
 
     private let satelliteDefs: [SatelliteDef] = [
-        SatelliteDef(centre: SCNVector3( 7.0,  6.5,  1.2), dotCount: 22, radius: 0.85, seed: 1011),
-        SatelliteDef(centre: SCNVector3( 8.4, -3.0, -1.0), dotCount: 20, radius: 0.80, seed: 2027),
-        SatelliteDef(centre: SCNVector3(-7.2, -5.5,  1.0), dotCount: 22, radius: 0.85, seed: 3041),
-        SatelliteDef(centre: SCNVector3(-7.8,  4.2, -0.7), dotCount: 20, radius: 0.80, seed: 4057),
+        SatelliteDef(centre: SCNVector3( 3.5,  3.25,  0.6),  dotCount: 22, radius: 0.85, seed: 1011),
+        SatelliteDef(centre: SCNVector3( 4.2, -1.5,  -0.5),  dotCount: 20, radius: 0.80, seed: 2027),
+        SatelliteDef(centre: SCNVector3(-3.6, -2.75,  0.5),  dotCount: 22, radius: 0.85, seed: 3041),
+        SatelliteDef(centre: SCNVector3(-3.9,  2.1,  -0.35), dotCount: 20, radius: 0.80, seed: 4057),
     ]
 
     /// Per-dot path data captured at setup so applyExpanded can interpolate
@@ -669,9 +669,13 @@ class OnboardingSceneViewController: UIViewController {
             // Mirror the arc bend for satellites on one side of the screen so
             // the four arcs splay outward instead of curving in the same
             // direction — gives the final scene a balanced, blossom-like
-            // composition rather than four parallel curves.
+            // composition rather than four parallel curves. The magnitude is
+            // scaled to roughly 1/3 of the bulb→satellite distance so the
+            // visual curvature stays consistent as the satellites move closer
+            // or farther from the central bulb.
             let bendSign: Float = def.centre.x >= 0 ? 1 : -1
-            let curveAmount: Float = 0.45 * bendSign
+            let chainSpan: Float = max(0.001, dirLen - bulbSurfaceRadius)
+            let curveAmount: Float = chainSpan * 0.18 * bendSign
 
             // --- Satellite dots ---
             var paths: [SatelliteDotPath] = []
@@ -742,7 +746,12 @@ class OnboardingSceneViewController: UIViewController {
             let start = bulbSurfaceWorld
             let end   = def.centre
 
-            let chainCount = 14
+            // Chain density scales with the bulb→satellite distance so the
+            // dots stay readably spaced (~0.42u apart) instead of piling on
+            // top of each other when the satellites sit close to the bulb.
+            // Clamped to a small minimum so the chain is never just one or
+            // two dots.
+            let chainCount = max(5, Int((chainSpan / 0.42).rounded()))
             var perDotOpacities: [CGFloat] = []
             perDotOpacities.reserveCapacity(chainCount)
             for k in 1...chainCount {
