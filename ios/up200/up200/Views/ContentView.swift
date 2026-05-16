@@ -1950,13 +1950,19 @@ private struct SimpleHomeHeader: View {
 
 // MARK: - Simple bottom create button
 
-/// Bottom chrome in Simple mode: just the floating plus button. The
-/// Notes / Library tabs live in `SimpleHomeHeader` at the top of the
-/// screen, not down here.
+/// Bottom chrome in Simple mode: a single floating capture button parked
+/// at the bottom-right corner. Styled as a "ready-to-record" affordance —
+/// amber-tinted glass, soft breathing glow, `livephoto` concentric rings
+/// as the glyph (recorder-coded but visually distinct from the typical
+/// mic / record-dot icons). The Notes / Library tabs live in
+/// `SimpleHomeHeader` at the top of the screen, not down here.
 private struct SimpleCreateBar: View {
     @Binding var showCreateMenu: Bool
 
     @State private var impact = UIImpactFeedbackGenerator(style: .light)
+    /// Slow breath that swells the amber halo when idle. Skipped when the
+    /// menu is open so the active state doesn't compete with the fan-out.
+    @State private var idlePulse: Bool = false
 
     /// Slightly springier than the tab-select feel — small overshoot so
     /// the options land at their fan positions with a touch of bounce,
@@ -1964,48 +1970,85 @@ private struct SimpleCreateBar: View {
     static let menuSpring = Animation.spring(response: 0.44, dampingFraction: 0.70)
 
     var body: some View {
-        HStack {
+        HStack(spacing: 0) {
             Spacer()
-            plusButton
-            Spacer()
+            captureButton
         }
     }
 
-    private var plusButton: some View {
+    private var captureButton: some View {
         Button {
             impact.impactOccurred()
             withAnimation(Self.menuSpring) {
                 showCreateMenu.toggle()
             }
         } label: {
-            Image(systemName: "plus")
-                .font(.system(size: 24, weight: .regular))
-                .foregroundColor(AppText.primary)
-                .rotationEffect(.degrees(showCreateMenu ? 45 : 0))
-                .frame(width: 64, height: 64)
-                .background(
-                    Circle().fill(AppInk.solid(showCreateMenu ? 0.18 : 0.06))
+            ZStack {
+                // livephoto = concentric live-capture rings. Reads as
+                // "recorder armed" without being the mic / record-circle
+                // both rivals use. Swaps to xmark when the menu is open so
+                // the close affordance is unambiguous.
+                Image(systemName: "livephoto")
+                    .font(.system(size: 28, weight: .regular))
+                    .foregroundColor(BrandColor.amber)
+                    .opacity(showCreateMenu ? 0 : 1)
+                    .scaleEffect(showCreateMenu ? 0.7 : 1)
+                Image(systemName: "xmark")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(AppText.primary)
+                    .opacity(showCreateMenu ? 1 : 0)
+                    .scaleEffect(showCreateMenu ? 1 : 0.7)
+            }
+            .frame(width: 64, height: 64)
+            .background(
+                Circle().fill(
+                    showCreateMenu
+                        ? BrandColor.amber.opacity(0.30)
+                        : BrandColor.amber.opacity(0.12)
                 )
-                .appLiquidGlass(in: Circle())
-                .overlay(
-                    Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    AppInk.solid(showCreateMenu ? 0.45 : 0.32),
-                                    AppInk.solid(showCreateMenu ? 0.18 : 0.10)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            ),
-                            lineWidth: 0.5
-                        )
-                )
-                .contentShape(Circle())
+            )
+            .appLiquidGlass(in: Circle())
+            .overlay(
+                Circle()
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                BrandColor.amber.opacity(showCreateMenu ? 0.65 : 0.42),
+                                BrandColor.amber.opacity(showCreateMenu ? 0.22 : 0.12)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 0.6
+                    )
+            )
+            // Amber halo: a static shadow plus a breathing one. The pulse
+            // is gated on the menu being closed so the open state reads
+            // as committed, not idling.
+            .shadow(color: BrandColor.amber.opacity(0.18), radius: 10, y: 4)
+            .shadow(
+                color: BrandColor.amber.opacity(
+                    showCreateMenu ? 0 : (idlePulse ? 0.30 : 0.10)
+                ),
+                radius: idlePulse ? 22 : 12,
+                y: 0
+            )
+            .animation(
+                showCreateMenu
+                    ? .easeOut(duration: 0.25)
+                    : .easeInOut(duration: 1.6).repeatForever(autoreverses: true),
+                value: idlePulse
+            )
+            .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(showCreateMenu ? "Close create menu" : "Create")
-        .onAppear { impact.prepare() }
+        .accessibilityLabel(showCreateMenu ? "Close create menu" : "Capture an idea")
+        .onAppear {
+            impact.prepare()
+            // Kick the breathing pulse on the next runloop so the initial
+            // state is "narrow halo" and the first transition is a swell.
+            DispatchQueue.main.async { idlePulse = true }
+        }
     }
 }
 
@@ -2020,47 +2063,52 @@ private struct CreateMenuOverlay: View {
     let onCreateContent: () -> Void
     let onDismiss: () -> Void
 
-    // Three pills fan around the plus button in an arc. All collapse to
-    // offset (0, 0) at the plus center so they appear to physically grow
-    // out of the plus body and then peel outward to their final spots.
-    //   • "Add a note"      → upper-left  (~140° from +x)
-    //   • "Draw my idea"    → straight up (~90°)
-    //   • "Create content"  → upper-right (~40°)
-    // x deltas keep pills clear of the screen edges on iPhone-class widths.
-    private let leftPillDX:   CGFloat = -100
-    private let leftPillDY:   CGFloat = -88
-    private let centerPillDX: CGFloat = 0
-    private let centerPillDY: CGFloat = -156
-    private let rightPillDX:  CGFloat = 100
-    private let rightPillDY:  CGFloat = -88
+    // The capture button now lives at bottom-right, so the three pills fan
+    // into the upper-left quadrant on a quarter-arc from straight-up
+    // (closest to vertical above the button) to almost-horizontal (far
+    // left, only slightly raised). All collapse to offset (0, 0) at the
+    // button center so they appear to grow out of the button body before
+    // peeling outward to their final spots.
+    //   • "Add a note"      → far left, slightly raised (~150° from +x)
+    //   • "Draw my idea"    → upper-left diagonal (~120°)
+    //   • "Create content"  → mostly up, tiny left lean (~95°)
+    // x deltas keep pills clear of the screen-left edge on iPhone-class widths.
+    private let topPillDX:    CGFloat = -20
+    private let topPillDY:    CGFloat = -180
+    private let midPillDX:    CGFloat = -90
+    private let midPillDY:    CGFloat = -130
+    private let leftPillDX:   CGFloat = -170
+    private let leftPillDY:   CGFloat = -50
 
-    // Vertical distance from the screen bottom to the plus button's
-    // center: AppTabBar bottom padding (6) + half of the 64pt plus
-    // button (32). The overlay's bottom-aligned ZStack uses this as
-    // padding so all options spawn at the plus button's center.
-    private let plusCenterFromBottom: CGFloat = 38
+    // Distance from the screen edges to the capture button's center:
+    // bottom padding (6) + half of the 64pt button (32) = 38; horizontal
+    // padding (16) + half of the button (32) = 48. The overlay's inner
+    // ZStack uses these as bottom/trailing padding so all options spawn
+    // at the button's center.
+    private let buttonCenterFromBottom: CGFloat = 38
+    private let buttonCenterFromTrailing: CGFloat = 48
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack(alignment: .bottomTrailing) {
             Color.black.opacity(show ? 0.45 : 0)
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture { onDismiss() }
 
-            // Bottom-align the inner ZStack so each option's bottom edge
-            // sits exactly on the plus button's vertical center. Combined
-            // with the .bottom scale anchor below, that makes the collapsed
-            // option a tiny dot at the plus center — so they really do
-            // appear to grow out of the plus body.
-            ZStack(alignment: .bottom) {
+            // bottomTrailing alignment so each option's bottom-right corner
+            // sits exactly on the capture button's center. Combined with
+            // the .bottomTrailing scale anchor below, that makes the
+            // collapsed option a tiny dot at the button's center — so they
+            // really do appear to grow out of the button body.
+            ZStack(alignment: .bottomTrailing) {
                 CreateMenuOption(
                     icon: "sparkles",
                     title: "Create content",
                     action: onCreateContent
                 )
-                .scaleEffect(show ? 1 : 0.18, anchor: .bottom)
+                .scaleEffect(show ? 1 : 0.18, anchor: .bottomTrailing)
                 .opacity(show ? 1 : 0)
-                .offset(x: show ? rightPillDX : 0, y: show ? rightPillDY : 0)
+                .offset(x: show ? topPillDX : 0, y: show ? topPillDY : 0)
                 .blur(radius: show ? 0 : 4)
 
                 CreateMenuOption(
@@ -2068,9 +2116,9 @@ private struct CreateMenuOverlay: View {
                     title: "Draw my idea",
                     action: onDrawIdea
                 )
-                .scaleEffect(show ? 1 : 0.18, anchor: .bottom)
+                .scaleEffect(show ? 1 : 0.18, anchor: .bottomTrailing)
                 .opacity(show ? 1 : 0)
-                .offset(x: show ? centerPillDX : 0, y: show ? centerPillDY : 0)
+                .offset(x: show ? midPillDX : 0, y: show ? midPillDY : 0)
                 .blur(radius: show ? 0 : 4)
 
                 CreateMenuOption(
@@ -2078,12 +2126,13 @@ private struct CreateMenuOverlay: View {
                     title: "Add a note",
                     action: onAddNote
                 )
-                .scaleEffect(show ? 1 : 0.18, anchor: .bottom)
+                .scaleEffect(show ? 1 : 0.18, anchor: .bottomTrailing)
                 .opacity(show ? 1 : 0)
                 .offset(x: show ? leftPillDX : 0, y: show ? leftPillDY : 0)
                 .blur(radius: show ? 0 : 4)
             }
-            .padding(.bottom, plusCenterFromBottom)
+            .padding(.bottom, buttonCenterFromBottom)
+            .padding(.trailing, buttonCenterFromTrailing)
         }
         .allowsHitTesting(show)
     }
