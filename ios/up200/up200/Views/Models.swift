@@ -232,13 +232,13 @@ struct NotesIllustration: View {
         ZStack {
             // Paper. Center at y=6, height 158 → top edge sits at y=-73.
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(AppInk.solid(0.18), lineWidth: 1.4)
+                .stroke(AppInk.solid(0.65), lineWidth: 1.4)
                 .frame(width: 134, height: 158)
                 .overlay(
                     VStack(alignment: .leading, spacing: 14) {
                         ForEach(0..<5, id: \.self) { i in
                             Capsule()
-                                .fill(AppInk.solid(0.10))
+                                .fill(AppInk.solid(0.30))
                                 .frame(width: i == 4 ? 52 : 92, height: 4)
                         }
                     }
@@ -255,7 +255,7 @@ struct NotesIllustration: View {
             HStack(spacing: 14) {
                 ForEach(0..<5, id: \.self) { _ in
                     Circle()
-                        .stroke(AppInk.solid(0.22), lineWidth: 1.4)
+                        .stroke(AppInk.solid(0.65), lineWidth: 1.4)
                         .frame(width: 8, height: 8)
                 }
             }
@@ -275,9 +275,9 @@ struct NotesIllustration: View {
 struct LibraryIllustration: View {
     var body: some View {
         ZStack {
-            card(width: 96,  height: 124, offset: CGSize(width: -32, height: -10), tint: 0.16)
-            card(width: 108, height: 138, offset: CGSize(width: 0,   height: 4),   tint: 0.26)
-            card(width: 96,  height: 130, offset: CGSize(width: 32,  height: 14),  tint: 0.18)
+            card(width: 96,  height: 124, offset: CGSize(width: -32, height: -10), tint: 0.40)
+            card(width: 108, height: 138, offset: CGSize(width: 0,   height: 4),   tint: 0.65)
+            card(width: 96,  height: 130, offset: CGSize(width: 32,  height: 14),  tint: 0.45)
         }
         .frame(width: 200, height: 180)
         .accessibilityHidden(true)
@@ -326,16 +326,16 @@ struct EmptyStatePlusButton: View {
                 Text(title)
                     .font(.appLabelBold)
             }
-            .foregroundColor(AppText.secondary)
+            .foregroundColor(AppText.primary)
             .padding(.horizontal, 22)
             .padding(.vertical, 12)
             .background(
                 Capsule(style: .continuous)
-                    .fill(AppInk.solid(0.04))
+                    .fill(AppInk.solid(0.08))
             )
             .overlay(
                 Capsule(style: .continuous)
-                    .stroke(AppInk.solid(0.14), lineWidth: 1)
+                    .stroke(AppInk.solid(0.35), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -372,11 +372,11 @@ struct EmptyStateView<Illustration: View>: View {
             VStack(spacing: 6) {
                 Text(title)
                     .font(.appBodyBold)
-                    .foregroundColor(AppText.tertiary)
+                    .foregroundColor(AppText.primary)
                 if let subtitle {
                     Text(subtitle)
                         .font(.appSubtext)
-                        .foregroundColor(AppText.muted)
+                        .foregroundColor(AppText.secondary)
                         .multilineTextAlignment(.center)
                 }
             }
