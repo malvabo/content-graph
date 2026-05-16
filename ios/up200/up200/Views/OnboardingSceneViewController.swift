@@ -909,7 +909,7 @@ class OnboardingSceneViewController: UIViewController {
         let defs: [(text: String, pos: SCNVector3, ghost: Bool)] = [
             ("PRODUCT IDEA",    SCNVector3(-3.5,  0.5,  3),  true),
             ("FEEDBACK",        SCNVector3( 5.0,  5.5,  1),  false),
-            ("TEAM SYNC NOTES", SCNVector3( 5.0, -5.5, -1),  false),
+            ("TEAM SYNC NOTES", SCNVector3(-5.0,  5.5, -1),  false),
         ]
 
         for def in defs {
