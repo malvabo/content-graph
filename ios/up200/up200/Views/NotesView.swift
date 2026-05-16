@@ -933,16 +933,14 @@ private struct NoteEditorPage: View {
         saved.updatedAt = Date()
         onSave(saved)
 
-        // If the user didn't enter a title and there's enough body to make a
-        // useful name, ask the model for a summary title and re-save with it
-        // prepended as the first line — `Note.displayTitle` picks that up.
+        // If the user didn't enter a title, ask the model for a summary title
+        // and re-save with it prepended as the first line — `Note.displayTitle`
+        // picks that up. Title every non-empty body, however short: a one-line
+        // note still needs a name to scan in the list.
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmedTitle.isEmpty else { return }
         let trimmedBody = noteBody.trimmingCharacters(in: .whitespacesAndNewlines)
-        let lineCount = trimmedBody.split(whereSeparator: \.isNewline)
-            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            .count
-        guard trimmedBody.count >= 40 || lineCount >= 2 else { return }
+        guard !trimmedBody.isEmpty else { return }
 
         let snapshotBody = noteBody
         let baseNote = saved
