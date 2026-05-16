@@ -52,6 +52,20 @@ class OnboardingSceneViewController: UIViewController {
     private var connectorDotOpacities: [[CGFloat]] = []
     private let expandDuration: TimeInterval = 0.95
 
+    // Step 3 also slides the entire bulb-system to the left to make room on
+    // the right for a paper-document graphic that materialises out of a final
+    // connector arc. The connector and document are both built up-front (so
+    // step 3's reveal animation never has to allocate SCN geometry), but the
+    // doc-connector dots are baked at world coordinates that already assume
+    // the constellation has shifted by `constellationShiftX` — so we never
+    // see the chain visually "rubber-banding" while the bulb is moving.
+    private var documentNode: SCNNode?
+    private var docConnectorNode: SCNNode?
+    private var docConnectorDotOpacities: [CGFloat] = []
+    private let constellationShiftX: Float = -4.0
+    private let docCentre = SCNVector3(7.4, 0.2, 1.4)
+    private let docSize = CGSize(width: 4.4, height: 5.7)
+
     // Read once at setup. Drives whether the dot cluster rotates, the cloud
     // blobs breathe, and labels typewriter or appear instantly. We don't
     // observe live changes — the user toggling reduce-motion mid-onboarding
@@ -66,6 +80,7 @@ class OnboardingSceneViewController: UIViewController {
         setupDeepAtmosphere()
         setupClouds()
         setupSatellites()
+        setupDocument()
         setupLabelAnchors()
     }
 
@@ -722,31 +737,68 @@ class OnboardingSceneViewController: UIViewController {
         }
     }
 
-    /// Step 2 → step 3 (or back). Satellites pop in with a soft fade+scale,
-    /// then each connector chain lights up dot-by-dot from the central bulb
-    /// outward — the line "draws itself" along the arc rather than appearing
-    /// all at once, which is what makes the reveal feel composed rather than
-    /// mechanical.
+    /// Step 2 → step 3 (or back). The bulb-system slides to the left to make
+    /// room on the right for a paper-document graphic. Satellites pop in with
+    /// a soft fade+scale while they slide. Each satellite-connector chain
+    /// then lights up dot-by-dot from the central bulb outward. Once those
+    /// have finished, a final connector arcs out to the right and the
+    /// document materialises at its end — "line first, then doc" — so the
+    /// user reads the reveal as the bulb "writing" itself into a page.
     private func applyExpanded(_ expanded: Bool) {
         let dur = expandDuration
+        let shiftX: Float = expanded ? constellationShiftX : 0
 
-        for sat in satelliteNodes {
+        // --- Shift the central bulb ---
+        if let spin = spinNode {
+            spin.removeAction(forKey: "shift")
+            let target = SCNVector3(shiftX, spin.position.y, spin.position.z)
+            if reduceMotion {
+                spin.position = target
+            } else {
+                let move = SCNAction.move(to: target, duration: dur)
+                move.timingMode = .easeInEaseOut
+                spin.runAction(move, forKey: "shift")
+            }
+        }
+
+        // --- Satellites: shift + scale + fade ---
+        for (i, sat) in satelliteNodes.enumerated() {
             sat.removeAllActions()
+            let base = satelliteDefs[i].centre
+            let targetPos = SCNVector3(base.x + shiftX, base.y, base.z)
             let targetOpacity: CGFloat = expanded ? 1 : 0
             let targetScale: Float     = expanded ? 1 : 0.45
             if reduceMotion {
-                sat.opacity = targetOpacity
-                sat.scale   = SCNVector3(targetScale, targetScale, targetScale)
+                sat.position = targetPos
+                sat.opacity  = targetOpacity
+                sat.scale    = SCNVector3(targetScale, targetScale, targetScale)
                 continue
             }
-            let fade  = SCNAction.fadeOpacity(to: targetOpacity, duration: dur)
-            let grow  = SCNAction.scale(to: CGFloat(targetScale), duration: dur)
+            let move = SCNAction.move(to: targetPos, duration: dur)
+            let fade = SCNAction.fadeOpacity(to: targetOpacity, duration: dur)
+            let grow = SCNAction.scale(to: CGFloat(targetScale), duration: dur)
+            move.timingMode = .easeInEaseOut
             fade.timingMode = .easeOut
             grow.timingMode = .easeOut
+            sat.runAction(move)
             sat.runAction(fade)
             sat.runAction(grow)
         }
 
+        // --- Satellite-connector parents shift with the bulb-system ---
+        for conn in connectorNodes {
+            conn.removeAction(forKey: "shift")
+            let target = SCNVector3(shiftX, 0, 0)
+            if reduceMotion {
+                conn.position = target
+            } else {
+                let move = SCNAction.move(to: target, duration: dur)
+                move.timingMode = .easeInEaseOut
+                conn.runAction(move, forKey: "shift")
+            }
+        }
+
+        // --- Satellite-connector dot cascade ---
         for (i, conn) in connectorNodes.enumerated() {
             let dots = conn.childNodes
             let targets = connectorDotOpacities[i]
@@ -770,6 +822,276 @@ class OnboardingSceneViewController: UIViewController {
                 dot.runAction(SCNAction.sequence([wait, fade]))
             }
         }
+
+        // --- Doc-connector dot cascade (line first) ---
+        // The doc connector waits until the satellite chains have mostly
+        // finished lighting up so the eye can travel cleanly out to the
+        // right rather than competing with the inner arcs.
+        if let docConn = docConnectorNode {
+            let docConnBaseDelay = expanded ? 1.95 : 0
+            for (j, dot) in docConn.childNodes.enumerated() {
+                dot.removeAllActions()
+                let target = expanded ? docConnectorDotOpacities[j] : 0
+                if reduceMotion {
+                    dot.opacity = target
+                    continue
+                }
+                let dotDelay = docConnBaseDelay + Double(j) * 0.055
+                let wait = SCNAction.wait(duration: dotDelay)
+                let fade = SCNAction.fadeOpacity(to: target, duration: 0.42)
+                fade.timingMode = .easeOut
+                dot.runAction(SCNAction.sequence([wait, fade]))
+            }
+        }
+
+        // --- Document materialises at the connector's end (then doc) ---
+        if let doc = documentNode {
+            doc.removeAllActions()
+            let targetOpacity: CGFloat = expanded ? 1 : 0
+            let targetScale: Float     = expanded ? 1 : 0.86
+            if reduceMotion {
+                doc.opacity = targetOpacity
+                doc.scale   = SCNVector3(targetScale, targetScale, targetScale)
+            } else {
+                // Document begins to resolve just after the last connector
+                // dot has lit up — enough overlap that the eye reads "the
+                // line arrives at a page that's already forming", not two
+                // disconnected beats.
+                let docDelay = expanded ? 2.65 : 0
+                let fade = SCNAction.fadeOpacity(to: targetOpacity, duration: 0.7)
+                let grow = SCNAction.scale(to: CGFloat(targetScale), duration: 0.75)
+                fade.timingMode = .easeOut
+                grow.timingMode = .easeOut
+                let wait = SCNAction.wait(duration: docDelay)
+                doc.runAction(SCNAction.sequence([wait, fade]))
+                doc.runAction(SCNAction.sequence([wait, grow]))
+            }
+        }
+    }
+
+    // MARK: - Document graphic (step 3, right side)
+
+    /// Builds the doc-connector chain and the document plane and adds both
+    /// to the scene hidden. The chain starts on the central bulb's right
+    /// surface *after* the constellation shift (so its first dot lines up
+    /// with the bulb when the shift animation finishes), and ends just shy
+    /// of the document's left edge. The document is an `SCNPlane` textured
+    /// with a CG-rendered paper page — title bars, a brand-amber divider,
+    /// and a stack of body lines — so it reads as an actual document rather
+    /// than a featureless rectangle.
+    private func setupDocument() {
+        let sprite = makeParticleSprite()
+
+        // Anchor points in world space, baked at the *post-shift* position.
+        let bulbCentre = SCNVector3(constellationShiftX, 0, 0)
+        let bulbSurfaceRadius: Float = 3.2
+        // End the chain just short of the document's left edge so the last
+        // bright dot sits visually "tucked under" the page's leading edge
+        // rather than crashing into it.
+        let docLeftEdge = SCNVector3(docCentre.x - Float(docSize.width) * 0.5 + 0.15,
+                                      docCentre.y,
+                                      docCentre.z)
+
+        let dx = docLeftEdge.x - bulbCentre.x
+        let dy = docLeftEdge.y - bulbCentre.y
+        let dz = docLeftEdge.z - bulbCentre.z
+        let dlen = max(0.001, sqrt(dx * dx + dy * dy + dz * dz))
+        let unit = SCNVector3(dx / dlen, dy / dlen, dz / dlen)
+
+        let start = SCNVector3(bulbCentre.x + unit.x * bulbSurfaceRadius,
+                                bulbCentre.y + unit.y * bulbSurfaceRadius,
+                                bulbCentre.z + unit.z * bulbSurfaceRadius)
+        let end   = docLeftEdge
+
+        // Perpendicular for an arc-shaped bend (cross with world-up).
+        let up = SCNVector3(0, 1, 0)
+        var perp = SCNVector3(
+            unit.y * up.z - unit.z * up.y,
+            unit.z * up.x - unit.x * up.z,
+            unit.x * up.y - unit.y * up.x
+        )
+        var perpLen = sqrt(perp.x * perp.x + perp.y * perp.y + perp.z * perp.z)
+        if perpLen < 0.001 {
+            perp = SCNVector3(0, 1, 0)
+            perpLen = 1
+        }
+        perp = SCNVector3(perp.x / perpLen, perp.y / perpLen, perp.z / perpLen)
+        // A gentle upward arc — bend the chain a touch above the straight
+        // line so the connector reads as a graceful gesture between the
+        // bulb and the page rather than a ruler-straight cable.
+        let curveAmount: Float = -0.55
+
+        let docConn = SCNNode()
+        scene.rootNode.addChildNode(docConn)
+        docConnectorNode = docConn
+
+        let chainCount = 16
+        for k in 1...chainCount {
+            let t = Float(k) / Float(chainCount + 1)
+            let bend = sin(t * Float.pi) * curveAmount
+            let pos = SCNVector3(
+                start.x + (end.x - start.x) * t + perp.x * bend,
+                start.y + (end.y - start.y) * t + perp.y * bend,
+                start.z + (end.z - start.z) * t + perp.z * bend
+            )
+
+            // Dots taper slightly inward → outward and brighten toward the
+            // page so the eye reads the chain as light travelling toward
+            // the document, mirroring the satellite connectors' direction
+            // logic.
+            let progress = Float(k) / Float(chainCount)
+            let size  = CGFloat(0.10 + progress * 0.09)
+            let alpha = CGFloat(0.50 + progress * 0.40)
+
+            let plane = SCNPlane(width: size, height: size)
+            let mat = plane.firstMaterial!
+            mat.diffuse.contents     = sprite
+            mat.transparent.contents = sprite
+            mat.lightingModel        = .constant
+            mat.blendMode            = .add
+            mat.writesToDepthBuffer  = false
+            mat.isDoubleSided        = true
+
+            let dot = SCNNode(geometry: plane)
+            dot.position = pos
+            dot.opacity  = 0
+            dot.constraints = [SCNBillboardConstraint()]
+            docConn.addChildNode(dot)
+            docConnectorDotOpacities.append(alpha)
+        }
+
+        // --- Document plane ---
+        let docTex = makeDocumentTexture()
+        let plane = SCNPlane(width: docSize.width, height: docSize.height)
+        let mat = plane.firstMaterial!
+        mat.diffuse.contents      = docTex
+        mat.transparent.contents  = docTex
+        mat.lightingModel         = .constant
+        // Paper is opaque (not additive) so the page reads as a real object
+        // sitting in front of the void, not a luminous overlay like the dots.
+        mat.blendMode             = .alpha
+        mat.writesToDepthBuffer   = false
+        mat.isDoubleSided         = true
+
+        let doc = SCNNode(geometry: plane)
+        doc.position = docCentre
+        // Slight Y-axis tilt — right edge rotates back, left edge forward —
+        // gives the page a sense of perspective without committing to a full
+        // 3D rendered scene. The doc is still planar; the tilt just sells
+        // depth.
+        doc.eulerAngles = SCNVector3(0, 0.14, 0)
+        doc.opacity = 0
+        doc.scale = SCNVector3(0.86, 0.86, 0.86)
+        scene.rootNode.addChildNode(doc)
+        documentNode = doc
+    }
+
+    /// Renders an "elegant document" as a UIImage: warm-cream paper with a
+    /// soft drop shadow, a top-corner highlight gradient, a hint of warm
+    /// wash toward the bottom-right, a stacked title block, a brand-amber
+    /// divider, and a column of body text lines of varying widths. Drawn at
+    /// 480×640 so the texture stays crisp on a Retina display when the
+    /// plane is rendered at its on-screen size.
+    private func makeDocumentTexture() -> UIImage {
+        let size = CGSize(width: 480, height: 640)
+        UIGraphicsBeginImageContextWithOptions(size, false, 0)
+        defer { UIGraphicsEndImageContext() }
+        let ctx = UIGraphicsGetCurrentContext()!
+
+        // Leave a margin around the page so the shadow has room to bloom
+        // without getting clipped by the texture's outer edge.
+        let pageInset: CGFloat = 30
+        let pageRect = CGRect(x: pageInset, y: pageInset,
+                              width: size.width - pageInset * 2,
+                              height: size.height - pageInset * 2)
+        let pageCorner: CGFloat = 7
+
+        // Soft drop shadow + warm-cream page fill in one pass.
+        ctx.saveGState()
+        ctx.setShadow(offset: CGSize(width: 0, height: 9),
+                      blur: 24,
+                      color: UIColor.black.withAlphaComponent(0.55).cgColor)
+        ctx.setFillColor(UIColor(red: 0.945, green: 0.915, blue: 0.855, alpha: 1).cgColor)
+        UIBezierPath(roundedRect: pageRect, cornerRadius: pageCorner).fill()
+        ctx.restoreGState()
+
+        // Inner highlight + warm wash, clipped to the page rect so they don't
+        // bleed outside the rounded corners.
+        ctx.saveGState()
+        UIBezierPath(roundedRect: pageRect, cornerRadius: pageCorner).addClip()
+
+        let highlightColors = [
+            UIColor(white: 1, alpha: 0.24).cgColor,
+            UIColor(white: 1, alpha: 0).cgColor,
+        ]
+        let highlightGrad = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                       colors: highlightColors as CFArray,
+                                       locations: [0, 1])!
+        ctx.drawRadialGradient(highlightGrad,
+                               startCenter: CGPoint(x: pageRect.minX + 70,
+                                                    y: pageRect.minY + 90),
+                               startRadius: 0,
+                               endCenter:   CGPoint(x: pageRect.minX + 70,
+                                                    y: pageRect.minY + 90),
+                               endRadius: 340,
+                               options: [])
+
+        let warmColors = [
+            UIColor(red: 0.86, green: 0.50, blue: 0.18, alpha: 0).cgColor,
+            UIColor(red: 0.86, green: 0.50, blue: 0.18, alpha: 0.07).cgColor,
+        ]
+        let warmGrad = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                  colors: warmColors as CFArray,
+                                  locations: [0, 1])!
+        ctx.drawLinearGradient(warmGrad,
+                               start: CGPoint(x: pageRect.midX, y: pageRect.midY),
+                               end:   CGPoint(x: pageRect.maxX, y: pageRect.maxY),
+                               options: [])
+        ctx.restoreGState()
+
+        // --- Content ---
+        let margin: CGFloat = 50
+        let contentX = pageRect.minX + margin
+        let contentWidth = pageRect.width - margin * 2
+
+        let titleColor = UIColor(red: 0.10, green: 0.08, blue: 0.07, alpha: 0.96)
+        let bodyColor  = UIColor(red: 0.18, green: 0.16, blue: 0.14, alpha: 0.78)
+        let amberColor = UIColor(red: 0.85, green: 0.45, blue: 0.10, alpha: 0.88)
+
+        func bar(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, color: UIColor) {
+            ctx.setFillColor(color.cgColor)
+            UIBezierPath(roundedRect: CGRect(x: x, y: y, width: w, height: h),
+                         cornerRadius: h / 2).fill()
+        }
+
+        var y = pageRect.minY + 72
+        // Title block — two stacked bars of decreasing width.
+        bar(x: contentX, y: y, w: contentWidth * 0.74, h: 11, color: titleColor)
+        y += 26
+        bar(x: contentX, y: y, w: contentWidth * 0.44, h: 8, color: titleColor)
+        y += 34
+
+        // Amber accent divider — small, anchored left, draws the eye and
+        // ties the page to the brand palette.
+        bar(x: contentX, y: y, w: 38, h: 3, color: amberColor)
+        y += 28
+
+        // Body text bars — irregular widths so they read as paragraphs of
+        // prose rather than a uniform stripe pattern. A short "end of
+        // paragraph" bar appears every few lines.
+        let widths: [CGFloat] = [
+            0.97, 0.93, 0.66,
+            0.99, 0.86, 0.94, 0.5,
+            0.92, 0.78, 0.96, 0.7,
+            0.88, 0.55,
+        ]
+        for w in widths {
+            if y > pageRect.maxY - 52 { break }
+            bar(x: contentX, y: y, w: contentWidth * w, h: 5, color: bodyColor)
+            y += 19
+        }
+
+        return UIGraphicsGetImageFromCurrentImageContext()!
     }
 
     // MARK: - Floating Labels
