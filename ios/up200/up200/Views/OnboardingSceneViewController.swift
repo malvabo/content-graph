@@ -39,6 +39,15 @@ class OnboardingSceneViewController: UIViewController {
     private var isCollected = false
     private let collectDuration: TimeInterval = 0.85
 
+    // Step 3 — graph: smaller satellite bulbs around the central bulb, each
+    // holding its own dot cluster, joined to the center by a soft edge line.
+    // The whole construct lives under one parent node so setShowGraph(true)
+    // can fade the entire graph in as a single layer without touching the
+    // central bulb's state.
+    private var graphGroupNode: SCNNode?
+    private var isGraphShown = false
+    private let graphRevealDuration: TimeInterval = 1.0
+
     // Read once at setup. Drives whether the dot cluster rotates, the cloud
     // blobs breathe, and labels typewriter or appear instantly. We don't
     // observe live changes — the user toggling reduce-motion mid-onboarding
@@ -53,6 +62,7 @@ class OnboardingSceneViewController: UIViewController {
         setupDeepAtmosphere()
         setupClouds()
         setupLabelAnchors()
+        setupGraph()
     }
 
     override func viewDidLayoutSubviews() {
@@ -526,6 +536,158 @@ class OnboardingSceneViewController: UIViewController {
         for entry in labelAnchors {
             entry.label.isHidden = collected
         }
+    }
+
+    // MARK: - Graph step (step 3)
+
+    /// Build the satellite-bulbs-with-edges construct once at setup, kept at
+    /// opacity 0 until step 3 reveals it. Doing all geometry work up front
+    /// means the step transition is a single opacity ramp — no jank from
+    /// late geometry instantiation when the user taps "Let's get started".
+    private func setupGraph() {
+        let group = SCNNode()
+        group.opacity = 0
+        scene.rootNode.addChildNode(group)
+        graphGroupNode = group
+
+        let sprite = makeParticleSprite()
+
+        func rng(_ n: Int) -> Float {
+            let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
+            return Float(v - floor(v))
+        }
+
+        // Five satellites at staggered angles around the central bulb.
+        // Distances stay inside the safe portrait-viewport half-width (~8.5
+        // units at z=0 with the current camera) so satellites at the cardinal
+        // sides never clip. Z offsets give the construct a slight 3D feel
+        // without breaking the planar "graph" read.
+        struct Sat { var angle: Float; var distance: Float; var radius: Float; var dotCount: Int; var seed: Int; var z: Float }
+        let satellites: [Sat] = [
+            Sat(angle: -.pi / 2 - 0.10,                  distance: 6.6, radius: 0.95, dotCount: 10, seed: 11, z:  0.4),
+            Sat(angle: -.pi / 2 + .pi * 2 / 5 + 0.18,    distance: 6.3, radius: 0.78, dotCount:  8, seed: 12, z: -0.3),
+            Sat(angle: -.pi / 2 + .pi * 4 / 5 - 0.12,    distance: 6.9, radius: 0.88, dotCount:  9, seed: 13, z:  0.2),
+            Sat(angle: -.pi / 2 + .pi * 6 / 5 + 0.10,    distance: 6.4, radius: 0.72, dotCount:  7, seed: 14, z: -0.1),
+            Sat(angle: -.pi / 2 + .pi * 8 / 5 - 0.20,    distance: 6.7, radius: 0.85, dotCount:  8, seed: 15, z:  0.3),
+        ]
+
+        // Bulb-edge radius pulled slightly larger than the actual 3.2 cluster
+        // radius so the edge line starts in the bulb's outer glow rather than
+        // visually piercing the dense core.
+        let bulbEdgeR: Float = 3.6
+
+        for sat in satellites {
+            let sx = cos(sat.angle) * sat.distance
+            let sy = sin(sat.angle) * sat.distance
+            let sz = sat.z
+            let satCenter = SCNVector3(sx, sy, sz)
+
+            // Edge: a thin additive cylinder running from the bulb's outer
+            // glow to just inside the satellite. The 0.35 inset on the
+            // satellite end keeps the line from piercing through the cluster
+            // to the far side; the bulbEdgeR inset on the origin end does the
+            // same for the central bulb.
+            let dist = sqrt(sx * sx + sy * sy + sz * sz)
+            let nx = sx / dist, ny = sy / dist, nz = sz / dist
+            let endInset: Float = max(0.25, sat.radius * 0.35)
+            let startPt = SCNVector3(nx * bulbEdgeR,
+                                     ny * bulbEdgeR,
+                                     nz * bulbEdgeR)
+            let endPt   = SCNVector3(nx * (dist - endInset),
+                                     ny * (dist - endInset),
+                                     nz * (dist - endInset))
+            let edge = makeGraphEdgeNode(from: startPt, to: endPt)
+            group.addChildNode(edge)
+
+            // Satellite dots: 7–10 tiny billboards inside a small sphere,
+            // same particle sprite + additive material as the central bulb
+            // so the visual language stays uniform — the satellites read as
+            // smaller copies of the focal cluster, not a different element.
+            for i in 0..<sat.dotCount {
+                let s = sat.seed * 100 + i
+                let dx = (rng(s * 3)     - 0.5) * 2
+                let dy = (rng(s * 3 + 1) - 0.5) * 2
+                let dz = (rng(s * 3 + 2) - 0.5) * 2
+                if dx * dx + dy * dy + dz * dz > 1 { continue }
+
+                let size  = CGFloat(0.13 + rng(s * 7)  * 0.13)
+                let alpha = CGFloat(0.45 + rng(s * 11) * 0.50)
+
+                let plane = SCNPlane(width: size, height: size)
+                let m = plane.firstMaterial!
+                m.diffuse.contents     = sprite
+                m.transparent.contents = sprite
+                m.lightingModel        = .constant
+                m.blendMode            = .add
+                m.writesToDepthBuffer  = false
+                m.isDoubleSided        = true
+
+                let dot = SCNNode(geometry: plane)
+                dot.position = SCNVector3(satCenter.x + dx * sat.radius * 0.85,
+                                          satCenter.y + dy * sat.radius * 0.85,
+                                          satCenter.z + dz * sat.radius * 0.85)
+                dot.opacity = alpha
+                dot.constraints = [SCNBillboardConstraint()]
+                group.addChildNode(dot)
+            }
+        }
+    }
+
+    /// Thin additive cylinder oriented from `a` to `b`. Default cylinder
+    /// axis is Y, so we compute the rotation that takes (0,1,0) into the
+    /// normalized direction vector and apply it as the node's rotation.
+    private func makeGraphEdgeNode(from a: SCNVector3, to b: SCNVector3) -> SCNNode {
+        let dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z
+        let length = max(0.001, sqrt(dx * dx + dy * dy + dz * dz))
+
+        let cyl = SCNCylinder(radius: 0.028, height: CGFloat(length))
+        cyl.radialSegmentCount = 6
+        let mat = cyl.firstMaterial!
+        // Warm-white additive line. Low alpha + additive blend lets the line
+        // read as a soft glow rather than a hard stroke, in keeping with the
+        // dot cluster's painterly feel.
+        mat.diffuse.contents       = UIColor(white: 1.0, alpha: 0.38)
+        mat.lightingModel          = .constant
+        mat.blendMode              = .add
+        mat.writesToDepthBuffer    = false
+        mat.isDoubleSided          = true
+
+        let node = SCNNode(geometry: cyl)
+        node.position = SCNVector3((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2)
+
+        let dir = SCNVector3(dx / length, dy / length, dz / length)
+        let up  = SCNVector3(0, 1, 0)
+        let axis = SCNVector3(up.y * dir.z - up.z * dir.y,
+                              up.z * dir.x - up.x * dir.z,
+                              up.x * dir.y - up.y * dir.x)
+        let axisLen = sqrt(axis.x * axis.x + axis.y * axis.y + axis.z * axis.z)
+        let dotProd = up.x * dir.x + up.y * dir.y + up.z * dir.z
+        if axisLen > 0.0001 {
+            let angle = acos(max(-1, min(1, dotProd)))
+            node.rotation = SCNVector4(axis.x / axisLen, axis.y / axisLen, axis.z / axisLen, angle)
+        } else if dotProd < 0 {
+            // Direction is exactly -Y; rotate 180° around any orthogonal axis.
+            node.rotation = SCNVector4(1, 0, 0, .pi)
+        }
+        return node
+    }
+
+    /// Step 3 of onboarding: smaller bulbs + edges fade in around the central
+    /// bulb. Symmetric in principle, but the current flow only reveals — never
+    /// hides — the graph, since onboarding ends right after.
+    func setShowGraph(_ shown: Bool) {
+        guard shown != isGraphShown else { return }
+        isGraphShown = shown
+        guard let group = graphGroupNode else { return }
+
+        if reduceMotion {
+            group.opacity = shown ? 1 : 0
+            return
+        }
+        group.removeAllActions()
+        let fade = SCNAction.fadeOpacity(to: shown ? 1 : 0, duration: graphRevealDuration)
+        fade.timingMode = .easeInEaseOut
+        group.runAction(fade)
     }
 
     // MARK: - Floating Labels
