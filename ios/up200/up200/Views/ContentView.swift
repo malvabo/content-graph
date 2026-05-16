@@ -2016,11 +2016,11 @@ private struct SimpleCreateBar: View {
             impact.impactOccurred()
             onTap()
         } label: {
-            // livephoto = concentric live-capture rings. Reads as
-            // "recorder armed" without being the mic / record-circle
-            // both rivals use.
-            Image(systemName: "livephoto")
-                .font(.system(size: 28, weight: .regular))
+            // waveform.and.mic = a microphone paired with a waveform —
+            // reads as "voice recorder" at a glance, distinct from the
+            // bare `mic.fill` glyph used inline elsewhere in the app.
+            Image(systemName: "waveform.and.mic")
+                .font(.system(size: 24, weight: .regular))
                 .foregroundColor(BrandColor.amber)
                 .frame(width: 64, height: 64)
                 .background(Circle().fill(BrandColor.amber.opacity(0.12)))
