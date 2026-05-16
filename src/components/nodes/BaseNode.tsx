@@ -301,7 +301,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
         <div style={{ position: 'relative' }} className="shrink-0">
-          <div className="w-[26px] h-[26px] rounded-md flex items-center justify-center" style={{ backgroundColor: colors.bg, color: colors.text }}>
+          <div className="w-[26px] h-[26px] flex items-center justify-center" style={{ color: colors.text }}>
             {NODE_ICONS[data.subtype]?.() ?? data.badge}
           </div>
           {brandActive && (data.category === 'generate' || data.subtype === 'brand-voice') && (

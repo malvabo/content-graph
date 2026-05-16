@@ -125,12 +125,12 @@ export default function CanvasToolbar({
             style={{
               width: 30, height: 30, borderRadius: 'var(--radius-md)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'transparent', border: '1px solid var(--color-border-default)',
+              background: 'transparent', border: 'none',
               color: 'var(--color-text-tertiary)', cursor: 'pointer',
-              transition: 'background 100ms, border-color 100ms',
+              transition: 'color 100ms',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
             aria-label="Back to library"
           >
             <BackIcon />
@@ -139,26 +139,25 @@ export default function CanvasToolbar({
           {/* Mode toggle — Canvas / Quick */}
           {onModeChange && (
             <div style={{
-              display: 'flex', gap: 0,
-              background: 'var(--color-bg-surface)',
-              borderRadius: 'var(--radius-full)',
-              padding: 2,
+              display: 'flex', gap: 4,
+              background: 'transparent',
+              padding: 0,
             }}>
               {(['canvas', 'quick'] as const).map(m => (
                 <button
                   key={m}
                   onClick={() => onModeChange(m)}
                   style={{
-                    padding: '4px 14px',
+                    padding: '4px 10px',
                     borderRadius: 'var(--radius-full)',
                     fontSize: 13,
                     fontWeight: 500,
                     fontFamily: 'var(--font-sans)',
                     border: 'none',
-                    background: mode === m ? 'var(--color-accent)' : 'transparent',
-                    color: mode === m ? '#fff' : '#526858',
+                    background: 'transparent',
+                    color: mode === m ? 'var(--color-accent)' : 'var(--color-text-tertiary)',
                     cursor: 'pointer',
-                    transition: 'background 120ms, color 120ms',
+                    transition: 'color 120ms',
                     lineHeight: '20px',
                   }}
                 >
@@ -218,12 +217,12 @@ export default function CanvasToolbar({
               onClick={() => { setMenuOpen(o => !o); setBrandSubOpen(false); }}
               style={{
                 width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'transparent', border: '1px solid var(--color-border-default)',
-                borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'var(--color-text-primary)',
-                transition: 'background 100ms, border-color 100ms',
+                background: 'transparent', border: 'none',
+                borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'var(--color-text-tertiary)',
+                transition: 'color 100ms',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
             >
               <GearIcon />
             </button>
