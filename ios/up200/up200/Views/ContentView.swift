@@ -1639,7 +1639,22 @@ private struct TemplatePromptEnhancer {
         req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         req.timeoutInterval = 30
 
-        let system = "You name content-generation prompt templates. Read the draft instructions and return a short, descriptive title that captures what the template produces. Title Case, 2–5 words, no quotes, no trailing punctuation, no preamble. Output only the title."
+        // Same titling rules as `AIService.titleSystemPrompt`, specialized for
+        // prompt templates — the title names what the template *produces*, so
+        // the user can scan a list of templates and pick the right one.
+        let system = """
+        You title content-generation prompt templates. The title sits in a list of templates the user picks from, so it has to name what the template produces.
+
+        Output exactly one title and nothing else:
+        - 3 to 7 words
+        - Sentence case: capitalize the first word and proper nouns only
+        - No quotes, no trailing punctuation, no emoji, no preamble
+        - No em-dashes; use a colon if you need separation
+
+        Lead with the concrete output. "LinkedIn hook post from research notes" beats "Template for posts." Two templates with neighboring purposes should get titles you can tell apart.
+
+        Avoid: generic openers ("Template for", "Prompt to"), throat-clearing ("some", "various"), filler adjectives ("powerful", "useful", "quick"), and the literal word "template" or "prompt" — the user already knows it's one.
+        """
 
         var userParts: [String] = []
         if !formats.isEmpty { userParts.append("Target output formats: \(formats.joined(separator: ", "))") }
@@ -1674,9 +1689,7 @@ private struct TemplatePromptEnhancer {
               let text = content["text"] as? String
         else { return .failure(.decode) }
 
-        let cleaned = text
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .trimmingCharacters(in: CharacterSet(charactersIn: "\"'“”‘’`.,"))
+        let cleaned = AIService.sanitize(text)
         return cleaned.isEmpty ? .failure(.empty) : .success(cleaned)
     }
 }

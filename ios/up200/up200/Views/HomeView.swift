@@ -88,8 +88,8 @@ struct AIService {
 
     static func generateTitle(from text: String) async -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return "Note" }
-        if !apiKey.isEmpty, let title = await callAnthropic(text: trimmed) {
+        guard !trimmed.isEmpty else { return "Untitled" }
+        if !apiKey.isEmpty, let title = await callAnthropic(text: trimmed), !title.isEmpty {
             return title
         }
         return fallback(from: trimmed)
@@ -104,11 +104,11 @@ struct AIService {
         req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         req.timeoutInterval = 8
 
-        let prompt = "Give a concise 3-6 word title for this content. Reply with only the title, no quotes, no punctuation at the end:\n\n\(text.prefix(800))"
         let body: [String: Any] = [
             "model": "claude-haiku-4-5-20251001",
-            "max_tokens": 25,
-            "messages": [["role": "user", "content": prompt]]
+            "max_tokens": 30,
+            "system": titleSystemPrompt,
+            "messages": [["role": "user", "content": String(text.prefix(1200))]]
         ]
         guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else { return nil }
         req.httpBody = httpBody
@@ -119,19 +119,71 @@ struct AIService {
               let text = content["text"] as? String
         else { return nil }
 
-        let title = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return title.isEmpty ? nil : title
+        return sanitize(text)
+    }
+
+    /// Embodies the `note-titler` skill: the title sits in a note app, so it
+    /// has to read well in a list of fifty other notes and help the user
+    /// find this one later.
+    private static let titleSystemPrompt = """
+    You title notes. The title sits in a note app, so it has to read well in a list of fifty other notes and help the user find this one later.
+
+    Output exactly one title and nothing else:
+    - 3 to 7 words
+    - Sentence case: capitalize the first word and proper nouns only
+    - No quotes, no trailing punctuation, no emoji, no preamble
+    - No em-dashes; use a colon if you need separation
+    - Match the language of the input
+
+    The title passes two tests: a glance reads it in under a second (scannability), and two notes on neighboring topics get titles you can tell apart (specificity).
+
+    Lead with the concrete subject. "Q3 hiring plan" beats "Thoughts on hiring." For meetings, name the meeting. For journals, name the event or feeling. For reading, name the source or claim. For code, name the function or thing being built. If the document already opens with a clear heading, tighten and reuse it.
+
+    Avoid: generic openers ("Notes on", "Thoughts about", "Reflections on"), throat-clearing ("some", "various", "miscellaneous"), filler adjectives ("interesting", "important", "useful", "quick"), date stamps, and punctuation theatrics. For sensitive content, keep the title discreet — it may be visible on a lock screen.
+
+    Examples:
+    Input: free-writing about feeling stuck waiting on agency responses for a visa petition
+    Output: Visa petition: stuck waiting on agencies
+
+    Input: SceneKit camera setup with commented lens choices and field of view math
+    Output: SceneKit camera setup and lens math
+
+    Input: long brainstorm on onboarding flow ideas for a new plant care app
+    Output: Plant care app onboarding brainstorm
+    """
+
+    /// Strips the wrappers a model sometimes adds — surrounding quotes, leading
+    /// "Title:" labels, trailing punctuation — and collapses to one line.
+    static func sanitize(_ raw: String) -> String {
+        var t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let nl = t.firstIndex(where: \.isNewline) { t = String(t[..<nl]) }
+        let prefixes = ["Title:", "title:", "TITLE:"]
+        for p in prefixes where t.hasPrefix(p) {
+            t = String(t.dropFirst(p.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let trimChars = CharacterSet(charactersIn: "\"'“”‘’`.,;:!?—–-")
+        t = t.trimmingCharacters(in: trimChars).trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty ? "" : t
     }
 
     static func fallback(from text: String) -> String {
         let stop = Set(["the","a","an","is","it","in","on","at","to","for","of","and","or","but",
                         "i","you","we","they","this","that","with","from","by","as","be","are",
                         "was","were","have","has","had","do","did","will","would","could","should"])
-        let words = text.split { !$0.isLetter }
+        let firstLine = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? text
+        let words = firstLine.split { !$0.isLetter && !$0.isNumber }
             .map(String.init)
             .filter { $0.count > 2 && !stop.contains($0.lowercased()) }
-        let title = Array(words.prefix(5)).joined(separator: " ")
-        return title.isEmpty ? "Note" : title
+        let picked = Array(words.prefix(6))
+        guard !picked.isEmpty else { return "Untitled" }
+        // Sentence case: first word capitalized, rest lowercase except all-caps
+        // tokens (likely acronyms) which we preserve.
+        let cased: [String] = picked.enumerated().map { idx, w in
+            let isAcronym = w.count <= 5 && w == w.uppercased() && w.contains(where: \.isLetter)
+            if isAcronym { return w }
+            return idx == 0 ? w.prefix(1).uppercased() + w.dropFirst().lowercased() : w.lowercased()
+        }
+        return cased.joined(separator: " ")
     }
 }
 
