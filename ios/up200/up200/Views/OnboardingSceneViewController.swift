@@ -517,7 +517,30 @@ class OnboardingSceneViewController: UIViewController {
             // the center — soft start, soft settle, no harsh snap when the
             // dots arrive.
             move.timingMode = .easeInEaseOut
-            dot.runAction(move, forKey: dotKey)
+
+            if collected {
+                // Once the bulb has gathered, each star drifts on its own
+                // small ellipse around its resting position. The cluster as
+                // a whole still rotates via spinNode (70s/rev), but on its
+                // own that's too slow to read as motion — the per-dot drift
+                // gives the bulb a constant inner shimmer so it never looks
+                // frozen. Phase / amplitude derived from i so neighbours
+                // never move in lockstep.
+                let base = target
+                let phase = Float(i) * 0.137
+                let amp: Float = 0.08 + Float(i % 7) * 0.012
+                let idle = SCNAction.customAction(duration: 1_000_000) { node, t in
+                    let ft = Float(t)
+                    let p = phase * 2 * Float.pi
+                    let dx = sin(ft * 0.38 + p)       * amp
+                    let dy = cos(ft * 0.31 + p * 1.2) * amp * 0.9
+                    let dz = sin(ft * 0.44 + p * 0.7) * amp * 0.55
+                    node.position = SCNVector3(base.x + dx, base.y + dy, base.z + dz)
+                }
+                dot.runAction(SCNAction.sequence([move, idle]), forKey: dotKey)
+            } else {
+                dot.runAction(move, forKey: dotKey)
+            }
         }
 
         // Clouds: fade out fully while collapsing so the bulb stands alone in
@@ -583,18 +606,44 @@ class OnboardingSceneViewController: UIViewController {
         let dotCount: Int
         let radius: Float
         let seed: Int
+        // Per-axis stretch baked into each dot's final shell position so the
+        // satellite reads as an ellipsoidal blob rather than a uniform sphere.
+        // Values diverge per satellite so the four clusters don't look like
+        // identical copies pasted into the four quadrants.
+        let axisScale: SCNVector3
+        // Whole-cluster breath that runs forever once the satellite has
+        // formed. Periods + amplitudes staggered so the field never pulses
+        // in unison.
+        let breathPeriod: TimeInterval
+        let breathAmplitude: Float
     }
 
-    // Dot counts bumped to match the central bulb's density once the new
-    // shell-jitter pattern is applied — without more dots the tight shell
-    // would read as a thin ring rather than a packed cluster. The NE / SW
-    // pair stays slightly larger than the SE / NW pair to keep the same
-    // subtle visual hierarchy the original layout established.
+    // Each satellite gets its own ellipsoid stretch + breath rhythm. The
+    // NE / SW pair stays slightly larger (radius + dotCount) than the SE /
+    // NW pair to keep the subtle visual hierarchy the original layout
+    // established, while the new axisScale values give each cluster a
+    // distinct silhouette so the four don't mirror each other.
     private let satelliteDefs: [SatelliteDef] = [
-        SatelliteDef(centre: SCNVector3( 5.0,  7.0,  0.6),  dotCount: 90, radius: 2.30, seed: 1011),
-        SatelliteDef(centre: SCNVector3( 6.0, -5.5, -0.5),  dotCount: 85, radius: 2.20, seed: 2027),
-        SatelliteDef(centre: SCNVector3(-5.0, -7.0,  0.5),  dotCount: 90, radius: 2.30, seed: 3041),
-        SatelliteDef(centre: SCNVector3(-6.0,  5.5, -0.35), dotCount: 85, radius: 2.20, seed: 4057),
+        SatelliteDef(
+            centre: SCNVector3( 5.0,  7.0,  0.6),  dotCount: 90, radius: 2.30, seed: 1011,
+            axisScale: SCNVector3(1.32, 0.82, 1.00),
+            breathPeriod: 6.4, breathAmplitude: 0.07
+        ),
+        SatelliteDef(
+            centre: SCNVector3( 6.0, -5.5, -0.5),  dotCount: 85, radius: 2.20, seed: 2027,
+            axisScale: SCNVector3(0.92, 1.26, 1.08),
+            breathPeriod: 7.3, breathAmplitude: 0.06
+        ),
+        SatelliteDef(
+            centre: SCNVector3(-5.0, -7.0,  0.5),  dotCount: 90, radius: 2.30, seed: 3041,
+            axisScale: SCNVector3(1.18, 1.05, 0.85),
+            breathPeriod: 5.8, breathAmplitude: 0.08
+        ),
+        SatelliteDef(
+            centre: SCNVector3(-6.0,  5.5, -0.35), dotCount: 85, radius: 2.20, seed: 4057,
+            axisScale: SCNVector3(0.86, 1.22, 1.06),
+            breathPeriod: 6.9, breathAmplitude: 0.07
+        ),
     ]
 
     /// Per-dot path data captured at setup so applyExpanded can interpolate
@@ -607,6 +656,12 @@ class OnboardingSceneViewController: UIViewController {
         let perp: SCNVector3         // unit perpendicular for the arc bend
         let curveAmount: Float       // signed magnitude of the sin-bend applied during migration
         let restingOpacity: CGFloat  // opacity once the dot has settled in the satellite
+        // Idle drift parameters — each settled dot orbits a lazy ellipse
+        // around finalLocal so the cluster keeps shimmering and morphing
+        // instead of freezing once every star has arrived. Phase + amplitude
+        // are per-dot so neighbouring stars never move in lockstep.
+        let idlePhase: Float
+        let idleAmplitude: Float
     }
 
     /// Builds the mini-bulbs up-front so the step 2 → step 3 crossing is
@@ -718,15 +773,22 @@ class OnboardingSceneViewController: UIViewController {
                 // Shell-jitter placement matching the central bulb's
                 // dotBulbPositions: pick the random in-sphere direction,
                 // then sit each dot at 55–100% of the satellite radius along
-                // that direction. The resulting thick shell reads as a
-                // condensed cluster rather than a uniform volumetric scatter
-                // — same packing signature the central bulb has, just scaled
-                // down so the four satellites feel like smaller siblings.
+                // that direction. axisScale stretches the shell into an
+                // ellipsoid so each satellite has its own non-symmetric
+                // silhouette instead of all four reading as identical
+                // spheres scaled down from the central bulb.
                 let nlen = max(0.001, sqrt(nx * nx + ny * ny + nz * nz))
                 let shellJitter = 0.55 + rng(def.seed, 5000 + placed) * 0.45
-                let finalLocal = SCNVector3(nx / nlen * def.radius * shellJitter,
-                                            ny / nlen * def.radius * shellJitter,
-                                            nz / nlen * def.radius * shellJitter)
+                let finalLocal = SCNVector3(nx / nlen * def.radius * shellJitter * def.axisScale.x,
+                                            ny / nlen * def.radius * shellJitter * def.axisScale.y,
+                                            nz / nlen * def.radius * shellJitter * def.axisScale.z)
+
+                // Idle drift parameters — phase is the dot's offset into the
+                // shared oscillation, amplitude is how far it strays from
+                // finalLocal. Both seeded so the motion is deterministic per
+                // dot but uncorrelated across neighbours.
+                let idlePhase = rng(def.seed, 7000 + placed)
+                let idleAmplitude: Float = 0.06 + rng(def.seed, 8000 + placed) * 0.10
 
                 let dot = SCNNode(geometry: plane)
                 // Pre-expansion the dot sits on the bulb surface at opacity 0
@@ -742,7 +804,9 @@ class OnboardingSceneViewController: UIViewController {
                     finalLocal: finalLocal,
                     perp: perp,
                     curveAmount: curveAmount,
-                    restingOpacity: alpha
+                    restingOpacity: alpha,
+                    idlePhase: idlePhase,
+                    idleAmplitude: idleAmplitude
                 ))
                 placed += 1
             }
@@ -783,6 +847,25 @@ class OnboardingSceneViewController: UIViewController {
             let paths = satelliteDotPaths[i]
             let dots = sat.childNodes
             let satDelay = Double(i) * perSatStagger
+            let def = satelliteDefs[i]
+
+            // Satellite-level breath: the whole cluster slowly inhales/exhales
+            // so the user sees the silhouette pulse even before tracking the
+            // per-dot drift. Direction is desynced per satellite so the four
+            // clusters never pulse in unison. Skipped when collapsing or
+            // under reduce-motion.
+            if expanded && !reduceMotion {
+                let halfBreath = def.breathPeriod / 2
+                let amp = CGFloat(def.breathAmplitude)
+                let inhale = SCNAction.scale(to: 1 + amp, duration: halfBreath)
+                let exhale = SCNAction.scale(to: 1 - amp, duration: halfBreath)
+                inhale.timingMode = .easeInEaseOut
+                exhale.timingMode = .easeInEaseOut
+                let breathSeq: SCNAction = i.isMultiple(of: 2)
+                    ? SCNAction.sequence([exhale, inhale])
+                    : SCNAction.sequence([inhale, exhale])
+                sat.runAction(SCNAction.repeatForever(breathSeq))
+            }
 
             for (j, dot) in dots.enumerated() {
                 dot.removeAllActions()
@@ -831,7 +914,33 @@ class OnboardingSceneViewController: UIViewController {
                     node.opacity = startOp + (endOp - startOp) * fadeProgress
                 }
 
-                dot.runAction(SCNAction.sequence([wait, travel]))
+                if expanded {
+                    // After the dot reaches its resting position, drift it on
+                    // its own ellipse around finalLocal so the satellite never
+                    // freezes into a still image — neighbouring dots move on
+                    // uncorrelated phases, which makes the cluster outline
+                    // shimmer and slowly morph. Duration is effectively
+                    // forever; the controller removes all dot actions on
+                    // collapse / dismissal.
+                    let base = path.finalLocal
+                    let amp = path.idleAmplitude
+                    let phase = path.idlePhase
+                    let idle = SCNAction.customAction(duration: 1_000_000) { node, t in
+                        let ft = Float(t)
+                        let p = phase * 2 * Float.pi
+                        let dx = sin(ft * 0.35 + p)       * amp
+                        let dy = cos(ft * 0.27 + p * 1.3) * amp * 0.9
+                        let dz = sin(ft * 0.41 + p * 0.7) * amp * 0.55
+                        node.position = SCNVector3(
+                            base.x + dx,
+                            base.y + dy,
+                            base.z + dz
+                        )
+                    }
+                    dot.runAction(SCNAction.sequence([wait, travel, idle]))
+                } else {
+                    dot.runAction(SCNAction.sequence([wait, travel]))
+                }
             }
         }
     }
