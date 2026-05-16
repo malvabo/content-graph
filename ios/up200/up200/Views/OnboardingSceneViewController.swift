@@ -570,10 +570,12 @@ class OnboardingSceneViewController: UIViewController {
 
     // MARK: - Satellites + connector arcs (step 3)
 
-    /// Each satellite is a small bulb at a fixed offset from the central
-    /// cluster. The four offsets sit roughly on a diamond around the origin,
-    /// with a tiny z-jitter so the satellites don't read as living on a
-    /// perfectly flat plane in front of the camera.
+    /// Each satellite is a bulb at a fixed offset from the central cluster.
+    /// The four offsets sit on a wide diamond around the origin with a
+    /// vertical-bias splay (portrait canvas), with a tiny z-jitter so the
+    /// satellites don't read as living on a perfectly flat plane in front
+    /// of the camera. The NE / SW pair is slightly larger than the SE / NW
+    /// pair to introduce a subtle visual hierarchy across the composition.
     private struct SatelliteDef {
         let centre: SCNVector3
         let dotCount: Int
@@ -582,10 +584,10 @@ class OnboardingSceneViewController: UIViewController {
     }
 
     private let satelliteDefs: [SatelliteDef] = [
-        SatelliteDef(centre: SCNVector3( 3.5,  3.25,  0.6),  dotCount: 22, radius: 0.85, seed: 1011),
-        SatelliteDef(centre: SCNVector3( 4.2, -1.5,  -0.5),  dotCount: 20, radius: 0.80, seed: 2027),
-        SatelliteDef(centre: SCNVector3(-3.6, -2.75,  0.5),  dotCount: 22, radius: 0.85, seed: 3041),
-        SatelliteDef(centre: SCNVector3(-3.9,  2.1,  -0.35), dotCount: 20, radius: 0.80, seed: 4057),
+        SatelliteDef(centre: SCNVector3( 5.0,  7.0,  0.6),  dotCount: 40, radius: 2.55, seed: 1011),
+        SatelliteDef(centre: SCNVector3( 6.0, -5.5, -0.5),  dotCount: 38, radius: 2.40, seed: 2027),
+        SatelliteDef(centre: SCNVector3(-5.0, -7.0,  0.5),  dotCount: 40, radius: 2.55, seed: 3041),
+        SatelliteDef(centre: SCNVector3(-6.0,  5.5, -0.35), dotCount: 38, radius: 2.40, seed: 4057),
     ]
 
     /// Per-dot path data captured at setup so applyExpanded can interpolate
