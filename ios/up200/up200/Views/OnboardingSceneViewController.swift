@@ -483,9 +483,11 @@ class OnboardingSceneViewController: UIViewController {
 
     /// SwiftUI advances the onboarding flow by passing an integer step:
     /// 0 = wide constellation, 1 = collected bulb, 2 = content-graph
-    /// satellites. We diff the requested step against the current one and
-    /// run each crossing's animation independently so a 0 → 2 jump still
-    /// collapses the cluster *and* expands the satellites in a single pass.
+    /// satellites + document, 3 = features preview (SCN content fades out so
+    /// the SwiftUI mock can carry the screen alone). We diff the requested
+    /// step against the current one and run each crossing's animation
+    /// independently so a 0 → 2 jump still collapses the cluster *and*
+    /// expands the satellites in a single pass.
     func setStep(_ step: Int) {
         guard step != currentStep else { return }
         let previous = currentStep

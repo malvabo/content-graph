@@ -330,20 +330,16 @@ struct OnboardingView: View {
             .padding(.horizontal, 28)
 
             // --- Centre: big + button with its two option pills above ---
-            // ZStack so the pills can hover above the plus without changing
-            // the row's measured height. The pills describe what the plus
-            // pops in the real app — kept honest to the real interaction.
+            // ZStack so the pills can fan above the plus without changing the
+            // row's measured height. The pills describe what the plus pops in
+            // the real app and are positioned at the same offsets the real
+            // `CreateMenuOverlay` uses ((-DX, -DY) / (+DX, -DY)) so the
+            // arrangement reads as a frozen-in-time copy of the real fan
+            // menu, just scaled a touch tighter to fit the onboarding's
+            // central row. Each pill spawns from the plus's centre (offset 0,
+            // scale 0.18 with `.bottom` anchor) the same way the real fan
+            // does, then fans out to its resting offset.
             ZStack {
-                HStack(spacing: 10) {
-                    optionPill(icon: "mic.fill", label: "Add a note")
-                    optionPill(icon: "sparkles", label: "Create")
-                }
-                .offset(y: -60)
-                .opacity(featuresAppeared ? 1 : 0)
-                .scaleEffect(featuresAppeared ? 1 : 0.85, anchor: .bottom)
-                .animation(.easeOut(duration: 0.55).delay(0.50),
-                           value: featuresAppeared)
-
                 ZStack {
                     Circle()
                         .fill(Color.white.opacity(0.96))
@@ -359,8 +355,24 @@ struct OnboardingView: View {
                 .opacity(featuresAppeared ? 1 : 0)
                 .animation(.spring(response: 0.55, dampingFraction: 0.72).delay(0.30),
                            value: featuresAppeared)
+
+                optionPill(icon: "mic.fill", label: "Add a note")
+                    .scaleEffect(featuresAppeared ? 1 : 0.18, anchor: .bottom)
+                    .opacity(featuresAppeared ? 1 : 0)
+                    .offset(x: featuresAppeared ? -90 : 0,
+                            y: featuresAppeared ? -78 : 0)
+                    .animation(.spring(response: 0.55, dampingFraction: 0.72).delay(0.50),
+                               value: featuresAppeared)
+
+                optionPill(icon: "sparkles", label: "Create")
+                    .scaleEffect(featuresAppeared ? 1 : 0.18, anchor: .bottom)
+                    .opacity(featuresAppeared ? 1 : 0)
+                    .offset(x: featuresAppeared ? 90 : 0,
+                            y: featuresAppeared ? -78 : 0)
+                    .animation(.spring(response: 0.55, dampingFraction: 0.72).delay(0.56),
+                               value: featuresAppeared)
             }
-            .frame(height: 120)
+            .frame(height: 140)
 
             // --- Bottom row: Library (left) and + menu (right) ---
             HStack(alignment: .top) {
@@ -369,7 +381,7 @@ struct OnboardingView: View {
                              subtitle: "Saved\ncontent projects",
                              delay: 0.91)
                 Spacer(minLength: 12)
-                featureBlurb(icon: "wand.and.stars",
+                featureBlurb(icon: "plus.circle.fill",
                              title: "+ menu",
                              subtitle: "Add a note\nor create",
                              delay: 1.04)
