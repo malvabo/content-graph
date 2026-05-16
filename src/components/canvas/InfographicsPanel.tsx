@@ -462,9 +462,9 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
           <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
             <button
               onClick={() => { setEditingId(null); onExitEditor?.(); }}
-              style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 100ms, border-color 100ms' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+              style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 100ms, border-color 100ms' }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
               aria-label="Back to infographics">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
@@ -486,16 +486,16 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--space-1)' }}>
             {hasHistory && (
               <button onClick={undo}
-                style={{ height: 30, padding: '0 var(--space-3)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', transition: 'background 100ms, border-color 100ms' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}>
+                style={{ height: 30, padding: '0 var(--space-3)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', transition: 'background 100ms, border-color 100ms' }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}>
                 ↩ Undo
               </button>
             )}
             <button
-              style={{ height: 30, padding: '0 var(--space-3)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', transition: 'background 100ms, border-color 100ms' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+              style={{ height: 30, padding: '0 var(--space-3)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', transition: 'background 100ms, border-color 100ms' }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
               onClick={async () => {
                 const el = document.getElementById('ig-editor-preview');
                 if (!el) return;

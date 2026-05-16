@@ -471,10 +471,10 @@ const ResultCard = memo(function ResultCard({ label, content }: { label: string;
             style={{
               padding: '4px 10px', borderRadius: 'var(--radius-md)', fontSize: 12,
               fontFamily: 'var(--font-sans)', fontWeight: 500,
-              background: 'var(--color-bg-surface)',
-              border: `1px solid ${copied ? 'var(--color-accent)' : 'var(--color-border-default)'}`,
-              color: copied ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-              cursor: 'pointer', transition: 'all 120ms',
+              background: 'transparent',
+              border: 'none',
+              color: copied ? 'var(--color-accent)' : 'var(--color-text-tertiary)',
+              cursor: 'pointer', transition: 'color 120ms',
             }}
           >
             {copied ? 'Copied!' : 'Copy'}
@@ -537,22 +537,14 @@ const STYLES = `
   @keyframes spin { to { transform: rotate(360deg); } }
   .qm-source-input { transition: opacity 200ms; }
   .qm-chip {
-    background: var(--color-bg-surface);
-    border: 1px solid var(--color-border-default);
-    color: var(--color-text-secondary);
-  }
-  :root.dark .qm-chip {
     background: transparent;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid transparent;
     color: var(--color-text-tertiary);
   }
   .qm-chip.active {
     border-color: var(--color-accent);
-    background: var(--color-bg-surface);
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
     color: var(--color-accent);
-  }
-  :root.dark .qm-chip.active {
-    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
   }
 `;
 

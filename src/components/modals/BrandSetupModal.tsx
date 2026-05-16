@@ -90,7 +90,7 @@ export default function BrandSetupModal({ brandId, onClose }: { brandId: string;
         <div style={{ display: 'flex', gap: 'var(--space-1)', padding: 'var(--space-2) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)' }}>
           {(['visual', 'voice', 'infographics'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              style={{ padding: 'var(--space-2) var(--space-3)', background: tab === t ? 'var(--color-bg-surface)' : 'transparent', border: 'none', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', fontWeight: 'var(--weight-medium)', color: tab === t ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)', cursor: 'pointer', textTransform: 'capitalize' }}>
+              style={{ padding: 'var(--space-2) var(--space-3)', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)', fontWeight: 'var(--weight-medium)', color: tab === t ? 'var(--color-accent)' : 'var(--color-text-tertiary)', cursor: 'pointer', textTransform: 'capitalize' }}>
               {t === 'infographics' ? 'Infographics' : `Brand ${t}`}
             </button>
           ))}

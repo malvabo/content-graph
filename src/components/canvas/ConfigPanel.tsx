@@ -118,7 +118,7 @@ const CONFIGS: Record<string, (c: Record<string, unknown>, s: (k: string, v: unk
         {['.txt', '.md', '.docx', '.pdf', '.json', '.zip'].map((f) => {
           const formats = (c.formats as string[]) ?? ['.zip'];
           const active = formats.includes(f);
-          return <button key={f} className={`text-xs px-2.5 py-1 rounded ${active ? 'bg-[var(--color-interactive-focus)] text-white' : 'bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)]'}`}
+          return <button key={f} className={`text-xs px-2.5 py-1 rounded ${active ? 'bg-[var(--color-interactive-focus)] text-white' : 'bg-transparent text-[var(--color-text-tertiary)]'}`}
             onClick={() => s('formats', active ? formats.filter((x: string) => x !== f) : [...formats, f])}>{f}</button>;
         })}
       </div>

@@ -169,9 +169,9 @@ export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?:
         <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
           {onBack && (
             <button onClick={onBack}
-              style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: '1px solid var(--color-border-default)', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 100ms, border-color 100ms' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+              style={{ width: 30, height: 30, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: 'var(--color-text-tertiary)', cursor: 'pointer', transition: 'background 100ms, border-color 100ms' }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
               aria-label="Back to cards library"><BackIcon /></button>
           )}
         </div>
