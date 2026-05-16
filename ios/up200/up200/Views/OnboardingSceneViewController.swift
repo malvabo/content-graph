@@ -71,13 +71,8 @@ class OnboardingSceneViewController: UIViewController {
         setupCamera()
         setupDotCloud()
         setupDeepAtmosphere()
-        // Step 2 redesign per design feedback: drop the corner cloud
-        // blobs and the four satellite mini-bulbs so the central amber
-        // cluster reads as the only object on the page, with empty
-        // space on the upper-right for the flow stream to bloom into.
-        // cloudNodes / satelliteNodes stay empty; the animation paths
-        // that iterate them are already no-ops on empty arrays.
-        setupFlowStream()
+        setupClouds()
+        setupSatellites()
         setupLabelAnchors()
     }
 
@@ -173,12 +168,6 @@ class OnboardingSceneViewController: UIViewController {
 
     // MARK: - Dot cloud (the rotating focal element)
 
-    /// Warm amber baked into the central cluster's dots + the flow-stream
-    /// particles. Hue lifted toward saturated orange so it reads as the
-    /// brand glow against the near-black page rather than a muddy tan.
-    private static let amberParticleColor = UIColor(red: 0.96, green: 0.58, blue: 0.18, alpha: 1.0)
-
-
     /// The central cluster of glowing dots, built as an explicit node graph so
     /// the whole cluster can rotate rigidly around its own center. Particles
     /// emitted via SCNParticleSystem live in world space and don't follow a
@@ -193,17 +182,11 @@ class OnboardingSceneViewController: UIViewController {
         let spinNode = SCNNode()           // Y rotation
         let tiltNode = SCNNode()           // X rotation
         spinNode.addChildNode(tiltNode)
-        // Offset the cluster down-and-left of dead-center so the
-        // upper-right corner has room for the flow stream to bloom into.
-        // Asymmetric composition: focal mass anchored bottom-left, motion
-        // exiting top-right, with negative space carrying the flow.
-        spinNode.position = SCNVector3(-2.0, -1.5, 0)
+        spinNode.position = SCNVector3(0, 0, 0)
         self.spinNode = spinNode
         self.tiltNode = tiltNode
 
-        // Amber-tinted sprite — central cluster + flow stream share the
-        // brand warm-amber palette. Background atmosphere stays white.
-        let sprite = makeParticleSprite(tint: Self.amberParticleColor)
+        let sprite = makeParticleSprite()
 
         func rng(_ n: Int) -> Float {
             let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
@@ -301,68 +284,13 @@ class OnboardingSceneViewController: UIViewController {
         deepAtmosphereNode = deepNode
     }
 
-    // MARK: - Flow stream (amber particles drifting upper-right)
-
-    /// A continuous stream of amber particles emitted from the central
-    /// cluster's anchor and flowing toward the upper-right corner. The
-    /// stream lives at world space (not parented to the spinning cluster)
-    /// so the direction stays stable even as the cluster rotates inside.
-    /// Particles fade as they travel, so the effect reads as "ideas
-    /// blooming outward into open space" without ever pooling at the
-    /// edge of the canvas.
-    private func setupFlowStream() {
-        guard !reduceMotion else { return }
-
-        let stream = SCNParticleSystem()
-        stream.birthRate            = 28
-        stream.particleLifeSpan     = 4.2
-        stream.particleLifeSpanVariation = 1.2
-        // Tight emitter around the cluster's anchor so the stream looks
-        // like it's spilling out of the focal mass, not a wide spray.
-        stream.emitterShape         = SCNSphere(radius: 1.8)
-        stream.birthLocation        = .surface
-        stream.emittingDirection    = SCNVector3(0.65, 0.85, 0)
-        stream.spreadingAngle       = 18
-        stream.particleVelocity     = 1.1
-        stream.particleVelocityVariation = 0.45
-        stream.particleSize         = 0.20
-        stream.particleSizeVariation = 0.10
-        stream.particleColor        = Self.amberParticleColor
-        // Fade out across lifespan so the trail tapers into the dark
-        // instead of clipping at lifespan end.
-        stream.particleColorVariation = SCNVector4(0.04, 0.06, 0.02, 0.20)
-        stream.stretchFactor        = 0.0
-        stream.blendMode            = .additive
-        stream.isLightingEnabled    = false
-        stream.particleImage        = makeParticleSprite(tint: Self.amberParticleColor)
-        stream.loops                = true
-        // Tail fades to nothing across the particle's lifespan so the
-        // stream tapers into the dark instead of clipping at lifespan
-        // end. Values + keyTimes are NSNumber-typed for the Obj-C
-        // bridge that SCNParticleSystem ultimately reads.
-        let fadeAnim = CAKeyframeAnimation()
-        fadeAnim.values = [NSNumber(value: 1.0), NSNumber(value: 0.85), NSNumber(value: 0.0)]
-        fadeAnim.keyTimes = [NSNumber(value: 0.0), NSNumber(value: 0.55), NSNumber(value: 1.0)]
-        stream.propertyControllers = [.opacity: SCNParticlePropertyController(animation: fadeAnim)]
-
-        let node = SCNNode()
-        node.addParticleSystem(stream)
-        // Anchored at the cluster's offset position so the stream
-        // visibly leaves the focal mass, not from world origin.
-        node.position = SCNVector3(-2.0, -1.5, 0)
-        scene.rootNode.addChildNode(node)
-    }
-
-    /// Soft circular sprite for particles. Pass a tint to render the
-    /// gradient in the brand amber for the central cluster + flow stream;
-    /// the default white sprite is used by the dim deep-atmosphere layer
-    /// so the back layer reads as neutral haze rather than tinted noise.
-    private func makeParticleSprite(tint: UIColor = .white) -> UIImage {
+    /// Soft circular sprite for particles
+    private func makeParticleSprite() -> UIImage {
         let size: CGFloat = 24
         UIGraphicsBeginImageContextWithOptions(CGSize(width: size, height: size), false, 0)
         let ctx = UIGraphicsGetCurrentContext()!
         let center = CGPoint(x: size / 2, y: size / 2)
-        let colors = [tint.cgColor, tint.withAlphaComponent(0).cgColor] as CFArray
+        let colors = [UIColor.white.cgColor, UIColor.clear.cgColor] as CFArray
         let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
                                   colors: colors,
                                   locations: [0, 1])!

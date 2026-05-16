@@ -69,14 +69,28 @@ struct OnboardingView: View {
             // so the dots can collapse inward (step 2) and then sprout
             // satellites + connector arcs (step 3) without cross-fading
             // between separate scenes. On the capture step (4) the whole
-            // scene fades to a quiet backdrop and zooms toward the
-            // top-right cloud so the starfield blurb reads as the focal
-            // element while the surrounding atmosphere fills the view.
+            // scene fades to a quiet backdrop so the starfield cloud reads
+            // as the focal element.
             OnboardingSceneView(step: step.rawValue)
                 .opacity(step == .capture ? 0.18 : 1)
-                .scaleEffect(step == .capture ? 1.8 : 1.0, anchor: .topTrailing)
                 .animation(.easeInOut(duration: 0.65), value: step)
                 .ignoresSafeArea()
+
+            // Step 4 .prompt: the user is *inside* the cloud. The starfield
+            // fills the whole screen (ignoresSafeArea) so the cloud has no
+            // visible top/bottom/side edges, and a long-press anywhere on
+            // it kicks off the recording. Other capture sub-phases swap in
+            // their own center content (waveform, choose list, generating
+            // scene) so the full-screen cloud only lives during .prompt.
+            if step == .capture && capturePhase == .prompt {
+                StarfieldBlurb(active: true)
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 30) {
+                        startCaptureRecording()
+                    }
+                    .transition(.opacity)
+            }
 
             switch step {
             case .intro:         introOverlay
@@ -228,7 +242,7 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             Spacer().frame(height: 24)
 
-            Text("Turn an idea into\ncontent worth sharing")
+            Text("From one idea,\na graph of content")
                 .font(.system(size: 22, weight: .medium, design: .monospaced))
                 .kerning(-0.3)
                 .foregroundColor(AppText.primary)
@@ -395,41 +409,17 @@ struct OnboardingView: View {
     @ViewBuilder private var captureCenter: some View {
         switch capturePhase {
         case .prompt:
-            // The cloud has no edges. The blurb's intrinsic frame is taller
-            // than the captureCenter slot, and the negative h-padding /
-            // b-padding lets it bleed past the surrounding paddings — the
-            // sides clear the captureCenter's horizontal inset, the bottom
-            // slips beneath the CTA layout box and past the screen edge.
-            // The press-and-hold caption is overlaid at the top of the
-            // visible portion of the cloud rather than placed below the
-            // blurb, since the blurb's "below" extends off-screen and a
-            // text element placed there would never be seen.
-            StarfieldBlurb(active: true)
-                .frame(height: 660)
-                // contentShape goes here, *before* the negative paddings,
-                // so the press-and-hold hit area is the full rendered
-                // cloud rectangle. Were it applied after, the negative
-                // padding would shrink the hit target down to the
-                // collapsed layout box and the user could tap on a star
-                // without anything firing.
-                .contentShape(Rectangle())
-                // Long-press initiates recording. minimumDuration is short
-                // enough that the gesture feels like a confirm-tap, not a
-                // hold — once .recording starts, the user can let go and
-                // tap "Finish recording" below.
-                .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 30) {
-                    startCaptureRecording()
-                }
-                .padding(.horizontal, -24)
-                .padding(.bottom, -320)
-                .overlay(alignment: .top) {
-                    Text("Press and hold to start recording\nyour first idea")
-                        .font(.system(size: 14, weight: .regular, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.58))
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 18)
-                        .allowsHitTesting(false)
-                }
+            // The cloud itself is rendered as a full-screen background in
+            // the parent ZStack and owns the press-and-hold gesture. This
+            // slot just hosts the visible caption pinned in the middle of
+            // the layout, with hit-testing disabled so taps fall through
+            // to the cloud behind it.
+            Text("Press and hold to start recording\nyour first idea")
+                .font(.system(size: 14, weight: .regular, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.62))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .allowsHitTesting(false)
                 .transition(.opacity)
 
         case .recording:
