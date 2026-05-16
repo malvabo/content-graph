@@ -1963,28 +1963,32 @@ private struct SimpleHomeHeader: View {
 
     @ViewBuilder
     private func segment(_ tab: AppTab, label: String) -> some View {
+        let selected = section == tab
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             withAnimation(Self.selectSpring) { section = tab }
         } label: {
             Text(label)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(section == tab ? AppText.primary : AppText.tertiary)
+                // White text on the active pill — same contrast pair the
+                // FilterChip "All" uses, so both highlighted controls on
+                // this page share a single selection idiom.
+                .foregroundColor(selected ? .white : AppText.tertiary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(section == tab ? AppBackground.surface : Color.clear)
-                        .shadow(
-                            color: AppInk.solid(section == tab ? 0.10 : 0),
-                            radius: 4, y: 1
-                        )
+                        // BrandColor.amber is the brand "lifted" fill —
+                        // matches the selected FilterChip pill above the
+                        // list. Drops the dark `AppBackground.surface` fill
+                        // that read as a charcoal-grey submerged tab.
+                        .fill(selected ? BrandColor.amber : Color.clear)
                 )
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
-        .accessibilityAddTraits(section == tab ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     }
 }
 
