@@ -18,7 +18,8 @@ private struct OnboardingSceneView: UIViewControllerRepresentable {
 private enum OnboardingStep: Int {
     case intro = 0          // wide constellation + brand mark + Get started / Log in
     case transform = 1      // collected bulb + "Transform your ideas…" headline + Continue
-    case constellation = 2  // central bulb + 4 satellite bulbs joined by dot arcs + final CTA
+    case constellation = 2  // central bulb + 4 satellite bulbs joined by dot arcs + doc + Continue
+    case features = 3       // app preview: 4 feature blurbs around one big central + button
 }
 
 struct OnboardingView: View {
@@ -27,6 +28,11 @@ struct OnboardingView: View {
 
     @State private var step: OnboardingStep = .intro
     @State private var appeared = false
+    // Per-element appearance flag for step 4. We don't share `appeared`
+    // because the staggered children on step 4 need to start hidden and
+    // cascade in only when that step is reached, not when the OnboardingView
+    // is first put on screen.
+    @State private var featuresAppeared = false
     // Typewriter state for the brand mark. Mirrors web's TypewriterLogo —
     // mono font, lowercase "up150", char-by-char typing with a blinking
     // caret that persists after the word is fully typed.
@@ -47,6 +53,7 @@ struct OnboardingView: View {
             case .intro:         introOverlay
             case .transform:     transformOverlay
             case .constellation: constellationOverlay
+            case .features:      featuresOverlay
             }
         }
         .onAppear { appeared = true }
@@ -221,9 +228,11 @@ struct OnboardingView: View {
 
             Button(action: {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                onGetStarted()
+                withAnimation(.easeInOut(duration: 0.45)) {
+                    step = .features
+                }
             }) {
-                Text("Let's get started")
+                Text("Continue")
                     .font(.app(size: 17, weight: .semibold))
                     .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
                     .frame(maxWidth: .infinity)
@@ -240,6 +249,194 @@ struct OnboardingView: View {
         // their first beats of motion before the headline and CTA resolve —
         // scene leads, copy follows, just as the previous step does.
         .transition(.opacity.animation(.easeIn(duration: 0.55).delay(0.35)))
+    }
+
+    // MARK: Step 4 — app preview (features blurbs around a central +)
+
+    /// Final preview screen. The SceneKit scene fades to black behind us
+    /// (handled in OnboardingSceneViewController.setStep), and we render a
+    /// small annotated mock of the home UI: a big plus button in the centre
+    /// with the two fan options it pops (Add a note, Create), surrounded by
+    /// four short feature blurbs — Notes, Profile, Library, Plus menu —
+    /// each appearing one at a time so the user reads them in order rather
+    /// than being hit with the whole grid at once. The page ends on the
+    /// final "Let's get started" CTA that exits onboarding into the app.
+    private var featuresOverlay: some View {
+        VStack(spacing: 0) {
+            Spacer().frame(height: 28)
+
+            Text("Your new workspace")
+                .font(.system(size: 22, weight: .medium, design: .monospaced))
+                .kerning(-0.3)
+                .foregroundColor(AppText.primary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 28)
+                .opacity(featuresAppeared ? 1 : 0)
+                .offset(y: featuresAppeared ? 0 : 8)
+                .animation(.easeOut(duration: 0.5).delay(0.15), value: featuresAppeared)
+
+            Spacer()
+
+            featuresMockup
+                .frame(maxWidth: .infinity)
+
+            Spacer()
+
+            Button(action: {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                onGetStarted()
+            }) {
+                Text("Let's get started")
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.white.opacity(0.94))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 28)
+            .opacity(featuresAppeared ? 1 : 0)
+            .offset(y: featuresAppeared ? 0 : 12)
+            .animation(.easeOut(duration: 0.5).delay(1.15), value: featuresAppeared)
+
+            Spacer().frame(height: 52)
+        }
+        // Toggle the per-element appearance cascade on entry. We don't reset
+        // on disappear because step 4 is the final beat — onGetStarted()
+        // dismisses the whole onboarding view.
+        .onAppear { featuresAppeared = true }
+    }
+
+    /// The mock in the centre: 4 feature cards arranged in two rows around a
+    /// big white `+` button, with the two satellite option pills floating
+    /// just above the plus (left = Add a note, right = Create). VStack +
+    /// HStacks rather than absolute offsets so the layout adapts to phone
+    /// width without clipping on narrower devices.
+    private var featuresMockup: some View {
+        VStack(spacing: 26) {
+            // --- Top row: Notes (left) and Profile (right) ---
+            HStack(alignment: .top) {
+                featureBlurb(icon: "list.bullet",
+                             title: "Notes",
+                             subtitle: "All your\naudio notes",
+                             delay: 0.65)
+                Spacer(minLength: 12)
+                featureBlurb(icon: "person.crop.circle.fill",
+                             title: "Profile",
+                             subtitle: "Settings &\naccount",
+                             delay: 0.78)
+            }
+            .padding(.horizontal, 28)
+
+            // --- Centre: big + button with its two option pills above ---
+            // ZStack so the pills can hover above the plus without changing
+            // the row's measured height. The pills describe what the plus
+            // pops in the real app — kept honest to the real interaction.
+            ZStack {
+                HStack(spacing: 10) {
+                    optionPill(icon: "mic.fill", label: "Add a note")
+                    optionPill(icon: "sparkles", label: "Create")
+                }
+                .offset(y: -60)
+                .opacity(featuresAppeared ? 1 : 0)
+                .scaleEffect(featuresAppeared ? 1 : 0.85, anchor: .bottom)
+                .animation(.easeOut(duration: 0.55).delay(0.50),
+                           value: featuresAppeared)
+
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.96))
+                        .frame(width: 86, height: 86)
+                        .shadow(color: Color(red: 0.85, green: 0.45, blue: 0.10).opacity(0.32),
+                                 radius: 22, x: 0, y: 0)
+                        .shadow(color: Color.black.opacity(0.45), radius: 14, x: 0, y: 8)
+                    Image(systemName: "plus")
+                        .font(.system(size: 36, weight: .light))
+                        .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                }
+                .scaleEffect(featuresAppeared ? 1 : 0.5)
+                .opacity(featuresAppeared ? 1 : 0)
+                .animation(.spring(response: 0.55, dampingFraction: 0.72).delay(0.30),
+                           value: featuresAppeared)
+            }
+            .frame(height: 120)
+
+            // --- Bottom row: Library (left) and + menu (right) ---
+            HStack(alignment: .top) {
+                featureBlurb(icon: "square.grid.2x2.fill",
+                             title: "Library",
+                             subtitle: "Saved\ncontent projects",
+                             delay: 0.91)
+                Spacer(minLength: 12)
+                featureBlurb(icon: "wand.and.stars",
+                             title: "+ menu",
+                             subtitle: "Add a note\nor create",
+                             delay: 1.04)
+            }
+            .padding(.horizontal, 28)
+        }
+    }
+
+    /// A small floating option pill next to the central `+`, mimicking the
+    /// fan-menu pills in the real app — keeps the icon set (mic + sparkles)
+    /// honest about what the user will see when they tap the plus.
+    private func optionPill(icon: String, label: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+            Text(label)
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(
+            Capsule(style: .continuous)
+                .fill(Color.white.opacity(0.94))
+                .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
+        )
+    }
+
+    /// One of the four feature blurbs — icon, mono title, two-line subtitle,
+    /// inside a glassy translucent card. The `delay` parameter controls when
+    /// the card slides + fades in on appearance so the four read as a
+    /// sequence (Notes → Profile → Library → + menu) instead of a single
+    /// burst.
+    private func featureBlurb(icon: String,
+                              title: String,
+                              subtitle: String,
+                              delay: Double) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(BrandColor.amber)
+            Text(title)
+                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .foregroundColor(Color.white.opacity(0.95))
+            Text(subtitle)
+                .font(.system(size: 10.5, weight: .regular, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.62))
+                .multilineTextAlignment(.center)
+                .lineSpacing(1)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .frame(width: 120)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                )
+        )
+        .opacity(featuresAppeared ? 1 : 0)
+        .scaleEffect(featuresAppeared ? 1 : 0.88)
+        .offset(y: featuresAppeared ? 0 : 10)
+        .animation(.spring(response: 0.55, dampingFraction: 0.78).delay(delay),
+                   value: featuresAppeared)
     }
 }
 

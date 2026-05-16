@@ -502,6 +502,31 @@ class OnboardingSceneViewController: UIViewController {
         if wasExpanded != nowExpanded {
             applyExpanded(nowExpanded)
         }
+
+        let wasFeatures = previous >= 3
+        let nowFeatures = step >= 3
+        if wasFeatures != nowFeatures {
+            applyFeatures(nowFeatures)
+        }
+    }
+
+    /// Step 3 → step 4 (or back). The features-preview screen is a pure
+    /// SwiftUI mock that doesn't want anything visually competing with it,
+    /// so we fade the entire SceneKit view (dots + document + connectors)
+    /// to transparent and let the warm-dark page gradient behind it carry
+    /// the backdrop. Reverse animates back in if the flow ever moves
+    /// backward.
+    private func applyFeatures(_ features: Bool) {
+        let targetAlpha: CGFloat = features ? 0 : 1
+        if reduceMotion {
+            sceneView.alpha = targetAlpha
+            return
+        }
+        UIView.animate(withDuration: 0.55,
+                       delay: 0,
+                       options: [.curveEaseInOut],
+                       animations: { self.sceneView.alpha = targetAlpha },
+                       completion: nil)
     }
 
     // MARK: - Collected bulb step
