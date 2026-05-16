@@ -1039,22 +1039,28 @@ private struct NoteEditorPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            DictationControls(
-                dictation: dictation,
-                onStart: {
-                    bodyBeforeDictation = noteBody
-                    dictation.start()
-                },
-                onCancel: {
-                    dictation.cancel()
-                    noteBody = bodyBeforeDictation
-                },
-                onConfirm: {
-                    dictation.stop()
-                }
-            )
-            .padding(.trailing, 20)
-            .padding(.bottom, 20)
+            // Idle mic only appears once the user has tapped into a field —
+            // the recording row stays for the duration of dictation so the
+            // user can always cancel or confirm.
+            if dictation.isRecording || focus != nil {
+                DictationControls(
+                    dictation: dictation,
+                    onStart: {
+                        bodyBeforeDictation = noteBody
+                        dictation.start()
+                    },
+                    onCancel: {
+                        dictation.cancel()
+                        noteBody = bodyBeforeDictation
+                    },
+                    onConfirm: {
+                        dictation.stop()
+                    }
+                )
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
 
             if !dictation.isRecording {
                 chatButton
@@ -1065,6 +1071,7 @@ private struct NoteEditorPage: View {
             }
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: focus)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .onChange(of: dictation.transcript) { _, newValue in

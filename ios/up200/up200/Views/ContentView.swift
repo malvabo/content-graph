@@ -794,20 +794,25 @@ struct ProjectGroupDetailView: View {
 
                         Spacer()
 
-                        Button {
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            editTextBeforeDictation = editText
-                            dictation.start()
-                        } label: {
-                            Image(systemName: "mic.fill")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(AppText.primary)
-                                .frame(width: 52, height: 52)
-                                .background(AppInk.solid(0.12))
-                                .clipShape(Circle())
+                        // Mic only appears once the user has tapped into the
+                        // editor — there's nothing to dictate into otherwise.
+                        if editorFocused {
+                            Button {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                editTextBeforeDictation = editText
+                                dictation.start()
+                            } label: {
+                                Image(systemName: "mic.fill")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundColor(AppText.primary)
+                                    .frame(width: 52, height: 52)
+                                    .background(AppInk.solid(0.12))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Dictate into this content")
+                            .transition(.scale(scale: 0.85).combined(with: .opacity))
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Dictate into this content")
                     }
                 }
             }
@@ -820,6 +825,7 @@ struct ProjectGroupDetailView: View {
             }
             .background(bg)
             .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
+            .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         }
         .sheet(isPresented: $showAIMenu) {
             AIActionsSheet { label, icon, instruction in
