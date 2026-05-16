@@ -902,7 +902,7 @@ struct ProjectGroupDetailView: View {
                 case .failure(let err):
                     aiFailReason = AITransformService.isKeyConfigured
                         ? err.userMessage
-                        : "Add your Anthropic API key in the Create tab first."
+                        : "Add your Anthropic API key in Profile first."
                     aiFailed = true
                 }
             }
@@ -946,6 +946,8 @@ struct ProfileView: View {
     @State private var custom: [CustomTemplate] = []
     @State private var path: [ProfileDestination] = []
     @State private var showLogOutConfirm = false
+    @State private var showKeyUpdate = false
+    @State private var showOnboarding = false
     @EnvironmentObject private var chrome: ChromeController
 
     private let bg = AppBackground.primary
@@ -1028,6 +1030,30 @@ struct ProfileView: View {
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
 
                     SettingsRow(
+                        title: "Onboarding",
+                        trailing: .icon("sun.max")
+                    ) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        showOnboarding = true
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(AppInk.solid(0.06))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+
+                    SettingsRow(
+                        title: "API key",
+                        trailing: .icon("key.horizontal")
+                    ) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        showKeyUpdate = true
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(AppInk.solid(0.06))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+
+                    SettingsRow(
                         title: "Log out",
                         trailing: .icon("rectangle.portrait.and.arrow.right"),
                         titleColor: logoutRed,
@@ -1100,6 +1126,19 @@ struct ProfileView: View {
                 }
             } message: {
                 Text("Your API key will be removed from this device.")
+            }
+            .sheet(isPresented: $showKeyUpdate) {
+                APIKeySetupView {
+                    showKeyUpdate = false
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(Radius.sheet)
+                .presentationBackground(AppBackground.primary)
+            }
+            .fullScreenCover(isPresented: $showOnboarding) {
+                OnboardingView(onGetStarted: { showOnboarding = false }, onLogin: { showOnboarding = false })
+                    .preferredColorScheme(.dark)
             }
         }
     }
