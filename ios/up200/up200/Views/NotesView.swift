@@ -462,9 +462,9 @@ struct DictationControls: View {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             onStart()
         } label: {
-            Image(systemName: "mic.fill")
-                .font(.system(size: 19, weight: .semibold))
-                .foregroundStyle(BrandColor.glowGradientBright)
+            Image(systemName: "mic")
+                .font(.system(size: 19, weight: .regular))
+                .foregroundColor(AppText.primary)
                 .frame(width: 56, height: 56)
                 .background(glassCircle)
         }
@@ -1140,8 +1140,8 @@ private struct NoteEditorPage: View {
             showCreate = true
         } label: {
             Image(systemName: "wand.and.stars")
-                .font(.system(size: 19, weight: .regular))
-                .foregroundColor(AppText.primary)
+                .font(.system(size: 19, weight: .semibold))
+                .foregroundStyle(BrandColor.glowGradientBright)
                 .frame(width: 56, height: 56)
                 .background(
                     Circle()
