@@ -1970,11 +1970,11 @@ private struct SimpleHomeHeader: View {
     }
 
     private var segmentedTabs: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 2) {
             segment(.notes, label: "Notes")
             segment(.library, label: "Library")
         }
-        .padding(4)
+        .padding(2)
         .appLiquidGlass(in: Capsule(style: .continuous))
         .overlay(
             Capsule(style: .continuous)
