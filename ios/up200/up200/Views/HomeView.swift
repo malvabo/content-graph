@@ -2286,7 +2286,7 @@ private struct FormatsBlock: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
-            .padding(.bottom, 8)
+            .padding(.bottom, 14)
 
             // Suggestion chip row with the expand button floating over the
             // trailing edge. Chips fade to transparent behind it via a mask;
@@ -2357,7 +2357,7 @@ private struct FormatsBlock: View {
                 .buttonStyle(.plain)
                 .padding(.trailing, 16)
             }
-            .padding(.bottom, 14)
+            .padding(.bottom, 6)
         }
         .animation(chipAnim, value: displayText)
         .onAppear { refreshSuggestions() }
