@@ -206,11 +206,6 @@ struct AmbientBackground: View {
         ZStack {
             AppBackground.primary
             RadialGradient(
-                colors: [AppBackground.glowTopLeft, .clear],
-                center: .init(x: 0.05, y: 0.05),
-                startRadius: 0, endRadius: 380
-            )
-            RadialGradient(
                 colors: [AppBackground.glowBottomRight, .clear],
                 center: .init(x: 1.0, y: 0.85),
                 startRadius: 0, endRadius: 320
