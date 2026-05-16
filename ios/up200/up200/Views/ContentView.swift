@@ -70,7 +70,7 @@ struct LibraryView: View {
                     title: emptyTitle,
                     subtitle: emptySubtitle
                 )
-            } else {
+            } else if !emptyTitle.isEmpty {
                 VStack {
                     Spacer()
                     VStack(spacing: 12) {
@@ -186,7 +186,7 @@ struct LibraryView: View {
                     ) {
                         libraryList(
                             filteredGroups,
-                            emptyTitle: searchText.isEmpty ? "Start typing" : "No results",
+                            emptyTitle: searchText.isEmpty ? "" : "No results",
                             emptySubtitle: nil
                         )
                     }

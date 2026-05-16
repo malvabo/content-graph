@@ -1345,7 +1345,7 @@ struct NotesView: View {
                     actionTitle: "New note",
                     action: { startAudioNote() }
                 )
-            } else {
+            } else if !emptyTitle.isEmpty {
                 VStack {
                     Spacer()
                     VStack(spacing: 12) {
@@ -1609,7 +1609,13 @@ struct NotesView: View {
                     ) {
                         notesList(
                             searchedNotes,
-                            emptyTitle: searchText.isEmpty ? "Start typing" : "No results",
+                            // No "Start typing" prompt — the search field's
+                            // own placeholder already invites the user to
+                            // type. When there's no query the list just
+                            // mirrors the regular notes view; only show
+                            // an empty hint once a query is actively
+                            // returning zero matches.
+                            emptyTitle: searchText.isEmpty ? "" : "No results",
                             emptySubtitle: nil
                         )
                     }
