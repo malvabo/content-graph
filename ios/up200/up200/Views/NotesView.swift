@@ -1282,7 +1282,9 @@ struct NotesView: View {
     }
 
     private func delete(_ note: Note) {
-        notes.removeAll { $0.id == note.id }
+        withAnimation(AppAnimation.standard) {
+            notes.removeAll { $0.id == note.id }
+        }
         scheduleSave()
     }
 
@@ -1382,7 +1384,7 @@ struct NotesView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Color.clear)
-            .animation(AppAnimation.standard, value: pinned.map(\.id))
+            .animation(AppAnimation.standard, value: items.map(\.id))
         }
     }
 
