@@ -1083,10 +1083,12 @@ struct ProfileView: View {
             .onChange(of: selectedTab) { _, new in
                 if !isModal && new != .profile { path.removeAll() }
             }
-            // Hide the AppTabBar synchronously the moment the path changes, so
-            // pushed pages (Templates list / editor) don't briefly show the bar
-            // while sliding in. The destinations still set hideTabBar in their
-            // own onAppear for defense in depth.
+            // Single source of truth for the AppTabBar: any non-empty path
+            // means a settings sub-page is on screen, so hide the bar.
+            // Destinations must NOT toggle hideTabBar in their own
+            // onAppear/onDisappear — those interleave during a push and the
+            // outgoing page's onDisappear would flip the bar back on under
+            // the incoming page.
             .onChange(of: path, initial: true) { _, newPath in
                 chrome.hideTabBar = !newPath.isEmpty
             }
@@ -1205,7 +1207,6 @@ private struct TemplatesListPage: View {
     @Binding var path: [ProfileDestination]
 
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var chrome: ChromeController
     private let bg = AppBackground.primary
 
     var body: some View {
@@ -1268,8 +1269,6 @@ private struct TemplatesListPage: View {
         .background(bg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .onAppear { chrome.hideTabBar = true }
-        .onDisappear { chrome.hideTabBar = false }
     }
 }
 
@@ -1302,7 +1301,6 @@ private struct TemplateEditPage: View {
     @StateObject private var dictation = NoteDictation()
 
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var chrome: ChromeController
     @FocusState private var focus: Field?
 
     private enum Field { case prompt }
@@ -1506,9 +1504,7 @@ private struct TemplateEditPage: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .onAppear { chrome.hideTabBar = true }
         .onDisappear {
-            chrome.hideTabBar = false
             dictation.stop()
             persist()
         }
