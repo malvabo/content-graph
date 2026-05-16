@@ -921,19 +921,11 @@ private struct RewriteSuggestionCard: View {
     let onAccept: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 6) {
-                Image(systemName: "wand.and.stars")
-                    .font(.system(size: 12, weight: .semibold))
-                Text("Suggested rewrite")
-                    .font(.system(size: 12, weight: .semibold))
-                    .textCase(.uppercase)
-                Spacer(minLength: 0)
-            }
-            .foregroundColor(AppText.tertiary)
+        VStack(alignment: .leading, spacing: 14) {
+            tagLabel("SUGGESTED REWRITE", icon: "wand.and.stars")
 
             diffBlock(
-                label: "Before",
+                label: "FROM",
                 text: suggestion.before,
                 fill: AppInk.solid(0.04),
                 stroke: AppInk.solid(0.08),
@@ -947,14 +939,12 @@ private struct RewriteSuggestionCard: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(AppText.tertiary)
                     .frame(width: 22, height: 22)
-                    .background(
-                        Circle().fill(AppInk.solid(0.06))
-                    )
+                    .background(Circle().fill(AppInk.solid(0.06)))
                 Spacer()
             }
 
             diffBlock(
-                label: "After",
+                label: "TO",
                 text: suggestion.after,
                 fill: AppInk.solid(0.08),
                 stroke: BrandColor.amber.opacity(0.35),
@@ -962,29 +952,26 @@ private struct RewriteSuggestionCard: View {
                 strike: false
             )
 
-            HStack {
-                Spacer()
-                Button(action: onAccept) {
-                    HStack(spacing: 6) {
-                        Image(systemName: isApplied ? "checkmark.circle.fill" : "arrow.right.circle.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                        Text(isApplied ? "Applied" : "Accept change")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundColor(isApplied ? AppText.secondary : .white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 9)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(isApplied ? AppInk.solid(0.10) : BrandColor.amber)
-                    )
+            Button(action: onAccept) {
+                HStack(spacing: 8) {
+                    Image(systemName: isApplied ? "checkmark" : "arrow.right")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(isApplied ? "Applied" : "Accept")
+                        .font(.app(size: 15, weight: .semibold))
                 }
-                .buttonStyle(.plain)
-                .disabled(isApplied)
-                .accessibilityLabel(isApplied ? "Rewrite applied" : "Accept rewrite")
+                .foregroundColor(isApplied ? AppText.secondary : .black)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(isApplied ? AppInk.solid(0.08) : BrandColor.amber)
+                )
             }
+            .buttonStyle(.plain)
+            .disabled(isApplied)
+            .accessibilityLabel(isApplied ? "Rewrite applied" : "Accept rewrite")
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppInk.solid(0.05))
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
@@ -992,6 +979,21 @@ private struct RewriteSuggestionCard: View {
             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                 .stroke(AppInk.solid(0.10), lineWidth: 0.5)
         )
+    }
+
+    /// Small uppercase monospaced label, mirroring the onboarding pill tags.
+    @ViewBuilder
+    private func tagLabel(_ text: String, icon: String? = nil) -> some View {
+        HStack(spacing: 6) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .medium))
+            }
+            Text(text)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .kerning(0.6)
+        }
+        .foregroundColor(AppText.tertiary)
     }
 
     @ViewBuilder
@@ -1003,17 +1005,18 @@ private struct RewriteSuggestionCard: View {
         textColor: Color,
         strike: Bool
     ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .font(.system(size: 10, weight: .semibold))
-                .textCase(.uppercase)
-                .foregroundColor(AppText.tertiary)
-            Text(text)
-                .font(.appBody)
+        VStack(alignment: .leading, spacing: 8) {
+            tagLabel(label)
+            // `Text(verbatim:)` so source text containing markdown like
+            // `**word**` renders literally instead of as bold — the diff is
+            // about the exact bytes that will be replaced, not the rendered form.
+            Text(verbatim: text)
+                .font(.system(size: 14, weight: .regular, design: .monospaced))
                 .foregroundColor(textColor)
                 .strikethrough(strike, color: AppText.tertiary)
+                .lineSpacing(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(10)
+                .padding(12)
                 .background(fill)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
