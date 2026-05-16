@@ -412,7 +412,7 @@ enum APICallError: Error {
         case .network(let detail):
             return "Could not reach the API: \(detail)"
         case .http(401, _):
-            return "Your API key was rejected. Tap the key icon to update it."
+            return "Your API key was rejected. Update it in Profile."
         case .http(403, _):
             return "Your API key isn't authorised for this model or region."
         case .http(429, _):

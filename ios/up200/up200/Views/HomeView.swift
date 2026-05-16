@@ -2439,8 +2439,6 @@ struct HomeView: View {
     @State private var generationFailed = false
     @State private var generationFailReason = ""
     @State private var generationTask: Task<Void, Never>? = nil
-    @State private var showKeyUpdate = false
-    @State private var showOnboarding = false
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
@@ -2460,22 +2458,6 @@ struct HomeView: View {
 
                 VStack(spacing: 0) {
                     InlineTopBar(title: "Create") {
-                        TopBarPill {
-                            TopBarPillButton(systemImage: "sun.max") {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                showOnboarding = true
-                            }
-                            .accessibilityLabel("Onboarding")
-
-                            TopBarPillDivider()
-
-                            TopBarPillButton(systemImage: "key.horizontal") {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                showKeyUpdate = true
-                            }
-                            .accessibilityLabel("API key")
-                        }
-
                         if isModal {
                             TopBarPill {
                                 TopBarPillButton(systemImage: "xmark") {
@@ -2538,26 +2520,13 @@ struct HomeView: View {
                  ? "Could not reach the API. Check your network connection and try again."
                  : generationFailReason)
         }
-        .sheet(isPresented: $showKeyUpdate) {
-            APIKeySetupView {
-                showKeyUpdate = false
-            }
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
-            .presentationCornerRadius(Radius.sheet)
-            .presentationBackground(AppBackground.primary)
-        }
-        .fullScreenCover(isPresented: $showOnboarding) {
-            OnboardingView(onGetStarted: { showOnboarding = false }, onLogin: { showOnboarding = false })
-                .preferredColorScheme(.dark)
-        }
     }
 
     private func startGeneration() {
         guard canGenerate else { return }
 
         guard ContentGenerator.isKeyConfigured else {
-            generationFailReason = "No API key found. Tap the key icon in the top-right to add your Anthropic API key."
+            generationFailReason = "No API key found. Add your Anthropic API key in Profile."
             generationFailed = true
             return
         }
