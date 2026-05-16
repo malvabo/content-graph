@@ -178,11 +178,14 @@ struct OnboardingView: View {
 
     // MARK: Step 3 — content graph
 
-    /// Final onboarding beat: the collected bulb sprouts smaller satellite
-    /// bulbs around it, each tethered to the centre by a chain of star dots
-    /// that arcs gently between the two. Visually states the app's core
-    /// metaphor — one idea blooming into a graph of related content — before
-    /// the user lands on the home screen.
+    /// Final onboarding beat: the collected bulb blooms outward into four
+    /// smaller satellite bulbs, each formed by a flock of stars streaming
+    /// out of the central cluster along a brief arc and settling into a
+    /// dense shell. No persistent trail is drawn between the centre and
+    /// the satellites — the four content clusters stay visually separate
+    /// once formed. Visually states the app's core metaphor — one idea
+    /// blooming into a graph of related content — before the user lands
+    /// on the home screen.
     private var constellationOverlay: some View {
         VStack(spacing: 0) {
             Spacer().frame(height: 24)

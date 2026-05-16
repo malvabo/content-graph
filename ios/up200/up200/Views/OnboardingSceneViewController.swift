@@ -40,20 +40,22 @@ class OnboardingSceneViewController: UIViewController {
     private let collectDuration: TimeInterval = 0.85
 
     // Step 3 — content-graph satellites. Each satellite is its own mini-bulb
-    // (a small parent node containing ~20 billboarded dots), and each one is
-    // tethered to the central bulb by a connector: a parent node holding a
-    // chain of small dots laid out along a gentle arc from the bulb's surface
-    // out to the satellite. Both groups are built up-front at viewDidLoad and
-    // held invisible until the controller is advanced to step 2, at which
-    // point the satellite dots travel from a spawn point on the bulb's
-    // surface out along the arc to their resting position — the satellite
-    // "forms" from stars peeled off the central bulb instead of fading in
-    // as a separate object. satelliteDotPaths captures each dot's spawn
-    // point, final position, and arc geometry so applyExpanded can drive
-    // that interpolation without recomputing anything per frame.
+    // (a small parent node containing billboarded dots) shaped like a tight
+    // shell around its centre — same shell-jitter distribution the central
+    // bulb uses, so the satellites read as smaller siblings of the focal
+    // cluster instead of looser scatter. Satellites are built up-front at
+    // viewDidLoad and held invisible (per-dot opacity 0, positioned on the
+    // central bulb's surface) until the controller is advanced to step 2,
+    // at which point the dots travel from a spawn point on the bulb's
+    // surface out along a gentle arc to their resting position — the
+    // satellite "forms" from stars peeled off the central bulb instead of
+    // fading in as a separate object. The four satellites stay visually
+    // separate at rest (no connector trail between them and the central
+    // bulb), so the eye reads four discrete content clusters blooming out
+    // of one idea. satelliteDotPaths captures each dot's spawn point,
+    // final position, and arc geometry so applyExpanded can drive that
+    // interpolation without recomputing anything per frame.
     private var satelliteNodes: [SCNNode] = []
-    private var connectorNodes: [SCNNode] = []
-    private var connectorDotOpacities: [[CGFloat]] = []
     private var satelliteDotPaths: [[SatelliteDotPath]] = []
     private let expandDuration: TimeInterval = 0.95
 
@@ -568,7 +570,7 @@ class OnboardingSceneViewController: UIViewController {
         }
     }
 
-    // MARK: - Satellites + connector arcs (step 3)
+    // MARK: - Satellites (step 3)
 
     /// Each satellite is a bulb at a fixed offset from the central cluster.
     /// The four offsets sit on a wide diamond around the origin with a
@@ -583,31 +585,35 @@ class OnboardingSceneViewController: UIViewController {
         let seed: Int
     }
 
+    // Dot counts bumped to match the central bulb's density once the new
+    // shell-jitter pattern is applied — without more dots the tight shell
+    // would read as a thin ring rather than a packed cluster. The NE / SW
+    // pair stays slightly larger than the SE / NW pair to keep the same
+    // subtle visual hierarchy the original layout established.
     private let satelliteDefs: [SatelliteDef] = [
-        SatelliteDef(centre: SCNVector3( 5.0,  7.0,  0.6),  dotCount: 40, radius: 2.55, seed: 1011),
-        SatelliteDef(centre: SCNVector3( 6.0, -5.5, -0.5),  dotCount: 38, radius: 2.40, seed: 2027),
-        SatelliteDef(centre: SCNVector3(-5.0, -7.0,  0.5),  dotCount: 40, radius: 2.55, seed: 3041),
-        SatelliteDef(centre: SCNVector3(-6.0,  5.5, -0.35), dotCount: 38, radius: 2.40, seed: 4057),
+        SatelliteDef(centre: SCNVector3( 5.0,  7.0,  0.6),  dotCount: 90, radius: 2.30, seed: 1011),
+        SatelliteDef(centre: SCNVector3( 6.0, -5.5, -0.5),  dotCount: 85, radius: 2.20, seed: 2027),
+        SatelliteDef(centre: SCNVector3(-5.0, -7.0,  0.5),  dotCount: 90, radius: 2.30, seed: 3041),
+        SatelliteDef(centre: SCNVector3(-6.0,  5.5, -0.35), dotCount: 85, radius: 2.20, seed: 4057),
     ]
 
     /// Per-dot path data captured at setup so applyExpanded can interpolate
     /// each satellite dot from its spawn point on the central bulb's surface
-    /// out along the connector arc to its resting position inside the
+    /// out along its migration arc to its resting position inside the
     /// satellite — without recomputing the geometry every frame.
     private struct SatelliteDotPath {
         let spawnLocal: SCNVector3   // satParent-local: a point on the bulb surface plus per-dot jitter
-        let finalLocal: SCNVector3   // satParent-local: random position within the satellite volume
+        let finalLocal: SCNVector3   // satParent-local: shell position within the satellite cluster
         let perp: SCNVector3         // unit perpendicular for the arc bend
-        let curveAmount: Float       // signed magnitude of the sin-bend, matches the connector chain
+        let curveAmount: Float       // signed magnitude of the sin-bend applied during migration
         let restingOpacity: CGFloat  // opacity once the dot has settled in the satellite
     }
 
-    /// Builds the mini-bulbs and their connector chains up-front. Both
-    /// groups stay invisible (satellite dots at opacity 0 sitting on the
-    /// bulb's surface, connector dots at opacity 0 along the arc) until the
-    /// controller is advanced to step 2, so the transition is purely an
-    /// animation — no node creation during the step crossing, which would
-    /// risk a frame hitch on lower-end devices.
+    /// Builds the mini-bulbs up-front so the step 2 → step 3 crossing is
+    /// purely an animation — no node creation during the transition, which
+    /// would risk a frame hitch on lower-end devices. Satellite dots start
+    /// at opacity 0 sitting on the central bulb's surface and don't render
+    /// until applyExpanded ramps them out along their migration arc.
     private func setupSatellites() {
         let sprite = makeParticleSprite()
 
@@ -636,20 +642,17 @@ class OnboardingSceneViewController: UIViewController {
             satelliteNodes.append(satParent)
 
             // --- Shared arc geometry (bulb surface ↔ satellite centre) ---
-            // Both the satellite dots' migration paths and the connector
-            // chain use this geometry, so it's computed once per satellite.
+            // Drives each satellite dot's migration path during the
+            // expansion animation. satParent sits at def.centre with no
+            // rotation, so the surface point in satParent-local coords is
+            // unit * bulbSurfaceRadius - def.centre.
             let dirLen = max(0.001, sqrt(def.centre.x * def.centre.x +
                                          def.centre.y * def.centre.y +
                                          def.centre.z * def.centre.z))
             let unit = SCNVector3(def.centre.x / dirLen, def.centre.y / dirLen, def.centre.z / dirLen)
-            let bulbSurfaceWorld = SCNVector3(unit.x * bulbSurfaceRadius,
-                                              unit.y * bulbSurfaceRadius,
-                                              unit.z * bulbSurfaceRadius)
-            // satParent sits at def.centre with no rotation, so world → local
-            // is a straight translation by -def.centre.
-            let bulbSurfaceLocal = SCNVector3(bulbSurfaceWorld.x - def.centre.x,
-                                              bulbSurfaceWorld.y - def.centre.y,
-                                              bulbSurfaceWorld.z - def.centre.z)
+            let bulbSurfaceLocal = SCNVector3(unit.x * bulbSurfaceRadius - def.centre.x,
+                                              unit.y * bulbSurfaceRadius - def.centre.y,
+                                              unit.z * bulbSurfaceRadius - def.centre.z)
 
             // Perpendicular = unit × worldUp, falling back to worldRight if
             // the satellite happens to sit on the Y axis (cross with up would
@@ -669,15 +672,14 @@ class OnboardingSceneViewController: UIViewController {
             }
             perp = SCNVector3(perp.x / perpLen, perp.y / perpLen, perp.z / perpLen)
             // Mirror the arc bend for satellites on one side of the screen so
-            // the four arcs splay outward instead of curving in the same
-            // direction — gives the final scene a balanced, blossom-like
-            // composition rather than four parallel curves. The magnitude is
-            // scaled to roughly 1/3 of the bulb→satellite distance so the
-            // visual curvature stays consistent as the satellites move closer
-            // or farther from the central bulb.
+            // the four migration streams splay outward instead of curving in
+            // the same direction — the four flocks blossom outward in turn
+            // rather than tracking parallel curves. Magnitude scales with
+            // bulb→satellite distance so the visual curvature stays
+            // consistent as the satellites move closer or farther.
             let bendSign: Float = def.centre.x >= 0 ? 1 : -1
-            let chainSpan: Float = max(0.001, dirLen - bulbSurfaceRadius)
-            let curveAmount: Float = chainSpan * 0.18 * bendSign
+            let migrationSpan: Float = max(0.001, dirLen - bulbSurfaceRadius)
+            let curveAmount: Float = migrationSpan * 0.18 * bendSign
 
             // --- Satellite dots ---
             var paths: [SatelliteDotPath] = []
@@ -704,7 +706,7 @@ class OnboardingSceneViewController: UIViewController {
                 mat.writesToDepthBuffer  = false
                 mat.isDoubleSided        = true
 
-                // Per-dot jitter on the spawn point so 20+ dots don't all
+                // Per-dot jitter on the spawn point so 80+ dots don't all
                 // peel off the bulb from a single pixel — gives the outbound
                 // stream visible thickness as it leaves the cluster surface.
                 let jx = (rng(def.seed, 3000 + placed * 3)     - 0.5) * 0.55
@@ -713,7 +715,18 @@ class OnboardingSceneViewController: UIViewController {
                 let spawnLocal = SCNVector3(bulbSurfaceLocal.x + jx,
                                             bulbSurfaceLocal.y + jy,
                                             bulbSurfaceLocal.z + jz)
-                let finalLocal = SCNVector3(nx * def.radius, ny * def.radius, nz * def.radius)
+                // Shell-jitter placement matching the central bulb's
+                // dotBulbPositions: pick the random in-sphere direction,
+                // then sit each dot at 55–100% of the satellite radius along
+                // that direction. The resulting thick shell reads as a
+                // condensed cluster rather than a uniform volumetric scatter
+                // — same packing signature the central bulb has, just scaled
+                // down so the four satellites feel like smaller siblings.
+                let nlen = max(0.001, sqrt(nx * nx + ny * ny + nz * nz))
+                let shellJitter = 0.55 + rng(def.seed, 5000 + placed) * 0.45
+                let finalLocal = SCNVector3(nx / nlen * def.radius * shellJitter,
+                                            ny / nlen * def.radius * shellJitter,
+                                            nz / nlen * def.radius * shellJitter)
 
                 let dot = SCNNode(geometry: plane)
                 // Pre-expansion the dot sits on the bulb surface at opacity 0
@@ -734,82 +747,29 @@ class OnboardingSceneViewController: UIViewController {
                 placed += 1
             }
             satelliteDotPaths.append(paths)
-
-            // --- Connector arc ---
-            // Stationary chain of dots along the bulb→satellite arc. The
-            // migrating satellite dots stream past this chain on their way
-            // out, and the chain fades in just behind them so a visible
-            // "trail" stays drawn between the bulb and the satellite after
-            // the stream of stars has settled.
-            let connectorParent = SCNNode()
-            connectorParent.opacity = 1   // parent always visible; per-dot opacity drives the cascade
-            scene.rootNode.addChildNode(connectorParent)
-
-            let start = bulbSurfaceWorld
-            let end   = def.centre
-
-            // Chain density scales with the bulb→satellite distance so the
-            // dots stay readably spaced (~0.42u apart) instead of piling on
-            // top of each other when the satellites sit close to the bulb.
-            // Clamped to a small minimum so the chain is never just one or
-            // two dots.
-            let chainCount = max(5, Int((chainSpan / 0.42).rounded()))
-            var perDotOpacities: [CGFloat] = []
-            perDotOpacities.reserveCapacity(chainCount)
-            for k in 1...chainCount {
-                let t = Float(k) / Float(chainCount + 1)
-                let bend = sin(t * Float.pi) * curveAmount
-                let pos = SCNVector3(
-                    start.x + (end.x - start.x) * t + perp.x * bend,
-                    start.y + (end.y - start.y) * t + perp.y * bend,
-                    start.z + (end.z - start.z) * t + perp.z * bend
-                )
-
-                // Dots taper slightly inward → outward and brighten toward
-                // the satellite end, so the eye reads the chain as light
-                // travelling away from the central bulb.
-                let progress = Float(k) / Float(chainCount)
-                let size  = CGFloat(0.09 + progress * 0.07)
-                let alpha = CGFloat(0.45 + progress * 0.40)
-
-                let plane = SCNPlane(width: size, height: size)
-                let mat = plane.firstMaterial!
-                mat.diffuse.contents     = sprite
-                mat.transparent.contents = sprite
-                mat.lightingModel        = .constant
-                mat.blendMode            = .add
-                mat.writesToDepthBuffer  = false
-                mat.isDoubleSided        = true
-
-                let dot = SCNNode(geometry: plane)
-                dot.position = pos
-                dot.opacity  = 0   // every chain dot starts hidden; expansion fades to perDotOpacities[k-1]
-                dot.constraints = [SCNBillboardConstraint()]
-                connectorParent.addChildNode(dot)
-                perDotOpacities.append(alpha)
-            }
-            connectorNodes.append(connectorParent)
-            connectorDotOpacities.append(perDotOpacities)
         }
     }
 
     /// Step 2 → step 3 (or back). Each satellite is formed by streaming a
     /// flock of stars from a single point on the central bulb's surface
-    /// outward along the connector arc. The dots fade in as they leave the
-    /// bulb, follow the same sin-curved arc the connector chain occupies,
-    /// and settle into their resting positions inside the satellite volume.
-    /// The connector chain itself lights up dot-by-dot just behind the
-    /// outbound stream, leaving a visible trail between the bulb and the
-    /// satellite once the migration has finished. Reversing the step plays
-    /// the same animation in reverse: stars retract along the arc and the
-    /// trail fades away.
+    /// outward along a gentle sin-curved arc. The dots fade in as they
+    /// leave the bulb and settle into their resting positions inside the
+    /// satellite's shell. No persistent trail is drawn between the central
+    /// bulb and the satellites — the four content clusters bloom out and
+    /// stay visually separate at rest, with only their position and shared
+    /// dot style implying the underlying graph. Reversing the step plays
+    /// the same animation in reverse: stars retract along the arc back
+    /// into the central bulb's surface.
     private func applyExpanded(_ expanded: Bool) {
         let travelDuration: TimeInterval = expandDuration
-        // Stagger within a satellite so its 20+ stars peel off the bulb in
-        // quick succession rather than as a single block — reads as a flock.
-        let perDotStagger:  TimeInterval = 0.035
+        // Per-dot stagger tightened to 0.012s so all 85–90 dots in a single
+        // satellite finish launching well inside the travel window — at the
+        // original 0.035s the last dot of a flock wouldn't leave the bulb
+        // until after the first dot had already settled, which read as
+        // dribbling out rather than streaming as one flock.
+        let perDotStagger:  TimeInterval = 0.012
         // Stagger between satellites so all four streams don't launch in
-        // lockstep; the screen reads as four streams blooming in turn.
+        // lockstep; the screen reads as four flocks blooming in turn.
         let perSatStagger:  TimeInterval = 0.10
 
         for (i, sat) in satelliteNodes.enumerated() {
@@ -872,31 +832,6 @@ class OnboardingSceneViewController: UIViewController {
                 }
 
                 dot.runAction(SCNAction.sequence([wait, travel]))
-            }
-        }
-
-        for (i, conn) in connectorNodes.enumerated() {
-            let dots = conn.childNodes
-            let targets = connectorDotOpacities[i]
-            // Connector chain follows just behind the outbound stream: it
-            // starts ~50ms after each satellite's first stars leave the
-            // bulb, so the trail visibly fills in behind the migrating dots
-            // rather than racing ahead of them.
-            let baseDelay = Double(i) * perSatStagger + 0.05
-            for (j, dot) in dots.enumerated() {
-                dot.removeAllActions()
-                let target = expanded ? targets[j] : 0
-                if reduceMotion {
-                    dot.opacity = target
-                    continue
-                }
-                // Per-dot stagger of 0.05s makes light "travel" along the
-                // arc from the bulb out to the satellite over ~0.7s per chain.
-                let dotDelay = baseDelay + Double(j) * 0.05
-                let wait = SCNAction.wait(duration: dotDelay)
-                let fade = SCNAction.fadeOpacity(to: target, duration: 0.4)
-                fade.timingMode = .easeOut
-                dot.runAction(SCNAction.sequence([wait, fade]))
             }
         }
     }
@@ -963,7 +898,7 @@ class OnboardingSceneViewController: UIViewController {
         // the labels belong to the wide constellation, not the bulb. The
         // same suppression covers step 3, where the cluster blooms into
         // satellites and the old floating tags would clash with the
-        // connector arcs.
+        // satellite clusters.
         if currentStep >= 1 {
             for entry in labelAnchors { entry.label.isHidden = true }
             return
