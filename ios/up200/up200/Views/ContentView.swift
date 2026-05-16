@@ -1951,23 +1951,17 @@ private struct SimpleHomeHeader: View {
 // MARK: - Simple bottom create button
 
 /// Bottom chrome in Simple mode: a single floating capture button parked
-/// at the bottom-right corner. Styled as a "ready-to-record" affordance —
+/// at the bottom-right corner. Tapping it begins voice recording right
+/// away — no intermediate menu. Styled as a "ready-to-record" affordance:
 /// amber-tinted glass, soft breathing glow, `livephoto` concentric rings
 /// as the glyph (recorder-coded but visually distinct from the typical
-/// mic / record-dot icons). The Notes / Library tabs live in
-/// `SimpleHomeHeader` at the top of the screen, not down here.
+/// mic / record-dot icons).
 private struct SimpleCreateBar: View {
-    @Binding var showCreateMenu: Bool
+    let onTap: () -> Void
 
     @State private var impact = UIImpactFeedbackGenerator(style: .light)
-    /// Slow breath that swells the amber halo when idle. Skipped when the
-    /// menu is open so the active state doesn't compete with the fan-out.
+    /// Slow breath that swells the amber halo when idle.
     @State private var idlePulse: Bool = false
-
-    /// Slightly springier than the tab-select feel — small overshoot so
-    /// the options land at their fan positions with a touch of bounce,
-    /// reinforcing the "popping out of the plus" read.
-    static let menuSpring = Animation.spring(response: 0.44, dampingFraction: 0.70)
 
     var body: some View {
         HStack(spacing: 0) {
@@ -1979,70 +1973,45 @@ private struct SimpleCreateBar: View {
     private var captureButton: some View {
         Button {
             impact.impactOccurred()
-            withAnimation(Self.menuSpring) {
-                showCreateMenu.toggle()
-            }
+            onTap()
         } label: {
-            ZStack {
-                // livephoto = concentric live-capture rings. Reads as
-                // "recorder armed" without being the mic / record-circle
-                // both rivals use. Swaps to xmark when the menu is open so
-                // the close affordance is unambiguous.
-                Image(systemName: "livephoto")
-                    .font(.system(size: 28, weight: .regular))
-                    .foregroundColor(BrandColor.amber)
-                    .opacity(showCreateMenu ? 0 : 1)
-                    .scaleEffect(showCreateMenu ? 0.7 : 1)
-                Image(systemName: "xmark")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(AppText.primary)
-                    .opacity(showCreateMenu ? 1 : 0)
-                    .scaleEffect(showCreateMenu ? 1 : 0.7)
-            }
-            .frame(width: 64, height: 64)
-            .background(
-                Circle().fill(
-                    showCreateMenu
-                        ? BrandColor.amber.opacity(0.30)
-                        : BrandColor.amber.opacity(0.12)
+            // livephoto = concentric live-capture rings. Reads as
+            // "recorder armed" without being the mic / record-circle
+            // both rivals use.
+            Image(systemName: "livephoto")
+                .font(.system(size: 28, weight: .regular))
+                .foregroundColor(BrandColor.amber)
+                .frame(width: 64, height: 64)
+                .background(Circle().fill(BrandColor.amber.opacity(0.12)))
+                .appLiquidGlass(in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    BrandColor.amber.opacity(0.42),
+                                    BrandColor.amber.opacity(0.12)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 0.6
+                        )
                 )
-            )
-            .appLiquidGlass(in: Circle())
-            .overlay(
-                Circle()
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                BrandColor.amber.opacity(showCreateMenu ? 0.65 : 0.42),
-                                BrandColor.amber.opacity(showCreateMenu ? 0.22 : 0.12)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 0.6
-                    )
-            )
-            // Amber halo: a static shadow plus a breathing one. The pulse
-            // is gated on the menu being closed so the open state reads
-            // as committed, not idling.
-            .shadow(color: BrandColor.amber.opacity(0.18), radius: 10, y: 4)
-            .shadow(
-                color: BrandColor.amber.opacity(
-                    showCreateMenu ? 0 : (idlePulse ? 0.30 : 0.10)
-                ),
-                radius: idlePulse ? 22 : 12,
-                y: 0
-            )
-            .animation(
-                showCreateMenu
-                    ? .easeOut(duration: 0.25)
-                    : .easeInOut(duration: 1.6).repeatForever(autoreverses: true),
-                value: idlePulse
-            )
-            .contentShape(Circle())
+                .shadow(color: BrandColor.amber.opacity(0.18), radius: 10, y: 4)
+                .shadow(
+                    color: BrandColor.amber.opacity(idlePulse ? 0.30 : 0.10),
+                    radius: idlePulse ? 22 : 12,
+                    y: 0
+                )
+                .animation(
+                    .easeInOut(duration: 1.6).repeatForever(autoreverses: true),
+                    value: idlePulse
+                )
+                .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(showCreateMenu ? "Close create menu" : "Capture an idea")
+        .accessibilityLabel("Record a note")
         .onAppear {
             impact.prepare()
             // Kick the breathing pulse on the next runloop so the initial
@@ -2052,258 +2021,12 @@ private struct SimpleCreateBar: View {
     }
 }
 
-// MARK: - Create Menu
-
-private struct CreateMenuOverlay: View {
-    /// Drives the animation: false collapses both options to the plus
-    /// button's center; true fans them out into their final positions.
-    let show: Bool
-    let onAddNote: () -> Void
-    let onDrawIdea: () -> Void
-    let onCreateContent: () -> Void
-    let onDismiss: () -> Void
-
-    // The capture button now lives at bottom-right, so the three pills fan
-    // into the upper-left quadrant on a quarter-arc from straight-up
-    // (closest to vertical above the button) to almost-horizontal (far
-    // left, only slightly raised). All collapse to offset (0, 0) at the
-    // button center so they appear to grow out of the button body before
-    // peeling outward to their final spots.
-    //   • "Add a note"      → far left, slightly raised (~150° from +x)
-    //   • "Draw my idea"    → upper-left diagonal (~120°)
-    //   • "Create content"  → mostly up, tiny left lean (~95°)
-    // x deltas keep pills clear of the screen-left edge on iPhone-class widths.
-    private let topPillDX:    CGFloat = -20
-    private let topPillDY:    CGFloat = -180
-    private let midPillDX:    CGFloat = -90
-    private let midPillDY:    CGFloat = -130
-    private let leftPillDX:   CGFloat = -170
-    private let leftPillDY:   CGFloat = -50
-
-    // Distance from the screen edges to the capture button's center:
-    // bottom padding (6) + half of the 64pt button (32) = 38; horizontal
-    // padding (16) + half of the button (32) = 48. The overlay's inner
-    // ZStack uses these as bottom/trailing padding so all options spawn
-    // at the button's center.
-    private let buttonCenterFromBottom: CGFloat = 38
-    private let buttonCenterFromTrailing: CGFloat = 48
-
-    var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            Color.black.opacity(show ? 0.45 : 0)
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture { onDismiss() }
-
-            // bottomTrailing alignment so each option's bottom-right corner
-            // sits exactly on the capture button's center. Combined with
-            // the .bottomTrailing scale anchor below, that makes the
-            // collapsed option a tiny dot at the button's center — so they
-            // really do appear to grow out of the button body.
-            ZStack(alignment: .bottomTrailing) {
-                CreateMenuOption(
-                    icon: "sparkles",
-                    title: "Create content",
-                    action: onCreateContent
-                )
-                .scaleEffect(show ? 1 : 0.18, anchor: .bottomTrailing)
-                .opacity(show ? 1 : 0)
-                .offset(x: show ? topPillDX : 0, y: show ? topPillDY : 0)
-                .blur(radius: show ? 0 : 4)
-
-                CreateMenuOption(
-                    icon: "scribble.variable",
-                    title: "Draw my idea",
-                    action: onDrawIdea
-                )
-                .scaleEffect(show ? 1 : 0.18, anchor: .bottomTrailing)
-                .opacity(show ? 1 : 0)
-                .offset(x: show ? midPillDX : 0, y: show ? midPillDY : 0)
-                .blur(radius: show ? 0 : 4)
-
-                CreateMenuOption(
-                    icon: "mic.fill",
-                    title: "Add a note",
-                    action: onAddNote
-                )
-                .scaleEffect(show ? 1 : 0.18, anchor: .bottomTrailing)
-                .opacity(show ? 1 : 0)
-                .offset(x: show ? leftPillDX : 0, y: show ? leftPillDY : 0)
-                .blur(radius: show ? 0 : 4)
-            }
-            .padding(.bottom, buttonCenterFromBottom)
-            .padding(.trailing, buttonCenterFromTrailing)
-        }
-        .allowsHitTesting(show)
-    }
-}
-
-/// Twinkling sparkles glyph for the "Create content" fan-menu option.
-/// SF Symbol's iterative variable-color drives the per-layer twinkle; a
-/// blurred amber glow behind the glyph breathes in and out so the icon
-/// reads as gently alive even before the user taps it.
-private struct AnimatedMagicIcon: View {
-    var size: CGFloat = 15
-    @State private var glow = false
-
-    var body: some View {
-        ZStack {
-            Image(systemName: "sparkles")
-                .font(.system(size: size + 5, weight: .semibold))
-                .foregroundStyle(BrandColor.glowGradientBright)
-                .blur(radius: 5)
-                .opacity(glow ? 0.55 : 0.22)
-                .scaleEffect(glow ? 1.05 : 0.7)
-
-            Image(systemName: "sparkles")
-                .font(.system(size: size, weight: .semibold))
-                .foregroundStyle(BrandColor.glowGradientBright)
-                .symbolEffect(
-                    .variableColor.iterative.reversing,
-                    options: .repeat(.continuous)
-                )
-        }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
-                glow = true
-            }
-        }
-    }
-}
-
-/// Microphone glyph for the "Add a note" fan-menu option. A soft amber
-/// halo expands outward on a slow loop (recording-style ripple) while
-/// a smaller inner glow breathes underneath the glyph, so the icon
-/// telegraphs voice capture without being literal about it.
-private struct AnimatedMicIcon: View {
-    var size: CGFloat = 15
-    @State private var ring = false
-    @State private var bob = false
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(BrandColor.amber.opacity(ring ? 0.0 : 0.45), lineWidth: 1.2)
-                .frame(width: 18, height: 18)
-                .scaleEffect(ring ? 2.4 : 0.5)
-
-            Circle()
-                .fill(BrandColor.amber.opacity(bob ? 0.18 : 0.34))
-                .frame(width: 22, height: 22)
-                .blur(radius: 5)
-
-            Image(systemName: "mic.fill")
-                .font(.system(size: size, weight: .semibold))
-                .foregroundColor(AppText.primary)
-                .scaleEffect(bob ? 1.06 : 0.97)
-        }
-        .onAppear {
-            withAnimation(.easeOut(duration: 1.6).repeatForever(autoreverses: false)) {
-                ring = true
-            }
-            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                bob = true
-            }
-        }
-    }
-}
-
-/// Scribble glyph for the "Draw my idea" fan-menu option. Uses the
-/// `scribble.variable` SF Symbol with iterative variable-color so the
-/// squiggle draws itself in a slow loop, and adds a soft inky shadow
-/// underneath so the strokes feel freshly laid down.
-private struct AnimatedDrawIcon: View {
-    var size: CGFloat = 15
-    @State private var bob = false
-
-    var body: some View {
-        ZStack {
-            Image(systemName: "scribble.variable")
-                .font(.system(size: size + 4, weight: .semibold))
-                .foregroundColor(AppText.primary)
-                .blur(radius: 5)
-                .opacity(bob ? 0.35 : 0.18)
-                .scaleEffect(bob ? 1.04 : 0.86)
-
-            Image(systemName: "scribble.variable")
-                .font(.system(size: size, weight: .semibold))
-                .foregroundColor(AppText.primary)
-                .symbolEffect(
-                    .variableColor.iterative.reversing,
-                    options: .repeat(.continuous)
-                )
-                .rotationEffect(.degrees(bob ? 2 : -2), anchor: .center)
-        }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                bob = true
-            }
-        }
-    }
-}
-
-private struct CreateMenuOption: View {
-    let icon: String
-    let title: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            action()
-        }) {
-            HStack(spacing: 10) {
-                Group {
-                    switch icon {
-                    case "sparkles":          AnimatedMagicIcon(size: 15)
-                    case "mic.fill":          AnimatedMicIcon(size: 15)
-                    case "scribble.variable": AnimatedDrawIcon(size: 15)
-                    default:
-                        Image(systemName: icon)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(AppText.primary)
-                    }
-                }
-                .frame(width: 18, height: 18)
-                Text(title)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(AppText.primary)
-                    .fixedSize(horizontal: true, vertical: false)
-            }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(AppInk.solid(0.12))
-            )
-            .appLiquidGlass(in: Capsule(style: .continuous))
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [AppInk.solid(0.42), AppInk.solid(0.14)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 0.5
-                    )
-            )
-            .contentShape(Capsule(style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
-    }
-}
-
 // MARK: - Content View
 
 struct ContentView: View {
     @AppStorage("simple_mode") private var simpleMode: Bool = false
     @State private var selectedTab: AppTab = .notes
     @State private var keyboardVisible = false
-    @State private var showCreateMenu = false
-    @State private var showCreate = false
-    @State private var showDrawCanvas = false
     @State private var showProfile = false
     @State private var newNoteTrigger = 0
     @StateObject private var bannerController = BannerController()
@@ -2325,15 +2048,6 @@ struct ContentView: View {
                     NoteVoiceSheet()
                         .environmentObject(recordingController)
                 }
-                .fullScreenCover(isPresented: $showCreate) {
-                    HomeView(isModal: true)
-                        .environmentObject(bannerController)
-                        .environmentObject(chromeController)
-                        .environmentObject(recordingController)
-                }
-                .fullScreenCover(isPresented: $showDrawCanvas) {
-                    DrawingCanvasView()
-                }
                 .fullScreenCover(isPresented: $showProfile) {
                     ProfileView(selectedTab: $selectedTab, isModal: true)
                         .environmentObject(chromeController)
@@ -2346,7 +2060,10 @@ struct ContentView: View {
                     if !keyboardVisible && !chromeController.hideTabBar {
                         Group {
                             if simpleMode {
-                                SimpleCreateBar(showCreateMenu: $showCreateMenu)
+                                SimpleCreateBar(onTap: {
+                                    selectedTab = .notes
+                                    newNoteTrigger &+= 1
+                                })
                             } else {
                                 ClassicAppTabBar(selected: $selectedTab, pillNS: tabPillNS)
                             }
@@ -2407,44 +2124,6 @@ struct ContentView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .zIndex(2)
             }
-
-            CreateMenuOverlay(
-                show: showCreateMenu,
-                onAddNote: {
-                    withAnimation(SimpleCreateBar.menuSpring) {
-                        showCreateMenu = false
-                    }
-                    selectedTab = .notes
-                    newNoteTrigger &+= 1
-                },
-                onDrawIdea: {
-                    withAnimation(SimpleCreateBar.menuSpring) {
-                        showCreateMenu = false
-                    }
-                    selectedTab = .notes
-                    // Defer slightly so the menu close reads before the
-                    // canvas cover slides in.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-                        showDrawCanvas = true
-                    }
-                },
-                onCreateContent: {
-                    withAnimation(SimpleCreateBar.menuSpring) {
-                        showCreateMenu = false
-                    }
-                    // Defer slightly so the menu close animation reads
-                    // before the fullScreenCover slides in.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-                        showCreate = true
-                    }
-                },
-                onDismiss: {
-                    withAnimation(SimpleCreateBar.menuSpring) {
-                        showCreateMenu = false
-                    }
-                }
-            )
-            .zIndex(3)
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
@@ -2466,8 +2145,6 @@ struct ContentView: View {
             } else {
                 // Tear down any Simple-only chrome left over from the
                 // previous mode.
-                showCreateMenu = false
-                showCreate = false
                 showProfile = false
             }
         }
