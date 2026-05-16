@@ -31,8 +31,12 @@ struct OnboardingView: View {
     // Per-element appearance flag for step 4. We don't share `appeared`
     // because the staggered children on step 4 need to start hidden and
     // cascade in only when that step is reached, not when the OnboardingView
-    // is first put on screen.
-    @State private var featuresAppeared = false
+    // is first put on screen. Under Reduce Motion the flag starts already
+    // true so the workspace overlay renders at its final state with no
+    // value change for the per-element `.animation(_, value:)` modifiers
+    // to animate against — keeping the workspace screen as instant as the
+    // SCN fade is in `applyFeatures`'s reduce-motion path.
+    @State private var featuresAppeared: Bool = UIAccessibility.isReduceMotionEnabled
     // Typewriter state for the brand mark. Mirrors web's TypewriterLogo —
     // mono font, lowercase "up150", char-by-char typing with a blinking
     // caret that persists after the word is fully typed.
