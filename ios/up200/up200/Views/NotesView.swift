@@ -534,7 +534,6 @@ struct NoteWaveform: View {
     // re-renders from audio level changes.
     @EnvironmentObject private var recording: RecordingController
     private let barCount = 38
-    private let amber = BrandColor.amber
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
@@ -543,8 +542,9 @@ struct NoteWaveform: View {
             HStack(spacing: 2.5) {
                 ForEach(0..<barCount, id: \.self) { i in
                     Capsule()
-                        .fill(amber.opacity(barOpacity(index: i)))
+                        .fill(BrandColor.glowGradient)
                         .frame(width: 3, height: barHeight(level: level, index: i, time: t))
+                        .opacity(barOpacity(index: i))
                 }
             }
         }
@@ -630,7 +630,7 @@ struct NoteVoiceSheet: View {
     private var voiceUI: some View {
         VStack(spacing: 0) {
             ZStack {
-                Text("Swipe down to keep recording")
+                Text("Swipe up to type text")
                     .font(.subheadline)
                     .foregroundColor(AppText.tertiary)
                     .frame(maxWidth: .infinity)
