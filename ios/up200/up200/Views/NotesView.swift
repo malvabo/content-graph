@@ -1703,11 +1703,11 @@ private struct NewTagSheet: View {
 
 // MARK: - Drawing canvas (Draw my idea)
 
-/// Sketch surface with a transcript pane docked underneath. The canvas
-/// occupies the upper region; a 10pt gutter separates it from a short
-/// text strip on the bottom that surfaces live dictation alongside an
-/// inline mic toggle. Save writes a `.drawing` Note with the serialized
-/// PKDrawing and the transcript as the body.
+/// Sketch surface with a left-aligned title and the canvas filling the
+/// rest of the screen. Mirrors the notes editor: chrome row up top
+/// (close + undo/redo on the left, save on the right), large title on
+/// the next line, content area below. Save writes a `.drawing` Note
+/// with the serialized PKDrawing.
 struct DrawingCanvasView: View {
     var initialNote: Note? = nil
     var onSave: ((Note) -> Void)? = nil
@@ -1715,45 +1715,38 @@ struct DrawingCanvasView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var canvasView = PKCanvasView()
-    @StateObject private var dictation = NoteDictation()
-    @State private var transcript: String = ""
-    @State private var showsRecorder: Bool = false
     @State private var hasInk: Bool = false
     @State private var canUndo: Bool = false
     @State private var canRedo: Bool = false
 
-    private var canSave: Bool {
-        hasInk || !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
+    private var canSave: Bool { hasInk }
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: 0) {
             topBar
                 .padding(.horizontal, 16)
-                .padding(.top, 12)
+                .padding(.top, 4)
+                .padding(.bottom, 12)
+
+            Text("Draw my idea")
+                .font(.appTitle)
+                .foregroundColor(AppText.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
 
             canvasArea
                 .padding(.horizontal, 12)
-                .frame(maxHeight: .infinity)
-
-            textArea
-                .padding(.horizontal, 12)
                 .padding(.bottom, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(AppBackground.primary.ignoresSafeArea())
-        .onChange(of: dictation.transcript) { _, new in
-            transcript = new
-        }
-        .onDisappear {
-            if dictation.isRecording { dictation.cancel() }
-        }
     }
 
     private var topBar: some View {
         HStack(spacing: 8) {
             Button {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                if dictation.isRecording { dictation.cancel() }
                 onCancel?()
                 dismiss()
             } label: {
@@ -1768,12 +1761,6 @@ struct DrawingCanvasView: View {
             .accessibilityLabel("Cancel")
 
             undoRedoCluster
-
-            Spacer()
-
-            Text("Draw my idea")
-                .font(.appNavTitle)
-                .foregroundColor(AppText.primary)
 
             Spacer()
 
@@ -1870,95 +1857,12 @@ struct DrawingCanvasView: View {
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
 
-    private var textArea: some View {
-        HStack(alignment: .center, spacing: 12) {
-            ScrollView(.vertical, showsIndicators: false) {
-                Group {
-                    if transcript.isEmpty {
-                        Text(dictation.isRecording
-                             ? "Listening\u{2026}"
-                             : "Tap the mic to add a voice note")
-                            .font(.appSubtext)
-                            .foregroundColor(AppText.tertiary)
-                    } else {
-                        Text(transcript)
-                            .font(.appBody)
-                            .foregroundColor(AppText.primary)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(maxHeight: .infinity)
-
-            micButton
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .frame(height: 120)
-        .background(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .fill(AppBackground.surface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .stroke(AppInk.solid(0.06), lineWidth: 0.5)
-        )
-    }
-
-    private var micButton: some View {
-        Button {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            if dictation.isRecording {
-                dictation.stop()
-            } else {
-                dictation.start()
-            }
-        } label: {
-            ZStack {
-                if dictation.isRecording {
-                    Circle()
-                        .stroke(BrandColor.amber.opacity(0.5), lineWidth: 1.5)
-                        .frame(width: 60, height: 60)
-                        .scaleEffect(showsRecorder ? 1.25 : 0.85)
-                        .opacity(showsRecorder ? 0 : 0.8)
-                }
-                Circle()
-                    .fill(dictation.isRecording ? Color.red : BrandColor.amber)
-                    .frame(width: 52, height: 52)
-                    .shadow(color: (dictation.isRecording ? Color.red : BrandColor.amber).opacity(0.32), radius: 14, y: 5)
-                Image(systemName: dictation.isRecording ? "stop.fill" : "mic.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
-            }
-            .frame(width: 64, height: 64, alignment: .center)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(dictation.isRecording ? "Stop recording" : "Start recording")
-        .onChange(of: dictation.isRecording) { _, rec in
-            if rec {
-                withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) {
-                    showsRecorder = true
-                }
-            } else {
-                showsRecorder = false
-            }
-        }
-    }
-
     private func save() {
-        if dictation.isRecording { dictation.stop() }
         let data = canvasView.drawing.dataRepresentation()
         var note = initialNote ?? Note()
         note.kind = .drawing
         note.drawingData = data
-        let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty {
-            note.body = trimmed
-        }
         note.updatedAt = Date()
-
-        let baseNote = note
-        let onSave = self.onSave
 
         if let onSave {
             onSave(note)
@@ -1972,43 +1876,6 @@ struct DrawingCanvasView: View {
             NotesStore.save(all)
         }
         dismiss()
-
-        // Same titler text notes use after save: when there's enough
-        // transcript and no user-typed first line, ask the model for a
-        // short summary and re-save with it prepended so the row's
-        // displayTitle reads as a real title instead of "Sketch" or
-        // a raw transcript fragment.
-        let firstLine = trimmed
-            .split(whereSeparator: \.isNewline)
-            .first
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
-        let lineCount = trimmed.split(whereSeparator: \.isNewline)
-            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            .count
-        guard trimmed.count >= 40 || lineCount >= 2 else { return }
-
-        Task.detached {
-            let aiTitle = await AIService.generateTitle(from: trimmed)
-            let cleaned = aiTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !cleaned.isEmpty,
-                  cleaned.lowercased() != firstLine.lowercased() else { return }
-            var titled = baseNote
-            titled.body = cleaned + (trimmed.isEmpty ? "" : "\n" + trimmed)
-            titled.updatedAt = Date()
-            await MainActor.run {
-                if let onSave {
-                    onSave(titled)
-                } else {
-                    var all = NotesStore.load()
-                    if let idx = all.firstIndex(where: { $0.id == titled.id }) {
-                        all[idx] = titled
-                    } else {
-                        all.insert(titled, at: 0)
-                    }
-                    NotesStore.save(all)
-                }
-            }
-        }
     }
 }
 
