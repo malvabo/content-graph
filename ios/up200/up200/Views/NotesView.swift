@@ -1377,9 +1377,7 @@ struct NotesView: View {
                 EmptyStateView(
                     illustration: NotesIllustration(),
                     title: emptyTitle,
-                    subtitle: emptySubtitle,
-                    actionTitle: "New note",
-                    action: { startAudioNote() }
+                    subtitle: emptySubtitle
                 )
             } else {
                 VStack {
