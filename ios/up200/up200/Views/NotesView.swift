@@ -874,6 +874,7 @@ private struct NoteEditorPage: View {
     @State private var noteBody: String
     @State private var bodyBeforeDictation: String = ""
     @State private var didDelete: Bool = false
+    @State private var showChat: Bool = false
     @StateObject private var dictation = NoteDictation()
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
@@ -1032,7 +1033,16 @@ private struct NoteEditorPage: View {
             )
             .padding(.trailing, 20)
             .padding(.bottom, 20)
+
+            if !dictation.isRecording {
+                chatButton
+                    .padding(.leading, 20)
+                    .padding(.bottom, 20)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
         }
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .onChange(of: dictation.transcript) { _, newValue in
@@ -1051,12 +1061,38 @@ private struct NoteEditorPage: View {
         } message: {
             Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
         }
+        .sheet(isPresented: $showChat) {
+            ChatView(initialNoteContextID: original.id)
+        }
         .onAppear { chrome.hideTabBar = true }
         .onDisappear {
             chrome.hideTabBar = false
             dictation.stop()
             persistIfNeeded()
         }
+    }
+
+    private var chatButton: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            // Commit any unsaved edits so the chat sees the current body
+            // when it loads notes from the store on appear.
+            persistIfNeeded()
+            showChat = true
+        } label: {
+            Image(systemName: "message")
+                .font(.system(size: 19, weight: .regular))
+                .foregroundColor(AppText.primary)
+                .frame(width: 56, height: 56)
+                .background(
+                    Circle()
+                        .fill(.regularMaterial)
+                        .overlay(Circle().stroke(AppInk.solid(0.15), lineWidth: 0.5))
+                        .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Ask AI chat about this note")
     }
 
     private var topBar: some View {

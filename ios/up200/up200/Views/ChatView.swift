@@ -204,6 +204,7 @@ private struct ChatService {
 
 struct ChatView: View {
     var initialContextIDs: Set<UUID> = []
+    var initialNoteContextID: UUID? = nil
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage("library_projects") private var projectsData: Data = Data()
@@ -326,6 +327,27 @@ struct ChatView: View {
         lastDecodedSignature = projectsData
     }
 
+    /// Seeds the chat with whichever initial context the caller passed —
+    /// a library document (matched against cached projects) or a note
+    /// (matched once notes finish loading async). Idempotent so it can be
+    /// called both synchronously on appear and after notes load.
+    private func attemptSeedContext() {
+        guard !didSeedContext else { return }
+        if let id = initialContextIDs.first,
+           let proj = cachedProjects.first(where: { $0.id == id }) {
+            seededContextID = "doc:\(proj.id.uuidString)"
+            inputText = "@\(proj.title) "
+            didSeedContext = true
+            return
+        }
+        if let id = initialNoteContextID,
+           let note = notes.first(where: { $0.id == id }), !note.isEmpty {
+            seededContextID = "note:\(note.id.uuidString)"
+            inputText = "@\(note.displayTitle) "
+            didSeedContext = true
+        }
+    }
+
     var body: some View {
         ZStack {
             bg.ignoresSafeArea()
@@ -387,17 +409,12 @@ struct ChatView: View {
             rebuildProjects()
             Task {
                 let loaded = await NotesStore.loadAsync()
-                await MainActor.run { notes = loaded }
-            }
-            if !didSeedContext {
-                didSeedContext = true
-                if let id = initialContextIDs.first,
-                   let proj = cachedProjects.first(where: { $0.id == id }) {
-                    let sourceID = "doc:\(proj.id.uuidString)"
-                    seededContextID = sourceID
-                    inputText = "@\(proj.title) "
+                await MainActor.run {
+                    notes = loaded
+                    attemptSeedContext()
                 }
             }
+            attemptSeedContext()
             // Auto-open the keyboard when the chat screen appears. A short
             // delay is needed because @FocusState inside a sheet doesn't
             // reliably take effect until the sheet's presentation transition
