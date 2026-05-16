@@ -59,6 +59,7 @@ struct OnboardingView: View {
     // with the new text, so reading it lazily would lose the original idea.
     @State private var firstIdeaTranscript: String = ""
     @State private var resultBatch: OnboardingResultBatch? = nil
+    @State private var generatingStartedAt: Date = .distantPast
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
@@ -357,7 +358,7 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
                 .transition(.opacity)
-        case .choose, .generating:
+        case .choose:
             VStack(spacing: 6) {
                 Text("Your idea is safe here.")
                     .font(.system(size: 20, weight: .medium, design: .monospaced))
@@ -370,6 +371,16 @@ struct OnboardingView: View {
             }
             .multilineTextAlignment(.center)
             .transition(.opacity)
+        case .generating:
+            // The "What do you want to create?" question is past — the user
+            // has picked. Keeping just the reassurance line lets the cloud
+            // animation below carry the rest of the message.
+            Text("Your idea is safe here.")
+                .font(.system(size: 20, weight: .medium, design: .monospaced))
+                .kerning(-0.3)
+                .foregroundColor(AppText.primary)
+                .multilineTextAlignment(.center)
+                .transition(.opacity)
         case .specify:
             Text("What do you want to?..")
                 .font(.system(size: 22, weight: .medium, design: .monospaced))
@@ -485,8 +496,22 @@ struct OnboardingView: View {
             .transition(.opacity)
 
         case .generating:
-            OnboardingGenerationPill(label: chosenContentLabel)
-                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            // Immersive cloud scene: a spherical, slowly-rotating cluster of
+            // stars at the center, with periodic amber sparks firing outward
+            // to form new mini-clusters connected back to the core. Replaces
+            // the previous in-pill loading indicator — the user reads as
+            // inside the cloud while the network call is in flight.
+            VStack(spacing: 16) {
+                GeneratingCloudScene(generationStartedAt: generatingStartedAt)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 460)
+                    .padding(.horizontal, -24)
+
+                Text("Creating\u{2026}")
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                    .foregroundColor(Color.white.opacity(0.62))
+            }
+            .transition(.opacity)
         }
     }
 
@@ -605,6 +630,10 @@ struct OnboardingView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         captureRecorder.stop()
         chosenContentLabel = label
+        // Stamped so the cloud scene can drive its satellite-firing
+        // schedule from t=0 instead of from the TimelineView's first tick,
+        // which would otherwise start mid-animation on phase entry.
+        generatingStartedAt = Date()
 
         let transcript = firstIdeaTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
         // Persist the raw idea as a Note unconditionally — if the API call
@@ -812,92 +841,227 @@ private struct OnboardingRecordingWaveform: View {
     }
 }
 
-// MARK: - Onboarding generation pill
+// MARK: - Generating cloud scene
 
-/// Compact pill shown while the user "waits" for their first piece of
-/// content. Mirrors the in-app GenerationBanner — orbiting dots on the
-/// left, "Creating your <content>" copy — so the moment the user lands
-/// in the app and sees the real banner, it reads as the same instrument
-/// they just saw at the end of onboarding.
-private struct OnboardingGenerationPill: View {
-    let label: String
+/// Immersive "your idea is taking shape" animation. Replaces the earlier
+/// orbiting-dot loading pill with the scene the user actually sees while
+/// the API call is in flight:
+///
+/// 1. A spherical cluster of stars at the center, slowly rotating around
+///    the vertical axis. Stars near the back of the sphere shrink and
+///    fade via a fake-perspective z-scale so the sphere reads as
+///    volumetric rather than flat.
+/// 2. After a beat, an amber spark fires outward toward one of four
+///    satellite anchor points around the sphere. The spark eases along
+///    a straight line and leaves a brief amber tail.
+/// 3. Once the spark settles, a small mini-cluster blooms at the
+///    satellite anchor and a thin amber connector line fades in linking
+///    the satellite back to the central sphere.
+/// 4. Subsequent satellites fire on a staggered schedule. After all four
+///    are seated, the whole graph keeps drifting — the "new cloud" the
+///    sparks have built sits there breathing until the network call
+///    returns and the view is replaced.
+private struct GeneratingCloudScene: View {
+    let generationStartedAt: Date
 
-    /// "A LinkedIn post" → "a LinkedIn post" — lowercases only the first
-    /// character so brand names ("LinkedIn", "Twitter") keep their casing
-    /// when the label is interpolated into "Creating <label>…".
-    private var phrasedLabel: String {
-        guard let first = label.first else { return label }
-        return first.lowercased() + label.dropFirst()
+    private let centralStarCount = 120
+    private let satelliteStarCount = 22
+    private let amber = Color(red: 1.00, green: 0.68, blue: 0.20)
+
+    private struct Satellite {
+        let delay: Double
+        let angle: Double
     }
-
-    private struct DotConfig {
-        let radius: Double
-        let size: Double
-        let speed: Double
-        let phase: Double
-        let opacity: Double
-    }
-    private let dotConfigs: [DotConfig] = [
-        DotConfig(radius: 9,  size: 3.5, speed: 1.1,  phase: 0.0,  opacity: 0.95),
-        DotConfig(radius: 7,  size: 2.5, speed: 1.7,  phase: 0.4,  opacity: 0.70),
-        DotConfig(radius: 11, size: 2.0, speed: 0.85, phase: 0.9,  opacity: 0.55),
-        DotConfig(radius: 6,  size: 3.0, speed: 2.2,  phase: 1.4,  opacity: 0.80),
-        DotConfig(radius: 10, size: 2.0, speed: 1.45, phase: 1.9,  opacity: 0.60),
-        DotConfig(radius: 8,  size: 2.5, speed: 0.95, phase: 2.5,  opacity: 0.75),
+    // Four anchor points around the central sphere, staggered in time
+    // so the sparks read as individual firings rather than a chord.
+    private let satellites: [Satellite] = [
+        Satellite(delay: 0.6, angle: -.pi / 2),
+        Satellite(delay: 1.9, angle:  .pi / 6),
+        Satellite(delay: 3.2, angle:  .pi - .pi / 5),
+        Satellite(delay: 4.5, angle: -.pi / 3 + .pi),
     ]
 
     var body: some View {
-        HStack(spacing: 12) {
-            Spacer(minLength: 0)
-            ZStack {
-                Circle()
-                    .fill(Color.white.opacity(0.06))
-                    .frame(width: 36, height: 36)
-                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
-                    let t = tl.date.timeIntervalSinceReferenceDate
-                    ZStack {
-                        ForEach(dotConfigs.indices, id: \.self) { i in
-                            let cfg = dotConfigs[i]
-                            let angle = t * cfg.speed + cfg.phase
-                            let x = cfg.radius * cos(angle)
-                            let y = cfg.radius * sin(angle)
-                            let pulse = (sin(t * cfg.speed * 2.3 + cfg.phase) + 1) / 2
-                            Circle()
-                                .fill(Color.white.opacity(cfg.opacity * (0.5 + 0.5 * pulse)))
-                                .frame(width: cfg.size * (0.75 + 0.25 * pulse),
-                                       height: cfg.size * (0.75 + 0.25 * pulse))
-                                .blur(radius: 0.8)
-                                .offset(x: x, y: y)
-                        }
+        TimelineView(.animation(minimumInterval: 1.0 / 40.0)) { context in
+            let elapsed = context.date.timeIntervalSince(generationStartedAt)
+            Canvas { ctx, size in
+                let cx = size.width / 2
+                let cy = size.height / 2
+                let coreRadius = min(size.width, size.height) * 0.16
+
+                drawSphere(in: ctx,
+                           cx: cx, cy: cy,
+                           r: coreRadius,
+                           t: elapsed,
+                           count: centralStarCount,
+                           sizeScale: 1.0,
+                           rotationSpeed: 0.32)
+
+                for (i, sat) in satellites.enumerated() {
+                    let progress = max(0.0, min(1.0, (elapsed - sat.delay) / 1.4))
+                    guard progress > 0 else { continue }
+                    let eased = 1 - pow(1 - progress, 3)
+
+                    let satDistance = coreRadius * 3.3
+                    let satX = cx + cos(sat.angle) * satDistance * eased
+                    let satY = cy + sin(sat.angle) * satDistance * eased
+
+                    // Connector line fades in once the spark has covered
+                    // most of its travel — drawn first so the spark and
+                    // the satellite mini-cluster sit on top of it.
+                    if progress > 0.6 {
+                        let lineAlpha = (progress - 0.6) / 0.4
+                        var line = Path()
+                        line.move(to: CGPoint(x: cx, y: cy))
+                        line.addLine(to: CGPoint(x: satX, y: satY))
+                        ctx.stroke(line,
+                                   with: .color(amber.opacity(0.22 * lineAlpha)),
+                                   lineWidth: 0.6)
+                    }
+
+                    // Travelling spark — bright while in flight, leaves a
+                    // short fading tail back toward the origin.
+                    if progress < 1 {
+                        drawSparkInFlight(in: ctx,
+                                          from: CGPoint(x: cx, y: cy),
+                                          to: CGPoint(x: satX, y: satY),
+                                          eased: eased)
+                    } else {
+                        drawSettledSparkGlow(in: ctx,
+                                             at: CGPoint(x: satX, y: satY),
+                                             phase: Double(i),
+                                             t: elapsed)
+                    }
+
+                    // Satellite mini-cluster blooms after the spark
+                    // arrives. Its radius scales with bloom progress so
+                    // it appears to grow out of the spark.
+                    if progress > 0.7 {
+                        let bloom = (progress - 0.7) / 0.3
+                        drawSphere(in: ctx,
+                                   cx: satX, cy: satY,
+                                   r: coreRadius * 0.55 * bloom,
+                                   t: elapsed + Double(i) * 1.7,
+                                   count: satelliteStarCount,
+                                   sizeScale: 0.85,
+                                   rotationSpeed: 0.45)
                     }
                 }
             }
-            .frame(width: 36, height: 36)
-            .clipShape(Circle())
-
-            Text("Creating \(phrasedLabel)\u{2026}")
-                .font(.app(size: 15, weight: .semibold))
-                .foregroundColor(AppText.primary)
-                .lineLimit(1)
-
-            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color.white.opacity(0.05))
-                Ellipse()
-                    .fill(BrandColor.amber.opacity(0.10))
-                    .blur(radius: 22)
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-            }
+        .accessibilityLabel("Creating your content")
+    }
+
+    /// Volumetric-feeling sphere of stars rendered into a 2D canvas via a
+    /// fake perspective scale. Uses a fibonacci-style distribution so the
+    /// points cover the sphere evenly rather than clumping at the poles,
+    /// then rotates around Y to give the cloud its drift.
+    private func drawSphere(in ctx: GraphicsContext,
+                            cx: Double, cy: Double,
+                            r: Double,
+                            t: Double,
+                            count: Int,
+                            sizeScale: Double,
+                            rotationSpeed: Double) {
+        let rotation = t * rotationSpeed
+        let golden = .pi * (1 + sqrt(5.0))
+        for i in 0..<count {
+            // Fibonacci sphere: points at constant area increments.
+            let n = Double(i) + 0.5
+            let phi = acos(1 - 2 * n / Double(count))
+            let theta = golden * Double(i) + rotation
+
+            let jitter = 0.78 + pseudoRandom(i * 3) * 0.24
+            let starR = r * jitter
+            let x = starR * sin(phi) * cos(theta)
+            let z = starR * sin(phi) * sin(theta)
+            let y = starR * cos(phi)
+
+            // Fake perspective: z is depth, range roughly [-r, +r].
+            // Map to a 0.6-1.4 scale so back-of-sphere stars shrink/dim.
+            let depth = (z + r) / (2 * r)
+            let perspective = 0.6 + depth * 0.8
+
+            let sx = cx + x * (0.85 + 0.15 * perspective)
+            let sy = cy + y * (0.85 + 0.15 * perspective)
+
+            let dotSize = (1.0 + pseudoRandom(i * 5) * 1.5) * perspective * sizeScale
+            let pulse = 0.78 + 0.22 * sin(t * 1.6 + Double(i) * 0.31)
+            let alpha = (0.30 + pseudoRandom(i * 7) * 0.55) * perspective * pulse
+
+            ctx.fill(
+                Path(ellipseIn: CGRect(x: sx - dotSize, y: sy - dotSize,
+                                       width: dotSize * 2, height: dotSize * 2)),
+                with: .color(.white.opacity(alpha))
+            )
+        }
+    }
+
+    /// Bright amber dot somewhere along the (origin → target) line at
+    /// `eased`. Adds a soft glow behind it and a short fading trail
+    /// pointing back toward origin so the eye reads it as motion.
+    private func drawSparkInFlight(in ctx: GraphicsContext,
+                                   from origin: CGPoint,
+                                   to target: CGPoint,
+                                   eased: Double) {
+        let sx = origin.x + (target.x - origin.x) * eased
+        let sy = origin.y + (target.y - origin.y) * eased
+
+        // Soft glow behind the spark.
+        let glow = 7.0
+        ctx.fill(
+            Path(ellipseIn: CGRect(x: sx - glow, y: sy - glow,
+                                   width: glow * 2, height: glow * 2)),
+            with: .color(amber.opacity(0.35))
         )
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .shadow(color: Color.black.opacity(0.40), radius: 16, x: 0, y: 8)
-        .accessibilityLabel("Creating \(phrasedLabel)")
+        // Spark itself.
+        let core = 2.6
+        ctx.fill(
+            Path(ellipseIn: CGRect(x: sx - core, y: sy - core,
+                                   width: core * 2, height: core * 2)),
+            with: .color(amber.opacity(0.95))
+        )
+
+        // Trail: three smaller dots stepping back toward origin.
+        for k in 1...3 {
+            let backEased = max(0.0, eased - Double(k) * 0.06)
+            let tx = origin.x + (target.x - origin.x) * backEased
+            let ty = origin.y + (target.y - origin.y) * backEased
+            let trailSize = 1.8 - Double(k) * 0.4
+            let trailAlpha = 0.55 - Double(k) * 0.15
+            ctx.fill(
+                Path(ellipseIn: CGRect(x: tx - trailSize, y: ty - trailSize,
+                                       width: trailSize * 2, height: trailSize * 2)),
+                with: .color(amber.opacity(trailAlpha))
+            )
+        }
+    }
+
+    /// After a spark has settled at a satellite anchor, leave a slowly
+    /// breathing amber bead at that point so the connector and mini-cluster
+    /// have an obvious origin tied to the spark that built them.
+    private func drawSettledSparkGlow(in ctx: GraphicsContext,
+                                      at point: CGPoint,
+                                      phase: Double,
+                                      t: Double) {
+        let pulse = 0.65 + 0.35 * sin(t * 1.4 + phase * 1.3)
+        let glow = 5.0 * pulse
+        ctx.fill(
+            Path(ellipseIn: CGRect(x: point.x - glow, y: point.y - glow,
+                                   width: glow * 2, height: glow * 2)),
+            with: .color(amber.opacity(0.32 * pulse))
+        )
+        let core = 1.8
+        ctx.fill(
+            Path(ellipseIn: CGRect(x: point.x - core, y: point.y - core,
+                                   width: core * 2, height: core * 2)),
+            with: .color(amber.opacity(0.85))
+        )
+    }
+
+    private func pseudoRandom(_ n: Int) -> Double {
+        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
+        return v - floor(v)
     }
 }
 
