@@ -2480,7 +2480,7 @@ struct HomeView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var bannerController: BannerController
 
-    @State private var sources: [SourceItem] = []
+    @State private var sources: [SourceItem]
     @State private var selectedFormatIDs: Set<String> = []
     @State private var prompt = ""
     @State private var brand = "Default"
@@ -2493,6 +2493,18 @@ struct HomeView: View {
     @State private var generationTask: Task<Void, Never>? = nil
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
+
+    init(
+        scrollToTopSignal: Int = 0,
+        pendingSheet: Binding<SourceSheet?> = .constant(nil),
+        isModal: Bool = false,
+        initialSources: [SourceItem] = []
+    ) {
+        self.scrollToTopSignal = scrollToTopSignal
+        self.pendingSheet = pendingSheet
+        self.isModal = isModal
+        self._sources = State(initialValue: initialSources)
+    }
 
     private var canGenerate: Bool {
         !sources.isEmpty && !selectedFormatIDs.isEmpty && !isGenerating
