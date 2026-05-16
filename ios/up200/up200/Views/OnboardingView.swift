@@ -470,7 +470,7 @@ struct OnboardingView: View {
                     saveIdeaAndExit()
                 }
             }
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
+            .transition(.opacity.combined(with: .move(edge: .top)))
 
         case .specify:
             VStack(spacing: 18) {
