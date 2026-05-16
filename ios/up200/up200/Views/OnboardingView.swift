@@ -54,10 +54,12 @@ struct OnboardingView: View {
             // so the dots can collapse inward (step 2) and then sprout
             // satellites + connector arcs (step 3) without cross-fading
             // between separate scenes. On the capture step (4) the whole
-            // scene fades to a quiet backdrop so the starfield blurb reads
-            // as the focal element.
+            // scene fades to a quiet backdrop and zooms toward the
+            // top-right cloud so the starfield blurb reads as the focal
+            // element while the surrounding atmosphere fills the view.
             OnboardingSceneView(step: step.rawValue)
                 .opacity(step == .capture ? 0.18 : 1)
+                .scaleEffect(step == .capture ? 1.8 : 1.0, anchor: .topTrailing)
                 .animation(.easeInOut(duration: 0.65), value: step)
                 .ignoresSafeArea()
 
