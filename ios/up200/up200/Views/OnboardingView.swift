@@ -228,7 +228,7 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             Spacer().frame(height: 24)
 
-            Text("From one idea,\na graph of content")
+            Text("Turn an idea into\ncontent worth sharing")
                 .font(.system(size: 22, weight: .medium, design: .monospaced))
                 .kerning(-0.3)
                 .foregroundColor(AppText.primary)
