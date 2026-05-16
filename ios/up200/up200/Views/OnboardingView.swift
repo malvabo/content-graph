@@ -52,6 +52,15 @@ struct OnboardingView: View {
     @State private var showCaptureMicAlert: Bool = false
     @State private var chosenContentLabel: String = ""
     @State private var generatingTask: Task<Void, Never>? = nil
+    // The first recording's transcript becomes the source we feed to the
+    // generator. We snapshot it the moment the user finishes recording —
+    // starting a second recording (the "Something else" specify pass)
+    // rewires SFSpeechRecognizer and clobbers `captureRecorder.transcript`
+    // with the new text, so reading it lazily would lose the original idea.
+    @State private var firstIdeaTranscript: String = ""
+    @State private var resultBatch: OnboardingResultBatch? = nil
+
+    @AppStorage("library_projects") private var projectsData: Data = Data()
 
     var body: some View {
         ZStack {
@@ -327,6 +336,15 @@ struct OnboardingView: View {
             generatingTask?.cancel()
             generatingTask = nil
         }
+        // Drop the user straight into the same detail surface the app uses
+        // for every other generation result. When they dismiss it, fall
+        // through to onGetStarted so onboarding exits — they've now seen
+        // both the create flow and the result page, so showing the main
+        // tab bar is the right next beat.
+        .fullScreenCover(item: $resultBatch, onDismiss: { onGetStarted() }) { batch in
+            ProjectGroupDetailView(groupTitle: batch.title, initialItems: batch.items)
+                .preferredColorScheme(.dark)
+        }
     }
 
     @ViewBuilder private var captureHeadline: some View {
@@ -416,17 +434,16 @@ struct OnboardingView: View {
         case .choose:
             VStack(spacing: 12) {
                 captureTagRow(label: "A LinkedIn post", icon: "person.2.fill") {
-                    chooseContent("A LinkedIn post")
+                    startGeneration(label: "A LinkedIn post", formatID: "linkedin", customPrompt: "")
                 }
                 captureTagRow(label: "A Twitter thread", icon: "text.bubble") {
-                    chooseContent("A Twitter thread")
+                    startGeneration(label: "A Twitter thread", formatID: "twitter", customPrompt: "")
                 }
                 captureTagRow(label: "Something else", icon: "sparkles") {
                     startSpecifyRecording()
                 }
                 captureTagRow(label: "Just save my note for now", icon: "tray.and.arrow.down") {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onGetStarted()
+                    saveIdeaAndExit()
                 }
             }
             .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -533,6 +550,11 @@ struct OnboardingView: View {
 
     private func finishCaptureRecording() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        // Snapshot the transcript *before* stopping — the recognition task
+        // may emit one last partial result after stop(), but the value held
+        // here is what we'll feed the generator no matter which path the
+        // user picks next.
+        firstIdeaTranscript = captureRecorder.transcript
         captureRecorder.stop()
         withAnimation(.easeInOut(duration: 0.45)) {
             capturePhase = .choose
@@ -550,31 +572,131 @@ struct OnboardingView: View {
 
     private func finishSpecifyRecording() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        let specifyText = captureRecorder.transcript
         captureRecorder.stop()
-        // After specifying, fall through into the same generating pill the
-        // direct content-type taps use — onboarding always exits via the
-        // same animated handoff regardless of which path got the user here.
-        chooseContent("Your content")
+        // The spoken intent steers the generator via customPrompt. "blog"
+        // gives the model long-form latitude to honor whatever the user
+        // asked for — the format-specific system prompts are too rigid to
+        // accommodate "write me a poem" or "draft a quick announcement".
+        startGeneration(label: "Your content", formatID: "blog", customPrompt: specifyText)
     }
 
-    private func chooseContent(_ label: String) {
+    private func saveIdeaAndExit() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        captureRecorder.stop()
+        saveTranscriptAsNote(firstIdeaTranscript)
+        onGetStarted()
+    }
+
+    private func startGeneration(label: String, formatID: String, customPrompt: String) {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         captureRecorder.stop()
         chosenContentLabel = label
+
+        let transcript = firstIdeaTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Persist the raw idea as a Note unconditionally — if the API call
+        // fails, the user still has their thought saved when they land in
+        // the app instead of losing the recording entirely.
+        saveTranscriptAsNote(transcript)
+
         withAnimation(.easeInOut(duration: 0.45)) {
             capturePhase = .generating
         }
+
         generatingTask?.cancel()
-        generatingTask = Task {
-            do { try await Task.sleep(nanoseconds: 1_800_000_000) }
-            catch { return }
-            await MainActor.run { onGetStarted() }
+        generatingTask = Task { @MainActor in
+            await runGeneration(label: label,
+                                formatID: formatID,
+                                customPrompt: customPrompt,
+                                transcript: transcript)
         }
+    }
+
+    @MainActor
+    private func runGeneration(label: String,
+                               formatID: String,
+                               customPrompt: String,
+                               transcript: String) async {
+        // No API key configured (e.g. fresh install before the key sheet) —
+        // can't generate, so drop the user into the app where they can add
+        // a key from Profile. Note is already saved.
+        guard ContentGenerator.isKeyConfigured else {
+            onGetStarted()
+            return
+        }
+
+        let sourceContent = transcript.isEmpty
+            ? "Captured idea (no transcription available)."
+            : transcript
+        let source = SourceItem(type: .voice, label: "First idea", content: sourceContent)
+        let formatLabel = allFormats.first { $0.id == formatID }?.label ?? label
+
+        let result = await ContentGenerator.generate(
+            sources: [source],
+            formatID: formatID,
+            formatLabel: formatLabel,
+            customPrompt: customPrompt,
+            brand: "Default"
+        )
+
+        guard !Task.isCancelled else { return }
+
+        switch result {
+        case .success(let text):
+            let project = GenerationProject(
+                title: deriveTitle(from: transcript, fallback: label),
+                outputType: formatID,
+                preview: String(text.prefix(160)),
+                content: text,
+                date: Date()
+            )
+            saveProjectToLibrary(project)
+            resultBatch = OnboardingResultBatch(title: project.title, items: [project])
+        case .failure:
+            // Note is already saved — quietly exit into the app rather than
+            // stranding the user on the generating pill. A failure banner
+            // in the middle of onboarding would be more noise than signal.
+            onGetStarted()
+        }
+    }
+
+    private func saveTranscriptAsNote(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        var notes = NotesStore.load()
+        notes.insert(Note(body: trimmed, updatedAt: Date()), at: 0)
+        NotesStore.save(notes)
+    }
+
+    private func saveProjectToLibrary(_ project: GenerationProject) {
+        var projects: [GenerationProject]
+        switch loadBlob([GenerationProject].self, from: projectsData) {
+        case .empty: projects = []
+        case .ok(let existing): projects = existing
+        case .corrupt: return
+        }
+        projects.insert(project, at: 0)
+        if let encoded = try? JSONEncoder().encode(projects) {
+            projectsData = encoded
+        }
+    }
+
+    private func deriveTitle(from transcript: String, fallback: String) -> String {
+        let first = transcript.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
+        let trimmed = first.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return fallback }
+        return String(trimmed.prefix(60))
     }
 
     private func formatCaptureTime(_ s: Int) -> String {
         String(format: "%d:%02d", s / 60, s % 60)
     }
+}
+
+private struct OnboardingResultBatch: Identifiable {
+    let id = UUID()
+    let title: String
+    let items: [GenerationProject]
 }
 
 // MARK: - Starfield blurb
