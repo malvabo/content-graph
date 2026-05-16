@@ -502,6 +502,18 @@ struct ProjectGroupDetailView: View {
         if let data = try? JSONEncoder().encode(projects) { projectsData = data }
     }
 
+    /// Pulls the current selected project's content back into `editText`
+    /// after the chat sheet closes so a rewrite the user accepted there
+    /// actually shows up in the editor. The chat button persists `editText`
+    /// first and the sheet covers the editor while it's open, so the
+    /// in-memory body and on-disk body are in sync until the chat writes
+    /// — at which point we want the on-disk version to win.
+    private func refreshAfterChat() {
+        rebuildAllProjects()
+        guard items.indices.contains(selectedIndex) else { return }
+        editText = bodyText(for: items[selectedIndex])
+    }
+
     private func deleteGroup() {
         var projects: [GenerationProject]
         switch loadBlob([GenerationProject].self, from: projectsData) {
@@ -765,6 +777,9 @@ struct ProjectGroupDetailView: View {
 
                         Button {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            // Commit any unsaved edits so the chat reads the
+                            // current body when it loads projects on appear.
+                            persistCurrent()
                             showChat = true
                         } label: {
                             Image(systemName: "message")
@@ -812,7 +827,7 @@ struct ProjectGroupDetailView: View {
                 runAITransform(instruction: instruction, label: label, icon: icon, source: editText)
             }
         }
-        .sheet(isPresented: $showChat) {
+        .sheet(isPresented: $showChat, onDismiss: refreshAfterChat) {
             let seedID = items.indices.contains(selectedIndex) ? items[selectedIndex].id : nil
             ChatView(initialContextIDs: seedID.map { Set([$0]) } ?? [])
         }
