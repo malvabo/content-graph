@@ -219,21 +219,14 @@ struct AmbientBackground: View {
 // MARK: - Empty-state illustrations
 
 /// Hairline-outline notepad illustration for the Notes empty state.
-/// Spiral binding dots on top, a paper outline with a stack of subtle
-/// "text lines" inside — same elegant outline language as iOS system
-/// empty illustrations (Inbox basket, Reminders empty, etc.).
+/// Spiral binding rings straddle the top edge of the paper (not floating
+/// above it as a separate row), with a stack of subtle "text lines"
+/// inside — same elegant outline language as iOS system empty
+/// illustrations (Inbox basket, Reminders empty, etc.).
 struct NotesIllustration: View {
     var body: some View {
         ZStack {
-            HStack(spacing: 14) {
-                ForEach(0..<5, id: \.self) { _ in
-                    Circle()
-                        .stroke(AppInk.solid(0.24), lineWidth: 1.2)
-                        .frame(width: 7, height: 7)
-                }
-            }
-            .offset(y: -82)
-
+            // Paper. Center at y=6, height 158 → top edge sits at y=-73.
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(AppInk.solid(0.26), lineWidth: 1.4)
                 .frame(width: 134, height: 158)
@@ -246,62 +239,69 @@ struct NotesIllustration: View {
                         }
                     }
                     .padding(.horizontal, 18)
-                    .padding(.top, 24)
+                    .padding(.top, 28)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 )
                 .offset(y: 6)
+
+            // Binding rings, centered on the paper's top edge so each ring
+            // is half above / half below the line. Reads as spiral-binding
+            // punched through the top of the page rather than a detached
+            // row of dots floating in space.
+            HStack(spacing: 14) {
+                ForEach(0..<5, id: \.self) { _ in
+                    Circle()
+                        .stroke(AppInk.solid(0.32), lineWidth: 1.4)
+                        .frame(width: 8, height: 8)
+                }
+            }
+            .offset(y: -73)
         }
         .frame(width: 180, height: 190)
         .accessibilityHidden(true)
     }
 }
 
-/// Hairline-outline book-stack illustration for the Library empty state.
-/// Three offset book outlines with a subtle dotted texture on the middle
-/// volume — echoes the "container + perforated surface" of the reference.
+/// Hairline-outline document-stack illustration for the Library empty
+/// state. Three overlapping content cards, each with a title bar and a
+/// few body lines — same internal vocabulary as the Notes illustration
+/// so the two empty states feel like one design family. Replaces the
+/// older "book with dot grid + short capsule fragments" composition,
+/// which read as broken elements piled together.
 struct LibraryIllustration: View {
     var body: some View {
         ZStack {
-            book(width: 96,  height: 124, offset: CGSize(width: -32, height: -10), tint: 0.16, withDots: false)
-            book(width: 108, height: 138, offset: CGSize(width: 0,   height: 4),   tint: 0.22, withDots: true)
-            book(width: 96,  height: 130, offset: CGSize(width: 32,  height: 14),  tint: 0.18, withDots: false)
+            card(width: 96,  height: 124, offset: CGSize(width: -32, height: -10), tint: 0.16)
+            card(width: 108, height: 138, offset: CGSize(width: 0,   height: 4),   tint: 0.26)
+            card(width: 96,  height: 130, offset: CGSize(width: 32,  height: 14),  tint: 0.18)
         }
         .frame(width: 200, height: 180)
         .accessibilityHidden(true)
     }
 
-    private func book(width: CGFloat, height: CGFloat, offset: CGSize, tint: Double, withDots: Bool) -> some View {
-        RoundedRectangle(cornerRadius: 6, style: .continuous)
+    private func card(width: CGFloat, height: CGFloat, offset: CGSize, tint: Double) -> some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
             .stroke(AppInk.solid(tint), lineWidth: 1.4)
             .frame(width: width, height: height)
             .overlay(
-                VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
+                    // Title bar — heavier weight, ~half-width, so it reads
+                    // as a document title rather than another body line.
                     Capsule()
-                        .fill(AppInk.solid(tint * 0.7))
-                        .frame(width: width * 0.5, height: 3)
-                        .padding(.top, 14)
-                    if withDots {
-                        Spacer(minLength: 8)
-                        VStack(spacing: 6) {
-                            ForEach(0..<4, id: \.self) { _ in
-                                HStack(spacing: 6) {
-                                    ForEach(0..<6, id: \.self) { _ in
-                                        Circle()
-                                            .fill(AppInk.solid(tint * 0.55))
-                                            .frame(width: 2.4, height: 2.4)
-                                    }
-                                }
-                            }
-                        }
-                        Spacer(minLength: 8)
-                    } else {
-                        Spacer()
+                        .fill(AppInk.solid(tint * 0.85))
+                        .frame(width: width * 0.5, height: 4)
+                        .padding(.bottom, 2)
+                    // Body lines — full-width with the last one short, so
+                    // each card scans as a paragraph in miniature.
+                    ForEach(0..<4, id: \.self) { i in
+                        Capsule()
+                            .fill(AppInk.solid(tint * 0.55))
+                            .frame(width: i == 3 ? width * 0.40 : width * 0.72, height: 3)
                     }
-                    Capsule()
-                        .fill(AppInk.solid(tint * 0.7))
-                        .frame(width: width * 0.28, height: 3)
-                        .padding(.bottom, 14)
                 }
+                .padding(.horizontal, 12)
+                .padding(.top, 16)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             )
             .offset(offset)
     }
