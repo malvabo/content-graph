@@ -138,9 +138,10 @@ private struct ChatService {
 
         Rewrite suggestions:
         - When the user asks you to revise, rewrite, edit, fix, tighten, \
-        rephrase, or otherwise replace a specific span of text inside the \
-        attached context, emit the change as a structured rewrite block \
-        instead of (or in addition to) explaining it in prose:
+        rephrase, expand, shorten, or otherwise replace a specific span \
+        of text inside the attached context, emit the change as a \
+        structured rewrite block instead of (or in addition to) \
+        explaining it in prose:
 
           <rewrite>
           <before>exact original text from the source</before>
@@ -154,8 +155,15 @@ private struct ChatService {
         whole source.
         - Emit multiple <rewrite> blocks if the user asked for several \
         edits; each block stands alone.
-        - For broad rewrites of an entire document, do not use this \
-        block — answer normally. The block is for surgical edits.
+        - When a [selection] context item is attached, the user has \
+        flagged that text as the surgical target — the inline-editing \
+        pathway. Always answer that request with a <rewrite> block whose \
+        <before> is the selection's content (or a tight subset of it), \
+        even when your edit covers the entire selection. Do not respond \
+        in prose for selection-targeted edits.
+        - For broad rewrites of an entire document with no [selection] \
+        attached, do not use this block — answer normally. The block is \
+        for surgical edits on a specific span.
         """
         if !contextItems.isEmpty {
             let ctx = contextItems.map {
