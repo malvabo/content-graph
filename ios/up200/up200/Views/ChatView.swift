@@ -221,6 +221,11 @@ struct ChatView: View {
     /// because the snippet has no persistent identity of its own.
     var initialSelection: String? = nil
     var initialSelectionTitle: String? = nil
+    /// NSRange of `initialSelection` inside its parent document body.
+    /// When non-nil, an accepted rewrite is applied back at exactly this
+    /// range so the surgical edit doesn't accidentally match — and
+    /// replace — a similar string elsewhere in the document.
+    var initialSelectionRange: NSRange? = nil
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage("library_projects") private var projectsData: Data = Data()
@@ -233,6 +238,12 @@ struct ChatView: View {
     @State private var seededContextID: String? = nil
     @State private var didSeedContext = false
     @State private var didSeedSelection = false
+    /// Source-id of the .selection chip we seeded on appear, paired with
+    /// the NSRange the snippet occupied in its parent doc body. Used to
+    /// route an accepted rewrite back to that exact range instead of a
+    /// document-wide find/replace, so the AI edit lands surgically.
+    @State private var seededSelectionSourceID: String? = nil
+    @State private var seededSelectionRange: NSRange? = nil
     @State private var sendTask: Task<Void, Never>? = nil
     @State private var fileImportTask: Task<Void, Never>? = nil
     @State private var cachedProjects: [GenerationProject] = []
@@ -399,6 +410,11 @@ struct ChatView: View {
         )
         attachedFiles.append(source)
         selectedContextIDs.insert(source.id)
+        // Carry the parent-document range with the selection chip so
+        // a follow-up rewrite lands at this exact offset rather than
+        // hunting for the first text match in the document body.
+        seededSelectionSourceID = source.id
+        seededSelectionRange = initialSelectionRange
         // Strip a dangling "@" the caller may have left in the seed text
         // so a chip + a stray "@" don't visually duplicate the attachment.
         if inputText.hasSuffix("@") { inputText.removeLast() }
@@ -884,6 +900,10 @@ struct ChatView: View {
     private func removeContext(_ source: ChatContextSource) {
         selectedContextIDs.remove(source.id)
         if seededContextID == source.id { seededContextID = nil }
+        if seededSelectionSourceID == source.id {
+            seededSelectionSourceID = nil
+            seededSelectionRange = nil
+        }
         if source.kind == .selection || source.kind == .file {
             attachedFiles.removeAll { $0.id == source.id }
         }
@@ -962,6 +982,33 @@ struct ChatView: View {
 
     // MARK: Rewrite acceptance
 
+    /// If the chat was seeded with a selection range and the rewrite's
+    /// `before` text still matches what's at that range in the supplied
+    /// body, returns the body with `after` spliced in at the same range.
+    /// Returns nil when the range is unset, out of bounds, or no longer
+    /// matches — callers fall back to a generic find/replace.
+    private func applyRewriteAtSeededRange(
+        in body: String,
+        before: String,
+        after: String
+    ) -> String? {
+        guard let nsRange = seededSelectionRange,
+              let range = Range(nsRange, in: body) else { return nil }
+        let current = String(body[range])
+        // Accept either an exact match or the trimmed forms agreeing, so
+        // a stray newline at the edge of the user's highlight doesn't
+        // bounce a valid surgical edit.
+        let normalize: (String) -> String = {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        guard current == before || normalize(current) == normalize(before) else {
+            return nil
+        }
+        var updated = body
+        updated.replaceSubrange(range, with: after)
+        return updated
+    }
+
     /// Apply a rewrite suggestion against the attached context sources.
     /// Documents are persisted to `library_projects`; notes to NotesStore;
     /// in-session imported files mutate their local entry. Returns true
@@ -974,12 +1021,24 @@ struct ChatView: View {
         let attachedIds = Set(attached.map { $0.id })
 
         // Documents — persisted via @AppStorage("library_projects").
+        // When the chat was seeded with a selection range pointing into
+        // one of the attached docs, apply the rewrite at that exact
+        // range rather than doing a document-wide find/replace, so a
+        // surgical edit doesn't accidentally retarget a similar string
+        // elsewhere in the body.
         var newProjects = cachedProjects
         var projectsChanged = false
         for idx in newProjects.indices {
             let sourceId = "doc:\(newProjects[idx].id.uuidString)"
             guard attachedIds.contains(sourceId) else { continue }
-            if newProjects[idx].content.contains(before) {
+            if let updated = applyRewriteAtSeededRange(
+                in: newProjects[idx].content,
+                before: before,
+                after: after
+            ) {
+                newProjects[idx].content = updated
+                projectsChanged = true
+            } else if newProjects[idx].content.contains(before) {
                 newProjects[idx].content = newProjects[idx]
                     .content.replacingOccurrences(of: before, with: after)
                 projectsChanged = true
@@ -1004,7 +1063,15 @@ struct ChatView: View {
             for idx in allNotes.indices {
                 let sourceId = "note:\(allNotes[idx].id.uuidString)"
                 guard attachedNoteIds.contains(sourceId) else { continue }
-                if allNotes[idx].body.contains(before) {
+                if let updated = applyRewriteAtSeededRange(
+                    in: allNotes[idx].body,
+                    before: before,
+                    after: after
+                ) {
+                    allNotes[idx].body = updated
+                    allNotes[idx].updatedAt = Date()
+                    notesChanged = true
+                } else if allNotes[idx].body.contains(before) {
                     allNotes[idx].body = allNotes[idx]
                         .body.replacingOccurrences(of: before, with: after)
                     allNotes[idx].updatedAt = Date()
