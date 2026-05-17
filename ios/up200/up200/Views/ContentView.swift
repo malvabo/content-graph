@@ -458,11 +458,20 @@ struct ProjectGroupDetailView: View {
     @State private var aiFailed = false
     @State private var aiFailReason = ""
     @State private var showAIPreview = false
-    @State private var aiPreviewText: String = ""
+    @State private var aiPreviewVariants: [String] = []
+    @State private var aiPreviewVariantIndex: Int = 0
     @State private var aiPreviewLabel: String = ""
     @State private var aiPreviewIcon: String = "sparkles"
     @State private var aiPreviewInstruction: String = ""
     @State private var aiSourceSnapshot: String = ""
+
+    private static let maxPreviewVariants = 5
+
+    private var aiPreviewCurrentVariant: String {
+        aiPreviewVariants.indices.contains(aiPreviewVariantIndex)
+            ? aiPreviewVariants[aiPreviewVariantIndex]
+            : ""
+    }
     @State private var editTextBeforeDictation: String = ""
     @StateObject private var dictation = NoteDictation()
     @FocusState private var editorFocused: Bool
@@ -908,7 +917,7 @@ struct ProjectGroupDetailView: View {
             .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         }
         .sheet(isPresented: $showAIMenu) {
-            AIActionsSheet(sourceText: editText) { label, icon, instruction in
+            AIActionsSheet { label, icon, instruction in
                 showAIMenu = false
                 runAITransform(instruction: instruction, label: label, icon: icon, source: editText)
             }
@@ -933,16 +942,20 @@ struct ProjectGroupDetailView: View {
             AIPreviewSheet(
                 actionLabel: aiPreviewLabel,
                 actionIcon: aiPreviewIcon,
-                previewText: aiPreviewText,
+                variants: aiPreviewVariants,
+                selectedIndex: $aiPreviewVariantIndex,
                 isLoading: isAIProcessing,
+                maxVariants: Self.maxPreviewVariants,
                 onApply: {
-                    editText = aiPreviewText
+                    let chosen = aiPreviewCurrentVariant
+                    guard !chosen.isEmpty else { return }
+                    editText = chosen
                     persistCurrent()
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     showAIPreview = false
                 },
                 onCopy: {
-                    UIPasteboard.general.string = aiPreviewText
+                    UIPasteboard.general.string = aiPreviewCurrentVariant
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 },
                 onRegenerate: {
@@ -950,7 +963,17 @@ struct ProjectGroupDetailView: View {
                         instruction: aiPreviewInstruction,
                         label: aiPreviewLabel,
                         icon: aiPreviewIcon,
-                        source: aiSourceSnapshot
+                        source: aiSourceSnapshot,
+                        mode: .replaceCurrent
+                    )
+                },
+                onAddVariant: {
+                    runAITransform(
+                        instruction: aiPreviewInstruction,
+                        label: aiPreviewLabel,
+                        icon: aiPreviewIcon,
+                        source: aiSourceSnapshot,
+                        mode: .appendVariant
                     )
                 },
                 onClose: { showAIPreview = false }
@@ -958,7 +981,8 @@ struct ProjectGroupDetailView: View {
         }
         .onChange(of: showAIPreview) { _, newValue in
             if !newValue {
-                aiPreviewText = ""
+                aiPreviewVariants = []
+                aiPreviewVariantIndex = 0
                 aiPreviewLabel = ""
                 aiPreviewIcon = "sparkles"
                 aiPreviewInstruction = ""
@@ -981,7 +1005,16 @@ struct ProjectGroupDetailView: View {
         }
     }
 
-    private func runAITransform(instruction: String, label: String, icon: String, source: String) {
+    enum AITransformMode {
+        /// First-run from the action sheet — replaces any previous variants.
+        case fresh
+        /// Refresh icon — re-roll the currently selected variant in place.
+        case replaceCurrent
+        /// "This but…" — generate a distinct variant and append to the list.
+        case appendVariant
+    }
+
+    private func runAITransform(instruction: String, label: String, icon: String, source: String, mode: AITransformMode = .fresh) {
         guard !isAIProcessing else { return }
         let trimmedInstruction = instruction.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedInstruction.isEmpty else { return }
@@ -995,8 +1028,28 @@ struct ProjectGroupDetailView: View {
         aiPreviewInstruction = trimmedInstruction
         aiSourceSnapshot = source
         isAIProcessing = true
+        // For variant calls, ask the model to avoid repeating any of the
+        // variants the user has already seen. Replace-current excludes the
+        // slot we're about to overwrite so the new attempt can land
+        // anywhere.
+        let existingForDifferenceHint: [String]
+        switch mode {
+        case .fresh:
+            existingForDifferenceHint = []
+        case .replaceCurrent:
+            existingForDifferenceHint = aiPreviewVariants.enumerated()
+                .filter { $0.offset != aiPreviewVariantIndex }
+                .map(\.element)
+        case .appendVariant:
+            existingForDifferenceHint = aiPreviewVariants
+        }
         aiTransformTask = Task {
-            let outcome = await AITransformService.transform(text: source, instruction: trimmedInstruction)
+            let outcome: Result<String, APICallError>
+            if existingForDifferenceHint.isEmpty {
+                outcome = await AITransformService.transform(text: source, instruction: trimmedInstruction)
+            } else {
+                outcome = await AITransformService.variant(text: source, instruction: trimmedInstruction, existing: existingForDifferenceHint)
+            }
             await MainActor.run {
                 // Always clear the loading flag — even on cancellation — so a
                 // subsequent transform can run instead of being blocked by a
@@ -1005,7 +1058,22 @@ struct ProjectGroupDetailView: View {
                 guard !Task.isCancelled else { return }
                 switch outcome {
                 case .success(let result):
-                    aiPreviewText = result
+                    switch mode {
+                    case .fresh:
+                        aiPreviewVariants = [result]
+                        aiPreviewVariantIndex = 0
+                    case .replaceCurrent:
+                        if aiPreviewVariants.indices.contains(aiPreviewVariantIndex) {
+                            aiPreviewVariants[aiPreviewVariantIndex] = result
+                        } else {
+                            aiPreviewVariants = [result]
+                            aiPreviewVariantIndex = 0
+                        }
+                    case .appendVariant:
+                        guard aiPreviewVariants.count < Self.maxPreviewVariants else { return }
+                        aiPreviewVariants.append(result)
+                        aiPreviewVariantIndex = aiPreviewVariants.count - 1
+                    }
                     if !showAIPreview { showAIPreview = true }
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 case .failure(let err):
@@ -2786,17 +2854,10 @@ struct AITransformService {
         return result.isEmpty ? .failure(.empty) : .success(result)
     }
 
-    struct SuggestedAction {
-        let label: String
-        let icon: String
-        let instruction: String
-    }
-
-    /// Asks the model to invent one new quick-edit option for the given text
-    /// that's distinct from the labels already on the sheet. Returns a label
-    /// (≤30 chars) and a one-sentence instruction. Icon is a curated SF
-    /// Symbol picked by the model or a generic fallback.
-    static func suggestAction(text: String, existing: [String]) async -> Result<SuggestedAction, APICallError> {
+    /// Same transform as `transform`, but explicitly asks for a take that's
+    /// distinct from a list of already-seen variants. Powers the "This but…"
+    /// affordance on the preview sheet.
+    static func variant(text: String, instruction: String, existing: [String]) async -> Result<String, APICallError> {
         let apiKey = KeychainService.load() ?? ""
         guard !apiKey.isEmpty, let url = URL(string: "https://api.anthropic.com/v1/messages") else {
             return .failure(.http(401, "Missing API key"))
@@ -2807,23 +2868,26 @@ struct AITransformService {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
         req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        req.timeoutInterval = 30
+        req.timeoutInterval = 60
 
-        let iconChoices = ["sparkles", "wand.and.stars", "paintbrush", "scissors", "quote.bubble", "globe", "heart", "flame", "bolt", "leaf"]
-        let system = """
-        You suggest one new quick-edit action for transforming the user's text. \
-        It must be distinct from the existing actions and useful for this specific text. \
-        Output ONLY a JSON object with three string keys: "label" (a short imperative title, max 30 chars, Title Case), \
-        "icon" (one of: \(iconChoices.joined(separator: ", "))), \
-        "instruction" (one sentence telling another model how to rewrite the text). \
-        No prose, no code fences, just the JSON object.
-        """
-        let existingList = existing.map { "- \($0)" }.joined(separator: "\n")
-        let user = "Existing actions (do not repeat or paraphrase):\n\(existingList)\n\nText:\n\(text)"
+        let system = "You rewrite the user's text following their instruction. Preserve formatting, structure, and tone unless the instruction asks to change them. The user has already seen the variant(s) below — produce a fresh take that is meaningfully different in wording, structure, or angle while still satisfying the instruction. Output only the rewritten text, no preamble, no commentary, no quotes around the output."
+
+        var lines: [String] = ["Instruction: \(instruction)"]
+        if !existing.isEmpty {
+            lines.append("")
+            lines.append("Already-seen variants (do not repeat or paraphrase any of them):")
+            for (i, v) in existing.enumerated() {
+                lines.append("--- Variant \(i + 1) ---\n\(v)")
+            }
+        }
+        lines.append("")
+        lines.append("Text:")
+        lines.append(text)
+        let user = lines.joined(separator: "\n")
 
         let body: [String: Any] = [
             "model": "claude-sonnet-4-6",
-            "max_tokens": 256,
+            "max_tokens": 4096,
             "system": system,
             "messages": [["role": "user", "content": user]]
         ]
@@ -2847,26 +2911,11 @@ struct AITransformService {
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let content = (json["content"] as? [[String: Any]])?.first,
-              let raw = content["text"] as? String
+              let text = content["text"] as? String
         else { return .failure(.decode) }
 
-        // The model occasionally wraps the JSON in prose or code fences;
-        // pull out the first {...} block.
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let start = trimmed.firstIndex(of: "{"),
-              let end = trimmed.lastIndex(of: "}"),
-              start < end
-        else { return .failure(.decode) }
-        let jsonSlice = String(trimmed[start...end])
-        guard let parsed = try? JSONSerialization.jsonObject(with: Data(jsonSlice.utf8)) as? [String: Any],
-              let label = (parsed["label"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
-              let instruction = (parsed["instruction"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !label.isEmpty, !instruction.isEmpty
-        else { return .failure(.decode) }
-
-        let icon = (parsed["icon"] as? String).flatMap { iconChoices.contains($0) ? $0 : nil } ?? "sparkles"
-        let clippedLabel = label.count > 40 ? String(label.prefix(40)) : label
-        return .success(SuggestedAction(label: clippedLabel, icon: icon, instruction: instruction))
+        let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.isEmpty ? .failure(.empty) : .success(result)
     }
 }
 
@@ -2888,31 +2937,16 @@ private let quickAIActions: [AIAction] = [
 ]
 
 struct AIActionsSheet: View {
-    let sourceText: String
     let onAction: (_ label: String, _ icon: String, _ instruction: String) -> Void
 
-    private static let maxExtras = 5
-
-    @State private var extras: [AIAction] = []
-    @State private var isSuggesting = false
-    @State private var suggestError: String? = nil
-
     private let sheetBg = AppBackground.primary
-
-    private var allActions: [AIAction] { quickAIActions + extras }
-
-    private var canSuggestMore: Bool { extras.count < Self.maxExtras }
 
     private var fittedHeight: CGFloat {
         let rowHeight: CGFloat = 52
         let rowSpacing: CGFloat = 2
-        let count = CGFloat(allActions.count)
-        let suggestRow: CGFloat = canSuggestMore ? (rowHeight + rowSpacing) : 0
-        let errorRow: CGFloat = suggestError != nil ? 28 : 0
+        let count = CGFloat(quickAIActions.count)
         return rowHeight * count
             + rowSpacing * max(0, count - 1)
-            + suggestRow
-            + errorRow
             + 32  // top padding
             + 24  // bottom padding
             + 24  // drag indicator
@@ -2920,28 +2954,8 @@ struct AIActionsSheet: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            if !extras.isEmpty {
-                counterChip
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 6)
-            }
-
-            ForEach(allActions) { action in
+            ForEach(quickAIActions) { action in
                 actionRow(action)
-            }
-
-            if canSuggestMore {
-                suggestRow
-                    .padding(.top, 4)
-            }
-
-            if let suggestError {
-                Text(suggestError)
-                    .font(.footnote)
-                    .foregroundColor(AppText.secondary)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 4)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(.top, 32)
@@ -2952,22 +2966,6 @@ struct AIActionsSheet: View {
         .presentationCornerRadius(32)
         .presentationDetents([.height(fittedHeight)])
         .presentationDragIndicator(.visible)
-        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: extras.count)
-        .animation(.easeInOut(duration: 0.18), value: suggestError)
-    }
-
-    private var counterChip: some View {
-        HStack {
-            Spacer()
-            Text("\(extras.count)/\(Self.maxExtras)")
-                .font(.app(size: 12, weight: .semibold))
-                .foregroundColor(AppInk.solid(0.70))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule().fill(AppInk.solid(0.10))
-                )
-        }
     }
 
     private func actionRow(_ action: AIAction) -> some View {
@@ -2993,66 +2991,6 @@ struct AIActionsSheet: View {
         }
         .buttonStyle(.plain)
     }
-
-    private var suggestRow: some View {
-        Button {
-            requestSuggestion()
-        } label: {
-            HStack(spacing: 14) {
-                ZStack {
-                    if isSuggesting {
-                        ProgressView()
-                            .controlSize(.small)
-                            .tint(AppInk.solid(0.85))
-                    } else {
-                        Image(systemName: "wand.and.stars")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(AppInk.solid(0.85))
-                    }
-                }
-                .frame(width: 36, height: 36)
-                .background(AppInk.solid(0.10))
-                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                Text("This but…")
-                    .font(.appBody)
-                    .foregroundColor(AppInk.solid(0.92))
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(isSuggesting)
-    }
-
-    private func requestSuggestion() {
-        guard !isSuggesting, canSuggestMore else { return }
-        let trimmed = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            suggestError = "There's no text to riff on yet."
-            return
-        }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        suggestError = nil
-        isSuggesting = true
-        let existingLabels = allActions.map(\.label)
-        Task {
-            let outcome = await AITransformService.suggestAction(text: sourceText, existing: existingLabels)
-            await MainActor.run {
-                isSuggesting = false
-                switch outcome {
-                case .success(let suggestion):
-                    extras.append(AIAction(label: suggestion.label, icon: suggestion.icon, instruction: suggestion.instruction))
-                    UINotificationFeedbackGenerator().notificationOccurred(.success)
-                case .failure(let err):
-                    suggestError = AITransformService.isKeyConfigured
-                        ? err.userMessage
-                        : "Add your Anthropic API key in Profile first."
-                }
-            }
-        }
-    }
 }
 
 // MARK: - AI preview sheet
@@ -3060,16 +2998,25 @@ struct AIActionsSheet: View {
 struct AIPreviewSheet: View {
     let actionLabel: String
     let actionIcon: String
-    let previewText: String
+    let variants: [String]
+    @Binding var selectedIndex: Int
     let isLoading: Bool
+    let maxVariants: Int
     let onApply: () -> Void
     let onCopy: () -> Void
     let onRegenerate: () -> Void
+    let onAddVariant: () -> Void
     let onClose: () -> Void
 
     @State private var didCopy = false
 
     private let sheetBg = AppBackground.primary
+
+    private var currentVariant: String {
+        variants.indices.contains(selectedIndex) ? variants[selectedIndex] : ""
+    }
+
+    private var canAddMore: Bool { variants.count < maxVariants }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -3086,6 +3033,9 @@ struct AIPreviewSheet: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Spacer()
+                if variants.count > 1 {
+                    variantNav
+                }
                 Button(action: onClose) {
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .semibold))
@@ -3102,7 +3052,7 @@ struct AIPreviewSheet: View {
 
             ZStack {
                 ScrollView(showsIndicators: false) {
-                    Text(previewText.isEmpty ? AttributedString(" ") : AppMarkdown.render(previewText))
+                    Text(currentVariant.isEmpty ? AttributedString(" ") : AppMarkdown.render(currentVariant))
                         .appBodyText()
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 16)
@@ -3128,6 +3078,29 @@ struct AIPreviewSheet: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isLoading)
+
+                if canAddMore {
+                    Button(action: onAddVariant) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "wand.and.stars")
+                                .font(.system(size: 13, weight: .medium))
+                            Text("This but…")
+                                .font(.app(size: 14, weight: .semibold))
+                        }
+                        .foregroundColor(AppInk.solid(0.85))
+                        .padding(.horizontal, 14)
+                        .frame(height: 40)
+                        .background(
+                            Capsule().fill(AppInk.solid(0.10))
+                        )
+                        .overlay(
+                            Capsule().stroke(AppInk.solid(0.13), lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isLoading)
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
+                }
 
                 Spacer()
 
@@ -3172,6 +3145,7 @@ struct AIPreviewSheet: View {
             .padding(.horizontal, 16)
             .padding(.top, 8)
             .padding(.bottom, 16)
+            .animation(.spring(response: 0.32, dampingFraction: 0.86), value: canAddMore)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(sheetBg)
@@ -3183,6 +3157,47 @@ struct AIPreviewSheet: View {
         // can read long previews without the sheet jumping to its large
         // detent on every swipe up.
         .presentationContentInteraction(.scrolls)
+    }
+
+    private var variantNav: some View {
+        HStack(spacing: 2) {
+            Button {
+                if selectedIndex > 0 {
+                    selectedIndex -= 1
+                    UISelectionFeedbackGenerator().selectionChanged()
+                }
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(selectedIndex == 0 ? AppInk.solid(0.30) : AppInk.solid(0.75))
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .disabled(selectedIndex == 0)
+
+            Text("\(selectedIndex + 1)/\(variants.count)")
+                .font(.app(size: 12, weight: .semibold))
+                .foregroundColor(AppInk.solid(0.75))
+                .frame(minWidth: 28)
+                .monospacedDigit()
+
+            Button {
+                if selectedIndex < variants.count - 1 {
+                    selectedIndex += 1
+                    UISelectionFeedbackGenerator().selectionChanged()
+                }
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(selectedIndex >= variants.count - 1 ? AppInk.solid(0.30) : AppInk.solid(0.75))
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .disabled(selectedIndex >= variants.count - 1)
+        }
+        .padding(.horizontal, 4)
+        .frame(height: 30)
+        .background(Capsule().fill(AppInk.solid(0.10)))
     }
 }
 
