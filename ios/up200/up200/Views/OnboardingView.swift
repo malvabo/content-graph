@@ -855,20 +855,33 @@ private struct GeneratingCloudScene: View {
     let generationStartedAt: Date
 
     private let centralStarCount = 120
-    private let satelliteStarCount = 22
     private let amber = Color(red: 1.00, green: 0.68, blue: 0.20)
 
     private struct Satellite {
         let delay: Double
         let angle: Double
+        // Per-satellite distance / size so the four don't sit on a perfect
+        // circle. Each value is a multiplier of the central coreRadius —
+        // organic asymmetry reads better than a clock-face arrangement.
+        let distanceFactor: Double
+        let sizeFactor: Double
+        let starCount: Int
     }
-    // Four anchor points around the central sphere, staggered in time
-    // so the sparks read as individual firings rather than a chord.
+    // Four anchor points around the central sphere, staggered in time so
+    // the sparks read as individual firings rather than a chord, and at
+    // varied distances / sizes so the resulting graph feels composed
+    // rather than mechanical. Distances are 1.7-2.1x core radius (was a
+    // uniform 3.3x), so the satellites cluster near the parent instead
+    // of drifting to the edges of the viewport.
     private let satellites: [Satellite] = [
-        Satellite(delay: 0.6, angle: -.pi / 2),
-        Satellite(delay: 1.9, angle:  .pi / 6),
-        Satellite(delay: 3.2, angle:  .pi - .pi / 5),
-        Satellite(delay: 4.5, angle: -.pi / 3 + .pi),
+        Satellite(delay: 0.55, angle: -.pi / 2 + 0.18,
+                  distanceFactor: 1.80, sizeFactor: 0.55, starCount: 28),
+        Satellite(delay: 1.75, angle:  .pi / 5,
+                  distanceFactor: 2.10, sizeFactor: 0.42, starCount: 20),
+        Satellite(delay: 2.95, angle:  .pi - .pi / 7,
+                  distanceFactor: 1.90, sizeFactor: 0.48, starCount: 24),
+        Satellite(delay: 4.15, angle: -2 * .pi / 3,
+                  distanceFactor: 1.70, sizeFactor: 0.38, starCount: 18),
     ]
 
     var body: some View {
@@ -877,7 +890,10 @@ private struct GeneratingCloudScene: View {
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
-                let coreRadius = min(size.width, size.height) * 0.16
+                // Bigger core (0.20 of min, was 0.16) so the central
+                // cloud reads as the focal element of the composition
+                // rather than a small dot lost in negative space.
+                let coreRadius = min(size.width, size.height) * 0.20
 
                 drawSphere(in: ctx,
                            cx: cx, cy: cy,
@@ -892,7 +908,7 @@ private struct GeneratingCloudScene: View {
                     guard progress > 0 else { continue }
                     let eased = 1 - pow(1 - progress, 3)
 
-                    let satDistance = coreRadius * 3.3
+                    let satDistance = coreRadius * sat.distanceFactor
                     let satX = cx + cos(sat.angle) * satDistance * eased
                     let satY = cy + sin(sat.angle) * satDistance * eased
 
@@ -905,8 +921,8 @@ private struct GeneratingCloudScene: View {
                         line.move(to: CGPoint(x: cx, y: cy))
                         line.addLine(to: CGPoint(x: satX, y: satY))
                         ctx.stroke(line,
-                                   with: .color(amber.opacity(0.22 * lineAlpha)),
-                                   lineWidth: 0.6)
+                                   with: .color(amber.opacity(0.28 * lineAlpha)),
+                                   lineWidth: 0.7)
                     }
 
                     // Travelling spark — bright while in flight, leaves a
@@ -925,14 +941,16 @@ private struct GeneratingCloudScene: View {
 
                     // Satellite mini-cluster blooms after the spark
                     // arrives. Its radius scales with bloom progress so
-                    // it appears to grow out of the spark.
+                    // it appears to grow out of the spark; per-satellite
+                    // sizeFactor / starCount give the composition organic
+                    // variety rather than four identical clones.
                     if progress > 0.7 {
                         let bloom = (progress - 0.7) / 0.3
                         drawSphere(in: ctx,
                                    cx: satX, cy: satY,
-                                   r: coreRadius * 0.55 * bloom,
+                                   r: coreRadius * sat.sizeFactor * bloom,
                                    t: elapsed + Double(i) * 1.7,
-                                   count: satelliteStarCount,
+                                   count: sat.starCount,
                                    sizeScale: 0.85,
                                    rotationSpeed: 0.45)
                     }
