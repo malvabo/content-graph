@@ -262,10 +262,10 @@ private struct LibraryLandingThumb: View {
         RoundedRectangle(cornerRadius: 7, style: .continuous)
             .fill(AppInk.solid(0.07))
             .overlay(
-                VStack(spacing: 3) {
+                VStack(spacing: 2) {
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
                         .fill(AppInk.solid(0.32))
-                        .frame(height: 14)
+                        .frame(height: 12)
                     Capsule()
                         .fill(AppInk.solid(0.55))
                         .frame(width: 22, height: 2.5)
@@ -277,22 +277,23 @@ private struct LibraryLandingThumb: View {
                     RoundedRectangle(cornerRadius: 2, style: .continuous)
                         .fill(BrandColor.amber.opacity(0.85))
                         .frame(width: 14, height: 5)
-                        .padding(.top, 1)
                     ForEach(2..<4, id: \.self) { i in
                         Capsule()
-                            .fill(AppInk.solid(0.16))
-                            .frame(width: lineWidths[i], height: 1.2)
+                            .fill(AppInk.solid(0.20))
+                            .frame(width: lineWidths[i], height: 1.5)
                     }
                 }
-                .padding(.horizontal, 5)
-                .padding(.vertical, 5)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .stroke(AppInk.solid(0.09), lineWidth: 0.5)
             )
-            .frame(width: 34, height: 56)
+            // Match LibraryDocCard's 42×52 footprint so doc / landing thumbs
+            // read as the same-sized card with just different innards.
+            .frame(width: 42, height: 52)
     }
 
     private static func bodyLineWidths(for seed: Int) -> [CGFloat] {
@@ -308,11 +309,13 @@ private struct LibraryFolderThumb: View {
     let seed: Int
 
     var body: some View {
-        // Folder sits inside the same 52×56 frame as the doc card. Body is
-        // centered horizontally; the tab pokes up from its top-left. Mini
-        // doc cards fan out inside with a fixed symmetric tilt so the
-        // rotated bounding boxes stay within the body and never spill into
-        // the row's text column.
+        // Folder shares the 42×52 footprint with LibraryDocCard and
+        // LibraryLandingThumb — same outer card size for every group
+        // type, only the inner illustration changes. Body is centered
+        // horizontally; the tab pokes up from its top-left. Mini doc
+        // cards fan out inside with a fixed symmetric tilt so the
+        // rotated bounding boxes stay within the body and never spill
+        // into the row's text column.
         ZStack(alignment: .topLeading) {
             // Tab
             UnevenRoundedRectangle(
@@ -320,8 +323,8 @@ private struct LibraryFolderThumb: View {
                 style: .continuous
             )
             .fill(AppInk.solid(0.18))
-            .frame(width: 18, height: 8)
-            .offset(x: 6, y: 0)
+            .frame(width: 14, height: 7)
+            .offset(x: 5, y: 0)
 
             // Body
             RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -330,20 +333,20 @@ private struct LibraryFolderThumb: View {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .stroke(AppInk.solid(0.14), lineWidth: 0.5)
                 )
-                .frame(width: 46, height: 44)
-                .offset(x: 3, y: 6)
+                .frame(width: 36, height: 40)
+                .offset(x: 3, y: 5)
 
             // Mini files inside. Placed directly in the outer .topLeading
             // ZStack so each offset is measured from (0,0) — a nested ZStack
             // would re-center them and break the layout.
             miniDoc(seed: seed &+ 31, rotation: -6)
-                .offset(x: 6, y: 20)
+                .offset(x: 5, y: 18)
             miniDoc(seed: seed &+ 17, rotation: 0)
-                .offset(x: 18, y: 16)
+                .offset(x: 14, y: 14)
             miniDoc(seed: seed &+ 7, rotation: 6)
-                .offset(x: 30, y: 20)
+                .offset(x: 23, y: 18)
         }
-        .frame(width: 52, height: 56)
+        .frame(width: 42, height: 52)
         .clipped()
     }
 
@@ -353,10 +356,10 @@ private struct LibraryFolderThumb: View {
         RoundedRectangle(cornerRadius: 2.5, style: .continuous)
             .fill(AppInk.solid(0.22))
             .overlay(
-                VStack(alignment: .leading, spacing: 1.5) {
+                VStack(alignment: .leading, spacing: 1.3) {
                     Capsule()
                         .fill(AppInk.solid(0.55))
-                        .frame(width: w[0], height: 1.4)
+                        .frame(width: w[0], height: 1.3)
                     Capsule()
                         .fill(AppInk.solid(0.30))
                         .frame(width: w[1], height: 1.0)
@@ -365,14 +368,14 @@ private struct LibraryFolderThumb: View {
                         .frame(width: w[2], height: 1.0)
                 }
                 .padding(.horizontal, 2)
-                .padding(.top, 3)
+                .padding(.top, 2.5)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 2.5, style: .continuous)
                     .stroke(AppInk.solid(0.18), lineWidth: 0.4)
             )
-            .frame(width: 16, height: 20)
+            .frame(width: 13, height: 17)
             .rotationEffect(.degrees(rotation))
     }
 
@@ -380,7 +383,7 @@ private struct LibraryFolderThumb: View {
         var h = seed
         return (0..<3).map { _ in
             h = h &* 1664525 &+ 1013904223
-            return 6 + CGFloat(h & 0x05)
+            return 5 + CGFloat(h & 0x04)
         }
     }
 }
