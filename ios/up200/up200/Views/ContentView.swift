@@ -1893,6 +1893,12 @@ private struct SimpleHomePage: View {
                         }
                     }
                 }
+                // Pin the whole page above the keyboard's safe area so
+                // raising / dismissing the search keyboard doesn't shove
+                // the list up and slam it back down — the previous
+                // behaviour read as "everything pops from below" on
+                // cancel.
+                .ignoresSafeArea(.keyboard)
             }
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -2507,13 +2513,14 @@ struct SearchOverlay<Results: View>: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // `.regularMaterial` matches the standard iOS `.searchable`
-            // pattern — translucent blur over the underlying chrome rather
-            // than an opaque card. The ambient background's amber radial
-            // tints bleed through, giving the surface a sense of depth.
-            Rectangle()
-                .fill(.regularMaterial)
-                .ignoresSafeArea()
+            // Same warm-amber backdrop as the rest of the page. Earlier
+            // versions used `.regularMaterial`, which on dark mode dims
+            // everything underneath to flat grey and erases the bottom-
+            // right amber radial. Reusing `AmbientBackground` carries the
+            // glow through so the search surface reads as part of the
+            // same warm page, not a separate cold grey panel.
+            AmbientBackground()
+                .ignoresSafeArea(.keyboard)
 
             VStack(spacing: 0) {
                 if !omitField {
@@ -2574,6 +2581,11 @@ struct SearchOverlay<Results: View>: View {
                 results()
             }
         }
+        // Pin the overlay above the keyboard's safe area so dismissing
+        // the keyboard on Cancel doesn't reflow the results list — the
+        // previous behaviour read as "everything pops up from below"
+        // as the keyboard receded and the overlay faded simultaneously.
+        .ignoresSafeArea(.keyboard)
         .onAppear {
             // Host owns focus when the field is inline; don't fight it.
             guard !omitField else { return }
