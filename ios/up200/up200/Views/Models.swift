@@ -76,7 +76,7 @@ enum AppBackground {
     /// instead of fighting a beige tint.
     static let primary = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.10, green: 0.08, blue: 0.07, alpha: 1.0)
+            ? UIColor(red: 0.035, green: 0.030, blue: 0.025, alpha: 1.0)
             : UIColor(white: 0.96, alpha: 1.0)
     })
     /// Top-left radial-glow tint. Bright amber on dark — kept at a low
@@ -93,7 +93,7 @@ enum AppBackground {
     /// depth without doubling the wash.
     static let glowBottomRight = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.85, green: 0.50, blue: 0.10, alpha: 0.10)
+            ? UIColor(red: 0.90, green: 0.55, blue: 0.12, alpha: 0.07)
             : UIColor(white: 0.88, alpha: 0.30)
     })
 
