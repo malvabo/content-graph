@@ -2541,10 +2541,19 @@ private extension View {
         let shouldDraw = active && visible
         let inset: CGFloat = shouldDraw ? 16 : 0
         let bottomInset: CGFloat = shouldDraw ? 8 : 0
+        // Onboarding card sits directly on the app background, which makes
+        // the shared `AppBackground.surface` token read as nearly the same
+        // brown as the page. Lift this one card a few points so the
+        // "your content is ready" moment has a visible plane.
+        let surroundFill = Color(uiColor: UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(red: 0.14, green: 0.12, blue: 0.11, alpha: 1.0)
+                : UIColor(white: 1.0, alpha: 1.0)
+        })
         return self
             .background(
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .fill(AppBackground.surface)
+                    .fill(surroundFill)
                     .opacity(shouldDraw ? 1 : 0)
             )
             .overlay(
