@@ -462,7 +462,7 @@ struct DictationControls: View {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             onStart()
         } label: {
-            Image(systemName: "mic")
+            Image(systemName: "mic.badge.plus")
                 .font(.system(size: 19, weight: .regular))
                 .foregroundColor(AppText.primary)
                 .frame(width: 56, height: 56)
