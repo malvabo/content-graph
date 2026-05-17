@@ -228,7 +228,7 @@ struct ChatView: View {
     @State private var rewriteFailed: Bool = false
     @StateObject private var dictation = NoteDictation()
     @State private var inputTextBeforeDictation: String = ""
-    @FocusState private var inputFocused: Bool
+    @State private var inputFocused: Bool = false
 
     private let bg = AppBackground.primary
 
@@ -268,6 +268,54 @@ struct ChatView: View {
     /// resolve `selectedContextIDs` for both the API and pill removal.
     private var allSources: [ChatContextSource] {
         availableMentions + attachedFiles
+    }
+
+    /// Build a NSAttributedString from a plain composer string, giving each
+    /// `@<source title>` a subtle background + brighter foreground so
+    /// mentions read as inline tags. Routed through the MentionTextView's
+    /// single render layer so styling stays in lockstep with the cursor —
+    /// the previous Text-over-TextField overlay drifted because the two
+    /// layers laid out glyphs differently.
+    private func styleMentions(in raw: String) -> NSAttributedString {
+        let inkColor = UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(white: 1.0, alpha: 0.92)
+                : UIColor(white: 0.0, alpha: 0.88)
+        }
+        let mentionBg = UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(white: 1.0, alpha: 0.16)
+                : UIColor(white: 0.0, alpha: 0.08)
+        }
+        let mentionFg = UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(white: 1.0, alpha: 0.96)
+                : UIColor(white: 0.0, alpha: 0.78)
+        }
+        let ns = NSMutableAttributedString(
+            string: raw,
+            attributes: [
+                .font: UIFont.systemFont(ofSize: 17),
+                .foregroundColor: inkColor
+            ]
+        )
+        let titles = allSources.map(\.title).sorted { $0.count > $1.count }
+        let nsStr = raw as NSString
+        for title in titles {
+            let needle = "@\(title)"
+            var cursor = 0
+            while cursor < nsStr.length {
+                let range = nsStr.range(
+                    of: needle,
+                    range: NSRange(location: cursor, length: nsStr.length - cursor)
+                )
+                if range.location == NSNotFound { break }
+                ns.addAttribute(.backgroundColor, value: mentionBg, range: range)
+                ns.addAttribute(.foregroundColor, value: mentionFg, range: range)
+                cursor = range.location + range.length
+            }
+        }
+        return ns
     }
 
     private var contextItems: [ChatContextSource] {
@@ -515,14 +563,13 @@ struct ChatView: View {
     private var inputArea: some View {
         VStack(spacing: 0) {
             VStack(spacing: 0) {
-                TextField("Ask anything\u{2026}", text: $inputText, axis: .vertical)
-                    .font(.appBody)
-                    .foregroundColor(AppText.primary)
-                    .tint(AppText.primary)
-                    .focused($inputFocused)
-                    .lineLimit(1...5)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                MentionTextView(
+                    text: $inputText,
+                    isFocused: $inputFocused,
+                    placeholder: "Ask anything\u{2026}",
+                    maxLines: 5,
+                    buildAttributed: styleMentions(in:)
+                )
 
                 HStack(spacing: 4) {
                     Button {
@@ -1137,5 +1184,181 @@ private struct MentionPickerSheet: View {
         case .note: return "note.text"
         case .file: return "paperclip"
         }
+    }
+}
+
+// MARK: - Mention-styled composer text view
+
+/// UITextView-backed editor for the chat composer so we can render
+/// `@<source title>` mentions with a different colour while the user
+/// types — SwiftUI's TextField only supports a single uniform foreground.
+///
+/// The previous implementation stacked a styled `Text(AttributedString)`
+/// over a transparent TextField; the two layers laid out glyphs
+/// differently and taps landed in the wrong character. Wrapping a
+/// UITextView keeps editing and rendering in the same view, so the
+/// styling can't desync from the cursor.
+private struct MentionTextView: UIViewRepresentable {
+    @Binding var text: String
+    @Binding var isFocused: Bool
+    let placeholder: String
+    let maxLines: Int
+    let buildAttributed: (String) -> NSAttributedString
+
+    private static let font = UIFont.systemFont(ofSize: 17)
+    private static let horizontalInset: CGFloat = 9
+    private static let verticalInset: CGFloat = 10
+    private static let lineFragmentPadding: CGFloat = 5
+
+    func makeUIView(context: Context) -> ChatComposerUITextView {
+        let tv = ChatComposerUITextView()
+        tv.delegate = context.coordinator
+        tv.backgroundColor = .clear
+        tv.font = Self.font
+        tv.tintColor = UIColor(AppText.primary)
+        tv.isScrollEnabled = false
+        tv.textContainer.lineFragmentPadding = Self.lineFragmentPadding
+        tv.textContainerInset = UIEdgeInsets(
+            top: Self.verticalInset,
+            left: Self.horizontalInset,
+            bottom: Self.verticalInset,
+            right: Self.horizontalInset
+        )
+        // Hug content vertically so SwiftUI's VStack lays us out at the
+        // intrinsic height (one line until we have more) rather than
+        // stretching to fill the available space.
+        tv.setContentHuggingPriority(.defaultHigh, for: .vertical)
+        tv.setContentCompressionResistancePriority(.defaultHigh, for: .vertical)
+        tv.placeholder = placeholder
+        tv.maxLines = maxLines
+        tv.attributedText = buildAttributed(text)
+        return tv
+    }
+
+    func updateUIView(_ tv: ChatComposerUITextView, context: Context) {
+        let coordinator = context.coordinator
+        // Re-style only when the external string actually diverges from
+        // what the view holds, otherwise every typed character would
+        // bounce through a full attributedText assignment and we'd lose
+        // the in-flight selection.
+        if tv.text != text {
+            let sel = tv.selectedRange
+            coordinator.suppressEcho = true
+            tv.attributedText = buildAttributed(text)
+            let len = (tv.text as NSString).length
+            tv.selectedRange = NSRange(
+                location: min(sel.location, len),
+                length: min(sel.length, max(0, len - sel.location))
+            )
+            coordinator.suppressEcho = false
+        }
+        if tv.placeholder != placeholder {
+            tv.placeholder = placeholder
+        }
+        tv.refreshPlaceholderVisibility()
+        DispatchQueue.main.async {
+            if isFocused && !tv.isFirstResponder {
+                tv.becomeFirstResponder()
+            } else if !isFocused && tv.isFirstResponder {
+                tv.resignFirstResponder()
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, UITextViewDelegate {
+        let parent: MentionTextView
+        var suppressEcho = false
+        init(_ parent: MentionTextView) { self.parent = parent }
+
+        func textViewDidChange(_ tv: UITextView) {
+            guard !suppressEcho else { return }
+            let newText = tv.text ?? ""
+            if parent.text != newText { parent.text = newText }
+            let sel = tv.selectedRange
+            tv.attributedText = parent.buildAttributed(newText)
+            tv.selectedRange = sel
+            (tv as? ChatComposerUITextView)?.refreshPlaceholderVisibility()
+        }
+
+        func textViewDidBeginEditing(_ tv: UITextView) {
+            if !parent.isFocused { parent.isFocused = true }
+        }
+
+        func textViewDidEndEditing(_ tv: UITextView) {
+            if parent.isFocused { parent.isFocused = false }
+        }
+    }
+}
+
+private final class ChatComposerUITextView: UITextView {
+    private let placeholderLabel = UILabel()
+    var placeholder: String = "" {
+        didSet {
+            placeholderLabel.text = placeholder
+            refreshPlaceholderVisibility()
+        }
+    }
+    /// Caps the intrinsic height to ~maxLines rows so the field grows
+    /// with content but eventually scrolls instead of pushing the whole
+    /// input area off screen.
+    var maxLines: Int = 5
+
+    override init(frame: CGRect, textContainer: NSTextContainer?) {
+        super.init(frame: frame, textContainer: textContainer)
+        configure()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configure()
+    }
+
+    private func configure() {
+        placeholderLabel.font = font ?? .systemFont(ofSize: 17)
+        placeholderLabel.textColor = UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(white: 1.0, alpha: 0.28)
+                : UIColor(white: 0.0, alpha: 0.32)
+        }
+        placeholderLabel.numberOfLines = 1
+        placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(placeholderLabel)
+        NSLayoutConstraint.activate([
+            placeholderLabel.leadingAnchor.constraint(
+                equalTo: leadingAnchor,
+                constant: textContainerInset.left + textContainer.lineFragmentPadding
+            ),
+            placeholderLabel.trailingAnchor.constraint(
+                lessThanOrEqualTo: trailingAnchor,
+                constant: -(textContainerInset.right + textContainer.lineFragmentPadding)
+            ),
+            placeholderLabel.topAnchor.constraint(
+                equalTo: topAnchor,
+                constant: textContainerInset.top
+            )
+        ])
+    }
+
+    func refreshPlaceholderVisibility() {
+        placeholderLabel.isHidden = !(text?.isEmpty ?? true)
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let base = super.intrinsicContentSize
+        let lineHeight = (font ?? .systemFont(ofSize: 17)).lineHeight
+        let cap = lineHeight * CGFloat(maxLines) + textContainerInset.top + textContainerInset.bottom
+        if base.height > cap {
+            isScrollEnabled = true
+            return CGSize(width: base.width, height: cap)
+        }
+        isScrollEnabled = false
+        return base
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        invalidateIntrinsicContentSize()
     }
 }
