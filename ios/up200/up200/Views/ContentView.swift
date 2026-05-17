@@ -467,11 +467,24 @@ struct ProjectGroupDetailView: View {
     @StateObject private var dictation = NoteDictation()
     @FocusState private var editorFocused: Bool
     @State private var isEditingBody: Bool = false
+    /// Onboarding-only: the fresh result lands in a stroked card with the
+    /// content scaled to ~90%; tapping the card animates the stroke
+    /// fading out and the content scaling back to 100%, ending in the
+    /// regular flush full-screen layout. Latches once flipped — there's
+    /// no way back to the card view from the expanded state.
+    @State private var isExpanded: Bool = false
 
     private let bg = AppBackground.primary
 
     @State private var cachedAllProjects: [GenerationProject] = []
     @State private var lastDecodedSignature: Data = Data()
+
+    /// True while the fresh-result celebration card is still showing — the
+    /// banner is up, the content is scaled down, and the next tap expands
+    /// it to the regular flush layout. False either because the variant
+    /// is the regular library detail (no banner ever shown) or because
+    /// the user has already tapped the card open.
+    private var inCardPreview: Bool { showsFreshBanner && !isExpanded }
 
     private var items: [GenerationProject] {
         let ids = Set(initialItems.map { $0.id })
@@ -625,8 +638,10 @@ struct ProjectGroupDetailView: View {
                 // Onboarding-only "first result" celebration banner. Sits
                 // between the top bar and the (optional) tabs so a fresh
                 // generation reads as a moment rather than just another
-                // item in the library.
-                if showsFreshBanner {
+                // item in the library. Fades + collapses out once the
+                // user taps the card open so the expanded layout matches
+                // the regular flush detail page.
+                if inCardPreview {
                     VStack(spacing: 4) {
                         Text("Your content is ready!")
                             .font(.appTitle)
@@ -640,6 +655,7 @@ struct ProjectGroupDetailView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 4)
                     .padding(.bottom, 14)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
                 // Tabs
@@ -718,14 +734,43 @@ struct ProjectGroupDetailView: View {
                                 }
                                 .contentShape(Rectangle())
                                 .onTapGesture {
-                                    isEditingBody = true
-                                    DispatchQueue.main.async { editorFocused = true }
+                                    // While the card preview is still up, the
+                                    // first tap is the "expand" tap — the
+                                    // edit-mode handoff only kicks in once
+                                    // the content is at its full layout.
+                                    if inCardPreview {
+                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                        withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
+                                            isExpanded = true
+                                        }
+                                    } else {
+                                        isEditingBody = true
+                                        DispatchQueue.main.async { editorFocused = true }
+                                    }
                                 }
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     }
-                    .cardWrappedIfNeeded(showsFreshBanner)
+                    // Animate scale + card stroke fade-out off the same
+                    // isExpanded flag so the "tap to expand" beat reads as
+                    // a single coordinated motion: content grows from 90%
+                    // to 100%, the surrounding stroke fades, and the
+                    // wrapper's inset collapses to zero.
+                    .scaleEffect(inCardPreview ? 0.9 : 1.0, anchor: .center)
+                    .cardSurround(active: showsFreshBanner, visible: inCardPreview)
+                    // Backstop tap handler for areas outside the body
+                    // ScrollView (e.g. the format-label band at the top
+                    // of the card) so the whole card surface — not just
+                    // the prose — counts as the expand affordance.
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        guard inCardPreview else { return }
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
+                            isExpanded = true
+                        }
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -2363,25 +2408,37 @@ struct TopBarPillDivider: View {
 }
 
 private extension View {
-    /// Wraps a view in a stroked surface card with horizontal + bottom
-    /// inset when `active` is true. Used by ProjectGroupDetailView's
-    /// fresh-result celebration variant; no-op for the regular variant
-    /// so existing library callers render flush as before.
-    @ViewBuilder
-    func cardWrappedIfNeeded(_ active: Bool) -> some View {
-        if active {
-            self
-                .background(AppBackground.surface)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                        .stroke(AppInk.solid(0.12), lineWidth: 0.5)
-                )
-                .padding(.horizontal, 16)
-                .padding(.bottom, 8)
-        } else {
-            self
-        }
+    /// Applies the onboarding fresh-result card chrome — surface fill,
+    /// hairline stroke, and inset padding — driven by two flags so the
+    /// chrome can be animated *out* in place rather than just toggled.
+    ///
+    /// - `active`: this caller is the onboarding variant at all (false
+    ///   for every regular library detail caller, in which case nothing
+    ///   here applies).
+    /// - `visible`: chrome should currently be drawn. Fades to opacity 0
+    ///   and pads to 0 when false, so animating `visible` from true to
+    ///   false dissolves the card into the full-screen layout.
+    func cardSurround(active: Bool, visible: Bool) -> some View {
+        let shouldDraw = active && visible
+        let inset: CGFloat = shouldDraw ? 16 : 0
+        let bottomInset: CGFloat = shouldDraw ? 8 : 0
+        return self
+            .background(
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .fill(AppBackground.surface)
+                    .opacity(shouldDraw ? 1 : 0)
+            )
+            .overlay(
+                // Stroke fades *and* scales outward past the card bounds
+                // when the user expands, so the chrome reads as opening
+                // up rather than just dissolving in place.
+                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                    .stroke(AppInk.solid(0.14), lineWidth: 0.5)
+                    .opacity(shouldDraw ? 1 : 0)
+                    .scaleEffect(shouldDraw ? 1.0 : 1.12)
+            )
+            .padding(.horizontal, inset)
+            .padding(.bottom, bottomInset)
     }
 }
 
