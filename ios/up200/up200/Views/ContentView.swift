@@ -908,7 +908,7 @@ struct ProjectGroupDetailView: View {
             .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         }
         .sheet(isPresented: $showAIMenu) {
-            AIActionsSheet { label, icon, instruction in
+            AIActionsSheet(sourceText: editText) { label, icon, instruction in
                 showAIMenu = false
                 runAITransform(instruction: instruction, label: label, icon: icon, source: editText)
             }
@@ -2763,6 +2763,89 @@ struct AITransformService {
         let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return result.isEmpty ? .failure(.empty) : .success(result)
     }
+
+    struct SuggestedAction {
+        let label: String
+        let icon: String
+        let instruction: String
+    }
+
+    /// Asks the model to invent one new quick-edit option for the given text
+    /// that's distinct from the labels already on the sheet. Returns a label
+    /// (≤30 chars) and a one-sentence instruction. Icon is a curated SF
+    /// Symbol picked by the model or a generic fallback.
+    static func suggestAction(text: String, existing: [String]) async -> Result<SuggestedAction, APICallError> {
+        let apiKey = KeychainService.load() ?? ""
+        guard !apiKey.isEmpty, let url = URL(string: "https://api.anthropic.com/v1/messages") else {
+            return .failure(.http(401, "Missing API key"))
+        }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        req.timeoutInterval = 30
+
+        let iconChoices = ["sparkles", "wand.and.stars", "paintbrush", "scissors", "quote.bubble", "globe", "heart", "flame", "bolt", "leaf"]
+        let system = """
+        You suggest one new quick-edit action for transforming the user's text. \
+        It must be distinct from the existing actions and useful for this specific text. \
+        Output ONLY a JSON object with three string keys: "label" (a short imperative title, max 30 chars, Title Case), \
+        "icon" (one of: \(iconChoices.joined(separator: ", "))), \
+        "instruction" (one sentence telling another model how to rewrite the text). \
+        No prose, no code fences, just the JSON object.
+        """
+        let existingList = existing.map { "- \($0)" }.joined(separator: "\n")
+        let user = "Existing actions (do not repeat or paraphrase):\n\(existingList)\n\nText:\n\(text)"
+
+        let body: [String: Any] = [
+            "model": "claude-sonnet-4-6",
+            "max_tokens": 256,
+            "system": system,
+            "messages": [["role": "user", "content": user]]
+        ]
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
+            return .failure(.decode)
+        }
+        req.httpBody = httpBody
+
+        let data: Data
+        let resp: URLResponse
+        do {
+            (data, resp) = try await URLSession.shared.data(for: req)
+        } catch {
+            return .failure(.network(error.localizedDescription))
+        }
+
+        let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        guard status == 200 else {
+            return .failure(.http(status, anthropicErrorMessage(from: data)))
+        }
+
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let content = (json["content"] as? [[String: Any]])?.first,
+              let raw = content["text"] as? String
+        else { return .failure(.decode) }
+
+        // The model occasionally wraps the JSON in prose or code fences;
+        // pull out the first {...} block.
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let start = trimmed.firstIndex(of: "{"),
+              let end = trimmed.lastIndex(of: "}"),
+              start < end
+        else { return .failure(.decode) }
+        let jsonSlice = String(trimmed[start...end])
+        guard let parsed = try? JSONSerialization.jsonObject(with: Data(jsonSlice.utf8)) as? [String: Any],
+              let label = (parsed["label"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              let instruction = (parsed["instruction"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !label.isEmpty, !instruction.isEmpty
+        else { return .failure(.decode) }
+
+        let icon = (parsed["icon"] as? String).flatMap { iconChoices.contains($0) ? $0 : nil } ?? "sparkles"
+        let clippedLabel = label.count > 40 ? String(label.prefix(40)) : label
+        return .success(SuggestedAction(label: clippedLabel, icon: icon, instruction: instruction))
+    }
 }
 
 // MARK: - AI actions sheet
@@ -2783,16 +2866,31 @@ private let quickAIActions: [AIAction] = [
 ]
 
 struct AIActionsSheet: View {
+    let sourceText: String
     let onAction: (_ label: String, _ icon: String, _ instruction: String) -> Void
 
+    private static let maxExtras = 5
+
+    @State private var extras: [AIAction] = []
+    @State private var isSuggesting = false
+    @State private var suggestError: String? = nil
+
     private let sheetBg = AppBackground.primary
+
+    private var allActions: [AIAction] { quickAIActions + extras }
+
+    private var canSuggestMore: Bool { extras.count < Self.maxExtras }
 
     private var fittedHeight: CGFloat {
         let rowHeight: CGFloat = 52
         let rowSpacing: CGFloat = 2
-        let count = CGFloat(quickAIActions.count)
+        let count = CGFloat(allActions.count)
+        let suggestRow: CGFloat = canSuggestMore ? (rowHeight + rowSpacing) : 0
+        let errorRow: CGFloat = suggestError != nil ? 28 : 0
         return rowHeight * count
             + rowSpacing * max(0, count - 1)
+            + suggestRow
+            + errorRow
             + 32  // top padding
             + 24  // bottom padding
             + 24  // drag indicator
@@ -2800,8 +2898,28 @@ struct AIActionsSheet: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            ForEach(quickAIActions) { action in
+            if !extras.isEmpty {
+                counterChip
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 6)
+            }
+
+            ForEach(allActions) { action in
                 actionRow(action)
+            }
+
+            if canSuggestMore {
+                suggestRow
+                    .padding(.top, 4)
+            }
+
+            if let suggestError {
+                Text(suggestError)
+                    .font(.footnote)
+                    .foregroundColor(AppText.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(.top, 32)
@@ -2812,6 +2930,22 @@ struct AIActionsSheet: View {
         .presentationCornerRadius(32)
         .presentationDetents([.height(fittedHeight)])
         .presentationDragIndicator(.visible)
+        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: extras.count)
+        .animation(.easeInOut(duration: 0.18), value: suggestError)
+    }
+
+    private var counterChip: some View {
+        HStack {
+            Spacer()
+            Text("\(extras.count)/\(Self.maxExtras)")
+                .font(.app(size: 12, weight: .semibold))
+                .foregroundColor(AppInk.solid(0.70))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule().fill(AppInk.solid(0.10))
+                )
+        }
     }
 
     private func actionRow(_ action: AIAction) -> some View {
@@ -2836,6 +2970,66 @@ struct AIActionsSheet: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    private var suggestRow: some View {
+        Button {
+            requestSuggestion()
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    if isSuggesting {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(AppInk.solid(0.85))
+                    } else {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(AppInk.solid(0.85))
+                    }
+                }
+                .frame(width: 36, height: 36)
+                .background(AppInk.solid(0.10))
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                Text("This but…")
+                    .font(.appBody)
+                    .foregroundColor(AppInk.solid(0.92))
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isSuggesting)
+    }
+
+    private func requestSuggestion() {
+        guard !isSuggesting, canSuggestMore else { return }
+        let trimmed = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            suggestError = "There's no text to riff on yet."
+            return
+        }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        suggestError = nil
+        isSuggesting = true
+        let existingLabels = allActions.map(\.label)
+        Task {
+            let outcome = await AITransformService.suggestAction(text: sourceText, existing: existingLabels)
+            await MainActor.run {
+                isSuggesting = false
+                switch outcome {
+                case .success(let suggestion):
+                    extras.append(AIAction(label: suggestion.label, icon: suggestion.icon, instruction: suggestion.instruction))
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                case .failure(let err):
+                    suggestError = AITransformService.isKeyConfigured
+                        ? err.userMessage
+                        : "Add your Anthropic API key in Profile first."
+                }
+            }
+        }
     }
 }
 
