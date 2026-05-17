@@ -292,11 +292,18 @@ struct ChatView: View {
                 ? UIColor(white: 1.0, alpha: 0.96)
                 : UIColor(white: 0.0, alpha: 0.78)
         }
+        // Match the message bubble's `.lineSpacing(3)` so typed lines and
+        // sent bubbles share one body-text rhythm — without the paragraph
+        // style the composer was drawing tighter than the surrounding
+        // chat history at the same 17pt.
+        let para = NSMutableParagraphStyle()
+        para.lineSpacing = 3
         let ns = NSMutableAttributedString(
             string: raw,
             attributes: [
                 .font: UIFont.systemFont(ofSize: 17),
-                .foregroundColor: inkColor
+                .foregroundColor: inkColor,
+                .paragraphStyle: para
             ]
         )
         let titles = allSources.map(\.title).sorted { $0.count > $1.count }
