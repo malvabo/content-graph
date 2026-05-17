@@ -619,8 +619,89 @@ struct ChatView: View {
 
     // MARK: Input area
 
+    /// Quick-action prompts surfaced above the composer when a
+    /// `.selection` chip is attached and the user hasn't sent anything
+    /// yet — same pattern Notion AI's inline-edit composer uses to
+    /// give one-tap access to the common rewrite verbs without forcing
+    /// the user to type the prompt themselves.
+    private struct QuickAction {
+        let label: String
+        let icon: String
+        let prompt: String
+    }
+
+    private let quickActions: [QuickAction] = [
+        QuickAction(label: "Improve writing",
+                    icon:  "pencil.line",
+                    prompt: "Improve this writing — keep the meaning and voice, sharpen the prose."),
+        QuickAction(label: "Proofread",
+                    icon:  "checkmark.circle",
+                    prompt: "Proofread this and fix any spelling, grammar, or punctuation issues."),
+        QuickAction(label: "Expand",
+                    icon:  "arrow.up.left.and.arrow.down.right",
+                    prompt: "Expand this with more detail while keeping the same voice."),
+        QuickAction(label: "Shorten",
+                    icon:  "scissors",
+                    prompt: "Shorten this — tighter, fewer words, same meaning."),
+        QuickAction(label: "Make it punchier",
+                    icon:  "bolt",
+                    prompt: "Make this punchier — stronger verbs, leaner sentences."),
+    ]
+
+    private var shouldShowQuickActions: Bool {
+        guard messages.isEmpty, !isLoading else { return false }
+        return contextItems.contains { $0.kind == .selection }
+    }
+
+    private var quickActionsRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(quickActions, id: \.label) { action in
+                    Button {
+                        applyQuickAction(action)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: action.icon)
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundColor(AppInk.solid(0.55))
+                            Text(action.label)
+                                .font(.app(size: 14, weight: .medium))
+                                .foregroundColor(AppText.primary)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(AppInk.solid(0.06))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().stroke(AppInk.solid(0.10), lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .padding(.bottom, 8)
+    }
+
+    /// Submits the action's prompt as the next chat turn, *prepending* any
+    /// @-mentions the user (or seeding) had already placed in the composer
+    /// so the prompt acts on the attached context rather than firing as a
+    /// fresh empty turn that loses the selection chip.
+    private func applyQuickAction(_ action: QuickAction) {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prefix = trimmed.isEmpty ? "" : trimmed + " "
+        inputText = prefix + action.prompt
+        sendMessage()
+    }
+
     private var inputArea: some View {
         VStack(spacing: 0) {
+            if shouldShowQuickActions {
+                quickActionsRow
+                    .transition(.opacity)
+            }
             VStack(spacing: 0) {
                 MentionTextView(
                     text: $inputText,
