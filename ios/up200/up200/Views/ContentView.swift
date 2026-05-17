@@ -427,6 +427,11 @@ struct ProjectGroupDetailView: View {
 
     @State private var selectedIndex: Int = 0
     @State private var editText: String = ""
+    /// Current cursor/selection state in the body editor. When the user
+    /// has highlighted a range, the wand button forwards only that
+    /// substring to chat as the editable snippet (rather than the whole
+    /// body), and a follow-up rewrite is applied back at the same range.
+    @State private var editSelection: TextSelection? = nil
     @State private var copied = false
     @State private var copiedResetTask: Task<Void, Never>? = nil
     @State private var showAIMenu = false
@@ -516,6 +521,25 @@ struct ProjectGroupDetailView: View {
     /// first and the sheet covers the editor while it's open, so the
     /// in-memory body and on-disk body are in sync until the chat writes
     /// — at which point we want the on-disk version to win.
+    /// Resolves the snippet + NSRange the chat should receive when the
+    /// wand is tapped. Prefers an explicit highlight; if nothing is
+    /// selected (or the selection is empty), hands the chat the trimmed
+    /// body as a non-ranged snippet so the existing "edit this document"
+    /// flow keeps working.
+    private func chatSelectionPayload(fallbackBody: String) -> (snippet: String?, range: NSRange?) {
+        if let selection = editSelection,
+           case .selection(let stringRange) = selection.indices,
+           !stringRange.isEmpty {
+            let snippet = String(editText[stringRange])
+            let ns = NSRange(stringRange, in: editText)
+            let trimmed = snippet.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                return (snippet, ns)
+            }
+        }
+        return (fallbackBody.isEmpty ? nil : fallbackBody, nil)
+    }
+
     private func refreshAfterChat() {
         rebuildAllProjects()
         guard items.indices.contains(selectedIndex) else { return }
@@ -696,7 +720,7 @@ struct ProjectGroupDetailView: View {
                                     .allowsHitTesting(false)
                             }
                             if isEditingBody || dictation.isRecording {
-                                TextEditor(text: $editText)
+                                TextEditor(text: $editText, selection: $editSelection)
                                     .appBodyText()
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
@@ -910,10 +934,16 @@ struct ProjectGroupDetailView: View {
             let selectionTitle: String? = items.indices.contains(selectedIndex)
                 ? (allFormats.first(where: { $0.id == items[selectedIndex].outputType })?.label ?? items[selectedIndex].outputType)
                 : nil
+            // If the user has a real range highlighted in the editor, the
+            // wand forwards only that substring as the snippet so the
+            // rewrite stays surgical. Otherwise fall back to the whole
+            // body — the chat treats it as a "edit this document" intent.
+            let (selSnippet, selRange) = chatSelectionPayload(fallbackBody: trimmedBody)
             ChatView(
                 initialContextIDs: seedID.map { Set([$0]) } ?? [],
-                initialSelection: trimmedBody.isEmpty ? nil : trimmedBody,
-                initialSelectionTitle: selectionTitle
+                initialSelection: selSnippet,
+                initialSelectionTitle: selectionTitle,
+                initialSelectionRange: selRange
             )
         }
         .sheet(isPresented: $showAIPreview) {
