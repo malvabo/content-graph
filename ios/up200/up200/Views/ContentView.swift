@@ -927,12 +927,12 @@ struct ProjectGroupDetailView: View {
         .sheet(isPresented: $showChat, onDismiss: refreshAfterChat) {
             let seedID = items.indices.contains(selectedIndex) ? items[selectedIndex].id : nil
             let trimmedBody = editText.trimmingCharacters(in: .whitespacesAndNewlines)
-            // Selection title leans on the format label ("Email", "LinkedIn
-            // Post") so the chip reads as "a snippet of <format>" rather
-            // than a generic "Selected text" — matches how Notion labels
-            // the page name on the page-context chip in their inline AI.
+            // Selection title is the document's own title — what the user
+            // recognises as "this page" — rather than the format ("Twitter
+            // Thread") which is the same string across every doc of that
+            // type and reads as a category label, not a page reference.
             let selectionTitle: String? = items.indices.contains(selectedIndex)
-                ? (allFormats.first(where: { $0.id == items[selectedIndex].outputType })?.label ?? items[selectedIndex].outputType)
+                ? items[selectedIndex].title
                 : nil
             // If the user has a real range highlighted in the editor, the
             // wand forwards only that substring as the snippet so the
