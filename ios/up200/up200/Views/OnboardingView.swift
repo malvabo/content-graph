@@ -306,6 +306,13 @@ struct OnboardingView: View {
 
             Spacer().frame(height: 52)
         }
+        // During .prompt the entire overlay is decorative — the only
+        // interactive element is the full-screen StarfieldBlurb behind
+        // it, which owns the press-and-hold gesture. Without this
+        // allowsHitTesting flip, the headline text and the bottom
+        // `Color.clear` placeholder would each carve a strip of the
+        // screen where the long-press silently fails to fire.
+        .allowsHitTesting(capturePhase != .prompt)
         .animation(.easeInOut(duration: 0.45), value: capturePhase)
         .transition(.opacity.animation(.easeIn(duration: 0.55).delay(0.25)))
         .task {
@@ -491,10 +498,10 @@ struct OnboardingView: View {
             // to form new mini-clusters connected back to the core. Replaces
             // the previous in-pill loading indicator — the user reads as
             // inside the cloud while the network call is in flight.
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 GeneratingCloudScene(generationStartedAt: generatingStartedAt)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 460)
+                    .frame(height: 420)
                     .padding(.horizontal, -24)
 
                 Text("Creating\u{2026}")
@@ -913,20 +920,48 @@ private struct GeneratingCloudScene: View {
                     let satY = cy + sin(sat.angle) * satDistance * eased
 
                     // Connector line fades in once the spark has covered
-                    // most of its travel — drawn first so the spark and
-                    // the satellite mini-cluster sit on top of it.
+                    // most of its travel. Start point sits on the central
+                    // sphere's surface (rather than its dead centre) and
+                    // end point sits just shy of the satellite's surface,
+                    // so the line emerges *from* the cluster's edge rather
+                    // than slicing through every dot in the core.
                     if progress > 0.6 {
                         let lineAlpha = (progress - 0.6) / 0.4
+                        let startX = cx + cos(sat.angle) * coreRadius * 0.95
+                        let startY = cy + sin(sat.angle) * coreRadius * 0.95
+                        let satEdge = coreRadius * sat.sizeFactor * 0.9
+                        let endX = satX - cos(sat.angle) * satEdge
+                        let endY = satY - sin(sat.angle) * satEdge
                         var line = Path()
-                        line.move(to: CGPoint(x: cx, y: cy))
-                        line.addLine(to: CGPoint(x: satX, y: satY))
+                        line.move(to: CGPoint(x: startX, y: startY))
+                        line.addLine(to: CGPoint(x: endX, y: endY))
                         ctx.stroke(line,
                                    with: .color(amber.opacity(0.28 * lineAlpha)),
                                    lineWidth: 0.7)
                     }
 
+                    // Satellite mini-cluster blooms after the spark
+                    // arrives. Its radius scales with bloom progress so
+                    // it appears to grow out of the spark; per-satellite
+                    // sizeFactor / starCount give the composition organic
+                    // variety rather than four identical clones. Drawn
+                    // before the spark/glow so the bright amber dot at
+                    // the centre stays visible on top of the cluster.
+                    if progress > 0.7 {
+                        let bloom = (progress - 0.7) / 0.3
+                        drawSphere(in: ctx,
+                                   cx: satX, cy: satY,
+                                   r: coreRadius * sat.sizeFactor * bloom,
+                                   t: elapsed + Double(i) * 1.7,
+                                   count: sat.starCount,
+                                   sizeScale: 0.85,
+                                   rotationSpeed: 0.45)
+                    }
+
                     // Travelling spark — bright while in flight, leaves a
-                    // short fading tail back toward the origin.
+                    // short fading tail back toward the origin. Once it
+                    // settles, the breathing glow stays on top of the
+                    // mini-cluster as the satellite's "seed" marker.
                     if progress < 1 {
                         drawSparkInFlight(in: ctx,
                                           from: CGPoint(x: cx, y: cy),
@@ -937,22 +972,6 @@ private struct GeneratingCloudScene: View {
                                              at: CGPoint(x: satX, y: satY),
                                              phase: Double(i),
                                              t: elapsed)
-                    }
-
-                    // Satellite mini-cluster blooms after the spark
-                    // arrives. Its radius scales with bloom progress so
-                    // it appears to grow out of the spark; per-satellite
-                    // sizeFactor / starCount give the composition organic
-                    // variety rather than four identical clones.
-                    if progress > 0.7 {
-                        let bloom = (progress - 0.7) / 0.3
-                        drawSphere(in: ctx,
-                                   cx: satX, cy: satY,
-                                   r: coreRadius * sat.sizeFactor * bloom,
-                                   t: elapsed + Double(i) * 1.7,
-                                   count: sat.starCount,
-                                   sizeScale: 0.85,
-                                   rotationSpeed: 0.45)
                     }
                 }
             }
