@@ -3160,44 +3160,41 @@ struct AIPreviewSheet: View {
     }
 
     private var variantNav: some View {
-        HStack(spacing: 2) {
-            Button {
+        HStack(spacing: 0) {
+            navArrow(systemImage: "chevron.left", isDisabled: selectedIndex == 0) {
                 if selectedIndex > 0 {
                     selectedIndex -= 1
                     UISelectionFeedbackGenerator().selectionChanged()
                 }
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(selectedIndex == 0 ? AppInk.solid(0.30) : AppInk.solid(0.75))
-                    .frame(width: 24, height: 24)
             }
-            .buttonStyle(.plain)
-            .disabled(selectedIndex == 0)
 
             Text("\(selectedIndex + 1)/\(variants.count)")
-                .font(.app(size: 12, weight: .semibold))
-                .foregroundColor(AppInk.solid(0.75))
-                .frame(minWidth: 28)
+                .font(.app(size: 14, weight: .semibold))
+                .foregroundColor(AppInk.solid(0.85))
+                .frame(minWidth: 32)
                 .monospacedDigit()
 
-            Button {
+            navArrow(systemImage: "chevron.right", isDisabled: selectedIndex >= variants.count - 1) {
                 if selectedIndex < variants.count - 1 {
                     selectedIndex += 1
                     UISelectionFeedbackGenerator().selectionChanged()
                 }
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(selectedIndex >= variants.count - 1 ? AppInk.solid(0.30) : AppInk.solid(0.75))
-                    .frame(width: 24, height: 24)
             }
-            .buttonStyle(.plain)
-            .disabled(selectedIndex >= variants.count - 1)
         }
-        .padding(.horizontal, 4)
-        .frame(height: 30)
+        .frame(height: 36)
         .background(Capsule().fill(AppInk.solid(0.10)))
+    }
+
+    private func navArrow(systemImage: String, isDisabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(isDisabled ? AppInk.solid(0.30) : AppInk.solid(0.85))
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
     }
 }
 
