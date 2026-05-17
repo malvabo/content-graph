@@ -967,13 +967,14 @@ struct ProjectGroupDetailView: View {
                         mode: .replaceCurrent
                     )
                 },
-                onAddVariant: {
+                onAddVariant: { delta in
                     runAITransform(
                         instruction: aiPreviewInstruction,
                         label: aiPreviewLabel,
                         icon: aiPreviewIcon,
                         source: aiSourceSnapshot,
-                        mode: .appendVariant
+                        mode: .appendVariant,
+                        userDelta: delta
                     )
                 },
                 onClose: { showAIPreview = false }
@@ -1014,7 +1015,7 @@ struct ProjectGroupDetailView: View {
         case appendVariant
     }
 
-    private func runAITransform(instruction: String, label: String, icon: String, source: String, mode: AITransformMode = .fresh) {
+    private func runAITransform(instruction: String, label: String, icon: String, source: String, mode: AITransformMode = .fresh, userDelta: String? = nil) {
         guard !isAIProcessing else { return }
         let trimmedInstruction = instruction.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedInstruction.isEmpty else { return }
@@ -1043,12 +1044,14 @@ struct ProjectGroupDetailView: View {
         case .appendVariant:
             existingForDifferenceHint = aiPreviewVariants
         }
+        let trimmedDelta = userDelta?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let deltaForCall = (trimmedDelta?.isEmpty == false) ? trimmedDelta : nil
         aiTransformTask = Task {
             let outcome: Result<String, APICallError>
-            if existingForDifferenceHint.isEmpty {
+            if existingForDifferenceHint.isEmpty && deltaForCall == nil {
                 outcome = await AITransformService.transform(text: source, instruction: trimmedInstruction)
             } else {
-                outcome = await AITransformService.variant(text: source, instruction: trimmedInstruction, existing: existingForDifferenceHint)
+                outcome = await AITransformService.variant(text: source, instruction: trimmedInstruction, existing: existingForDifferenceHint, userDelta: deltaForCall)
             }
             await MainActor.run {
                 // Always clear the loading flag — even on cancellation — so a
@@ -2856,8 +2859,10 @@ struct AITransformService {
 
     /// Same transform as `transform`, but explicitly asks for a take that's
     /// distinct from a list of already-seen variants. Powers the "This but…"
-    /// affordance on the preview sheet.
-    static func variant(text: String, instruction: String, existing: [String]) async -> Result<String, APICallError> {
+    /// affordance on the preview sheet. When `userDelta` is non-nil, that
+    /// free-form note from the user becomes the dominant steer for the new
+    /// variant (e.g. "make it punchier", "lean into the data").
+    static func variant(text: String, instruction: String, existing: [String], userDelta: String? = nil) async -> Result<String, APICallError> {
         let apiKey = KeychainService.load() ?? ""
         guard !apiKey.isEmpty, let url = URL(string: "https://api.anthropic.com/v1/messages") else {
             return .failure(.http(401, "Missing API key"))
@@ -2870,9 +2875,13 @@ struct AITransformService {
         req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         req.timeoutInterval = 60
 
-        let system = "You rewrite the user's text following their instruction. Preserve formatting, structure, and tone unless the instruction asks to change them. The user has already seen the variant(s) below — produce a fresh take that is meaningfully different in wording, structure, or angle while still satisfying the instruction. Output only the rewritten text, no preamble, no commentary, no quotes around the output."
+        let system = "You rewrite the user's text following their instruction. Preserve formatting, structure, and tone unless the instruction asks to change them. The user has already seen the variant(s) below — produce a fresh take that is meaningfully different in wording, structure, or angle while still satisfying the instruction. If the user also provided a 'This but' note, that note is the primary steer for what should change. Output only the rewritten text, no preamble, no commentary, no quotes around the output."
 
         var lines: [String] = ["Instruction: \(instruction)"]
+        let trimmedDelta = userDelta?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmedDelta.isEmpty {
+            lines.append("This but: \(trimmedDelta)")
+        }
         if !existing.isEmpty {
             lines.append("")
             lines.append("Already-seen variants (do not repeat or paraphrase any of them):")
@@ -3005,10 +3014,11 @@ struct AIPreviewSheet: View {
     let onApply: () -> Void
     let onCopy: () -> Void
     let onRegenerate: () -> Void
-    let onAddVariant: () -> Void
+    let onAddVariant: (String) -> Void
     let onClose: () -> Void
 
     @State private var didCopy = false
+    @State private var showDeltaInput = false
 
     private let sheetBg = AppBackground.primary
 
@@ -3019,6 +3029,34 @@ struct AIPreviewSheet: View {
     private var canAddMore: Bool { variants.count < maxVariants }
 
     var body: some View {
+        NavigationStack {
+            mainView
+                .navigationDestination(isPresented: $showDeltaInput) {
+                    ThisButDeltaView(
+                        actionLabel: actionLabel,
+                        sourceText: currentVariant,
+                        onSubmit: { delta in
+                            showDeltaInput = false
+                            onAddVariant(delta)
+                        },
+                        onBack: { showDeltaInput = false }
+                    )
+                    .toolbar(.hidden, for: .navigationBar)
+                }
+                .toolbar(.hidden, for: .navigationBar)
+        }
+        .background(sheetBg)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(sheetBg)
+        .presentationCornerRadius(Radius.sheet)
+        // Let the inner ScrollView consume vertical pans first so the user
+        // can read long previews without the sheet jumping to its large
+        // detent on every swipe up.
+        .presentationContentInteraction(.scrolls)
+    }
+
+    private var mainView: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Image(systemName: actionIcon)
@@ -3080,7 +3118,10 @@ struct AIPreviewSheet: View {
                 .disabled(isLoading)
 
                 if canAddMore {
-                    Button(action: onAddVariant) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        showDeltaInput = true
+                    } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "wand.and.stars")
                                 .font(.system(size: 13, weight: .medium))
@@ -3149,14 +3190,6 @@ struct AIPreviewSheet: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(sheetBg)
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(sheetBg)
-        .presentationCornerRadius(Radius.sheet)
-        // Let the inner ScrollView consume vertical pans first so the user
-        // can read long previews without the sheet jumping to its large
-        // detent on every swipe up.
-        .presentationContentInteraction(.scrolls)
     }
 
     private var variantNav: some View {
@@ -3200,6 +3233,134 @@ struct AIPreviewSheet: View {
 
 #Preview {
     ContentView()
+}
+
+// MARK: - "This but…" delta input
+
+/// Pushed onto the AIPreviewSheet's NavigationStack when the user taps the
+/// "This but…" pill. Shows the variant they're reacting to as read-only
+/// context, with an input pill at the bottom for typing what they want
+/// different. Submit pops back and triggers a new variant generation with
+/// the typed note as the dominant steer.
+struct ThisButDeltaView: View {
+    let actionLabel: String
+    let sourceText: String
+    let onSubmit: (String) -> Void
+    let onBack: () -> Void
+
+    @State private var delta: String = ""
+    @FocusState private var inputFocused: Bool
+
+    private var canSubmit: Bool {
+        !delta.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(AppText.primary)
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Back")
+
+                Text(actionLabel)
+                    .font(.appBodyBold)
+                    .foregroundColor(AppText.primary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(AppInk.solid(0.06))
+                    .frame(height: 0.5)
+            }
+
+            ScrollView(showsIndicators: false) {
+                Text(sourceText.isEmpty ? AttributedString(" ") : AppMarkdown.render(sourceText))
+                    .appBodyText()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                    .textSelection(.enabled)
+            }
+
+            inputBar
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 16)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(AppBackground.primary)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                inputFocused = true
+            }
+        }
+    }
+
+    private var inputBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "wand.and.stars")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(AppInk.solid(0.45))
+                .padding(.leading, 4)
+
+            TextField(
+                "",
+                text: $delta,
+                prompt: Text("This but…").foregroundColor(AppInk.solid(0.30)),
+                axis: .vertical
+            )
+            .font(.appBody)
+            .foregroundColor(AppText.primary)
+            .tint(AppText.primary)
+            .lineLimit(1...4)
+            .focused($inputFocused)
+            .submitLabel(.send)
+            .onSubmit(submit)
+
+            Button(action: submit) {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(canSubmit ? .black : AppInk.solid(0.40))
+                    .frame(width: 34, height: 34)
+                    .background(
+                        Circle().fill(canSubmit ? Color.white : AppInk.solid(0.15))
+                    )
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSubmit)
+            .accessibilityLabel("Submit")
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            Capsule(style: .continuous)
+                .fill(AppInk.solid(0.08))
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(AppInk.solid(0.14), lineWidth: 0.5)
+                )
+        )
+    }
+
+    private func submit() {
+        let trimmed = delta.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        onSubmit(trimmed)
+    }
 }
 
 // MARK: - Markdown rendering
