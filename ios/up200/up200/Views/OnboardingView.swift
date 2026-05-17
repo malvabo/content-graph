@@ -469,7 +469,10 @@ struct OnboardingView: View {
                     saveIdeaAndExit()
                 }
             }
-            .transition(.opacity.combined(with: .move(edge: .top)))
+            // Pure fade-in. The slide directions (.bottom, then .top) both
+            // pulled the eye in a direction; a dissolve is the calmer
+            // "appears" the design ask wants.
+            .transition(.opacity)
 
         case .specify:
             VStack(spacing: 18) {
