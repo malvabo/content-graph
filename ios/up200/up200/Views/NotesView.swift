@@ -1175,8 +1175,8 @@ private struct FilterChip: View {
             Text(label)
                 .font(.app(size: 14, weight: isSelected ? .semibold : .regular))
                 .foregroundColor(isSelected ? AppText.primary : AppText.secondary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 9)
                 .background(
                     ZStack {
                         if isSelected {
