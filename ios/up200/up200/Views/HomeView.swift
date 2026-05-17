@@ -1529,32 +1529,6 @@ private struct GlassCard<Content: View>: View {
     }
 }
 
-// MARK: - Section Disclosure
-
-// Tiny chevron button used at the start of collapsible section headers
-// (Sources / Format / Prompt). Pointing right when collapsed, rotated 90°
-// when expanded. The rotation animates via the spring on the toggle.
-private struct SectionDisclosure: View {
-    @Binding var expanded: Bool
-
-    var body: some View {
-        Button {
-            withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
-                expanded.toggle()
-            }
-        } label: {
-            Image(systemName: "chevron.right")
-                .font(.app(size: 11, weight: .semibold))
-                .foregroundColor(AppText.secondary)
-                .rotationEffect(.degrees(expanded ? 90 : 0))
-                .frame(width: 16, height: 32)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(expanded ? "Collapse section" : "Expand section")
-    }
-}
-
 // MARK: - Sources Block
 
 private struct SourcesBlock: View {
@@ -1568,21 +1542,14 @@ private struct SourcesBlock: View {
     @State private var photoPickerItem: PhotosPickerItem? = nil
     @State private var photoExtractTask: Task<Void, Never>? = nil
     @State private var fileImportTask: Task<Void, Never>? = nil
-    @State private var expanded: Bool = true
 
     var body: some View {
         GlassCard {
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
-                    SectionDisclosure(expanded: $expanded)
                     Text("Sources")
                         .font(.appSubtextMedium)
                         .foregroundColor(AppInk.solid(0.85))
-                    if !expanded && !sources.isEmpty {
-                        Text("\(sources.count)")
-                            .font(.appCaption)
-                            .foregroundColor(AppInk.solid(0.40))
-                    }
                     Spacer()
                     Button { activeSheet = .picker } label: {
                         Image(systemName: "plus")
@@ -1599,8 +1566,7 @@ private struct SourcesBlock: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
 
-                if expanded {
-                    ForEach(sources) { item in
+                ForEach(sources) { item in
                     VStack(spacing: 0) {
                         Rectangle()
                             .fill(AppInk.solid(0.06))
@@ -1632,7 +1598,6 @@ private struct SourcesBlock: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 13)
                     }
-                }
                 }
             }
         }
