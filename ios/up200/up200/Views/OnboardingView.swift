@@ -60,21 +60,32 @@ struct OnboardingView: View {
     @State private var firstIdeaTranscript: String = ""
     @State private var resultBatch: OnboardingResultBatch? = nil
     @State private var generatingStartedAt: Date = .distantPast
+    // Step 3 (.constellation) renders the same orange-spark / central-cloud
+    // scene used during .capture/.generating, so the "one idea → graph"
+    // metaphor is spoken in the same visual vocabulary across onboarding.
+    @State private var constellationStartedAt: Date = .distantPast
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
     var body: some View {
         ZStack {
-            // Shared scene across all steps — same SceneKit view stays mounted
-            // so the dots can collapse inward (step 2) and then sprout
-            // satellites + connector arcs (step 3) without cross-fading
-            // between separate scenes. On the capture step (4) the whole
-            // scene fades to a quiet backdrop so the starfield cloud reads
-            // as the focal element.
+            // Shared SceneKit scene for steps 1–2. On step 3 (.constellation)
+            // we hand the visual off to GeneratingCloudScene (same scene used
+            // during .capture/.generating) so the "one idea → graph of
+            // content" beat speaks in the same orange-spark vocabulary as the
+            // creation flow. On step 4 (.capture) the SceneKit view fades to
+            // a quiet backdrop while the starfield cloud takes focus.
             OnboardingSceneView(step: step.rawValue)
-                .opacity(step == .capture ? 0.18 : 1)
+                .opacity(step == .capture ? 0.18 : (step == .constellation ? 0 : 1))
                 .animation(.easeInOut(duration: 0.65), value: step)
                 .ignoresSafeArea()
+
+            if step == .constellation {
+                GeneratingCloudScene(generationStartedAt: constellationStartedAt)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
 
             // Step 4 .prompt: the user is *inside* the cloud. The starfield
             // fills the whole screen (ignoresSafeArea) so the cloud has no
@@ -205,6 +216,7 @@ struct OnboardingView: View {
 
             Button(action: {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                constellationStartedAt = Date()
                 withAnimation(.easeInOut(duration: 0.45)) {
                     step = .constellation
                 }
