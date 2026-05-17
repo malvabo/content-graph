@@ -2036,10 +2036,7 @@ private struct SimpleCreateBar: View {
             impact.impactOccurred()
             onTap()
         } label: {
-            // waveform.and.mic = a microphone paired with a waveform —
-            // reads as "voice recorder" at a glance, distinct from the
-            // bare `mic.fill` glyph used inline elsewhere in the app.
-            Image(systemName: "waveform.and.mic")
+            Image(systemName: "mic.fill")
                 .font(.system(size: 24, weight: .regular))
                 .foregroundColor(BrandColor.amber)
                 .frame(width: 64, height: 64)
