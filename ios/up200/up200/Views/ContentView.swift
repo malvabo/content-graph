@@ -856,7 +856,13 @@ struct ProjectGroupDetailView: View {
                             persistCurrent()
                             showChat = true
                         } label: {
-                            Image(systemName: "message")
+                            // "Magic" wand reads as an inline-editing
+                            // affordance — tapping seeds the chat with the
+                            // current body as a selection chip plus the
+                            // document chip, so the user can ask AI to
+                            // rewrite a specific snippet without manually
+                            // attaching anything.
+                            Image(systemName: "wand.and.stars")
                                 .font(.system(size: 17, weight: .regular))
                                 .foregroundColor(AppText.primary)
                                 .frame(width: 52, height: 52)
@@ -864,7 +870,7 @@ struct ProjectGroupDetailView: View {
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Ask AI chat")
+                        .accessibilityLabel("Ask AI to edit this")
 
                         Spacer()
 
@@ -909,7 +915,19 @@ struct ProjectGroupDetailView: View {
         }
         .sheet(isPresented: $showChat, onDismiss: refreshAfterChat) {
             let seedID = items.indices.contains(selectedIndex) ? items[selectedIndex].id : nil
-            ChatView(initialContextIDs: seedID.map { Set([$0]) } ?? [])
+            let trimmedBody = editText.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Selection title leans on the format label ("Email", "LinkedIn
+            // Post") so the chip reads as "a snippet of <format>" rather
+            // than a generic "Selected text" — matches how Notion labels
+            // the page name on the page-context chip in their inline AI.
+            let selectionTitle: String? = items.indices.contains(selectedIndex)
+                ? (allFormats.first(where: { $0.id == items[selectedIndex].outputType })?.label ?? items[selectedIndex].outputType)
+                : nil
+            ChatView(
+                initialContextIDs: seedID.map { Set([$0]) } ?? [],
+                initialSelection: trimmedBody.isEmpty ? nil : trimmedBody,
+                initialSelectionTitle: selectionTitle
+            )
         }
         .sheet(isPresented: $showAIPreview) {
             AIPreviewSheet(

@@ -100,7 +100,7 @@ private enum AssistantParser {
 /// imported files all flow through the same shape so the chat API call
 /// stays a single code path.
 struct ChatContextSource: Identifiable, Equatable {
-    enum Kind: String { case document, note, file }
+    enum Kind: String { case document, note, file, selection }
 
     let id: String
     let kind: Kind
@@ -205,6 +205,14 @@ private struct ChatService {
 struct ChatView: View {
     var initialContextIDs: Set<UUID> = []
     var initialNoteContextID: UUID? = nil
+    /// Ad-hoc text snippet pre-attached as a `.selection` context chip
+    /// when the caller wants the chat to start with a specific piece of
+    /// the source visible above the input — see ProjectGroupDetailView's
+    /// "ask AI" flow, which seeds the current body so the AI can edit it
+    /// directly. Distinct from `initialContextIDs` (a stored document)
+    /// because the snippet has no persistent identity of its own.
+    var initialSelection: String? = nil
+    var initialSelectionTitle: String? = nil
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage("library_projects") private var projectsData: Data = Data()
@@ -216,6 +224,7 @@ struct ChatView: View {
     @State private var selectedContextIDs: Set<String> = []
     @State private var seededContextID: String? = nil
     @State private var didSeedContext = false
+    @State private var didSeedSelection = false
     @State private var sendTask: Task<Void, Never>? = nil
     @State private var fileImportTask: Task<Void, Never>? = nil
     @State private var cachedProjects: [GenerationProject] = []
@@ -342,19 +351,54 @@ struct ChatView: View {
     /// (matched once notes finish loading async). Idempotent so it can be
     /// called both synchronously on appear and after notes load.
     private func attemptSeedContext() {
+        attemptSeedSelection()
         guard !didSeedContext else { return }
         if let id = initialContextIDs.first,
            let proj = cachedProjects.first(where: { $0.id == id }) {
             seededContextID = "doc:\(proj.id.uuidString)"
-            inputText = "@\(proj.title) "
+            // Prepend so a pre-attached selection chip still leads —
+            // selection is the *what*, doc is the *where it came from*.
+            inputText = "@\(proj.title) " + inputText
             didSeedContext = true
             return
         }
         if let id = initialNoteContextID,
            let note = notes.first(where: { $0.id == id }), !note.isEmpty {
             seededContextID = "note:\(note.id.uuidString)"
-            inputText = "@\(note.displayTitle) "
+            inputText = "@\(note.displayTitle) " + inputText
             didSeedContext = true
+        }
+    }
+
+    /// Seeds a free-form text snippet (the "selected text" the user
+    /// kicked the chat off from) as a `.selection` context chip so the
+    /// AI receives the snippet alongside the parent document and the
+    /// composer shows a styled @-mention pointing at it.
+    private func attemptSeedSelection() {
+        guard !didSeedSelection else { return }
+        guard let snippet = initialSelection?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+              !snippet.isEmpty else { return }
+        didSeedSelection = true
+
+        let title = (initialSelectionTitle?
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                        .isEmpty == false)
+            ? initialSelectionTitle!
+            : "Selected text"
+        let source = ChatContextSource(
+            id: "selection:\(UUID().uuidString)",
+            kind: .selection,
+            title: title,
+            preview: String(snippet.prefix(120)),
+            content: snippet
+        )
+        attachedFiles.append(source)
+        selectedContextIDs.insert(source.id)
+        let mention = "@\(title) "
+        if !inputText.contains(mention) {
+            if inputText.hasSuffix("@") { inputText.removeLast() }
+            inputText = mention + inputText
         }
     }
 
@@ -1187,9 +1231,10 @@ private struct MentionPickerSheet: View {
 
     private func icon(for kind: ChatContextSource.Kind) -> String {
         switch kind {
-        case .document: return "doc.text"
-        case .note: return "note.text"
-        case .file: return "paperclip"
+        case .document:  return "doc.text"
+        case .note:      return "note.text"
+        case .file:      return "paperclip"
+        case .selection: return "text.cursor"
         }
     }
 }
