@@ -432,6 +432,11 @@ struct ProjectGroupDetailView: View {
     /// substring to chat as the editable snippet (rather than the whole
     /// body), and a follow-up rewrite is applied back at the same range.
     @State private var editSelection: TextSelection? = nil
+    /// Range captured from `editSelection` at the moment the AI menu
+    /// opens. When non-nil and non-empty, the quick-edit transform
+    /// operates on (and the preview/apply replace) only that slice rather
+    /// than the whole body.
+    @State private var aiSelectionRange: Range<String.Index>? = nil
     @State private var copied = false
     @State private var copiedResetTask: Task<Void, Never>? = nil
     @State private var showAIMenu = false
@@ -839,6 +844,7 @@ struct ProjectGroupDetailView: View {
                     HStack(spacing: 10) {
                         Button {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            aiSelectionRange = currentEditorSelectionRange()
                             showAIMenu = true
                         } label: {
                             Group {
@@ -921,7 +927,20 @@ struct ProjectGroupDetailView: View {
         .sheet(isPresented: $showAIMenu) {
             AIActionsSheet { label, icon, instruction in
                 showAIMenu = false
-                runAITransform(instruction: instruction, label: label, icon: icon, source: editText)
+                let source: String
+                if let range = aiSelectionRange,
+                   range.lowerBound != range.upperBound,
+                   editText.indices.contains(range.lowerBound),
+                   range.upperBound <= editText.endIndex {
+                    source = String(editText[range])
+                } else {
+                    // Empty/invalid selection — clear it so apply overwrites
+                    // the whole body and doesn't try to splice into a stale
+                    // range.
+                    aiSelectionRange = nil
+                    source = editText
+                }
+                runAITransform(instruction: instruction, label: label, icon: icon, source: source)
             }
         }
         .sheet(isPresented: $showChat, onDismiss: refreshAfterChat) {
@@ -961,7 +980,13 @@ struct ProjectGroupDetailView: View {
                 onApply: {
                     let chosen = aiPreviewCurrentVariant
                     guard !chosen.isEmpty else { return }
-                    editText = chosen
+                    if let range = aiSelectionRange,
+                       editText.indices.contains(range.lowerBound),
+                       range.upperBound <= editText.endIndex {
+                        editText.replaceSubrange(range, with: chosen)
+                    } else {
+                        editText = chosen
+                    }
                     persistCurrent()
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     showAIPreview = false
@@ -1000,6 +1025,7 @@ struct ProjectGroupDetailView: View {
                 aiPreviewIcon = "sparkles"
                 aiPreviewInstruction = ""
                 aiSourceSnapshot = ""
+                aiSelectionRange = nil
             }
         }
         .alert("AI request failed", isPresented: $aiFailed) {
@@ -1025,6 +1051,24 @@ struct ProjectGroupDetailView: View {
         case replaceCurrent
         /// "This but…" — generate a distinct variant and append to the list.
         case appendVariant
+    }
+
+    /// Pulls a contiguous range out of `editSelection` if the user has
+    /// an active text selection in the body editor. Returns nil when there's
+    /// no selection or just a cursor position (lower == upper).
+    private func currentEditorSelectionRange() -> Range<String.Index>? {
+        guard let selection = editSelection else { return nil }
+        let range: Range<String.Index>?
+        switch selection.indices {
+        case .selection(let r):
+            range = r
+        case .multiSelection(let set):
+            range = set.ranges.first
+        @unknown default:
+            range = nil
+        }
+        guard let r = range, r.lowerBound != r.upperBound else { return nil }
+        return r
     }
 
     private func runAITransform(instruction: String, label: String, icon: String, source: String, mode: AITransformMode = .fresh, userDelta: String? = nil) {
