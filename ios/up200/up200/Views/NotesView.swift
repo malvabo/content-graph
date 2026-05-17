@@ -1198,6 +1198,7 @@ private struct FilterChip: View {
     let label: String
     let isSelected: Bool
     let isDeletable: Bool
+    let namespace: Namespace.ID
     let action: () -> Void
     var onDelete: (() -> Void)? = nil
 
@@ -1208,16 +1209,22 @@ private struct FilterChip: View {
                 .foregroundColor(isSelected ? AppText.primary : AppText.secondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .appLiquidGlass(in: Capsule(style: .continuous))
-                .overlay(
-                    Capsule(style: .continuous).stroke(
-                        isSelected ? AppInk.solid(0.28) : AppInk.solid(0.08),
-                        lineWidth: isSelected ? 1 : 0.5
-                    )
+                .background(
+                    ZStack {
+                        if isSelected {
+                            Capsule(style: .continuous)
+                                .fill(AppInk.solid(0.14))
+                                .overlay(
+                                    Capsule(style: .continuous)
+                                        .stroke(AppInk.solid(0.22), lineWidth: 0.5)
+                                )
+                                .matchedGeometryEffect(id: "filterChipPill", in: namespace)
+                        }
+                    }
                 )
+                .contentShape(Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
-        .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isSelected)
         .contextMenu {
             if isDeletable, let onDelete {
                 Button(role: .destructive, action: onDelete) {
@@ -1271,6 +1278,9 @@ struct NotesView: View {
     @State private var newTagName = ""
     @State private var reloadTask: Task<Void, Never>? = nil
     @FocusState private var searchFocused: Bool
+    @Namespace private var filterChipNS
+
+    private static let filterChipSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
 
     private var showSearchBinding: Binding<Bool> {
         externalShowSearch ?? $localShowSearch
@@ -1588,15 +1598,25 @@ struct NotesView: View {
                 if !showSearch {
                     ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        FilterChip(label: "All", isSelected: selectedFilter == nil, isDeletable: false) {
-                                withAnimation { selectedFilter = nil }
+                        FilterChip(
+                                label: "All",
+                                isSelected: selectedFilter == nil,
+                                isDeletable: false,
+                                namespace: filterChipNS
+                            ) {
+                                withAnimation(Self.filterChipSpring) { selectedFilter = nil }
                             }
                             ForEach(allTags, id: \.self) { tag in
                                 FilterChip(
                                     label: tag,
                                     isSelected: selectedFilter == tag,
                                     isDeletable: customTags.contains(tag),
-                                    action: { withAnimation { selectedFilter = selectedFilter == tag ? nil : tag } },
+                                    namespace: filterChipNS,
+                                    action: {
+                                        withAnimation(Self.filterChipSpring) {
+                                            selectedFilter = selectedFilter == tag ? nil : tag
+                                        }
+                                    },
                                     onDelete: customTags.contains(tag) ? { removeTag(tag) } : nil
                                 )
                             }
