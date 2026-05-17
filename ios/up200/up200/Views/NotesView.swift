@@ -352,18 +352,8 @@ private struct NoteListRow: View {
     let note: Note
     private let amber = BrandColor.amber
 
-    // Build the title as a single Text so a starred-badge sits inline with
-    // the last wrapped line instead of floating at the block's vertical
-    // center. An HStack would place the star next to the whole Text block;
-    // embedding the symbol via Text(Image:) lets SwiftUI's text layout
-    // carry it along with the trailing glyphs.
     private var titleText: Text {
-        let base = Text(note.displayTitle)
-        guard note.tags.contains("Starred") else { return base }
-        return base
-            + Text(" ")
-            + Text(Image(systemName: "star.fill"))
-                .foregroundStyle(BrandColor.glowGradient)
+        Text(note.displayTitle)
     }
 
     var body: some View {
@@ -381,9 +371,8 @@ private struct NoteListRow: View {
                     .font(.appSmall)
                     .foregroundColor(AppText.tertiary)
 
-                let otherTags = note.tags.filter { $0 != "Starred" }
-                if !otherTags.isEmpty {
-                    Text(otherTags.joined(separator: " · "))
+                if !note.tags.isEmpty {
+                    Text(note.tags.joined(separator: " · "))
                         .font(.appMicro)
                         .foregroundColor(amber.opacity(0.75))
                         .lineLimit(1)
@@ -1296,7 +1285,7 @@ struct NotesView: View {
         recording.showingSheet = true
     }
 
-    private let builtinTags = ["Starred", "Work", "Personal"]
+    private let builtinTags = ["Talk Copenhagen", "Talk London", "Article", "MND"]
     private var allTags: [String] { builtinTags + customTags }
 
     private var sortedNotes: [Note] {
@@ -1496,7 +1485,7 @@ struct NotesView: View {
                 )
             }
             Divider()
-            ForEach(allTags.filter { $0 != "Starred" }, id: \.self) { tag in
+            ForEach(allTags, id: \.self) { tag in
                 Button {
                     toggleTag(tag, for: note)
                 } label: {
