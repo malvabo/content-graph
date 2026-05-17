@@ -311,11 +311,11 @@ private struct LibraryFolderThumb: View {
     var body: some View {
         // Folder shares the 42×52 footprint with LibraryDocCard and
         // LibraryLandingThumb — same outer card size for every group
-        // type, only the inner illustration changes. Body is centered
-        // horizontally; the tab pokes up from its top-left. Mini doc
-        // cards fan out inside with a fixed symmetric tilt so the
-        // rotated bounding boxes stay within the body and never spill
-        // into the row's text column.
+        // type, only the inner illustration changes. Body fills almost
+        // the whole frame so the folder reads as the same visual weight
+        // as the doc/landing cards rather than a small object floating
+        // in a half-empty slot. Mini doc cards fan out inside with a
+        // fixed symmetric tilt.
         ZStack(alignment: .topLeading) {
             // Tab
             UnevenRoundedRectangle(
@@ -323,8 +323,8 @@ private struct LibraryFolderThumb: View {
                 style: .continuous
             )
             .fill(AppInk.solid(0.18))
-            .frame(width: 14, height: 7)
-            .offset(x: 5, y: 0)
+            .frame(width: 15, height: 7)
+            .offset(x: 4, y: 0)
 
             // Body
             RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -333,18 +333,18 @@ private struct LibraryFolderThumb: View {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .stroke(AppInk.solid(0.14), lineWidth: 0.5)
                 )
-                .frame(width: 36, height: 40)
-                .offset(x: 3, y: 5)
+                .frame(width: 40, height: 46)
+                .offset(x: 1, y: 5)
 
             // Mini files inside. Placed directly in the outer .topLeading
             // ZStack so each offset is measured from (0,0) — a nested ZStack
             // would re-center them and break the layout.
             miniDoc(seed: seed &+ 31, rotation: -6)
-                .offset(x: 5, y: 18)
+                .offset(x: 3, y: 19)
             miniDoc(seed: seed &+ 17, rotation: 0)
                 .offset(x: 14, y: 14)
             miniDoc(seed: seed &+ 7, rotation: 6)
-                .offset(x: 23, y: 18)
+                .offset(x: 25, y: 19)
         }
         .frame(width: 42, height: 52)
         .clipped()
@@ -354,12 +354,12 @@ private struct LibraryFolderThumb: View {
     private func miniDoc(seed: Int, rotation: Double) -> some View {
         let w = Self.lineWidths(for: seed)
         RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-            .fill(AppInk.solid(0.22))
+            .fill(AppInk.solid(0.26))
             .overlay(
-                VStack(alignment: .leading, spacing: 1.3) {
+                VStack(alignment: .leading, spacing: 1.5) {
                     Capsule()
                         .fill(AppInk.solid(0.55))
-                        .frame(width: w[0], height: 1.3)
+                        .frame(width: w[0], height: 1.4)
                     Capsule()
                         .fill(AppInk.solid(0.30))
                         .frame(width: w[1], height: 1.0)
@@ -368,14 +368,14 @@ private struct LibraryFolderThumb: View {
                         .frame(width: w[2], height: 1.0)
                 }
                 .padding(.horizontal, 2)
-                .padding(.top, 2.5)
+                .padding(.top, 3)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .stroke(AppInk.solid(0.18), lineWidth: 0.4)
+                    .stroke(AppInk.solid(0.20), lineWidth: 0.4)
             )
-            .frame(width: 13, height: 17)
+            .frame(width: 14, height: 18)
             .rotationEffect(.degrees(rotation))
     }
 
@@ -383,7 +383,7 @@ private struct LibraryFolderThumb: View {
         var h = seed
         return (0..<3).map { _ in
             h = h &* 1664525 &+ 1013904223
-            return 5 + CGFloat(h & 0x04)
+            return 4 + CGFloat(h & 0x05)
         }
     }
 }
