@@ -401,7 +401,7 @@ struct GenerationBanner: View {
                             .stroke(AppInk.solid(0.14), lineWidth: 0.5)
                         Text("Open")
                             .font(.appCaptionMedium)
-                            .foregroundColor(AppText.primary)
+                            .foregroundStyle(BrandColor.glowGradientBright)
                     }
                     .frame(width: 68, height: 32)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
