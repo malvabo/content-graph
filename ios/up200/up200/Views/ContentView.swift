@@ -1970,16 +1970,10 @@ private struct SimpleHomeHeader: View {
     }
 
     private var segmentedTabs: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 6) {
             segment(.notes, label: "Notes")
             segment(.library, label: "Library")
         }
-        .padding(2)
-        .appLiquidGlass(in: Capsule(style: .continuous))
-        .overlay(
-            Capsule(style: .continuous)
-                .stroke(AppInk.solid(0.08), lineWidth: 0.5)
-        )
     }
 
     @ViewBuilder
@@ -1992,18 +1986,12 @@ private struct SimpleHomeHeader: View {
             Text(label)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(selected ? AppText.primary : AppText.tertiary)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background {
-                    if selected {
-                        Capsule(style: .continuous)
-                            .fill(AppInk.solid(0.10))
-                            .overlay(
-                                Capsule(style: .continuous)
-                                    .stroke(AppInk.solid(0.20), lineWidth: 1)
-                            )
-                    }
-                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 9)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(AppInk.solid(selected ? 0.20 : 0.06))
+                )
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
