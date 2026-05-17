@@ -364,7 +364,9 @@ struct OnboardingView: View {
         // both the create flow and the result page, so showing the main
         // tab bar is the right next beat.
         .fullScreenCover(item: $resultBatch, onDismiss: { onGetStarted() }) { batch in
-            ProjectGroupDetailView(groupTitle: batch.title, initialItems: batch.items)
+            ProjectGroupDetailView(groupTitle: batch.title,
+                                   initialItems: batch.items,
+                                   showsFreshBanner: true)
                 .preferredColorScheme(.dark)
         }
     }
