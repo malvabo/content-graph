@@ -1858,19 +1858,27 @@ private struct SimpleHomePage: View {
                         searchFocused: $searchFocused,
                         onProfileTap: onProfileTap,
                         onSearchToggle: {
+                            // Drive the layout toggle + focus drop in one
+                            // animation block so the keyboard recedes in
+                            // lockstep with the inline field collapsing
+                            // back to the tabs/pills. Splitting them used
+                            // to leave the focus change to race the
+                            // animation, which read as a tiny stutter on
+                            // cancel.
                             withAnimation(AppAnimation.standard) {
                                 showSearch.toggle()
-                                if !showSearch { searchText = "" }
+                                if !showSearch {
+                                    searchText = ""
+                                    searchFocused = false
+                                }
                             }
-                            // Focus is owned by the header now; flip it
-                            // alongside the toggle so the keyboard rises on
-                            // entry and dismisses on exit.
+                            // Field doesn't exist yet on toggle-on; defer
+                            // focus by one runloop so SwiftUI mounts the
+                            // TextField before we try to focus it.
                             if showSearch {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                                     searchFocused = true
                                 }
-                            } else {
-                                searchFocused = false
                             }
                         }
                     )
@@ -1929,28 +1937,14 @@ private struct SimpleHomeHeader: View {
     private static let selectSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
 
     var body: some View {
-        HStack(spacing: 12) {
-            if showSearch {
-                AppSearchField(
-                    placeholder: section == .notes ? "Search notes" : "Search library",
-                    text: $searchText,
-                    isFocused: searchFocused
-                )
-
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onSearchToggle()
-                } label: {
-                    Text("Cancel")
-                        .font(.appLabel)
-                        .foregroundColor(AppText.primary)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 10)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Cancel search")
-            } else {
+        // ZStack with opacity-driven swap so the two layouts crossfade
+        // instead of snapping. An `if/else` produced different child
+        // identities each frame, which SwiftUI cannot interpolate —
+        // the bar would hard-cut from tabs to field on tap and back on
+        // cancel. Both layers are always mounted; only opacity +
+        // hit-testing change with `showSearch`.
+        ZStack {
+            HStack(spacing: 12) {
                 segmentedTabs
                 Spacer(minLength: 8)
                 TopBarPill {
@@ -1971,6 +1965,34 @@ private struct SimpleHomeHeader: View {
                     .accessibilityLabel("Profile")
                 }
             }
+            .opacity(showSearch ? 0 : 1)
+            .allowsHitTesting(!showSearch)
+            .accessibilityHidden(showSearch)
+
+            HStack(spacing: 12) {
+                AppSearchField(
+                    placeholder: section == .notes ? "Search notes" : "Search library",
+                    text: $searchText,
+                    isFocused: searchFocused
+                )
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onSearchToggle()
+                } label: {
+                    Text("Cancel")
+                        .font(.appLabel)
+                        .foregroundColor(AppText.primary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 10)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Cancel search")
+            }
+            .opacity(showSearch ? 1 : 0)
+            .allowsHitTesting(showSearch)
+            .accessibilityHidden(!showSearch)
         }
         .padding(.horizontal, 20)
         .padding(.top, 12)

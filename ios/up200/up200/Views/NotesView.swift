@@ -1577,7 +1577,13 @@ struct NotesView: View {
                     }
                 }
 
-                ScrollView(.horizontal, showsIndicators: false) {
+                // Filter chips bar is purely a tag-selector for the
+                // collapsed list view; during search it's covered by the
+                // overlay's opaque surface AND is reachable by VoiceOver,
+                // so collapse it out of the layout entirely while showSearch
+                // is true.
+                if !showSearch {
+                    ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         FilterChip(label: "All", isSelected: selectedFilter == nil, isDeletable: false) {
                                 withAnimation { selectedFilter = nil }
@@ -1609,6 +1615,7 @@ struct NotesView: View {
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
                     }
+                }
 
                     Rectangle()
                         .fill(AppInk.solid(0.06))
