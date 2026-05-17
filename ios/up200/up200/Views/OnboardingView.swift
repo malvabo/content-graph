@@ -470,7 +470,11 @@ struct OnboardingView: View {
                     saveIdeaAndExit()
                 }
             }
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
+            // Fade-in only — the prior `.move(edge: .bottom)` made the
+            // four options slide up from below, which read as a dismissal
+            // gesture. Plain opacity is the dissolve-in the design ask
+            // calls for.
+            .transition(.opacity)
 
         case .specify:
             VStack(spacing: 18) {
