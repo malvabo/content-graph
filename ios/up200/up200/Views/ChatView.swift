@@ -364,16 +364,12 @@ struct ChatView: View {
         if let id = initialContextIDs.first,
            let proj = cachedProjects.first(where: { $0.id == id }) {
             seededContextID = "doc:\(proj.id.uuidString)"
-            // Prepend so a pre-attached selection chip still leads —
-            // selection is the *what*, doc is the *where it came from*.
-            inputText = "@\(proj.title) " + inputText
             didSeedContext = true
             return
         }
         if let id = initialNoteContextID,
            let note = notes.first(where: { $0.id == id }), !note.isEmpty {
             seededContextID = "note:\(note.id.uuidString)"
-            inputText = "@\(note.displayTitle) " + inputText
             didSeedContext = true
         }
     }
@@ -403,11 +399,9 @@ struct ChatView: View {
         )
         attachedFiles.append(source)
         selectedContextIDs.insert(source.id)
-        let mention = "@\(title) "
-        if !inputText.contains(mention) {
-            if inputText.hasSuffix("@") { inputText.removeLast() }
-            inputText = mention + inputText
-        }
+        // Strip a dangling "@" the caller may have left in the seed text
+        // so a chip + a stray "@" don't visually duplicate the attachment.
+        if inputText.hasSuffix("@") { inputText.removeLast() }
     }
 
     var body: some View {
@@ -696,6 +690,65 @@ struct ChatView: View {
         sendMessage()
     }
 
+    /// Horizontal row of removable chips, one per attached context source.
+    /// Sits inside the composer bubble above the text field so the
+    /// attachment is visually owned by the input — the chip is the user's
+    /// affordance to detach it and the icon hints at the source kind
+    /// (document, note, imported file, ad-hoc text selection).
+    private var contextChipsRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(contextItems) { source in
+                    contextChip(source)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.top, 8)
+            .padding(.bottom, 2)
+        }
+    }
+
+    private func contextChip(_ source: ChatContextSource) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: contextChipIcon(for: source.kind))
+                .font(.system(size: 11, weight: .regular))
+                .foregroundColor(AppInk.solid(0.55))
+            Text(source.title)
+                .font(.app(size: 13, weight: .medium))
+                .foregroundColor(AppText.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                removeContext(source)
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(AppInk.solid(0.55))
+                    .frame(width: 18, height: 18)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Remove \(source.title)")
+        }
+        .padding(.leading, 10)
+        .padding(.trailing, 2)
+        .padding(.vertical, 4)
+        .overlay(
+            Capsule().stroke(AppInk.solid(0.18), lineWidth: 0.5)
+        )
+        .frame(maxWidth: 180, alignment: .leading)
+    }
+
+    private func contextChipIcon(for kind: ChatContextSource.Kind) -> String {
+        switch kind {
+        case .document: return "doc.text"
+        case .note: return "note.text"
+        case .file: return "paperclip"
+        case .selection: return "character.cursor.ibeam"
+        }
+    }
+
     private var inputArea: some View {
         VStack(spacing: 0) {
             if shouldShowQuickActions {
@@ -703,6 +756,9 @@ struct ChatView: View {
                     .transition(.opacity)
             }
             VStack(spacing: 0) {
+                if !contextItems.isEmpty {
+                    contextChipsRow
+                }
                 MentionTextView(
                     text: $inputText,
                     isFocused: $inputFocused,
@@ -809,18 +865,28 @@ struct ChatView: View {
         if !selectedContextIDs.contains(source.id) {
             selectedContextIDs.insert(source.id)
         }
-        let mention = "@\(source.title) "
-        // Avoid stacking duplicates when the user re-picks the same item.
-        if !inputText.contains(mention) {
-            // Strip a dangling "@" the user may have typed before opening
-            // the sheet, so we don't leave "@@instagram" behind.
-            if inputText.hasSuffix("@") {
-                inputText.removeLast()
-            }
-            inputText += mention
+        // Picker-driven attachments surface as a chip above the input, so
+        // we no longer splice "@<title>" into the typed text. The user may
+        // have typed a bare "@" to trigger the picker — drop it so it
+        // doesn't linger next to the new chip.
+        if inputText.hasSuffix("@") {
+            inputText.removeLast()
         }
         showMentionPicker = false
         inputFocused = true
+    }
+
+    /// Detaches a chip when the user taps its × button. Clears the right
+    /// backing store depending on the source's origin: picker selections
+    /// live in `selectedContextIDs`, the prefilled doc/note ID in
+    /// `seededContextID`, and ad-hoc selection/file attachments also need
+    /// removal from `attachedFiles` so they don't re-appear if re-picked.
+    private func removeContext(_ source: ChatContextSource) {
+        selectedContextIDs.remove(source.id)
+        if seededContextID == source.id { seededContextID = nil }
+        if source.kind == .selection || source.kind == .file {
+            attachedFiles.removeAll { $0.id == source.id }
+        }
     }
 
     private func importFile(at url: URL) {
