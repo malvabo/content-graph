@@ -218,7 +218,11 @@ private func outputTypesList(_ items: [GenerationProject]) -> String {
     return labels.joined(separator: ", ")
 }
 
-private struct LibraryDocCard: View {
+/// Single text-document thumbnail: rounded card with a bold title bar and
+/// four thinner body lines, all widths seeded for visual variety. Used in
+/// both the Library list (single-item groups) and the Notes list (text
+/// notes) so the "this is a document" graphic is identical everywhere.
+struct DocCardThumb: View {
     let seed: Int
     var width: CGFloat = 42
     var height: CGFloat = 52
@@ -243,6 +247,11 @@ private struct LibraryDocCard: View {
                     .stroke(AppInk.solid(0.09), lineWidth: 0.5)
             )
             .frame(width: width, height: height)
+    }
+
+    static func intSeed(from uuid: UUID) -> Int {
+        let b = uuid.uuid
+        return Int(b.0) &<< 24 | Int(b.1) &<< 16 | Int(b.2) &<< 8 | Int(b.3)
     }
 
     private static func lineWidths(for seed: Int) -> [CGFloat] {
@@ -291,7 +300,7 @@ private struct LibraryLandingThumb: View {
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .stroke(AppInk.solid(0.09), lineWidth: 0.5)
             )
-            // Match LibraryDocCard's 42×52 footprint so doc / landing thumbs
+            // Match DocCardThumb's 42×52 footprint so doc / landing thumbs
             // read as the same-sized card with just different innards.
             .frame(width: 42, height: 52)
     }
@@ -305,85 +314,54 @@ private struct LibraryLandingThumb: View {
     }
 }
 
-private struct LibraryFolderThumb: View {
+/// Multi-item group thumb: two overlapping doc cards in the same visual
+/// language as `DocCardThumb`, just smaller and rotated so the group reads
+/// as "stack of documents." Replaces the older folder-with-tab design that
+/// left an empty strip at the bottom (mini docs cut off short of the
+/// folder's bottom edge) and had a tab sticking out of the top.
+private struct LibraryStackThumb: View {
     let seed: Int
 
     var body: some View {
-        // Folder shares the 42×52 footprint with LibraryDocCard and
-        // LibraryLandingThumb — same outer card size for every group
-        // type, only the inner illustration changes. Body fills almost
-        // the whole frame so the folder reads as the same visual weight
-        // as the doc/landing cards rather than a small object floating
-        // in a half-empty slot. Mini doc cards fan out inside with a
-        // fixed symmetric tilt.
-        ZStack(alignment: .topLeading) {
-            // Tab
-            UnevenRoundedRectangle(
-                cornerRadii: .init(topLeading: 3, bottomLeading: 0, bottomTrailing: 0, topTrailing: 3),
-                style: .continuous
-            )
-            .fill(AppInk.solid(0.18))
-            .frame(width: 15, height: 7)
-            .offset(x: 4, y: 0)
-
-            // Body
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(AppInk.solid(0.12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(AppInk.solid(0.14), lineWidth: 0.5)
-                )
-                .frame(width: 40, height: 46)
-                .offset(x: 1, y: 5)
-
-            // Mini files inside. Placed directly in the outer .topLeading
-            // ZStack so each offset is measured from (0,0) — a nested ZStack
-            // would re-center them and break the layout.
-            miniDoc(seed: seed &+ 31, rotation: -6)
-                .offset(x: 3, y: 19)
-            miniDoc(seed: seed &+ 17, rotation: 0)
-                .offset(x: 14, y: 14)
-            miniDoc(seed: seed &+ 7, rotation: 6)
-                .offset(x: 25, y: 19)
+        ZStack {
+            miniDoc(seed: seed &+ 41)
+                .rotationEffect(.degrees(-7))
+                .offset(x: -5, y: -2)
+            miniDoc(seed: seed &+ 17)
+                .rotationEffect(.degrees(6))
+                .offset(x: 5, y: 3)
         }
         .frame(width: 42, height: 52)
-        .clipped()
     }
 
     @ViewBuilder
-    private func miniDoc(seed: Int, rotation: Double) -> some View {
-        let w = Self.lineWidths(for: seed)
-        RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-            .fill(AppInk.solid(0.26))
+    private func miniDoc(seed: Int) -> some View {
+        let widths = Self.lineWidths(for: seed)
+        RoundedRectangle(cornerRadius: 5, style: .continuous)
+            .fill(AppInk.solid(0.07))
             .overlay(
-                VStack(alignment: .leading, spacing: 1.5) {
-                    Capsule()
-                        .fill(AppInk.solid(0.55))
-                        .frame(width: w[0], height: 1.4)
-                    Capsule()
-                        .fill(AppInk.solid(0.30))
-                        .frame(width: w[1], height: 1.0)
-                    Capsule()
-                        .fill(AppInk.solid(0.30))
-                        .frame(width: w[2], height: 1.0)
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(0..<4, id: \.self) { i in
+                        Capsule()
+                            .fill(AppInk.solid(i == 0 ? 0.55 : 0.20))
+                            .frame(width: widths[i], height: i == 0 ? 1.8 : 1.2)
+                    }
                 }
-                .padding(.horizontal, 2)
-                .padding(.top, 3)
+                .padding(4)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .stroke(AppInk.solid(0.20), lineWidth: 0.4)
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .stroke(AppInk.solid(0.16), lineWidth: 0.5)
             )
-            .frame(width: 14, height: 18)
-            .rotationEffect(.degrees(rotation))
+            .frame(width: 26, height: 32)
     }
 
     private static func lineWidths(for seed: Int) -> [CGFloat] {
         var h = seed
-        return (0..<3).map { _ in
+        return (0..<4).map { _ in
             h = h &* 1664525 &+ 1013904223
-            return 4 + CGFloat(h & 0x05)
+            return 6 + CGFloat(h & 0x0B)
         }
     }
 }
@@ -399,11 +377,11 @@ private struct LibraryGroupThumb: View {
     var body: some View {
         Group {
             if items.count > 1 {
-                LibraryFolderThumb(seed: seed)
+                LibraryStackThumb(seed: seed)
             } else if items.first?.outputType == "landing" {
                 LibraryLandingThumb(seed: seed)
             } else {
-                LibraryDocCard(seed: seed)
+                DocCardThumb(seed: seed)
             }
         }
         .frame(width: 52, height: 56)

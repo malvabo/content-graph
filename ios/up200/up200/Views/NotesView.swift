@@ -269,50 +269,18 @@ private struct NoteThumb: View {
     let note: Note
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(AppInk.solid(0.07))
-            .overlay(thumbContent)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(AppInk.solid(0.09), lineWidth: 0.5)
-            )
-            .frame(width: 42, height: 52)
-    }
-
-    @ViewBuilder
-    private var thumbContent: some View {
         switch note.kind {
         case .drawing:
-            ChartThumbContent(seed: note.id)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(AppInk.solid(0.07))
+                .overlay(ChartThumbContent(seed: note.id))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(AppInk.solid(0.09), lineWidth: 0.5)
+                )
+                .frame(width: 42, height: 52)
         case .text:
-            PaperThumbContent(seed: note.id)
-        }
-    }
-}
-
-/// Stack of five capsule "text lines" with seeded widths — the original
-/// notepad thumb, restored for text notes.
-private struct PaperThumbContent: View {
-    let seed: UUID
-    var body: some View {
-        let widths = Self.lineWidths(for: seed)
-        VStack(alignment: .leading, spacing: 3) {
-            ForEach(0..<5, id: \.self) { i in
-                Capsule()
-                    .fill(AppInk.solid(i == 0 ? 0.55 : 0.20))
-                    .frame(width: widths[i], height: i == 0 ? 2.5 : 1.5)
-            }
-        }
-        .padding(8)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private static func lineWidths(for id: UUID) -> [CGFloat] {
-        let b = id.uuid
-        var h = Int(b.0) &<< 24 | Int(b.1) &<< 16 | Int(b.2) &<< 8 | Int(b.3)
-        return (0..<5).map { _ in
-            h = h &* 1664525 &+ 1013904223
-            return 8 + CGFloat(h & 0x17)
+            DocCardThumb(seed: DocCardThumb.intSeed(from: note.id))
         }
     }
 }
