@@ -438,6 +438,11 @@ private struct LibraryGroupRow: View {
 struct ProjectGroupDetailView: View {
     let groupTitle: String
     let initialItems: [GenerationProject]
+    /// When true, the content is wrapped in a stroked card and prefaced
+    /// with a "Your content is ready!" banner. Used by onboarding's
+    /// first-generation handoff so the moment reads as a celebration
+    /// rather than just another item in the library.
+    var showsFreshBanner: Bool = false
     @AppStorage("library_projects") private var projectsData: Data = Data()
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
@@ -617,6 +622,26 @@ struct ProjectGroupDetailView: View {
                 .padding(.top, 4)
                 .padding(.bottom, 10)
 
+                // Onboarding-only "first result" celebration banner. Sits
+                // between the top bar and the (optional) tabs so a fresh
+                // generation reads as a moment rather than just another
+                // item in the library.
+                if showsFreshBanner {
+                    VStack(spacing: 4) {
+                        Text("Your content is ready!")
+                            .font(.appTitle)
+                            .foregroundColor(AppText.primary)
+                        Text("Share it with the world")
+                            .font(.appBody)
+                            .foregroundColor(AppText.secondary)
+                    }
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+                    .padding(.bottom, 14)
+                }
+
                 // Tabs
                 if items.count > 1 {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -700,6 +725,7 @@ struct ProjectGroupDetailView: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     }
+                    .cardWrappedIfNeeded(showsFreshBanner)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -2333,6 +2359,29 @@ struct TopBarPillDivider: View {
         Rectangle()
             .fill(AppInk.solid(0.10))
             .frame(width: 0.5, height: 18)
+    }
+}
+
+private extension View {
+    /// Wraps a view in a stroked surface card with horizontal + bottom
+    /// inset when `active` is true. Used by ProjectGroupDetailView's
+    /// fresh-result celebration variant; no-op for the regular variant
+    /// so existing library callers render flush as before.
+    @ViewBuilder
+    func cardWrappedIfNeeded(_ active: Bool) -> some View {
+        if active {
+            self
+                .background(AppBackground.surface)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                        .stroke(AppInk.solid(0.12), lineWidth: 0.5)
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+        } else {
+            self
+        }
     }
 }
 
