@@ -1252,7 +1252,21 @@ struct NotesView: View {
     @State private var localSearchText = ""
     @State private var localShowSearch = false
     @State private var selectedFilter: String? = nil
-    @State private var customTags: [String] = UserDefaults.standard.stringArray(forKey: "note_custom_tags") ?? []
+    @State private var customTags: [String] = {
+        let defaults = UserDefaults.standard
+        var tags = defaults.stringArray(forKey: "note_custom_tags") ?? []
+        // One-shot scrub of legacy user tags that were retired from the
+        // default set; gated by a versioned flag so the user can re-create
+        // a tag with the same name later without it being eaten again.
+        let migrationKey = "note_removed_deprecated_tags_v1"
+        if !defaults.bool(forKey: migrationKey) {
+            let removed: Set<String> = ["Love", "New"]
+            tags.removeAll { removed.contains($0) }
+            defaults.set(tags, forKey: "note_custom_tags")
+            defaults.set(true, forKey: migrationKey)
+        }
+        return tags
+    }()
     @State private var showAddTag = false
     @State private var newTagName = ""
     @State private var reloadTask: Task<Void, Never>? = nil
@@ -1285,7 +1299,7 @@ struct NotesView: View {
         recording.showingSheet = true
     }
 
-    private let builtinTags = ["Talk Copenhagen", "Talk London", "Article", "MND"]
+    private let builtinTags = ["Talk Copenhagen", "Talk London", "Article"]
     private var allTags: [String] { builtinTags + customTags }
 
     private var sortedNotes: [Note] {
