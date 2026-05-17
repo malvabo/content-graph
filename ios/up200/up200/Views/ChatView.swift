@@ -515,14 +515,24 @@ struct ChatView: View {
     private var inputArea: some View {
         VStack(spacing: 0) {
             VStack(spacing: 0) {
-                TextField("Ask anything\u{2026}", text: $inputText, axis: .vertical)
-                    .font(.appBody)
-                    .foregroundColor(AppText.primary)
-                    .tint(AppText.primary)
-                    .focused($inputFocused)
-                    .lineLimit(1...5)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                // UITextView-backed editor — a single view renders both the
+                // text and the @mention styling, so the cursor stays glued
+                // to the typed glyph (the old TextField+overlay approach
+                // drifted because TextField and the styled Text laid out the
+                // same string with different font metrics).
+                MentionTextEditor(
+                    text: $inputText,
+                    mentionTitles: allSources.map(\.title),
+                    placeholder: "Ask anything\u{2026}",
+                    isFocused: Binding(
+                        get: { inputFocused },
+                        set: { inputFocused = $0 }
+                    ),
+                    minLines: 1,
+                    maxLines: 5
+                )
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
 
                 HStack(spacing: 4) {
                     Button {
@@ -1126,5 +1136,210 @@ private struct MentionPickerSheet: View {
         case .note: return "note.text"
         case .file: return "paperclip"
         }
+    }
+}
+
+// MARK: - Mention-styled composer
+
+/// UITextView-backed composer that paints each `@<source title>` substring
+/// with a subtle pill-style background so mentions read as inline tags as
+/// the user types. Replacing TextField with a single UITextView (rather
+/// than overlaying a styled Text on top of a transparent TextField, the
+/// previous approach reverted in #484) is what keeps the cursor glued to
+/// the typed glyph — only one view lays out the text, so there is no
+/// second layer to drift out of sync.
+private struct MentionTextEditor: UIViewRepresentable {
+    @Binding var text: String
+    let mentionTitles: [String]
+    let placeholder: String
+    @Binding var isFocused: Bool
+    let minLines: Int
+    let maxLines: Int
+
+    private static let bodyFont = UIFont.systemFont(ofSize: 17)
+    private static let lineSpacing: CGFloat = 3
+
+    func makeUIView(context: Context) -> _MentionUITextView {
+        let tv = _MentionUITextView()
+        tv.delegate = context.coordinator
+        tv.font = Self.bodyFont
+        tv.backgroundColor = .clear
+        tv.textContainerInset = .zero
+        tv.textContainer.lineFragmentPadding = 0
+        tv.isScrollEnabled = false
+        tv.tintColor = .label
+        tv.placeholderColor = UIColor { $0.userInterfaceStyle == .dark
+            ? UIColor(white: 1.0, alpha: 0.28)
+            : UIColor(white: 0.0, alpha: 0.28) }
+        tv.placeholderFont = Self.bodyFont
+        tv.placeholderText = placeholder
+        tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        tv.setContentHuggingPriority(.defaultLow, for: .vertical)
+        return tv
+    }
+
+    func updateUIView(_ tv: _MentionUITextView, context: Context) {
+        // Re-style on every binding update. Preserve the selection so a
+        // restyle (e.g. when external mention-picker insertion happens, or
+        // when the mention list changes) doesn't yank the caret around.
+        let newAttr = Self.styled(text, mentionTitles: mentionTitles)
+        if tv.attributedText.string != text {
+            tv.attributedText = newAttr
+        } else if !tv.attributedText.isEqual(to: newAttr) {
+            let sel = tv.selectedRange
+            tv.attributedText = newAttr
+            tv.selectedRange = sel
+        }
+
+        tv.placeholderText = placeholder
+        tv.refreshPlaceholderVisibility()
+
+        // Cap the editor at maxLines tall; once content exceeds that, flip
+        // to a scrolling pane instead of pushing the surrounding layout
+        // off-screen. _MentionUITextView reads maxHeight + minHeight in its
+        // intrinsicContentSize override, so SwiftUI lays out the cap.
+        let lineH = Self.bodyFont.lineHeight + Self.lineSpacing
+        let cap = lineH * CGFloat(maxLines)
+        tv.maxHeight = cap
+        tv.minHeight = lineH * CGFloat(max(1, minLines))
+        let fits = tv.sizeThatFits(CGSize(width: tv.bounds.width > 0 ? tv.bounds.width : 320,
+                                          height: .greatestFiniteMagnitude)).height
+        let shouldScroll = fits > cap + 0.5
+        if tv.isScrollEnabled != shouldScroll {
+            tv.isScrollEnabled = shouldScroll
+            tv.invalidateIntrinsicContentSize()
+        }
+
+        // Mirror SwiftUI focus state into UIKit first-responder, async to
+        // avoid mutating during the current SwiftUI update pass.
+        if isFocused && !tv.isFirstResponder {
+            DispatchQueue.main.async { tv.becomeFirstResponder() }
+        } else if !isFocused && tv.isFirstResponder {
+            DispatchQueue.main.async { _ = tv.resignFirstResponder() }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, UITextViewDelegate {
+        var parent: MentionTextEditor
+        init(_ p: MentionTextEditor) { parent = p }
+
+        func textViewDidChange(_ textView: UITextView) {
+            if parent.text != textView.text {
+                parent.text = textView.text
+            }
+            textView.invalidateIntrinsicContentSize()
+            if let tv = textView as? _MentionUITextView {
+                tv.refreshPlaceholderVisibility()
+            }
+        }
+
+        func textViewDidBeginEditing(_ textView: UITextView) {
+            if !parent.isFocused { parent.isFocused = true }
+        }
+
+        func textViewDidEndEditing(_ textView: UITextView) {
+            if parent.isFocused { parent.isFocused = false }
+        }
+    }
+
+    // MARK: Styling
+
+    private static func paragraphStyle() -> NSParagraphStyle {
+        let p = NSMutableParagraphStyle()
+        p.lineSpacing = lineSpacing
+        return p
+    }
+
+    /// Build the styled attributed text. Mention titles can contain spaces
+    /// so we can't use a regex — match each known title literally,
+    /// longest-first so "@New topic" wins over a stray "@New" prefix.
+    private static func styled(_ text: String, mentionTitles: [String]) -> NSAttributedString {
+        let inkColor = UIColor { $0.userInterfaceStyle == .dark
+            ? UIColor(white: 1.0, alpha: 0.92)
+            : UIColor(white: 0.0, alpha: 0.88) }
+        let mentionBg = UIColor { $0.userInterfaceStyle == .dark
+            ? UIColor(white: 1.0, alpha: 0.16)
+            : UIColor(white: 0.0, alpha: 0.08) }
+        let mentionFg = UIColor { $0.userInterfaceStyle == .dark
+            ? UIColor(white: 1.0, alpha: 0.96)
+            : UIColor(white: 0.0, alpha: 0.78) }
+
+        let ns = NSMutableAttributedString(
+            string: text,
+            attributes: [
+                .font: bodyFont,
+                .foregroundColor: inkColor,
+                .paragraphStyle: paragraphStyle()
+            ]
+        )
+        let titles = mentionTitles.sorted { $0.count > $1.count }
+        let nsStr = text as NSString
+        for title in titles where !title.isEmpty {
+            let needle = "@\(title)"
+            var cursor = 0
+            while cursor < nsStr.length {
+                let range = nsStr.range(of: needle,
+                                        range: NSRange(location: cursor, length: nsStr.length - cursor))
+                if range.location == NSNotFound { break }
+                ns.addAttribute(.backgroundColor, value: mentionBg, range: range)
+                ns.addAttribute(.foregroundColor, value: mentionFg, range: range)
+                cursor = range.location + range.length
+            }
+        }
+        return ns
+    }
+}
+
+/// UITextView subclass with a UILabel-based placeholder and a height cap.
+/// Kept in this file because it only exists to back `MentionTextEditor`.
+final class _MentionUITextView: UITextView {
+    /// Clamps `intrinsicContentSize.height` so SwiftUI lays out the editor
+    /// at most this tall — after which `isScrollEnabled = true` is what
+    /// makes the editor scrollable instead of pushing the surrounding
+    /// layout off-screen.
+    var maxHeight: CGFloat? { didSet { invalidateIntrinsicContentSize() } }
+    var minHeight: CGFloat = 0 { didSet { invalidateIntrinsicContentSize() } }
+
+    var placeholderText: String = "" { didSet { placeholderLabel.text = placeholderText } }
+    var placeholderColor: UIColor = .placeholderText { didSet { placeholderLabel.textColor = placeholderColor } }
+    var placeholderFont: UIFont = .systemFont(ofSize: 17) { didSet { placeholderLabel.font = placeholderFont } }
+
+    private let placeholderLabel = UILabel()
+
+    override init(frame: CGRect, textContainer: NSTextContainer?) {
+        super.init(frame: frame, textContainer: textContainer)
+        placeholderLabel.numberOfLines = 0
+        placeholderLabel.isUserInteractionEnabled = false
+        placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(placeholderLabel)
+        NSLayoutConstraint.activate([
+            placeholderLabel.topAnchor.constraint(equalTo: topAnchor),
+            placeholderLabel.leadingAnchor.constraint(equalTo: leadingAnchor),
+            placeholderLabel.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor)
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) not supported") }
+
+    func refreshPlaceholderVisibility() {
+        placeholderLabel.isHidden = !text.isEmpty
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let width = bounds.width > 0 ? bounds.width : UIScreen.main.bounds.width
+        let fitting = sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        let floor = max(minHeight, placeholderFont.lineHeight)
+        let h = max(fitting.height, floor)
+        if let cap = maxHeight, h > cap {
+            return CGSize(width: UIView.noIntrinsicMetric, height: cap)
+        }
+        return CGSize(width: UIView.noIntrinsicMetric, height: h)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        invalidateIntrinsicContentSize()
     }
 }
