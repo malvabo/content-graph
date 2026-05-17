@@ -1370,6 +1370,11 @@ private struct MentionTextView: UIViewRepresentable {
         // stretching to fill the available space.
         tv.setContentHuggingPriority(.defaultHigh, for: .vertical)
         tv.setContentCompressionResistancePriority(.defaultHigh, for: .vertical)
+        // Horizontally, defer to the parent's width so long unbroken text
+        // wraps inside the bubble instead of stretching the whole composer
+        // (and the sibling quick-actions row) past the screen edges.
+        tv.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         tv.placeholder = placeholder
         tv.maxLines = maxLines
         tv.attributedText = buildAttributed(text)
@@ -1490,12 +1495,18 @@ private final class ChatComposerUITextView: UITextView {
         let base = super.intrinsicContentSize
         let lineHeight = (font ?? .systemFont(ofSize: 17)).lineHeight
         let cap = lineHeight * CGFloat(maxLines) + textContainerInset.top + textContainerInset.bottom
+        // Width must be noIntrinsicMetric so SwiftUI gives us the parent's
+        // width and the text container wraps; otherwise a long pasted line
+        // reports its full unbroken width here and stretches the composer.
+        let height: CGFloat
         if base.height > cap {
             isScrollEnabled = true
-            return CGSize(width: base.width, height: cap)
+            height = cap
+        } else {
+            isScrollEnabled = false
+            height = base.height
         }
-        isScrollEnabled = false
-        return base
+        return CGSize(width: UIView.noIntrinsicMetric, height: height)
     }
 
     override func layoutSubviews() {
