@@ -54,22 +54,12 @@ export function PromptInline({ id }: { id: string }) {
         aria-label="Prompt filter"
       />
       <button
+        className="btn btn-sm btn-outline"
         onMouseDown={e => e.stopPropagation()}
         onClick={() => setModalOpen(true)}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          height: 24, padding: '0 8px', borderRadius: 'var(--radius-md)',
-          background: 'transparent', border: '1px solid var(--color-border-default)',
-          color: 'var(--color-text-tertiary)', cursor: 'pointer',
-          fontSize: 11, fontFamily: 'var(--font-sans)', fontWeight: 500,
-          transition: 'background 100ms, border-color 100ms',
-          whiteSpace: 'nowrap',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--color-border-default)'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}
         aria-label="Choose a prompt template"
       >
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
         Choose a template
       </button>
 
