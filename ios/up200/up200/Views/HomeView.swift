@@ -2352,8 +2352,10 @@ private struct FormatsBlock: View {
         .animation(chipAnim, value: displayText)
         .onAppear { refreshSuggestions() }
         .onChange(of: selectedFormatIDs) {
-            withAnimation(chipAnim) { refreshSuggestions() }
-            prompt = displayText
+            withAnimation(chipAnim) {
+                refreshSuggestions()
+                prompt = displayText
+            }
         }
         .sheet(isPresented: $showPicker) {
             FormatPickerSheet(selectedFormatIDs: $selectedFormatIDs)
