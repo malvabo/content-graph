@@ -1573,6 +1573,9 @@ private struct MentionTextView: UIViewRepresentable {
 
 private final class ChatComposerUITextView: UITextView {
     private let placeholderLabel = UILabel()
+    private var placeholderLeading: NSLayoutConstraint!
+    private var placeholderTrailing: NSLayoutConstraint!
+    private var placeholderTop: NSLayoutConstraint!
     var placeholder: String = "" {
         didSet {
             placeholderLabel.text = placeholder
@@ -1594,8 +1597,30 @@ private final class ChatComposerUITextView: UITextView {
         configure()
     }
 
+    // The placeholder mirrors the typed text's font and lead-in inset so
+    // "Ask anything…" sits exactly where the first typed glyph will land.
+    // Both the textview font and the textContainerInset are assigned by
+    // MentionTextView *after* init, so we hook the setters to keep the
+    // placeholder in lockstep instead of capturing stale defaults at
+    // configure() time.
+    override var font: UIFont? {
+        didSet { placeholderLabel.font = font ?? .systemFont(ofSize: 17) }
+    }
+
+    override var textContainerInset: UIEdgeInsets {
+        didSet { syncPlaceholderInsets() }
+    }
+
+    private func syncPlaceholderInsets() {
+        guard placeholderLeading != nil else { return }
+        let pad = textContainer.lineFragmentPadding
+        placeholderLeading.constant = textContainerInset.left + pad
+        placeholderTrailing.constant = -(textContainerInset.right + pad)
+        placeholderTop.constant = textContainerInset.top
+    }
+
     private func configure() {
-        placeholderLabel.font = font ?? .systemFont(ofSize: 17)
+        placeholderLabel.font = .systemFont(ofSize: 17)
         placeholderLabel.textColor = UIColor { trait in
             trait.userInterfaceStyle == .dark
                 ? UIColor(white: 1.0, alpha: 0.28)
@@ -1604,19 +1629,22 @@ private final class ChatComposerUITextView: UITextView {
         placeholderLabel.numberOfLines = 1
         placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(placeholderLabel)
+        placeholderLeading = placeholderLabel.leadingAnchor.constraint(
+            equalTo: leadingAnchor,
+            constant: textContainerInset.left + textContainer.lineFragmentPadding
+        )
+        placeholderTrailing = placeholderLabel.trailingAnchor.constraint(
+            lessThanOrEqualTo: trailingAnchor,
+            constant: -(textContainerInset.right + textContainer.lineFragmentPadding)
+        )
+        placeholderTop = placeholderLabel.topAnchor.constraint(
+            equalTo: topAnchor,
+            constant: textContainerInset.top
+        )
         NSLayoutConstraint.activate([
-            placeholderLabel.leadingAnchor.constraint(
-                equalTo: leadingAnchor,
-                constant: textContainerInset.left + textContainer.lineFragmentPadding
-            ),
-            placeholderLabel.trailingAnchor.constraint(
-                lessThanOrEqualTo: trailingAnchor,
-                constant: -(textContainerInset.right + textContainer.lineFragmentPadding)
-            ),
-            placeholderLabel.topAnchor.constraint(
-                equalTo: topAnchor,
-                constant: textContainerInset.top
-            )
+            placeholderLeading,
+            placeholderTrailing,
+            placeholderTop
         ])
     }
 
