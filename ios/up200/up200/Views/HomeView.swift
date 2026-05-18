@@ -1573,10 +1573,9 @@ private struct SourcesBlock: View {
                     Button { activeSheet = .picker } label: {
                         Image(systemName: "plus")
                             .font(.appCaptionMedium)
-                            .foregroundColor(AppInk.solid(0.80))
+                            .foregroundColor(.white)
                             .frame(width: 30, height: 30)
-                            .background(AppInk.solid(0.09))
-                            .overlay(Circle().stroke(AppInk.solid(0.10), lineWidth: 0.5))
+                            .background(BrandColor.ctaPrimary)
                             .clipShape(Circle())
                     }
                     .buttonStyle(.plain)
@@ -2289,13 +2288,13 @@ private struct FormatsBlock: View {
                             } label: {
                                 Text(fmt.label)
                                     .font(.appCaptionMedium)
-                                    .foregroundColor(AppInk.solid(0.65))
+                                    .foregroundColor(AppInk.solid(0.78))
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 11)
-                                    .background(AppInk.solid(0.06), in: Capsule(style: .continuous))
+                                    .background(AppInk.solid(0.10), in: Capsule(style: .continuous))
                                     .overlay(
                                         Capsule(style: .continuous)
-                                            .stroke(AppInk.solid(0.08), lineWidth: 0.5)
+                                            .stroke(AppInk.solid(0.14), lineWidth: 0.5)
                                     )
                             }
                             .buttonStyle(.plain)
@@ -2326,16 +2325,12 @@ private struct FormatsBlock: View {
                 } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(AppInk.solid(0.55))
+                        .foregroundColor(AppInk.solid(0.70))
                         .frame(width: 36, height: 36)
-                        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+                        .background(AppInk.solid(0.12), in: Capsule(style: .continuous))
                         .overlay(
                             Capsule(style: .continuous)
-                                .fill(AppInk.solid(0.06))
-                        )
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(AppInk.solid(0.10), lineWidth: 0.5)
+                                .stroke(AppInk.solid(0.14), lineWidth: 0.5)
                         )
                 }
                 .buttonStyle(.plain)
@@ -2430,16 +2425,16 @@ private struct BrandCard: View {
                     HStack(spacing: 5) {
                         Text(selectedBrand)
                             .font(.appSubtextMedium)
-                            .foregroundColor(AppInk.solid(0.70))
+                            .foregroundColor(AppInk.solid(0.78))
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.app(size: 11, weight: .semibold))
-                            .foregroundColor(AppText.tertiary)
+                            .foregroundColor(AppInk.solid(0.50))
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
-                    .background(AppInk.solid(0.09))
+                    .background(AppInk.solid(0.14))
                     .clipShape(Capsule())
-                    .overlay(Capsule().stroke(AppInk.solid(0.10), lineWidth: 0.5))
+                    .overlay(Capsule().stroke(AppInk.solid(0.16), lineWidth: 0.5))
                 }
             }
             .padding(.horizontal, 16)

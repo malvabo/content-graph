@@ -679,12 +679,11 @@ struct ProjectGroupDetailView: View {
                                 Button { selectTab(idx) } label: {
                                     Text(tabLabel(item))
                                         .font(.app(size: 14, weight: selectedIndex == idx ? .semibold : .regular))
-                                        .foregroundColor(selectedIndex == idx ? .white : AppInk.solid(0.45))
+                                        .foregroundColor(selectedIndex == idx ? .white : AppInk.solid(0.55))
                                         .padding(.horizontal, 14)
                                         .padding(.vertical, 7)
-                                        .background(selectedIndex == idx ? AppInk.solid(0.12) : Color.clear)
+                                        .background(selectedIndex == idx ? AnyShapeStyle(BrandColor.ctaPrimary) : AnyShapeStyle(Color.clear))
                                         .clipShape(Capsule())
-                                        .overlay(Capsule().stroke(selectedIndex == idx ? AppInk.solid(0.20) : Color.clear, lineWidth: 0.5))
                                 }
                                 .buttonStyle(.plain)
                                 .animation(AppAnimation.quick, value: selectedIndex)
@@ -848,15 +847,15 @@ struct ProjectGroupDetailView: View {
                                 if isAIProcessing {
                                     ProgressView()
                                         .controlSize(.small)
-                                        .tint(AppText.primary)
+                                        .tint(.white)
                                 } else {
                                     Image(systemName: "sparkles")
                                         .font(.system(size: 17, weight: .semibold))
-                                        .foregroundColor(AppText.primary)
+                                        .foregroundColor(.white)
                                 }
                             }
                             .frame(width: 52, height: 52)
-                            .background(AppInk.solid(0.12))
+                            .background(BrandColor.ctaPrimary)
                             .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
@@ -878,9 +877,9 @@ struct ProjectGroupDetailView: View {
                             // attaching anything.
                             Image(systemName: "wand.and.stars")
                                 .font(.system(size: 17, weight: .regular))
-                                .foregroundColor(AppText.primary)
+                                .foregroundColor(.white)
                                 .frame(width: 52, height: 52)
-                                .background(AppInk.solid(0.12))
+                                .background(BrandColor.ctaPrimary)
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
@@ -2545,10 +2544,10 @@ struct TopBarPill<Content: View>: View {
         HStack(spacing: 0) { content() }
             .background(
                 Capsule(style: .continuous)
-                    .fill(AppInk.solid(0.08))
+                    .fill(AppInk.solid(0.12))
                     .overlay(
                         Capsule(style: .continuous)
-                            .stroke(AppInk.solid(0.10), lineWidth: 0.5)
+                            .stroke(AppInk.solid(0.14), lineWidth: 0.5)
                     )
             )
     }

@@ -784,9 +784,9 @@ struct ChatView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(AppInk.solid(0.65))
+                    .foregroundColor(AppInk.solid(0.70))
                     .frame(width: 36, height: 36)
-                    .background(AppInk.solid(0.08))
+                    .background(AppInk.solid(0.12))
                     .clipShape(Circle())
                     .appIconHitArea()
             }
@@ -806,9 +806,9 @@ struct ChatView: View {
             } label: {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(AppInk.solid(0.55))
+                    .foregroundColor(AppInk.solid(0.65))
                     .frame(width: 36, height: 36)
-                    .background(AppInk.solid(0.07))
+                    .background(AppInk.solid(0.12))
                     .clipShape(Circle())
                     .appIconHitArea()
             }
@@ -931,10 +931,10 @@ struct ChatView: View {
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
-                        .background(AppInk.solid(0.06))
+                        .background(AppInk.solid(0.10))
                         .clipShape(Capsule())
                         .overlay(
-                            Capsule().stroke(AppInk.solid(0.10), lineWidth: 0.5)
+                            Capsule().stroke(AppInk.solid(0.14), lineWidth: 0.5)
                         )
                     }
                     .buttonStyle(.plain)
@@ -1001,10 +1001,10 @@ struct ChatView: View {
         .padding(.leading, 14)
         .padding(.trailing, 6)
         .padding(.vertical, 7)
-        .background(AppInk.solid(0.06), in: Capsule(style: .continuous))
+        .background(AppInk.solid(0.10), in: Capsule(style: .continuous))
         .overlay(
             Capsule(style: .continuous)
-                .stroke(AppInk.solid(0.10), lineWidth: 0.5)
+                .stroke(AppInk.solid(0.14), lineWidth: 0.5)
         )
         .frame(maxWidth: 220, alignment: .leading)
     }
@@ -1038,10 +1038,10 @@ struct ChatView: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(AppInk.solid(0.06), in: Capsule(style: .continuous))
+                .background(AppInk.solid(0.10), in: Capsule(style: .continuous))
                 .overlay(
                     Capsule(style: .continuous)
-                        .stroke(AppInk.solid(0.10), lineWidth: 0.5)
+                        .stroke(AppInk.solid(0.14), lineWidth: 0.5)
                 )
                 .frame(maxWidth: 180, alignment: .leading)
             }
@@ -1122,13 +1122,13 @@ struct ChatView: View {
                         let ready = canSend
                         Image(systemName: "arrow.up")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(ready ? .white : AppInk.solid(0.28))
+                            .foregroundColor(ready ? .white : AppInk.solid(0.32))
                             .frame(width: 32, height: 32)
-                            .background(ready ? AppInk.solid(0.18) : AppInk.solid(0.06))
+                            .background(ready ? AnyShapeStyle(BrandColor.ctaPrimary) : AnyShapeStyle(AppInk.solid(0.08)))
                             .clipShape(Circle())
                             .overlay(
                                 Circle().stroke(
-                                    ready ? AppInk.solid(0.22) : AppInk.solid(0.08),
+                                    ready ? Color.clear : AppInk.solid(0.10),
                                     lineWidth: 0.5
                                 )
                             )
@@ -1549,15 +1549,19 @@ private struct MessageBubble: View {
             Text(isUser ? AttributedString(message.content) : AppMarkdown.render(message.content))
                 // Canonical body-text rhythm (17pt, lineSpacing 8) — same
                 // modifier note bodies and other reading copy use, so chat
-                // doesn't read denser than the rest of the app.
+                // doesn't read denser than the rest of the app. User bubbles
+                // get the brand primary fill (iMessage-style) and override
+                // the body-text colour to white so the saturated brown reads
+                // as the user's "voice" in the thread.
                 .appBodyText()
+                .foregroundColor(isUser ? .white : AppInk.solid(0.92))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(isUser ? AppInk.solid(0.12) : AppInk.solid(0.05))
+                .background(isUser ? AnyShapeStyle(BrandColor.ctaPrimary) : AnyShapeStyle(AppInk.solid(0.05)))
                 .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
-                        .stroke(AppInk.solid(isUser ? 0.14 : 0.08), lineWidth: 0.5)
+                        .stroke(isUser ? Color.clear : AppInk.solid(0.08), lineWidth: 0.5)
                 )
                 .textSelection(.enabled)
 
