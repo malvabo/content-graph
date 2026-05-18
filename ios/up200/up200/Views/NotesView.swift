@@ -836,17 +836,9 @@ private struct NoteEditorPage: View {
     @State private var didDelete: Bool = false
     @State private var showChat: Bool = false
     @State private var showCreate: Bool = false
-    /// Live selection in the body editor. `length == 0` means a caret with no
-    /// highlighted text — the floating selection actions are gated on a
-    /// non-empty selection so a stray tap doesn't surface them.
-    @State private var bodySelection: NSRange = NSRange(location: 0, length: 0)
-    /// Rect of the first line of the active selection inside the editor's
-    /// own coordinate space. Drives the placement of the magic/chat bubble
-    /// that floats just above the highlighted text.
-    @State private var selectionRect: CGRect? = nil
-    /// Snapshot of the selection captured at the moment a floating action
-    /// fires — held on its own so the chat sheet's seed survives across
-    /// the selection clearing when the keyboard collapses on sheet present.
+    /// Snapshot of the selection captured at the moment a custom menu
+    /// action fires — held on its own so the chat sheet's seed survives
+    /// the selection clearing when the keyboard collapses on present.
     @State private var pendingSelectionText: String? = nil
     @State private var pendingSelectionRange: NSRange? = nil
     /// Drives the inline rewrite sheet for the magic-pen action.
@@ -1012,32 +1004,18 @@ private struct NoteEditorPage: View {
                     }
                     SelectableNoteEditor(
                         text: $noteBody,
-                        selection: $bodySelection,
-                        selectionRect: $selectionRect,
                         isFocused: Binding(
                             get: { focus == .body },
                             set: { newValue in focus = newValue ? .body : nil }
                         ),
-                        bottomInset: 96
-                    )
-                    .overlay {
-                        // Magic + chat pair anchored just above the highlighted
-                        // text — mirrors the bottom-of-screen pair but bound to
-                        // the current selection instead of the whole note.
-                        GeometryReader { proxy in
-                            if let rect = selectionRect, bodySelection.length > 0 {
-                                let bubbleHalfWidth: CGFloat = 55
-                                let clampedX = min(max(rect.midX, bubbleHalfWidth), proxy.size.width - bubbleHalfWidth)
-                                let clampedY = max(30, rect.minY - 30)
-                                selectionActionBubble
-                                    .position(x: clampedX, y: clampedY)
-                                    .transition(.scale(scale: 0.85).combined(with: .opacity))
-                            }
+                        bottomInset: 96,
+                        onMagicSelection: { snippet, range in
+                            triggerSelectionRewrite(snippet: snippet, range: range)
+                        },
+                        onChatSelection: { snippet, range in
+                            triggerSelectionChat(snippet: snippet, range: range)
                         }
-                        .allowsHitTesting(bodySelection.length > 0 && selectionRect != nil)
-                    }
-                    .animation(.spring(response: 0.30, dampingFraction: 0.85), value: selectionRect)
-                    .animation(.spring(response: 0.30, dampingFraction: 0.85), value: bodySelection.length > 0)
+                    )
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
@@ -1182,70 +1160,24 @@ private struct NoteEditorPage: View {
         .accessibilityLabel("Create from this note")
     }
 
-    /// Pair of circular buttons that float just above an active text
-    /// selection — magic-pen rewrites the highlighted span, chat opens the
-    /// AI chat with the snippet pre-attached as a `.selection` chip.
-    private var selectionActionBubble: some View {
-        HStack(spacing: 10) {
-            selectionCircleButton(icon: "wand.and.stars", weight: .semibold, label: "Rewrite selection") {
-                triggerSelectionRewrite()
-            }
-            selectionCircleButton(icon: "message", weight: .regular, label: "Ask AI about selection") {
-                triggerSelectionChat()
-            }
-        }
-    }
-
-    private func selectionCircleButton(icon: String, weight: Font.Weight, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            action()
-        }) {
-            Image(systemName: icon)
-                .font(.system(size: 17, weight: weight))
-                .foregroundColor(AppText.primary)
-                .frame(width: 44, height: 44)
-                .background(
-                    Circle()
-                        .fill(.regularMaterial)
-                        .overlay(Circle().stroke(AppInk.solid(0.18), lineWidth: 0.5))
-                        .shadow(color: Color.black.opacity(0.28), radius: 12, y: 4)
-                )
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
-    }
-
-    /// Captures the current selection, then opens the rewrite sheet.
-    /// The `RewriteRequest` carries its own snapshot so the rewrite still
-    /// lands at the right span even if the user keeps editing.
-    private func triggerSelectionRewrite() {
-        guard let snippet = currentSelectionText(), let range = currentSelectionRange() else { return }
+    /// Opens the rewrite sheet seeded with the snippet UIKit handed back
+    /// from the edit-menu callback. The `RewriteRequest` carries its own
+    /// snapshot so the rewrite still lands at the right span even if the
+    /// user keeps editing.
+    private func triggerSelectionRewrite(snippet: String, range: NSRange) {
+        let trimmed = snippet.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
         persistIfNeeded()
         rewriteRequest = RewriteRequest(originalText: snippet, range: range)
     }
 
-    private func triggerSelectionChat() {
-        guard let snippet = currentSelectionText(), let range = currentSelectionRange() else { return }
+    private func triggerSelectionChat(snippet: String, range: NSRange) {
+        let trimmed = snippet.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
         pendingSelectionText = snippet
         pendingSelectionRange = range
         persistIfNeeded()
         showChat = true
-    }
-
-    private func currentSelectionText() -> String? {
-        guard bodySelection.length > 0 else { return nil }
-        let ns = noteBody as NSString
-        guard bodySelection.location >= 0, NSMaxRange(bodySelection) <= ns.length else { return nil }
-        let snippet = ns.substring(with: bodySelection).trimmingCharacters(in: .whitespacesAndNewlines)
-        return snippet.isEmpty ? nil : ns.substring(with: bodySelection)
-    }
-
-    private func currentSelectionRange() -> NSRange? {
-        guard bodySelection.length > 0 else { return nil }
-        let ns = noteBody as NSString
-        guard bodySelection.location >= 0, NSMaxRange(bodySelection) <= ns.length else { return nil }
-        return bodySelection
     }
 
     /// Replaces the originally-selected span in the note body with the
@@ -2221,17 +2153,19 @@ struct DrawingPreview: UIViewRepresentable {
 
 // MARK: - Selectable Note Editor
 
-/// UITextView-backed body editor that exposes the user's text selection
-/// back to SwiftUI. Drives the floating magic/chat bubble that appears
-/// above a highlighted span — the system `TextEditor` doesn't surface
-/// selection state, so we wrap UIKit to read `selectedRange` plus the
-/// rect of the first line of the selection for placement.
+/// UITextView-backed body editor that injects Magic + Chat as the first
+/// items in the iOS selection edit menu — the Canva-style floating
+/// bubble we tried first collided with the system Cut/Copy/Paste
+/// callout for the same screen space and was never reliably visible.
+/// Routing through `editMenuForTextIn` lands the actions in the menu
+/// the user already opens to operate on a selection, which is exactly
+/// what "first options on selection" means in iOS terms.
 private struct SelectableNoteEditor: UIViewRepresentable {
     @Binding var text: String
-    @Binding var selection: NSRange
-    @Binding var selectionRect: CGRect?
     @Binding var isFocused: Bool
     let bottomInset: CGFloat
+    let onMagicSelection: (String, NSRange) -> Void
+    let onChatSelection: (String, NSRange) -> Void
 
     private static let font = UIFont.systemFont(ofSize: 18)
     private static let lineSpacing: CGFloat = 8
@@ -2266,6 +2200,13 @@ private struct SelectableNoteEditor: UIViewRepresentable {
     }
 
     func updateUIView(_ tv: UITextView, context: Context) {
+        // Keep the coordinator's snapshot of the callbacks fresh — the
+        // SwiftUI view is rebuilt on every parent state change and the
+        // closures capture `self` (i.e. the NoteEditorPage) by value, so
+        // an old coordinator-held closure would point at a stale `self`
+        // and the trigger funcs would mutate a copy that goes nowhere.
+        context.coordinator.parent = self
+
         if tv.text != text {
             let sel = tv.selectedRange
             context.coordinator.suppressEcho = true
@@ -2277,7 +2218,6 @@ private struct SelectableNoteEditor: UIViewRepresentable {
                 length: min(sel.length, max(0, len - sel.location))
             )
             context.coordinator.suppressEcho = false
-            context.coordinator.refreshSelection(tv)
         }
         if tv.textContainerInset.bottom != bottomInset {
             tv.textContainerInset.bottom = bottomInset
@@ -2302,11 +2242,6 @@ private struct SelectableNoteEditor: UIViewRepresentable {
             guard !suppressEcho else { return }
             let new = tv.text ?? ""
             if parent.text != new { parent.text = new }
-            refreshSelection(tv)
-        }
-
-        func textViewDidChangeSelection(_ tv: UITextView) {
-            refreshSelection(tv)
         }
 
         func textViewDidBeginEditing(_ tv: UITextView) {
@@ -2315,42 +2250,46 @@ private struct SelectableNoteEditor: UIViewRepresentable {
 
         func textViewDidEndEditing(_ tv: UITextView) {
             if parent.isFocused { parent.isFocused = false }
-            if parent.selectionRect != nil { parent.selectionRect = nil }
         }
 
-        func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            guard let tv = scrollView as? UITextView else { return }
-            refreshSelection(tv)
-        }
+        /// Prepends Magic + Chat to the iOS edit menu whenever the user
+        /// has a non-empty selection so those two actions sit in front
+        /// of Cut/Copy/Paste/AutoFill — the literal "first options" the
+        /// brief asked for. Returning the suggested actions unchanged
+        /// for a zero-length range keeps the caret menu (Paste / Select
+        /// All / etc.) intact.
+        func textView(
+            _ textView: UITextView,
+            editMenuForTextIn range: NSRange,
+            suggestedActions: [UIMenuElement]
+        ) -> UIMenu? {
+            guard range.length > 0 else { return UIMenu(children: suggestedActions) }
+            let ns = (textView.text ?? "") as NSString
+            guard range.location >= 0, NSMaxRange(range) <= ns.length else {
+                return UIMenu(children: suggestedActions)
+            }
+            let snippet = ns.substring(with: range)
+            let trimmed = snippet.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return UIMenu(children: suggestedActions) }
 
-        func refreshSelection(_ tv: UITextView) {
-            let range = tv.selectedRange
-            if parent.selection != range { parent.selection = range }
-
-            guard range.length > 0,
-                  let startPos = tv.position(from: tv.beginningOfDocument, offset: range.location),
-                  let endPos = tv.position(from: startPos, offset: range.length),
-                  let textRange = tv.textRange(from: startPos, to: endPos)
-            else {
-                if parent.selectionRect != nil { parent.selectionRect = nil }
-                return
+            let magic = UIAction(
+                title: "Magic",
+                image: UIImage(systemName: "wand.and.stars")
+            ) { [weak self] _ in
+                self?.parent.onMagicSelection(snippet, range)
+            }
+            let chat = UIAction(
+                title: "Chat",
+                image: UIImage(systemName: "message")
+            ) { [weak self] _ in
+                self?.parent.onChatSelection(snippet, range)
             }
 
-            // First-line rect of the selection, in the text view's own
-            // coord space. Subtract the scroll offset so the rect tracks
-            // the visible position rather than the in-document position.
-            let rawRect = tv.firstRect(for: textRange)
-            guard !rawRect.isNull, !rawRect.isInfinite, rawRect.height > 0 else {
-                if parent.selectionRect != nil { parent.selectionRect = nil }
-                return
-            }
-            let visible = CGRect(
-                x: rawRect.minX,
-                y: rawRect.minY - tv.contentOffset.y,
-                width: rawRect.width,
-                height: rawRect.height
-            )
-            if parent.selectionRect != visible { parent.selectionRect = visible }
+            // `.displayInline` keeps the two custom actions on the same
+            // pill as Cut/Copy/Paste rather than nesting them behind a
+            // disclosure arrow.
+            let customGroup = UIMenu(title: "", options: .displayInline, children: [magic, chat])
+            return UIMenu(children: [customGroup] + suggestedActions)
         }
     }
 }
