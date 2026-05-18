@@ -280,7 +280,7 @@ private struct NoteThumb: View {
                 )
                 .frame(width: 42, height: 52)
         case .text:
-            DocCardThumb(seed: DocCardThumb.intSeed(from: note.id))
+            DocCardThumb()
         }
     }
 }

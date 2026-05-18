@@ -219,16 +219,16 @@ private func outputTypesList(_ items: [GenerationProject]) -> String {
 }
 
 /// Single text-document thumbnail: rounded card with a bold title bar and
-/// four thinner body lines, all widths seeded for visual variety. Used in
-/// both the Library list (single-item groups) and the Notes list (text
-/// notes) so the "this is a document" graphic is identical everywhere.
+/// four thinner body lines. Used in both the Library list (single-item
+/// groups) and the Notes list (text notes) so the "this is a document"
+/// graphic is identical for every text file everywhere.
 struct DocCardThumb: View {
-    let seed: Int
     var width: CGFloat = 42
     var height: CGFloat = 52
 
+    private static let lineWidths: [CGFloat] = [16, 28, 22, 30, 20]
+
     var body: some View {
-        let widths = Self.lineWidths(for: seed)
         RoundedRectangle(cornerRadius: 8, style: .continuous)
             .fill(AppInk.solid(0.07))
             .overlay(
@@ -236,7 +236,7 @@ struct DocCardThumb: View {
                     ForEach(0..<5, id: \.self) { i in
                         Capsule()
                             .fill(AppInk.solid(i == 0 ? 0.55 : 0.20))
-                            .frame(width: widths[i], height: i == 0 ? 2.5 : 1.5)
+                            .frame(width: Self.lineWidths[i], height: i == 0 ? 2.5 : 1.5)
                     }
                 }
                 .padding(8)
@@ -247,19 +247,6 @@ struct DocCardThumb: View {
                     .stroke(AppInk.solid(0.09), lineWidth: 0.5)
             )
             .frame(width: width, height: height)
-    }
-
-    static func intSeed(from uuid: UUID) -> Int {
-        let b = uuid.uuid
-        return Int(b.0) &<< 24 | Int(b.1) &<< 16 | Int(b.2) &<< 8 | Int(b.3)
-    }
-
-    private static func lineWidths(for seed: Int) -> [CGFloat] {
-        var h = seed
-        return (0..<5).map { _ in
-            h = h &* 1664525 &+ 1013904223
-            return 8 + CGFloat(h & 0x17)
-        }
     }
 }
 
@@ -381,7 +368,7 @@ private struct LibraryGroupThumb: View {
             } else if items.first?.outputType == "landing" {
                 LibraryLandingThumb(seed: seed)
             } else {
-                DocCardThumb(seed: seed)
+                DocCardThumb()
             }
         }
         .frame(width: 52, height: 56)
