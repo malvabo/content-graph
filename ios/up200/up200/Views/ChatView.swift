@@ -112,6 +112,7 @@ struct ChatContextSource: Identifiable, Equatable {
     let title: String      // displayed in the @-mention and picker
     let preview: String    // single-line subtitle in the picker
     let content: String    // full body sent to the API
+    var tags: [String] = []  // surfaced atop the chat + appended to the prompt
 }
 
 // MARK: - Chat Service
@@ -174,9 +175,12 @@ private struct ChatService {
         tags only — never include the kind/title header line.
         """
         if !contextItems.isEmpty {
-            let ctx = contextItems.map {
-                let body = $0.content.isEmpty ? $0.preview : $0.content
-                return "<source kind=\"\($0.kind.rawValue)\" title=\"\($0.title)\">\n\(body)\n</source>"
+            let ctx = contextItems.map { src -> String in
+                let body = src.content.isEmpty ? src.preview : src.content
+                let tagsAttr = src.tags.isEmpty
+                    ? ""
+                    : " tags=\"\(src.tags.joined(separator: ", "))\""
+                return "<source kind=\"\(src.kind.rawValue)\" title=\"\(src.title)\"\(tagsAttr)>\n\(body)\n</source>"
             }.joined(separator: "\n\n")
             systemText += "\n\nThe user has provided these content pieces as context:\n\n\(ctx)"
         }
@@ -289,7 +293,8 @@ struct ChatView: View {
                     kind: .note,
                     title: note.displayTitle,
                     preview: note.preview,
-                    content: note.body
+                    content: note.body,
+                    tags: note.tags
                 )
             }
     }
@@ -439,6 +444,10 @@ struct ChatView: View {
                     .fill(AppInk.solid(0.06))
                     .frame(height: 0.5)
 
+                if !contextTags.isEmpty {
+                    contextTagsBar
+                }
+
                 if messages.isEmpty {
                     welcomeState
                 } else {
@@ -528,6 +537,42 @@ struct ChatView: View {
     }
 
     // MARK: Header
+
+    /// Deduped, order-preserving union of tags carried by every attached
+    /// context source. Shown atop the chat so the user can see which
+    /// tags travelled into the AI prompt alongside the body content.
+    private var contextTags: [String] {
+        var seen: Set<String> = []
+        var out: [String] = []
+        for src in contextItems {
+            for tag in src.tags where !tag.isEmpty && seen.insert(tag).inserted {
+                out.append(tag)
+            }
+        }
+        return out
+    }
+
+    private var contextTagsBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(contextTags, id: \.self) { tag in
+                    Text(tag)
+                        .font(.appCaptionMedium)
+                        .foregroundColor(BrandColor.amber)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(BrandColor.amber.opacity(0.10))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().stroke(BrandColor.amber.opacity(0.22), lineWidth: 0.5)
+                        )
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .padding(.top, 10)
+        .padding(.bottom, 4)
+    }
 
     private var header: some View {
         HStack(spacing: 0) {

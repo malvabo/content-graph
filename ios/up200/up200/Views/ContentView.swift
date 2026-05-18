@@ -3436,13 +3436,33 @@ struct ThisButDeltaView: View {
 enum AppMarkdown {
     static func render(_ raw: String) -> AttributedString {
         let processed = promoteHeadersToBold(raw)
-        let opts = AttributedString.MarkdownParsingOptions(
-            interpretedSyntax: .inlineOnlyPreservingWhitespace
-        )
-        if let attr = try? AttributedString(markdown: processed, options: opts) {
-            return attr
+        return parseInlineBold(processed)
+    }
+
+    // SwiftUI's built-in inline-markdown parser leaks literal `**` markers
+    // when the input mixes hyphen-prefixed lines with bold runs across
+    // multiple paragraphs, so every `**…**` pair ends up visible in the
+    // card. We parse bold ourselves to guarantee the markers never make
+    // it to screen — the only inline syntax the AI emits in practice.
+    private static func parseInlineBold(_ raw: String) -> AttributedString {
+        var result = AttributedString()
+        var idx = raw.startIndex
+        while idx < raw.endIndex {
+            guard let open = raw.range(of: "**", range: idx..<raw.endIndex),
+                  let close = raw.range(of: "**", range: open.upperBound..<raw.endIndex),
+                  close.lowerBound > open.upperBound else {
+                result.append(AttributedString(String(raw[idx..<raw.endIndex])))
+                break
+            }
+            if open.lowerBound > idx {
+                result.append(AttributedString(String(raw[idx..<open.lowerBound])))
+            }
+            var bold = AttributedString(String(raw[open.upperBound..<close.lowerBound]))
+            bold.inlinePresentationIntent = .stronglyEmphasized
+            result.append(bold)
+            idx = close.upperBound
         }
-        return AttributedString(raw)
+        return result
     }
 
     // The inline-only markdown parser doesn't understand "## Header" lines,
