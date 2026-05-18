@@ -54,7 +54,7 @@ export function PromptInline({ id }: { id: string }) {
         aria-label="Prompt filter"
       />
       <button
-        className="btn btn-sm btn-outline"
+        className="btn btn-outline"
         onMouseDown={e => e.stopPropagation()}
         onClick={() => setModalOpen(true)}
         aria-label="Choose a prompt template"
