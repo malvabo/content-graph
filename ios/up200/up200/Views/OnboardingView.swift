@@ -236,34 +236,52 @@ struct OnboardingView: View {
     /// blooming into a graph of related content — before the user lands
     /// on the home screen.
     private var constellationOverlay: some View {
-        // No headline and no CTA — this beat is the orange-spark cluster
-        // blooming on its own, then auto-advancing into the capture step.
-        // A transparent passthrough keeps the SceneKit + GeneratingCloudScene
-        // visuals from the parent ZStack uncovered while still giving us
-        // a place to anchor the auto-advance task. The visible transition is
-        // already owned by the GeneratingCloudScene's own asymmetric scale
-        // (insertion fade in, removal scales past the camera), so this
-        // overlay doesn't need its own.
-        Color.clear
-            .allowsHitTesting(false)
-            // Hold long enough for the cluster to bloom out into its
-            // satellites and read as a finished gesture before the camera
-            // dives into it. The constellation clock is stamped 1.2s in
-            // the future when entering this step, so the spark schedule
-            // is shifted later; the hold tracks that shift to keep the
-            // four firings on screen instead of being clipped by the dive.
-            .task {
-                try? await Task.sleep(nanoseconds: 6_500_000_000)
-                guard !Task.isCancelled else { return }
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                // Longer than a regular step swap — the cluster has to
-                // travel from a comfortable read-size to past-camera scale,
-                // and the starfield has to settle back from its rushing
-                // entry. Below ~0.85s the dive reads as a snap zoom.
-                withAnimation(.easeInOut(duration: 0.95)) {
-                    step = .capture
-                }
+        // 'Transform your ideas / into high quality content' carries the
+        // post-intro beat: the user reads one message while the central
+        // bulb collapses, the satellites bloom, and the camera dives into
+        // the cloud. Was previously a `Color.clear` with no copy, which
+        // left the satellites floating without context.
+        VStack(spacing: 0) {
+            Spacer().frame(height: 24)
+
+            Text("Transform your ideas\ninto high quality content")
+                .font(.lora(size: 22, weight: .medium))
+                .kerning(-0.3)
+                .foregroundColor(AppText.primary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .padding(.horizontal, 28)
+                .padding(.top, 12)
+
+            Spacer()
+        }
+        .allowsHitTesting(false)
+        // Delayed easeIn lets the bulb collapse settle before the headline
+        // resolves — scene leads, copy follows, same shape the rest of
+        // onboarding uses. Fast easeOut removal so it's gone before the
+        // capture step's delayed headline starts fading in.
+        .transition(.asymmetric(
+            insertion: .opacity.animation(.easeIn(duration: 0.55).delay(0.35)),
+            removal:   .opacity.animation(.easeOut(duration: 0.22))
+        ))
+        // Hold long enough for the cluster to bloom out into its
+        // satellites and read as a finished gesture before the camera
+        // dives into it. The constellation clock is stamped 1.2s in
+        // the future when entering this step, so the spark schedule
+        // is shifted later; the hold tracks that shift to keep the
+        // four firings on screen instead of being clipped by the dive.
+        .task {
+            try? await Task.sleep(nanoseconds: 6_500_000_000)
+            guard !Task.isCancelled else { return }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            // Longer than a regular step swap — the cluster has to
+            // travel from a comfortable read-size to past-camera scale,
+            // and the starfield has to settle back from its rushing
+            // entry. Below ~0.85s the dive reads as a snap zoom.
+            withAnimation(.easeInOut(duration: 0.95)) {
+                step = .capture
             }
+        }
     }
 
     // MARK: Step 4 — Capture (starfield blurb → record → choose)
