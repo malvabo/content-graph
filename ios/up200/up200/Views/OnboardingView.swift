@@ -580,7 +580,7 @@ struct OnboardingView: View {
                     .frame(height: 420)
                     .padding(.horizontal, -24)
 
-                Text("Creating\u{2026}")
+                Text("Writing your content\u{2026}")
                     .font(.system(size: 14, weight: .medium, design: .monospaced))
                     .foregroundColor(Color.white.opacity(0.62))
             }
@@ -1312,7 +1312,7 @@ private struct InsideSphereScene: View {
                 }
             }
         }
-        .accessibilityLabel("Creating your content")
+        .accessibilityLabel("Writing your content")
     }
 
     private func pseudoRandom(_ n: Int) -> Double {
