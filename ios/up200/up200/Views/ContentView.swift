@@ -714,7 +714,7 @@ struct ProjectGroupDetailView: View {
                         ZStack(alignment: .topLeading) {
                             if editText.isEmpty {
                                 Text("No content")
-                                    .font(.appBody)
+                                    .font(.appReadingBody)
                                     .foregroundColor(AppText.muted)
                                     .padding(.horizontal, inCardPreview ? 14 : 24)
                                     .padding(.top, inCardPreview ? 4 : 8)
@@ -722,7 +722,7 @@ struct ProjectGroupDetailView: View {
                             }
                             if isEditingBody || dictation.isRecording {
                                 TextEditor(text: $editText, selection: $editSelection)
-                                    .appBodyText()
+                                    .appReadingBodyText()
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
                                     .tint(AppText.primary)
@@ -737,7 +737,7 @@ struct ProjectGroupDetailView: View {
                             } else {
                                 ScrollView {
                                     Text(AppMarkdown.render(editText))
-                                        .appBodyText()
+                                        .appReadingBodyText()
                                         .textSelection(.enabled)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.horizontal, inCardPreview ? 14 : 20)
@@ -3168,7 +3168,7 @@ struct AIPreviewSheet: View {
             ZStack {
                 ScrollView(showsIndicators: false) {
                     Text(currentVariant.isEmpty ? AttributedString(" ") : AppMarkdown.render(currentVariant))
-                        .appBodyText()
+                        .appReadingBodyText()
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -3364,7 +3364,7 @@ struct ThisButDeltaView: View {
 
             ScrollView(showsIndicators: false) {
                 Text(sourceText.isEmpty ? AttributedString(" ") : AppMarkdown.render(sourceText))
-                    .appBodyText()
+                    .appReadingBodyText()
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 16)

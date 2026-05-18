@@ -748,14 +748,14 @@ private struct NoteComposerSheet: View {
                 ZStack(alignment: .topLeading) {
                     if noteBody.isEmpty {
                         Text("Start typing\u{2026}")
-                            .font(.appBody)
+                            .font(.appReadingBody)
                             .foregroundColor(AppText.muted)
                             .padding(.horizontal, 24)
                             .padding(.top, 20)
                             .allowsHitTesting(false)
                     }
                     TextEditor(text: $noteBody)
-                        .font(.appBody)
+                        .font(.appReadingBody)
                         .lineSpacing(8)
                         .foregroundColor(AppInk.solid(0.92))
                         .scrollContentBackground(.hidden)
@@ -983,14 +983,14 @@ private struct NoteEditorPage: View {
                 ZStack(alignment: .topLeading) {
                     if noteBody.isEmpty {
                         Text("Start typing\u{2026}")
-                            .font(.appBody)
+                            .font(.appReadingBody)
                             .foregroundColor(AppText.muted)
                             .padding(.horizontal, 24)
                             .padding(.top, 8)
                             .allowsHitTesting(false)
                     }
                     TextEditor(text: $noteBody)
-                        .appBodyText()
+                        .appReadingBodyText()
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)
                         .tint(AppText.primary)

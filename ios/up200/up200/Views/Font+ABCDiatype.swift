@@ -34,6 +34,11 @@ extension Font {
     static let appBody         = app(size: 17)
     static let appBodyBold     = app(size: 17, weight: .semibold)
 
+    // Reading body — a notch larger than `appBody` for long-form content
+    // surfaces (note bodies, generated content, markdown read views).
+    // Chat keeps `appBody` so message bubbles don't grow.
+    static let appReadingBody  = app(size: 18)
+
     // Label  (UI controls, buttons)
     static let appLabel        = app(size: 16)
     static let appLabelBold    = app(size: 16, weight: .semibold)
@@ -64,8 +69,21 @@ struct AppBodyTextStyle: ViewModifier {
     }
 }
 
+struct AppReadingBodyTextStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.appReadingBody)
+            .lineSpacing(8)
+            .foregroundColor(AppInk.solid(0.92))
+    }
+}
+
 extension View {
     func appBodyText() -> some View {
         modifier(AppBodyTextStyle())
+    }
+
+    func appReadingBodyText() -> some View {
+        modifier(AppReadingBodyTextStyle())
     }
 }
