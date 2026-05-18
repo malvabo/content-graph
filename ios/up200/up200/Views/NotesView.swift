@@ -1021,7 +1021,7 @@ private struct NoteEditorPage: View {
                     }
                 )
                 .padding(.trailing, 20)
-                .padding(.bottom, 20)
+                .padding(.bottom, 8)
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
 
@@ -1031,7 +1031,7 @@ private struct NoteEditorPage: View {
                     chatButton
                 }
                 .padding(.leading, 20)
-                .padding(.bottom, 20)
+                .padding(.bottom, 8)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
