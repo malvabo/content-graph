@@ -813,14 +813,14 @@ private struct TextInputSheet: View {
                         ZStack(alignment: .topLeading) {
                             if bodyText.isEmpty {
                                 Text("Start writing\u{2026}")
-                                    .font(.appBody)
+                                    .font(.appReadingBody)
                                     .foregroundColor(AppInk.solid(0.28))
                                     .padding(.horizontal, 20)
                                     .padding(.top, 2)
                                     .allowsHitTesting(false)
                             }
                             TextEditor(text: $bodyText)
-                                .appBodyText()
+                                .appReadingBodyText()
                                 .tint(AppText.primary)
                                 .scrollContentBackground(.hidden)
                                 .background(.clear)
