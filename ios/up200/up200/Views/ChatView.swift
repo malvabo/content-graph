@@ -8,6 +8,11 @@ struct ChatMessage: Identifiable {
     var id = UUID()
     var role: String // "user" or "assistant"
     var content: String
+    // Snapshot of the context chips attached when this turn was sent.
+    // Captured per-message so the chat history can show which sources
+    // fed each answer even after the user adds or removes chips in the
+    // composer for a later turn. Only populated on user messages.
+    var attachedContext: [ChatContextSource] = []
 }
 
 // MARK: - Rewrite Suggestion
@@ -770,6 +775,37 @@ struct ChatView: View {
         }
     }
 
+    /// Read-only chip row rendered above a user message bubble in the
+    /// chat history. Mirrors the composer's `contextChipsRow` look (same
+    /// icon vocabulary, capsule fill) at a smaller scale, and drops the
+    /// × button — historical attachments aren't detachable, they're an
+    /// attribution marker so the answer below can be read in context.
+    private func attachedContextRow(_ items: [ChatContextSource]) -> some View {
+        HStack(spacing: 6) {
+            ForEach(items) { source in
+                HStack(spacing: 6) {
+                    Image(systemName: contextChipIcon(for: source.kind))
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(AppInk.solid(0.55))
+                    Text(source.title)
+                        .font(.appCaptionMedium)
+                        .foregroundColor(AppInk.solid(0.78))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(AppInk.solid(0.06), in: Capsule(style: .continuous))
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(AppInk.solid(0.10), lineWidth: 0.5)
+                )
+                .frame(maxWidth: 180, alignment: .leading)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+
     private var inputArea: some View {
         VStack(spacing: 0) {
             if shouldShowQuickActions {
@@ -957,7 +993,14 @@ struct ChatView: View {
     @ViewBuilder
     private func renderMessage(_ msg: ChatMessage) -> some View {
         if msg.role == "user" {
-            MessageBubble(message: msg)
+            if msg.attachedContext.isEmpty {
+                MessageBubble(message: msg)
+            } else {
+                VStack(alignment: .trailing, spacing: 6) {
+                    attachedContextRow(msg.attachedContext)
+                    MessageBubble(message: msg)
+                }
+            }
         } else {
             let segments = AssistantParser.parse(msg.content)
             VStack(alignment: .leading, spacing: 10) {
@@ -1166,7 +1209,7 @@ struct ChatView: View {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isLoading else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        messages.append(ChatMessage(role: "user", content: text))
+        messages.append(ChatMessage(role: "user", content: text, attachedContext: contextItems))
         inputText = ""
         // Dismiss the keyboard once the turn is in flight so the assistant's
         // reply (and any rewrite card) lands in the full screen height
@@ -1296,6 +1339,17 @@ private struct RewriteSuggestionCard: View {
         )
     }
 
+    /// Parses inline markdown (bold, italic, code, links) while keeping
+    /// the original line breaks. Falls back to a plain attributed string
+    /// if parsing throws — never returns the raw `**…**` form.
+    private static func renderMarkdown(_ text: String) -> AttributedString {
+        let opts = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: .inlineOnlyPreservingWhitespace
+        )
+        return (try? AttributedString(markdown: text, options: opts))
+            ?? AttributedString(text)
+    }
+
     /// Uppercase monospaced label for SUGGESTED REWRITE / FROM / TO. Sized
     /// up from the prior 10pt to 12pt because at 10 the labels were
     /// effectively unreadable against the dim secondary background.
@@ -1324,10 +1378,12 @@ private struct RewriteSuggestionCard: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             tagLabel(label)
-            // `Text(verbatim:)` so source text containing markdown like
-            // `**word**` renders literally instead of as bold — the diff is
-            // about the exact bytes that will be replaced, not the rendered form.
-            Text(verbatim: text)
+            // Inline markdown so `**word**` reads as bold rather than as
+            // four literal asterisks. The replacement logic still operates
+            // on the raw `suggestion.before` / `suggestion.after` bytes;
+            // only the on-screen render is parsed. `inlineOnlyPreservingWhitespace`
+            // keeps multi-line content intact instead of collapsing it.
+            Text(Self.renderMarkdown(text))
                 .font(.system(size: 14, weight: .regular, design: .monospaced))
                 .foregroundColor(textColor)
                 .strikethrough(strike, color: AppText.tertiary)
