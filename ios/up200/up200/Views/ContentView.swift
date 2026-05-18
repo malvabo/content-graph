@@ -814,14 +814,11 @@ struct ProjectGroupDetailView: View {
             // as the Notes magic/chat pair so the bar reads as a pair of
             // pebbles on top of the content rather than a solid toolbar.
             if !dictation.isRecording {
-                HStack(spacing: 12) {
-                    aiSparklesButton
-                    aiWandButton
-                }
-                .padding(.leading, 20)
-                .padding(.bottom, 8)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .transition(.scale(scale: 0.85).combined(with: .opacity))
+                aiPillBar
+                    .padding(.leading, 20)
+                    .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
@@ -993,53 +990,58 @@ struct ProjectGroupDetailView: View {
         case appendVariant
     }
 
-    private var aiSparklesButton: some View {
-        Button {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            aiSelectionRange = currentEditorSelectionRange()
-            showAIMenu = true
-        } label: {
-            Group {
-                if isAIProcessing {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(AppText.primary)
-                } else {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 19, weight: .semibold))
-                        .foregroundColor(AppText.primary)
+    /// Single capsule grouping the AI actions — matches the iOS Notes
+    /// detail-view affordance bar (one pill, multiple icons sharing the
+    /// same translucent surface).
+    private var aiPillBar: some View {
+        HStack(spacing: 4) {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                aiSelectionRange = currentEditorSelectionRange()
+                showAIMenu = true
+            } label: {
+                Group {
+                    if isAIProcessing {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(AppText.primary)
+                    } else {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 19, weight: .semibold))
+                            .foregroundColor(AppText.primary)
+                    }
                 }
+                .frame(width: 48, height: 48)
+                .contentShape(Rectangle())
             }
-            .frame(width: 56, height: 56)
-            .background(glassCircle)
+            .buttonStyle(.plain)
+            .disabled(isAIProcessing)
+            .accessibilityLabel("AI actions")
+
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                // Commit any unsaved edits so the chat reads the current body
+                // when it loads projects on appear.
+                persistCurrent()
+                showChat = true
+            } label: {
+                Image(systemName: "wand.and.stars")
+                    .font(.system(size: 19, weight: .regular))
+                    .foregroundColor(AppText.primary)
+                    .frame(width: 48, height: 48)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Ask AI to edit this")
         }
-        .buttonStyle(.plain)
-        .disabled(isAIProcessing)
-        .accessibilityLabel("AI actions")
+        .padding(.horizontal, 4)
+        .background(glassCapsule)
     }
 
-    private var aiWandButton: some View {
-        Button {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            // Commit any unsaved edits so the chat reads the current body when
-            // it loads projects on appear.
-            persistCurrent()
-            showChat = true
-        } label: {
-            Image(systemName: "wand.and.stars")
-                .font(.system(size: 19, weight: .regular))
-                .foregroundColor(AppText.primary)
-                .frame(width: 56, height: 56)
-                .background(glassCircle)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Ask AI to edit this")
-    }
-
-    private var glassCircle: some View {
-        Circle()
+    private var glassCapsule: some View {
+        Capsule(style: .continuous)
             .fill(.regularMaterial)
-            .overlay(Circle().stroke(AppInk.solid(0.15), lineWidth: 0.5))
+            .overlay(Capsule(style: .continuous).stroke(AppInk.solid(0.15), lineWidth: 0.5))
             .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
     }
 
