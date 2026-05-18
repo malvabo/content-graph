@@ -17,7 +17,6 @@ private struct OnboardingSceneView: UIViewControllerRepresentable {
 
 private enum OnboardingStep: Int {
     case intro = 0          // wide constellation + brand mark + Get started / Log in
-    case transform = 1      // collected bulb + "Transform your ideas…" headline + Continue
     case constellation = 2  // central bulb + 4 satellite bulbs joined by dot arcs + final CTA
     case capture = 3        // starfield "blurb" → press-and-hold record → transform / expand
 }
@@ -69,14 +68,13 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // Shared SceneKit scene for steps 1–2. On step 3 (.constellation)
-            // we hand the visual off to GeneratingCloudScene (same scene used
-            // during .capture/.generating) so the "one idea → graph of
-            // content" beat speaks in the same orange-spark vocabulary as the
-            // creation flow. On step 4 (.capture) the SceneKit view is hidden
-            // entirely — even at low opacity its warm gradient + step-2 bulb
-            // cluster patches over the starfield as a visible ghost layer
-            // sitting on top of the dive's destination.
+            // SceneKit wide-constellation backdrop for the intro step only.
+            // On .constellation we hand the visual off to GeneratingCloudScene
+            // (same scene used during .capture/.generating) so the "one idea
+            // → graph of content" beat speaks in the same orange-spark
+            // vocabulary as the creation flow. On .capture the SceneKit view
+            // is hidden too — even at low opacity its warm gradient + cluster
+            // would patch a visible ghost layer on top of the starfield.
             OnboardingSceneView(step: step.rawValue)
                 .opacity((step == .capture || step == .constellation) ? 0 : 1)
                 .animation(.easeInOut(duration: 0.65), value: step)
@@ -126,7 +124,6 @@ struct OnboardingView: View {
 
             switch step {
             case .intro:         introOverlay
-            case .transform:     transformOverlay
             case .constellation: constellationOverlay
             case .capture:       captureOverlay
             }
@@ -173,8 +170,14 @@ struct OnboardingView: View {
             VStack(spacing: 12) {
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    // Stamp the constellation clock 1.2s in the future so the
+                    // central bulb is visible immediately on screen 3 but the
+                    // amber spark firings hold off until the transition has
+                    // settled — the orange animation reads as starting after
+                    // a beat rather than launching mid-fade.
+                    constellationStartedAt = Date().addingTimeInterval(1.2)
                     withAnimation(.easeInOut(duration: 0.45)) {
-                        step = .transform
+                        step = .constellation
                     }
                 }) {
                     Text("Get started")
@@ -212,59 +215,14 @@ struct OnboardingView: View {
 
             Spacer().frame(height: 52)
         }
-        // Removal accelerated to 0.20s so the intro's "Log in" button
-        // (bottom of the screen) is gone before the transform overlay's
-        // delayed-insertion "Continue" button starts fading in at 0.25s.
-        // Otherwise the two white pills crossfade through each other in
-        // the same vertical band.
+        // Removal accelerated to 0.20s so the intro's white pills are
+        // gone quickly when the user taps Get started — the next beat
+        // is the orange cluster, and lingering CTAs would ghost over
+        // the new scene as it fades in.
         .transition(.asymmetric(
             insertion: .opacity,
             removal: .opacity.animation(.easeInOut(duration: 0.20))
         ))
-    }
-
-    // MARK: Step 2 — collected bulb
-
-    private var transformOverlay: some View {
-        VStack(spacing: 0) {
-            Spacer().frame(height: 24)
-
-            // Mono headline at top — same typographic register as the brand
-            // mark on step 1, so the two screens feel like one continuous
-            // story instead of a font swap mid-flow.
-            Text("Transform your ideas\ninto high quality content")
-                .font(.lora(size: 22, weight: .medium))
-                .kerning(-0.3)
-                .foregroundColor(AppText.primary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
-                .padding(.horizontal, 28)
-                .padding(.top, 12)
-
-            Spacer()
-        }
-        // Asymmetric: on entry the scene leads, so the copy fades in behind a
-        // delay. On exit the auto-advance fires — the old copy needs to clear
-        // immediately so it doesn't ghost on top of the next step's beats and
-        // so the hand-off has a visible receipt. easeOut, not easeIn, because
-        // we're fading *out* — we want the alpha to drop fast and then settle.
-        .transition(.asymmetric(
-            insertion: .opacity.animation(.easeIn(duration: 0.45).delay(0.25)),
-            removal:   .opacity.animation(.easeOut(duration: 0.22))
-        ))
-        // Auto-advance to the constellation step after a beat that's long
-        // enough to read the headline and watch the bulb settle. The view
-        // is only mounted while `step == .transform`, so this task is
-        // cancelled automatically if the flow is ever short-circuited.
-        .task {
-            try? await Task.sleep(nanoseconds: 3_500_000_000)
-            guard !Task.isCancelled else { return }
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            constellationStartedAt = Date()
-            withAnimation(.easeInOut(duration: 0.45)) {
-                step = .constellation
-            }
-        }
     }
 
     // MARK: Step 3 — content graph
@@ -290,9 +248,12 @@ struct OnboardingView: View {
             .allowsHitTesting(false)
             // Hold long enough for the cluster to bloom out into its
             // satellites and read as a finished gesture before the camera
-            // dives into it.
+            // dives into it. The constellation clock is stamped 1.2s in
+            // the future when entering this step, so the spark schedule
+            // is shifted later; the hold tracks that shift to keep the
+            // four firings on screen instead of being clipped by the dive.
             .task {
-                try? await Task.sleep(nanoseconds: 4_800_000_000)
+                try? await Task.sleep(nanoseconds: 6_500_000_000)
                 guard !Task.isCancelled else { return }
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 // Longer than a regular step swap — the cluster has to
