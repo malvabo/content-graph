@@ -84,7 +84,17 @@ struct OnboardingView: View {
                 GeneratingCloudScene(generationStartedAt: constellationStartedAt)
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
-                    .transition(.opacity)
+                    // On removal (.constellation → .capture) the cluster
+                    // scales past the camera and fades — the user is
+                    // *flying into* the cloud rather than cutting to a new
+                    // screen. Insertion stays as a plain fade so arriving
+                    // at this step is unchanged.
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity,
+                            removal: .scale(scale: 4.5).combined(with: .opacity)
+                        )
+                    )
             }
 
             // Step 4 .prompt: the user is *inside* the cloud. The starfield
@@ -100,7 +110,16 @@ struct OnboardingView: View {
                     .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 30) {
                         startCaptureRecording()
                     }
-                    .transition(.opacity)
+                    // Insertion picks up the back half of the zoom: stars
+                    // rush past as the camera settles inside the cluster.
+                    // Removal stays as a plain fade so transitioning out of
+                    // .prompt into the waveform/choose list is unchanged.
+                    .transition(
+                        .asymmetric(
+                            insertion: .scale(scale: 1.8).combined(with: .opacity),
+                            removal: .opacity
+                        )
+                    )
             }
 
             switch step {
@@ -267,7 +286,11 @@ struct OnboardingView: View {
 
             Button(action: {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                withAnimation(.easeInOut(duration: 0.55)) {
+                // Longer than a regular step swap — the cluster has to
+                // travel from a comfortable read-size to past-camera scale,
+                // and the starfield has to settle back from its rushing
+                // entry. Below ~0.85s the dive reads as a snap zoom.
+                withAnimation(.easeInOut(duration: 0.95)) {
                     step = .capture
                 }
             }) {
