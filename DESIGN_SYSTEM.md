@@ -1,4 +1,4 @@
-# up200 Design System
+# Oula Design System
 
 ## 1. Design Tokens
 

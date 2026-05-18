@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 export default function TypewriterLogo({ fontSize = 96 }: { fontSize?: number }) {
-  const label = 'up150';
+  const label = 'Oula';
   const [len, setLen] = useState(0);
   const done = len === label.length;
   useEffect(() => {
@@ -10,7 +10,7 @@ export default function TypewriterLogo({ fontSize = 96 }: { fontSize?: number })
     return () => clearTimeout(t);
   }, [len, done]);
   return (
-    <div aria-label="up150" style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+    <div aria-label="Oula" style={{ display: 'inline-flex', alignItems: 'baseline' }}>
       <span style={{ fontFamily: 'var(--font-mono)', fontSize, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--color-text-primary)' }}>
         {label.slice(0, len)}
       </span>

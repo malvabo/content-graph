@@ -159,7 +159,7 @@ export default function WelcomeScreen({
               letterSpacing: '-0.02em',
             }}
           >
-            up150
+            Oula
           </div>
           <div
             style={{
