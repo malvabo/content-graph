@@ -571,93 +571,102 @@ struct ProjectGroupDetailView: View {
             bg.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
-                // Top bar
-                HStack(spacing: 10) {
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        persistCurrent()
-                        dismiss()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(AppText.primary)
-                            .frame(width: 36, height: 36)
-                            .background(AppInk.solid(0.08))
-                            .clipShape(Circle())
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-
-                    Text(groupTitle)
-                        .font(.appBodyBold)
-                        .foregroundColor(AppText.primary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-
-                    Spacer()
-
-                    TopBarPill {
+                // Top bar. Hidden during the onboarding card-preview moment so
+                // the celebration banner stands alone — the screen reads as
+                // the closing onboarding beat rather than a library detail
+                // page with a banner pasted on top. Reappears as soon as the
+                // user taps the card to expand into the regular layout.
+                if !inCardPreview {
+                    HStack(spacing: 10) {
                         Button {
-                            UIPasteboard.general.string = editText
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            withAnimation(AppAnimation.quick) { copied = true }
-                            copiedResetTask?.cancel()
-                            copiedResetTask = Task { @MainActor in
-                                try? await Task.sleep(nanoseconds: 2_000_000_000)
-                                guard !Task.isCancelled else { return }
-                                withAnimation { copied = false }
-                            }
+                            persistCurrent()
+                            dismiss()
                         } label: {
-                            Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                                .contentTransition(.symbolEffect(.replace))
-                                .topBarPillLabel()
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(AppText.primary)
+                                .frame(width: 36, height: 36)
+                                .background(AppInk.solid(0.08))
+                                .clipShape(Circle())
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(copied ? "Copied" : "Copy")
 
-                        TopBarPillDivider()
+                        Text(groupTitle)
+                            .font(.appBodyBold)
+                            .foregroundColor(AppText.primary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
 
-                        Menu {
-                            ShareLink(item: editText) {
-                                Label("Share", systemImage: "square.and.arrow.up")
-                            }
-                            Button(role: .destructive) {
-                                deleteGroup()
+                        Spacer()
+
+                        TopBarPill {
+                            Button {
+                                UIPasteboard.general.string = editText
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                withAnimation(AppAnimation.quick) { copied = true }
+                                copiedResetTask?.cancel()
+                                copiedResetTask = Task { @MainActor in
+                                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                                    guard !Task.isCancelled else { return }
+                                    withAnimation { copied = false }
+                                }
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                                    .contentTransition(.symbolEffect(.replace))
+                                    .topBarPillLabel()
                             }
-                        } label: {
-                            Image(systemName: "ellipsis")
-                                .topBarPillLabel()
-                        }
-                        .accessibilityLabel("More")
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 4)
-                .padding(.bottom, 10)
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(copied ? "Copied" : "Copy")
 
-                // Onboarding-only "first result" celebration banner. Sits
-                // between the top bar and the (optional) tabs so a fresh
-                // generation reads as a moment rather than just another
-                // item in the library. Fades + collapses out once the
-                // user taps the card open so the expanded layout matches
-                // the regular flush detail page.
+                            TopBarPillDivider()
+
+                            Menu {
+                                ShareLink(item: editText) {
+                                    Label("Share", systemImage: "square.and.arrow.up")
+                                }
+                                Button(role: .destructive) {
+                                    deleteGroup()
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis")
+                                    .topBarPillLabel()
+                            }
+                            .accessibilityLabel("More")
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+                    .padding(.bottom, 10)
+                    .transition(.opacity)
+                }
+
+                // Onboarding-only "first result" celebration banner. With the
+                // top bar suppressed during this beat, the banner sits at the
+                // top of the screen — same typographic register (monospaced
+                // headline + lighter supporting line) as the earlier
+                // onboarding steps so the result page reads as the closing
+                // screen of that flow rather than a library detail surface.
                 if inCardPreview {
-                    VStack(spacing: 4) {
+                    VStack(spacing: 6) {
                         Text("Your content is ready!")
-                            .font(.appTitle)
+                            .font(.system(size: 22, weight: .medium, design: .monospaced))
+                            .kerning(-0.3)
                             .foregroundColor(AppText.primary)
                         Text("Share it with the world")
-                            .font(.appBody)
-                            .foregroundColor(AppText.secondary)
+                            .font(.system(size: 20, weight: .medium, design: .monospaced))
+                            .kerning(-0.3)
+                            .foregroundColor(Color.white.opacity(0.72))
                     }
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
-                    .padding(.bottom, 14)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 24)
+                    .padding(.bottom, 18)
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
