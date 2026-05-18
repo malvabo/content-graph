@@ -2103,6 +2103,7 @@ private struct SimpleHomeHeader: View {
     let onSearchToggle: () -> Void
 
     private static let selectSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
+    @Namespace private var segmentPillNS
 
     var body: some View {
         // ZStack with opacity-driven swap so the two layouts crossfade
@@ -2188,10 +2189,15 @@ private struct SimpleHomeHeader: View {
                 .padding(.horizontal, 18)
                 .padding(.vertical, 9)
                 .background(
-                    Capsule(style: .continuous)
-                        .fill(AppInk.solid(selected ? 0.20 : 0.06))
+                    ZStack {
+                        if selected {
+                            Capsule(style: .continuous)
+                                .fill(AppInk.solid(0.20))
+                                .matchedGeometryEffect(id: "homeSegmentPill", in: segmentPillNS)
+                        }
+                    }
                 )
-                .contentShape(Rectangle())
+                .contentShape(Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
