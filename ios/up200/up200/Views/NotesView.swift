@@ -1098,7 +1098,7 @@ private struct NoteEditorPage: View {
         } label: {
             Image(systemName: "wand.and.stars")
                 .font(.system(size: 19, weight: .semibold))
-                .foregroundStyle(BrandColor.glowGradientBright)
+                .foregroundColor(AppText.primary)
                 .frame(width: 56, height: 56)
                 .background(
                     Circle()
