@@ -674,41 +674,35 @@ struct AnimatedLightsButton: View {
     var showSparks: Bool = false
     var isEnabled: Bool = true
     var action: () -> Void
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var disabledFill: Color {
-        colorScheme == .dark ? AppBackground.ctaDisabled : AppBackground.surface
-    }
 
     var body: some View {
         Button(action: action) {
             ZStack {
                 // Flat brown-amber CTA fill — shared token, also used by
                 // the Accept-rewrite button in chat so the two primary
-                // actions read as one visual.
+                // actions read as one visual. Disabled uses its own
+                // adaptive token so the button stays visible as a button;
+                // the prior fallback to `surface` rendered it pure white
+                // on white in light mode, indistinguishable from the cards
+                // above it.
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .fill(isEnabled ? BrandColor.ctaPrimary : disabledFill)
+                    .fill(isEnabled ? BrandColor.ctaPrimary : AppBackground.ctaDisabled)
 
                 RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .stroke(
-                        isEnabled
-                        ? AnyShapeStyle(AppInk.solid(0.28))
-                        : AnyShapeStyle(BrandColor.amber.opacity(0.35)),
-                        lineWidth: isEnabled ? 0.75 : 1
-                    )
+                    .stroke(AppInk.solid(isEnabled ? 0.28 : 0.14), lineWidth: isEnabled ? 0.75 : 1)
 
                 HStack(spacing: 8) {
                     if showSparks {
                         SparkRaysShape()
                             .stroke(
-                                isEnabled ? Color.white : BrandColor.amber.opacity(0.55),
+                                isEnabled ? Color.white : AppInk.solid(0.45),
                                 style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round)
                             )
                             .frame(width: 17, height: 17)
                     }
                     Text(title)
                         .font(.app(size: 18, weight: .semibold))
-                        .foregroundColor(isEnabled ? .white : BrandColor.amber.opacity(0.65))
+                        .foregroundColor(isEnabled ? .white : AppInk.solid(0.55))
                 }
             }
             .frame(height: 54)
@@ -1614,7 +1608,7 @@ private struct SourcesBlock: View {
                             } label: {
                                 Image(systemName: "xmark")
                                     .font(.appBadge)
-                                    .foregroundColor(AppInk.solid(0.28))
+                                    .foregroundColor(AppInk.solid(0.42))
                                     .frame(width: 32, height: 32)
                                     .contentShape(Rectangle())
                             }
@@ -2384,8 +2378,13 @@ private struct PromptField: View {
             text: $prompt,
             axis: .vertical
         ) {
+            // Placeholder sits on the card's pure-white surface with no input
+            // chrome around it, so the alpha has to do all the work of marking
+            // this row as low-emphasis. 0.22 fell well below the 3:1 floor
+            // for non-text UI in light mode (~1.8:1 against #FFF); 0.40 keeps
+            // the hint clearly secondary while staying readable.
             Text("Leave empty to generate from sources and format.")
-                .foregroundStyle(AppInk.solid(0.22))
+                .foregroundStyle(AppInk.solid(0.40))
         }
         // Match the canonical body-text style (17pt, lineSpacing 8,
         // primary ink) used everywhere else for reading copy. The prompt

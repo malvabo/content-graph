@@ -59,25 +59,32 @@ enum SelectionStyle {
 enum AppInk {
     static func solid(_ alpha: Double) -> Color {
         Color(uiColor: UIColor { trait in
-            trait.userInterfaceStyle == .dark
-                ? UIColor(white: 1.0, alpha: alpha)
-                : UIColor(white: 0.0, alpha: alpha)
+            if trait.userInterfaceStyle == .dark {
+                return UIColor(white: 1.0, alpha: alpha)
+            }
+            // Light mode uses a warm dark-brown ink instead of pure black so
+            // every overlay (chip fills, hairline strokes, glyphs) carries a
+            // hint of the brand's warmth — same alpha values still resolve
+            // along the design's emphasis ramp, just with a coffee bias
+            // instead of a flat neutral grey.
+            return UIColor(red: 0.16, green: 0.10, blue: 0.05, alpha: alpha)
         })
     }
 }
 
 /// Adaptive app-background tokens. Dark mode keeps the warm dark-brown
-/// wash that gives the brand its identity; light mode is a clean
-/// neutral grey — no warm tint, no peach glow — so the page reads as
-/// a flat off-white plane like Apple's own light surfaces.
+/// wash that gives the brand its identity; light mode is a faintly warm
+/// cream — enough to carry the brand into light without bringing back
+/// the heavy peach wash an earlier iteration had.
 enum AppBackground {
-    /// Solid app/sheet background. Neutral RGB on light so the warm
-    /// brand colors (amber chips, CTA) pop against a true grey ground
-    /// instead of fighting a beige tint.
+    /// Solid app/sheet background. A faint warm tint on light so the warm
+    /// brand CTA doesn't look orphaned against a cold neutral plane, while
+    /// staying close enough to off-white that the page still reads as a
+    /// clean surface.
     static let primary = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.035, green: 0.030, blue: 0.025, alpha: 1.0)
-            : UIColor(white: 0.96, alpha: 1.0)
+            : UIColor(red: 0.965, green: 0.955, blue: 0.935, alpha: 1.0)
     })
     /// Top-left radial-glow tint. Bright amber on dark — kept at a low
     /// alpha so the corner reads as a hint of warm light rather than the
@@ -128,10 +135,15 @@ enum AppBackground {
             ? UIColor(red: 0.24, green: 0.14, blue: 0.07, alpha: 1.0)
             : UIColor(red: 0.78, green: 0.42, blue: 0.10, alpha: 1.0)
     })
+    /// Disabled CTA fill. Must sit visibly **below** the cards above it
+    /// (which are pure white in light) so the button still reads as a
+    /// button rather than as another card with missing text. A warm tan
+    /// in light keeps it on-brand without competing with the enabled
+    /// brown-amber fill.
     static let ctaDisabled = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.14, green: 0.11, blue: 0.09, alpha: 1.0)
-            : UIColor(red: 0.90, green: 0.89, blue: 0.87, alpha: 1.0)
+            : UIColor(red: 0.86, green: 0.83, blue: 0.78, alpha: 1.0)
     })
 }
 
