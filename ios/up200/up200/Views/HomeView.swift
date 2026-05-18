@@ -2467,6 +2467,31 @@ struct HomeView: View {
     }
 
     var body: some View {
+        // When presented as a fullScreenCover (from the note page), the cover
+        // sits above ContentView's banner overlay, so the generation pill at
+        // ContentView.swift is hidden behind us. Render our own copy inside
+        // the modal so the user still sees progress + can open the result.
+        ZStack(alignment: .top) {
+            modalBody
+            if isModal && bannerController.isVisible {
+                GenerationBanner(
+                    isReady: bannerController.isReady,
+                    onTap: {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        bannerController.onOpen?()
+                    },
+                    onDismiss: { bannerController.onCancel?() }
+                )
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(2)
+            }
+        }
+        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
+    }
+
+    private var modalBody: some View {
         NavigationStack {
             ZStack {
                 AmbientBackground()
