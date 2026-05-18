@@ -1293,7 +1293,7 @@ private struct MessageBubble: View {
             if isUser { Spacer(minLength: 56) }
 
             Text(isUser ? AttributedString(message.content) : AppMarkdown.render(message.content))
-                // Canonical body-text rhythm (17pt, lineSpacing 8) — same
+                // Canonical body-text rhythm (17pt, lineSpacing 12) — same
                 // modifier note bodies and other reading copy use, so chat
                 // doesn't read denser than the rest of the app.
                 .appBodyText()
