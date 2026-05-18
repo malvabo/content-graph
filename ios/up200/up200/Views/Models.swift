@@ -89,11 +89,12 @@ enum AppBackground {
             : UIColor(white: 1.0, alpha: 0.35)
     })
     /// Bottom-right radial-glow tint. Same amber hue as the top-left
-    /// glow, lower alpha — far enough off the warm corner that it adds
-    /// depth without doubling the wash.
+    /// glow, raised in alpha so the corner reads as a clear warm
+    /// presence rather than the previously-too-subtle hint that left
+    /// most of the page looking flat grey.
     static let glowBottomRight = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.85, green: 0.50, blue: 0.10, alpha: 0.10)
+            ? UIColor(red: 0.92, green: 0.55, blue: 0.12, alpha: 0.28)
             : UIColor(white: 0.88, alpha: 0.30)
     })
 
@@ -211,10 +212,19 @@ struct AmbientBackground: View {
     var body: some View {
         ZStack {
             AppBackground.primary
+            // Wider radius + an explicit mid-stop so the warm corner
+            // bleeds into the rest of the page as a smooth amber wash
+            // instead of dropping off into pure near-black grey halfway
+            // across the screen. The earlier 320pt radius left the top
+            // half flat and the page read as grey, not warm.
             RadialGradient(
-                colors: [AppBackground.glowBottomRight, .clear],
+                gradient: Gradient(stops: [
+                    .init(color: AppBackground.glowBottomRight, location: 0),
+                    .init(color: AppBackground.glowBottomRight.opacity(0.55), location: 0.45),
+                    .init(color: .clear, location: 1.0),
+                ]),
                 center: .init(x: 1.0, y: 0.85),
-                startRadius: 0, endRadius: 320
+                startRadius: 0, endRadius: 700
             )
         }
         .ignoresSafeArea()
