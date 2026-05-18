@@ -568,7 +568,7 @@ struct ProjectGroupDetailView: View {
     }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottomTrailing) {
             bg.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
@@ -786,7 +786,47 @@ struct ProjectGroupDetailView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            // Floating mic / dictation row — matches the Notes detail view:
+            // glass-material circle, no opaque bar behind it. Visible whenever
+            // the user is dictating or has the editor focused (the only
+            // moment where there's somewhere for transcribed text to land).
+            if dictation.isRecording || editorFocused {
+                DictationControls(
+                    dictation: dictation,
+                    onStart: {
+                        editTextBeforeDictation = editText
+                        dictation.start()
+                    },
+                    onCancel: {
+                        dictation.cancel()
+                        editText = editTextBeforeDictation
+                    },
+                    onConfirm: {
+                        dictation.stop()
+                    }
+                )
+                .padding(.trailing, 20)
+                .padding(.bottom, 8)
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
+
+            // Floating AI buttons (bottom-leading) — same liquid-glass treatment
+            // as the Notes magic/chat pair so the bar reads as a pair of
+            // pebbles on top of the content rather than a solid toolbar.
+            if !dictation.isRecording {
+                HStack(spacing: 12) {
+                    aiSparklesButton
+                    aiWandButton
+                }
+                .padding(.leading, 20)
+                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
         }
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -821,108 +861,6 @@ struct ProjectGroupDetailView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Enable Microphone and Speech Recognition in Settings to dictate.")
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            Group {
-                if dictation.isRecording {
-                    HStack(spacing: 0) {
-                        Spacer(minLength: 0)
-                        DictationControls(
-                            dictation: dictation,
-                            onStart: {},
-                            onCancel: {
-                                dictation.cancel()
-                                editText = editTextBeforeDictation
-                            },
-                            onConfirm: {
-                                dictation.stop()
-                            }
-                        )
-                        .fixedSize(horizontal: true, vertical: false)
-                    }
-                } else {
-                    HStack(spacing: 10) {
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            aiSelectionRange = currentEditorSelectionRange()
-                            showAIMenu = true
-                        } label: {
-                            Group {
-                                if isAIProcessing {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                        .tint(.white)
-                                } else {
-                                    Image(systemName: "sparkles")
-                                        .font(.system(size: 17, weight: .semibold))
-                                        .foregroundColor(.white)
-                                }
-                            }
-                            .frame(width: 52, height: 52)
-                            .background(BrandColor.ctaPrimary)
-                            .clipShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(isAIProcessing)
-                        .accessibilityLabel("AI actions")
-
-                        Button {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            // Commit any unsaved edits so the chat reads the
-                            // current body when it loads projects on appear.
-                            persistCurrent()
-                            showChat = true
-                        } label: {
-                            // "Magic" wand reads as an inline-editing
-                            // affordance — tapping seeds the chat with the
-                            // current body as a selection chip plus the
-                            // document chip, so the user can ask AI to
-                            // rewrite a specific snippet without manually
-                            // attaching anything.
-                            Image(systemName: "wand.and.stars")
-                                .font(.system(size: 17, weight: .regular))
-                                .foregroundColor(.white)
-                                .frame(width: 52, height: 52)
-                                .background(BrandColor.ctaPrimary)
-                                .clipShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Ask AI to edit this")
-
-                        Spacer()
-
-                        // Mic only appears once the user has tapped into the
-                        // editor — there's nothing to dictate into otherwise.
-                        if editorFocused {
-                            Button {
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                editTextBeforeDictation = editText
-                                dictation.start()
-                            } label: {
-                                Image(systemName: "mic.fill")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .foregroundColor(AppText.primary)
-                                    .frame(width: 52, height: 52)
-                                    .background(AppInk.solid(0.12))
-                                    .clipShape(Circle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Dictate into this content")
-                            .transition(.scale(scale: 0.85).combined(with: .opacity))
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-            .background(alignment: .top) {
-                LinearGradient(colors: [bg.opacity(0), bg], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 28).offset(y: -28).allowsHitTesting(false)
-            }
-            .background(bg)
-            .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
-            .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         }
         .sheet(isPresented: $showAIMenu) {
             AIActionsSheet { label, icon, instruction in
@@ -1054,6 +992,56 @@ struct ProjectGroupDetailView: View {
         case replaceCurrent
         /// "This but…" — generate a distinct variant and append to the list.
         case appendVariant
+    }
+
+    private var aiSparklesButton: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            aiSelectionRange = currentEditorSelectionRange()
+            showAIMenu = true
+        } label: {
+            Group {
+                if isAIProcessing {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(AppText.primary)
+                } else {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 19, weight: .semibold))
+                        .foregroundColor(AppText.primary)
+                }
+            }
+            .frame(width: 56, height: 56)
+            .background(glassCircle)
+        }
+        .buttonStyle(.plain)
+        .disabled(isAIProcessing)
+        .accessibilityLabel("AI actions")
+    }
+
+    private var aiWandButton: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            // Commit any unsaved edits so the chat reads the current body when
+            // it loads projects on appear.
+            persistCurrent()
+            showChat = true
+        } label: {
+            Image(systemName: "wand.and.stars")
+                .font(.system(size: 19, weight: .regular))
+                .foregroundColor(AppText.primary)
+                .frame(width: 56, height: 56)
+                .background(glassCircle)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Ask AI to edit this")
+    }
+
+    private var glassCircle: some View {
+        Circle()
+            .fill(.regularMaterial)
+            .overlay(Circle().stroke(AppInk.solid(0.15), lineWidth: 0.5))
+            .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
     }
 
     /// Pulls a contiguous range out of `editSelection` if the user has
