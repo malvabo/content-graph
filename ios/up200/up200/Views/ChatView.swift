@@ -1324,10 +1324,10 @@ private struct RewriteSuggestionCard: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             tagLabel(label)
-            // `Text(verbatim:)` so source text containing markdown like
-            // `**word**` renders literally instead of as bold — the diff is
-            // about the exact bytes that will be replaced, not the rendered form.
-            Text(verbatim: text)
+            // Render markdown so `**word**` shows as bold instead of leaking
+            // literal asterisks into the card. Replacement still uses the raw
+            // bytes — only the display goes through the markdown parser.
+            Text(AppMarkdown.render(text))
                 .font(.system(size: 14, weight: .regular, design: .monospaced))
                 .foregroundColor(textColor)
                 .strikethrough(strike, color: AppText.tertiary)
