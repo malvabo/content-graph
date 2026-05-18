@@ -2618,9 +2618,14 @@ private extension View {
             .overlay(
                 // Stroke fades *and* scales outward past the card bounds
                 // when the user expands, so the chrome reads as opening
-                // up rather than just dissolving in place.
+                // up rather than just dissolving in place. Uses iOS's
+                // semantic `.separator` colour (translucent, dark/light
+                // adaptive) rather than a flat 14%-white ink — the system
+                // separator is the same hairline UIKit uses for cells and
+                // grouped tables, so the card edge reads as native chrome
+                // instead of a hand-drawn outline.
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                    .stroke(AppInk.solid(0.14), lineWidth: 0.5)
+                    .stroke(Color(uiColor: .separator), lineWidth: 0.33)
                     .opacity(shouldDraw ? 1 : 0)
                     .scaleEffect(shouldDraw ? 1.0 : 1.12)
             )
