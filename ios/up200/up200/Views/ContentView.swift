@@ -2451,9 +2451,13 @@ struct ContentView: View {
                 } else if selectedTab == .create {
                     selectedTab = .notes
                 }
-            } else {
-                // Tear down any Simple-only chrome left over from the
-                // previous mode.
+            } else if !minimalMode {
+                // Simple → Classic (not Simple → Minimal). Tear down any
+                // Simple-only chrome left over from the previous mode.
+                // When going Simple → Minimal, leave showProfile alone:
+                // Minimal also reaches Profile through the same modal, so
+                // dismissing it mid-transition would yank the screen the
+                // user was just looking at.
                 showProfile = false
             }
         }
