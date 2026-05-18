@@ -1247,6 +1247,7 @@ struct NotesView: View {
     @State private var showAddTag = false
     @State private var newTagName = ""
     @State private var reloadTask: Task<Void, Never>? = nil
+    @State private var titlingTask: Task<Void, Never>? = nil
     @FocusState private var searchFocused: Bool
     @Namespace private var filterChipNS
 
@@ -1320,6 +1321,48 @@ struct NotesView: View {
         guard let idx = notes.firstIndex(where: { $0.id == note.id }) else { return }
         notes[idx].isPinned.toggle()
         scheduleSave()
+    }
+
+    /// One-shot pass that retroactively titles older notes whose body is a
+    /// single line (or a long opening sentence) so the list shows a 3-word
+    /// summary instead of the first transcript line. New notes can land
+    /// here from onboarding or from a pre-fix install; the editor's
+    /// `persistIfNeeded` will not run until the user opens them, so this is
+    /// the only way to clean up the existing list without manual taps.
+    private func retroTitleUntitledNotes() {
+        titlingTask?.cancel()
+        let snapshot = notes
+        titlingTask = Task {
+            for note in snapshot where Self.needsTitle(note) {
+                if Task.isCancelled { return }
+                let originalBody = note.body
+                guard let updatedBody = await AIService.prependTitleIfMissing(to: originalBody) else { continue }
+                if Task.isCancelled { return }
+                await MainActor.run {
+                    guard let idx = notes.firstIndex(where: { $0.id == note.id }) else { return }
+                    // Skip if the body changed since we sampled it (user edit
+                    // landed) or the note is currently being edited — the
+                    // editor owns the body until it dismisses.
+                    if notes[idx].body != originalBody { return }
+                    if editingNote?.id == note.id { return }
+                    notes[idx].body = updatedBody
+                    notes[idx].updatedAt = note.updatedAt
+                    scheduleSave()
+                }
+            }
+        }
+    }
+
+    /// Heuristic for "this note has no title yet": text notes whose first
+    /// line is long enough to look like prose rather than a title. Drawings
+    /// and short labels are left alone.
+    private static func needsTitle(_ note: Note) -> Bool {
+        guard note.kind == .text else { return false }
+        let trimmed = note.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        let firstLine = trimmed.split(whereSeparator: \.isNewline).first.map(String.init) ?? trimmed
+        if firstLine.count <= 60 { return false }
+        return true
     }
 
     private func scheduleSave() {
@@ -1697,7 +1740,10 @@ struct NotesView: View {
                     showAddTag = false
                 }
             }
-            .task { notes = await NotesStore.loadAsync() }
+            .task {
+                notes = await NotesStore.loadAsync()
+                retroTitleUntitledNotes()
+            }
         .onReceive(NotificationCenter.default.publisher(for: .notesStoreDidChange)) { _ in
             // Skip if this view has a debounced save in flight; the disk may be
             // stale relative to in-memory edits and reloading would clobber them.

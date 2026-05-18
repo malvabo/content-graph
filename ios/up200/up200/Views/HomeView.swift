@@ -188,6 +188,29 @@ struct AIService {
         }
         return cased.joined(separator: " ")
     }
+
+    /// Returns a body with a fresh AI 3-word title prepended as the first
+    /// line, or nil when the body already looks titled, when the generated
+    /// title duplicates the existing first line, or when generation fails.
+    /// Shared by every call site that lands a raw transcript on disk so the
+    /// notes list never shows a "first line" instead of a summary.
+    static func prependTitleIfMissing(to body: String) async -> String? {
+        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        // Treat any short-ish first line followed by a newline as an
+        // existing title — covers both user-typed titles and prior AI passes.
+        if let nl = trimmed.firstIndex(of: "\n") {
+            let firstLineLen = trimmed.distance(from: trimmed.startIndex, to: nl)
+            if firstLineLen <= 60 { return nil }
+        }
+        let aiTitle = await generateTitle(from: trimmed)
+        let cleaned = aiTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return nil }
+        let firstLine = trimmed.split(whereSeparator: \.isNewline).first
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
+        guard cleaned.lowercased() != firstLine.lowercased() else { return nil }
+        return cleaned + "\n" + body
+    }
 }
 
 // MARK: - Content Generator

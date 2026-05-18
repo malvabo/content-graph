@@ -744,12 +744,28 @@ struct OnboardingView: View {
     private func saveTranscriptAsNote(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        var notes = NotesStore.load()
+        var stored = NotesStore.load()
         var note = Note()
         note.body = trimmed
         note.updatedAt = Date()
-        notes.insert(note, at: 0)
-        NotesStore.save(notes)
+        let noteID = note.id
+        stored.insert(note, at: 0)
+        NotesStore.save(stored)
+
+        // Title in the background so the notes list shows a 3-word summary
+        // instead of the first transcript line. This is the only persistence
+        // path for onboarding transcripts — there is no editor sweep here to
+        // catch it on dismissal.
+        Task.detached(priority: .utility) {
+            guard let updatedBody = await AIService.prependTitleIfMissing(to: trimmed) else { return }
+            var latest = NotesStore.load()
+            guard let idx = latest.firstIndex(where: { $0.id == noteID }) else { return }
+            // Don't clobber edits the user may have made after onboarding handed off.
+            guard latest[idx].body == trimmed else { return }
+            latest[idx].body = updatedBody
+            latest[idx].updatedAt = Date()
+            NotesStore.save(latest)
+        }
     }
 
     private func saveProjectToLibrary(_ project: GenerationProject) {
