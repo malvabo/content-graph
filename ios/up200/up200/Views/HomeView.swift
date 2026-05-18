@@ -129,7 +129,7 @@ struct AIService {
     You title notes. The title sits in a note app, so it has to read well in a list of fifty other notes and help the user find this one later.
 
     Output exactly one title and nothing else:
-    - 3 to 7 words
+    - Exactly 3 words — never more, never fewer
     - Sentence case: capitalize the first word and proper nouns only
     - No quotes, no trailing punctuation, no emoji, no preamble
     - No em-dashes; use a colon if you need separation
@@ -143,17 +143,19 @@ struct AIService {
 
     Examples:
     Input: free-writing about feeling stuck waiting on agency responses for a visa petition
-    Output: Visa petition: stuck waiting on agencies
+    Output: Visa petition stuck
 
     Input: SceneKit camera setup with commented lens choices and field of view math
-    Output: SceneKit camera setup and lens math
+    Output: SceneKit camera setup
 
     Input: long brainstorm on onboarding flow ideas for a new plant care app
-    Output: Plant care app onboarding brainstorm
+    Output: Plant care onboarding
     """
 
     /// Strips the wrappers a model sometimes adds — surrounding quotes, leading
-    /// "Title:" labels, trailing punctuation — and collapses to one line.
+    /// "Title:" labels, trailing punctuation — collapses to one line, and
+    /// trims to at most three words so a long-winded model reply still lands
+    /// as a 3-word summary in the list.
     static func sanitize(_ raw: String) -> String {
         var t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if let nl = t.firstIndex(where: \.isNewline) { t = String(t[..<nl]) }
@@ -163,7 +165,8 @@ struct AIService {
         }
         let trimChars = CharacterSet(charactersIn: "\"'“”‘’`.,;:!?—–-")
         t = t.trimmingCharacters(in: trimChars).trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.isEmpty ? "" : t
+        let words = t.split(whereSeparator: \.isWhitespace).prefix(3).map(String.init)
+        return words.joined(separator: " ")
     }
 
     static func fallback(from text: String) -> String {
@@ -174,7 +177,7 @@ struct AIService {
         let words = firstLine.split { !$0.isLetter && !$0.isNumber }
             .map(String.init)
             .filter { $0.count > 2 && !stop.contains($0.lowercased()) }
-        let picked = Array(words.prefix(6))
+        let picked = Array(words.prefix(3))
         guard !picked.isEmpty else { return "Untitled" }
         // Sentence case: first word capitalized, rest lowercase except all-caps
         // tokens (likely acronyms) which we preserve.

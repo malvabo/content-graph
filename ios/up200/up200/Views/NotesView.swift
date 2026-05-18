@@ -887,17 +887,19 @@ private struct NoteEditorPage: View {
 
     private func persistIfNeeded() {
         guard !didDelete else { return }
-        if combined == original.body { return }
+        let bodyChanged = (combined != original.body)
         var saved = original
-        saved.body = combined
-        saved.title = ""
-        saved.updatedAt = Date()
-        onSave(saved)
+        if bodyChanged {
+            saved.body = combined
+            saved.title = ""
+            saved.updatedAt = Date()
+            onSave(saved)
+        }
 
-        // If the user didn't enter a title, ask the model for a summary title
-        // and re-save with it prepended as the first line — `Note.displayTitle`
-        // picks that up. Title every non-empty body, however short: a one-line
-        // note still needs a name to scan in the list.
+        // Title every non-empty body without a user-supplied title, even when
+        // the editor didn't change anything — voice notes are saved on the way
+        // in (see `startAudioNote`) and the user often dismisses the editor
+        // without typing, so this path is the only place the AI title runs.
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmedTitle.isEmpty else { return }
         let trimmedBody = noteBody.trimmingCharacters(in: .whitespacesAndNewlines)
