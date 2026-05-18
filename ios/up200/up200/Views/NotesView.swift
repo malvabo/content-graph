@@ -1040,6 +1040,10 @@ private struct NoteEditorPage: View {
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: focus)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .swipeBackGesture {
+            dictation.stop()
+            dismiss()
+        }
         .onChange(of: dictation.transcript) { _, newValue in
             let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return }

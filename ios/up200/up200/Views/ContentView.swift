@@ -790,6 +790,10 @@ struct ProjectGroupDetailView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .swipeBackGesture {
+            persistCurrent()
+            dismiss()
+        }
         .task {
             rebuildAllProjects()
             if items.indices.contains(selectedIndex) { editText = bodyText(for: items[selectedIndex]) }
@@ -1504,6 +1508,7 @@ private struct TemplatesListPage: View {
         .background(bg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .swipeBackGesture { dismiss() }
     }
 }
 
@@ -1739,6 +1744,7 @@ private struct TemplateEditPage: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .swipeBackGesture { dismiss() }
         .onDisappear {
             dictation.stop()
             persist()
@@ -3378,6 +3384,7 @@ struct ThisButDeltaView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(AppBackground.primary)
+        .swipeBackGesture(onBack)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 inputFocused = true
