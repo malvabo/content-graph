@@ -157,10 +157,14 @@ private struct ChatService {
         edits; each block stands alone.
         - When a [selection] context item is attached, the user has \
         flagged that text as the surgical target — the inline-editing \
-        pathway. Always answer that request with a <rewrite> block whose \
-        <before> is the selection's content (or a tight subset of it), \
-        even when your edit covers the entire selection. Do not respond \
-        in prose for selection-targeted edits.
+        pathway. EVERY user turn in this conversation is implicitly \
+        about that selection unless the user names a different chip. \
+        You MUST respond with at least one <rewrite> block whose \
+        <before> is the selection's text (or a tight subset of it), \
+        even when your edit covers the entire selection, and even when \
+        the user's instruction is terse ("shorter", "punchier", \
+        "fix the grammar"). Do not answer in prose for these turns; the \
+        <rewrite> block is the answer.
         - For broad rewrites of an entire document with no [selection] \
         attached, do not use this block — answer normally. The block is \
         for surgical edits on a specific span.
@@ -173,7 +177,20 @@ private struct ChatService {
             systemText += "\n\nThe user has provided these content pieces as context:\n\n\(ctx)"
         }
 
-        let apiMessages = messages.map { ["role": $0.role, "content": $0.content] }
+        // The chip refactor moved attachment routing out of the user's
+        // visible message (it used to read "@Doc @Selection edit this");
+        // restore that signal on the wire so the model has the same
+        // selection-routing cue without us polluting the display bubble.
+        // Apply only to the latest user turn — earlier turns already had
+        // their references frozen in when they were sent.
+        var wireMessages = messages
+        if !contextItems.isEmpty,
+           let lastUserIdx = wireMessages.lastIndex(where: { $0.role == "user" }) {
+            let refs = contextItems.map { "@\($0.title)" }.joined(separator: " ")
+            let original = wireMessages[lastUserIdx].content
+            wireMessages[lastUserIdx].content = "\(refs) \(original)"
+        }
+        let apiMessages = wireMessages.map { ["role": $0.role, "content": $0.content] }
         let body: [String: Any] = [
             "model": "claude-sonnet-4-6",
             "max_tokens": 1024,
