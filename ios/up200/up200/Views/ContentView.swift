@@ -927,13 +927,17 @@ struct ProjectGroupDetailView: View {
         .sheet(isPresented: $showChat, onDismiss: refreshAfterChat) {
             let seedID = items.indices.contains(selectedIndex) ? items[selectedIndex].id : nil
             let trimmedBody = editText.trimmingCharacters(in: .whitespacesAndNewlines)
-            // Selection title leans on the format label ("Email", "LinkedIn
-            // Post") so the chip reads as "a snippet of <format>" rather
-            // than a generic "Selected text" — matches how Notion labels
-            // the page name on the page-context chip in their inline AI.
-            let selectionTitle: String? = items.indices.contains(selectedIndex)
-                ? (allFormats.first(where: { $0.id == items[selectedIndex].outputType })?.label ?? items[selectedIndex].outputType)
-                : nil
+            // Prefer the document's own title so the chip reads as the
+            // page name (matches how Notion labels the page-context chip
+            // in their inline AI). Fall back to the format label when the
+            // document hasn't been named yet.
+            let selectionTitle: String? = {
+                guard items.indices.contains(selectedIndex) else { return nil }
+                let item = items[selectedIndex]
+                let trimmed = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty { return trimmed }
+                return allFormats.first(where: { $0.id == item.outputType })?.label ?? item.outputType
+            }()
             // If the user has a real range highlighted in the editor, the
             // wand forwards only that substring as the snippet so the
             // rewrite stays surgical. Otherwise fall back to the whole
