@@ -867,13 +867,11 @@ struct ProjectGroupDetailView: View {
                             persistCurrent()
                             showChat = true
                         } label: {
-                            // "Magic" wand reads as an inline-editing
-                            // affordance — tapping seeds the chat with the
-                            // current body as a selection chip plus the
-                            // document chip, so the user can ask AI to
-                            // rewrite a specific snippet without manually
-                            // attaching anything.
-                            Image(systemName: "wand.and.stars")
+                            // Chat bubble matches the button's actual job —
+                            // opening a chat seeded with the doc + selection
+                            // chips — and mirrors the same icon NotesView
+                            // uses on its note-level chat affordance.
+                            Image(systemName: "message")
                                 .font(.system(size: 17, weight: .regular))
                                 .foregroundColor(AppText.primary)
                                 .frame(width: 52, height: 52)
