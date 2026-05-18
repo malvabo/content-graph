@@ -1338,7 +1338,9 @@ struct NotesView: View {
 
     private func togglePin(_ note: Note) {
         guard let idx = notes.firstIndex(where: { $0.id == note.id }) else { return }
-        notes[idx].isPinned.toggle()
+        withAnimation(AppAnimation.standard) {
+            notes[idx].isPinned.toggle()
+        }
         scheduleSave()
     }
 
