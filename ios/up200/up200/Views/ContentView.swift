@@ -302,21 +302,22 @@ private struct LibraryLandingThumb: View {
 }
 
 /// Multi-item group thumb: two overlapping doc cards in the same visual
-/// language as `DocCardThumb`, just smaller and rotated so the group reads
-/// as "stack of documents." Replaces the older folder-with-tab design that
-/// left an empty strip at the bottom (mini docs cut off short of the
-/// folder's bottom edge) and had a tab sticking out of the top.
+/// language as `DocCardThumb`, just slightly smaller and offset so the
+/// group reads as "stack of documents." Card size and offsets are tuned
+/// so the combined silhouette fills the same 42×52 footprint as
+/// `DocCardThumb` / `LibraryLandingThumb`, otherwise multi-item rows look
+/// visibly smaller than single-item rows in the list.
 private struct LibraryStackThumb: View {
     let seed: Int
 
     var body: some View {
         ZStack {
             miniDoc(seed: seed &+ 41)
-                .rotationEffect(.degrees(-7))
-                .offset(x: -5, y: -2)
+                .rotationEffect(.degrees(-5))
+                .offset(x: -3, y: -3)
             miniDoc(seed: seed &+ 17)
-                .rotationEffect(.degrees(6))
-                .offset(x: 5, y: 3)
+                .rotationEffect(.degrees(5))
+                .offset(x: 3, y: 3)
         }
         .frame(width: 42, height: 52)
     }
@@ -324,31 +325,31 @@ private struct LibraryStackThumb: View {
     @ViewBuilder
     private func miniDoc(seed: Int) -> some View {
         let widths = Self.lineWidths(for: seed)
-        RoundedRectangle(cornerRadius: 5, style: .continuous)
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
             .fill(AppInk.solid(0.07))
             .overlay(
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 2.5) {
                     ForEach(0..<4, id: \.self) { i in
                         Capsule()
                             .fill(AppInk.solid(i == 0 ? 0.55 : 0.20))
-                            .frame(width: widths[i], height: i == 0 ? 1.8 : 1.2)
+                            .frame(width: widths[i], height: i == 0 ? 2.0 : 1.3)
                     }
                 }
-                .padding(4)
+                .padding(6)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .stroke(AppInk.solid(0.16), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(AppInk.solid(0.12), lineWidth: 0.5)
             )
-            .frame(width: 26, height: 32)
+            .frame(width: 32, height: 42)
     }
 
     private static func lineWidths(for seed: Int) -> [CGFloat] {
         var h = seed
         return (0..<4).map { _ in
             h = h &* 1664525 &+ 1013904223
-            return 6 + CGFloat(h & 0x0B)
+            return 8 + CGFloat(h & 0x09)
         }
     }
 }
