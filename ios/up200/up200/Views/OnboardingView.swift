@@ -240,37 +240,29 @@ struct OnboardingView: View {
                 .padding(.top, 12)
 
             Spacer()
-
-            Button(action: {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                constellationStartedAt = Date()
-                withAnimation(.easeInOut(duration: 0.45)) {
-                    step = .constellation
-                }
-            }) {
-                Text("Continue")
-                    .font(.app(size: 17, weight: .semibold))
-                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color.white.opacity(0.94))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 28)
-
-            Spacer().frame(height: 52)
         }
         // Asymmetric: on entry the scene leads, so the copy fades in behind a
-        // delay. On exit the user has just tapped "Continue" — the old copy
-        // needs to clear immediately so it doesn't ghost on top of the next
-        // step's headline (which sits at the same y position) and so the tap
-        // has a visible receipt. easeOut, not easeIn, because we're fading
-        // *out* — we want the alpha to drop fast and then settle.
+        // delay. On exit the auto-advance fires — the old copy needs to clear
+        // immediately so it doesn't ghost on top of the next step's beats and
+        // so the hand-off has a visible receipt. easeOut, not easeIn, because
+        // we're fading *out* — we want the alpha to drop fast and then settle.
         .transition(.asymmetric(
             insertion: .opacity.animation(.easeIn(duration: 0.45).delay(0.25)),
             removal:   .opacity.animation(.easeOut(duration: 0.22))
         ))
+        // Auto-advance to the constellation step after a beat that's long
+        // enough to read the headline and watch the bulb settle. The view
+        // is only mounted while `step == .transform`, so this task is
+        // cancelled automatically if the flow is ever short-circuited.
+        .task {
+            try? await Task.sleep(nanoseconds: 3_500_000_000)
+            guard !Task.isCancelled else { return }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            constellationStartedAt = Date()
+            withAnimation(.easeInOut(duration: 0.45)) {
+                step = .constellation
+            }
+        }
     }
 
     // MARK: Step 3 — content graph
@@ -284,22 +276,23 @@ struct OnboardingView: View {
     /// blooming into a graph of related content — before the user lands
     /// on the home screen.
     private var constellationOverlay: some View {
-        VStack(spacing: 0) {
-            Spacer().frame(height: 24)
-
-            Text("From one idea,\na graph of content")
-                .font(.lora(size: 22, weight: .medium))
-                .kerning(-0.3)
-                .foregroundColor(AppText.primary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
-                .padding(.horizontal, 28)
-                .padding(.top, 12)
-
-            Spacer()
-
-            Button(action: {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        // No headline and no CTA — this beat is the orange-spark cluster
+        // blooming on its own, then auto-advancing into the capture step.
+        // A transparent passthrough keeps the SceneKit + GeneratingCloudScene
+        // visuals from the parent ZStack uncovered while still giving us
+        // a place to anchor the auto-advance task. The visible transition is
+        // already owned by the GeneratingCloudScene's own asymmetric scale
+        // (insertion fade in, removal scales past the camera), so this
+        // overlay doesn't need its own.
+        Color.clear
+            .allowsHitTesting(false)
+            // Hold long enough for the cluster to bloom out into its
+            // satellites and read as a finished gesture before the camera
+            // dives into it.
+            .task {
+                try? await Task.sleep(nanoseconds: 4_800_000_000)
+                guard !Task.isCancelled else { return }
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 // Longer than a regular step swap — the cluster has to
                 // travel from a comfortable read-size to past-camera scale,
                 // and the starfield has to settle back from its rushing
@@ -307,31 +300,7 @@ struct OnboardingView: View {
                 withAnimation(.easeInOut(duration: 0.95)) {
                     step = .capture
                 }
-            }) {
-                Text("Let's get started")
-                    .font(.app(size: 17, weight: .semibold))
-                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color.white.opacity(0.94))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 28)
-
-            Spacer().frame(height: 52)
-        }
-        // Asymmetric for the same reason as the previous step: on entry the
-        // scene leads (delay) but on exit the user has tapped "Let's get
-        // started" — the old headline must clear before the new one
-        // ("Let's capture / your first idea") fades in at the same y
-        // position, or the two two-line headlines blend into garbled text
-        // during the 0.95s dive. easeOut so the alpha drops promptly
-        // instead of lingering near full visibility for most of the fade.
-        .transition(.asymmetric(
-            insertion: .opacity.animation(.easeIn(duration: 0.55).delay(0.35)),
-            removal:   .opacity.animation(.easeOut(duration: 0.22))
-        ))
     }
 
     // MARK: Step 4 — Capture (starfield blurb → record → choose)
