@@ -48,8 +48,8 @@ enum SelectionStyle {
 }
 
 /// Adaptive "ink" — the base hue for translucent overlays, separators,
-/// selection fills, and on-background text. White on dark, near-black on
-/// light. Call `AppInk.solid(0.X)` instead of layering `.opacity(0.X)`
+/// selection fills, and on-background text. White on dark, warm coffee
+/// brown on light. Call `AppInk.solid(0.X)` instead of layering `.opacity(0.X)`
 /// on top of a constant Color so the alpha is baked into the dynamic
 /// UIColor; SwiftUI's `.opacity`
 /// modifier resolves the dynamic provider against the screen trait
@@ -57,6 +57,12 @@ enum SelectionStyle {
 /// which would otherwise leave text white in forced-light mode on a
 /// system-dark device.
 enum AppInk {
+    /// Light-mode ink — a dark, warm coffee brown. Every translucent
+    /// chrome element (text, glyphs, hairline strokes, chip fills) in
+    /// light mode pulls from this single hue so nothing alpha-blends out
+    /// to a neutral grey against the cream background.
+    static let lightInk = UIColor(red: 0.16, green: 0.10, blue: 0.05, alpha: 1.0)
+
     static func solid(_ alpha: Double) -> Color {
         Color(uiColor: UIColor { trait in
             if trait.userInterfaceStyle == .dark {
@@ -67,7 +73,7 @@ enum AppInk {
             // hint of the brand's warmth — same alpha values still resolve
             // along the design's emphasis ramp, just with a coffee bias
             // instead of a flat neutral grey.
-            return UIColor(red: 0.16, green: 0.10, blue: 0.05, alpha: alpha)
+            return lightInk.withAlphaComponent(alpha)
         })
     }
 }
@@ -151,26 +157,41 @@ enum AppBackground {
 /// place. Text sitting on colored fills (amber CTAs, etc.) should keep
 /// pure `.white` for contrast — these tokens are for content on the
 /// adaptive app background and translucent chrome.
+///
+/// Light-mode emphasis ramps off `AppInk.lightInk` (a warm coffee brown)
+/// so secondary / tertiary / muted text and icon glyphs don't alpha-blend
+/// down to a neutral grey against the cream `AppBackground.primary` —
+/// they fade through warm tones the same way the brand's CTAs do.
 enum AppText {
     /// Body / titles — primary reading content.
     static let primary   = Color(uiColor: UIColor { t in
-        t.userInterfaceStyle == .dark ? UIColor(white: 1.0, alpha: 0.92) : UIColor(white: 0.0, alpha: 0.88)
+        t.userInterfaceStyle == .dark
+            ? UIColor(white: 1.0, alpha: 0.92)
+            : AppInk.lightInk.withAlphaComponent(0.88)
     })
     /// Section labels, secondary actions, default icon foregrounds.
     static let secondary = Color(uiColor: UIColor { t in
-        t.userInterfaceStyle == .dark ? UIColor(white: 1.0, alpha: 0.55) : UIColor(white: 0.0, alpha: 0.58)
+        t.userInterfaceStyle == .dark
+            ? UIColor(white: 1.0, alpha: 0.55)
+            : AppInk.lightInk.withAlphaComponent(0.62)
     })
     /// Subtitles, helper text, group headers.
     static let tertiary  = Color(uiColor: UIColor { t in
-        t.userInterfaceStyle == .dark ? UIColor(white: 1.0, alpha: 0.35) : UIColor(white: 0.0, alpha: 0.42)
+        t.userInterfaceStyle == .dark
+            ? UIColor(white: 1.0, alpha: 0.35)
+            : AppInk.lightInk.withAlphaComponent(0.48)
     })
     /// Placeholders and very low-emphasis chrome (deep dim).
     static let muted     = Color(uiColor: UIColor { t in
-        t.userInterfaceStyle == .dark ? UIColor(white: 1.0, alpha: 0.22) : UIColor(white: 0.0, alpha: 0.28)
+        t.userInterfaceStyle == .dark
+            ? UIColor(white: 1.0, alpha: 0.22)
+            : AppInk.lightInk.withAlphaComponent(0.34)
     })
     /// Disabled controls — both labels and icon glyphs.
     static let disabled  = Color(uiColor: UIColor { t in
-        t.userInterfaceStyle == .dark ? UIColor(white: 1.0, alpha: 0.25) : UIColor(white: 0.0, alpha: 0.30)
+        t.userInterfaceStyle == .dark
+            ? UIColor(white: 1.0, alpha: 0.25)
+            : AppInk.lightInk.withAlphaComponent(0.36)
     })
 }
 

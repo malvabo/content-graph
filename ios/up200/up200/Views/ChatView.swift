@@ -511,17 +511,17 @@ struct ChatView: View {
         let inkColor = UIColor { trait in
             trait.userInterfaceStyle == .dark
                 ? UIColor(white: 1.0, alpha: 0.92)
-                : UIColor(white: 0.0, alpha: 0.88)
+                : AppInk.lightInk.withAlphaComponent(0.88)
         }
         let mentionBg = UIColor { trait in
             trait.userInterfaceStyle == .dark
                 ? UIColor(white: 1.0, alpha: 0.16)
-                : UIColor(white: 0.0, alpha: 0.08)
+                : AppInk.lightInk.withAlphaComponent(0.08)
         }
         let mentionFg = UIColor { trait in
             trait.userInterfaceStyle == .dark
                 ? UIColor(white: 1.0, alpha: 0.96)
-                : UIColor(white: 0.0, alpha: 0.78)
+                : AppInk.lightInk.withAlphaComponent(0.78)
         }
         // Match the message bubble's `.lineSpacing(3)` so typed lines and
         // sent bubbles share one body-text rhythm — without the paragraph
@@ -2151,7 +2151,7 @@ private final class ChatComposerUITextView: UITextView {
         placeholderLabel.textColor = UIColor { trait in
             trait.userInterfaceStyle == .dark
                 ? UIColor(white: 1.0, alpha: 0.28)
-                : UIColor(white: 0.0, alpha: 0.32)
+                : AppInk.lightInk.withAlphaComponent(0.36)
         }
         placeholderLabel.numberOfLines = 1
         placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
