@@ -1169,6 +1169,7 @@ struct ProfileView: View {
     @AppStorage("notifications_enabled") private var notificationsEnabled: Bool = true
     @AppStorage("appearance_dark_mode") private var darkModeEnabled: Bool = true
     @AppStorage("simple_mode") private var simpleMode: Bool = false
+    @AppStorage("minimal_mode") private var minimalMode: Bool = false
     @AppStorage("onboarding_complete") private var onboardingComplete: Bool = false
     @State private var custom: [CustomTemplate] = []
     @State private var path: [ProfileDestination] = []
@@ -1234,22 +1235,10 @@ struct ProfileView: View {
 
                     SettingsRow(
                         title: "Layout",
-                        trailing: .value(simpleMode ? "Simple" : "Standard")
+                        trailing: .value(layoutLabel)
                     ) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        if isModal {
-                            // Simple → Classic: pre-select the Profile tab so
-                            // when the cover dismisses the user lands on the
-                            // (now-classic) Profile tab — preserving context.
-                            selectedTab = .profile
-                            simpleMode.toggle()
-                            dismiss()
-                        } else {
-                            // Classic → Simple: ContentView's onChange will
-                            // open the modal Profile so the user keeps
-                            // seeing it through the transition.
-                            simpleMode.toggle()
-                        }
+                        cycleLayout()
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
@@ -1375,6 +1364,46 @@ struct ProfileView: View {
     private func saveCustom() {
         if case .corrupt = loadBlob([CustomTemplate].self, from: customData) { return }
         if let data = try? JSONEncoder().encode(custom) { customData = data }
+    }
+
+    // MARK: - Layout cycling
+    //
+    // Layout cycles Standard → Simple → Minimal 1 → Standard. Only one of
+    // the two mode flags is true at a time; "Standard" is the empty state
+    // (both false). When transitioning into a mode whose chrome differs
+    // from the current screen (the modal Profile vs. the Profile tab vs.
+    // a top-bar pill in Minimal), pre-select Profile or dismiss the modal
+    // so the user keeps seeing the same screen across the transition —
+    // same posture as the original two-state toggle.
+    private var layoutLabel: String {
+        if minimalMode { return "Minimal 1" }
+        if simpleMode { return "Simple" }
+        return "Standard"
+    }
+
+    private func cycleLayout() {
+        if minimalMode {
+            // Minimal → Standard. The modal Profile is the only way Profile
+            // is reachable in Minimal, so dismiss it and land back on the
+            // (now-classic) Profile tab.
+            minimalMode = false
+            simpleMode = false
+            if isModal {
+                selectedTab = .profile
+                dismiss()
+            }
+        } else if simpleMode {
+            // Simple → Minimal. ContentView's onChange flips the chrome;
+            // we just need to swap the flags.
+            simpleMode = false
+            minimalMode = true
+            if isModal {
+                // Stay in the modal Profile — Minimal also uses it.
+            }
+        } else {
+            // Standard → Simple. Same as the original toggle did.
+            simpleMode = true
+        }
     }
 }
 
@@ -2302,6 +2331,10 @@ private struct SimpleCreateBar: View {
 
 struct ContentView: View {
     @AppStorage("simple_mode") private var simpleMode: Bool = false
+    /// Minimal 1: the experimental flattened layout. When on, takes
+    /// precedence over `simple_mode`. The two flags are independent so
+    /// switching back to Standard/Simple restores the user's prior choice.
+    @AppStorage("minimal_mode") private var minimalMode: Bool = false
     @State private var selectedTab: AppTab = .notes
     @State private var keyboardVisible = false
     @State private var showProfile = false
@@ -2334,7 +2367,7 @@ struct ContentView: View {
                 // This ordering ensures correct visual stacking on all iOS versions:
                 // outer inset content appears above inner inset content.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if !keyboardVisible && !chromeController.hideTabBar {
+                    if !keyboardVisible && !chromeController.hideTabBar && !minimalMode {
                         Group {
                             if simpleMode {
                                 SimpleCreateBar(onTap: {
@@ -2425,11 +2458,30 @@ struct ContentView: View {
                 showProfile = false
             }
         }
+        .onChange(of: minimalMode) { _, isMinimal in
+            // Same rationale as the simple-mode handler above — Minimal 1
+            // doesn't have a .create / .library / .profile tab, so park
+            // the selection on .notes when flipping in, and re-open the
+            // modal Profile if that's where the user was so the screen
+            // they were on stays visible across the transition.
+            if isMinimal {
+                if selectedTab == .profile {
+                    selectedTab = .notes
+                    showProfile = true
+                } else if selectedTab == .create || selectedTab == .library {
+                    selectedTab = .notes
+                }
+            } else {
+                showProfile = false
+            }
+        }
     }
 
     @ViewBuilder
     private var tabsLayer: some View {
-        if simpleMode {
+        if minimalMode {
+            MinimalHomePage(onProfileTap: { showProfile = true })
+        } else if simpleMode {
             SimpleHomePage(
                 newNoteTrigger: newNoteTrigger,
                 onProfileTap: { showProfile = true }
