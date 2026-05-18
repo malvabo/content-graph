@@ -490,18 +490,26 @@ struct OnboardingView: View {
             .transition(.opacity)
 
         case .choose:
-            VStack(spacing: 12) {
-                captureTagRow(label: "A LinkedIn post", icon: "person.2.fill") {
-                    startGeneration(label: "A LinkedIn post", formatID: "linkedin", customPrompt: "")
+            // Four fluid morphing circles in a 2×2 grid. Each blob runs its
+            // own harmonic phase (via a per-cell seed) so they breathe out
+            // of sync rather than pulsing in unison — the screen reads as a
+            // living cluster of choices rather than four identical buttons.
+            VStack(spacing: 16) {
+                HStack(spacing: 16) {
+                    blobOption(label: "A LinkedIn post", icon: "person.2.fill", seed: 0.0) {
+                        startGeneration(label: "A LinkedIn post", formatID: "linkedin", customPrompt: "")
+                    }
+                    blobOption(label: "A Twitter thread", icon: "text.bubble", seed: 1.3) {
+                        startGeneration(label: "A Twitter thread", formatID: "twitter", customPrompt: "")
+                    }
                 }
-                captureTagRow(label: "A Twitter thread", icon: "text.bubble") {
-                    startGeneration(label: "A Twitter thread", formatID: "twitter", customPrompt: "")
-                }
-                captureTagRow(label: "Something else", icon: "sparkles") {
-                    startSpecifyRecording()
-                }
-                captureTagRow(label: "Just save my note for now", icon: "tray.and.arrow.down") {
-                    saveIdeaAndExit()
+                HStack(spacing: 16) {
+                    blobOption(label: "Something else", icon: "sparkles", seed: 2.6) {
+                        startSpecifyRecording()
+                    }
+                    blobOption(label: "Just save my note for now", icon: "tray.and.arrow.down", seed: 3.9) {
+                        saveIdeaAndExit()
+                    }
                 }
             }
             // Pure fade-in. The slide directions (.bottom, then .top) both
@@ -591,26 +599,46 @@ struct OnboardingView: View {
         }
     }
 
-    private func captureTagRow(label: String, icon: String, action: @escaping () -> Void) -> some View {
+    /// One of the four morphing-circle options in `.choose`. The shape is
+    /// a `OnboardingBlobShape` driven by a `TimelineView(.animation)` clock
+    /// so it keeps breathing for the whole time the user is reading the
+    /// options — no on/off animation state to manage. The `seed` shifts
+    /// the harmonics so each blob morphs on its own rhythm.
+    private func blobOption(label: String, icon: String, seed: Double, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(BrandColor.amber.opacity(0.92))
-                    .frame(width: 22)
-                Text(label)
-                    .font(.app(size: 16, weight: .medium))
-                    .foregroundColor(AppText.primary)
-                Spacer()
+            TimelineView(.animation) { ctx in
+                // Under reduce-motion the phase is pinned, so the shape
+                // becomes a static (still-irregular) blob rather than a
+                // perfect circle — the asymmetry survives, the motion
+                // doesn't.
+                let phase: Double = UIAccessibility.isReduceMotionEnabled
+                    ? 0
+                    : ctx.date.timeIntervalSinceReferenceDate * 0.55
+
+                ZStack {
+                    OnboardingBlobShape(phase: phase, seed: seed)
+                        .fill(Color.white.opacity(0.07))
+                    OnboardingBlobShape(phase: phase, seed: seed)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+
+                    VStack(spacing: 10) {
+                        Image(systemName: icon)
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(BrandColor.amber.opacity(0.92))
+                        Text(label)
+                            .font(.app(size: 14, weight: .medium))
+                            .foregroundColor(AppText.primary)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.85)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.horizontal, 22)
+                }
             }
-            .padding(.horizontal, 18)
-            .frame(height: 56)
-            .background(Color.white.opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-            )
+            .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .contentShape(Circle())
         }
         .buttonStyle(.plain)
     }
@@ -1284,6 +1312,42 @@ private struct InsideSphereScene: View {
     private func pseudoRandom(_ n: Int) -> Double {
         let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
         return v - floor(v)
+    }
+}
+
+/// Wobbly circle whose outline is a unit circle perturbed by three
+/// low-frequency harmonics. `phase` slides the wave continuously so the
+/// shape never settles; `seed` shifts each harmonic so two blobs with
+/// different seeds never line up.
+private struct OnboardingBlobShape: Shape {
+    var phase: Double
+    var seed: Double
+
+    func path(in rect: CGRect) -> Path {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let baseRadius = min(rect.width, rect.height) / 2
+        // 7% deformation — visible as a fluid wobble without making the
+        // shape look broken or letting the text breach the outline.
+        let amplitude = baseRadius * 0.07
+
+        var path = Path()
+        let steps = 96
+        for i in 0...steps {
+            let theta = Double(i) / Double(steps) * 2 * .pi
+            let wobble =
+                sin(3 * theta + phase * 1.0 + seed * 1.7) * 0.55 +
+                sin(5 * theta - phase * 0.7 + seed * 0.9) * 0.30 +
+                sin(2 * theta + phase * 0.4 + seed * 2.3) * 0.40
+            // Subtract half the max amplitude so the path stays inside
+            // the frame's inscribed circle on the outward swings.
+            let r = baseRadius - amplitude * 0.5 + amplitude * wobble
+            let x = center.x + r * cos(theta)
+            let y = center.y + r * sin(theta)
+            if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+            else { path.addLine(to: CGPoint(x: x, y: y)) }
+        }
+        path.closeSubpath()
+        return path
     }
 }
 
