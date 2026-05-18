@@ -3026,8 +3026,8 @@ struct AIActionsSheet: View {
         let count = CGFloat(quickAIActions.count)
         return rowHeight * count
             + rowSpacing * max(0, count - 1)
-            + 32  // top padding
-            + 24  // bottom padding
+            + 12  // top padding
+            + 12  // bottom padding
             + 24  // drag indicator
     }
 
@@ -3037,8 +3037,8 @@ struct AIActionsSheet: View {
                 actionRow(action)
             }
         }
-        .padding(.top, 32)
-        .padding(.bottom, 24)
+        .padding(.top, 12)
+        .padding(.bottom, 12)
         .frame(maxWidth: .infinity, alignment: .top)
         .background(sheetBg)
         .presentationBackground(sheetBg)
