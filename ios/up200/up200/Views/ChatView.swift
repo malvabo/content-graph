@@ -725,13 +725,13 @@ struct ChatView: View {
     }
 
     private func contextChip(_ source: ChatContextSource) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Image(systemName: contextChipIcon(for: source.kind))
-                .font(.system(size: 11, weight: .regular))
+                .font(.system(size: 13, weight: .regular))
                 .foregroundColor(AppInk.solid(0.55))
             Text(source.title)
-                .font(.app(size: 13, weight: .medium))
-                .foregroundColor(AppText.primary)
+                .font(.appCaptionMedium)
+                .foregroundColor(AppInk.solid(0.85))
                 .lineLimit(1)
                 .truncationMode(.tail)
             Button {
@@ -739,21 +739,23 @@ struct ChatView: View {
                 removeContext(source)
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundColor(AppInk.solid(0.55))
-                    .frame(width: 18, height: 18)
+                    .frame(width: 22, height: 22)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Remove \(source.title)")
         }
-        .padding(.leading, 10)
-        .padding(.trailing, 2)
-        .padding(.vertical, 4)
+        .padding(.leading, 14)
+        .padding(.trailing, 6)
+        .padding(.vertical, 7)
+        .background(AppInk.solid(0.06), in: Capsule(style: .continuous))
         .overlay(
-            Capsule().stroke(AppInk.solid(0.18), lineWidth: 0.5)
+            Capsule(style: .continuous)
+                .stroke(AppInk.solid(0.10), lineWidth: 0.5)
         )
-        .frame(maxWidth: 180, alignment: .leading)
+        .frame(maxWidth: 220, alignment: .leading)
     }
 
     private func contextChipIcon(for kind: ChatContextSource.Kind) -> String {
