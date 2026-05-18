@@ -4,7 +4,7 @@ import PDFKit
 
 // MARK: - Chat Message Model
 
-struct ChatMessage: Identifiable {
+struct ChatMessage: Identifiable, Codable {
     var id = UUID()
     var role: String // "user" or "assistant"
     var content: String
@@ -13,6 +13,32 @@ struct ChatMessage: Identifiable {
     // fed each answer even after the user adds or removes chips in the
     // composer for a later turn. Only populated on user messages.
     var attachedContext: [ChatContextSource] = []
+
+    init(
+        id: UUID = UUID(),
+        role: String,
+        content: String,
+        attachedContext: [ChatContextSource] = []
+    ) {
+        self.id = id
+        self.role = role
+        self.content = content
+        self.attachedContext = attachedContext
+    }
+
+    // Tolerate missing fields so saved chats written by earlier schema
+    // versions still decode — auto-synth would throw on any absent key.
+    private enum CodingKeys: String, CodingKey {
+        case id, role, content, attachedContext
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id              = try c.decodeIfPresent(UUID.self,                forKey: .id)              ?? UUID()
+        role            = try c.decodeIfPresent(String.self,              forKey: .role)            ?? ""
+        content         = try c.decodeIfPresent(String.self,              forKey: .content)         ?? ""
+        attachedContext = try c.decodeIfPresent([ChatContextSource].self, forKey: .attachedContext) ?? []
+    }
 }
 
 // MARK: - Rewrite Suggestion
@@ -104,8 +130,8 @@ private enum AssistantParser {
 /// Unified context attachment. Documents (library projects), notes, and
 /// imported files all flow through the same shape so the chat API call
 /// stays a single code path.
-struct ChatContextSource: Identifiable, Equatable {
-    enum Kind: String { case document, note, file, selection }
+struct ChatContextSource: Identifiable, Equatable, Codable {
+    enum Kind: String, Codable { case document, note, file, selection }
 
     let id: String
     let kind: Kind
@@ -113,6 +139,36 @@ struct ChatContextSource: Identifiable, Equatable {
     let preview: String    // single-line subtitle in the picker
     let content: String    // full body sent to the API
     var tags: [String] = []  // surfaced atop the chat + appended to the prompt
+
+    init(
+        id: String,
+        kind: Kind,
+        title: String,
+        preview: String,
+        content: String,
+        tags: [String] = []
+    ) {
+        self.id = id
+        self.kind = kind
+        self.title = title
+        self.preview = preview
+        self.content = content
+        self.tags = tags
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, kind, title, preview, content, tags
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id      = try c.decodeIfPresent(String.self,   forKey: .id)      ?? UUID().uuidString
+        kind    = try c.decodeIfPresent(Kind.self,     forKey: .kind)    ?? .file
+        title   = try c.decodeIfPresent(String.self,   forKey: .title)   ?? ""
+        preview = try c.decodeIfPresent(String.self,   forKey: .preview) ?? ""
+        content = try c.decodeIfPresent(String.self,   forKey: .content) ?? ""
+        tags    = try c.decodeIfPresent([String].self, forKey: .tags)    ?? []
+    }
 }
 
 // MARK: - Chat Service
@@ -220,6 +276,133 @@ private struct ChatService {
     }
 }
 
+// MARK: - Saved Chats
+
+/// One persisted chat conversation. Saved on each turn so the user can
+/// resume a chat from the history button in the chat header. Cap on the
+/// store ensures it doesn't grow without bound.
+struct SavedChat: Identifiable, Codable {
+    var id = UUID()
+    var messages: [ChatMessage]
+    var updatedAt: Date
+
+    /// First user message, single-line, capped — used as the row title in
+    /// the saved-chats sheet. Mirrors how messaging apps name a thread
+    /// before the user has given it an explicit title.
+    var title: String {
+        let firstUser = messages.first(where: { $0.role == "user" })?.content ?? ""
+        let trimmed = firstUser.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "Untitled chat" }
+        let firstLine = trimmed
+            .split(whereSeparator: \.isNewline)
+            .first
+            .map(String.init) ?? trimmed
+        return String(firstLine.prefix(80))
+    }
+
+    /// Latest message body, single-line, capped — second row used as the
+    /// preview subtitle in the saved-chats sheet so the user can scan
+    /// what the chat ended on.
+    var preview: String {
+        let last = messages.last?.content ?? ""
+        let trimmed = last.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+        let firstLine = trimmed
+            .split(whereSeparator: \.isNewline)
+            .first
+            .map(String.init) ?? trimmed
+        return String(firstLine.prefix(140))
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, messages, updatedAt
+    }
+
+    init(id: UUID = UUID(), messages: [ChatMessage], updatedAt: Date = Date()) {
+        self.id = id
+        self.messages = messages
+        self.updatedAt = updatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id         = try c.decodeIfPresent(UUID.self,          forKey: .id)         ?? UUID()
+        messages   = try c.decodeIfPresent([ChatMessage].self, forKey: .messages)   ?? []
+        updatedAt  = try c.decodeIfPresent(Date.self,          forKey: .updatedAt)  ?? Date()
+    }
+}
+
+extension Notification.Name {
+    static let savedChatsDidChange = Notification.Name("SavedChatsDidChange")
+}
+
+struct SavedChatsStore {
+    static let key = "saved_chats_v1"
+    static let maxStored = 100
+    private static let saveQueue = DispatchQueue(label: "com.up200.savedchats.save", qos: .utility)
+
+    static func load() -> [SavedChat] {
+        let data = UserDefaults.standard.data(forKey: key) ?? Data()
+        switch loadBlob([SavedChat].self, from: data) {
+        case .empty:
+            return []
+        case .ok(let raw):
+            return raw.sorted { $0.updatedAt > $1.updatedAt }
+        case .corrupt:
+            // Bytes exist but can't decode. Return empty so the UI renders,
+            // but `save` will refuse to overwrite — preserving the original
+            // blob for any future recovery path. Same contract as NotesStore.
+            return []
+        }
+    }
+
+    static func loadAsync() async -> [SavedChat] {
+        await withCheckedContinuation { continuation in
+            saveQueue.async { continuation.resume(returning: load()) }
+        }
+    }
+
+    static func save(_ chats: [SavedChat]) {
+        let existing = UserDefaults.standard.data(forKey: key) ?? Data()
+        if case .corrupt = loadBlob([SavedChat].self, from: existing) {
+            return
+        }
+        guard let data = try? JSONEncoder().encode(chats) else { return }
+        UserDefaults.standard.set(data, forKey: key)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .savedChatsDidChange, object: nil)
+        }
+    }
+
+    /// Insert-or-update a single chat, then write the trimmed list back.
+    /// Called from `ChatView` after every turn so an interrupted session
+    /// is preserved on disk without the user having to "save" explicitly.
+    static func upsertInBackground(_ chat: SavedChat) {
+        let snapshot = chat
+        saveQueue.async {
+            var all = load()
+            if let idx = all.firstIndex(where: { $0.id == snapshot.id }) {
+                all[idx] = snapshot
+            } else {
+                all.append(snapshot)
+            }
+            all.sort { $0.updatedAt > $1.updatedAt }
+            if all.count > maxStored {
+                all = Array(all.prefix(maxStored))
+            }
+            save(all)
+        }
+    }
+
+    static func deleteInBackground(_ id: UUID) {
+        saveQueue.async {
+            var all = load()
+            all.removeAll { $0.id == id }
+            save(all)
+        }
+    }
+}
+
 // MARK: - Chat View
 
 struct ChatView: View {
@@ -245,6 +428,13 @@ struct ChatView: View {
     @State private var inputText = ""
     @State private var isLoading = false
     @State private var showMentionPicker = false
+    @State private var showSavedChatsPicker = false
+    /// Stable identity for the conversation currently visible in this
+    /// view. The first `persistActiveChat` call writes a row under this
+    /// id; subsequent turns update that same row, so a session is one
+    /// entry in the saved-chats list rather than one per message. Reset
+    /// when the user picks a different conversation from the sheet.
+    @State private var activeSavedChatID: UUID = UUID()
     @State private var showFilePicker = false
     @State private var selectedContextIDs: Set<String> = []
     @State private var seededContextID: String? = nil
@@ -469,6 +659,14 @@ struct ChatView: View {
                 }
             )
         }
+        .sheet(isPresented: $showSavedChatsPicker) {
+            SavedChatsSheet(
+                currentChatID: activeSavedChatID,
+                onSelect: { chat in
+                    loadSavedChat(chat)
+                }
+            )
+        }
         .fileImporter(
             isPresented: $showFilePicker,
             allowedContentTypes: [.text, .plainText, .pdf],
@@ -514,6 +712,10 @@ struct ChatView: View {
             sendTask?.cancel()
             fileImportTask?.cancel()
             dictation.cancel()
+            // Catch any final state the per-turn saves missed — eg. if a
+            // rewrite card was applied (which doesn't itself trigger a
+            // save) or a tab swap dismissed the sheet mid-edit.
+            persistActiveChat()
         }
         .onAppear {
             rebuildProjects()
@@ -600,22 +802,18 @@ struct ChatView: View {
             Spacer(minLength: 8)
 
             Button {
-                presentMentionPicker()
+                presentSavedChatsPicker()
             } label: {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(
-                        selectedContextIDs.isEmpty
-                            ? AppInk.solid(availableMentions.isEmpty ? 0.18 : 0.55)
-                            : .white
-                    )
+                    .foregroundColor(AppInk.solid(0.55))
                     .frame(width: 36, height: 36)
                     .background(AppInk.solid(0.07))
                     .clipShape(Circle())
                     .appIconHitArea()
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Library context")
+            .accessibilityLabel("Saved chats")
         }
         .padding(.horizontal, 16)
         .frame(height: 56)
@@ -963,6 +1161,57 @@ struct ChatView: View {
         showMentionPicker = true
     }
 
+    private func presentSavedChatsPicker() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        inputFocused = false
+        showSavedChatsPicker = true
+    }
+
+    /// Persist the current `messages` array into the saved-chats store
+    /// under `activeSavedChatID`. Called after each turn so an interrupted
+    /// session is preserved. No-op when there are no messages yet — an
+    /// abandoned empty chat doesn't earn a row in the history.
+    private func persistActiveChat() {
+        guard !messages.isEmpty else { return }
+        let snapshot = SavedChat(
+            id: activeSavedChatID,
+            messages: messages,
+            updatedAt: Date()
+        )
+        SavedChatsStore.upsertInBackground(snapshot)
+    }
+
+    /// Replace the visible conversation with a previously saved chat.
+    /// Clears the composer's attachments — the loaded chat is a different
+    /// thread, so dragging the seeded context chip from the previous
+    /// conversation forward would just confuse the next turn.
+    private func loadSavedChat(_ chat: SavedChat) {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        // Make sure the current chat is committed before we swap it out
+        // for the loaded one, so an in-progress conversation isn't lost.
+        persistActiveChat()
+        sendTask?.cancel()
+        sendTask = nil
+        activeSavedChatID = chat.id
+        messages = chat.messages
+        inputText = ""
+        selectedContextIDs = []
+        attachedFiles = []
+        seededContextID = nil
+        seededSelectionSourceID = nil
+        seededSelectionRange = nil
+        // The seeded selection chip from the parent flow no longer makes
+        // sense in the context of a separate loaded conversation. Mark it
+        // as already-seeded so attemptSeedSelection won't re-add it.
+        didSeedSelection = true
+        didSeedContext = true
+        appliedRewriteKeys = []
+        isLoading = false
+        chatFailed = false
+        rewriteFailed = false
+        showSavedChatsPicker = false
+    }
+
     private func attachMention(_ source: ChatContextSource) {
         if !selectedContextIDs.contains(source.id) {
             selectedContextIDs.insert(source.id)
@@ -1255,6 +1504,10 @@ struct ChatView: View {
         guard !text.isEmpty, !isLoading else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         messages.append(ChatMessage(role: "user", content: text, attachedContext: contextItems))
+        // Persist the user turn immediately so a network drop, an app
+        // termination, or a failed assistant call doesn't lose what the
+        // user already typed and sent.
+        persistActiveChat()
         inputText = ""
         // Dismiss the keyboard once the turn is in flight so the assistant's
         // reply (and any rewrite card) lands in the full screen height
@@ -1271,6 +1524,7 @@ struct ChatView: View {
                 switch outcome {
                 case .success(let reply):
                     messages.append(ChatMessage(role: "assistant", content: reply))
+                    persistActiveChat()
                 case .failure(let err):
                     // Surface as an alert so the error doesn't masquerade as
                     // a model response in the chat history.
@@ -1541,6 +1795,192 @@ private struct MentionPickerSheet: View {
         case .file:      return "paperclip"
         case .selection: return "text.cursor"
         }
+    }
+}
+
+// MARK: - Saved Chats Sheet
+
+/// Bottom sheet listing previously saved chats so the user can resume
+/// one. The currently-open chat is flagged so it doesn't look like a
+/// "load" candidate — picking it would no-op anyway.
+private struct SavedChatsSheet: View {
+    let currentChatID: UUID
+    let onSelect: (SavedChat) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var chats: [SavedChat] = []
+    @State private var loaded: Bool = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.app(size: 13, weight: .semibold))
+                        .foregroundColor(AppInk.solid(0.60))
+                        .frame(width: 28, height: 28)
+                        .background(AppInk.solid(0.10))
+                        .clipShape(Circle())
+                        .appIconHitArea()
+                }
+                .accessibilityLabel("Close")
+                Spacer(minLength: 0)
+                Text("Saved chats")
+                    .font(.app(size: 16, weight: .semibold))
+                    .foregroundColor(AppText.primary)
+                Spacer(minLength: 0)
+                Color.clear.frame(width: 28, height: 28)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 20)
+            .padding(.bottom, 14)
+
+            Rectangle()
+                .fill(AppInk.solid(0.06))
+                .frame(height: 0.5)
+
+            if loaded && chats.isEmpty {
+                Spacer()
+                VStack(spacing: 12) {
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.app(size: 32, weight: .regular))
+                        .foregroundColor(AppInk.solid(0.20))
+                    Text("No saved chats yet")
+                        .font(.app(size: 15))
+                        .foregroundColor(AppInk.solid(0.30))
+                    Text("Chats are saved automatically as you go. They'll show up here.")
+                        .font(.app(size: 13))
+                        .foregroundColor(AppInk.solid(0.22))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+                .frame(maxWidth: .infinity)
+                Spacer()
+            } else {
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: 6) {
+                        ForEach(chats) { chat in
+                            row(chat)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 24)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(Radius.sheet)
+        .presentationBackground(AppBackground.primary)
+        .task {
+            chats = await SavedChatsStore.loadAsync()
+            loaded = true
+        }
+    }
+
+    private func row(_ chat: SavedChat) -> some View {
+        let isCurrent = chat.id == currentChatID
+        return Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            onSelect(chat)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "bubble.left")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(AppInk.solid(0.55))
+                    .frame(width: 20)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(chat.title)
+                            .font(.app(size: 14, weight: .semibold))
+                            .foregroundColor(AppInk.solid(0.88))
+                            .lineLimit(1)
+                        if isCurrent {
+                            Text("Current")
+                                .font(.appCaptionMedium)
+                                .foregroundColor(BrandColor.amber)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(BrandColor.amber.opacity(0.12))
+                                .clipShape(Capsule())
+                        }
+                    }
+                    if !chat.preview.isEmpty {
+                        Text(chat.preview)
+                            .font(.app(size: 12))
+                            .foregroundColor(AppInk.solid(0.40))
+                            .lineLimit(1)
+                    }
+                    Text(SavedChatsSheet.relativeDate(chat.updatedAt))
+                        .font(.app(size: 11))
+                        .foregroundColor(AppInk.solid(0.32))
+                }
+                Spacer()
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(AppInk.solid(0.04))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(AppInk.solid(0.06), lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button(role: .destructive) {
+                deleteChat(chat)
+            } label: {
+                Label("Delete chat", systemImage: "trash")
+            }
+        }
+    }
+
+    private func deleteChat(_ chat: SavedChat) {
+        SavedChatsStore.deleteInBackground(chat.id)
+        chats.removeAll { $0.id == chat.id }
+    }
+
+    private static let timeFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        return f
+    }()
+    private static let weekdayFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE"
+        return f
+    }()
+    private static let monthDayFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f
+    }()
+    private static let fullFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        return f
+    }()
+
+    /// Friendlier short timestamp: time for today, "Yesterday", weekday for
+    /// the past week, then a date — mirrors the row stamps used elsewhere
+    /// in the app so the saved-chats list visually matches the notes list.
+    static func relativeDate(_ date: Date) -> String {
+        let cal = Calendar.current
+        if cal.isDateInToday(date) { return timeFmt.string(from: date) }
+        if cal.isDateInYesterday(date) { return "Yesterday" }
+        let now = Date()
+        let days = cal.dateComponents(
+            [.day],
+            from: cal.startOfDay(for: date),
+            to: cal.startOfDay(for: now)
+        ).day ?? 0
+        if days < 7 { return weekdayFmt.string(from: date) }
+        if cal.component(.year, from: date) == cal.component(.year, from: now) {
+            return monthDayFmt.string(from: date)
+        }
+        return fullFmt.string(from: date)
     }
 }
 
