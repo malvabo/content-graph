@@ -146,12 +146,15 @@ export function VoiceSourceInline({ id }: { id: string }) {
   const voiceNoteId = useGraphStore((s) => s.nodes.find((n) => n.id === id)?.data.config?.voiceNoteId as string | undefined);
   const updateConfig = useGraphStore((s) => s.updateNodeConfig);
   const { addNote, updateNote } = useVoiceStore();
+  const allNotes = useVoiceStore((s) => s.notes);
   const note = useVoiceStore((s) => voiceNoteId ? s.notes.find((n) => n.id === voiceNoteId) : undefined);
   const groqKey = useSettingsStore((s) => s.groqKey);
 
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const libraryAnchorRef = useRef<HTMLButtonElement>(null);
 
   const mediaRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -379,29 +382,67 @@ export function VoiceSourceInline({ id }: { id: string }) {
           </button>
         </div>
       ) : (
-        <button
-          onClick={startRecording}
+        <div
           style={{
             flex: 1,
             border: '1px dashed var(--color-border-default)',
             borderRadius: 'var(--radius-lg)',
-            background: 'none',
-            cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
-            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
-            color: 'var(--color-text-placeholder)',
-            transition: 'background 150ms, border-color 150ms',
+            display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 8,
+            padding: 12,
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-surface)'; e.currentTarget.style.borderStyle = 'solid'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderStyle = 'dashed'; }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-text-disabled)' }}>
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" y1="19" x2="12" y2="22"/>
-          </svg>
-          Start recording
-        </button>
+          <button
+            ref={libraryAnchorRef}
+            onClick={() => setLibraryOpen(o => !o)}
+            disabled={allNotes.filter(n => n.status === 'ready').length === 0}
+            style={{
+              border: '1px solid var(--color-border-default)',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--color-bg-surface)',
+              cursor: allNotes.filter(n => n.status === 'ready').length === 0 ? 'not-allowed' : 'pointer',
+              padding: '6px 10px',
+              fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)',
+              color: 'var(--color-text-secondary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
+              opacity: allNotes.filter(n => n.status === 'ready').length === 0 ? 0.5 : 1,
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+              Select from library
+            </span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <button
+            onClick={startRecording}
+            style={{
+              border: '1px solid var(--color-border-default)',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--color-bg-surface)',
+              cursor: 'pointer',
+              padding: '6px 10px',
+              fontSize: 'var(--text-sm)', fontFamily: 'var(--font-sans)',
+              color: 'var(--color-text-secondary)',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+            Record new
+          </button>
+        </div>
+      )}
+
+      {libraryOpen && libraryAnchorRef.current && (
+        <LibraryPicker
+          anchor={libraryAnchorRef.current}
+          notes={allNotes.filter(n => n.status === 'ready')}
+          onPick={(picked) => {
+            updateConfig(id, { voiceNoteId: picked.id });
+            useOutputStore.getState().setOutput(id, { text: picked.transcript });
+            setLibraryOpen(false);
+          }}
+          onClose={() => setLibraryOpen(false)}
+        />
       )}
 
       {micError && !recording && (
@@ -412,3 +453,71 @@ export function VoiceSourceInline({ id }: { id: string }) {
     </div>
   );
 }
+
+function LibraryPicker({ anchor, notes, onPick, onClose }: {
+  anchor: HTMLElement;
+  notes: VoiceNoteRow[];
+  onPick: (n: VoiceNoteRow) => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const rect = anchor.getBoundingClientRect();
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node) && !anchor.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [anchor, onClose]);
+
+  return createPortal(
+    <div
+      ref={ref}
+      onMouseDown={e => e.stopPropagation()}
+      className="dropdown-fade"
+      style={{
+        position: 'fixed',
+        left: rect.left,
+        top: rect.bottom + 4,
+        width: rect.width,
+        maxHeight: 240,
+        overflowY: 'auto',
+        background: 'var(--color-bg-popover)',
+        border: '1px solid var(--color-border-default)',
+        borderRadius: 'var(--radius-md)',
+        boxShadow: 'var(--shadow-md)',
+        zIndex: 9999,
+        padding: 'var(--space-1)',
+      }}
+    >
+      {notes.length === 0 ? (
+        <div style={{ padding: '8px 10px', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>
+          No voice notes yet
+        </div>
+      ) : notes.map(n => (
+        <button
+          key={n.id}
+          onClick={() => onPick(n)}
+          style={{
+            display: 'block', width: '100%', textAlign: 'left',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            padding: '6px 10px', borderRadius: 'var(--radius-sm)',
+            fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)',
+            color: 'var(--color-text-primary)',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-hover)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+        >
+          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title || 'Untitled note'}</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 2 }}>
+            {formatDuration(n.durationMs)}
+          </div>
+        </button>
+      ))}
+    </div>,
+    document.body
+  );
+}
+
+type VoiceNoteRow = { id: string; title: string; durationMs: number; transcript: string; status: string };

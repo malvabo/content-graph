@@ -266,14 +266,24 @@ export function TextSourceInline({ id }: { id: string }) {
             padding: '10px 12px',
           }}
         >
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <div style={{
               fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 500,
               color: 'var(--color-text-primary)', lineHeight: 'var(--leading-snug)',
-              overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+              overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
             }}>
               {displayTitle}
             </div>
+            {title && text && (
+              <div style={{
+                marginTop: 4,
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
+                color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-snug)',
+                overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+              }}>
+                {text}
+              </div>
+            )}
             <div style={{ marginTop: 4, fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
               {wordCount.toLocaleString()} words
             </div>
