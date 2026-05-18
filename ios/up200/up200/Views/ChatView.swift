@@ -1117,6 +1117,10 @@ struct ChatView: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         messages.append(ChatMessage(role: "user", content: text))
         inputText = ""
+        // Dismiss the keyboard once the turn is in flight so the assistant's
+        // reply (and any rewrite card) lands in the full screen height
+        // instead of being shoved behind a still-raised keyboard.
+        inputFocused = false
         isLoading = true
         let snapshot = messages
         let ctx = contextItems
