@@ -138,11 +138,10 @@ struct LibraryView: View {
                                     if !showSearch { searchText = "" }
                                 }
                             }
-                        }
 
-                        if let onProfileTap {
-                            TopBarPill {
-                                TopBarPillButton(systemImage: "person.crop.circle") {
+                            if let onProfileTap {
+                                TopBarPillDivider()
+                                TopBarProfileAvatar {
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                     onProfileTap()
                                 }
@@ -2166,9 +2165,9 @@ private struct SimpleHomeHeader: View {
                         onSearchToggle()
                     }
                     .accessibilityLabel("Search")
-                }
-                TopBarPill {
-                    TopBarPillButton(systemImage: "person.crop.circle") {
+
+                    TopBarPillDivider()
+                    TopBarProfileAvatar {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         onProfileTap()
                     }
@@ -2570,6 +2569,24 @@ struct TopBarPillDivider: View {
         Rectangle()
             .fill(AppInk.solid(0.10))
             .frame(width: 0.5, height: 18)
+    }
+}
+
+/// Filled circular avatar sized to sit flush at the right edge of a
+/// `TopBarPill`, mirroring Granola's search+profile combo — the avatar
+/// reads as a photo placeholder rather than the outline glyph.
+struct TopBarProfileAvatar: View {
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "person.crop.circle.fill")
+                .symbolRenderingMode(.hierarchical)
+                .font(.system(size: 32, weight: .regular))
+                .foregroundStyle(AppText.primary)
+                .frame(width: 38, height: 38)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
