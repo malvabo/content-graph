@@ -3036,6 +3036,7 @@ struct AIPreviewSheet: View {
 
     @State private var didCopy = false
     @State private var showDeltaInput = false
+    @State private var selectedDetent: PresentationDetent = .medium
 
     private let sheetBg = AppBackground.primary
 
@@ -3063,7 +3064,7 @@ struct AIPreviewSheet: View {
                 .toolbar(.hidden, for: .navigationBar)
         }
         .background(sheetBg)
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.medium, .large], selection: $selectedDetent)
         .presentationDragIndicator(.visible)
         .presentationBackground(sheetBg)
         .presentationCornerRadius(Radius.sheet)
@@ -3071,6 +3072,12 @@ struct AIPreviewSheet: View {
         // can read long previews without the sheet jumping to its large
         // detent on every swipe up.
         .presentationContentInteraction(.scrolls)
+        // A freshly generated variant (re-roll or "This but…") must not
+        // bump the sheet up to .large — keep it pinned at .medium so the
+        // user stays in the same compact view they were just reading.
+        .onChange(of: variants.count) { _, _ in selectedDetent = .medium }
+        .onChange(of: selectedIndex) { _, _ in selectedDetent = .medium }
+        .onChange(of: isLoading) { _, _ in selectedDetent = .medium }
     }
 
     private var mainView: some View {
