@@ -59,7 +59,7 @@ struct AppBodyTextStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .font(.appBody)
-            .lineSpacing(8)
+            .lineSpacing(12)
             .foregroundColor(AppInk.solid(0.92))
     }
 }
