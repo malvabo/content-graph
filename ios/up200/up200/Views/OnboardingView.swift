@@ -73,10 +73,12 @@ struct OnboardingView: View {
             // we hand the visual off to GeneratingCloudScene (same scene used
             // during .capture/.generating) so the "one idea → graph of
             // content" beat speaks in the same orange-spark vocabulary as the
-            // creation flow. On step 4 (.capture) the SceneKit view fades to
-            // a quiet backdrop while the starfield cloud takes focus.
+            // creation flow. On step 4 (.capture) the SceneKit view is hidden
+            // entirely — even at low opacity its warm gradient + step-2 bulb
+            // cluster patches over the starfield as a visible ghost layer
+            // sitting on top of the dive's destination.
             OnboardingSceneView(step: step.rawValue)
-                .opacity(step == .capture ? 0.18 : (step == .constellation ? 0 : 1))
+                .opacity((step == .capture || step == .constellation) ? 0 : 1)
                 .animation(.easeInOut(duration: 0.65), value: step)
                 .ignoresSafeArea()
 
