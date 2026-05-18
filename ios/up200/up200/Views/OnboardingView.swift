@@ -253,10 +253,16 @@ struct OnboardingView: View {
 
             Spacer().frame(height: 52)
         }
-        // Headline + button fade in slightly behind the bulb collapse so the
-        // user sees the stars converge first, then the text resolves. Matches
-        // the "smoothly and quickly" feel — the scene leads, the copy follows.
-        .transition(.opacity.animation(.easeIn(duration: 0.45).delay(0.25)))
+        // Asymmetric: on entry the scene leads, so the copy fades in behind a
+        // delay. On exit the user has just tapped "Continue" — the old copy
+        // needs to clear immediately so it doesn't ghost on top of the next
+        // step's headline (which sits at the same y position) and so the tap
+        // has a visible receipt. easeOut, not easeIn, because we're fading
+        // *out* — we want the alpha to drop fast and then settle.
+        .transition(.asymmetric(
+            insertion: .opacity.animation(.easeIn(duration: 0.45).delay(0.25)),
+            removal:   .opacity.animation(.easeOut(duration: 0.22))
+        ))
     }
 
     // MARK: Step 3 — content graph
@@ -307,10 +313,17 @@ struct OnboardingView: View {
 
             Spacer().frame(height: 52)
         }
-        // Same easeIn delay as step 2 so the satellites + connectors finish
-        // their first beats of motion before the headline and CTA resolve —
-        // scene leads, copy follows, just as the previous step does.
-        .transition(.opacity.animation(.easeIn(duration: 0.55).delay(0.35)))
+        // Asymmetric for the same reason as the previous step: on entry the
+        // scene leads (delay) but on exit the user has tapped "Let's get
+        // started" — the old headline must clear before the new one
+        // ("Let's capture / your first idea") fades in at the same y
+        // position, or the two two-line headlines blend into garbled text
+        // during the 0.95s dive. easeOut so the alpha drops promptly
+        // instead of lingering near full visibility for most of the fade.
+        .transition(.asymmetric(
+            insertion: .opacity.animation(.easeIn(duration: 0.55).delay(0.35)),
+            removal:   .opacity.animation(.easeOut(duration: 0.22))
+        ))
     }
 
     // MARK: Step 4 — Capture (starfield blurb → record → choose)
@@ -349,7 +362,20 @@ struct OnboardingView: View {
         // screen where the long-press silently fails to fire.
         .allowsHitTesting(capturePhase != .prompt)
         .animation(.easeInOut(duration: 0.45), value: capturePhase)
-        .transition(.opacity.animation(.easeIn(duration: 0.55).delay(0.25)))
+        // Enter: hold the headline back until the dive has resolved
+        // (cluster has scaled past the camera and the starfield has
+        // settled). Pushed further than the previous overlays (0.50 vs
+        // 0.35) because the .constellation → .capture transition is a
+        // 0.95s dive — appearing at 0.25s used to spawn the headline
+        // while the cluster was still blowing past, which made the new
+        // copy land on top of the old one.
+        // Exit: not actually used today (.capture is terminal in
+        // onboarding) but mirror the pattern so it's correct if the flow
+        // ever reverses.
+        .transition(.asymmetric(
+            insertion: .opacity.animation(.easeOut(duration: 0.40).delay(0.50)),
+            removal:   .opacity.animation(.easeOut(duration: 0.22))
+        ))
         .task {
             // Tick the on-screen mm:ss only while the recorder is active.
             // Loop exits when the view is torn down (SwiftUI cancels .task).
