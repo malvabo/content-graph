@@ -210,7 +210,15 @@ struct OnboardingView: View {
 
             Spacer().frame(height: 52)
         }
-        .transition(.opacity)
+        // Removal accelerated to 0.20s so the intro's "Log in" button
+        // (bottom of the screen) is gone before the transform overlay's
+        // delayed-insertion "Continue" button starts fading in at 0.25s.
+        // Otherwise the two white pills crossfade through each other in
+        // the same vertical band.
+        .transition(.asymmetric(
+            insertion: .opacity,
+            removal: .opacity.animation(.easeInOut(duration: 0.20))
+        ))
     }
 
     // MARK: Step 2 — collected bulb
