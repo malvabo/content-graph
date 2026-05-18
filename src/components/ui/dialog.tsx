@@ -32,12 +32,12 @@ const DialogContent = React.forwardRef<
     hideClose?: boolean;
     sheet?: boolean;
   }
->(({ className, children, maxWidth = 560, hideClose, sheet = false, ...props }, ref) => (
+>(({ className, children, maxWidth = 560, hideClose, sheet = false, style, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
-      style={{ '--dlg-max-w': `${maxWidth}px` } as React.CSSProperties}
+      style={{ '--dlg-max-w': `${maxWidth}px`, ...style } as React.CSSProperties}
       className={cn(
         'fixed z-[1001]',
         'flex flex-col overflow-hidden',
