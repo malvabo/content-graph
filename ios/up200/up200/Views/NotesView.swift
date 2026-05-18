@@ -1171,6 +1171,11 @@ private struct FilterChip: View {
     let namespace: Namespace.ID
     let action: () -> Void
     var onDelete: (() -> Void)? = nil
+    // Selected-pill chrome diverges by scheme so light mode reads as an
+    // iOS-native floating capsule (white fill on cream, hairline stroke,
+    // subtle drop shadow) rather than a translucent dark blob. Dark mode
+    // keeps the existing translucent ink overlay.
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Button(action: action) {
@@ -1183,10 +1188,20 @@ private struct FilterChip: View {
                     ZStack {
                         if isSelected {
                             Capsule(style: .continuous)
-                                .fill(AppInk.solid(0.14))
+                                .fill(colorScheme == .dark
+                                      ? AnyShapeStyle(AppInk.solid(0.14))
+                                      : AnyShapeStyle(AppBackground.surface))
                                 .overlay(
                                     Capsule(style: .continuous)
-                                        .stroke(AppInk.solid(0.22), lineWidth: 0.5)
+                                        .stroke(AppInk.solid(colorScheme == .dark ? 0.22 : 0.05), lineWidth: 0.5)
+                                )
+                                .shadow(
+                                    color: AppInk.solid(colorScheme == .dark ? 0 : 0.08),
+                                    radius: 6, x: 0, y: 2
+                                )
+                                .shadow(
+                                    color: AppInk.solid(colorScheme == .dark ? 0 : 0.04),
+                                    radius: 1, x: 0, y: 0.5
                                 )
                                 .matchedGeometryEffect(id: "filterChipPill", in: namespace)
                         }
