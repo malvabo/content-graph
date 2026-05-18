@@ -164,12 +164,15 @@ private struct ChatService {
         - For broad rewrites of an entire document with no [selection] \
         attached, do not use this block — answer normally. The block is \
         for surgical edits on a specific span.
+        - The `kind=… title=…` line on each <source> is metadata, not \
+        body text. <before> must quote bytes from inside the <source> \
+        tags only — never include the kind/title header line.
         """
         if !contextItems.isEmpty {
             let ctx = contextItems.map {
                 let body = $0.content.isEmpty ? $0.preview : $0.content
-                return "[\($0.kind.rawValue)] \($0.title):\n\(body)"
-            }.joined(separator: "\n\n---\n\n")
+                return "<source kind=\"\($0.kind.rawValue)\" title=\"\($0.title)\">\n\(body)\n</source>"
+            }.joined(separator: "\n\n")
             systemText += "\n\nThe user has provided these content pieces as context:\n\n\(ctx)"
         }
 
@@ -1011,6 +1014,42 @@ struct ChatView: View {
         return updated
     }
 
+    /// Locate `before` inside `body` with a small set of fallbacks so a
+    /// near-miss quote from the model still lands. Returns the body with
+    /// `after` spliced in at the first matching span, or nil if no
+    /// strategy found a span. Strategies, in order:
+    /// 1. exact substring
+    /// 2. whitespace-trimmed `before`
+    /// 3. `before` with a leading "Title-ish:\n" line stripped — the
+    ///    common failure where the model quotes the source title header
+    ///    along with the body.
+    private func applyRewriteByContains(
+        in body: String,
+        before: String,
+        after: String
+    ) -> String? {
+        if body.contains(before) {
+            return body.replacingOccurrences(of: before, with: after)
+        }
+        let trimmed = before.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty, trimmed != before, body.contains(trimmed) {
+            return body.replacingOccurrences(of: trimmed, with: after)
+        }
+        if let newline = trimmed.range(of: "\n") {
+            let firstLine = trimmed[trimmed.startIndex..<newline.lowerBound]
+            let rest = String(trimmed[newline.upperBound...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            // Only strip the first line when it looks like a metadata
+            // header — short, ends in ":", or is the source's title —
+            // so we don't silently drop real body text.
+            let looksLikeHeader = firstLine.hasSuffix(":") || firstLine.count <= 80
+            if looksLikeHeader, !rest.isEmpty, body.contains(rest) {
+                return body.replacingOccurrences(of: rest, with: after)
+            }
+        }
+        return nil
+    }
+
     /// Apply a rewrite suggestion against the attached context sources.
     /// Documents are persisted to `library_projects`; notes to NotesStore;
     /// in-session imported files mutate their local entry. Returns true
@@ -1040,9 +1079,12 @@ struct ChatView: View {
             ) {
                 newProjects[idx].content = updated
                 projectsChanged = true
-            } else if newProjects[idx].content.contains(before) {
-                newProjects[idx].content = newProjects[idx]
-                    .content.replacingOccurrences(of: before, with: after)
+            } else if let updated = applyRewriteByContains(
+                in: newProjects[idx].content,
+                before: before,
+                after: after
+            ) {
+                newProjects[idx].content = updated
                 projectsChanged = true
             }
         }
@@ -1073,9 +1115,12 @@ struct ChatView: View {
                     allNotes[idx].body = updated
                     allNotes[idx].updatedAt = Date()
                     notesChanged = true
-                } else if allNotes[idx].body.contains(before) {
-                    allNotes[idx].body = allNotes[idx]
-                        .body.replacingOccurrences(of: before, with: after)
+                } else if let updated = applyRewriteByContains(
+                    in: allNotes[idx].body,
+                    before: before,
+                    after: after
+                ) {
+                    allNotes[idx].body = updated
                     allNotes[idx].updatedAt = Date()
                     notesChanged = true
                 }
@@ -1092,14 +1137,18 @@ struct ChatView: View {
         // attachment so any follow-up turn sees the new content.
         var filesChanged = false
         for idx in attachedFiles.indices where attachedIds.contains(attachedFiles[idx].id) {
-            if attachedFiles[idx].content.contains(before) {
+            if let updated = applyRewriteByContains(
+                in: attachedFiles[idx].content,
+                before: before,
+                after: after
+            ) {
                 let f = attachedFiles[idx]
                 attachedFiles[idx] = ChatContextSource(
                     id: f.id,
                     kind: f.kind,
                     title: f.title,
                     preview: f.preview,
-                    content: f.content.replacingOccurrences(of: before, with: after)
+                    content: updated
                 )
                 filesChanged = true
             }
