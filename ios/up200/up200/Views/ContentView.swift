@@ -708,17 +708,17 @@ struct ProjectGroupDetailView: View {
                             .font(.appTitle)
                             .foregroundColor(AppText.primary)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 20)
-                            .padding(.top, 16)
-                            .padding(.bottom, 10)
+                            .padding(.horizontal, inCardPreview ? 14 : 20)
+                            .padding(.top, inCardPreview ? 12 : 16)
+                            .padding(.bottom, inCardPreview ? 8 : 10)
 
                         ZStack(alignment: .topLeading) {
                             if editText.isEmpty {
                                 Text("No content")
                                     .font(.appBody)
                                     .foregroundColor(AppText.muted)
-                                    .padding(.horizontal, 24)
-                                    .padding(.top, 8)
+                                    .padding(.horizontal, inCardPreview ? 14 : 24)
+                                    .padding(.top, inCardPreview ? 4 : 8)
                                     .allowsHitTesting(false)
                             }
                             if isEditingBody || dictation.isRecording {
@@ -741,8 +741,8 @@ struct ProjectGroupDetailView: View {
                                         .appBodyText()
                                         .textSelection(.enabled)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.horizontal, 20)
-                                        .padding(.top, 8)
+                                        .padding(.horizontal, inCardPreview ? 14 : 20)
+                                        .padding(.top, inCardPreview ? 4 : 8)
                                         .padding(.bottom, 96)
                                 }
                                 .contentShape(Rectangle())
@@ -2595,13 +2595,13 @@ private extension View {
         let shouldDraw = active && visible
         let inset: CGFloat = shouldDraw ? 16 : 0
         let bottomInset: CGFloat = shouldDraw ? 8 : 0
-        // Onboarding card sits directly on the app background, which makes
-        // the shared `AppBackground.surface` token read as nearly the same
-        // brown as the page. Lift this one card a few points so the
-        // "your content is ready" moment has a visible plane.
+        // Onboarding card sits directly on the app background. Use a neutral
+        // 5% white lift (rather than a warm brown) so the surface reads as a
+        // clean grey plane against the near-black page instead of doubling up
+        // on the brand's amber wash.
         let surroundFill = Color(uiColor: UIColor { trait in
             trait.userInterfaceStyle == .dark
-                ? UIColor(red: 0.14, green: 0.12, blue: 0.11, alpha: 1.0)
+                ? UIColor(white: 0.05, alpha: 1.0)
                 : UIColor(white: 1.0, alpha: 1.0)
         })
         return self
