@@ -55,5 +55,12 @@
 	<string>Speech recognition is used to transcribe your voice notes</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Lora-Regular.ttf</string>
+		<string>Lora-Medium.ttf</string>
+		<string>Lora-SemiBold.ttf</string>
+		<string>Lora-Bold.ttf</string>
+	</array>
 </dict>
 </plist>

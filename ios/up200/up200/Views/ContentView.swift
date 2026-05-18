@@ -648,18 +648,18 @@ struct ProjectGroupDetailView: View {
 
                 // Onboarding-only "first result" celebration banner. With the
                 // top bar suppressed during this beat, the banner sits at the
-                // top of the screen — same typographic register (monospaced
+                // top of the screen — same typographic register (Lora serif
                 // headline + lighter supporting line) as the earlier
                 // onboarding steps so the result page reads as the closing
                 // screen of that flow rather than a library detail surface.
                 if inCardPreview {
                     VStack(spacing: 6) {
                         Text("Your content is ready!")
-                            .font(.system(size: 22, weight: .medium, design: .monospaced))
+                            .font(.lora(size: 22, weight: .medium))
                             .kerning(-0.3)
                             .foregroundColor(AppText.primary)
                         Text("Share it with the world")
-                            .font(.system(size: 20, weight: .medium, design: .monospaced))
+                            .font(.lora(size: 20, weight: .medium))
                             .kerning(-0.3)
                             .foregroundColor(Color.white.opacity(0.72))
                     }

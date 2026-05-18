@@ -5,6 +5,23 @@ extension Font {
         .system(size: size, weight: weight)
     }
 
+    /// Lora — the serif used for onboarding headlines. Bundled as static
+    /// cuts (Regular / Medium / SemiBold / Bold); weights outside that
+    /// set fall back to the nearest available cut rather than letting the
+    /// system synthesize, since synthesized weights look smeared on a
+    /// hairline serif.
+    static func lora(size: CGFloat, weight: Weight = .regular) -> Font {
+        let postScriptName: String = {
+            switch weight {
+            case .bold, .heavy, .black: return "Lora-Bold"
+            case .semibold:             return "Lora-SemiBold"
+            case .medium:               return "Lora-Medium"
+            default:                    return "Lora-Regular"
+            }
+        }()
+        return .custom(postScriptName, size: size)
+    }
+
     // ── Type scale ────────────────────────────────────────────────────────────
     // Title
     static let appTitle        = app(size: 26, weight: .bold)      // detail screen heading

@@ -140,7 +140,7 @@ struct OnboardingView: View {
 
             VStack(spacing: 12) {
                 Text(String(brandFull.prefix(brandTypedLength)))
-                    .font(.system(size: 52, weight: .regular, design: .monospaced))
+                    .font(.lora(size: 52, weight: .regular))
                     .kerning(-0.5)
                     .foregroundColor(AppText.primary)
 
@@ -223,7 +223,7 @@ struct OnboardingView: View {
             // mark on step 1, so the two screens feel like one continuous
             // story instead of a font swap mid-flow.
             Text("Transform your ideas\ninto high quality content")
-                .font(.system(size: 22, weight: .medium, design: .monospaced))
+                .font(.lora(size: 22, weight: .medium))
                 .kerning(-0.3)
                 .foregroundColor(AppText.primary)
                 .multilineTextAlignment(.center)
@@ -280,7 +280,7 @@ struct OnboardingView: View {
             Spacer().frame(height: 24)
 
             Text("From one idea,\na graph of content")
-                .font(.system(size: 22, weight: .medium, design: .monospaced))
+                .font(.lora(size: 22, weight: .medium))
                 .kerning(-0.3)
                 .foregroundColor(AppText.primary)
                 .multilineTextAlignment(.center)
@@ -436,7 +436,7 @@ struct OnboardingView: View {
         switch capturePhase {
         case .prompt, .recording:
             Text("Let's capture\nyour first idea")
-                .font(.system(size: 22, weight: .medium, design: .monospaced))
+                .font(.lora(size: 22, weight: .medium))
                 .kerning(-0.3)
                 .foregroundColor(AppText.primary)
                 .multilineTextAlignment(.center)
@@ -445,11 +445,11 @@ struct OnboardingView: View {
         case .choose:
             VStack(spacing: 6) {
                 Text("Your idea is safe here.")
-                    .font(.system(size: 20, weight: .medium, design: .monospaced))
+                    .font(.lora(size: 20, weight: .medium))
                     .kerning(-0.3)
                     .foregroundColor(AppText.primary)
                 Text("What do you want to create?")
-                    .font(.system(size: 20, weight: .medium, design: .monospaced))
+                    .font(.lora(size: 20, weight: .medium))
                     .kerning(-0.3)
                     .foregroundColor(Color.white.opacity(0.72))
             }
@@ -460,14 +460,14 @@ struct OnboardingView: View {
             // has picked. Keeping just the reassurance line lets the cloud
             // animation below carry the rest of the message.
             Text("Your idea is safe here.")
-                .font(.system(size: 20, weight: .medium, design: .monospaced))
+                .font(.lora(size: 20, weight: .medium))
                 .kerning(-0.3)
                 .foregroundColor(AppText.primary)
                 .multilineTextAlignment(.center)
                 .transition(.opacity)
         case .specify:
             Text("What do you want to?..")
-                .font(.system(size: 22, weight: .medium, design: .monospaced))
+                .font(.lora(size: 22, weight: .medium))
                 .kerning(-0.3)
                 .foregroundColor(AppText.primary)
                 .multilineTextAlignment(.center)
