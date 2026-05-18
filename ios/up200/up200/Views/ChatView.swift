@@ -1321,35 +1321,25 @@ private struct RewriteSuggestionCard: View {
     let onAccept: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            tagLabel("SUGGESTED REWRITE", icon: "wand.and.stars")
+        VStack(alignment: .leading, spacing: 14) {
+            // Before → after reads like editorial prose, not a code diff:
+            // sans-serif body type, strikethrough on the old text, full
+            // weight on the new. No card around it, no FROM/TO chips —
+            // the typography itself does the work.
+            Text(Self.renderMarkdown(suggestion.before))
+                .font(.appBody)
+                .foregroundColor(AppText.tertiary)
+                .strikethrough(true, color: AppInk.solid(0.35))
+                .lineSpacing(6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
 
-            // FROM → TO is one semantic unit; keep it tight so the hierarchy
-            // reads as [header] [diff] [action] instead of five equal rows.
-            VStack(alignment: .leading, spacing: 6) {
-                diffBlock(
-                    label: "FROM",
-                    text: suggestion.before,
-                    fill: AppInk.solid(0.04),
-                    stroke: AppInk.solid(0.08),
-                    textColor: AppText.secondary,
-                    strike: true
-                )
-
-                Image(systemName: "arrow.down")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(AppText.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-
-                diffBlock(
-                    label: "TO",
-                    text: suggestion.after,
-                    fill: AppInk.solid(0.08),
-                    stroke: AppInk.solid(0.10),
-                    textColor: AppText.primary,
-                    strike: false
-                )
-            }
+            Text(Self.renderMarkdown(suggestion.after))
+                .font(.appBody)
+                .foregroundColor(AppText.primary)
+                .lineSpacing(6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
 
             Button(action: onAccept) {
                 HStack(spacing: 8) {
@@ -1358,10 +1348,6 @@ private struct RewriteSuggestionCard: View {
                     Text(isApplied ? "Applied" : "Accept")
                         .font(.app(size: 15, weight: .semibold))
                 }
-                // Same brown-amber / white-text combination as the Generate
-                // button. Drops the prior near-white BrandColor.amber fill
-                // so the app has a single primary-CTA visual rather than
-                // one white pill per surface.
                 .foregroundColor(isApplied ? AppText.secondary : .white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
@@ -1374,80 +1360,15 @@ private struct RewriteSuggestionCard: View {
             .disabled(isApplied)
             .accessibilityLabel(isApplied ? "Rewrite applied" : "Accept rewrite")
         }
-        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppInk.solid(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                .stroke(AppInk.solid(0.10), lineWidth: 0.5)
-        )
     }
 
-    /// Parses inline markdown (bold, italic, code, links) while keeping
-    /// the original line breaks. Falls back to a plain attributed string
-    /// if parsing throws — never returns the raw `**…**` form.
     private static func renderMarkdown(_ text: String) -> AttributedString {
         let opts = AttributedString.MarkdownParsingOptions(
             interpretedSyntax: .inlineOnlyPreservingWhitespace
         )
         return (try? AttributedString(markdown: text, options: opts))
             ?? AttributedString(text)
-    }
-
-    /// Uppercase monospaced label for SUGGESTED REWRITE / FROM / TO. Sized
-    /// up from the prior 10pt to 12pt because at 10 the labels were
-    /// effectively unreadable against the dim secondary background.
-    @ViewBuilder
-    private func tagLabel(_ text: String, icon: String? = nil) -> some View {
-        HStack(spacing: 6) {
-            if let icon {
-                Image(systemName: icon)
-                    .font(.system(size: 13, weight: .medium))
-            }
-            Text(text)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .kerning(0.6)
-        }
-        .foregroundColor(AppText.tertiary)
-    }
-
-    @ViewBuilder
-    private func diffBlock(
-        label: String,
-        text: String,
-        fill: Color,
-        stroke: Color,
-        textColor: Color,
-        strike: Bool
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            tagLabel(label)
-            // Inline markdown so `**word**` reads as bold rather than as
-            // four literal asterisks. The replacement logic still operates
-            // on the raw `suggestion.before` / `suggestion.after` bytes;
-            // only the on-screen render is parsed. `inlineOnlyPreservingWhitespace`
-            // keeps multi-line content intact instead of collapsing it.
-            Text(Self.renderMarkdown(text))
-                .font(.system(size: 14, weight: .regular, design: .monospaced))
-                .foregroundColor(textColor)
-                .strikethrough(strike, color: AppText.tertiary)
-                // ~1.4 line height. SwiftUI's default for 14pt mono is
-                // ~17pt baseline-to-baseline; +5pt of `lineSpacing` puts
-                // the diff at roughly 14 * 1.55 ≈ comfortable reading
-                // rhythm, well above the prior cramped 1.36×.
-                .lineSpacing(5)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(fill)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(stroke, lineWidth: 0.5)
-                )
-                .textSelection(.enabled)
-        }
     }
 }
 
