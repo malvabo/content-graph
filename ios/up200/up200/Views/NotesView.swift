@@ -1397,9 +1397,10 @@ struct NotesView: View {
     }
 
     private func delete(_ note: Note) {
-        withAnimation(AppAnimation.standard) {
-            notes.removeAll { $0.id == note.id }
-        }
+        // No withAnimation: the swipeActions destructive button already owns
+        // the row-out animation. Driving a second animation from the data
+        // side made the red tint linger as the row collapsed.
+        notes.removeAll { $0.id == note.id }
         scheduleSave()
     }
 
@@ -1415,9 +1416,9 @@ struct NotesView: View {
 
     private func togglePin(_ note: Note) {
         guard let idx = notes.firstIndex(where: { $0.id == note.id }) else { return }
-        withAnimation(AppAnimation.standard) {
-            notes[idx].isPinned.toggle()
-        }
+        // No withAnimation: the system swipe-close already animates. A second
+        // data-side animation just delayed the visible result of the tap.
+        notes[idx].isPinned.toggle()
         scheduleSave()
     }
 
@@ -1546,7 +1547,6 @@ struct NotesView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Color.clear)
-            .animation(AppAnimation.standard, value: items.map(\.id))
         }
     }
 
@@ -1590,16 +1590,11 @@ struct NotesView: View {
                         .font(.system(size: 14, weight: .semibold))
                 }
             }
-            .tint(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.48, green: 0.06, blue: 0.06),
-                        Color(red: 0.20, green: 0.02, blue: 0.02)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
+            // Plain Color — UIKit's swipeActions background expects a UIColor.
+            // A LinearGradient gets bridged as an overlay layer that lingers
+            // across the row as the destructive cell expands, reading as a
+            // long red strip during the wipe.
+            .tint(Color(red: 0.34, green: 0.04, blue: 0.04))
         }
         .swipeActions(edge: .leading) {
             Button {
