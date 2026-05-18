@@ -836,12 +836,33 @@ private struct NoteEditorPage: View {
     @State private var didDelete: Bool = false
     @State private var showChat: Bool = false
     @State private var showCreate: Bool = false
+    /// Live selection in the body editor. `length == 0` means a caret with no
+    /// highlighted text — the floating selection actions are gated on a
+    /// non-empty selection so a stray tap doesn't surface them.
+    @State private var bodySelection: NSRange = NSRange(location: 0, length: 0)
+    /// Rect of the first line of the active selection inside the editor's
+    /// own coordinate space. Drives the placement of the magic/chat bubble
+    /// that floats just above the highlighted text.
+    @State private var selectionRect: CGRect? = nil
+    /// Snapshot of the selection captured at the moment a floating action
+    /// fires — held on its own so the chat sheet's seed survives across
+    /// the selection clearing when the keyboard collapses on sheet present.
+    @State private var pendingSelectionText: String? = nil
+    @State private var pendingSelectionRange: NSRange? = nil
+    /// Drives the inline rewrite sheet for the magic-pen action.
+    @State private var rewriteRequest: RewriteRequest? = nil
     @StateObject private var dictation = NoteDictation()
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
     @FocusState private var focus: Field?
 
     private enum Field { case title, body }
+
+    struct RewriteRequest: Identifiable {
+        let id = UUID()
+        let originalText: String
+        let range: NSRange
+    }
 
     init(note: Note, onSave: @escaping (Note) -> Void, onDelete: @escaping () -> Void) {
         let migrated = Note.migrated(note)
@@ -989,14 +1010,34 @@ private struct NoteEditorPage: View {
                             .padding(.top, 8)
                             .allowsHitTesting(false)
                     }
-                    TextEditor(text: $noteBody)
-                        .appReadingBodyText()
-                        .scrollContentBackground(.hidden)
-                        .background(Color.clear)
-                        .tint(AppText.primary)
-                        .padding(.horizontal, 16)
-                        .contentMargins(.bottom, 96, for: .scrollContent)
-                        .focused($focus, equals: .body)
+                    SelectableNoteEditor(
+                        text: $noteBody,
+                        selection: $bodySelection,
+                        selectionRect: $selectionRect,
+                        isFocused: Binding(
+                            get: { focus == .body },
+                            set: { newValue in focus = newValue ? .body : nil }
+                        ),
+                        bottomInset: 96
+                    )
+                    .overlay {
+                        // Magic + chat pair anchored just above the highlighted
+                        // text — mirrors the bottom-of-screen pair but bound to
+                        // the current selection instead of the whole note.
+                        GeometryReader { proxy in
+                            if let rect = selectionRect, bodySelection.length > 0 {
+                                let bubbleHalfWidth: CGFloat = 55
+                                let clampedX = min(max(rect.midX, bubbleHalfWidth), proxy.size.width - bubbleHalfWidth)
+                                let clampedY = max(30, rect.minY - 30)
+                                selectionActionBubble
+                                    .position(x: clampedX, y: clampedY)
+                                    .transition(.scale(scale: 0.85).combined(with: .opacity))
+                            }
+                        }
+                        .allowsHitTesting(bodySelection.length > 0 && selectionRect != nil)
+                    }
+                    .animation(.spring(response: 0.30, dampingFraction: 0.85), value: selectionRect)
+                    .animation(.spring(response: 0.30, dampingFraction: 0.85), value: bodySelection.length > 0)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
@@ -1060,8 +1101,30 @@ private struct NoteEditorPage: View {
         } message: {
             Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
         }
-        .sheet(isPresented: $showChat, onDismiss: refreshAfterChat) {
-            ChatView(initialNoteContextID: original.id)
+        .sheet(isPresented: $showChat, onDismiss: {
+            pendingSelectionText = nil
+            pendingSelectionRange = nil
+            refreshAfterChat()
+        }) {
+            let selectionTitle: String? = {
+                let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
+                let parent = t.isEmpty ? original.displayTitle : t
+                return parent.isEmpty ? "Selected text" : "Selection in \(parent)"
+            }()
+            ChatView(
+                initialNoteContextID: original.id,
+                initialSelection: pendingSelectionText,
+                initialSelectionTitle: pendingSelectionText == nil ? nil : selectionTitle,
+                initialSelectionRange: pendingSelectionRange
+            )
+        }
+        .sheet(item: $rewriteRequest, onDismiss: refreshAfterChat) { request in
+            SelectionRewriteSheet(
+                originalText: request.originalText,
+                onApply: { rewritten in
+                    applyRewrite(rewritten, at: request.range, original: request.originalText)
+                }
+            )
         }
         .fullScreenCover(isPresented: $showCreate) {
             HomeView(isModal: true, initialSources: [noteAsSource])
@@ -1080,6 +1143,8 @@ private struct NoteEditorPage: View {
             // Commit any unsaved edits so the chat sees the current body
             // when it loads notes from the store on appear.
             persistIfNeeded()
+            pendingSelectionText = nil
+            pendingSelectionRange = nil
             showChat = true
         } label: {
             Image(systemName: "message")
@@ -1115,6 +1180,86 @@ private struct NoteEditorPage: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Create from this note")
+    }
+
+    /// Pair of circular buttons that float just above an active text
+    /// selection — magic-pen rewrites the highlighted span, chat opens the
+    /// AI chat with the snippet pre-attached as a `.selection` chip.
+    private var selectionActionBubble: some View {
+        HStack(spacing: 10) {
+            selectionCircleButton(icon: "wand.and.stars", weight: .semibold, label: "Rewrite selection") {
+                triggerSelectionRewrite()
+            }
+            selectionCircleButton(icon: "message", weight: .regular, label: "Ask AI about selection") {
+                triggerSelectionChat()
+            }
+        }
+    }
+
+    private func selectionCircleButton(icon: String, weight: Font.Weight, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            action()
+        }) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: weight))
+                .foregroundColor(AppText.primary)
+                .frame(width: 44, height: 44)
+                .background(
+                    Circle()
+                        .fill(.regularMaterial)
+                        .overlay(Circle().stroke(AppInk.solid(0.18), lineWidth: 0.5))
+                        .shadow(color: Color.black.opacity(0.28), radius: 12, y: 4)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
+    /// Captures the current selection, then opens the rewrite sheet.
+    /// The `RewriteRequest` carries its own snapshot so the rewrite still
+    /// lands at the right span even if the user keeps editing.
+    private func triggerSelectionRewrite() {
+        guard let snippet = currentSelectionText(), let range = currentSelectionRange() else { return }
+        persistIfNeeded()
+        rewriteRequest = RewriteRequest(originalText: snippet, range: range)
+    }
+
+    private func triggerSelectionChat() {
+        guard let snippet = currentSelectionText(), let range = currentSelectionRange() else { return }
+        pendingSelectionText = snippet
+        pendingSelectionRange = range
+        persistIfNeeded()
+        showChat = true
+    }
+
+    private func currentSelectionText() -> String? {
+        guard bodySelection.length > 0 else { return nil }
+        let ns = noteBody as NSString
+        guard bodySelection.location >= 0, NSMaxRange(bodySelection) <= ns.length else { return nil }
+        let snippet = ns.substring(with: bodySelection).trimmingCharacters(in: .whitespacesAndNewlines)
+        return snippet.isEmpty ? nil : ns.substring(with: bodySelection)
+    }
+
+    private func currentSelectionRange() -> NSRange? {
+        guard bodySelection.length > 0 else { return nil }
+        let ns = noteBody as NSString
+        guard bodySelection.location >= 0, NSMaxRange(bodySelection) <= ns.length else { return nil }
+        return bodySelection
+    }
+
+    /// Replaces the originally-selected span in the note body with the
+    /// rewritten text. Falls back to a contains match if the span has
+    /// drifted (e.g. the user kept editing while the sheet was open).
+    private func applyRewrite(_ rewritten: String, at range: NSRange, original: String) {
+        let ns = noteBody as NSString
+        if NSMaxRange(range) <= ns.length, ns.substring(with: range) == original {
+            noteBody = ns.replacingCharacters(in: range, with: rewritten)
+            return
+        }
+        if let r = noteBody.range(of: original) {
+            noteBody.replaceSubrange(r, with: rewritten)
+        }
     }
 
     private var noteAsSource: SourceItem {
@@ -2068,6 +2213,428 @@ struct DrawingPreview: UIViewRepresentable {
     func updateUIView(_ uiView: PKCanvasView, context: Context) {
         if let drawing = try? PKDrawing(data: data) {
             uiView.drawing = drawing
+        }
+    }
+}
+
+// MARK: - Selectable Note Editor
+
+/// UITextView-backed body editor that exposes the user's text selection
+/// back to SwiftUI. Drives the floating magic/chat bubble that appears
+/// above a highlighted span — the system `TextEditor` doesn't surface
+/// selection state, so we wrap UIKit to read `selectedRange` plus the
+/// rect of the first line of the selection for placement.
+private struct SelectableNoteEditor: UIViewRepresentable {
+    @Binding var text: String
+    @Binding var selection: NSRange
+    @Binding var selectionRect: CGRect?
+    @Binding var isFocused: Bool
+    let bottomInset: CGFloat
+
+    private static let font = UIFont.systemFont(ofSize: 18)
+    private static let lineSpacing: CGFloat = 8
+
+    private static func attributes() -> [NSAttributedString.Key: Any] {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineSpacing = Self.lineSpacing
+        return [
+            .font: Self.font,
+            .foregroundColor: UIColor(AppText.primary),
+            .paragraphStyle: paragraph
+        ]
+    }
+
+    func makeUIView(context: Context) -> UITextView {
+        let tv = UITextView()
+        tv.delegate = context.coordinator
+        tv.backgroundColor = .clear
+        tv.font = Self.font
+        tv.textColor = UIColor(AppText.primary)
+        tv.tintColor = UIColor(AppText.primary)
+        tv.isScrollEnabled = true
+        tv.alwaysBounceVertical = true
+        tv.textContainer.lineFragmentPadding = 0
+        // Matches the original TextEditor's combined outer padding (16) +
+        // TextEditor's internal left inset (~8), so the body text lines up
+        // with the "Start typing…" placeholder rendered alongside this view.
+        tv.textContainerInset = UIEdgeInsets(top: 8, left: 24, bottom: bottomInset, right: 24)
+        tv.typingAttributes = Self.attributes()
+        tv.attributedText = NSAttributedString(string: text, attributes: Self.attributes())
+        return tv
+    }
+
+    func updateUIView(_ tv: UITextView, context: Context) {
+        if tv.text != text {
+            let sel = tv.selectedRange
+            context.coordinator.suppressEcho = true
+            tv.attributedText = NSAttributedString(string: text, attributes: Self.attributes())
+            tv.typingAttributes = Self.attributes()
+            let len = (tv.text as NSString).length
+            tv.selectedRange = NSRange(
+                location: min(sel.location, len),
+                length: min(sel.length, max(0, len - sel.location))
+            )
+            context.coordinator.suppressEcho = false
+            context.coordinator.refreshSelection(tv)
+        }
+        if tv.textContainerInset.bottom != bottomInset {
+            tv.textContainerInset.bottom = bottomInset
+        }
+        DispatchQueue.main.async {
+            if isFocused && !tv.isFirstResponder {
+                tv.becomeFirstResponder()
+            } else if !isFocused && tv.isFirstResponder {
+                tv.resignFirstResponder()
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, UITextViewDelegate {
+        var parent: SelectableNoteEditor
+        var suppressEcho = false
+        init(_ parent: SelectableNoteEditor) { self.parent = parent }
+
+        func textViewDidChange(_ tv: UITextView) {
+            guard !suppressEcho else { return }
+            let new = tv.text ?? ""
+            if parent.text != new { parent.text = new }
+            refreshSelection(tv)
+        }
+
+        func textViewDidChangeSelection(_ tv: UITextView) {
+            refreshSelection(tv)
+        }
+
+        func textViewDidBeginEditing(_ tv: UITextView) {
+            if !parent.isFocused { parent.isFocused = true }
+        }
+
+        func textViewDidEndEditing(_ tv: UITextView) {
+            if parent.isFocused { parent.isFocused = false }
+            if parent.selectionRect != nil { parent.selectionRect = nil }
+        }
+
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            guard let tv = scrollView as? UITextView else { return }
+            refreshSelection(tv)
+        }
+
+        func refreshSelection(_ tv: UITextView) {
+            let range = tv.selectedRange
+            if parent.selection != range { parent.selection = range }
+
+            guard range.length > 0,
+                  let startPos = tv.position(from: tv.beginningOfDocument, offset: range.location),
+                  let endPos = tv.position(from: startPos, offset: range.length),
+                  let textRange = tv.textRange(from: startPos, to: endPos)
+            else {
+                if parent.selectionRect != nil { parent.selectionRect = nil }
+                return
+            }
+
+            // First-line rect of the selection, in the text view's own
+            // coord space. Subtract the scroll offset so the rect tracks
+            // the visible position rather than the in-document position.
+            let rawRect = tv.firstRect(for: textRange)
+            guard !rawRect.isNull, !rawRect.isInfinite, rawRect.height > 0 else {
+                if parent.selectionRect != nil { parent.selectionRect = nil }
+                return
+            }
+            let visible = CGRect(
+                x: rawRect.minX,
+                y: rawRect.minY - tv.contentOffset.y,
+                width: rawRect.width,
+                height: rawRect.height
+            )
+            if parent.selectionRect != visible { parent.selectionRect = visible }
+        }
+    }
+}
+
+// MARK: - Selection Rewrite Sheet
+
+/// Sheet that fires when the user taps the magic-pen on a highlighted
+/// span. Shows the original, lets the user pick a preset or type a
+/// custom instruction, calls `AITransformService.transform`, then
+/// surfaces the rewrite with Accept/Discard so a botched generation
+/// doesn't overwrite the note silently.
+private struct SelectionRewriteSheet: View {
+    let originalText: String
+    let onApply: (String) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var instruction: String = ""
+    @State private var rewritten: String? = nil
+    @State private var isLoading: Bool = false
+    @State private var errorMessage: String? = nil
+
+    private let presets: [(label: String, instruction: String)] = [
+        ("Improve", "Improve the writing — make it clearer and more polished without changing the meaning."),
+        ("Shorter", "Tighten this — cut filler and keep the key idea in fewer words."),
+        ("Punchier", "Rewrite this with more energy and a stronger opening."),
+        ("Fix grammar", "Fix grammar, spelling, and punctuation. Keep the wording and tone otherwise unchanged.")
+    ]
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AppBackground.primary.ignoresSafeArea()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        sectionLabel("Selected text")
+                        Text(originalText)
+                            .font(.appReadingBody)
+                            .foregroundColor(AppText.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(14)
+                            .background(
+                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                    .fill(AppBackground.surface)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                    .stroke(AppInk.solid(0.08), lineWidth: 0.5)
+                            )
+
+                        if rewritten == nil {
+                            sectionLabel("Rewrite as…")
+                            FlowLayout(spacing: 8) {
+                                ForEach(presets, id: \.label) { preset in
+                                    presetChip(label: preset.label) {
+                                        run(instruction: preset.instruction)
+                                    }
+                                }
+                            }
+
+                            sectionLabel("Or describe the change")
+                            TextField(
+                                "",
+                                text: $instruction,
+                                prompt: Text("e.g. make it sound more curious").foregroundColor(AppInk.solid(0.30)),
+                                axis: .vertical
+                            )
+                            .lineLimit(2...5)
+                            .font(.appBody)
+                            .foregroundColor(AppText.primary)
+                            .tint(AppText.primary)
+                            .padding(14)
+                            .background(
+                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                    .fill(AppBackground.surface)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                    .stroke(AppInk.solid(0.08), lineWidth: 0.5)
+                            )
+
+                            Button {
+                                let trimmed = instruction.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !trimmed.isEmpty else { return }
+                                run(instruction: trimmed)
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "wand.and.stars")
+                                    Text(isLoading ? "Rewriting…" : "Rewrite")
+                                }
+                                .font(.app(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity, minHeight: 48)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(canSubmit ? BrandColor.ctaPrimary : AppBackground.ctaDisabled)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!canSubmit || isLoading)
+                        } else if let result = rewritten {
+                            sectionLabel("Rewrite")
+                            Text(result)
+                                .font(.appReadingBody)
+                                .foregroundColor(AppText.primary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(14)
+                                .background(
+                                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                        .fill(AppBackground.surface)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                        .stroke(AppInk.solid(0.18), lineWidth: 0.5)
+                                )
+
+                            HStack(spacing: 10) {
+                                Button {
+                                    rewritten = nil
+                                    instruction = ""
+                                } label: {
+                                    Text("Try again")
+                                        .font(.app(size: 15, weight: .medium))
+                                        .foregroundColor(AppText.primary)
+                                        .frame(maxWidth: .infinity, minHeight: 44)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .fill(AppBackground.surface)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .stroke(AppInk.solid(0.10), lineWidth: 0.5)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+
+                                Button {
+                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                    onApply(result)
+                                    dismiss()
+                                } label: {
+                                    Text("Replace selection")
+                                        .font(.app(size: 15, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity, minHeight: 44)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .fill(BrandColor.ctaPrimary)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.app(size: 13))
+                                .foregroundColor(Color.red.opacity(0.85))
+                                .padding(.top, 4)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
+                }
+            }
+            .navigationTitle("Rewrite")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundColor(AppText.primary)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationBackground(AppBackground.primary)
+    }
+
+    private var canSubmit: Bool {
+        !instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.app(size: 12, weight: .semibold))
+            .foregroundColor(AppText.tertiary)
+            .tracking(0.4)
+    }
+
+    private func presetChip(label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.app(size: 14, weight: .medium))
+                .foregroundColor(AppText.primary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(AppBackground.surface)
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(AppInk.solid(0.10), lineWidth: 0.5)
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(isLoading)
+    }
+
+    private func run(instruction value: String) {
+        isLoading = true
+        errorMessage = nil
+        Task {
+            let outcome = await AITransformService.transform(text: originalText, instruction: value)
+            await MainActor.run {
+                isLoading = false
+                switch outcome {
+                case .success(let text):
+                    rewritten = text
+                case .failure(let err):
+                    errorMessage = Self.message(for: err)
+                }
+            }
+        }
+    }
+
+    private static func message(for error: APICallError) -> String {
+        switch error {
+        case .http(401, _):
+            return AITransformService.isKeyConfigured
+                ? "Your API key was rejected. Update it in Settings and try again."
+                : "Add your Claude API key in Settings to use rewrite."
+        case .http(_, let body) where !body.isEmpty:
+            return body
+        case .http:
+            return "The rewrite request failed. Try again."
+        case .network(let detail):
+            return detail.isEmpty ? "Network error. Try again." : detail
+        case .decode:
+            return "Couldn't read the rewrite response."
+        case .empty:
+            return "The rewrite came back empty. Try again."
+        }
+    }
+}
+
+/// Minimal flow layout for wrapping the preset chips — SwiftUI's
+/// built-in HStack doesn't wrap, and pulling in a third-party layout
+/// for one row of chips is overkill.
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var lineWidth: CGFloat = 0
+        var totalHeight: CGFloat = 0
+        var lineHeight: CGFloat = 0
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if lineWidth + size.width > maxWidth && lineWidth > 0 {
+                totalHeight += lineHeight + spacing
+                lineWidth = 0
+                lineHeight = 0
+            }
+            lineWidth += size.width + spacing
+            lineHeight = max(lineHeight, size.height)
+        }
+        totalHeight += lineHeight
+        return CGSize(width: maxWidth.isFinite ? maxWidth : lineWidth, height: totalHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var lineHeight: CGFloat = 0
+        let maxX = bounds.maxX
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x + size.width > maxX && x > bounds.minX {
+                x = bounds.minX
+                y += lineHeight + spacing
+                lineHeight = 0
+            }
+            sub.place(at: CGPoint(x: x, y: y), anchor: .topLeading, proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            lineHeight = max(lineHeight, size.height)
         }
     }
 }
