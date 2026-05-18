@@ -1805,8 +1805,10 @@ private struct MentionPickerSheet: View {
 // MARK: - Saved Chats Sheet
 
 /// Bottom sheet listing previously saved chats so the user can resume
-/// one. The currently-open chat is flagged so it doesn't look like a
-/// "load" candidate — picking it would no-op anyway.
+/// one. Grouped by recency (Today / Past week / Older) with a minimal
+/// row style — title on the left, short relative stamp on the right —
+/// to match the native iOS chat-history feel rather than the heavier
+/// card-row pattern used elsewhere in the app.
 private struct SavedChatsSheet: View {
     let currentChatID: UUID
     let onSelect: (SavedChat) -> Void
@@ -1814,34 +1816,14 @@ private struct SavedChatsSheet: View {
     @State private var chats: [SavedChat] = []
     @State private var loaded: Bool = false
 
+    private struct Group: Identifiable {
+        let label: String
+        let chats: [SavedChat]
+        var id: String { label }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.app(size: 13, weight: .semibold))
-                        .foregroundColor(AppInk.solid(0.60))
-                        .frame(width: 28, height: 28)
-                        .background(AppInk.solid(0.10))
-                        .clipShape(Circle())
-                        .appIconHitArea()
-                }
-                .accessibilityLabel("Close")
-                Spacer(minLength: 0)
-                Text("Saved chats")
-                    .font(.app(size: 16, weight: .semibold))
-                    .foregroundColor(AppText.primary)
-                Spacer(minLength: 0)
-                Color.clear.frame(width: 28, height: 28)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
-            .padding(.bottom, 14)
-
-            Rectangle()
-                .fill(AppInk.solid(0.06))
-                .frame(height: 0.5)
-
             if loaded && chats.isEmpty {
                 Spacer()
                 VStack(spacing: 12) {
@@ -1861,18 +1843,20 @@ private struct SavedChatsSheet: View {
                 Spacer()
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 6) {
-                        ForEach(chats) { chat in
-                            row(chat)
+                    LazyVStack(spacing: 0, alignment: .leading) {
+                        ForEach(groupedChats) { group in
+                            sectionHeader(group.label)
+                            ForEach(group.chats) { chat in
+                                row(chat)
+                            }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
+                    .padding(.top, 8)
                     .padding(.bottom, 24)
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(Radius.sheet)
         .presentationBackground(AppBackground.primary)
@@ -1882,54 +1866,71 @@ private struct SavedChatsSheet: View {
         }
     }
 
+    /// Splits the loaded list into Today / Past week / Older buckets and
+    /// drops any bucket that ended up empty so the section divider line
+    /// isn't left dangling over nothing.
+    private var groupedChats: [Group] {
+        let cal = Calendar.current
+        let now = Date()
+        var today: [SavedChat] = []
+        var pastWeek: [SavedChat] = []
+        var older: [SavedChat] = []
+        for chat in chats {
+            if cal.isDateInToday(chat.updatedAt) {
+                today.append(chat)
+                continue
+            }
+            let days = cal.dateComponents(
+                [.day],
+                from: cal.startOfDay(for: chat.updatedAt),
+                to: cal.startOfDay(for: now)
+            ).day ?? 0
+            if days < 7 { pastWeek.append(chat) } else { older.append(chat) }
+        }
+        var out: [Group] = []
+        if !today.isEmpty    { out.append(Group(label: "Today",     chats: today))    }
+        if !pastWeek.isEmpty { out.append(Group(label: "Past week", chats: pastWeek)) }
+        if !older.isEmpty    { out.append(Group(label: "Older",     chats: older))    }
+        return out
+    }
+
+    /// Section header with a hairline that extends to the right edge —
+    /// the standard "history" list pattern (Apple Maps recents, iMessage
+    /// search, etc.) so the sheet reads as native rather than bespoke.
+    private func sectionHeader(_ label: String) -> some View {
+        HStack(spacing: 12) {
+            Text(label)
+                .font(.app(size: 13, weight: .medium))
+                .foregroundColor(AppInk.solid(0.45))
+            Rectangle()
+                .fill(AppInk.solid(0.10))
+                .frame(height: 0.5)
+                .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 18)
+        .padding(.bottom, 6)
+    }
+
     private func row(_ chat: SavedChat) -> some View {
-        let isCurrent = chat.id == currentChatID
-        return Button {
+        Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             onSelect(chat)
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: "bubble.left")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(AppInk.solid(0.55))
-                    .frame(width: 20)
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(chat.title)
-                            .font(.app(size: 14, weight: .semibold))
-                            .foregroundColor(AppInk.solid(0.88))
-                            .lineLimit(1)
-                        if isCurrent {
-                            Text("Current")
-                                .font(.appCaptionMedium)
-                                .foregroundColor(BrandColor.amber)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(BrandColor.amber.opacity(0.12))
-                                .clipShape(Capsule())
-                        }
-                    }
-                    if !chat.preview.isEmpty {
-                        Text(chat.preview)
-                            .font(.app(size: 12))
-                            .foregroundColor(AppInk.solid(0.40))
-                            .lineLimit(1)
-                    }
-                    Text(SavedChatsSheet.relativeDate(chat.updatedAt))
-                        .font(.app(size: 11))
-                        .foregroundColor(AppInk.solid(0.32))
-                }
-                Spacer()
+                Text(chat.title)
+                    .font(.app(size: 17))
+                    .foregroundColor(AppInk.solid(0.92))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 8)
+                Text(SavedChatsSheet.shortRelative(chat.updatedAt))
+                    .font(.app(size: 15))
+                    .foregroundColor(AppInk.solid(0.42))
             }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(AppInk.solid(0.04))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(AppInk.solid(0.06), lineWidth: 0.5)
-            )
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .contextMenu {
@@ -1951,41 +1952,25 @@ private struct SavedChatsSheet: View {
         f.dateFormat = "h:mm a"
         return f
     }()
-    private static let weekdayFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "EEEE"
-        return f
-    }()
-    private static let monthDayFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d"
-        return f
-    }()
-    private static let fullFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.dateStyle = .medium
-        return f
-    }()
 
-    /// Friendlier short timestamp: time for today, "Yesterday", weekday for
-    /// the past week, then a date — mirrors the row stamps used elsewhere
-    /// in the app so the saved-chats list visually matches the notes list.
-    static func relativeDate(_ date: Date) -> String {
+    /// Compact relative stamp: time for today, then `Nd` for days, `Nw`
+    /// for weeks, `Ny` once the chat is more than a year old. Matches the
+    /// "4d / 5d / 1w / 7w" abbreviation pattern of native history lists.
+    static func shortRelative(_ date: Date) -> String {
         let cal = Calendar.current
-        if cal.isDateInToday(date) { return timeFmt.string(from: date) }
-        if cal.isDateInYesterday(date) { return "Yesterday" }
         let now = Date()
+        if cal.isDateInToday(date) { return timeFmt.string(from: date) }
         let days = cal.dateComponents(
             [.day],
             from: cal.startOfDay(for: date),
             to: cal.startOfDay(for: now)
         ).day ?? 0
-        if days < 7 { return weekdayFmt.string(from: date) }
-        if cal.component(.year, from: date) == cal.component(.year, from: now) {
-            return monthDayFmt.string(from: date)
-        }
-        return fullFmt.string(from: date)
+        if days < 7 { return "\(max(days, 1))d" }
+        let weeks = days / 7
+        if weeks < 52 { return "\(weeks)w" }
+        return "\(weeks / 52)y"
     }
+}
 }
 
 // MARK: - Mention-styled composer text view
