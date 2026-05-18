@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <title>Spacial · UP150</title>
+  <title>Spacial · Oula</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <style>
     :root {
@@ -563,10 +563,10 @@
 
   <div class="top">
     <div class="top-left">
-      <a href="/" class="pill brand" aria-label="Back to UP150">
+      <a href="/" class="pill brand" aria-label="Back to Oula">
         <span style="display:inline-flex;align-items:center;gap:6px;">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          UP150
+          Oula
         </span>
       </a>
       <div class="pill" id="counter">— / —</div>
@@ -703,7 +703,7 @@
         const now = new Date().toISOString();
         return [
           { id: 'demo-1', source: 'demo', kind: 'Demo', title: 'Welcome to Spacial', body: 'Wave your hand left and right to flick between notes. Tap the centered card to expand, then speak — the AI rewrites the text when you finish talking.', createdAt: now, generated: false, demo: true },
-          { id: 'demo-2', source: 'demo', kind: 'Demo', title: 'Your notes live here', body: 'Record a voice note in UP150 and it shows up in this 3D space, ready to flick through with your hand.', createdAt: now, generated: false, demo: true },
+          { id: 'demo-2', source: 'demo', kind: 'Demo', title: 'Your notes live here', body: 'Record a voice note in Oula and it shows up in this 3D space, ready to flick through with your hand.', createdAt: now, generated: false, demo: true },
           { id: 'demo-3', source: 'demo', kind: 'Demo', title: 'Why spacial?', body: 'A glance is faster than a tap. Notes laid out in space let you browse without scrolling — like fanning a deck of cards across your desk.', createdAt: now, generated: false, demo: true },
           { id: 'demo-4', source: 'demo', kind: 'Demo', title: 'Built in your browser', body: 'Hand tracking runs locally via MediaPipe. Camera frames never leave your device.', createdAt: now, generated: false, demo: true },
         ];
@@ -713,7 +713,7 @@
     }
 
     /**
-     * Persist a note edit back to the SPA's localStorage so UP150 picks up the
+     * Persist a note edit back to the SPA's localStorage so Oula picks up the
      * change next time it loads. Demos are in-memory only.
      */
     function saveEditedNote(note, newBody) {
@@ -825,7 +825,7 @@
 
     const isDemo = notes.length > 0 && notes.every(n => n.demo);
     counterEl.textContent = N === 0 ? '0 notes' : `1 / ${N}`;
-    if (isDemo) hintEl.textContent = 'Demo · record a note in UP150 to see your own';
+    if (isDemo) hintEl.textContent = 'Demo · record a note in Oula to see your own';
     else hintEl.textContent = 'Flick left or right to browse';
 
     // Build progress pips
@@ -1256,7 +1256,7 @@
       if (!fsNote) return;
       const apiKey = readApiKey();
       if (!apiKey) {
-        fsTranscript.textContent = 'No API key. Add your Anthropic key in UP150 settings, then come back.';
+        fsTranscript.textContent = 'No API key. Add your Anthropic key in Oula settings, then come back.';
         fsHint.textContent = 'Settings → API keys → Anthropic';
         return;
       }
@@ -1299,7 +1299,7 @@
         fsCancel.hidden = false;
         fsHint.textContent = fsNote.demo
           ? 'Demo edit — saves only in this view'
-          : 'Tap save to write back to UP150';
+          : 'Tap save to write back to Oula';
       } catch (err) {
         console.error(err);
         fsBody.classList.remove('editing');
@@ -1318,7 +1318,7 @@
       fsProposedBody = null;
       fsAccept.hidden = true;
       fsCancel.hidden = true;
-      fsTranscript.textContent = saved ? 'Saved to UP150' : (fsNote.demo ? 'Saved in this session' : 'Could not write back');
+      fsTranscript.textContent = saved ? 'Saved to Oula' : (fsNote.demo ? 'Saved in this session' : 'Could not write back');
       fsHint.textContent = 'Tap mic for another edit';
       // Update the underlying card preview too.
       const idx = notes.indexOf(fsNote);

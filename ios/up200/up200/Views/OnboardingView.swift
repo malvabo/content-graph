@@ -37,9 +37,9 @@ struct OnboardingView: View {
     @State private var step: OnboardingStep = .intro
     @State private var appeared = false
     // Typewriter state for the brand mark — char-by-char typing of
-    // lowercase "up150" in the mono font.
+    // "Oula" in the mono font.
     @State private var brandTypedLength: Int = 0
-    private let brandFull = "up150"
+    private let brandFull = "Oula"
 
     // Capture-step state: which sub-phase the blurb is in, plus a live mic
     // session driving the waveform during .recording. The recorder is held

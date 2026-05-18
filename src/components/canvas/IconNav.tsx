@@ -168,7 +168,7 @@ export default function IconNav({ activeView, onViewChange }: Props) {
             <Logo />
           </span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--color-text-primary)', whiteSpace: 'nowrap' }}>
-            up150
+            Oula
           </span>
         </div>
 
