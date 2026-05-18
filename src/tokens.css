@@ -299,17 +299,17 @@
 :root.dark {
   --color-nav-bg: var(--color-bg);
   --color-nav-text: #a4a4ad;
-  --color-nav-item-active: #252220;
+  --color-nav-item-active: #232323;
   --color-nav-item-hover: rgba(230, 230, 230, 0.06);
   --color-bg: #0d0d0f;
   --color-bg-canvas: radial-gradient(ellipse 70% 50% at 90% 100%, rgba(10,50,22,0.28) 0%, rgba(8,28,14,0.1) 45%, transparent 70%), #0d0d0f;
-  --color-bg-surface: #161412;
-  --color-bg-card: #201e1c;
-  --color-bg-modal: #141210;
-  --color-bg-popover: #201e1c;
-  --color-bg-subtle: #141210;
+  --color-bg-surface: #161616;
+  --color-bg-card: #1f1f1f;
+  --color-bg-modal: #141414;
+  --color-bg-popover: #1f1f1f;
+  --color-bg-subtle: #141414;
   --color-bg-dark: #080808;
-  --color-bg-hover: #1e1c1a;
+  --color-bg-hover: #1c1c1c;
   --color-node-bg: rgba(255,255,255,0.10);
   --node-backdrop: blur(16px) saturate(1.4);
   --color-bg-tooltip: #e8e6e3;
