@@ -1322,24 +1322,30 @@ private struct RewriteSuggestionCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            // Before → after reads like editorial prose, not a code diff:
-            // sans-serif body type, strikethrough on the old text, full
-            // weight on the new. No card around it, no FROM/TO chips —
-            // the typography itself does the work.
-            Text(Self.renderMarkdown(suggestion.before))
-                .font(.appBody)
-                .foregroundColor(AppText.tertiary)
-                .strikethrough(true, color: AppInk.solid(0.35))
-                .lineSpacing(6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .textSelection(.enabled)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("From:")
+                    .font(.app(size: 13, weight: .semibold))
+                    .foregroundColor(AppText.secondary)
+                Text(Self.renderMarkdown(suggestion.before))
+                    .font(.appBody)
+                    .foregroundColor(AppText.tertiary)
+                    .strikethrough(true, color: AppInk.solid(0.35))
+                    .lineSpacing(6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            }
 
-            Text(Self.renderMarkdown(suggestion.after))
-                .font(.appBody)
-                .foregroundColor(AppText.primary)
-                .lineSpacing(6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .textSelection(.enabled)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("To:")
+                    .font(.app(size: 13, weight: .semibold))
+                    .foregroundColor(AppText.secondary)
+                Text(Self.renderMarkdown(suggestion.after))
+                    .font(.appBody)
+                    .foregroundColor(AppText.primary)
+                    .lineSpacing(6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            }
 
             Button(action: onAccept) {
                 HStack(spacing: 8) {
