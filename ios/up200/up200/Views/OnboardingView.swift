@@ -511,12 +511,14 @@ struct OnboardingView: View {
 
         case .generating:
             // Immersive cloud scene: a spherical, slowly-rotating cluster of
-            // stars at the center, with periodic amber sparks firing outward
-            // to form new mini-clusters connected back to the core. Replaces
-            // the previous in-pill loading indicator — the user reads as
-            // inside the cloud while the network call is in flight.
+            // stars that fills the frame so the user reads as standing
+            // *inside* the cloud. Periodically a dot on the sphere ignites
+            // to amber and connects with a thin line to the previously
+            // ignited dot, building a graph of orange nodes around the
+            // viewer while the network call is in flight. Nothing fires
+            // outside the sphere.
             VStack(spacing: 14) {
-                GeneratingCloudScene(generationStartedAt: generatingStartedAt)
+                InsideSphereScene(generationStartedAt: generatingStartedAt)
                     .frame(maxWidth: .infinity)
                     .frame(height: 420)
                     .padding(.horizontal, -24)
@@ -1101,6 +1103,143 @@ private struct GeneratingCloudScene: View {
                                    width: core * 2, height: core * 2)),
             with: .color(amber.opacity(0.85))
         )
+    }
+
+    private func pseudoRandom(_ n: Int) -> Double {
+        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
+        return v - floor(v)
+    }
+}
+
+// MARK: - Inside-the-sphere scene
+
+/// "Creating…" beat as a closed sphere the viewer sits inside. A large
+/// fibonacci cluster of white stars fills the frame, slowly rotating. Every
+/// ~0.85s a dot on the sphere ignites to amber and a thin amber line draws
+/// out to the previously ignited dot, so the firings read as a network of
+/// orange nodes wiring up *within* the cluster instead of sparks escaping
+/// to satellites outside it.
+private struct InsideSphereScene: View {
+    let generationStartedAt: Date
+
+    private let starCount = 180
+    private let amber = Color(red: 1.00, green: 0.68, blue: 0.20)
+    private let igniteInterval: Double = 0.85
+    private let igniteStartDelay: Double = 0.4
+    private let maxIgnitions = 14
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 40.0)) { context in
+            let elapsed = max(0, context.date.timeIntervalSince(generationStartedAt))
+            Canvas { ctx, size in
+                let cx = size.width / 2
+                let cy = size.height / 2
+                // Sphere fills most of the frame so its edge wraps the
+                // viewport — the dots surround the eye rather than sitting
+                // in a pocket of negative space.
+                let r = min(size.width, size.height) * 0.46
+
+                let rotation = elapsed * 0.22
+                let golden = .pi * (1 + sqrt(5.0))
+
+                var positions = [CGPoint](repeating: .zero, count: starCount)
+                var depths = [Double](repeating: 0, count: starCount)
+
+                for i in 0..<starCount {
+                    let n = Double(i) + 0.5
+                    let phi = acos(1 - 2 * n / Double(starCount))
+                    let theta = golden * Double(i) + rotation
+                    let jitter = 0.80 + pseudoRandom(i * 3) * 0.20
+                    let sr = r * jitter
+                    let x = sr * sin(phi) * cos(theta)
+                    let z = sr * sin(phi) * sin(theta)
+                    let y = sr * cos(phi)
+                    let depth = (z + r) / (2 * r)
+                    let perspective = 0.55 + depth * 0.9
+                    let sx = cx + x * (0.85 + 0.15 * perspective)
+                    let sy = cy + y * (0.85 + 0.15 * perspective)
+                    positions[i] = CGPoint(x: sx, y: sy)
+                    depths[i] = depth
+                }
+
+                // Firing schedule: coprime stride scatters the ignitions
+                // across the sphere rather than walking sequentially.
+                let elapsedFiring = elapsed - igniteStartDelay
+                let firingCount = min(maxIgnitions,
+                                      max(0, Int(elapsedFiring / igniteInterval) + 1))
+                let stride = 23
+                let startIdx = 11
+                var fired: [Int] = []
+                var igniteTime: [Int: Double] = [:]
+                for k in 0..<firingCount {
+                    let idx = (startIdx + k * stride) % starCount
+                    fired.append(idx)
+                    igniteTime[idx] = igniteStartDelay + Double(k) * igniteInterval
+                }
+
+                // Connecting lines drawn first so the bright ignited dots
+                // sit on top. Each new ignition pulls a line back to its
+                // predecessor over ~0.55s.
+                for k in 1..<fired.count {
+                    let aIdx = fired[k - 1]
+                    let bIdx = fired[k]
+                    guard let igniteB = igniteTime[bIdx] else { continue }
+                    let progress = max(0, min(1, (elapsed - igniteB - 0.10) / 0.55))
+                    if progress <= 0 { continue }
+                    let pa = positions[aIdx]
+                    let pb = positions[bIdx]
+                    let endX = pa.x + (pb.x - pa.x) * progress
+                    let endY = pa.y + (pb.y - pa.y) * progress
+                    var path = Path()
+                    path.move(to: pa)
+                    path.addLine(to: CGPoint(x: endX, y: endY))
+                    ctx.stroke(path,
+                               with: .color(amber.opacity(0.32)),
+                               lineWidth: 0.7)
+                }
+
+                // Paint stars back-to-front so foreground dots cover the
+                // ones behind them — a cheap depth sort that keeps the
+                // sphere reading as volumetric rather than flat.
+                let order = (0..<starCount).sorted { depths[$0] < depths[$1] }
+                for i in order {
+                    let p = positions[i]
+                    let perspective = 0.55 + depths[i] * 0.9
+                    let baseDotSize = (1.0 + pseudoRandom(i * 5) * 1.5) * perspective
+                    let pulse = 0.78 + 0.22 * sin(elapsed * 1.6 + Double(i) * 0.31)
+                    let baseAlpha = (0.30 + pseudoRandom(i * 7) * 0.55) * perspective * pulse
+
+                    if let it = igniteTime[i] {
+                        let ignP = max(0, min(1, (elapsed - it) / 0.45))
+                        // White → amber by ramping G and B down toward
+                        // the brand amber while leaving R at 1.0.
+                        let color = Color(red: 1.0,
+                                          green: 1.0 - 0.32 * ignP,
+                                          blue: 1.0 - 0.80 * ignP)
+                        let amberPulse = 0.85 + 0.15 * sin(elapsed * 1.8 + Double(i) * 0.5)
+                        let dot = baseDotSize * (1.0 + 0.8 * ignP * amberPulse)
+                        let glow = dot * 2.8
+                        ctx.fill(
+                            Path(ellipseIn: CGRect(x: p.x - glow, y: p.y - glow,
+                                                   width: glow * 2, height: glow * 2)),
+                            with: .color(amber.opacity(0.22 * ignP))
+                        )
+                        ctx.fill(
+                            Path(ellipseIn: CGRect(x: p.x - dot, y: p.y - dot,
+                                                   width: dot * 2, height: dot * 2)),
+                            with: .color(color.opacity(max(baseAlpha, 0.85 * ignP)))
+                        )
+                    } else {
+                        ctx.fill(
+                            Path(ellipseIn: CGRect(x: p.x - baseDotSize, y: p.y - baseDotSize,
+                                                   width: baseDotSize * 2, height: baseDotSize * 2)),
+                            with: .color(.white.opacity(baseAlpha))
+                        )
+                    }
+                }
+            }
+        }
+        .accessibilityLabel("Creating your content")
     }
 
     private func pseudoRandom(_ n: Int) -> Double {
