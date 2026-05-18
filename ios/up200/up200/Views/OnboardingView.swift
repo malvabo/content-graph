@@ -456,32 +456,11 @@ struct OnboardingView: View {
             .transition(.opacity)
 
         case .choose:
-            // Four fluid morphing circles in a 2×2 grid. Each blob runs its
-            // own harmonic phase (via a per-cell seed) so they breathe out
-            // of sync rather than pulsing in unison — the screen reads as a
-            // living cluster of choices rather than four identical buttons.
-            VStack(spacing: 16) {
-                HStack(spacing: 16) {
-                    blobOption(label: "A LinkedIn post", icon: "person.2.fill", seed: 0.0) {
-                        startGeneration(label: "A LinkedIn post", formatID: "linkedin", customPrompt: "")
-                    }
-                    blobOption(label: "A Twitter thread", icon: "text.bubble", seed: 1.3) {
-                        startGeneration(label: "A Twitter thread", formatID: "twitter", customPrompt: "")
-                    }
-                }
-                HStack(spacing: 16) {
-                    blobOption(label: "Something else", icon: "sparkles", seed: 2.6) {
-                        startSpecifyRecording()
-                    }
-                    blobOption(label: "Just save my note for now", icon: "tray.and.arrow.down", seed: 3.9) {
-                        saveIdeaAndExit()
-                    }
-                }
-            }
-            // Pure fade-in. The slide directions (.bottom, then .top) both
-            // pulled the eye in a direction; a dissolve is the calmer
-            // "appears" the design ask wants.
-            .transition(.opacity)
+            chooseFluidBlobsField
+                // Pure fade-in. The slide directions (.bottom, then .top)
+                // both pulled the eye in a direction; a dissolve is the
+                // calmer "appears" the design ask wants.
+                .transition(.opacity)
 
         case .specify:
             VStack(spacing: 18) {
@@ -565,48 +544,112 @@ struct OnboardingView: View {
         }
     }
 
-    /// One of the four morphing-circle options in `.choose`. The shape is
-    /// a `OnboardingBlobShape` driven by a `TimelineView(.animation)` clock
-    /// so it keeps breathing for the whole time the user is reading the
-    /// options — no on/off animation state to manage. The `seed` shifts
-    /// the harmonics so each blob morphs on its own rhythm.
-    private func blobOption(label: String, icon: String, seed: Double, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            TimelineView(.animation) { ctx in
-                // Under reduce-motion the phase is pinned, so the shape
-                // becomes a static (still-irregular) blob rather than a
-                // perfect circle — the asymmetry survives, the motion
-                // doesn't.
-                let phase: Double = UIAccessibility.isReduceMotionEnabled
-                    ? 0
-                    : ctx.date.timeIntervalSinceReferenceDate * 0.55
+    /// The four `.choose` options rendered as a single fluid metaball field
+    /// rather than four separate buttons. Each "drop" is an
+    /// `OnboardingBlobShape` placed in a 2×2 layout with the centres close
+    /// enough that their Gaussian-blurred halos overlap; an
+    /// `alphaThreshold` filter then turns the blurred mass back into a
+    /// hard-edged shape so adjacent drops fuse into one continuous body
+    /// with stretching, pinching strands between them — water on glass,
+    /// not four flat pills. The wobble amplitude and phase speed are
+    /// dialled up so the morphing is clearly visible rather than a barely
+    /// perceptible breathe.
+    private var chooseFluidBlobsField: some View {
+        let options: [(label: String, icon: String, seed: Double, action: () -> Void)] = [
+            ("A LinkedIn post", "person.2.fill", 0.0, {
+                startGeneration(label: "A LinkedIn post", formatID: "linkedin", customPrompt: "")
+            }),
+            ("A Twitter thread", "text.bubble", 1.3, {
+                startGeneration(label: "A Twitter thread", formatID: "twitter", customPrompt: "")
+            }),
+            ("Something else", "sparkles", 2.6, {
+                startSpecifyRecording()
+            }),
+            ("Just save my note for now", "tray.and.arrow.down", 3.9, {
+                saveIdeaAndExit()
+            })
+        ]
 
-                ZStack {
-                    OnboardingBlobShape(phase: phase, seed: seed)
-                        .fill(Color.white.opacity(0.07))
-                    OnboardingBlobShape(phase: phase, seed: seed)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+        return GeometryReader { geo in
+            // Centres are close enough that the blurred halos of neighbouring
+            // drops overlap — that's what makes the alphaThreshold fuse them
+            // into one continuous body with stretched strands between.
+            let blobRadius: CGFloat = min(geo.size.width * 0.26, 88)
+            let cellOffset: CGFloat = blobRadius * 0.95
+            let cx = geo.size.width / 2
+            let cy = geo.size.height / 2
+            let positions: [CGPoint] = [
+                CGPoint(x: cx - cellOffset, y: cy - cellOffset),
+                CGPoint(x: cx + cellOffset, y: cy - cellOffset),
+                CGPoint(x: cx - cellOffset, y: cy + cellOffset),
+                CGPoint(x: cx + cellOffset, y: cy + cellOffset),
+            ]
 
-                    VStack(spacing: 10) {
-                        Image(systemName: icon)
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(BrandColor.amber.opacity(0.92))
-                        Text(label)
-                            .font(.app(size: 14, weight: .medium))
-                            .foregroundColor(AppText.primary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(3)
-                            .minimumScaleFactor(0.85)
-                            .fixedSize(horizontal: false, vertical: true)
+            ZStack {
+                // Merged fluid fill. The Canvas draws each blob opaque, the
+                // blur softens edges into halos, and alphaThreshold cuts
+                // the result back to a hard edge — anywhere two halos
+                // overlap above the threshold becomes connecting tissue.
+                TimelineView(.animation) { ctx in
+                    let phase: Double = UIAccessibility.isReduceMotionEnabled
+                        ? 0
+                        : ctx.date.timeIntervalSinceReferenceDate * 1.05
+
+                    Canvas(opaque: false) { canvas, _ in
+                        canvas.drawLayer { layer in
+                            layer.addFilter(.alphaThreshold(
+                                min: 0.5,
+                                color: Color.white.opacity(0.13)
+                            ))
+                            layer.addFilter(.blur(radius: 18))
+                            for (idx, opt) in options.enumerated() {
+                                let pos = positions[idx]
+                                let rect = CGRect(
+                                    x: pos.x - blobRadius,
+                                    y: pos.y - blobRadius,
+                                    width: blobRadius * 2,
+                                    height: blobRadius * 2
+                                )
+                                let path = OnboardingBlobShape(phase: phase, seed: opt.seed).path(in: rect)
+                                layer.fill(path, with: .color(.white))
+                            }
+                        }
                     }
-                    .padding(.horizontal, 22)
+                }
+                .allowsHitTesting(false)
+
+                // Tap targets + icon/label per drop. Positioned over each
+                // blob centre — the fluid fill is decorative, the hit area
+                // is a plain circle so a tap near the connecting strand
+                // still resolves to the nearest drop's action.
+                ForEach(Array(options.enumerated()), id: \.offset) { idx, opt in
+                    Button(action: opt.action) {
+                        VStack(spacing: 10) {
+                            Image(systemName: opt.icon)
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(AppText.primary)
+                            Text(opt.label)
+                                .font(.app(size: 14, weight: .medium))
+                                .foregroundColor(AppText.primary)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(3)
+                                .minimumScaleFactor(0.85)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(.horizontal, 16)
+                        .frame(width: blobRadius * 1.7, height: blobRadius * 1.7)
+                        .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .position(positions[idx])
                 }
             }
-            .aspectRatio(1, contentMode: .fit)
-            .frame(maxWidth: .infinity)
-            .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        // Reserve enough vertical room for two rows of blobs (each ~176pt
+        // diameter at max) plus the gap a metaball connection wants. The
+        // captureCenter surrounds this in Spacers, so any leftover space
+        // is absorbed there.
+        .frame(height: 360)
     }
 
     private func startCaptureRecording() {
@@ -1292,9 +1335,11 @@ private struct OnboardingBlobShape: Shape {
     func path(in rect: CGRect) -> Path {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let baseRadius = min(rect.width, rect.height) / 2
-        // 7% deformation — visible as a fluid wobble without making the
-        // shape look broken or letting the text breach the outline.
-        let amplitude = baseRadius * 0.07
+        // 14% deformation — clearly fluid; with the metaball alpha
+        // threshold on top this is what makes the connecting strands
+        // between adjacent drops stretch and pinch instead of holding
+        // a static neck.
+        let amplitude = baseRadius * 0.14
 
         var path = Path()
         let steps = 96
