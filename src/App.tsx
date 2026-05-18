@@ -10,11 +10,8 @@ import { useGraphStore, type ContentNode } from './store/graphStore';
 import { supabase } from './lib/supabase';
 import { injectCustomFonts } from './utils/customFonts';
 import AuthGate from './components/auth/AuthGate';
-import { useIsMobile } from './hooks/useIsMobile';
 // Heavy view-specific components are lazy-loaded so they don't inflate the
 // initial JS parse cost on startup. Each chunk loads on first navigation.
-import MobileBottomBar from './components/mobile/MobileBottomBar';
-import CreateHome from './components/home/CreateHome';
 import TypewriterLogo from './components/TypewriterLogo';
 
 const GraphCanvas = lazy(() => import('./components/canvas/GraphCanvas'));
@@ -23,7 +20,6 @@ const IconNav = lazy(() => import('./components/canvas/IconNav'));
 const VoiceLibrary = lazy(() => import('./components/canvas/VoiceLibrary'));
 const ScriptSensePanel = lazy(() => import('./components/canvas/ScriptSensePanel'));
 const ScriptLibrary = lazy(() => import('./components/canvas/ScriptLibrary'));
-const MobileWorkflow = lazy(() => import('./components/canvas/MobileWorkflow'));
 const EmptyCanvasOverlay = lazy(() => import('./components/canvas/EmptyCanvasOverlay'));
 const Intro = lazy(() => import('./components/Intro'));
 const OnboardingScreen = lazy(() => import('./components/OnboardingScreen'));
@@ -32,9 +28,6 @@ const SettingsPanel = lazy(() => import('./components/canvas/SettingsPanel'));
 const CardsPanel = lazy(() => import('./components/canvas/CardsPanel'));
 const CardsLibrary = lazy(() => import('./components/canvas/CardsLibrary'));
 const InfographicsPanel = lazy(() => import('./components/canvas/InfographicsPanel'));
-const MobileLibrary = lazy(() => import('./components/mobile/MobileLibrary'));
-const NotesEmptyScreen = lazy(() => import('./components/home/NotesEmptyScreen'));
-const WelcomeScreen = lazy(() => import('./components/WelcomeScreen'));
 const QuickMode = lazy(() => import('./components/canvas/QuickMode'));
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; btnHover: boolean }> {
@@ -73,15 +66,12 @@ export default function App() {
 
 function AppInner() {
   const { user, loading: authLoading, init, guest } = useAuthStore();
-  const isMobile = useIsMobile();
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem('onboarding_complete')
   );
-  const [showOnboardingOverlay, setShowOnboardingOverlay] = useState(false);
-  const [showPostOnboardingNotes, setShowPostOnboardingNotes] = useState(false);
 
-  const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'create', 'capture', 'welcome'];
-  const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'create'; };
+  const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro'];
+  const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'library'; };
   const getHashParam = () => { const h = window.location.hash.slice(1); const i = h.indexOf(':'); return i === -1 ? undefined : h.slice(i + 1) || undefined; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
   const [hashParam, setHashParam] = useState(getHashParam);
@@ -105,36 +95,12 @@ function AppInner() {
   useEffect(() => { init(); }, [init]);
   useEffect(() => { if (user) useSettingsStore.getState().load(); }, [user]);
 
-  // 'create' / 'capture' are mobile-only views. If a desktop user lands on
-  // those hashes (e.g. shared link), normalize to the workflow library.
   useEffect(() => {
-    if (!isMobile && (activeView === 'create' || activeView === 'capture')) {
-      setActiveView('library');
-    }
-  }, [isMobile, activeView, setActiveView]);
-
-  // Mirror: desktop-only views silently fall through to CreateHome on mobile
-  // (the mobile branch only renders MobileLibrary, SettingsPanel, or
-  // CreateHome). A shared link like #scriptlist or #voice would land the user
-  // on a blank Create with no breadcrumb back. Bounce them home instead.
-  useEffect(() => {
-    if (!isMobile) return;
-    const desktopOnly = new Set(['workflow', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics']);
-    if (desktopOnly.has(activeView)) setActiveView('create');
-  }, [isMobile, activeView, setActiveView]);
-
-  // Mobile is a dark-mode-only experience — force the class on mount/change,
-  // and restore the user's stored preference when switching back to desktop.
-  useEffect(() => {
-    if (isMobile) {
-      document.documentElement.classList.add('dark');
-    } else {
-      const stored = localStorage.getItem('theme-mode');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const shouldDark = stored === 'dark' || ((!stored || stored === 'default') && prefersDark);
-      document.documentElement.classList.toggle('dark', shouldDark);
-    }
-  }, [isMobile]);
+    const stored = localStorage.getItem('theme-mode');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const shouldDark = stored === 'dark' || ((!stored || stored === 'default') && prefersDark);
+    document.documentElement.classList.toggle('dark', shouldDark);
+  }, []);
   // Register user-uploaded @font-face rules globally — gather every custom
   // font from the legacy settings brand plus every saved library brand so
   // switching brand kits on a flow doesn't unload its fonts.
@@ -244,45 +210,6 @@ function AppInner() {
 
   if (!user && !guest) return <AuthGate />;
 
-  const isNativeWrapper = !!(window as any).webkit?.messageHandlers?.nativeBridge;
-
-  if (isMobile && !isNativeWrapper) {
-    return (
-      <div className="flex flex-col" style={{ height: '100dvh' }}>
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          {activeView === 'library' ? (
-            <Suspense fallback={null}><MobileLibrary /></Suspense>
-          ) : activeView === 'settings' ? (
-            <Suspense fallback={null}><SettingsPanel /></Suspense>
-          ) : (
-            <CreateHome onShowOnboarding={() => setShowOnboardingOverlay(true)} />
-          )}
-          {activeView === 'welcome' && (
-            <Suspense fallback={null}>
-              <WelcomeScreen
-                onGetStarted={() => { setActiveView('create'); setShowPostOnboardingNotes(true); }}
-              />
-            </Suspense>
-          )}
-          {showOnboardingOverlay && (
-            <Suspense fallback={null}>
-              <OnboardingScreen
-                onFinish={() => setShowOnboardingOverlay(false)}
-                onClose={() => setShowOnboardingOverlay(false)}
-              />
-            </Suspense>
-          )}
-          {showPostOnboardingNotes && activeView !== 'welcome' && (
-            <Suspense fallback={null}>
-              <NotesEmptyScreen onClose={() => setShowPostOnboardingNotes(false)} />
-            </Suspense>
-          )}
-        </div>
-        <MobileBottomBar active={activeView} onChange={setActiveView} />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col" style={{ height: '100dvh' }}>
       {guest && !user && (
@@ -310,28 +237,23 @@ function AppInner() {
         )}
 
         {activeView === 'workflow' && (
-          <>
-            <div className="hidden md:flex flex-1 relative flex-col">
-              <CanvasToolbar
-                onBackToLibrary={() => setActiveView('library')}
-                mode={canvasMode}
-                onModeChange={setCanvasMode}
-              />
-              <div className="flex-1 relative" style={{ marginTop: 48 }}>
-                {canvasMode === 'quick' ? (
-                  <QuickMode />
-                ) : (
-                  <>
-                    <EmptyCanvasOverlay />
-                    <GraphCanvas />
-                  </>
-                )}
-              </div>
+          <div className="flex flex-1 relative flex-col">
+            <CanvasToolbar
+              onBackToLibrary={() => setActiveView('library')}
+              mode={canvasMode}
+              onModeChange={setCanvasMode}
+            />
+            <div className="flex-1 relative" style={{ marginTop: 48 }}>
+              {canvasMode === 'quick' ? (
+                <QuickMode />
+              ) : (
+                <>
+                  <EmptyCanvasOverlay />
+                  <GraphCanvas />
+                </>
+              )}
             </div>
-            <div className="flex md:hidden flex-1 min-h-0">
-              <MobileWorkflow onBackToLibrary={() => setActiveView('library')} />
-            </div>
-          </>
+          </div>
         )}
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
