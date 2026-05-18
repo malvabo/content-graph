@@ -197,11 +197,13 @@ struct AIService {
     static func prependTitleIfMissing(to body: String) async -> String? {
         let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
-        // Treat any short-ish first line followed by a newline as an
-        // existing title — covers both user-typed titles and prior AI passes.
+        // Treat a short (≤4 word) first line followed by a newline as an
+        // existing title. Word-count is more reliable than char-count for
+        // recognising prior AI titles regardless of language.
         if let nl = trimmed.firstIndex(of: "\n") {
-            let firstLineLen = trimmed.distance(from: trimmed.startIndex, to: nl)
-            if firstLineLen <= 60 { return nil }
+            let firstLine = String(trimmed[..<nl])
+            let wordCount = firstLine.split(whereSeparator: \.isWhitespace).count
+            if wordCount <= 4 { return nil }
         }
         let aiTitle = await generateTitle(from: trimmed)
         let cleaned = aiTitle.trimmingCharacters(in: .whitespacesAndNewlines)

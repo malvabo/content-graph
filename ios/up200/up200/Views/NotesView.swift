@@ -1331,7 +1331,9 @@ struct NotesView: View {
     /// the only way to clean up the existing list without manual taps.
     private func retroTitleUntitledNotes() {
         titlingTask?.cancel()
-        let snapshot = notes
+        // Most-recent first so the top of the list (what the user is looking
+        // at) lights up before the long tail.
+        let snapshot = notes.sorted { $0.updatedAt > $1.updatedAt }
         titlingTask = Task {
             for note in snapshot where Self.needsTitle(note) {
                 if Task.isCancelled { return }
@@ -1354,15 +1356,18 @@ struct NotesView: View {
     }
 
     /// Heuristic for "this note has no title yet": text notes whose first
-    /// line is long enough to look like prose rather than a title. Drawings
-    /// and short labels are left alone.
+    /// line spans more than four words look like prose, not a title. Counts
+    /// words instead of characters so existing 3-word titles ("Plant care
+    /// onboarding") are recognised regardless of length, while voice
+    /// transcripts ("Hey so that's what I wanted to talk about") still
+    /// qualify even when they happen to be short enough to fit one row.
     private static func needsTitle(_ note: Note) -> Bool {
         guard note.kind == .text else { return false }
-        let trimmed = note.body.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
-        let firstLine = trimmed.split(whereSeparator: \.isNewline).first.map(String.init) ?? trimmed
-        if firstLine.count <= 60 { return false }
-        return true
+        let body = note.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !body.isEmpty else { return false }
+        let firstLine = body.split(whereSeparator: \.isNewline).first.map(String.init) ?? body
+        let wordCount = firstLine.split(whereSeparator: \.isWhitespace).count
+        return wordCount > 4
     }
 
     private func scheduleSave() {
