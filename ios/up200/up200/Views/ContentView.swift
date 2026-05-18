@@ -933,16 +933,19 @@ struct ProjectGroupDetailView: View {
         .sheet(isPresented: $showChat, onDismiss: refreshAfterChat) {
             let seedID = items.indices.contains(selectedIndex) ? items[selectedIndex].id : nil
             let trimmedBody = editText.trimmingCharacters(in: .whitespacesAndNewlines)
-            // Prefer the document's own title so the chip reads as the
-            // page name (matches how Notion labels the page-context chip
-            // in their inline AI). Fall back to the format label when the
-            // document hasn't been named yet.
+            // Selection chip reads as "Selection in <doc name>" so it ties
+            // back to the parent doc but still signals it's a snippet, not
+            // the full document — the doc chip already shows the bare title.
+            // Falls back to the format label when the document hasn't been
+            // named yet so the chip still anchors to something concrete.
             let selectionTitle: String? = {
                 guard items.indices.contains(selectedIndex) else { return nil }
                 let item = items[selectedIndex]
                 let trimmed = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmed.isEmpty { return trimmed }
-                return allFormats.first(where: { $0.id == item.outputType })?.label ?? item.outputType
+                if !trimmed.isEmpty { return "Selection in \(trimmed)" }
+                let formatLabel = allFormats.first(where: { $0.id == item.outputType })?.label
+                    ?? item.outputType
+                return formatLabel.isEmpty ? nil : "Selection in \(formatLabel)"
             }()
             // If the user has a real range highlighted in the editor, the
             // wand forwards only that substring as the snippet so the
@@ -3433,13 +3436,33 @@ struct ThisButDeltaView: View {
 enum AppMarkdown {
     static func render(_ raw: String) -> AttributedString {
         let processed = promoteHeadersToBold(raw)
-        let opts = AttributedString.MarkdownParsingOptions(
-            interpretedSyntax: .inlineOnlyPreservingWhitespace
-        )
-        if let attr = try? AttributedString(markdown: processed, options: opts) {
-            return attr
+        return parseInlineBold(processed)
+    }
+
+    // SwiftUI's built-in inline-markdown parser leaks literal `**` markers
+    // when the input mixes hyphen-prefixed lines with bold runs across
+    // multiple paragraphs, so every `**…**` pair ends up visible in the
+    // card. We parse bold ourselves to guarantee the markers never make
+    // it to screen — the only inline syntax the AI emits in practice.
+    private static func parseInlineBold(_ raw: String) -> AttributedString {
+        var result = AttributedString()
+        var idx = raw.startIndex
+        while idx < raw.endIndex {
+            guard let open = raw.range(of: "**", range: idx..<raw.endIndex),
+                  let close = raw.range(of: "**", range: open.upperBound..<raw.endIndex),
+                  close.lowerBound > open.upperBound else {
+                result.append(AttributedString(String(raw[idx..<raw.endIndex])))
+                break
+            }
+            if open.lowerBound > idx {
+                result.append(AttributedString(String(raw[idx..<open.lowerBound])))
+            }
+            var bold = AttributedString(String(raw[open.upperBound..<close.lowerBound]))
+            bold.inlinePresentationIntent = .stronglyEmphasized
+            result.append(bold)
+            idx = close.upperBound
         }
-        return AttributedString(raw)
+        return result
     }
 
     // The inline-only markdown parser doesn't understand "## Header" lines,
