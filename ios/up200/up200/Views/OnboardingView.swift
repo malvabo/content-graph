@@ -638,17 +638,27 @@ struct OnboardingView: View {
     /// sharp stroke gives the edge, a blurred copy underneath gives the
     /// halo. Static, no morphing; circles don't touch or fuse.
     private var chooseCirclesField: some View {
-        let options: [(label: String, icon: String, action: () -> Void)] = [
-            ("A LinkedIn post", "person.2.fill", {
+        // Each option is either a system symbol or a short text mark
+        // (e.g. "LI" for LinkedIn). Text mode is for brand monograms
+        // where an SF Symbol would feel generic.
+        struct ChooseOption {
+            let label: String
+            let symbol: String?
+            let textMark: String?
+            let action: () -> Void
+        }
+
+        let options: [ChooseOption] = [
+            ChooseOption(label: "A LinkedIn post", symbol: nil, textMark: "LI", action: {
                 startGeneration(label: "A LinkedIn post", formatID: "linkedin", customPrompt: "")
             }),
-            ("A Twitter thread", "text.bubble", {
+            ChooseOption(label: "A Twitter thread", symbol: "text.bubble", textMark: nil, action: {
                 startGeneration(label: "A Twitter thread", formatID: "twitter", customPrompt: "")
             }),
-            ("Something else", "sparkles", {
+            ChooseOption(label: "Something else", symbol: "sparkles", textMark: nil, action: {
                 startSpecifyRecording()
             }),
-            ("Just save my note for now", "tray.and.arrow.down", {
+            ChooseOption(label: "Just save my note for now", symbol: "bookmark", textMark: nil, action: {
                 saveIdeaAndExit()
             })
         ]
@@ -671,9 +681,16 @@ struct OnboardingView: View {
                 ForEach(Array(options.enumerated()), id: \.offset) { idx, opt in
                     Button(action: opt.action) {
                         VStack(spacing: 10) {
-                            Image(systemName: opt.icon)
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(AppText.primary)
+                            if let mark = opt.textMark {
+                                Text(mark)
+                                    .font(.app(size: 22, weight: .semibold))
+                                    .tracking(1.0)
+                                    .foregroundColor(AppText.primary)
+                            } else if let symbol = opt.symbol {
+                                Image(systemName: symbol)
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(AppText.primary)
+                            }
                             Text(opt.label)
                                 .font(.app(size: 14, weight: .medium))
                                 .foregroundColor(AppText.primary)
@@ -685,19 +702,27 @@ struct OnboardingView: View {
                         .padding(.horizontal, 16)
                         .frame(width: circleRadius * 2, height: circleRadius * 2)
                         .background(
+                            // Mostly-opaque dark disc so the circle reads as
+                            // a discrete button rather than a transparent
+                            // ring with stars drifting through it. A bit of
+                            // alpha left so the boundary doesn't read as a
+                            // hard coal cutout against the cosmos behind.
                             Circle()
-                                .fill(Color.white.opacity(0.03))
+                                .fill(Color.black.opacity(0.72))
                         )
                         .overlay(
-                            // Blurred outer stroke = soft glow halo.
+                            // Blurred outer stroke = soft glow halo. Padded
+                            // outward so the blur has room to bleed past
+                            // the frame edge.
                             Circle()
-                                .stroke(Color.white.opacity(0.35), lineWidth: 1.4)
+                                .stroke(Color.white.opacity(0.40), lineWidth: 1.4)
                                 .blur(radius: 3)
+                                .padding(-4)
                         )
                         .overlay(
                             // Sharp thin stroke on top defines the edge.
                             Circle()
-                                .stroke(Color.white.opacity(0.55), lineWidth: 0.5)
+                                .stroke(Color.white.opacity(0.60), lineWidth: 0.5)
                         )
                         .contentShape(Circle())
                     }
@@ -923,9 +948,13 @@ private struct StarfieldBlurb: View {
 
                     // Each star drifts on its own lazy ellipse — phases are
                     // index-offset so the field never moves in unison.
-                    let phase = t * 0.22 + Double(i) * 0.41
-                    let dx = sin(phase) * 9.0
-                    let dy = cos(phase * 1.27) * 6.5
+                    // Amplitude and rate are dialled up enough that the
+                    // motion is clearly visible behind the .choose circles
+                    // (the field used to read as static at conversational
+                    // viewing distance).
+                    let phase = t * 0.38 + Double(i) * 0.41
+                    let dx = sin(phase) * 16.0
+                    let dy = cos(phase * 1.27) * 11.0
 
                     let x = rx * size.width + dx
                     let y = ry * size.height + dy
