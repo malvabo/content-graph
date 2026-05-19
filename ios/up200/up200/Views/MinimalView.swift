@@ -412,7 +412,8 @@ struct MinimalNoteDetailPage: View {
                     },
                     onConfirm: {
                         dictation.stop()
-                    }
+                    },
+                    idleDiameter: 52
                 )
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
@@ -976,7 +977,7 @@ struct MinimalNoteDetailPage: View {
             Image(systemName: "wand.and.stars")
                 .font(.system(size: 19, weight: .regular))
                 .foregroundColor(AppText.primary)
-                .frame(width: 56, height: 56)
+                .frame(width: 52, height: 52)
                 .background(glassCircle)
         }
         .buttonStyle(.plain)

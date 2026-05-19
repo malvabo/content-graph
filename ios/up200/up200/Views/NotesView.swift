@@ -398,6 +398,10 @@ struct DictationControls: View {
     let onStart: () -> Void
     let onCancel: () -> Void
     let onConfirm: () -> Void
+    /// Outer size of the idle mic button. Minimal mode passes 52 to
+    /// align with its "Ask AI" pill height; other surfaces keep the
+    /// default 56pt glass circle.
+    var idleDiameter: CGFloat = 56
 
     private let amber = BrandColor.amber
     private let stroke = AppInk.solid(0.15)
@@ -422,7 +426,7 @@ struct DictationControls: View {
             Image(systemName: "mic.badge.plus")
                 .font(.system(size: 19, weight: .regular))
                 .foregroundColor(AppText.primary)
-                .frame(width: 56, height: 56)
+                .frame(width: idleDiameter, height: idleDiameter)
                 .background(glassCircle)
         }
         .buttonStyle(.plain)
