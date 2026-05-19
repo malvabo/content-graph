@@ -318,6 +318,11 @@ struct MinimalNoteDetailPage: View {
     }
 
     private var headerTitle: String {
+        // On the Note tab the body's first line is the title (rendered
+        // at the top of the editor / reader), so echoing it in the top
+        // bar just duplicates the same text. Generation tabs still get
+        // the note's title here as context for the generated content.
+        if isNoteTab { return "" }
         let trimmed = note.displayTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed == "Untitled" { return "New note" }
         return trimmed
