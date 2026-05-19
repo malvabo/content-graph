@@ -723,6 +723,17 @@ final class RecordingController: ObservableObject {
         reset()
     }
 
+    /// Reconcile a sheet-driven dismissal. If the user swipe-dismisses the
+    /// voice sheet without tapping Finish or Cancel, `showingSheet` flips
+    /// to false but `saveHandler` (and any running engine) lingers — the
+    /// closure captures `notes`, etc., leaking those references until the
+    /// next begin() call clears them. Call this from the sheet's
+    /// `onDismiss` to treat a swipe-dismissal as a Cancel only when no
+    /// explicit termination has run yet.
+    func reconcileDismissal() {
+        if saveHandler != nil { cancel() }
+    }
+
     private func reset() {
         isRecording = false
         isPaused = false
@@ -811,14 +822,32 @@ final class RecordingController: ObservableObject {
     }
 
     private func activateAndStart() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-        } catch {
-            startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
-            return
+        // setCategory + setActive can block the main thread for 50-300ms
+        // while the audio subsystem reconciles category, ducks other
+        // apps, etc. Running them on a detached task keeps gesture
+        // handling responsive — once the session is live we hop back
+        // to the main actor and finish wiring the recognizer + engine.
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let session = AVAudioSession.sharedInstance()
+            do {
+                try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+                try session.setActive(true, options: .notifyOthersOnDeactivation)
+            } catch {
+                await MainActor.run {
+                    self?.startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
+                }
+                return
+            }
+            await MainActor.run {
+                self?.continueStartingEngine()
+            }
         }
+    }
+
+    private func continueStartingEngine() {
+        // Bail if the user cancelled while the session was activating —
+        // saveHandler == nil means cancel()/reset() ran in the gap.
+        guard saveHandler != nil else { return }
 
         request = SFSpeechAudioBufferRecognitionRequest()
         guard let req = request, let rec = recognizer else {

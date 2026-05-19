@@ -32,6 +32,12 @@ private enum CapturePhase {
 struct OnboardingView: View {
     var onGetStarted: () -> Void
     var onLogin: () -> Void
+    /// Optional close affordance for re-triggered presentations (e.g.
+    /// "Show onboarding" from Profile). When non-nil, a small X button
+    /// renders in the top-right and dismisses without requiring the
+    /// user to complete the flow. First-launch presentations pass nil
+    /// to enforce a complete sign-in path.
+    var onClose: (() -> Void)? = nil
 
     @State private var step: OnboardingStep = .intro
     @State private var appeared = false
@@ -65,6 +71,12 @@ struct OnboardingView: View {
     // rewires SFSpeechRecognizer and clobbers `captureRecorder.transcript`
     // with the new text, so reading it lazily would lose the original idea.
     @State private var firstIdeaTranscript: String = ""
+    // Deferred task that re-snapshots `firstIdeaTranscript` ~700ms after
+    // finishCaptureRecording so the recognizer's final isFinal callback
+    // (which carries the last 200-500ms of speech) lands in our captured
+    // value. Cancelled when a new recording starts so the second pass
+    // can't clobber the first idea.
+    @State private var firstIdeaSnapshotTask: Task<Void, Never>? = nil
     @State private var resultBatch: OnboardingResultBatch? = nil
     @State private var generatingStartedAt: Date = .distantPast
     // Step 3 (.constellation) renders the same orange-spark / central-cloud
@@ -79,6 +91,15 @@ struct OnboardingView: View {
     // trembling rather than a clean dive. Holding the cluster on a single
     // frame for the dive makes the zoom a pure motion of one still image.
     @State private var diveStartedAt: Date? = nil
+    // True once the user can manually advance past the constellation hold
+    // (after the cluster has bloomed enough to read as a complete gesture
+    // and the "Continue" button has had time to fade in). Lets impatient
+    // users skip the remaining ~5s before the auto-dive fires.
+    @State private var constellationContinueArmed = false
+    // Idempotency latch on the .constellation → .capture dive — either the
+    // 6.5s auto-task or the manual Continue button can drive it, but only
+    // one of them should actually flip the step.
+    @State private var diveInFlight = false
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
@@ -159,7 +180,12 @@ struct OnboardingView: View {
                     // background, not the focal element.
                     .opacity(starfieldVisible ? 0.65 : 0)
                     .contentShape(Rectangle())
-                    .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 30) {
+                    // maximumDistance: 80 (was 30) — phones held normally
+                    // wobble enough that a 30pt drift silently cancelled
+                    // the press with no feedback. 80pt still excludes
+                    // intentional swipes but tolerates ordinary hand
+                    // jitter during a 0.3s hold.
+                    .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 80) {
                         guard capturePhase == .prompt else { return }
                         startCaptureRecording()
                     }
@@ -193,6 +219,34 @@ struct OnboardingView: View {
             case .intro:         introOverlay
             case .constellation: constellationOverlay
             case .capture:       captureOverlay
+            }
+
+            // Top-right close button, only when an `onClose` callback was
+            // supplied. Sits above the rest of the overlays so it remains
+            // reachable across every step (intro / constellation / capture).
+            if let onClose {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: onClose) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(Color.white.opacity(0.70))
+                                .frame(width: 32, height: 32)
+                                .background(Color.white.opacity(0.10))
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(Color.white.opacity(0.15), lineWidth: 0.5))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Close onboarding")
+                        .padding(.trailing, 12)
+                        .padding(.top, 8)
+                    }
+                    Spacer()
+                }
+                .ignoresSafeArea(edges: [])
             }
         }
         .onAppear { appeared = true }
@@ -325,10 +379,41 @@ struct OnboardingView: View {
                 .lineSpacing(4)
                 .padding(.horizontal, 28)
                 .padding(.top, 12)
+                // Decorative — taps fall through to the SceneKit cluster
+                // (which itself disables hit testing). The Continue button
+                // below is the only interactive element in this overlay.
+                .allowsHitTesting(false)
 
             Spacer()
+                .allowsHitTesting(false)
+
+            // Continue affordance — appears after ~2.5s so the user has
+            // seen at least two satellites bloom (the gesture reads as
+            // intentional rather than mid-animation) and lets impatient
+            // users skip the remaining ~4s of the hold.
+            Button(action: triggerDiveNow) {
+                HStack(spacing: 6) {
+                    Text("Continue")
+                        .font(.app(size: 15, weight: .medium))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+                .foregroundColor(Color.white.opacity(0.78))
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(Color.white.opacity(0.08))
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule().stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                )
+            }
+            .buttonStyle(.plain)
+            .opacity(constellationContinueArmed ? 1 : 0)
+            .animation(.easeOut(duration: 0.5), value: constellationContinueArmed)
+            .allowsHitTesting(constellationContinueArmed)
+
+            Spacer().frame(height: 36)
         }
-        .allowsHitTesting(false)
         // Delayed easeIn lets the bulb collapse settle before the headline
         // resolves — scene leads, copy follows, same shape the rest of
         // onboarding uses. Fast easeOut removal so it's gone before the
@@ -344,29 +429,40 @@ struct OnboardingView: View {
         // is shifted later; the hold tracks that shift to keep the
         // four firings on screen instead of being clipped by the dive.
         .task {
-            try? await Task.sleep(nanoseconds: 6_500_000_000)
+            // Arm the Continue button after 2.5s — by that point the
+            // cluster has bloomed two satellites and the headline has
+            // fully faded in, so the button reads as part of the same
+            // settled scene rather than competing with mid-animation.
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
             guard !Task.isCancelled else { return }
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            // Freeze the cluster on a single frame for the duration of the
-            // dive (see comment on `diveStartedAt`). Has to be set on the
-            // same runloop tick as the step change so the scene picks up
-            // the frozen time before its removal transition starts
-            // animating — otherwise we get one or two frames of live
-            // rotation that read as a jolt right at the start of the dive.
-            diveStartedAt = Date()
-            // 0.85s, easeIn — with the cluster frozen on a single frame,
-            // the dive is just a still image scaling + fading. easeIn
-            // (gentle start, accelerating into the end) reads as a real
-            // camera pushing forward: the cluster sits a beat, the camera
-            // starts moving, then plunges through. easeInOut had a slow
-            // ending that lingered on the magnified, mostly-faded frame,
-            // and easeOut started with a jolt before there was anything
-            // to dive through. The shorter window (0.85s vs 0.95s) cuts
-            // the late, near-zero-opacity tail where the scaled-up cluster
-            // would otherwise still be detectable.
-            withAnimation(.easeIn(duration: 0.85)) {
-                step = .capture
+            withAnimation(.easeOut(duration: 0.5)) {
+                constellationContinueArmed = true
             }
+            // Auto-dive after the remaining 4s if the user hasn't tapped
+            // Continue. Total hold ≈ 6.5s — same as before for users who
+            // want to watch the whole bloom.
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            guard !Task.isCancelled else { return }
+            triggerDiveNow()
+        }
+    }
+
+    /// Drives the .constellation → .capture transition. Idempotent — the
+    /// auto-task and the Continue button may both call this; only the
+    /// first call flips state, the second is a no-op.
+    private func triggerDiveNow() {
+        guard !diveInFlight, step == .constellation else { return }
+        diveInFlight = true
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        // Freeze the cluster on a single frame for the duration of the
+        // dive (see comment on `diveStartedAt`). Has to be set on the
+        // same runloop tick as the step change so the scene picks up
+        // the frozen time before its removal transition starts animating.
+        diveStartedAt = Date()
+        // 0.85s, easeIn — cluster freezes, scene scales + fades through
+        // the camera. See the original task body for the curve rationale.
+        withAnimation(.easeIn(duration: 0.85)) {
+            step = .capture
         }
     }
 
@@ -457,7 +553,19 @@ struct OnboardingView: View {
                     UIApplication.shared.open(url)
                 }
             }
-            Button("Skip", role: .cancel) { onGetStarted() }
+            Button("Skip", role: .cancel) {
+                // Treat Skip differently per phase. From .prompt the user
+                // never recorded anything, so exit onboarding entirely.
+                // From .choose (denial caught on .specify and bounced
+                // back) keep them on the choose list — they still have a
+                // valid first idea and can pick a content type or save.
+                if capturePhase == .choose {
+                    // Already moved back to .choose by the onChange below.
+                    // Nothing to do; just dismiss the alert.
+                } else {
+                    onGetStarted()
+                }
+            }
         } message: {
             Text("Microphone access is needed to capture your first idea. You can also skip and start exploring.")
         }
@@ -532,7 +640,7 @@ struct OnboardingView: View {
             // the layout, with hit-testing disabled so taps fall through
             // to the cloud behind it.
             Text("Press and hold to start recording\nyour first idea")
-                .font(.system(size: 14, weight: .regular, design: .rounded))
+                .font(.system(.subheadline, design: .rounded))
                 .foregroundColor(Color.white.opacity(0.62))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
@@ -540,6 +648,12 @@ struct OnboardingView: View {
                 .transition(.opacity)
 
         case .recording:
+            // captureRecorder.isRecording becomes true only after the
+            // async mic auth + audio engine start completes (50-500ms
+            // after the long-press fires). The "Listening…" label tells
+            // the user the engine is spinning up so they don't start
+            // speaking into a deaf microphone during the gap.
+            let isLive = captureRecorder.isRecording
             VStack(spacing: 18) {
                 OnboardingRecordingWaveform(recorder: captureRecorder)
                     .frame(height: 180)
@@ -553,11 +667,13 @@ struct OnboardingView: View {
 
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(BrandColor.amber)
+                        .fill(isLive ? BrandColor.amber : Color.white.opacity(0.4))
                         .frame(width: 7, height: 7)
-                    Text("Recording  \(formatCaptureTime(recordingSeconds))")
+                    Text(isLive
+                         ? "Recording  \(formatCaptureTime(recordingSeconds))"
+                         : "Listening\u{2026}")
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundColor(BrandColor.amber.opacity(0.92))
+                        .foregroundColor((isLive ? BrandColor.amber : Color.white.opacity(0.6)).opacity(0.92))
                 }
             }
             .transition(.opacity)
@@ -570,6 +686,7 @@ struct OnboardingView: View {
                 .transition(.opacity)
 
         case .specify:
+            let isLive = captureRecorder.isRecording
             VStack(spacing: 18) {
                 OnboardingRecordingWaveform(recorder: captureRecorder)
                     .frame(height: 180)
@@ -583,11 +700,13 @@ struct OnboardingView: View {
 
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(BrandColor.amber)
+                        .fill(isLive ? BrandColor.amber : Color.white.opacity(0.4))
                         .frame(width: 7, height: 7)
-                    Text("Recording  \(formatCaptureTime(specifySeconds))")
+                    Text(isLive
+                         ? "Recording  \(formatCaptureTime(specifySeconds))"
+                         : "Listening\u{2026}")
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundColor(BrandColor.amber.opacity(0.92))
+                        .foregroundColor((isLive ? BrandColor.amber : Color.white.opacity(0.6)).opacity(0.92))
                 }
             }
             .transition(.opacity)
@@ -601,13 +720,19 @@ struct OnboardingView: View {
             // viewer while the network call is in flight. Nothing fires
             // outside the sphere.
             VStack(spacing: 14) {
+                // maxHeight (was fixed 420) lets the sphere shrink on
+                // shorter screens; the negative horizontal padding is
+                // gone — letting the scene render to its full inscribed
+                // size produces a centred sphere even on iPhone SE rather
+                // than one whose right edge was being pushed off-screen
+                // by the parent's 24pt inset combined with the -24pt
+                // counter-inset.
                 InsideSphereScene(generationStartedAt: generatingStartedAt)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 420)
-                    .padding(.horizontal, -24)
+                    .frame(maxHeight: 420)
 
                 Text("Writing your content\u{2026}")
-                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                    .font(.system(.subheadline, design: .monospaced))
                     .foregroundColor(Color.white.opacity(0.62))
             }
             .transition(.opacity)
@@ -685,8 +810,15 @@ struct OnboardingView: View {
             })
         ]
 
+        // Sized from the *narrower* of width / proposed height so the
+        // field shrinks to fit narrow phones (SE-class at 320pt available
+        // width) and still has headroom for the icon+label VStack inside
+        // each circle to render at AX Dynamic Type. Was hard-coded to
+        // 0.24 of width with a fixed 360pt frame — at AX5 the inner VStack
+        // pushed past the bottom row's inscribed circle and clipped.
         return GeometryReader { geo in
-            let circleRadius: CGFloat = min(geo.size.width * 0.24, 84)
+            let dim = min(geo.size.width, geo.size.height)
+            let circleRadius: CGFloat = min(dim * 0.24, 84)
             // Small gap between circles so the strokes read as four
             // discrete shapes rather than a touching cluster.
             let cellOffset: CGFloat = circleRadius * 1.08
@@ -751,9 +883,12 @@ struct OnboardingView: View {
             }
         }
         // Reserve enough vertical room for two rows of circles (each ~168pt
-        // diameter at max) plus the inter-row gap. The captureCenter
-        // surrounds this in Spacers, so any leftover space is absorbed there.
-        .frame(height: 360)
+        // diameter at max) plus the inter-row gap. Computed from the same
+        // sizing math as the inner GeometryReader so the field never
+        // requests more height than its circles need — important on
+        // iPhone SE-class screens where a fixed 360pt frame was forcing
+        // the inner VStack to clip the bottom row's labels.
+        .frame(maxHeight: 360)
     }
 
     private func startCaptureRecording() {
@@ -778,12 +913,23 @@ struct OnboardingView: View {
 
     private func finishCaptureRecording() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        // Snapshot the transcript *before* stopping — the recognition task
-        // may emit one last partial result after stop(), but the value held
-        // here is what we'll feed the generator no matter which path the
-        // user picks next.
+        // Take an immediate snapshot as a floor, then re-snapshot after a
+        // short delay so the recognizer's final isFinal callback (which
+        // arrives 200-500ms after endAudio()) can land in `transcript`
+        // before we capture it. Without the deferred update, the last
+        // sentence of a user's idea is silently dropped.
         firstIdeaTranscript = captureRecorder.transcript
         captureRecorder.stop()
+        firstIdeaSnapshotTask?.cancel()
+        firstIdeaSnapshotTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            guard !Task.isCancelled else { return }
+            // Only overwrite if no second recording has rewired the
+            // recognizer in the meantime (.specify clobbers transcript).
+            if capturePhase == .choose {
+                firstIdeaTranscript = captureRecorder.transcript
+            }
+        }
         withAnimation(.easeInOut(duration: 0.45)) {
             capturePhase = .choose
         }
@@ -798,6 +944,12 @@ struct OnboardingView: View {
             return
         }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        // Kill the deferred first-idea snapshot — once the recognizer
+        // rewires for the specify pass it'll overwrite `transcript` with
+        // the new utterance, and we don't want the stale Task firing
+        // afterward to copy that into firstIdeaTranscript.
+        firstIdeaSnapshotTask?.cancel()
+        firstIdeaSnapshotTask = nil
         specifySeconds = 0
         specifyStartedAt = Date()
         captureRecorder.start()

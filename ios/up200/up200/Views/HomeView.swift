@@ -543,14 +543,19 @@ final class VoiceRecorder: ObservableObject {
         guard isRecording else { return }
         isRecording = false
         audioLevel = 0
-        recognitionTask?.cancel()
+        // End the audio buffer synchronously so SFSpeechRecognizer flushes
+        // its final isFinal callback — the last 200-500ms of speech rides
+        // on that result. The previous version called recognitionTask?.cancel()
+        // here, which preempted the flush and silently dropped the user's
+        // last sentence. We release our reference but let the underlying
+        // task live until it self-completes via line 597; any orphan is
+        // cancelled by startEngine() at the start of the next recording.
+        recognitionRequest?.endAudio()
         recognitionTask = nil
         let engine = audioEngine
-        let req = recognitionRequest
         recognitionRequest = nil
         teardownTask = Task.detached(priority: .userInitiated) {
             engine.stop()
-            req?.endAudio()
             engine.inputNode.removeTap(onBus: 0)
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
@@ -1390,6 +1395,10 @@ struct VoiceRecordSheet: View {
                         .transition(.opacity)
                 } else {
                     Button(action: handleMicTap) {
+                        // 88pt outer hit area around the 76pt visible
+                        // disc. Without it, the Circle()'s default hit
+                        // shape *is* the circle, so taps landing on the
+                        // bounding-box corners (each ~12pt) silently miss.
                         Circle()
                             .fill(amber.opacity(0.18))
                             .frame(width: 76, height: 76)
@@ -1399,6 +1408,8 @@ struct VoiceRecordSheet: View {
                                     .foregroundColor(amber)
                             )
                             .overlay(Circle().stroke(amber.opacity(0.35), lineWidth: 1))
+                            .frame(width: 88, height: 88)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .disabled(isGenerating)
@@ -1410,7 +1421,8 @@ struct VoiceRecordSheet: View {
                 // Timer
                 if recorder.isRecording || !recorder.transcript.isEmpty {
                     Text(timeLabel)
-                        .font(.system(size: 22, weight: .medium, design: .monospaced))
+                        .font(.system(.title2, design: .monospaced))
+                        .fontWeight(.medium)
                         .foregroundColor(AppInk.solid(0.70))
                         .transition(.opacity)
                 } else {
@@ -2279,6 +2291,16 @@ private struct FormatsBlock: View {
     @Binding var prompt: String
     @State private var showPicker = false
     @State private var suggestions: [ContentFormat] = []
+    // Last value that `displayText` synced into `prompt`. The format-chip
+    // → prompt sync only fires when the user hasn't typed over it — i.e.
+    // when `prompt` still matches the previously-synced text. Once the
+    // user edits the prompt, format selections stop overwriting it.
+    @State private var lastSyncedDisplayText: String = ""
+    // Stable shuffled order computed once; the displayed suggestions list
+    // is just this filtered by what's currently selected. The previous
+    // implementation re-shuffled on every selection change, which made
+    // the chip row visibly jumble on each tap.
+    @State private var shuffledOrder: [ContentFormat] = []
 
     private var selectedFormats: [ContentFormat] {
         allFormats.filter { selectedFormatIDs.contains($0.id) }
@@ -2289,8 +2311,10 @@ private struct FormatsBlock: View {
     }
 
     private func refreshSuggestions() {
-        let unselected = allFormats.filter { !selectedFormatIDs.contains($0.id) }
-        suggestions = Array(unselected.shuffled().prefix(4))
+        if shuffledOrder.isEmpty { shuffledOrder = allFormats.shuffled() }
+        suggestions = Array(
+            shuffledOrder.filter { !selectedFormatIDs.contains($0.id) }.prefix(4)
+        )
     }
 
     var body: some View {
@@ -2376,7 +2400,14 @@ private struct FormatsBlock: View {
         .onChange(of: selectedFormatIDs) {
             withAnimation(chipAnim) {
                 refreshSuggestions()
-                prompt = displayText
+                // Only auto-write the format list into the prompt if the
+                // user hasn't typed over it. If `prompt` no longer matches
+                // the last value we synced, the user has edited the
+                // field — leave their text alone.
+                if prompt.isEmpty || prompt == lastSyncedDisplayText {
+                    prompt = displayText
+                    lastSyncedDisplayText = displayText
+                }
             }
         }
         .sheet(isPresented: $showPicker) {

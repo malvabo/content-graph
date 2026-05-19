@@ -996,6 +996,13 @@ private struct NoteEditorPage: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
                 .focused($focus, equals: .title)
+                // Submit on Return moves focus down to the body field
+                // rather than inserting a newline. Without this the
+                // title field was a focus trap: axis: .vertical lets
+                // Return insert newlines (up to lineLimit), and there's
+                // no visible "Next" affordance to escape into the body.
+                .submitLabel(.next)
+                .onSubmit { focus = .body }
 
                 ZStack(alignment: .topLeading) {
                     if noteBody.isEmpty {
@@ -1602,7 +1609,12 @@ struct NotesView: View {
         .listRowSeparatorTint(AppInk.solid(0.06))
         .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
         .alignmentGuide(.listRowSeparatorTrailing) { d in d[.trailing] - 20 }
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+        // allowsFullSwipe: false — a full-swipe-to-delete on iOS is a single
+        // gesture with no second confirmation, so a brushed-against thumb
+        // permanently destroys a note. Requiring an explicit tap on the
+        // revealed Delete button after the swipe gives the user a moment
+        // to see what they're about to delete.
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive) {
                 delete(note)
             } label: {

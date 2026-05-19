@@ -1376,7 +1376,12 @@ struct ProfileView: View {
                 .presentationBackground(AppBackground.primary)
             }
             .fullScreenCover(isPresented: $showOnboarding) {
-                OnboardingView(onGetStarted: { showOnboarding = false }, onLogin: { showOnboarding = false })
+                // onClose surfaces an X in the top-right of OnboardingView
+                // so a user who taps "Show onboarding" from Profile can
+                // back out without being forced through the whole flow.
+                OnboardingView(onGetStarted: { showOnboarding = false },
+                               onLogin: { showOnboarding = false },
+                               onClose: { showOnboarding = false })
                     .preferredColorScheme(.dark)
             }
         }
@@ -2375,7 +2380,8 @@ struct ContentView: View {
                 .environmentObject(bannerController)
                 .environmentObject(chromeController)
                 .environmentObject(recordingController)
-                .sheet(isPresented: $recordingController.showingSheet) {
+                .sheet(isPresented: $recordingController.showingSheet,
+                       onDismiss: { recordingController.reconcileDismissal() }) {
                     NoteVoiceSheet()
                         .environmentObject(recordingController)
                 }
@@ -2722,7 +2728,11 @@ private extension View {
                 RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
                     .stroke(Color(uiColor: .separator), lineWidth: 0.33)
                     .opacity(shouldDraw ? 1 : 0)
-                    .scaleEffect(shouldDraw ? 1.0 : 1.12)
+                    // Under Reduce Motion, fade only (no scale) so the
+                    // animation respects the user's accessibility setting.
+                    .scaleEffect(UIAccessibility.isReduceMotionEnabled
+                                 ? 1.0
+                                 : (shouldDraw ? 1.0 : 1.12))
             )
             .padding(.horizontal, inset)
             .padding(.bottom, bottomInset)
@@ -3130,30 +3140,27 @@ struct AIActionsSheet: View {
 
     private let sheetBg = AppBackground.primary
 
-    private var fittedHeight: CGFloat {
-        let rowHeight: CGFloat = 52
-        let rowSpacing: CGFloat = 2
-        let count = CGFloat(quickAIActions.count)
-        return rowHeight * count
-            + rowSpacing * max(0, count - 1)
-            + 12  // top padding
-            + 12  // bottom padding
-            + 24  // drag indicator
-    }
-
     var body: some View {
-        VStack(spacing: 2) {
-            ForEach(quickAIActions) { action in
-                actionRow(action)
+        ScrollView {
+            VStack(spacing: 2) {
+                ForEach(quickAIActions) { action in
+                    actionRow(action)
+                }
             }
+            .padding(.top, 12)
+            .padding(.bottom, 12)
+            .frame(maxWidth: .infinity, alignment: .top)
         }
-        .padding(.top, 12)
-        .padding(.bottom, 12)
-        .frame(maxWidth: .infinity, alignment: .top)
+        .scrollIndicators(.hidden)
         .background(sheetBg)
         .presentationBackground(sheetBg)
         .presentationCornerRadius(32)
-        .presentationDetents([.height(fittedHeight)])
+        // [.medium, .large] (was a fixed .height(fittedHeight) computed
+        // from a hardcoded 52pt row). At AX5 Dynamic Type, the row labels
+        // render taller than 52pt and the fixed sheet height clipped the
+        // bottom rows. Adaptive detents + a ScrollView around the list
+        // let large-type users reach every action.
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
 
