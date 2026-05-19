@@ -343,35 +343,23 @@ struct MinimalNoteDetailPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            // Unified bottom bar. When the user is just reading, the
-            // "Ask AI" pill spans the row on its own. The moment the
-            // editor focuses, the magic icons (sparkles on generation
-            // tabs, Create wand on the Note tab) slide in on the left
-            // and the dictation mic on the right — same three-element
-            // posture as the reference design. Dictation's recording
-            // row takes the whole bar over while it's live so the user
-            // can't tap into the chat sheet mid-utterance.
+            // Unified bottom bar with three persistent components: the
+            // Create wand on the left, the "Ask AI" chat pill in the
+            // middle, and the dictation mic on the right. All three
+            // stay visible whether or not the editor is focused so the
+            // user can pick a generation path without first tapping
+            // into the body. Dictation's recording row takes the whole
+            // bar over while it's live so the user can't tap into the
+            // chat sheet mid-utterance.
             HStack(alignment: .center, spacing: 12) {
-                if editorFocused && !dictation.isRecording {
-                    if !isNoteTab {
-                        // Quick edits (Make Shorter, Fix Grammar, …)
-                        // belong on the AI-output tabs where rewriting
-                        // a generation is the natural next move. On the
-                        // original Note tab the user's own captured
-                        // text shouldn't get a one-tap "Shorter"
-                        // affordance — hide the sparkles entry there.
-                        aiSparklesButton
-                            .transition(.scale(scale: 0.85).combined(with: .opacity))
-                    }
-                    if isNoteTab && !hasActiveTextSelection {
-                        // The Create button targets the whole note, not
-                        // the highlighted span, so it'd duplicate (and
-                        // contradict) the in-selection AI menu the
-                        // system surfaces over a live highlight. Hide
-                        // it until the user collapses the selection.
-                        aiWandButton
-                            .transition(.scale(scale: 0.85).combined(with: .opacity))
-                    }
+                if !dictation.isRecording && !hasActiveTextSelection {
+                    // The Create button targets the whole tab body,
+                    // not the highlighted span, so it'd duplicate (and
+                    // contradict) the in-selection AI menu the system
+                    // surfaces over a live highlight. Hide it until
+                    // the user collapses the selection.
+                    aiWandButton
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
 
                 if !dictation.isRecording {
@@ -384,23 +372,21 @@ struct MinimalNoteDetailPage: View {
                     Spacer(minLength: 0)
                 }
 
-                if dictation.isRecording || editorFocused {
-                    DictationControls(
-                        dictation: dictation,
-                        onStart: {
-                            bodyBeforeDictation = editText
-                            dictation.start()
-                        },
-                        onCancel: {
-                            dictation.cancel()
-                            editText = bodyBeforeDictation
-                        },
-                        onConfirm: {
-                            dictation.stop()
-                        }
-                    )
-                    .transition(.scale(scale: 0.85).combined(with: .opacity))
-                }
+                DictationControls(
+                    dictation: dictation,
+                    onStart: {
+                        bodyBeforeDictation = editText
+                        dictation.start()
+                    },
+                    onCancel: {
+                        dictation.cancel()
+                        editText = bodyBeforeDictation
+                    },
+                    onConfirm: {
+                        dictation.stop()
+                    }
+                )
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 8)
