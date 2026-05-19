@@ -99,13 +99,14 @@ struct OnboardingView: View {
                     )
             }
 
-            // Step 4 .prompt: the user is *inside* the cloud. The starfield
-            // fills the whole screen (ignoresSafeArea) so the cloud has no
-            // visible top/bottom/side edges, and a long-press anywhere on
-            // it kicks off the recording. Other capture sub-phases swap in
-            // their own center content (waveform, choose list, generating
-            // scene) so the full-screen cloud only lives during .prompt.
-            if step == .capture && capturePhase == .prompt {
+            // Step 4: the starfield is the visual continuity between the
+            // .prompt → .choose beats. .prompt owns the long-press to start
+            // recording; .choose keeps the field as a passive backdrop so
+            // the four blob options sit in the same cloud the user just
+            // pressed-and-held, rather than a flat black screen. Hit
+            // testing is disabled outside .prompt so the blob buttons
+            // (rendered above in `captureOverlay`) still receive taps.
+            if step == .capture && (capturePhase == .prompt || capturePhase == .choose) {
                 StarfieldBlurb(active: true)
                     .ignoresSafeArea()
                     // Held at a permanent dim so the captureOverlay headline
@@ -115,18 +116,27 @@ struct OnboardingView: View {
                     .opacity(0.65)
                     .contentShape(Rectangle())
                     .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 30) {
+                        guard capturePhase == .prompt else { return }
                         startCaptureRecording()
                     }
+                    // Hit testing only matters during .prompt — the blob
+                    // buttons in .choose are rendered above in
+                    // `captureOverlay` and would still get tap priority
+                    // either way, but turning off the long-press during
+                    // .choose keeps the gesture from competing for taps
+                    // near the bottom blobs.
+                    .allowsHitTesting(capturePhase == .prompt)
                     // Plain cross-fade. The previous insertion was
-                    // .scale(scale: 1.8) combined with opacity, which made the
-                    // destination blurb appear at 1.8× and contract into place
-                    // on top of the still-dispersing cluster — the eye read it
-                    // as a second image landing on top mid-zoom. Removing the
-                    // scale lets the cluster's own scale-out own the entire
-                    // "zoom in" beat, and the blurb just fades up from behind
-                    // it on the same curve. Removal stays as a plain fade so
-                    // transitioning out of .prompt into the waveform / choose
-                    // list is unchanged.
+                    // .scale(scale: 1.8) combined with opacity, which made
+                    // the destination blurb appear at 1.8× and contract
+                    // into place on top of the still-dispersing cluster —
+                    // the eye read it as a second image landing on top
+                    // mid-zoom. Removing the scale lets the cluster's own
+                    // scale-out own the entire "zoom in" beat, and the
+                    // blurb just fades up from behind it on the same curve.
+                    // Removal stays as a plain fade so transitioning out
+                    // of .choose into the waveform / generating scene is
+                    // calm.
                     .transition(
                         .asymmetric(
                             insertion: .opacity,
