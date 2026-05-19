@@ -779,22 +779,6 @@ struct ProjectGroupDetailView: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     }
-                    // While the card preview is up, anchor the AI pill inside
-                    // the card's bottom-left so the affordance reads as part
-                    // of the celebration unit. The screen-level floating pill
-                    // (below) gets gated off in this state so we don't end up
-                    // with the icons clipped against the bottom safe-area
-                    // edge of the screen. Insets are kept symmetric (leading
-                    // == bottom) so the pill nestles into the corner rather
-                    // than floating top-heavy on it.
-                    .overlay(alignment: .bottomLeading) {
-                        if inCardPreview {
-                            aiPillBar
-                                .padding(.leading, 10)
-                                .padding(.bottom, 10)
-                                .transition(.scale(scale: 0.85).combined(with: .opacity))
-                        }
-                    }
                     // Animate scale + card stroke fade-out off the same
                     // isExpanded flag so the "tap to expand" beat reads as
                     // a single coordinated motion: content grows from 90%
@@ -845,11 +829,11 @@ struct ProjectGroupDetailView: View {
             // Floating AI buttons (bottom-leading) — same liquid-glass treatment
             // as the Notes magic/chat pair so the bar reads as a pair of
             // pebbles on top of the content rather than a solid toolbar.
-            // Gated off during the onboarding card-preview beat — there the
-            // pill is overlaid inside the card itself so it stays visually
-            // anchored to the celebration unit instead of being clipped
-            // against the bottom safe-area edge.
-            if !dictation.isRecording && !inCardPreview {
+            // Stays mounted during the onboarding card-preview beat too so the
+            // affordance matches the regular generated-content view exactly
+            // (same icons, same screen-edge inset, no 0.9× downscale from the
+            // card transform).
+            if !dictation.isRecording {
                 aiPillBar
                     .padding(.leading, 20)
                     .padding(.bottom, 8)
