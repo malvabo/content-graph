@@ -776,12 +776,14 @@ struct ProjectGroupDetailView: View {
                     // of the celebration unit. The screen-level floating pill
                     // (below) gets gated off in this state so we don't end up
                     // with the icons clipped against the bottom safe-area
-                    // edge of the screen.
+                    // edge of the screen. Insets are kept symmetric (leading
+                    // == bottom) so the pill nestles into the corner rather
+                    // than floating top-heavy on it.
                     .overlay(alignment: .bottomLeading) {
                         if inCardPreview {
                             aiPillBar
-                                .padding(.leading, 14)
-                                .padding(.bottom, 14)
+                                .padding(.leading, 10)
+                                .padding(.bottom, 10)
                                 .transition(.scale(scale: 0.85).combined(with: .opacity))
                         }
                     }
