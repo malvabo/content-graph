@@ -2394,9 +2394,18 @@ struct ContentView: View {
                 // This ordering ensures correct visual stacking on all iOS versions:
                 // outer inset content appears above inner inset content.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if !keyboardVisible && !chromeController.hideTabBar && !minimalMode {
+                    if !keyboardVisible && !chromeController.hideTabBar {
                         Group {
-                            if simpleMode {
+                            if minimalMode {
+                                // Minimal 1 shares Simple's floating mic
+                                // — voice capture is the only top-level
+                                // affordance, so a single capture button
+                                // is enough chrome.
+                                SimpleCreateBar(onTap: {
+                                    selectedTab = .notes
+                                    newNoteTrigger &+= 1
+                                })
+                            } else if simpleMode {
                                 SimpleCreateBar(onTap: {
                                     selectedTab = .notes
                                     newNoteTrigger &+= 1
@@ -2511,7 +2520,10 @@ struct ContentView: View {
     @ViewBuilder
     private var tabsLayer: some View {
         if minimalMode {
-            MinimalHomePage(onProfileTap: { showProfile = true })
+            MinimalHomePage(
+                newNoteTrigger: newNoteTrigger,
+                onProfileTap: { showProfile = true }
+            )
         } else if simpleMode {
             SimpleHomePage(
                 newNoteTrigger: newNoteTrigger,
