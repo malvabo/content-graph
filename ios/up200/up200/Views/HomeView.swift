@@ -409,8 +409,6 @@ struct GenerationBanner: View {
     var onTap: () -> Void
     var onDismiss: () -> Void
 
-    @State private var glowPhase = false
-
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
@@ -439,18 +437,12 @@ struct GenerationBanner: View {
                 Button(action: onTap) {
                     ZStack {
                         RoundedRectangle(cornerRadius: Radius.input, style: .continuous)
-                            .fill(AppBackground.surfaceCool)
-                        Ellipse()
-                            .fill(BrandColor.amber.opacity(0.55))
-                            .frame(width: 80, height: 36)
-                            .blur(radius: 16)
-                            .offset(x: glowPhase ? 10 : -10)
-                            .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: glowPhase)
+                            .fill(BrandColor.ctaPrimary)
                         RoundedRectangle(cornerRadius: Radius.input, style: .continuous)
-                            .stroke(AppInk.solid(0.14), lineWidth: 0.5)
+                            .stroke(AppInk.solid(0.28), lineWidth: 0.75)
                         Text("Open")
                             .font(.appCaptionMedium)
-                            .foregroundStyle(BrandColor.glowGradientBright)
+                            .foregroundColor(.white)
                     }
                     .frame(width: 68, height: 32)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.input, style: .continuous))
@@ -485,9 +477,6 @@ struct GenerationBanner: View {
         .shadow(color: Color.black.opacity(0.40), radius: 16, x: 0, y: 8)
         .contentShape(Rectangle())
         .onTapGesture { if isReady { onTap() } }
-        .onAppear {
-            glowPhase = true
-        }
     }
 }
 
