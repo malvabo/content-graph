@@ -119,9 +119,30 @@ struct MinimalHomePage: View {
                         // Minimal-specific destination — keep every other
                         // NotesView behaviour (filter chips, pinned/other
                         // split, swipe actions, search overlay results)
-                        // and only swap the per-note page.
+                        // and only swap the per-note page. Sketched notes
+                        // still route to the canvas; opening a drawing in
+                        // the text editor would orphan its PKDrawing data.
                         detailFor: { note in
-                            AnyView(MinimalNoteDetailPage(initialNote: note))
+                            if note.kind == .drawing {
+                                AnyView(
+                                    DrawingCanvasView(
+                                        initialNote: note,
+                                        onSave: { saved in
+                                            var fresh = NotesStore.load()
+                                            if let idx = fresh.firstIndex(where: { $0.id == saved.id }) {
+                                                fresh[idx] = saved
+                                            } else {
+                                                fresh.insert(saved, at: 0)
+                                            }
+                                            NotesStore.saveInBackground(fresh)
+                                        },
+                                        onCancel: {}
+                                    )
+                                    .toolbar(.hidden, for: .navigationBar)
+                                )
+                            } else {
+                                AnyView(MinimalNoteDetailPage(initialNote: note))
+                            }
                         }
                     )
                 }
