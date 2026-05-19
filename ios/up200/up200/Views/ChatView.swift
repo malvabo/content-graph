@@ -650,7 +650,7 @@ struct ChatView: View {
                 inputArea
             }
         }
-        .sheet(isPresented: $showMentionPicker) {
+        .fullScreenCover(isPresented: $showMentionPicker) {
             MentionPickerSheet(
                 documents: documentSources,
                 notes: noteSources,
@@ -1654,121 +1654,187 @@ private struct MentionPickerSheet: View {
     let onSelect: (ChatContextSource) -> Void
     @Environment(\.dismiss) private var dismiss
 
+    @State private var query = ""
+    @FocusState private var fieldFocused: Bool
+
+    private let cardBg = AppBackground.primary
+
     private var isEmpty: Bool { documents.isEmpty && notes.isEmpty }
 
+    private var filteredDocuments: [ChatContextSource] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return documents }
+        return documents.filter {
+            $0.title.localizedCaseInsensitiveContains(q) ||
+            $0.preview.localizedCaseInsensitiveContains(q)
+        }
+    }
+
+    private var filteredNotes: [ChatContextSource] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return notes }
+        return notes.filter {
+            $0.title.localizedCaseInsensitiveContains(q) ||
+            $0.preview.localizedCaseInsensitiveContains(q)
+        }
+    }
+
+    private var hasResults: Bool { !filteredDocuments.isEmpty || !filteredNotes.isEmpty }
+
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.app(size: 13, weight: .semibold))
-                        .foregroundColor(AppInk.solid(0.60))
-                        .frame(width: 28, height: 28)
-                        .background(AppInk.solid(0.10))
-                        .clipShape(Circle())
-                        .appIconHitArea()
+        ZStack {
+            Color.black.opacity(0.55)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    fieldFocused = false
+                    dismiss()
                 }
-                .accessibilityLabel("Close")
-                Spacer(minLength: 0)
-                Text("Mention")
-                    .font(.app(size: 16, weight: .semibold))
-                    .foregroundColor(AppText.primary)
-                Spacer(minLength: 0)
-                Color.clear.frame(width: 28, height: 28)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
-            .padding(.bottom, 14)
 
-            Rectangle()
-                .fill(AppInk.solid(0.06))
-                .frame(height: 0.5)
-
-            if isEmpty {
-                Spacer()
-                VStack(spacing: 12) {
-                    Image(systemName: "tray")
-                        .font(.app(size: 32, weight: .regular))
-                        .foregroundColor(AppInk.solid(0.20))
-                    Text("Nothing to mention yet")
-                        .font(.app(size: 15))
-                        .foregroundColor(AppInk.solid(0.30))
-                    Text("Create a note or document to reference it here.")
-                        .font(.app(size: 13))
-                        .foregroundColor(AppInk.solid(0.22))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    Text("Mention")
+                        .font(.appBodyBold)
+                        .foregroundColor(AppText.primary)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer()
+                    Button {
+                        fieldFocused = false
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(AppText.secondary)
+                            .frame(width: 30, height: 30)
+                            .background(AppInk.solid(0.10))
+                            .clipShape(Circle())
+                            .appIconHitArea()
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Close")
                 }
-                .frame(maxWidth: .infinity)
-                Spacer()
-            } else {
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 16) {
-                        if !documents.isEmpty {
-                            section(title: "Documents", items: documents)
-                        }
-                        if !notes.isEmpty {
-                            section(title: "Notes", items: notes)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
+
+                AppSearchField(
+                    placeholder: "Search",
+                    text: $query,
+                    isFocused: $fieldFocused
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+
+                if isEmpty {
+                    VStack(spacing: 8) {
+                        Spacer().frame(height: 28)
+                        Image(systemName: "tray")
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundColor(AppInk.solid(0.18))
+                        Text("Nothing to mention yet")
+                            .font(.appSubtext)
+                            .foregroundColor(AppInk.solid(0.30))
+                        Text("Create a note or document to reference it here.")
+                            .font(.appSmall)
+                            .foregroundColor(AppInk.solid(0.22))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                        Spacer().frame(height: 28)
+                    }
+                    .frame(maxWidth: .infinity)
+                } else if !hasResults {
+                    VStack(spacing: 8) {
+                        Spacer().frame(height: 28)
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundColor(AppInk.solid(0.18))
+                        Text("No results")
+                            .font(.appSubtext)
+                            .foregroundColor(AppInk.solid(0.30))
+                        Spacer().frame(height: 28)
+                    }
+                    .frame(maxWidth: .infinity)
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(spacing: 0) {
+                            if !filteredDocuments.isEmpty {
+                                sectionRows(title: "Documents", items: filteredDocuments)
+                            }
+                            if !filteredNotes.isEmpty {
+                                sectionRows(title: "Notes", items: filteredNotes)
+                            }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 24)
                 }
             }
+            .frame(maxWidth: 460, maxHeight: 520)
+            .background(
+                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                    .fill(cardBg)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
+                    .stroke(AppInk.solid(0.08), lineWidth: 0.5)
+            )
+            .shadow(color: Color.black.opacity(0.45), radius: 30, y: 10)
+            .padding(.horizontal, 14)
+            .padding(.top, 72)
+            .padding(.bottom, 24)
+            .frame(maxHeight: .infinity, alignment: .top)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(Radius.sheet)
-        .presentationBackground(AppBackground.primary)
     }
 
     @ViewBuilder
-    private func section(title: String, items: [ChatContextSource]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private func sectionRows(title: String, items: [ChatContextSource]) -> some View {
+        HStack {
             Text(title)
-                .font(.app(size: 12, weight: .semibold))
-                .foregroundColor(AppInk.solid(0.45))
+                .font(.app(size: 11, weight: .semibold))
+                .foregroundColor(AppInk.solid(0.40))
                 .textCase(.uppercase)
-                .padding(.horizontal, 4)
+                .tracking(0.5)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+        .padding(.bottom, 4)
 
-            VStack(spacing: 6) {
-                ForEach(items) { item in
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        onSelect(item)
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: icon(for: item.kind))
-                                .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(AppInk.solid(0.55))
-                                .frame(width: 20)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.title)
-                                    .font(.app(size: 14, weight: .semibold))
-                                    .foregroundColor(AppInk.solid(0.88))
-                                    .lineLimit(1)
-                                if !item.preview.isEmpty {
-                                    Text(item.preview)
-                                        .font(.app(size: 12))
-                                        .foregroundColor(AppInk.solid(0.40))
-                                        .lineLimit(1)
-                                }
-                            }
-                            Spacer()
+        ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                onSelect(item)
+            } label: {
+                HStack(alignment: .top, spacing: 14) {
+                    Image(systemName: icon(for: item.kind))
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(AppInk.solid(0.55))
+                        .frame(width: 24, height: 24)
+                        .padding(.top, 1)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.title)
+                            .font(.app(size: 16, weight: .medium))
+                            .foregroundColor(AppInk.solid(0.92))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                        if !item.preview.isEmpty {
+                            Text(item.preview)
+                                .font(.appSmall)
+                                .foregroundColor(AppText.tertiary)
+                                .lineLimit(1)
                         }
-                        .padding(14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(AppInk.solid(0.04))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(AppInk.solid(0.06), lineWidth: 0.5)
-                        )
                     }
-                    .buttonStyle(.plain)
+                    Spacer(minLength: 0)
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if idx < items.count - 1 {
+                Rectangle()
+                    .fill(AppInk.solid(0.05))
+                    .frame(height: 0.5)
+                    .padding(.leading, 54)
             }
         }
     }
