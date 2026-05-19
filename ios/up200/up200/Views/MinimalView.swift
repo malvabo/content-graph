@@ -670,17 +670,26 @@ struct MinimalNoteDetailPage: View {
 
     private func tabPill(index: Int, label: String) -> some View {
         let active = selectedIndex == index
+        // Generation tabs (index > 0) get a sparkles glyph after the label
+        // so the AI-authored tabs read distinctly from the source Note tab.
+        let isGeneration = index > 0
         return Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             selectTab(index)
         } label: {
-            Text(label)
-                .font(.app(size: 14, weight: active ? .semibold : .regular))
-                .foregroundColor(active ? .white : AppInk.solid(0.55))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background(active ? AnyShapeStyle(BrandColor.ctaPrimary) : AnyShapeStyle(Color.clear))
-                .clipShape(Capsule())
+            HStack(spacing: 4) {
+                Text(label)
+                if isGeneration {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 11, weight: active ? .semibold : .regular))
+                }
+            }
+            .font(.app(size: 14, weight: active ? .semibold : .regular))
+            .foregroundColor(active ? .white : AppInk.solid(0.55))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(active ? AnyShapeStyle(BrandColor.ctaPrimary) : AnyShapeStyle(Color.clear))
+            .clipShape(Capsule())
         }
         .buttonStyle(.plain)
         .animation(AppAnimation.quick, value: selectedIndex)
