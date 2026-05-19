@@ -1552,14 +1552,20 @@ private struct MessageBubble: View {
                 Spacer(minLength: 56)
                 Text(AttributedString(message.content))
                     // Canonical body-text rhythm (17pt, lineSpacing 12). User
-                    // bubbles use the brand primary fill (iMessage-style) with
-                    // white text so the user's voice reads distinctly.
+                    // bubbles share the composer field's subtle ink overlay so
+                    // what's being typed and what's been sent read as one
+                    // neutral chip surface — the saturated amber fill was
+                    // reading as a brand CTA rather than a quoted message.
                     .appBodyText()
-                    .foregroundColor(.white)
+                    .foregroundColor(AppInk.solid(0.92))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(AnyShapeStyle(BrandColor.ctaPrimary))
+                    .background(AppInk.solid(0.06))
                     .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
+                            .stroke(AppInk.solid(0.10), lineWidth: 0.5)
+                    )
                     .textSelection(.enabled)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
