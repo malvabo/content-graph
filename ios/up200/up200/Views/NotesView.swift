@@ -2187,14 +2187,15 @@ private struct SelectableNoteEditor: UIViewRepresentable {
 
     private static let font = UIFont.systemFont(ofSize: 18)
     private static let lineSpacing: CGFloat = 8
-    private static let paragraphSpacing: CGFloat = 10
+    // 18pt = 8 lineSpacing + 10 extra, so the gap between paragraphs
+    // reads as a clear 10pt break beyond the within-paragraph line
+    // gap. UITextView honours `paragraphSpacing` reliably (SwiftUI's
+    // Text does not, which is why the body readers use VStack instead).
+    private static let paragraphSpacing: CGFloat = 18
 
     private static func attributes() -> [NSAttributedString.Key: Any] {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = Self.lineSpacing
-        // 10pt breathing room after every Enter. UITextView honours
-        // `paragraphSpacing` reliably (SwiftUI's Text does not, which is
-        // why the Minimal reader splits into a VStack instead).
         paragraph.paragraphSpacing = Self.paragraphSpacing
         return [
             .font: Self.font,
