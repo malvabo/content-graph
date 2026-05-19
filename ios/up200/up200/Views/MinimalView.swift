@@ -345,16 +345,24 @@ struct MinimalNoteDetailPage: View {
 
             // Unified bottom bar. When the user is just reading, the
             // "Ask AI" pill spans the row on its own. The moment the
-            // editor focuses, the magic icons (sparkles + Create wand,
-            // Create only on the Note tab) slide in on the left and
-            // the dictation mic on the right — same three-element
+            // editor focuses, the magic icons (sparkles on generation
+            // tabs, Create wand on the Note tab) slide in on the left
+            // and the dictation mic on the right — same three-element
             // posture as the reference design. Dictation's recording
             // row takes the whole bar over while it's live so the user
             // can't tap into the chat sheet mid-utterance.
             HStack(alignment: .center, spacing: 12) {
                 if editorFocused && !dictation.isRecording {
-                    aiSparklesButton
-                        .transition(.scale(scale: 0.85).combined(with: .opacity))
+                    if !isNoteTab {
+                        // Quick edits (Make Shorter, Fix Grammar, …)
+                        // belong on the AI-output tabs where rewriting
+                        // a generation is the natural next move. On the
+                        // original Note tab the user's own captured
+                        // text shouldn't get a one-tap "Shorter"
+                        // affordance — hide the sparkles entry there.
+                        aiSparklesButton
+                            .transition(.scale(scale: 0.85).combined(with: .opacity))
+                    }
                     if isNoteTab && !hasActiveTextSelection {
                         // The Create button targets the whole note, not
                         // the highlighted span, so it'd duplicate (and
@@ -401,6 +409,7 @@ struct MinimalNoteDetailPage: View {
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: hasActiveTextSelection)
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: isNoteTab)
         .onChange(of: dictation.transcript) { _, newValue in
             let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return }
