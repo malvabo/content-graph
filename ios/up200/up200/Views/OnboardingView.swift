@@ -1040,6 +1040,13 @@ private struct GeneratingCloudScene: View {
                     // end point sits just shy of the satellite's surface,
                     // so the line emerges *from* the cluster's edge rather
                     // than slicing through every dot in the core.
+                    //
+                    // Stroked as a dotted line — zero-length dashes drawn
+                    // with a round line cap render as small circular dots
+                    // spaced 4pt apart — and shaded by a linear gradient
+                    // that brightens through the middle and softens at
+                    // both ends, so the connector reads as a gentle "spark
+                    // trail" rather than a hard 100% filled-in stroke.
                     if progress > 0.6 {
                         let lineAlpha = (progress - 0.6) / 0.4
                         let startX = cx + cos(sat.angle) * coreRadius * 0.95
@@ -1050,9 +1057,24 @@ private struct GeneratingCloudScene: View {
                         var line = Path()
                         line.move(to: CGPoint(x: startX, y: startY))
                         line.addLine(to: CGPoint(x: endX, y: endY))
-                        ctx.stroke(line,
-                                   with: .color(amber.opacity(0.28 * lineAlpha)),
-                                   lineWidth: 0.7)
+                        let lineGradient = Gradient(stops: [
+                            .init(color: amber.opacity(0.08 * lineAlpha), location: 0.0),
+                            .init(color: amber.opacity(0.30 * lineAlpha), location: 0.5),
+                            .init(color: amber.opacity(0.08 * lineAlpha), location: 1.0)
+                        ])
+                        ctx.stroke(
+                            line,
+                            with: .linearGradient(
+                                lineGradient,
+                                startPoint: CGPoint(x: startX, y: startY),
+                                endPoint: CGPoint(x: endX, y: endY)
+                            ),
+                            style: StrokeStyle(
+                                lineWidth: 1.4,
+                                lineCap: .round,
+                                dash: [0.01, 4]
+                            )
+                        )
                     }
 
                     // Satellite mini-cluster blooms after the spark
