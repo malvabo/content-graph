@@ -162,18 +162,39 @@ struct MinimalHomePage: View {
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(item: $selectedNote) { note in
-                MinimalNoteDetailPage(
-                    initialNote: note,
-                    onUpdate: { saved in
-                        if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
-                            notes[idx] = saved
-                        } else {
-                            notes.insert(saved, at: 0)
-                        }
-                        scheduleSave()
-                    },
-                    onDelete: { delete(note) }
-                )
+                // Sketched notes carry a serialized PKDrawing in
+                // drawingData and must open in the canvas — opening one
+                // in the text editor would lose the strokes. Same branch
+                // classic NotesView uses, so the two surfaces stay in
+                // lockstep on the data side.
+                if note.kind == .drawing {
+                    DrawingCanvasView(
+                        initialNote: note,
+                        onSave: { saved in
+                            if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
+                                notes[idx] = saved
+                            } else {
+                                notes.insert(saved, at: 0)
+                            }
+                            scheduleSave()
+                        },
+                        onCancel: {}
+                    )
+                    .toolbar(.hidden, for: .navigationBar)
+                } else {
+                    MinimalNoteDetailPage(
+                        initialNote: note,
+                        onUpdate: { saved in
+                            if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
+                                notes[idx] = saved
+                            } else {
+                                notes.insert(saved, at: 0)
+                            }
+                            scheduleSave()
+                        },
+                        onDelete: { delete(note) }
+                    )
+                }
             }
             .task {
                 notes = await NotesStore.loadAsync()
@@ -327,6 +348,16 @@ struct MinimalNoteDetailPage: View {
     @State private var isEditingBody: Bool = false
     @FocusState private var editorFocused: Bool
 
+    /// In-editor dictation. Mirrors NoteEditorPage's pattern: a small
+    /// `mic.badge.plus` glass button parks itself bottom-right whenever
+    /// the editor is focused or recording; tapping it begins live
+    /// transcription that lands at the current insertion point in
+    /// `editText`. `bodyBeforeDictation` snapshots the prefix so an
+    /// interrupted / cancelled dictation reverts cleanly without
+    /// eating any pre-existing body content.
+    @StateObject private var dictation = NoteDictation()
+    @State private var bodyBeforeDictation: String = ""
+
     @State private var showGenerateSheet = false
     @State private var showChat = false
     @State private var showAIMenu = false
@@ -391,21 +422,73 @@ struct MinimalNoteDetailPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            HStack(spacing: 12) {
-                aiSparklesButton
-                aiChatButton
-                aiWandButton
+            // Bottom-leading: the AI toolbar (sparkles / chat / wand).
+            // Hidden while dictating so the recording row owns the bottom
+            // edge and the user can't accidentally tap into AI sheets
+            // mid-utterance.
+            if !dictation.isRecording {
+                HStack(spacing: 12) {
+                    aiSparklesButton
+                    aiChatButton
+                    aiWandButton
+                }
+                .padding(.leading, 20)
+                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
-            .padding(.leading, 20)
-            .padding(.bottom, 8)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+
+            // Bottom-trailing: in-editor dictation. Only mounts once the
+            // user has tapped into a field — there's nowhere for the
+            // transcribed text to land otherwise.
+            if dictation.isRecording || editorFocused {
+                DictationControls(
+                    dictation: dictation,
+                    onStart: {
+                        bodyBeforeDictation = editText
+                        dictation.start()
+                    },
+                    onCancel: {
+                        dictation.cancel()
+                        editText = bodyBeforeDictation
+                    },
+                    onConfirm: {
+                        dictation.stop()
+                    }
+                )
+                .padding(.trailing, 20)
+                .padding(.bottom, 8)
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: isGenerating)
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
+        .onChange(of: dictation.transcript) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            if bodyBeforeDictation.isEmpty {
+                editText = trimmed
+            } else {
+                let needsSeparator = !bodyBeforeDictation.hasSuffix("\n") && !bodyBeforeDictation.hasSuffix(" ")
+                editText = bodyBeforeDictation + (needsSeparator ? " " : "") + trimmed
+            }
+        }
+        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enable Microphone and Speech Recognition in Settings to dictate.")
+        }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
         .swipeBackGesture {
+            dictation.stop()
             persistCurrent()
             dismiss()
         }
@@ -415,7 +498,10 @@ struct MinimalNoteDetailPage: View {
         }
         .onDisappear {
             chrome.hideTabBar = false
+            dictation.stop()
             persistCurrent()
+            maybeGenerateTitle()
+            maybeDiscardEmptyNote()
             generateTask?.cancel()
             aiTransformTask?.cancel()
             copiedResetTask?.cancel()
@@ -514,6 +600,7 @@ struct MinimalNoteDetailPage: View {
         HStack(spacing: 10) {
             Button {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                dictation.stop()
                 persistCurrent()
                 dismiss()
             } label: {
@@ -815,6 +902,14 @@ struct MinimalNoteDetailPage: View {
     // MARK: Tab switching & persistence
 
     private func selectTab(_ index: Int) {
+        // Abandon any in-flight dictation before swapping editText —
+        // otherwise the transcript callback would overwrite the new
+        // tab's text with the previous tab's pre-dictation snapshot +
+        // the partial transcript.
+        if dictation.isRecording {
+            dictation.cancel()
+            editText = bodyBeforeDictation
+        }
         persistCurrent()
         selectedIndex = index
         editText = currentTextForTab(index)
@@ -861,6 +956,44 @@ struct MinimalNoteDetailPage: View {
         MinimalGenStore.deleteAll(forNoteID: note.id)
         onDelete()
         dismiss()
+    }
+
+    /// Same logic as NoteEditorPage.persistIfNeeded — if the note body
+    /// reads like prose with no user-supplied title (first line >4 words),
+    /// ask the model for a 3-word title and prepend it once. Runs only
+    /// when leaving the screen so the user's editing isn't interrupted
+    /// mid-flow.
+    private func maybeGenerateTitle() {
+        let trimmedBody = note.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedBody.isEmpty else { return }
+        let firstLine = trimmedBody.split(whereSeparator: \.isNewline).first.map(String.init) ?? trimmedBody
+        let wordCount = firstLine.split(whereSeparator: \.isWhitespace).count
+        guard wordCount > 4 else { return }
+
+        let snapshotBody = note.body
+        let baseNote = note
+        let save = onUpdate
+        Task {
+            let aiTitle = await AIService.generateTitle(from: trimmedBody)
+            let cleaned = aiTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !cleaned.isEmpty else { return }
+            guard cleaned.lowercased() != firstLine.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else { return }
+            var updated = baseNote
+            updated.body = cleaned + "\n" + snapshotBody
+            updated.updatedAt = Date()
+            await MainActor.run { save(updated) }
+        }
+    }
+
+    /// New notes captured but left empty (cancelled recording, pencil tap
+    /// with no follow-through) shouldn't pile up as Untitled rows. Only
+    /// fires for notes that *started* empty — clearing an existing note's
+    /// body shouldn't auto-delete it. Generations attached to the note
+    /// also keep it alive even if the body itself was emptied.
+    private func maybeDiscardEmptyNote() {
+        guard initialNote.isEmpty, note.isEmpty else { return }
+        guard MinimalGenStore.load().allSatisfy({ $0.noteId != note.id }) else { return }
+        onDelete()
     }
 
     // MARK: Generation
