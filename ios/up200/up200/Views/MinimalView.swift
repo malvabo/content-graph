@@ -348,14 +348,17 @@ struct MinimalNoteDetailPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            // Bottom-leading: the AI toolbar (sparkles / wand). Hidden
-            // while dictating so the recording row owns the bottom edge
-            // and the user can't accidentally tap into AI sheets
-            // mid-utterance.
-            if !dictation.isRecording {
+            // Bottom-leading: the AI toolbar (sparkles / wand). Mirrors
+            // the dictation mic at bottom-right: only surfaces while the
+            // user is actually engaging the text (editor focused), and
+            // hides during dictation so the recording row owns the
+            // bottom edge. The wand (Create) is further gated to the
+            // Note tab — generation tabs are derived content and don't
+            // get their own Create affordance.
+            if editorFocused && !dictation.isRecording {
                 HStack(spacing: 12) {
                     aiSparklesButton
-                    if !hasActiveTextSelection {
+                    if isNoteTab && !hasActiveTextSelection {
                         // The Create button targets the whole note, not
                         // the highlighted span, so it'd duplicate (and
                         // contradict) the in-selection AI menu the
