@@ -108,17 +108,28 @@ struct OnboardingView: View {
             if step == .capture && capturePhase == .prompt {
                 StarfieldBlurb(active: true)
                     .ignoresSafeArea()
+                    // Held at a permanent dim so the captureOverlay headline
+                    // ("Let's capture your first idea") and the press-and-hold
+                    // caption read cleanly on top — the blurb is the destination
+                    // background, not the focal element.
+                    .opacity(0.65)
                     .contentShape(Rectangle())
                     .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 30) {
                         startCaptureRecording()
                     }
-                    // Insertion picks up the back half of the zoom: stars
-                    // rush past as the camera settles inside the cluster.
-                    // Removal stays as a plain fade so transitioning out of
-                    // .prompt into the waveform/choose list is unchanged.
+                    // Plain cross-fade. The previous insertion was
+                    // .scale(scale: 1.8) combined with opacity, which made the
+                    // destination blurb appear at 1.8× and contract into place
+                    // on top of the still-dispersing cluster — the eye read it
+                    // as a second image landing on top mid-zoom. Removing the
+                    // scale lets the cluster's own scale-out own the entire
+                    // "zoom in" beat, and the blurb just fades up from behind
+                    // it on the same curve. Removal stays as a plain fade so
+                    // transitioning out of .prompt into the waveform / choose
+                    // list is unchanged.
                     .transition(
                         .asymmetric(
-                            insertion: .scale(scale: 1.8).combined(with: .opacity),
+                            insertion: .opacity,
                             removal: .opacity
                         )
                     )
