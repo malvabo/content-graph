@@ -88,7 +88,7 @@ function AppInner() {
   // the rest of the session (otherwise unmounting on nav blows away draft state,
   // accepted insights, undo stack, etc.).
   const [scriptSenseEverOpened, setScriptSenseEverOpened] = useState(false);
-  const [canvasMode, setCanvasMode] = useState<'canvas' | 'quick'>('canvas');
+  const [canvasMode, setCanvasMode] = useState<'canvas' | 'quick'>('quick');
   useEffect(() => { if (activeView === 'scriptsense') setScriptSenseEverOpened(true); }, [activeView]);
   useKeyboardShortcuts();
 
