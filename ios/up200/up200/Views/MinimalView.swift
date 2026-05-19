@@ -884,6 +884,13 @@ struct MinimalNoteDetailPage: View {
         .contentShape(Rectangle())
         .onTapGesture {
             isEditingBody = true
+            // SwiftUI's TextEditor with a nil selection lands the cursor
+            // at the end of the document on focus and scrolls the editor
+            // to it — which reads as the view yanking to the bottom when
+            // the user just wanted to tap into the prose. Anchor the
+            // insertion point at the top so the editor opens where the
+            // reader was instead of jumping past the visible content.
+            editSelection = TextSelection(insertionPoint: editText.startIndex)
             DispatchQueue.main.async { editorFocused = true }
         }
     }

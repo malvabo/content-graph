@@ -756,6 +756,14 @@ struct ProjectGroupDetailView: View {
                                         }
                                     } else {
                                         isEditingBody = true
+                                        // TextEditor with nil selection
+                                        // lands the cursor at the end of
+                                        // the document on focus and scrolls
+                                        // to it; anchor the insertion point
+                                        // at the top so the editor opens
+                                        // where the reader was instead of
+                                        // yanking past the visible content.
+                                        editSelection = TextSelection(insertionPoint: editText.startIndex)
                                         DispatchQueue.main.async { editorFocused = true }
                                     }
                                 }
