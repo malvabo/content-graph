@@ -1024,20 +1024,35 @@ private struct NoteEditorPage: View {
                         // Magic + chat pair anchored just above the highlighted
                         // text — mirrors the bottom-of-screen pair but bound to
                         // the current selection instead of the whole note.
+                        //
+                        // The bubble clears 60pt above rect.minY so it sits
+                        // outside iOS's ~44pt accessibility tap target around
+                        // the leading selection handle (the handle's knob sits
+                        // ~12pt above the line top, with the touch target
+                        // extending another 22pt up). Without that clearance,
+                        // grabbing the handle to extend the selection upward
+                        // — or letting the finger drift up while extending
+                        // vertically — lands on the bubble instead.
+                        //
+                        // The animations are scoped to the overlay's contents
+                        // rather than chained after .overlay on the editor,
+                        // so SwiftUI doesn't fire an implicit animation
+                        // transaction on the UITextView wrapper every time
+                        // the selection rect ticks during a handle drag.
                         GeometryReader { proxy in
                             if let rect = selectionRect, bodySelection.length > 0 {
                                 let bubbleHalfWidth: CGFloat = 55
                                 let clampedX = min(max(rect.midX, bubbleHalfWidth), proxy.size.width - bubbleHalfWidth)
-                                let clampedY = max(30, rect.minY - 30)
+                                let clampedY = max(40, rect.minY - 60)
                                 selectionActionBubble
                                     .position(x: clampedX, y: clampedY)
                                     .transition(.scale(scale: 0.85).combined(with: .opacity))
                             }
                         }
+                        .animation(.spring(response: 0.30, dampingFraction: 0.85), value: selectionRect)
+                        .animation(.spring(response: 0.30, dampingFraction: 0.85), value: bodySelection.length > 0)
                         .allowsHitTesting(bodySelection.length > 0 && selectionRect != nil)
                     }
-                    .animation(.spring(response: 0.30, dampingFraction: 0.85), value: selectionRect)
-                    .animation(.spring(response: 0.30, dampingFraction: 0.85), value: bodySelection.length > 0)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
