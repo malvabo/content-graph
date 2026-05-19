@@ -151,7 +151,7 @@ function TextInput() {
     <div>
       <span style={FIELD_LABEL}>Text</span>
       <textarea
-        style={{ ...TEXTAREA, minHeight: 120 }}
+        style={{ ...TEXTAREA, minHeight: 220 }}
         placeholder="Paste or type your source text here"
         value={value}
         onChange={e => set(e.target.value)}
@@ -870,7 +870,7 @@ export default function QuickMode() {
               </div>
             </div>
             <textarea
-              style={{ ...TEXTAREA, minHeight: 96 }}
+              style={{ ...TEXTAREA, minHeight: 120 }}
               placeholder="Write your instruction here, or pick a template above"
               value={store.promptValue}
               onChange={e => { store.setPrompt(e.target.value); if (store.templateKey) store.setTemplate(null); }}
