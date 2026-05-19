@@ -69,16 +69,18 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             // SceneKit wide-constellation backdrop for the intro step only.
-            // On .constellation we hand the visual off to GeneratingCloudScene
-            // (same scene used during .capture/.generating) so the "one idea
-            // → graph of content" beat speaks in the same orange-spark
-            // vocabulary as the creation flow. On .capture the SceneKit view
-            // is hidden too — even at low opacity its warm gradient + cluster
-            // would patch a visible ghost layer on top of the starfield.
-            OnboardingSceneView(step: step.rawValue)
-                .opacity((step == .capture || step == .constellation) ? 0 : 1)
-                .animation(.easeInOut(duration: 0.65), value: step)
-                .ignoresSafeArea()
+            // Rendered conditionally instead of held at opacity 0 on later
+            // steps — SCNView paints into its own Metal-backed CAMetalLayer,
+            // which can keep compositing pixels through an outer SwiftUI
+            // .opacity(0) and leave a ghost dust pattern on top of the
+            // starfield after the dive. Tearing down the representable
+            // entirely on .constellation / .capture removes the layer, so
+            // nothing from the SceneKit cluster can leak onto the next beat.
+            if step == .intro {
+                OnboardingSceneView(step: step.rawValue)
+                    .ignoresSafeArea()
+                    .transition(.opacity.animation(.easeInOut(duration: 0.45)))
+            }
 
             if step == .constellation {
                 GeneratingCloudScene(generationStartedAt: constellationStartedAt)
