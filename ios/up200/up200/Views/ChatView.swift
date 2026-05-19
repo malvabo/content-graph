@@ -1639,29 +1639,10 @@ private struct RewriteSuggestionCard: View {
 // MARK: - Typing Indicator
 
 private struct TypingIndicator: View {
-    @State private var phase = 0
-
     var body: some View {
-        HStack(spacing: 5) {
-            ForEach(0..<3, id: \.self) { i in
-                Circle()
-                    .fill(AppInk.solid(phase == i ? 0.60 : 0.18))
-                    .frame(width: 6, height: 6)
-                    .animation(.easeInOut(duration: 0.28), value: phase)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(AppInk.solid(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .task {
-            while true {
-                do { try await Task.sleep(nanoseconds: 380_000_000) }
-                catch { break }
-                phase = (phase + 1) % 3
-            }
-        }
+        OrbitDotsCircle()
+            .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

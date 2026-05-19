@@ -353,12 +353,11 @@ struct ContentGenerator {
 
 // MARK: - Generation Banner
 
-struct GenerationBanner: View {
-    let isReady: Bool
-    var onTap: () -> Void
-    var onDismiss: () -> Void
-
-    @State private var glowPhase = false
+/// Animated cluster of dots orbiting inside a 36pt circle. Reused both
+/// as the loading glyph inside `GenerationBanner` and as the chat
+/// thinking indicator so the two surfaces share the same visual idiom.
+struct OrbitDotsCircle: View {
+    var diameter: CGFloat = 36
 
     private struct DotConfig {
         let radius: Double
@@ -377,31 +376,50 @@ struct GenerationBanner: View {
     ]
 
     var body: some View {
+        ZStack {
+            Circle()
+                .fill(AppInk.solid(0.06))
+                .frame(width: diameter, height: diameter)
+            TimelineView(.animation(minimumInterval: 1.0/30.0)) { tl in
+                let t = tl.date.timeIntervalSinceReferenceDate
+                ZStack {
+                    ForEach(dotConfigs.indices, id: \.self) { i in
+                        let cfg = dotConfigs[i]
+                        let angle = t * cfg.speed + cfg.phase
+                        let x = cfg.radius * cos(angle)
+                        let y = cfg.radius * sin(angle)
+                        let pulse = (sin(t * cfg.speed * 2.3 + cfg.phase) + 1) / 2
+                        Circle()
+                            .fill(AppInk.solid(cfg.opacity * (0.5 + 0.5 * pulse)))
+                            .frame(width: cfg.size * (0.75 + 0.25 * pulse),
+                                   height: cfg.size * (0.75 + 0.25 * pulse))
+                            .blur(radius: 0.8)
+                            .offset(x: x, y: y)
+                    }
+                }
+            }
+        }
+        .frame(width: diameter, height: diameter)
+        .clipShape(Circle())
+    }
+}
+
+struct GenerationBanner: View {
+    let isReady: Bool
+    var onTap: () -> Void
+    var onDismiss: () -> Void
+
+    @State private var glowPhase = false
+
+    var body: some View {
         HStack(spacing: 12) {
             ZStack {
-                Circle()
-                    .fill(AppInk.solid(0.06))
-                    .frame(width: 36, height: 36)
                 if !isReady {
-                    TimelineView(.animation(minimumInterval: 1.0/30.0)) { tl in
-                        let t = tl.date.timeIntervalSinceReferenceDate
-                        ZStack {
-                            ForEach(dotConfigs.indices, id: \.self) { i in
-                                let cfg = dotConfigs[i]
-                                let angle = t * cfg.speed + cfg.phase
-                                let x = cfg.radius * cos(angle)
-                                let y = cfg.radius * sin(angle)
-                                let pulse = (sin(t * cfg.speed * 2.3 + cfg.phase) + 1) / 2
-                                Circle()
-                                    .fill(AppInk.solid(cfg.opacity * (0.5 + 0.5 * pulse)))
-                                    .frame(width: cfg.size * (0.75 + 0.25 * pulse),
-                                           height: cfg.size * (0.75 + 0.25 * pulse))
-                                    .blur(radius: 0.8)
-                                    .offset(x: x, y: y)
-                            }
-                        }
-                    }
+                    OrbitDotsCircle()
                 } else {
+                    Circle()
+                        .fill(AppInk.solid(0.06))
+                        .frame(width: 36, height: 36)
                     Image(systemName: "checkmark")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(AppText.primary)

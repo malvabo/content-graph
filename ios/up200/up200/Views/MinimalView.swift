@@ -350,7 +350,15 @@ struct MinimalNoteDetailPage: View {
             if !dictation.isRecording {
                 HStack(spacing: 12) {
                     aiSparklesButton
-                    aiWandButton
+                    if !hasActiveTextSelection {
+                        // The Create button targets the whole note, not
+                        // the highlighted span, so it'd duplicate (and
+                        // contradict) the in-selection AI menu the
+                        // system surfaces over a live highlight. Hide it
+                        // until the user collapses the selection.
+                        aiWandButton
+                            .transition(.scale(scale: 0.85).combined(with: .opacity))
+                    }
                 }
                 .padding(.leading, 20)
                 .padding(.bottom, 8)
@@ -390,6 +398,7 @@ struct MinimalNoteDetailPage: View {
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: hasActiveTextSelection)
         .onChange(of: dictation.transcript) { _, newValue in
             let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return }
@@ -834,6 +843,14 @@ struct MinimalNoteDetailPage: View {
     }
 
     // MARK: Floating buttons
+
+    /// True iff the user has a non-collapsed highlight in the editor.
+    /// Drives the Create / wand button's visibility — that action
+    /// targets the whole note, so it shouldn't compete with the
+    /// in-selection AI menu the system surfaces over the highlight.
+    private var hasActiveTextSelection: Bool {
+        currentEditorSelectionRange() != nil
+    }
 
     /// Pulls a contiguous, non-collapsed range out of the live selection.
     /// Returns nil when there's just a cursor (lower == upper) or no
