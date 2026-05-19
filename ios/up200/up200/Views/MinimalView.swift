@@ -317,10 +317,29 @@ struct MinimalNoteDetailPage: View {
         return generations[selectedIndex - 1]
     }
 
-    private var headerTitle: String {
+    /// Title shown in the prominent row between the top bar and the tabs.
+    /// On the Note tab it tracks `editText`'s first line live so the
+    /// heading updates as the user types; on generation tabs it shows
+    /// the source note's title (the format label already lives in the
+    /// tab pill, so we don't repeat it here).
+    private var visibleTitle: String {
+        if isNoteTab {
+            let firstLine = editText.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
+            return firstLine.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
         let trimmed = note.displayTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed == "Untitled" { return "New note" }
-        return trimmed
+        return trimmed == "Untitled" ? "" : trimmed
+    }
+
+    /// Note-tab body with the title line stripped so the reader doesn't
+    /// echo the heading shown above the tabs. Returns "" when the body
+    /// has no newline (the whole text is the title with nothing after).
+    private var noteBodyWithoutTitle: String {
+        let body = editText
+        guard let nl = body.firstIndex(of: "\n") else { return "" }
+        var rest = String(body[body.index(after: nl)...])
+        while let c = rest.first, c == "\n" || c == "\r" { rest.removeFirst() }
+        return rest
     }
 
     private func formatLabel(_ outputType: String) -> String {
@@ -335,7 +354,16 @@ struct MinimalNoteDetailPage: View {
                 topBar
                     .padding(.horizontal, 16)
                     .padding(.top, 4)
-                    .padding(.bottom, 10)
+                    .padding(.bottom, 6)
+
+                if !visibleTitle.isEmpty {
+                    Text(visibleTitle)
+                        .font(.appTitle)
+                        .foregroundColor(AppText.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 12)
+                }
 
                 tabsBar
 
@@ -605,12 +633,6 @@ struct MinimalNoteDetailPage: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Back")
 
-            Text(headerTitle)
-                .font(.appBodyBold)
-                .foregroundColor(AppText.primary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-
             Spacer()
 
             TopBarPill {
@@ -717,9 +739,10 @@ struct MinimalNoteDetailPage: View {
     @ViewBuilder
     private var contentArea: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Title strip: format label on a generation tab, source labels
-            // (as tags) when multi-source. Hidden on the Note tab — the
-            // first line of the note body is its own title.
+            // Source-note chips when a generation pulls from more than
+            // one note. The format label and the note title both live
+            // above the tabs row now, so this is the only label strip
+            // the body itself carries.
             if let gen = currentGeneration {
                 generationHeader(gen)
             }
@@ -731,27 +754,16 @@ struct MinimalNoteDetailPage: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        // Breathing room under the grey divider that closes the tab strip.
-        // Generation tabs already get this from `generationHeader`'s 14pt
-        // top padding; the Note tab has no header so the body would
-        // otherwise hug the divider.
-        .padding(.top, (isNoteTab && !generations.isEmpty) ? 12 : 0)
+        // Breathing room under the grey divider that closes the tab strip
+        // when generations exist; without it the body would hug the line.
+        .padding(.top, generations.isEmpty ? 0 : 12)
     }
 
     @ViewBuilder
     private func generationHeader(_ gen: MinimalGeneration) -> some View {
-        Text(formatLabel(gen.outputType))
-            .font(.appTitle)
-            .foregroundColor(AppText.primary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
-            .padding(.top, 14)
-            .padding(.bottom, 6)
-
-        // Source-note tags, same visual language as ChatView's contextTagsBar.
-        // Only render when there's actually more than one source — solo
-        // generations (created from the current note alone) don't need a
-        // tag chip pointing back to the note the user is already inside.
+        // The format label already lives in the tab pill above, so we no
+        // longer repeat it as a heading here — only render the
+        // multi-source chips when they're needed for context.
         if gen.sourceLabels.count > 1 {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
@@ -801,7 +813,12 @@ struct MinimalNoteDetailPage: View {
 
     private var readerView: some View {
         ScrollView {
-            if editText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            // On the Note tab the first line is the heading shown above
+            // the tabs row, so the reader renders the body without it
+            // to avoid echoing the title. Generation tabs already have
+            // standalone content, so they render as-is.
+            let displayText = isNoteTab ? noteBodyWithoutTitle : editText
+            if displayText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text(isNoteTab ? "Tap to start typing" : "No content")
                     .font(.appReadingBody)
                     .foregroundColor(AppText.muted)
@@ -809,7 +826,7 @@ struct MinimalNoteDetailPage: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
             } else {
-                BodyParagraphsView(raw: editText)
+                BodyParagraphsView(raw: displayText)
                     .padding(.horizontal, 20)
                     .padding(.top, isNoteTab ? 4 : 8)
                     .padding(.bottom, 96)
