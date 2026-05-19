@@ -381,13 +381,24 @@ struct MinimalNoteDetailPage: View {
             // chat sheet mid-utterance.
             HStack(alignment: .center, spacing: 12) {
                 if !dictation.isRecording && !hasActiveTextSelection {
-                    // The Create button targets the whole tab body,
-                    // not the highlighted span, so it'd duplicate (and
-                    // contradict) the in-selection AI menu the system
-                    // surfaces over a live highlight. Hide it until
-                    // the user collapses the selection.
-                    aiWandButton
-                        .transition(.scale(scale: 0.85).combined(with: .opacity))
+                    if isNoteTab {
+                        // The Note tab's wand opens the full Create
+                        // modal — it targets the whole body, not the
+                        // highlighted span, so we still hide it while
+                        // a live selection is active (the in-selection
+                        // AI menu the system surfaces would otherwise
+                        // duplicate it).
+                        aiWandButton
+                            .transition(.scale(scale: 0.85).combined(with: .opacity))
+                    } else {
+                        // Generation tabs offer quick rewrite actions
+                        // (Make Shorter, Fix Grammar, …) instead of the
+                        // Create flow — the user is already inside an
+                        // AI output and the natural next step is to
+                        // refine it, not generate something new.
+                        aiSparklesButton
+                            .transition(.scale(scale: 0.85).combined(with: .opacity))
+                    }
                 }
 
                 if !dictation.isRecording {
@@ -900,7 +911,7 @@ struct MinimalNoteDetailPage: View {
                         .foregroundColor(AppText.primary)
                 }
             }
-            .frame(width: 56, height: 56)
+            .frame(width: 52, height: 52)
             .background(glassCircle)
         }
         .buttonStyle(.plain)
