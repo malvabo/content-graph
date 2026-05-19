@@ -1323,6 +1323,13 @@ struct NotesView: View {
     /// When nil, the view uses its own internal storage (Classic mode).
     var externalShowSearch: Binding<Bool>? = nil
     var externalSearchText: Binding<String>? = nil
+    /// Custom navigation destination for a tapped note. When set, takes
+    /// precedence over the default NoteEditorPage / DrawingCanvasView
+    /// branch. Minimal 1's home page uses this to push its own per-note
+    /// detail (with generation tabs) while keeping the row list,
+    /// pinned section, swipe actions, filter chips, and search overlay
+    /// behaviour intact.
+    var detailFor: ((Note) -> AnyView)? = nil
     @EnvironmentObject private var recording: RecordingController
     @Environment(\.scenePhase) private var scenePhase
     @State private var notes: [Note] = []
@@ -1376,7 +1383,13 @@ struct NotesView: View {
             note.body = transcript
             note.updatedAt = Date()
             notes.append(note)
-            scheduleSave()
+            // Persist immediately rather than via the 350 ms debounce —
+            // the navigation push below opens a detail page that may
+            // start editing the same note straight away (in-editor
+            // dictation, a typed addition). A debounced save would then
+            // race the detail page's save and overwrite the user's
+            // edits with the bare transcript snapshot.
+            NotesStore.saveInBackground(notes)
             editingNote = note
         }
         recording.showingSheet = true
@@ -1808,7 +1821,11 @@ struct NotesView: View {
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(item: $editingNote) { note in
-                if note.kind == .drawing {
+                if let detailFor {
+                    // Host-provided destination — Minimal 1 surfaces its
+                    // own per-note detail page with generation tabs.
+                    detailFor(note)
+                } else if note.kind == .drawing {
                     DrawingCanvasView(
                         initialNote: note,
                         onSave: { saved in
