@@ -102,11 +102,14 @@ const BLOBS = [
 // mix-blend-mode; the painted region's alpha is round all the way out, so there is
 // no rectangle to leak on iOS Safari.
 
+// 2×2 grid centered around (50%, 60%). Each tile travels to the draft orb at
+// (50%, 88%) on select — xOffset / yOffset are the deltas from the tile's grid
+// slot to that target.
 const PLATFORMS = [
-  { id: 'linkedin',  label: 'LinkedIn',  left: '16.5%', xOffset: '33.5vw', mergeRgb: '10,102,194',  glowRgb: '10,102,194'  },
-  { id: 'x',         label: 'X',         left: '39%',   xOffset: '11vw',   mergeRgb: '240,235,230', glowRgb: '90,90,90'    },
-  { id: 'instagram', label: 'Instagram', left: '61%',   xOffset: '-11vw',  mergeRgb: '225,48,108',  glowRgb: '201,48,102'  },
-  { id: 'threads',   label: 'Scripts',   left: '83.5%', xOffset: '-33.5vw',mergeRgb: '60,50,70',    glowRgb: '74,58,94'    },
+  { id: 'linkedin',  label: 'LinkedIn',  left: '33%', top: '50%', xOffset: '17vw',  yOffset: '38vh', mergeRgb: '10,102,194',  glowRgb: '10,102,194'  },
+  { id: 'x',         label: 'X',         left: '67%', top: '50%', xOffset: '-17vw', yOffset: '38vh', mergeRgb: '240,235,230', glowRgb: '90,90,90'    },
+  { id: 'instagram', label: 'Instagram', left: '33%', top: '70%', xOffset: '17vw',  yOffset: '18vh', mergeRgb: '225,48,108',  glowRgb: '201,48,102'  },
+  { id: 'threads',   label: 'Scripts',   left: '67%', top: '70%', xOffset: '-17vw', yOffset: '18vh', mergeRgb: '60,50,70',    glowRgb: '74,58,94'    },
 ] as const;
 
 // Cloud click-target 64px; halo extends to ~140px around it. Label sits 8px below
@@ -500,7 +503,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 animate={{
                   opacity: isDimmed ? 0 : (isTraveling ? 0 : 1),
                   scale:   isDimmed ? 0.7 : (isSelected && selPhase==='pulse' ? 1.15 : (isTraveling ? 0 : 1)),
-                  y:       isDimmed ? 20  : (isTraveling ? '28vh' : 0),
+                  y:       isDimmed ? 20  : (isTraveling ? p.yOffset : 0),
                   x:       isTraveling ? p.xOffset : '0vw',
                   filter:  'saturate(100%)',
                 }}
@@ -510,7 +513,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                   y:       isSelected&&selPhase==='travel' ? {type:'spring',stiffness:55,damping:18,mass:1} : (isDimmed ? {duration:0.25} : {delay:entranceDelay,...ENT_SPRING}),
                 }}
                 style={{
-                  position:'absolute', left:p.left, top:'60%',
+                  position:'absolute', left:p.left, top:p.top,
                   marginLeft: -(BULB/2), marginTop: -(BULB/2),
                   width: BULB, height: BULB,
                   cursor: selId ? 'default' : 'pointer',
@@ -587,7 +590,7 @@ export default function MobileOnboarding({ onComplete, initialPhase }: Props) {
                 animate={{ opacity: selId ? 0 : 0.8 }}
                 transition={{ delay: selId ? 0 : entranceDelay+0.04, duration: selId ? 0.2 : 0.28 }}
                 style={{
-                  position:'absolute', left:p.left, top:'calc(60% + 54px)',
+                  position:'absolute', left:p.left, top:`calc(${p.top} + 54px)`,
                   transform:'translateX(-50%)',
                   fontFamily:'var(--font-sans)', fontSize:13, fontWeight:500,
                   color:'#ffffff', letterSpacing:'0.02em',
