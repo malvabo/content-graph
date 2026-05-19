@@ -348,40 +348,39 @@ struct MinimalNoteDetailPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            // Bottom-leading: the AI toolbar (sparkles / wand). Mirrors
-            // the dictation mic at bottom-right: only surfaces while the
-            // user is actually engaging the text (editor focused), and
-            // hides during dictation so the recording row owns the
-            // bottom edge. The wand (Create) is further gated to the
-            // Note tab — generation tabs are derived content and don't
-            // get their own Create affordance.
-            if editorFocused && !dictation.isRecording {
-                HStack(spacing: 12) {
+            // Unified bottom bar. When the user is just reading, the
+            // "Ask AI" pill spans the row on its own. The moment the
+            // editor focuses, the magic icons (sparkles + Create wand,
+            // Create only on the Note tab) slide in on the left and
+            // the dictation mic on the right — same three-element
+            // posture as the reference design. Dictation's recording
+            // row takes the whole bar over while it's live so the user
+            // can't tap into the chat sheet mid-utterance.
+            HStack(alignment: .center, spacing: 12) {
+                if editorFocused && !dictation.isRecording {
                     aiSparklesButton
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
                     if isNoteTab && !hasActiveTextSelection {
                         // The Create button targets the whole note, not
                         // the highlighted span, so it'd duplicate (and
                         // contradict) the in-selection AI menu the
-                        // system surfaces over a live highlight. Hide it
-                        // until the user collapses the selection.
+                        // system surfaces over a live highlight. Hide
+                        // it until the user collapses the selection.
                         aiWandButton
                             .transition(.scale(scale: 0.85).combined(with: .opacity))
                     }
                 }
-                .padding(.leading, 20)
-                .padding(.bottom, 8)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .transition(.scale(scale: 0.85).combined(with: .opacity))
-            }
 
-            // Bottom-trailing: chat sits on top, in-editor dictation
-            // stacks below it when the user focuses the editor. Both are
-            // hidden while dictating except for the dictation row itself.
-            VStack(spacing: 12) {
                 if !dictation.isRecording {
-                    aiChatButton
+                    aiChatPill
                         .transition(.scale(scale: 0.85).combined(with: .opacity))
+                } else {
+                    // Recording row has its own natural width; without
+                    // the pill absorbing the slack, push it to the
+                    // trailing edge so it doesn't hug the leading.
+                    Spacer(minLength: 0)
                 }
+
                 if dictation.isRecording || editorFocused {
                     DictationControls(
                         dictation: dictation,
@@ -400,9 +399,9 @@ struct MinimalNoteDetailPage: View {
                     .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
             }
-            .padding(.trailing, 20)
+            .padding(.horizontal, 20)
             .padding(.bottom, 8)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
@@ -942,7 +941,14 @@ struct MinimalNoteDetailPage: View {
         return (snippet, NSRange(range, in: editText))
     }
 
-    private var aiChatButton: some View {
+    /// Bottom "Ask AI" pill — the chat entry point styled as a
+    /// fillable field. Leading `OrbitDotsCircle` reuses the loading
+    /// glyph from `GenerationBanner` so the chat surface shares the
+    /// same visual idiom as content generation. Tapping anywhere on
+    /// the pill opens the existing chat sheet; the user types in the
+    /// sheet's composer (the "existing chat form field"), so the
+    /// chat history and attachment plumbing stay untouched.
+    private var aiChatPill: some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             // Same as sparkles: freeze the live selection before SwiftUI
@@ -952,14 +958,29 @@ struct MinimalNoteDetailPage: View {
             persistCurrent()
             showChat = true
         } label: {
-            Image(systemName: "message")
-                .font(.system(size: 19, weight: .regular))
-                .foregroundColor(AppText.primary)
-                .frame(width: 56, height: 56)
-                .background(glassCircle)
+            HStack(spacing: 10) {
+                OrbitDotsCircle(diameter: 36)
+                Text("Ask AI")
+                    .font(.appBody)
+                    .foregroundColor(AppInk.solid(0.45))
+                Spacer(minLength: 0)
+            }
+            .padding(.leading, 8)
+            .padding(.trailing, 16)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(.regularMaterial)
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(AppInk.solid(0.15), lineWidth: 0.5)
+                    )
+                    .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
+            )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Chat about this note")
+        .accessibilityLabel("Ask AI about this note")
     }
 
     private var aiWandButton: some View {
