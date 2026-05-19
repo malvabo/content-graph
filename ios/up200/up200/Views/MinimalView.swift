@@ -360,6 +360,13 @@ struct MinimalNoteDetailPage: View {
                     Text(visibleTitle)
                         .font(.appTitle)
                         .foregroundColor(AppText.primary)
+                        // Cap at 2 lines so a long note title doesn't
+                        // push the tab strip below the fold on smaller
+                        // phones (or under AX Dynamic Type). The scale
+                        // factor lets a moderately-long title squeeze
+                        // onto one line before wrapping.
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 12)
@@ -401,15 +408,16 @@ struct MinimalNoteDetailPage: View {
                     }
                 }
 
-                if !dictation.isRecording {
-                    aiChatPill
-                        .transition(.scale(scale: 0.85).combined(with: .opacity))
-                } else {
-                    // Recording row has its own natural width; without
-                    // the pill absorbing the slack, push it to the
-                    // trailing edge so it doesn't hug the leading.
-                    Spacer(minLength: 0)
-                }
+                // Keep the pill in the layout (its inner frame(maxWidth:
+                // .infinity) absorbs the slack and pushes DictationControls
+                // to the trailing edge) but fade it out and disable taps
+                // while dictation is live. Previous version conditionally
+                // swapped to a Spacer, and the Spacer's silent insertion
+                // popped the dictation row visibly each time the user
+                // started or finished recording.
+                aiChatPill
+                    .opacity(dictation.isRecording ? 0 : 1)
+                    .allowsHitTesting(!dictation.isRecording)
 
                 DictationControls(
                     dictation: dictation,
