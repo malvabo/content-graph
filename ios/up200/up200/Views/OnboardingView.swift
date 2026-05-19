@@ -87,7 +87,7 @@ struct OnboardingView: View {
             if step == .intro {
                 OnboardingSceneView(step: step.rawValue)
                     .ignoresSafeArea()
-                    .transition(.opacity.animation(.easeInOut(duration: 0.45)))
+                    .transition(.opacity.animation(.easeInOut(duration: 0.85)))
             }
 
             if step == .constellation {
@@ -95,19 +95,23 @@ struct OnboardingView: View {
                                      frozenAt: diveStartedAt)
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
-                    // On removal (.constellation → .capture) the cluster
+                    // Insertion (.intro → .constellation): the cloud appears
+                    // at 1.7× and contracts to its final size while fading
+                    // in, so the eye reads the crossing as the camera
+                    // *pulling back* from the wide constellation to reveal
+                    // the cloud as a discrete object — not a hard cut. Plain
+                    // opacity here was the source of the "abrupt change"
+                    // feedback; the spatial motion gives the transition
+                    // somewhere to land.
+                    //
+                    // Removal (.constellation → .capture): the cluster
                     // scales past the camera and fades — the user is
                     // *flying into* the cloud rather than cutting to a new
-                    // screen. Scale dialled back from 4.5× → 3.5× because
-                    // the larger value over-amplified the cluster's still
-                    // visible internal animations at the edges of the dive
-                    // even with the scene frozen; 3.5× is enough to read
-                    // as "past the camera" without the corners shearing.
-                    // Insertion stays as a plain fade so arriving at this
-                    // step is unchanged.
+                    // screen. 3.5× is enough to read as "past the camera"
+                    // without the corners shearing.
                     .transition(
                         .asymmetric(
-                            insertion: .opacity,
+                            insertion: .scale(scale: 1.7).combined(with: .opacity),
                             removal: .scale(scale: 3.5).combined(with: .opacity)
                         )
                     )
@@ -213,7 +217,13 @@ struct OnboardingView: View {
                     // settled — the orange animation reads as starting after
                     // a beat rather than launching mid-fade.
                     constellationStartedAt = Date().addingTimeInterval(1.2)
-                    withAnimation(.easeInOut(duration: 0.45)) {
+                    // easeOut so the zoom-out decelerates into rest — the
+                    // cloud reads as a camera pulling back and settling at
+                    // its final distance. 0.85s gives the eye time to track
+                    // the contraction; the previous 0.45s easeInOut was too
+                    // fast for the new spatial motion to register and the
+                    // crossing felt like a cut.
+                    withAnimation(.easeOut(duration: 0.85)) {
                         step = .constellation
                     }
                 }) {
