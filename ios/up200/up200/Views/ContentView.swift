@@ -2311,12 +2311,21 @@ private struct SimpleHomeHeader: View {
 /// visually distinct from the typical mic / record-dot icons).
 private struct SimpleCreateBar: View {
     let onTap: () -> Void
+    /// Minimal 1 hook. When non-nil, a chat glass circle is rendered to
+    /// the left of the mic — tapping it opens a global ChatView (no
+    /// pre-selected note context), parallel to the in-detail chat
+    /// button inside MinimalNoteDetailPage. Simple mode passes nil so
+    /// its bottom chrome stays a single capture button.
+    var onChatTap: (() -> Void)? = nil
 
     @State private var impact = UIImpactFeedbackGenerator(style: .light)
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 12) {
             Spacer()
+            if let onChatTap {
+                chatButton(onChatTap)
+            }
             captureButton
         }
     }
@@ -2352,6 +2361,37 @@ private struct SimpleCreateBar: View {
         .accessibilityLabel("Record a note")
         .onAppear { impact.prepare() }
     }
+
+    private func chatButton(_ tap: @escaping () -> Void) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            tap()
+        } label: {
+            Image(systemName: "message.fill")
+                .font(.system(size: 22, weight: .regular))
+                .foregroundColor(BrandColor.amber)
+                .frame(width: 64, height: 64)
+                .background(Circle().fill(BrandColor.amber.opacity(0.12)))
+                .appLiquidGlass(in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    BrandColor.amber.opacity(0.42),
+                                    BrandColor.amber.opacity(0.12)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 0.6
+                        )
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open chat")
+    }
 }
 
 // MARK: - Content View
@@ -2366,6 +2406,9 @@ struct ContentView: View {
     @State private var keyboardVisible = false
     @State private var showProfile = false
     @State private var newNoteTrigger = 0
+    /// Minimal 1 only: drives the global ChatView sheet fired by the
+    /// chat circle next to the mic in `SimpleCreateBar`.
+    @State private var showMinimalChat = false
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
     @StateObject private var recordingController = RecordingController()
@@ -2389,6 +2432,12 @@ struct ContentView: View {
                     ProfileView(selectedTab: $selectedTab, isModal: true)
                         .environmentObject(chromeController)
                 }
+                .sheet(isPresented: $showMinimalChat) {
+                    // Minimal 1's bottom-bar chat — opens with no
+                    // preselected note context so the user can
+                    // @mention any note from the chat input.
+                    ChatView()
+                }
                 // Tab bar is the inner inset (anchored at screen bottom).
                 // Mini bar is the outer inset (stacks above the tab bar naturally).
                 // This ordering ensures correct visual stacking on all iOS versions:
@@ -2398,13 +2447,19 @@ struct ContentView: View {
                         Group {
                             if minimalMode {
                                 // Minimal 1 shares Simple's floating mic
-                                // — voice capture is the only top-level
-                                // affordance, so a single capture button
-                                // is enough chrome.
-                                SimpleCreateBar(onTap: {
-                                    selectedTab = .notes
-                                    newNoteTrigger &+= 1
-                                })
+                                // for voice capture, and adds a chat
+                                // glass circle to the left of it for a
+                                // global ChatView (no preselected note
+                                // context).
+                                SimpleCreateBar(
+                                    onTap: {
+                                        selectedTab = .notes
+                                        newNoteTrigger &+= 1
+                                    },
+                                    onChatTap: {
+                                        showMinimalChat = true
+                                    }
+                                )
                             } else if simpleMode {
                                 SimpleCreateBar(onTap: {
                                     selectedTab = .notes
