@@ -714,6 +714,11 @@ struct MinimalNoteDetailPage: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        // Breathing room under the grey divider that closes the tab strip.
+        // Generation tabs already get this from `generationHeader`'s 14pt
+        // top padding; the Note tab has no header so the body would
+        // otherwise hug the divider.
+        .padding(.top, (isNoteTab && !generations.isEmpty) ? 12 : 0)
     }
 
     @ViewBuilder
