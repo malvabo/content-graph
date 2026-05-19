@@ -158,9 +158,6 @@ function TextInput() {
         onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
         onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
       />
-      <div style={{ textAlign: 'right', fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 4, fontFamily: 'var(--font-sans)' }}>
-        {value.length.toLocaleString()}
-      </div>
     </div>
   );
 }
@@ -501,33 +498,26 @@ const ResultCard = memo(function ResultCard({ label, content }: { label: string;
   );
 });
 
-// ─── Accordion section ────────────────────────────────────────────────────────
+// ─── Section header ───────────────────────────────────────────────────────────
 
-function AccordionSection({ title, sub, open, onToggle, children }: {
-  title: string; sub: string; open: boolean; onToggle: () => void; children: React.ReactNode;
+const CONTENT_MAX_WIDTH = 880;
+const SECTION_PAD_X = 32;
+
+function Section({ title, sub, children }: {
+  title: string; sub: string; children: React.ReactNode;
 }) {
   return (
     <div>
       <div
-        onClick={onToggle}
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '20px 40px', cursor: 'pointer', userSelect: 'none',
+          display: 'flex', alignItems: 'baseline', gap: 10,
+          padding: `20px ${SECTION_PAD_X}px 12px`, userSelect: 'none',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-          <span style={{ fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: '22px' }}>{title}</span>
-          <span style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>— {sub}</span>
-        </div>
-        <svg
-          width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="var(--color-text-tertiary)" strokeWidth="2" strokeLinecap="round"
-          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms', flexShrink: 0 }}
-        >
-          <path d="m6 9 6 6 6-6"/>
-        </svg>
+        <span style={{ fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: '22px' }}>{title}</span>
+        <span style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>— {sub}</span>
       </div>
-      {open && <div style={{ padding: '0 40px 24px' }}>{children}</div>}
+      <div style={{ padding: `0 ${SECTION_PAD_X}px 24px` }}>{children}</div>
     </div>
   );
 }
@@ -557,9 +547,6 @@ export default function QuickMode() {
   const store = useQuickModeStore();
 
   const [view, setView] = useState<View>('setup');
-  const [sectionsOpen, setSectionsOpen] = useState({ sources: true, prompt: true, outputs: true });
-  const toggleSection = (k: keyof typeof sectionsOpen) =>
-    setSectionsOpen(s => ({ ...s, [k]: !s[k] }));
 
   // Run state lives locally — resets on mode switch, which is fine
   const [runState, setRunState] = useState<RunState>('idle');
@@ -570,6 +557,13 @@ export default function QuickMode() {
 
   const isRunning = runState === 'running';
   const isDone = runState === 'done';
+
+  // ── Status line for the sticky action bar ──
+  const sourceCharCount =
+    (store.selectedSources.includes('text')  ? store.textValue.length         : 0) +
+    (store.selectedSources.includes('url')   ? store.urlFetchedText.length    : 0) +
+    (store.selectedSources.includes('file')  ? store.fileText.length          : 0) +
+    (store.selectedSources.includes('voice') ? store.voiceTranscript.length   : 0);
 
   // ── Validation ──
   const hasSourceContent = store.selectedSources.length > 0 && store.selectedSources.some(t => {
@@ -736,7 +730,7 @@ export default function QuickMode() {
     return (
       <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', background: 'var(--color-bg)', fontFamily: 'var(--font-sans)' }}>
         <style>{STYLES}</style>
-        <div style={{ padding: '28px 40px', maxWidth: 720 }}>
+        <div style={{ padding: `28px ${SECTION_PAD_X}px`, maxWidth: CONTENT_MAX_WIDTH, margin: '0 auto' }}>
           <button
             onClick={backToSetup}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--color-text-secondary)', fontFamily: 'var(--font-sans)', padding: 0, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 28 }}
@@ -783,104 +777,128 @@ export default function QuickMode() {
   }
 
   // ── Setup page ──
+  // Status line: what's missing, or a live summary of what's picked.
+  let statusLine: React.ReactNode;
+  if (!hasSourceContent) {
+    statusLine = store.selectedSources.length === 0
+      ? 'Pick a source to start'
+      : 'Add content to your source';
+  } else if (store.promptValue.trim().length === 0) {
+    statusLine = 'Write a prompt or pick a template';
+  } else if (store.selectedOutputs.length === 0) {
+    statusLine = 'Pick at least one output format';
+  } else {
+    const srcWord = store.selectedSources.length === 1 ? 'source' : 'sources';
+    const outWord = store.selectedOutputs.length === 1 ? 'output' : 'outputs';
+    statusLine = `${store.selectedSources.length} ${srcWord} · ${sourceCharCount.toLocaleString()} chars · ${store.selectedOutputs.length} ${outWord}`;
+  }
+
   return (
-    <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', background: 'var(--color-bg)', fontFamily: 'var(--font-sans)' }}>
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--color-bg)', fontFamily: 'var(--font-sans)' }}>
       <style>{STYLES}</style>
 
-      <AccordionSection
-        title="Sources" sub="Choose what you're working with"
-        open={sectionsOpen.sources} onToggle={() => toggleSection('sources')}
-      >
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: store.selectedSources.length > 0 ? 20 : 0 }}>
-          {SOURCE_DEFS.map(({ key, label, icon }) => {
-            const active = store.selectedSources.includes(key);
-            return (
-              <button key={key} onClick={() => toggleSource(key)} className={`qm-chip${active ? ' active' : ''}`} style={CHIP_BASE}>
-                {icon}{label}
-              </button>
-            );
-          })}
-        </div>
-        {store.selectedSources.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {store.selectedSources.map(type => (
-              <div key={type} className="qm-source-input">
-                {type === 'text'  && <TextInput />}
-                {type === 'url'   && <UrlInput />}
-                {type === 'file'  && <FileInput />}
-                {type === 'voice' && <VoiceInput />}
+      {/* Scrollable composition area, centered with a desktop max-width. */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ maxWidth: CONTENT_MAX_WIDTH, margin: '0 auto' }}>
+          <Section title="Sources" sub="Choose what you're working with">
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: store.selectedSources.length > 0 ? 20 : 0 }}>
+              {SOURCE_DEFS.map(({ key, label, icon }) => {
+                const active = store.selectedSources.includes(key);
+                return (
+                  <button key={key} onClick={() => toggleSource(key)} className={`qm-chip${active ? ' active' : ''}`} style={CHIP_BASE}>
+                    {icon}{label}
+                  </button>
+                );
+              })}
+            </div>
+            {store.selectedSources.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {store.selectedSources.map(type => (
+                  <div key={type} className="qm-source-input">
+                    {type === 'text'  && <TextInput />}
+                    {type === 'url'   && <UrlInput />}
+                    {type === 'file'  && <FileInput />}
+                    {type === 'voice' && <VoiceInput />}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </AccordionSection>
+            )}
+          </Section>
 
-      <div style={SECTION_DIVIDER} />
+          <div style={SECTION_DIVIDER} />
 
-      <AccordionSection
-        title="Prompt" sub="Tell it what to do"
-        open={sectionsOpen.prompt} onToggle={() => toggleSection('prompt')}
-      >
-        <div style={{ overflowX: 'auto', display: 'flex', gap: 8, paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 12 }}>
-          {QUICK_TEMPLATES.map(tpl => {
-            const active = store.templateKey === tpl.key;
-            return (
-              <button
-                key={tpl.key}
-                onClick={() => selectTemplate(tpl.key)}
-                className={`qm-chip${active ? ' active' : ''}`} style={{ ...CHIP_BASE, flexShrink: 0 }}
-              >
-                {tpl.label}
-              </button>
-            );
-          })}
+          <Section title="Prompt" sub="Tell it what to do">
+            <div style={{ overflowX: 'auto', display: 'flex', gap: 8, paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 12 }}>
+              {QUICK_TEMPLATES.map(tpl => {
+                const active = store.templateKey === tpl.key;
+                return (
+                  <button
+                    key={tpl.key}
+                    onClick={() => selectTemplate(tpl.key)}
+                    className={`qm-chip${active ? ' active' : ''}`} style={{ ...CHIP_BASE, flexShrink: 0 }}
+                  >
+                    {tpl.label}
+                  </button>
+                );
+              })}
+            </div>
+            <textarea
+              style={{ ...TEXTAREA, minHeight: 100 }}
+              placeholder="Write your instruction here, or pick a template above"
+              value={store.promptValue}
+              onChange={e => { store.setPrompt(e.target.value); if (store.templateKey) store.setTemplate(null); }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
+            />
+          </Section>
+
+          <div style={SECTION_DIVIDER} />
+
+          <Section title="Outputs" sub="Pick your formats">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
+              {QUICK_OUTPUTS.map(({ key, label }) => {
+                const active = store.selectedOutputs.includes(key);
+                return (
+                  <button
+                    key={key}
+                    onClick={() => toggleOutput(key)}
+                    className={`qm-chip${active ? ' active' : ''}`} style={{ ...CHIP_BASE, borderRadius: 'var(--radius-md)', padding: '10px 14px', justifyContent: 'flex-start' }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </Section>
+
+          <div style={{ height: 24 }} />
         </div>
-        <textarea
-          style={{ ...TEXTAREA, minHeight: 100 }}
-          placeholder="Write your instruction here, or pick a template above"
-          value={store.promptValue}
-          onChange={e => { store.setPrompt(e.target.value); if (store.templateKey) store.setTemplate(null); }}
-          onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
-          onBlur={e => { e.currentTarget.style.borderColor = 'var(--color-border-default)'; }}
-        />
-      </AccordionSection>
-
-      <div style={SECTION_DIVIDER} />
-
-      <AccordionSection
-        title="Outputs" sub="Pick your formats"
-        open={sectionsOpen.outputs} onToggle={() => toggleSection('outputs')}
-      >
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-          {QUICK_OUTPUTS.map(({ key, label }) => {
-            const active = store.selectedOutputs.includes(key);
-            return (
-              <button
-                key={key}
-                onClick={() => toggleOutput(key)}
-                className={`qm-chip${active ? ' active' : ''}`} style={{ ...CHIP_BASE, borderRadius: 'var(--radius-md)', padding: '10px 14px', justifyContent: 'flex-start' }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </AccordionSection>
-
-      <div style={SECTION_DIVIDER} />
-
-      <div style={{ padding: '20px 40px', display: 'flex', justifyContent: 'flex-end' }}>
-        <button
-          onClick={doRun}
-          disabled={!canRun}
-          className="btn btn-run"
-          style={{ opacity: !canRun ? 0.45 : 1, cursor: !canRun ? 'default' : 'pointer' }}
-        >
-          Run →
-        </button>
       </div>
 
-      <div style={{ height: 24 }} />
+      {/* Sticky action bar — status on the left, Run on the right. */}
+      <div style={{
+        flexShrink: 0,
+        background: 'var(--color-bg)',
+        borderTop: '1px solid var(--color-border-subtle)',
+      }}>
+        <div style={{
+          maxWidth: CONTENT_MAX_WIDTH, margin: '0 auto',
+          padding: `12px ${SECTION_PAD_X}px`,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+        }}>
+          <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
+            {statusLine}
+          </span>
+          <button
+            onClick={doRun}
+            disabled={!canRun}
+            className="btn btn-run"
+            style={{ opacity: !canRun ? 0.45 : 1, cursor: !canRun ? 'default' : 'pointer' }}
+          >
+            Run →
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
