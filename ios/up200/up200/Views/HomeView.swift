@@ -86,6 +86,27 @@ private let allTemplates: [ContentTemplate] = [
 struct AIService {
     private static var apiKey: String { KeychainService.load() ?? "" }
 
+    /// Treat an AI-generated title as redundant when it just rephrases
+    /// the body's first line — exact match, one containing the other,
+    /// or matching once case and punctuation are stripped. Without this
+    /// fuzzier check a body starting with "Fragmented speech workflow"
+    /// can still get an AI title like "Fragmented Speech Workflow." or
+    /// "Fragmented speech workflow notes" prepended, leaving two
+    /// near-identical title-looking lines at the top of the note.
+    static func titleDuplicatesFirstLine(_ aiTitle: String, firstLine: String) -> Bool {
+        let normalize: (String) -> String = { s in
+            s.lowercased()
+                .components(separatedBy: .punctuationCharacters).joined()
+                .components(separatedBy: .whitespacesAndNewlines)
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+        }
+        let t = normalize(aiTitle)
+        let f = normalize(firstLine)
+        guard !t.isEmpty, !f.isEmpty else { return t == f }
+        return t == f || f.contains(t) || t.contains(f)
+    }
+
     static func generateTitle(from text: String) async -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return "Untitled" }
@@ -210,7 +231,7 @@ struct AIService {
         guard !cleaned.isEmpty else { return nil }
         let firstLine = trimmed.split(whereSeparator: \.isNewline).first
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
-        guard cleaned.lowercased() != firstLine.lowercased() else { return nil }
+        guard !titleDuplicatesFirstLine(cleaned, firstLine: firstLine) else { return nil }
         return cleaned + "\n" + body
     }
 }
