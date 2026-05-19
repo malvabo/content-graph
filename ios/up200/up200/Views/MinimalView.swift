@@ -348,6 +348,17 @@ struct MinimalNoteDetailPage: View {
     @State private var isEditingBody: Bool = false
     @FocusState private var editorFocused: Bool
 
+    /// Live cursor / selection state in the body editor. When the user
+    /// has highlighted a range, both the sparkles AI menu and the chat
+    /// sheet operate on that substring (rather than the whole tab) and
+    /// a follow-up rewrite is spliced back at the same range.
+    @State private var editSelection: TextSelection? = nil
+    /// Frozen copy of `editSelection`'s range, captured at the moment an
+    /// AI sheet opens. The live selection collapses to a cursor as soon
+    /// as the user taps a button — without this snapshot the AI flow
+    /// would receive an empty range and silently overwrite the whole body.
+    @State private var aiSelectionRange: Range<String.Index>? = nil
+
     /// In-editor dictation. Mirrors NoteEditorPage's pattern: a small
     /// `mic.badge.plus` glass button parks itself bottom-right whenever
     /// the editor is focused or recording; tapping it begins live
@@ -509,8 +520,37 @@ struct MinimalNoteDetailPage: View {
         .onReceive(NotificationCenter.default.publisher(for: .minimalGenStoreDidChange)) { _ in
             reloadGenerations()
         }
-        .sheet(isPresented: $showChat, onDismiss: { reloadGenerations() }) {
-            ChatView(initialNoteContextID: note.id)
+        .sheet(isPresented: $showChat, onDismiss: {
+            reloadGenerations()
+            // Don't let a stale chat range leak into a subsequent
+            // sparkles tap — the AI preview sheet clears its own
+            // range on close; this is the parallel for chat.
+            aiSelectionRange = nil
+        }) {
+            // Forward any active highlight as the chat's seed snippet so
+            // a rewrite the user accepts lands surgically at that exact
+            // range instead of a document-wide find/replace. The chat
+            // also gets a "Selection in <tab>" chip pointing back to the
+            // tab the user was viewing.
+            let (snippet, range) = chatSelectionPayload()
+            let selectionTitle: String? = {
+                guard snippet != nil else { return nil }
+                if isNoteTab {
+                    let titled = note.displayTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                    return titled.isEmpty ? nil : "Selection in \(titled)"
+                }
+                if let gen = currentGeneration {
+                    return "Selection in \(formatLabel(gen.outputType))"
+                }
+                return nil
+            }()
+            ChatView(
+                initialContextIDs: [],
+                initialNoteContextID: note.id,
+                initialSelection: snippet,
+                initialSelectionTitle: selectionTitle,
+                initialSelectionRange: range
+            )
         }
         .sheet(isPresented: $showGenerateSheet) {
             MinimalGenerateSheet(
@@ -524,7 +564,21 @@ struct MinimalNoteDetailPage: View {
         .sheet(isPresented: $showAIMenu) {
             AIActionsSheet { label, icon, instruction in
                 showAIMenu = false
-                runAITransform(instruction: instruction, label: label, icon: icon, source: editText)
+                // When a range was frozen on tap, slice the source from
+                // it so the rewrite stays surgical; otherwise fall back
+                // to the whole tab body and clear the (stale or empty)
+                // range so apply doesn't try to splice into nothing.
+                let source: String
+                if let range = aiSelectionRange,
+                   range.lowerBound != range.upperBound,
+                   editText.indices.contains(range.lowerBound),
+                   range.upperBound <= editText.endIndex {
+                    source = String(editText[range])
+                } else {
+                    aiSelectionRange = nil
+                    source = editText
+                }
+                runAITransform(instruction: instruction, label: label, icon: icon, source: source)
             }
         }
         .sheet(isPresented: $showAIPreview) {
@@ -538,7 +592,17 @@ struct MinimalNoteDetailPage: View {
                 onApply: {
                     let chosen = aiPreviewCurrentVariant
                     guard !chosen.isEmpty else { return }
-                    editText = chosen
+                    // Splice into the captured selection range when we
+                    // have a valid one; otherwise overwrite the whole
+                    // tab. The bounds check defends against the editor
+                    // having mutated since the range was frozen.
+                    if let range = aiSelectionRange,
+                       editText.indices.contains(range.lowerBound),
+                       range.upperBound <= editText.endIndex {
+                        editText.replaceSubrange(range, with: chosen)
+                    } else {
+                        editText = chosen
+                    }
                     persistCurrent()
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     showAIPreview = false
@@ -577,6 +641,7 @@ struct MinimalNoteDetailPage: View {
                 aiPreviewIcon = "sparkles"
                 aiPreviewInstruction = ""
                 aiSourceSnapshot = ""
+                aiSelectionRange = nil
             }
         }
         .alert("AI request failed", isPresented: $aiFailed) {
@@ -784,7 +849,7 @@ struct MinimalNoteDetailPage: View {
                     .padding(.top, 8)
                     .allowsHitTesting(false)
             }
-            TextEditor(text: $editText)
+            TextEditor(text: $editText, selection: $editSelection)
                 .appReadingBodyText()
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
@@ -827,9 +892,36 @@ struct MinimalNoteDetailPage: View {
 
     // MARK: Floating buttons
 
+    /// Pulls a contiguous, non-collapsed range out of the live selection.
+    /// Returns nil when there's just a cursor (lower == upper) or no
+    /// selection at all — in which case AI flows fall back to operating
+    /// on the whole tab body.
+    private func currentEditorSelectionRange() -> Range<String.Index>? {
+        guard let selection = editSelection else { return nil }
+        let range: Range<String.Index>?
+        switch selection.indices {
+        case .selection(let r):
+            range = r
+        case .multiSelection(let set):
+            range = set.ranges.first
+        @unknown default:
+            range = nil
+        }
+        guard let r = range, r.lowerBound != r.upperBound else { return nil }
+        // Tolerate the editor reshuffling indices between selection
+        // capture and the AI button tap by validating against the
+        // current editText bounds.
+        guard editText.indices.contains(r.lowerBound), r.upperBound <= editText.endIndex else { return nil }
+        return r
+    }
+
     private var aiSparklesButton: some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            // Freeze the live selection before SwiftUI presents the
+            // action sheet — by the time the sheet's onAction fires the
+            // editor has lost focus and the live selection has collapsed.
+            aiSelectionRange = currentEditorSelectionRange()
             showAIMenu = true
         } label: {
             Group {
@@ -851,9 +943,31 @@ struct MinimalNoteDetailPage: View {
         .accessibilityLabel("Quick AI actions")
     }
 
+    /// Resolves the snippet + NSRange the chat sheet should receive when
+    /// the chat button fires. Reads the *frozen* `aiSelectionRange` that
+    /// the button's onTap captured — by the time SwiftUI renders the
+    /// sheet, the editor has lost focus and the live `editSelection`
+    /// has collapsed. Returns nil for both when no real highlight was
+    /// active, so the chat falls back to its document-wide posture.
+    private func chatSelectionPayload() -> (snippet: String?, range: NSRange?) {
+        guard let range = aiSelectionRange,
+              range.lowerBound != range.upperBound,
+              editText.indices.contains(range.lowerBound),
+              range.upperBound <= editText.endIndex
+        else { return (nil, nil) }
+        let snippet = String(editText[range])
+        let trimmed = snippet.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return (nil, nil) }
+        return (snippet, NSRange(range, in: editText))
+    }
+
     private var aiChatButton: some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            // Same as sparkles: freeze the live selection before SwiftUI
+            // presents the sheet so the editor losing focus doesn't
+            // wipe the range we're about to forward.
+            aiSelectionRange = currentEditorSelectionRange()
             persistCurrent()
             showChat = true
         } label: {
