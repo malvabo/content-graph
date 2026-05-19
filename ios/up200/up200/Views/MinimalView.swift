@@ -84,15 +84,20 @@ extension Notification.Name {
 
 // MARK: - Home Page
 
-/// Notes list + Profile pill. No library, no Create tab, no tag chips —
-/// the entire top-level surface in Minimal 1.
+/// Notes list + Profile pill. Minimal 1's top-level surface. Hosts the
+/// classic `NotesView` in embedded mode so the user keeps the same row
+/// titles, pinned section, swipe actions, tag chips, custom tags, and
+/// search overlay they had in Standard / Simple; only the per-note
+/// navigation destination differs — tapping a note pushes
+/// `MinimalNoteDetailPage` (with generation tabs) instead of the
+/// classic single-note editor.
 struct MinimalHomePage: View {
     var onProfileTap: () -> Void = {}
 
-    @EnvironmentObject private var recording: RecordingController
-    @State private var notes: [Note] = []
-    @State private var selectedNote: Note? = nil
-    @State private var pendingSave: DispatchWorkItem? = nil
+    @State private var newNoteTrigger: Int = 0
+    @State private var showSearch = false
+    @State private var searchText = ""
+    @FocusState private var searchFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -100,231 +105,129 @@ struct MinimalHomePage: View {
                 AmbientBackground()
 
                 VStack(spacing: 0) {
-                    InlineTopBar(title: "Notes") {
-                        TopBarPill {
-                            TopBarPillButton(systemImage: "square.and.pencil") {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                startAudioNote()
-                            }
-                            .accessibilityLabel("New voice note")
-                        }
-                        TopBarPill {
-                            TopBarPillButton(systemImage: "person.crop.circle") {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                onProfileTap()
-                            }
-                            .accessibilityLabel("Profile")
-                        }
-                    }
+                    header
 
                     Rectangle()
                         .fill(AppInk.solid(0.06))
                         .frame(height: 0.5)
 
-                    if notes.isEmpty {
-                        EmptyStateView(
-                            illustration: NotesIllustration(),
-                            title: "No notes yet",
-                            subtitle: "Tap the pencil to capture an idea by voice",
-                            actionTitle: "Start recording",
-                            action: startAudioNote
-                        )
-                    } else {
-                        List {
-                            ForEach(sortedNotes) { note in
-                                Button {
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    selectedNote = note
-                                } label: {
-                                    MinimalNoteRow(note: note, generationCount: generationCount(for: note))
-                                }
-                                .buttonStyle(.plain)
-                                .listRowInsets(EdgeInsets())
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.visible)
-                                .listRowSeparatorTint(AppInk.solid(0.06))
-                                .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
-                                .alignmentGuide(.listRowSeparatorTrailing) { d in d[.trailing] - 20 }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        delete(note)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                            }
+                    NotesView(
+                        newNoteTrigger: newNoteTrigger,
+                        embedded: true,
+                        externalShowSearch: $showSearch,
+                        externalSearchText: $searchText,
+                        // Minimal-specific destination — keep every other
+                        // NotesView behaviour (filter chips, pinned/other
+                        // split, swipe actions, search overlay results)
+                        // and only swap the per-note page.
+                        detailFor: { note in
+                            AnyView(MinimalNoteDetailPage(initialNote: note))
                         }
-                        .listStyle(.plain)
-                        .scrollContentBackground(.hidden)
-                    }
+                    )
                 }
+                // Match SimpleHomePage's posture so the keyboard rising
+                // for search doesn't shove the list up and slam it back.
+                .ignoresSafeArea(.keyboard)
             }
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .navigationDestination(item: $selectedNote) { note in
-                // Sketched notes carry a serialized PKDrawing in
-                // drawingData and must open in the canvas — opening one
-                // in the text editor would lose the strokes. Same branch
-                // classic NotesView uses, so the two surfaces stay in
-                // lockstep on the data side.
-                if note.kind == .drawing {
-                    DrawingCanvasView(
-                        initialNote: note,
-                        onSave: { saved in
-                            if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
-                                notes[idx] = saved
-                            } else {
-                                notes.insert(saved, at: 0)
-                            }
-                            scheduleSave()
-                        },
-                        onCancel: {}
-                    )
-                    .toolbar(.hidden, for: .navigationBar)
-                } else {
-                    MinimalNoteDetailPage(
-                        initialNote: note,
-                        onUpdate: { saved in
-                            if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
-                                notes[idx] = saved
-                            } else {
-                                notes.insert(saved, at: 0)
-                            }
-                            scheduleSave()
-                        },
-                        onDelete: { delete(note) }
-                    )
+        }
+        .onChange(of: showSearch) { _, newVal in
+            // Search field doesn't exist in the view tree until the
+            // toggle flips on; defer focus by one runloop so SwiftUI
+            // mounts the TextField before we try to focus it.
+            if newVal {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    searchFocused = true
                 }
             }
-            .task {
-                notes = await NotesStore.loadAsync()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .notesStoreDidChange)) { _ in
-                Task {
-                    let fresh = await NotesStore.loadAsync()
-                    await MainActor.run { notes = fresh }
-                }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .minimalGenStoreDidChange)) { _ in
-                generationsTouchTrigger &+= 1
-            }
         }
     }
 
-    /// Bumped on every minimal-generations-store change so the row counts
-    /// recompute even though the notes array itself didn't move.
-    @State private var generationsTouchTrigger: Int = 0
-
-    private var sortedNotes: [Note] {
-        notes.sorted { $0.updatedAt > $1.updatedAt }
-    }
-
-    /// Voice-first capture, matching classic NotesView. The transcript
-    /// callback fires when the user stops the recording sheet — at which
-    /// point a new note is materialised with the transcript as the body
-    /// and the detail page is pushed so the user can edit / generate
-    /// from it immediately.
-    private func startAudioNote() {
-        recording.begin { transcript in
-            var note = Note()
-            note.body = transcript
-            note.updatedAt = Date()
-            notes.insert(note, at: 0)
-            scheduleSave()
-            selectedNote = note
-        }
-        recording.showingSheet = true
-    }
-
-    private func delete(_ note: Note) {
-        withAnimation(AppAnimation.standard) {
-            notes.removeAll { $0.id == note.id }
-        }
-        scheduleSave()
-        MinimalGenStore.deleteAll(forNoteID: note.id)
-    }
-
-    private func scheduleSave() {
-        pendingSave?.cancel()
-        let snapshot = notes
-        var work: DispatchWorkItem!
-        work = DispatchWorkItem {
-            NotesStore.saveInBackground(snapshot)
-            if pendingSave === work { pendingSave = nil }
-        }
-        pendingSave = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
-    }
-
-    private func generationCount(for note: Note) -> Int {
-        _ = generationsTouchTrigger
-        return MinimalGenStore.load().filter { $0.noteId == note.id }.count
-    }
-}
-
-// MARK: - Notes list row
-
-private struct MinimalNoteRow: View {
-    let note: Note
-    let generationCount: Int
-
-    var body: some View {
-        HStack(spacing: 14) {
-            DocCardThumb()
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text(note.isEmpty ? "Untitled" : note.displayTitle)
-                    .font(.appRowTitle)
-                    .foregroundColor(note.isEmpty ? AppText.tertiary : AppInk.solid(0.88))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-
-                HStack(spacing: 8) {
-                    Text(RowDate.relative(from: note.updatedAt))
-                        .font(.appSmall)
-                        .foregroundColor(AppText.tertiary)
-                    if generationCount > 0 {
-                        Text("·")
-                            .font(.appSmall)
-                            .foregroundColor(AppText.tertiary)
-                        Text("\(generationCount) generation\(generationCount == 1 ? "" : "s")")
-                            .font(.appSmall)
-                            .foregroundColor(BrandColor.amber.opacity(0.85))
+    /// Top bar. Two layouts crossfade off `showSearch` (same pattern as
+    /// SimpleHomeHeader) so the bar morphs from "title + pills" to
+    /// "search field + Cancel" without snapping.
+    @ViewBuilder
+    private var header: some View {
+        ZStack {
+            HStack(spacing: 12) {
+                Text("Notes")
+                    .font(.app(size: 26, weight: .bold))
+                    .foregroundColor(AppText.primary)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 8)
+                TopBarPill {
+                    TopBarPillButton(systemImage: "square.and.pencil") {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        // NotesView reacts to a bumped `newNoteTrigger`
+                        // by calling its private `startAudioNote()` —
+                        // same affordance the classic top bar gives.
+                        newNoteTrigger &+= 1
                     }
+                    .accessibilityLabel("New voice note")
+
+                    TopBarPillDivider()
+
+                    TopBarPillButton(
+                        systemImage: showSearch ? "xmark" : "magnifyingglass",
+                        isActive: showSearch
+                    ) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        withAnimation(AppAnimation.standard) {
+                            showSearch.toggle()
+                            if !showSearch {
+                                searchText = ""
+                                searchFocused = false
+                            }
+                        }
+                    }
+                    .accessibilityLabel(showSearch ? "Close search" : "Search")
+                }
+                TopBarPill {
+                    TopBarPillButton(systemImage: "person.crop.circle") {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onProfileTap()
+                    }
+                    .accessibilityLabel("Profile")
                 }
             }
+            .opacity(showSearch ? 0 : 1)
+            .allowsHitTesting(!showSearch)
+            .accessibilityHidden(showSearch)
 
-            Spacer(minLength: 0)
+            HStack(spacing: 12) {
+                AppSearchField(
+                    placeholder: "Search notes",
+                    text: $searchText,
+                    isFocused: $searchFocused
+                )
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    withAnimation(AppAnimation.standard) {
+                        showSearch = false
+                        searchText = ""
+                        searchFocused = false
+                    }
+                } label: {
+                    Text("Cancel")
+                        .font(.appLabel)
+                        .foregroundColor(AppText.primary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 10)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Cancel search")
+            }
+            .opacity(showSearch ? 1 : 0)
+            .allowsHitTesting(showSearch)
+            .accessibilityHidden(!showSearch)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .contentShape(Rectangle())
-    }
-}
-
-// `NoteListRow` and `RowDate` are private to NotesView; the row above is
-// the Minimal-specific variant that also surfaces a generation count.
-// `RowDate` is duplicated below so this file doesn't depend on NotesView's
-// internals.
-private enum RowDate {
-    private static let time: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "h:mm a"; return f
-    }()
-    private static let monthDay: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "MMM d"; return f
-    }()
-    private static let full: DateFormatter = {
-        let f = DateFormatter(); f.dateStyle = .medium; return f
-    }()
-
-    static func relative(from date: Date) -> String {
-        let cal = Calendar.current
-        if cal.isDateInToday(date) { return time.string(from: date) }
-        if cal.component(.year, from: date) == cal.component(.year, from: Date()) {
-            return monthDay.string(from: date)
-        }
-        return full.string(from: date)
+        .padding(.top, 12)
+        .padding(.bottom, 12)
+        .animation(AppAnimation.standard, value: showSearch)
     }
 }
 
@@ -332,8 +235,6 @@ private enum RowDate {
 
 struct MinimalNoteDetailPage: View {
     let initialNote: Note
-    let onUpdate: (Note) -> Void
-    let onDelete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
@@ -369,7 +270,7 @@ struct MinimalNoteDetailPage: View {
     @StateObject private var dictation = NoteDictation()
     @State private var bodyBeforeDictation: String = ""
 
-    @State private var showGenerateSheet = false
+    @State private var showCreateModal = false
     @State private var showChat = false
     @State private var showAIMenu = false
     @State private var isAIProcessing = false
@@ -382,9 +283,6 @@ struct MinimalNoteDetailPage: View {
     @State private var aiPreviewInstruction: String = ""
     @State private var aiSourceSnapshot: String = ""
 
-    @State private var isGenerating = false
-    @State private var generateTask: Task<Void, Never>? = nil
-
     @State private var aiFailed = false
     @State private var aiFailReason = ""
     @State private var copied = false
@@ -392,10 +290,8 @@ struct MinimalNoteDetailPage: View {
 
     private static let maxPreviewVariants = 5
 
-    init(initialNote: Note, onUpdate: @escaping (Note) -> Void, onDelete: @escaping () -> Void) {
+    init(initialNote: Note) {
         self.initialNote = initialNote
-        self.onUpdate = onUpdate
-        self.onDelete = onDelete
         let migrated = Note.migrated(initialNote)
         self._note = State(initialValue: migrated)
         self._editText = State(initialValue: migrated.body)
@@ -473,7 +369,6 @@ struct MinimalNoteDetailPage: View {
             }
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
-        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: isGenerating)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
         .onChange(of: dictation.transcript) { _, newValue in
             let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -513,7 +408,6 @@ struct MinimalNoteDetailPage: View {
             persistCurrent()
             maybeGenerateTitle()
             maybeDiscardEmptyNote()
-            generateTask?.cancel()
             aiTransformTask?.cancel()
             copiedResetTask?.cancel()
         }
@@ -552,12 +446,17 @@ struct MinimalNoteDetailPage: View {
                 initialSelectionRange: range
             )
         }
-        .sheet(isPresented: $showGenerateSheet) {
-            MinimalGenerateSheet(
-                primaryNote: note,
-                onGenerate: { formats, extraNotes in
-                    showGenerateSheet = false
-                    startGeneration(formats: formats, extraNotes: extraNotes)
+        .fullScreenCover(isPresented: $showCreateModal) {
+            // Classic Create modal (HomeView) with the current note seeded
+            // as the first source. The host (this page) takes the results
+            // through `resultsHandler` and writes them into
+            // `minimal_generations_v1` tied to this note's id — HomeView
+            // itself never touches `library_projects` in this flow.
+            HomeView(
+                isModal: true,
+                initialSources: [noteAsSource],
+                resultsHandler: { results, sources in
+                    persistGeneratedResults(results, sources: sources)
                 }
             )
         }
@@ -985,24 +884,15 @@ struct MinimalNoteDetailPage: View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             persistCurrent()
-            showGenerateSheet = true
+            showCreateModal = true
         } label: {
-            Group {
-                if isGenerating {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(AppText.primary)
-                } else {
-                    Image(systemName: "wand.and.stars")
-                        .font(.system(size: 19, weight: .regular))
-                        .foregroundColor(AppText.primary)
-                }
-            }
-            .frame(width: 56, height: 56)
-            .background(glassCircle)
+            Image(systemName: "wand.and.stars")
+                .font(.system(size: 19, weight: .regular))
+                .foregroundColor(AppText.primary)
+                .frame(width: 56, height: 56)
+                .background(glassCircle)
         }
         .buttonStyle(.plain)
-        .disabled(isGenerating)
         .accessibilityLabel("Generate content from this note")
     }
 
@@ -1038,15 +928,27 @@ struct MinimalNoteDetailPage: View {
 
     private func persistCurrent() {
         if isNoteTab {
-            let trimmed = editText
-            if trimmed != note.body {
-                note.body = trimmed
-                note.updatedAt = Date()
-                onUpdate(note)
-            }
+            guard editText != note.body else { return }
+            note.body = editText
+            note.updatedAt = Date()
+            persistNoteToStore()
         } else if let gen = currentGeneration, editText != gen.content {
             MinimalGenStore.updateContent(id: gen.id, content: editText)
         }
+    }
+
+    /// Writes the in-memory `note` back into the shared notes blob. The
+    /// embedded NotesView listens for `.notesStoreDidChange` (posted by
+    /// NotesStore.save) and reloads, so the list row refreshes without
+    /// any extra plumbing.
+    private func persistNoteToStore() {
+        var fresh = NotesStore.load()
+        if let idx = fresh.firstIndex(where: { $0.id == note.id }) {
+            fresh[idx] = note
+        } else {
+            fresh.insert(note, at: 0)
+        }
+        NotesStore.saveInBackground(fresh)
     }
 
     private func reloadGenerations() {
@@ -1068,7 +970,9 @@ struct MinimalNoteDetailPage: View {
 
     private func performDelete() {
         MinimalGenStore.deleteAll(forNoteID: note.id)
-        onDelete()
+        var fresh = NotesStore.load()
+        fresh.removeAll { $0.id == note.id }
+        NotesStore.saveInBackground(fresh)
         dismiss()
     }
 
@@ -1086,16 +990,22 @@ struct MinimalNoteDetailPage: View {
 
         let snapshotBody = note.body
         let baseNote = note
-        let save = onUpdate
         Task {
             let aiTitle = await AIService.generateTitle(from: trimmedBody)
             let cleaned = aiTitle.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !cleaned.isEmpty else { return }
             guard cleaned.lowercased() != firstLine.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else { return }
-            var updated = baseNote
-            updated.body = cleaned + "\n" + snapshotBody
-            updated.updatedAt = Date()
-            await MainActor.run { save(updated) }
+            await MainActor.run {
+                var fresh = NotesStore.load()
+                guard let idx = fresh.firstIndex(where: { $0.id == baseNote.id }) else { return }
+                // Skip if the body changed underneath us while the
+                // model was thinking — don't overwrite the user's
+                // post-disappear edits with a stale title.
+                guard fresh[idx].body == snapshotBody else { return }
+                fresh[idx].body = cleaned + "\n" + snapshotBody
+                fresh[idx].updatedAt = Date()
+                NotesStore.saveInBackground(fresh)
+            }
         }
     }
 
@@ -1107,101 +1017,70 @@ struct MinimalNoteDetailPage: View {
     private func maybeDiscardEmptyNote() {
         guard initialNote.isEmpty, note.isEmpty else { return }
         guard MinimalGenStore.load().allSatisfy({ $0.noteId != note.id }) else { return }
-        onDelete()
+        var fresh = NotesStore.load()
+        fresh.removeAll { $0.id == note.id }
+        NotesStore.saveInBackground(fresh)
     }
 
-    // MARK: Generation
+    // MARK: Generation handoff
 
-    private func startGeneration(formats: [String], extraNotes: [Note]) {
-        guard !formats.isEmpty else { return }
-        guard ContentGenerator.isKeyConfigured else {
-            aiFailReason = "Add your Anthropic API key in Profile first."
-            aiFailed = true
-            return
-        }
+    /// Builds the `SourceItem` HomeView consumes for its sources block —
+    /// the current note, with its title as the chip label and body as
+    /// the content. Same shape NoteEditorPage's `noteAsSource` uses, so
+    /// HomeView treats it identically.
+    private var noteAsSource: SourceItem {
+        SourceItem(
+            type: .note,
+            label: note.displayTitle,
+            content: note.body
+        )
+    }
 
-        // Materialise sources up front so the async task doesn't hold the
-        // (mutable) `note` State directly. The current note always counts as
-        // a source; extras follow in the order the user picked them.
-        let primaryNote = note
-        let allSourceNotes = [primaryNote] + extraNotes
-        let sourceItems: [SourceItem] = allSourceNotes.map { n in
-            SourceItem(
-                type: .note,
-                label: n.displayTitle,
-                content: n.body
+    /// Called by HomeView's `resultsHandler` after a successful generation.
+    /// Wraps each result into a `MinimalGeneration` anchored to this note's
+    /// id, snapshots the source labels for the tag-chip strip, and jumps
+    /// the active tab to the first new generation so the user sees the
+    /// output as soon as the modal dismisses.
+    private func persistGeneratedResults(_ results: [GeneratedResult], sources: [SourceItem]) {
+        guard !results.isEmpty else { return }
+        let noteID = note.id
+        // Source labels carry every chip the user added in the modal —
+        // including text snippets, links, files, images — so the tag
+        // strip on the new generation tab reflects everything that fed
+        // it, not just the originating note.
+        let sourceLabels = sources.map(\.label)
+        // We only have a reliable note id for the *primary* source (the
+        // note we came from). Other sources picked in the modal (text /
+        // link / file / image / voice / unrelated notes) don't expose
+        // their UUIDs through SourceItem, so `sourceNoteIds` records
+        // just the anchor.
+        let sourceIDs: [UUID] = [noteID]
+        let now = Date()
+        let batch: [MinimalGeneration] = results.enumerated().map { idx, r in
+            MinimalGeneration(
+                noteId: noteID,
+                sourceNoteIds: sourceIDs,
+                sourceLabels: sourceLabels,
+                outputType: r.formatID,
+                content: r.content,
+                // Stagger by ms so insertion order is stable across
+                // a multi-format batch.
+                date: now.addingTimeInterval(Double(idx) * 0.001)
             )
         }
-        let filteredSources = sourceItems.filter { !$0.content.isEmpty }
-        guard !filteredSources.isEmpty else {
-            aiFailReason = "The selected notes have no content yet."
-            aiFailed = true
-            return
+        MinimalGenStore.insertBatch(batch)
+        // Re-read so the displayed list matches what's on disk and
+        // jump straight to the first new generation.
+        let firstID = batch[0].id
+        let refreshed = MinimalGenStore.load()
+            .filter { $0.noteId == noteID }
+            .sorted { $0.date < $1.date }
+        generations = refreshed
+        if let i = refreshed.firstIndex(where: { $0.id == firstID }) {
+            selectedIndex = i + 1
+            editText = refreshed[i].content
         }
-        let sourceLabels = allSourceNotes.map(\.displayTitle)
-        let sourceIDs = allSourceNotes.map(\.id)
-        let primaryID = primaryNote.id
-
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        isGenerating = true
-        let capturedFormats = formats
-
-        generateTask = Task {
-            var newGenerations: [MinimalGeneration] = []
-            var firstError: APICallError? = nil
-            let now = Date()
-            for (idx, formatID) in capturedFormats.enumerated() {
-                guard !Task.isCancelled else { break }
-                let label = allFormats.first { $0.id == formatID }?.label ?? formatID
-                let outcome = await ContentGenerator.generate(
-                    sources: filteredSources,
-                    formatID: formatID,
-                    formatLabel: label,
-                    customPrompt: "",
-                    brand: "Default"
-                )
-                switch outcome {
-                case .success(let text):
-                    newGenerations.append(
-                        MinimalGeneration(
-                            noteId: primaryID,
-                            sourceNoteIds: sourceIDs,
-                            sourceLabels: sourceLabels,
-                            outputType: formatID,
-                            content: text,
-                            // Stagger by ms so insertion order is stable.
-                            date: now.addingTimeInterval(Double(idx) * 0.001)
-                        )
-                    )
-                case .failure(let err):
-                    if firstError == nil { firstError = err }
-                }
-            }
-            let cancelled = Task.isCancelled
-            await MainActor.run {
-                isGenerating = false
-                generateTask = nil
-                if cancelled { return }
-                if newGenerations.isEmpty {
-                    aiFailReason = firstError?.userMessage ?? "Generation failed."
-                    aiFailed = true
-                    return
-                }
-                MinimalGenStore.insertBatch(newGenerations)
-                // Jump to the first newly-created generation so the user
-                // sees the result without an extra tap.
-                let firstID = newGenerations[0].id
-                let refreshed = MinimalGenStore.load()
-                    .filter { $0.noteId == primaryID }
-                    .sorted { $0.date < $1.date }
-                generations = refreshed
-                if let i = refreshed.firstIndex(where: { $0.id == firstID }) {
-                    selectedIndex = i + 1
-                    editText = refreshed[i].content
-                }
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-            }
-        }
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
 
     // MARK: Quick AI transform
@@ -1284,398 +1163,3 @@ struct MinimalNoteDetailPage: View {
     }
 }
 
-// MARK: - Generate sheet
-
-private struct MinimalGenerateSheet: View {
-    let primaryNote: Note
-    let onGenerate: (_ formats: [String], _ extraNotes: [Note]) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var selectedFormatIDs: Set<String> = []
-    @State private var extraNotes: [Note] = []
-    @State private var showSourcePicker = false
-
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                AppBackground.primary.ignoresSafeArea()
-
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 24) {
-                        sourcesSection
-                        formatsSection
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    .padding(.bottom, 120)
-                }
-            }
-            .toolbar(.hidden, for: .navigationBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .safeAreaInset(edge: .top, spacing: 0) {
-                header
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                generateBar
-            }
-        }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(Radius.sheet)
-        .presentationBackground(AppBackground.primary)
-        .sheet(isPresented: $showSourcePicker) {
-            MinimalSourcePicker(
-                excludedID: primaryNote.id,
-                alreadySelected: extraNotes,
-                onDone: { picked in
-                    extraNotes = picked
-                    showSourcePicker = false
-                }
-            )
-        }
-    }
-
-    private var header: some View {
-        HStack {
-            Text("Generate")
-                .font(.app(size: 22, weight: .bold))
-                .foregroundColor(AppText.primary)
-            Spacer()
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(AppText.primary)
-                    .frame(width: 32, height: 32)
-                    .background(AppInk.solid(0.10))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Close")
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
-        .padding(.bottom, 16)
-        .background(AppBackground.primary)
-    }
-
-    private var sourcesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionLabel("Sources")
-            FlowLayout(spacing: 8) {
-                sourceChip(label: primaryNote.displayTitle, isLocked: true)
-                ForEach(extraNotes) { n in
-                    sourceChip(label: n.displayTitle, isLocked: false, onRemove: {
-                        extraNotes.removeAll { $0.id == n.id }
-                    })
-                }
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    showSourcePicker = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 12, weight: .semibold))
-                        Text("Add note")
-                            .font(.appCaptionMedium)
-                    }
-                    .foregroundColor(AppText.secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(
-                        Capsule(style: .continuous)
-                            .stroke(AppInk.solid(0.25), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private func sourceChip(label: String, isLocked: Bool, onRemove: (() -> Void)? = nil) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: "note.text")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(BrandColor.amber)
-            Text(label.isEmpty ? "Untitled" : label)
-                .font(.appCaptionMedium)
-                .foregroundColor(BrandColor.amber)
-                .lineLimit(1)
-            if let onRemove {
-                Button(action: onRemove) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(BrandColor.amber.opacity(0.85))
-                        .frame(width: 16, height: 16)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            } else if isLocked {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(BrandColor.amber.opacity(0.6))
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(BrandColor.amber.opacity(0.10))
-        .clipShape(Capsule())
-        .overlay(Capsule().stroke(BrandColor.amber.opacity(0.22), lineWidth: 0.5))
-    }
-
-    private var formatsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionLabel("Formats")
-            FlowLayout(spacing: 8) {
-                ForEach(allFormats) { format in
-                    let selected = selectedFormatIDs.contains(format.id)
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        if selected {
-                            selectedFormatIDs.remove(format.id)
-                        } else {
-                            selectedFormatIDs.insert(format.id)
-                        }
-                    } label: {
-                        Text(format.label)
-                            .font(.app(size: 14, weight: selected ? .semibold : .regular))
-                            .foregroundColor(selected ? .white : AppInk.solid(0.78))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(
-                                selected
-                                    ? AnyShapeStyle(BrandColor.ctaPrimary)
-                                    : AnyShapeStyle(AppInk.solid(0.06))
-                            )
-                            .clipShape(Capsule())
-                            .overlay(
-                                Capsule().stroke(AppInk.solid(selected ? 0 : 0.10), lineWidth: 0.5)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    private func sectionLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.app(size: 13, weight: .semibold))
-            .foregroundColor(AppText.tertiary)
-            .textCase(.uppercase)
-            .kerning(0.6)
-    }
-
-    private var generateBar: some View {
-        let count = selectedFormatIDs.count
-        let label = count == 0 ? "Generate" : "Generate \(count)"
-        return VStack(spacing: 0) {
-            Rectangle().fill(AppInk.solid(0.06)).frame(height: 0.5)
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                let orderedFormats = allFormats.map(\.id).filter { selectedFormatIDs.contains($0) }
-                onGenerate(orderedFormats, extraNotes)
-            } label: {
-                Text(label)
-                    .font(.app(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(count == 0 ? AppBackground.ctaDisabled : BrandColor.ctaPrimary)
-                    )
-            }
-            .buttonStyle(.plain)
-            .disabled(count == 0)
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 20)
-        }
-        .background(AppBackground.primary)
-    }
-}
-
-// MARK: - Source picker
-
-private struct MinimalSourcePicker: View {
-    let excludedID: UUID
-    let alreadySelected: [Note]
-    let onDone: ([Note]) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var notes: [Note] = []
-    @State private var selectedIDs: Set<UUID> = []
-
-    init(excludedID: UUID, alreadySelected: [Note], onDone: @escaping ([Note]) -> Void) {
-        self.excludedID = excludedID
-        self.alreadySelected = alreadySelected
-        self.onDone = onDone
-        self._selectedIDs = State(initialValue: Set(alreadySelected.map(\.id)))
-    }
-
-    private var candidates: [Note] {
-        notes
-            .filter { $0.id != excludedID && !$0.isEmpty }
-            .sorted { $0.updatedAt > $1.updatedAt }
-    }
-
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                AppBackground.primary.ignoresSafeArea()
-                VStack(spacing: 0) {
-                    header
-                    if candidates.isEmpty {
-                        VStack(spacing: 10) {
-                            Spacer()
-                            Image(systemName: "note.text")
-                                .font(.system(size: 36))
-                                .foregroundColor(AppText.tertiary)
-                            Text("No other notes yet")
-                                .font(.appBody)
-                                .foregroundColor(AppText.secondary)
-                            Spacer()
-                        }
-                        .frame(maxWidth: .infinity)
-                    } else {
-                        List {
-                            ForEach(candidates) { note in
-                                Button {
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    if selectedIDs.contains(note.id) {
-                                        selectedIDs.remove(note.id)
-                                    } else {
-                                        selectedIDs.insert(note.id)
-                                    }
-                                } label: {
-                                    pickerRow(note)
-                                }
-                                .buttonStyle(.plain)
-                                .listRowInsets(EdgeInsets())
-                                .listRowBackground(Color.clear)
-                                .listRowSeparatorTint(AppInk.solid(0.06))
-                                .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
-                            }
-                        }
-                        .listStyle(.plain)
-                        .scrollContentBackground(.hidden)
-                    }
-                }
-            }
-            .toolbar(.hidden, for: .navigationBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
-        }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(Radius.sheet)
-        .presentationBackground(AppBackground.primary)
-        .task {
-            notes = await NotesStore.loadAsync()
-        }
-    }
-
-    private var header: some View {
-        HStack {
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                dismiss()
-            } label: {
-                Text("Cancel")
-                    .font(.appLabel)
-                    .foregroundColor(AppText.secondary)
-            }
-            Spacer()
-            Text("Add sources")
-                .font(.appBodyBold)
-                .foregroundColor(AppText.primary)
-            Spacer()
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                let picked = candidates.filter { selectedIDs.contains($0.id) }
-                onDone(picked)
-            } label: {
-                Text("Done")
-                    .font(.appLabelBold)
-                    .foregroundColor(BrandColor.ctaPrimary)
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
-        .padding(.bottom, 12)
-    }
-
-    private func pickerRow(_ note: Note) -> some View {
-        let selected = selectedIDs.contains(note.id)
-        return HStack(spacing: 14) {
-            Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 20, weight: .regular))
-                .foregroundColor(selected ? BrandColor.ctaPrimary : AppText.tertiary)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(note.displayTitle)
-                    .font(.appRowTitle)
-                    .foregroundColor(AppText.primary)
-                    .lineLimit(1)
-                Text(RowDate.relative(from: note.updatedAt))
-                    .font(.appSmall)
-                    .foregroundColor(AppText.tertiary)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
-    }
-}
-
-// MARK: - Flow layout
-//
-// Simple horizontal wrapping container — chips flow left to right and
-// break to the next line when they overflow. SwiftUI doesn't ship a
-// stock version so this is a small custom Layout.
-
-private struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
-        var rowWidth: CGFloat = 0
-        var rowHeight: CGFloat = 0
-        var totalHeight: CGFloat = 0
-        var totalWidth: CGFloat = 0
-        for sub in subviews {
-            let size = sub.sizeThatFits(.unspecified)
-            if rowWidth + size.width > maxWidth && rowWidth > 0 {
-                totalHeight += rowHeight + spacing
-                totalWidth = max(totalWidth, rowWidth - spacing)
-                rowWidth = 0
-                rowHeight = 0
-            }
-            rowWidth += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
-        }
-        totalHeight += rowHeight
-        totalWidth = max(totalWidth, rowWidth - spacing)
-        return CGSize(width: totalWidth, height: totalHeight)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let maxWidth = bounds.width
-        var x: CGFloat = bounds.minX
-        var y: CGFloat = bounds.minY
-        var rowHeight: CGFloat = 0
-        for sub in subviews {
-            let size = sub.sizeThatFits(.unspecified)
-            if x - bounds.minX + size.width > maxWidth && x > bounds.minX {
-                x = bounds.minX
-                y += rowHeight + spacing
-                rowHeight = 0
-            }
-            sub.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
-        }
-    }
-}

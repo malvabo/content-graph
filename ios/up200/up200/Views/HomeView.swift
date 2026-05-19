@@ -217,7 +217,10 @@ struct AIService {
 
 // MARK: - Content Generator
 
-private struct GeneratedResult: Identifiable {
+/// Module-internal so a custom host (Minimal 1's note detail page) can
+/// receive results directly via `HomeView.resultsHandler` instead of
+/// letting HomeView write to the shared `library_projects` blob.
+struct GeneratedResult: Identifiable {
     let id = UUID()
     let formatID: String
     let formatLabel: String
@@ -2449,6 +2452,13 @@ struct HomeView: View {
     var scrollToTopSignal: Int = 0
     var pendingSheet: Binding<SourceSheet?> = .constant(nil)
     var isModal: Bool = false
+    /// Minimal 1 hook. When set, generation results are handed to this
+    /// closure instead of being written to `library_projects`, and the
+    /// result-detail fullScreenCover is suppressed — Minimal anchors
+    /// generations to their source note (`minimal_generations_v1`) and
+    /// dismisses straight back to that note instead of opening a
+    /// classic library detail page.
+    var resultsHandler: (([GeneratedResult], [SourceItem]) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var bannerController: BannerController
 
@@ -2470,11 +2480,13 @@ struct HomeView: View {
         scrollToTopSignal: Int = 0,
         pendingSheet: Binding<SourceSheet?> = .constant(nil),
         isModal: Bool = false,
-        initialSources: [SourceItem] = []
+        initialSources: [SourceItem] = [],
+        resultsHandler: (([GeneratedResult], [SourceItem]) -> Void)? = nil
     ) {
         self.scrollToTopSignal = scrollToTopSignal
         self.pendingSheet = pendingSheet
         self.isModal = isModal
+        self.resultsHandler = resultsHandler
         self._sources = State(initialValue: initialSources)
     }
 
@@ -2603,14 +2615,24 @@ struct HomeView: View {
         isGenerating = true
         bannerController.isReady = false
         bannerController.isVisible = true
-        bannerController.onOpen = { [self] in
-            let projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
-            let batchItems = lastBatchIDs.compactMap { id in projects.first { $0.id == id } }
-            let items = batchItems.isEmpty ? (projects.first.map { [$0] } ?? []) : batchItems
-            if let first = items.first {
-                resultBatch = ResultBatch(title: first.title, items: items)
+        if resultsHandler != nil {
+            // Minimal 1 host: tapping the ready banner just dismisses
+            // this modal — the host (note detail page) is what shows
+            // the new generation as a tab, not a library-detail surface.
+            bannerController.onOpen = { [self] in
+                bannerController.isVisible = false
+                dismiss()
             }
-            bannerController.isVisible = false
+        } else {
+            bannerController.onOpen = { [self] in
+                let projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+                let batchItems = lastBatchIDs.compactMap { id in projects.first { $0.id == id } }
+                let items = batchItems.isEmpty ? (projects.first.map { [$0] } ?? []) : batchItems
+                if let first = items.first {
+                    resultBatch = ResultBatch(title: first.title, items: items)
+                }
+                bannerController.isVisible = false
+            }
         }
         bannerController.onCancel = { [self] in generationTask?.cancel(); generationTask = nil; isGenerating = false; bannerController.isVisible = false }
 
@@ -2650,6 +2672,12 @@ struct HomeView: View {
                     bannerController.isVisible = false
                     generationFailReason = firstError?.userMessage ?? ""
                     generationFailed = true
+                } else if let resultsHandler {
+                    // Minimal 1 host owns persistence — hand the results
+                    // over, mark the banner ready (taps just dismiss),
+                    // and never touch library_projects.
+                    resultsHandler(results, capturedSources)
+                    bannerController.isReady = true
                 } else if saveToLibrary(results, sources: capturedSources) {
                     bannerController.isReady = true
                 } else {
