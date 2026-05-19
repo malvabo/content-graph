@@ -2749,11 +2749,15 @@ extension View {
     /// Styles a glyph to sit inside a `TopBarPill` as one of its segments.
     /// Use this for `Menu` / `ShareLink` labels where `TopBarPillButton`'s
     /// action-only API doesn't fit.
+    /// Square-frame icon so a single-button `TopBarPill` reads as a perfect
+    /// circle (the outer Capsule fill renders identically to a Circle at a
+    /// 1:1 aspect ratio). Multi-button pills with `TopBarPillDivider` keep
+    /// their capsule silhouette by tiling these squares horizontally.
     func topBarPillLabel(isActive: Bool = false) -> some View {
         self
             .font(.system(size: 18, weight: .regular))
             .foregroundColor(AppText.primary)
-            .frame(width: 44, height: 38)
+            .frame(width: 44, height: 44)
             .background(isActive ? AppInk.solid(0.12) : Color.clear)
             .clipShape(Capsule())
     }
