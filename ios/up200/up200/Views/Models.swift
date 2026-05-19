@@ -7,7 +7,7 @@ import SwiftUI
 // MARK: - Design tokens
 
 enum BrandColor {
-    static let amber = Color(red: 0.78, green: 0.78, blue: 0.80)
+    static let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
 
     /// Primary CTA fill — solid brown-amber, used by the Generate button
     /// and the Accept-rewrite button. Single shared token so every
