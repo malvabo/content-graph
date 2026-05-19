@@ -124,14 +124,25 @@ struct OnboardingView: View {
             // pressed-and-held, rather than a flat black screen. Hit
             // testing is disabled outside .prompt so the blob buttons
             // (rendered above in `captureOverlay`) still receive taps.
-            if step == .capture && (capturePhase == .prompt || capturePhase == .choose) {
-                StarfieldBlurb(active: true)
+            //
+            // Held alive throughout the entire .capture step (rather than
+            // being inserted/removed on each active sub-phase) so the
+            // SwiftUI transition fires exactly once — on the
+            // .constellation → .capture crossing — and the 0.85s delay
+            // below applies only to that one entry. In-capture phase
+            // crossings (.recording → .choose etc.) are driven by the
+            // .opacity modifier on `starfieldVisible` with a prompt 0.45s
+            // curve, so the field reappears under the blob chooser
+            // immediately rather than inheriting the entry delay.
+            if step == .capture {
+                let starfieldVisible = capturePhase == .prompt || capturePhase == .choose
+                StarfieldBlurb(active: starfieldVisible)
                     .ignoresSafeArea()
                     // Held at a permanent dim so the captureOverlay headline
                     // ("Let's capture your first idea") and the press-and-hold
                     // caption read cleanly on top — the blurb is the destination
                     // background, not the focal element.
-                    .opacity(0.65)
+                    .opacity(starfieldVisible ? 0.65 : 0)
                     .contentShape(Rectangle())
                     .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 30) {
                         guard capturePhase == .prompt else { return }
@@ -144,6 +155,7 @@ struct OnboardingView: View {
                     // .choose keeps the gesture from competing for taps
                     // near the bottom blobs.
                     .allowsHitTesting(capturePhase == .prompt)
+                    .animation(.easeInOut(duration: 0.45), value: capturePhase)
                     // Insertion delayed by the cluster's full 0.85s dive
                     // duration so the starfield only begins fading in
                     // *after* the cluster has scaled past the camera and
@@ -152,13 +164,8 @@ struct OnboardingView: View {
                     // dispersing structured cluster, and the eye reads the
                     // two layers as overlapping starfields instead of one
                     // continuous "fly through the cloud into open space"
-                    // beat. The earlier attempt at this (scale(1.8) on
-                    // insertion) overlapped a contracting image on top of
-                    // an expanding one; delaying time instead of changing
-                    // scale resolves the same collision cleanly.
-                    // Removal stays as a plain fade so transitioning out
-                    // of .choose into the waveform / generating scene is
-                    // calm.
+                    // beat. Removal stays as a plain fade so leaving
+                    // .capture (no path today, but defensive) is calm.
                     .transition(
                         .asymmetric(
                             insertion: .opacity.animation(.easeOut(duration: 0.40).delay(0.85)),
