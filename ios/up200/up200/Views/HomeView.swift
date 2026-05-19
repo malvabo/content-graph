@@ -1583,9 +1583,12 @@ private struct SourcesBlock: View {
                     Button { activeSheet = .picker } label: {
                         Image(systemName: "plus")
                             .font(.appCaptionMedium)
-                            .foregroundColor(.white)
+                            .foregroundColor(AppInk.solid(0.80))
                             .frame(width: 30, height: 30)
-                            .background(BrandColor.ctaPrimary)
+                            .background(AppInk.solid(0.10))
+                            .overlay(
+                                Circle().stroke(AppInk.solid(0.14), lineWidth: 0.5)
+                            )
                             .clipShape(Circle())
                     }
                     .buttonStyle(.plain)
@@ -2391,11 +2394,9 @@ private struct PromptField: View {
             Text("Leave empty to generate from sources and format.")
                 .foregroundStyle(AppInk.solid(0.40))
         }
-        // Match the canonical body-text style (17pt, lineSpacing 8,
-        // primary ink) used everywhere else for reading copy. The prompt
-        // composer is the only multi-line field on this sheet, so it
-        // should read at body rhythm rather than the tighter subtext.
-        .appBodyText()
+        .font(.appCaption)
+        .lineSpacing(4)
+        .foregroundColor(AppInk.solid(0.92))
         .tint(AppText.primary)
         .lineLimit(3...6)
         .padding(.horizontal, 16)
