@@ -48,6 +48,14 @@ struct OnboardingView: View {
     @StateObject private var captureRecorder = VoiceRecorder()
     @State private var recordingSeconds: Int = 0
     @State private var specifySeconds: Int = 0
+    // Wall-clock anchor for each recording so the displayed mm:ss is computed
+    // from Date() at render time rather than from a 1-second .task poll, which
+    // drifts under main-thread pressure (the .generating Canvas can stretch
+    // ticks past their nominal 1.0s interval). The Int seconds counters above
+    // are kept as a backing store for the on-screen text so SwiftUI only
+    // invalidates that subtree when the second actually rolls over.
+    @State private var recordingStartedAt: Date = .distantPast
+    @State private var specifyStartedAt: Date = .distantPast
     @State private var showCaptureMicAlert: Bool = false
     @State private var chosenContentLabel: String = ""
     @State private var generatingTask: Task<Void, Never>? = nil
@@ -87,7 +95,14 @@ struct OnboardingView: View {
             if step == .intro {
                 OnboardingSceneView(step: step.rawValue)
                     .ignoresSafeArea()
-                    .transition(.opacity.animation(.easeInOut(duration: 0.85)))
+                    // No inner .animation override — inherit the wrapping
+                    // withAnimation curve set by the Get-started button
+                    // (.easeOut(0.85)). Previously hardcoded easeInOut here
+                    // diverged from the cloud's easeOut zoom curve, so the
+                    // intro fade and the cloud contraction crossed paths at
+                    // different points in the timeline and read as two
+                    // unrelated motions.
+                    .transition(.opacity)
             }
 
             if step == .constellation {
@@ -406,19 +421,22 @@ struct OnboardingView: View {
             removal:   .opacity.animation(.easeOut(duration: 0.22))
         ))
         .task {
-            // Tick the on-screen mm:ss only while the recorder is active.
-            // Loop exits when the view is torn down (SwiftUI cancels .task).
-            // Two counters because the user may record twice — once for the
-            // idea and again to specify "what do you want to" — and each
-            // phase shows its own elapsed time.
+            // Refresh the displayed mm:ss from the wall-clock anchor each
+            // second the recorder is active. Computing from Date() rather
+            // than incrementing a counter avoids the drift the old loop hit
+            // when Task.sleep ran long under main-thread contention — at the
+            // cost of one extra Date() comparison per tick, which is free.
             while !Task.isCancelled {
                 do { try await Task.sleep(nanoseconds: 1_000_000_000) }
                 catch { break }
                 guard captureRecorder.isRecording else { continue }
                 switch capturePhase {
-                case .recording: recordingSeconds += 1
-                case .specify:   specifySeconds += 1
-                default:         break
+                case .recording:
+                    recordingSeconds = Int(Date().timeIntervalSince(recordingStartedAt))
+                case .specify:
+                    specifySeconds = Int(Date().timeIntervalSince(specifyStartedAt))
+                default:
+                    break
                 }
             }
         }
@@ -495,7 +513,7 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .transition(.opacity)
         case .specify:
-            Text("What do you want to?..")
+            Text("What do you want to\u{2026}?")
                 .font(.lora(size: 22, weight: .medium))
                 .kerning(-0.3)
                 .foregroundColor(AppText.primary)
@@ -739,8 +757,18 @@ struct OnboardingView: View {
 
     private func startCaptureRecording() {
         guard capturePhase == .prompt else { return }
+        // .onChange(of: permissionDenied) below only fires on a *transition*
+        // to true; if the user previously denied mic access in a past session
+        // the flag is already true at view load and no .onChange runs. Catch
+        // that case here so the long-press surfaces the alert instead of
+        // silently flipping into a recording state with no audio.
+        if captureRecorder.permissionDenied {
+            showCaptureMicAlert = true
+            return
+        }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         recordingSeconds = 0
+        recordingStartedAt = Date()
         captureRecorder.start()
         withAnimation(.easeInOut(duration: 0.45)) {
             capturePhase = .recording
@@ -761,8 +789,16 @@ struct OnboardingView: View {
     }
 
     private func startSpecifyRecording() {
+        // Same guard as startCaptureRecording — if permission was already
+        // denied (perhaps the user revoked between recordings) surface the
+        // alert instead of pretending to record.
+        if captureRecorder.permissionDenied {
+            showCaptureMicAlert = true
+            return
+        }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         specifySeconds = 0
+        specifyStartedAt = Date()
         captureRecorder.start()
         withAnimation(.easeInOut(duration: 0.45)) {
             capturePhase = .specify
@@ -865,14 +901,29 @@ struct OnboardingView: View {
 
     private func saveTranscriptAsNote(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        // Empty input usually means speech recognition produced nothing — mic
+        // worked but the user spoke too quietly, or the recogniser timed out.
+        // Previously we returned silently here, so "Just save my note for
+        // now" with a failed transcription exited onboarding having persisted
+        // nothing. Save a placeholder so the user still finds *a* note in
+        // their library and can investigate (mic / permissions / Siri lang)
+        // instead of thinking the app discarded their idea.
+        let isPlaceholder = trimmed.isEmpty
+        let body = isPlaceholder
+            ? "Your first voice idea — transcription was empty. Try recording again from the Notes tab."
+            : trimmed
+
         var stored = NotesStore.load()
         var note = Note()
-        note.body = trimmed
+        note.body = body
         note.updatedAt = Date()
         let noteID = note.id
         stored.insert(note, at: 0)
         NotesStore.save(stored)
+
+        // Skip AI-titling for placeholder notes — there's no content to
+        // summarise and we'd just send the placeholder text to the model.
+        guard !isPlaceholder else { return }
 
         // Title in the background so the notes list shows a 3-word summary
         // instead of the first transcript line. This is the only persistence
