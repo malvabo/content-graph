@@ -930,7 +930,7 @@ private struct NoteEditorPage: View {
             // similar to the first line).
             let firstLine = snapshotBody.split(whereSeparator: \.isNewline).first
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) } ?? ""
-            guard cleaned.lowercased() != firstLine.lowercased() else { return }
+            guard !AIService.titleDuplicatesFirstLine(cleaned, firstLine: firstLine) else { return }
             var updated = baseNote
             updated.body = cleaned + "\n" + snapshotBody
             updated.updatedAt = Date()
