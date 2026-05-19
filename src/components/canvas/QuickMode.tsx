@@ -114,8 +114,8 @@ function parseResults(raw: string): Record<string, string> {
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const FIELD_LABEL: React.CSSProperties = {
-  display: 'block', fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)',
-  color: 'var(--color-text-secondary)', marginBottom: 6, letterSpacing: 0.1,
+  display: 'block', fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-sans)',
+  color: 'var(--color-text-secondary)', marginBottom: 6,
 };
 const TEXTAREA: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -164,7 +164,6 @@ function UrlInput() {
   const urlFetchedText = useQuickModeStore(s => s.urlFetchedText);
   const setUrl = useQuickModeStore(s => s.setUrlValue);
   const setFetched = useQuickModeStore(s => s.setUrlFetched);
-  const clearUrl = useQuickModeStore(s => s.clearUrl);
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<{ title: string; domain: string; excerpt: string } | null>(null);
@@ -220,8 +219,8 @@ function UrlInput() {
         disabled={fetching || !urlValue.trim()}
         style={{
           marginTop: 8, padding: '6px 14px',
-          background: 'transparent', border: '1.5px solid var(--color-accent)',
-          borderRadius: 'var(--radius-md)', color: 'var(--color-accent)',
+          background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border-default)',
+          borderRadius: 'var(--radius-md)', color: 'var(--color-text-primary)',
           fontSize: 13, fontFamily: 'var(--font-sans)', cursor: fetching ? 'default' : 'pointer',
           opacity: (!urlValue.trim() || fetching) ? 0.5 : 1, fontWeight: 500,
         }}
@@ -500,24 +499,17 @@ const ResultCard = memo(function ResultCard({ label, content }: { label: string;
 const CONTENT_MAX_WIDTH = 880;
 const SECTION_PAD_X = 32;
 
-function Section({ index, title, sub, children }: {
-  index: number; title: string; sub: string; children: React.ReactNode;
+function Section({ title, sub, children }: {
+  title: string; sub: string; children: React.ReactNode;
 }) {
   return (
     <div>
       <div
         style={{
-          display: 'flex', alignItems: 'baseline', gap: 10,
-          padding: `16px ${SECTION_PAD_X}px 8px`, userSelect: 'none',
+          display: 'flex', alignItems: 'baseline', gap: 8,
+          padding: `20px ${SECTION_PAD_X}px 10px`, userSelect: 'none',
         }}
       >
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 18, height: 18, borderRadius: '50%',
-          background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border-subtle)',
-          fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-sans)',
-          color: 'var(--color-text-tertiary)', flexShrink: 0,
-        }}>{index}</span>
         <span style={{ fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: '22px' }}>{title}</span>
         <span style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{sub}</span>
       </div>
@@ -564,8 +556,8 @@ const STYLES = `
   }
   .qm-check-row:hover { background: var(--color-bg-subtle); }
   .qm-check-box {
-    width: 16px; height: 16px; border-radius: 4px;
-    border: 1.5px solid var(--color-border-default);
+    width: 16px; height: 16px; border-radius: 3px;
+    border: 1.5px solid var(--color-border-strong);
     display: inline-flex; align-items: center; justify-content: center;
     flex-shrink: 0; transition: background 120ms, border-color 120ms;
   }
@@ -895,7 +887,7 @@ export default function QuickMode() {
       {/* Scrollable composition area, centered with a desktop max-width. */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{ maxWidth: CONTENT_MAX_WIDTH, margin: '0 auto' }}>
-          <Section index={1} title="Sources" sub="What you're working with">
+          <Section title="Sources" sub="What you're working with">
             <div className="qm-tabs">
               {SOURCE_DEFS.map(({ key, label, icon }) => {
                 const active = activeSourceTab === key;
@@ -923,7 +915,7 @@ export default function QuickMode() {
 
           <div style={SECTION_DIVIDER} />
 
-          <Section index={2} title="Prompt" sub="What you want it to do">
+          <Section title="Prompt" sub="What you want it to do">
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={FIELD_LABEL}>Instruction</span>
               <div ref={templateMenuRef} style={{ position: 'relative' }}>
@@ -971,16 +963,15 @@ export default function QuickMode() {
 
           <div style={SECTION_DIVIDER} />
 
-          <Section index={3} title="Outputs" sub="Formats to generate">
+          <Section title="Outputs" sub="Formats to generate">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {OUTPUT_GROUPS.map(group => {
                 const items = QUICK_OUTPUTS.filter(o => o.group === group);
                 return (
                   <div key={group}>
                     <div style={{
-                      fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-sans)',
-                      color: 'var(--color-text-tertiary)', letterSpacing: 0.5,
-                      textTransform: 'uppercase', marginBottom: 6,
+                      fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)',
+                      color: 'var(--color-text-tertiary)', marginBottom: 6,
                     }}>{group}</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 }}>
                       {items.map(({ key, label, meta }) => {
@@ -1029,9 +1020,9 @@ export default function QuickMode() {
         <div style={{
           maxWidth: CONTENT_MAX_WIDTH, margin: '0 auto',
           padding: `12px ${SECTION_PAD_X}px`,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 14,
         }}>
-          <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-sans)' }}>
+          <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', fontFamily: 'var(--font-sans)' }}>
             {statusLine}
           </span>
           <button
