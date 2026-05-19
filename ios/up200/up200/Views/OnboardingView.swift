@@ -652,31 +652,35 @@ struct OnboardingView: View {
     }
 
     /// The four `.choose` options rendered as plain circles in a 2×2 grid.
-    /// Each circle has a thin white stroke with a soft outer glow — the
-    /// sharp stroke gives the edge, a blurred copy underneath gives the
-    /// halo. Static, no morphing; circles don't touch or fuse.
+    /// Each circle has a thin white stroke — the stroke alone defines the
+    /// edge, with only a whisper of a halo for soft depth. The earlier
+    /// brighter blurred halo read as "glowing buttons," which fought the
+    /// quiet starfield behind them.
     private var chooseCirclesField: some View {
-        // Each option is either a system symbol or a short text mark
-        // (e.g. "LI" for LinkedIn). Text mode is for brand monograms
-        // where an SF Symbol would feel generic.
         struct ChooseOption {
             let label: String
-            let symbol: String?
-            let textMark: String?
+            let symbol: String
             let action: () -> Void
         }
 
         let options: [ChooseOption] = [
-            ChooseOption(label: "A LinkedIn post", symbol: nil, textMark: "LI", action: {
+            // LinkedIn: briefcase reads as "professional post" and keeps the
+            // four icons in the same outline-SF-Symbol vocabulary. The
+            // previous typographic "LI" sat as a flat letterform next to
+            // three graphical glyphs and visually didn't belong.
+            ChooseOption(label: "A LinkedIn post", symbol: "briefcase", action: {
                 startGeneration(label: "A LinkedIn post", formatID: "linkedin", customPrompt: "")
             }),
-            ChooseOption(label: "A Twitter thread", symbol: "text.bubble", textMark: nil, action: {
+            ChooseOption(label: "A Twitter thread", symbol: "text.bubble", action: {
                 startGeneration(label: "A Twitter thread", formatID: "twitter", customPrompt: "")
             }),
-            ChooseOption(label: "Something else", symbol: "sparkles", textMark: nil, action: {
+            ChooseOption(label: "Something else", symbol: "sparkles", action: {
                 startSpecifyRecording()
             }),
-            ChooseOption(label: "Just save my note for now", symbol: "bookmark", textMark: nil, action: {
+            // square.and.arrow.down is the universal iOS save glyph;
+            // bookmark read more like "bookmark an item" than "save my
+            // note," which is what this action actually does.
+            ChooseOption(label: "Just save my note for now", symbol: "square.and.arrow.down", action: {
                 saveIdeaAndExit()
             })
         ]
@@ -699,16 +703,9 @@ struct OnboardingView: View {
                 ForEach(Array(options.enumerated()), id: \.offset) { idx, opt in
                     Button(action: opt.action) {
                         VStack(spacing: 10) {
-                            if let mark = opt.textMark {
-                                Text(mark)
-                                    .font(.app(size: 22, weight: .semibold))
-                                    .tracking(1.0)
-                                    .foregroundColor(AppText.primary)
-                            } else if let symbol = opt.symbol {
-                                Image(systemName: symbol)
-                                    .font(.system(size: 20, weight: .medium))
-                                    .foregroundColor(AppText.primary)
-                            }
+                            Image(systemName: opt.symbol)
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(AppText.primary)
                             Text(opt.label)
                                 .font(.app(size: 14, weight: .medium))
                                 .foregroundColor(AppText.primary)
@@ -729,18 +726,22 @@ struct OnboardingView: View {
                                 .fill(Color.black.opacity(0.72))
                         )
                         .overlay(
-                            // Blurred outer stroke = soft glow halo. Padded
-                            // outward so the blur has room to bleed past
-                            // the frame edge.
+                            // Whisper of a halo for a hint of depth against
+                            // the starfield — much dimmer than before so it
+                            // doesn't read as "glowing." Padding kept tight
+                            // so the bleed doesn't extend visibly past the
+                            // sharp edge.
                             Circle()
-                                .stroke(Color.white.opacity(0.40), lineWidth: 1.4)
-                                .blur(radius: 3)
-                                .padding(-4)
+                                .stroke(Color.white.opacity(0.10), lineWidth: 1.0)
+                                .blur(radius: 2)
+                                .padding(-2)
                         )
                         .overlay(
-                            // Sharp thin stroke on top defines the edge.
+                            // Sharp thin stroke on top — the only edge the
+                            // eye actually reads. Dialed from 0.60 → 0.38
+                            // so the ring is present but not bright.
                             Circle()
-                                .stroke(Color.white.opacity(0.60), lineWidth: 0.5)
+                                .stroke(Color.white.opacity(0.38), lineWidth: 0.5)
                         )
                         .contentShape(Circle())
                     }
