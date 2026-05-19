@@ -1543,31 +1543,29 @@ private struct MessageBubble: View {
     private var isUser: Bool { message.role == "user" }
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            if isUser { Spacer(minLength: 56) }
-
-            Text(isUser ? AttributedString(message.content) : AppMarkdown.render(message.content))
-                // Canonical body-text rhythm (17pt, lineSpacing 12) — same
-                // modifier note bodies and other reading copy use, so chat
-                // doesn't read denser than the rest of the app. User bubbles
-                // get the brand primary fill (iMessage-style) and override
-                // the body-text colour to white so the saturated brown reads
-                // as the user's "voice" in the thread.
+        if isUser {
+            HStack(alignment: .bottom, spacing: 0) {
+                Spacer(minLength: 56)
+                Text(AttributedString(message.content))
+                    // Canonical body-text rhythm (17pt, lineSpacing 12). User
+                    // bubbles use the brand primary fill (iMessage-style) with
+                    // white text so the user's voice reads distinctly.
+                    .appBodyText()
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(AnyShapeStyle(BrandColor.ctaPrimary))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
+                    .textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        } else {
+            Text(AppMarkdown.render(message.content))
                 .appBodyText()
-                .foregroundColor(isUser ? .white : AppInk.solid(0.92))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(isUser ? AnyShapeStyle(BrandColor.ctaPrimary) : AnyShapeStyle(AppInk.solid(0.05)))
-                .clipShape(RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
-                        .stroke(isUser ? Color.clear : AppInk.solid(0.08), lineWidth: 0.5)
-                )
+                .foregroundColor(AppInk.solid(0.92))
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .textSelection(.enabled)
-
-            if !isUser { Spacer(minLength: 56) }
         }
-        .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
     }
 }
 
