@@ -838,27 +838,15 @@ struct MinimalNoteDetailPage: View {
         }
     }
 
-    /// Splits the body on one-or-more blank lines so the reader can lay
-    /// each paragraph out as its own Text. Within-paragraph single
-    /// newlines are preserved so the rendered text still soft-breaks
-    /// where the user wrote a line break.
+    /// Treats every non-empty line as its own paragraph so the reader
+    /// VStack lays them out with a visible 10pt gap. The old "split only
+    /// on blank lines" rule meant the spacing never showed up unless the
+    /// user pressed Enter twice between paragraphs — most users press it
+    /// once. Whitespace-only lines drop out, so double newlines collapse
+    /// to a single paragraph separator.
     private func paragraphs(in raw: String) -> [String] {
-        var result: [String] = []
-        var current: [String] = []
-        for line in raw.components(separatedBy: "\n") {
-            if line.trimmingCharacters(in: .whitespaces).isEmpty {
-                if !current.isEmpty {
-                    result.append(current.joined(separator: "\n"))
-                    current = []
-                }
-            } else {
-                current.append(line)
-            }
-        }
-        if !current.isEmpty {
-            result.append(current.joined(separator: "\n"))
-        }
-        return result
+        raw.components(separatedBy: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
     // MARK: Floating buttons
