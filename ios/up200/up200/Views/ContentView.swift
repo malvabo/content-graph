@@ -249,6 +249,52 @@ struct DocCardThumb: View {
     }
 }
 
+/// Two overlapping mini-docs in the same visual language as `DocCardThumb`,
+/// rotated ±5° and offset so the combined silhouette fills the same 42×52
+/// footprint. Used by the Notes list for text notes that have more than
+/// one generation attached, so a row's leading graphic immediately says
+/// "this note carries a stack of generated docs" without resizing the
+/// canvas relative to single-doc rows.
+struct DocStackThumb: View {
+    var width: CGFloat = 42
+    var height: CGFloat = 52
+
+    private static let lineWidths: [CGFloat] = [12, 18, 14, 16]
+
+    var body: some View {
+        ZStack {
+            miniDoc
+                .rotationEffect(.degrees(-5))
+                .offset(x: -3, y: -3)
+            miniDoc
+                .rotationEffect(.degrees(5))
+                .offset(x: 3, y: 3)
+        }
+        .frame(width: width, height: height)
+    }
+
+    private var miniDoc: some View {
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(AppInk.solid(0.07))
+            .overlay(
+                VStack(alignment: .leading, spacing: 2.5) {
+                    ForEach(0..<4, id: \.self) { i in
+                        Capsule()
+                            .fill(AppInk.solid(i == 0 ? 0.55 : 0.20))
+                            .frame(width: Self.lineWidths[i], height: i == 0 ? 2.0 : 1.3)
+                    }
+                }
+                .padding(6)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(AppInk.solid(0.12), lineWidth: 0.5)
+            )
+            .frame(width: 32, height: 42)
+    }
+}
+
 private struct LibraryLandingThumb: View {
     let seed: Int
 

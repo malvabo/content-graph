@@ -264,9 +264,12 @@ private enum RowDate {
 /// Tiny illustrative thumb leading each row in the notes list. Same
 /// frame / corner / stroke for every row so adjacent items read as a
 /// consistent strip; the inner glyph switches with `Note.kind` — paper
-/// lines for text, chart bars for sketched drawings.
+/// lines for text, chart bars for sketched drawings. Text notes that
+/// carry more than one generation swap to the two-doc stack so the row's
+/// leading graphic flags multi-output notes without growing the canvas.
 private struct NoteThumb: View {
     let note: Note
+    var hasMultipleGenerations: Bool = false
 
     var body: some View {
         switch note.kind {
@@ -280,7 +283,11 @@ private struct NoteThumb: View {
                 )
                 .frame(width: 42, height: 52)
         case .text:
-            DocCardThumb()
+            if hasMultipleGenerations {
+                DocStackThumb()
+            } else {
+                DocCardThumb()
+            }
         }
     }
 }
@@ -318,6 +325,7 @@ private struct ChartThumbContent: View {
 
 private struct NoteListRow: View {
     let note: Note
+    var hasMultipleGenerations: Bool = false
     private let amber = BrandColor.amber
 
     private var titleText: Text {
@@ -326,7 +334,7 @@ private struct NoteListRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            NoteThumb(note: note)
+            NoteThumb(note: note, hasMultipleGenerations: hasMultipleGenerations)
 
             VStack(alignment: .leading, spacing: 5) {
                 titleText
@@ -1342,6 +1350,11 @@ struct NotesView: View {
     @State private var localSearchText = ""
     @State private var localShowSearch = false
     @State private var selectedFilter: String? = nil
+    /// Note IDs that carry more than one generation in MinimalGenStore.
+    /// Drives the leading thumbnail swap to `DocStackThumb` so the row
+    /// graphic communicates "multiple docs attached" at a glance. Stays
+    /// empty for users who have never created a Minimal-mode generation.
+    @State private var multiGenNoteIds: Set<UUID> = []
     @State private var customTags: [String] = {
         let defaults = UserDefaults.standard
         var tags = defaults.stringArray(forKey: "note_custom_tags") ?? []
@@ -1513,6 +1526,18 @@ struct NotesView: View {
         NotesStore.saveInBackground(notes)
     }
 
+    /// Recomputes the set of note IDs that have more than one attached
+    /// generation. Called from `.task` on first appear and from the
+    /// MinimalGenStore change notification so the thumbnail flips the
+    /// moment a second generation is added or the last one is removed.
+    private func reloadMultiGenIds() {
+        let counts = MinimalGenStore.load().reduce(into: [UUID: Int]()) { acc, gen in
+            acc[gen.noteId, default: 0] += 1
+        }
+        let next = Set(counts.compactMap { $0.value > 1 ? $0.key : nil })
+        if next != multiGenNoteIds { multiGenNoteIds = next }
+    }
+
     private func removeTag(_ tag: String) {
         customTags.removeAll { $0 == tag }
         UserDefaults.standard.set(customTags, forKey: "note_custom_tags")
@@ -1593,7 +1618,7 @@ struct NotesView: View {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             editingNote = note
         } label: {
-            NoteListRow(note: note)
+            NoteListRow(note: note, hasMultipleGenerations: multiGenNoteIds.contains(note.id))
         }
         .buttonStyle(.plain)
         .listRowInsets(EdgeInsets())
@@ -1867,8 +1892,12 @@ struct NotesView: View {
             }
             .task {
                 notes = await NotesStore.loadAsync()
+                reloadMultiGenIds()
                 retroTitleUntitledNotes()
             }
+        .onReceive(NotificationCenter.default.publisher(for: .minimalGenStoreDidChange)) { _ in
+            reloadMultiGenIds()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .notesStoreDidChange)) { _ in
             // Skip if this view has a debounced save in flight; the disk may be
             // stale relative to in-memory edits and reloading would clobber them.
