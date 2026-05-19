@@ -4,25 +4,29 @@ import { useSettingsStore } from '../../store/settingsStore';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const QUICK_OUTPUTS = [
-  { key: 'linkedin-post',  label: 'LinkedIn Post' },
-  { key: 'twitter-thread', label: 'Twitter Thread' },
-  { key: 'twitter-single', label: 'Twitter Single' },
-  { key: 'ig-carousel',    label: 'IG Carousel' },
-  { key: 'blog-article',   label: 'Blog Article' },
-  { key: 'newsletter',     label: 'Newsletter' },
-  { key: 'infographic',    label: 'Infographic' },
-  { key: 'quote-card',     label: 'Quote Card' },
-  { key: 'image-prompt',   label: 'Image Prompt' },
-] as const;
+type OutputGroup = 'Social' | 'Long-form' | 'Visual';
+
+const QUICK_OUTPUTS: { key: string; label: string; group: OutputGroup; meta: string }[] = [
+  { key: 'linkedin-post',  label: 'LinkedIn Post',   group: 'Social',    meta: '~1,300 chars' },
+  { key: 'twitter-thread', label: 'Twitter Thread',  group: 'Social',    meta: '5–8 tweets' },
+  { key: 'twitter-single', label: 'Twitter Single',  group: 'Social',    meta: '≤ 280 chars' },
+  { key: 'ig-carousel',    label: 'IG Carousel',     group: 'Social',    meta: '5–7 slides' },
+  { key: 'blog-article',   label: 'Blog Article',    group: 'Long-form', meta: '600–1,200 words' },
+  { key: 'newsletter',     label: 'Newsletter',      group: 'Long-form', meta: '2–3 sections' },
+  { key: 'infographic',    label: 'Infographic',     group: 'Visual',    meta: 'data + 5 facts' },
+  { key: 'quote-card',     label: 'Quote Card',      group: 'Visual',    meta: 'pull quote' },
+  { key: 'image-prompt',   label: 'Image Prompt',    group: 'Visual',    meta: 'scene description' },
+];
+
+const OUTPUT_GROUPS: OutputGroup[] = ['Social', 'Long-form', 'Visual'];
 
 const QUICK_TEMPLATES = [
-  { key: 'social',    label: 'Repurpose for social',  text: 'Turn this into social content. Adapt the tone and length for each format. Keep the core message intact.' },
-  { key: 'extract',   label: 'Extract key points',    text: 'Extract the most important points from this source. Be concise. Use plain language. No filler.' },
-  { key: 'summarise', label: 'Summarise',              text: 'Summarise this in plain language. Aim for clarity over completeness. One paragraph maximum.' },
-  { key: 'audience',  label: 'Rewrite for audience',  text: 'Rewrite this for a general audience with no specialist knowledge. Keep the meaning. Remove jargon.' },
-  { key: 'series',    label: 'Content series',         text: 'Turn this into a multi-part content series. Each piece should stand alone but connect to the others.' },
-  { key: 'draft',     label: 'Draft from notes',       text: 'Use these notes as a brief. Write a first draft. Fill in gaps with reasonable assumptions and flag them.' },
+  { key: 'social',    label: 'Repurpose for social',  preview: 'Turn this into social content, tuned per format',           text: 'Turn this into social content. Adapt the tone and length for each format. Keep the core message intact.' },
+  { key: 'extract',   label: 'Extract key points',    preview: 'Pull out the important bits, plain language, no filler',    text: 'Extract the most important points from this source. Be concise. Use plain language. No filler.' },
+  { key: 'summarise', label: 'Summarise',             preview: 'One paragraph, clarity over completeness',                  text: 'Summarise this in plain language. Aim for clarity over completeness. One paragraph maximum.' },
+  { key: 'audience',  label: 'Rewrite for audience',  preview: 'For a general audience — drop the jargon, keep the meaning', text: 'Rewrite this for a general audience with no specialist knowledge. Keep the meaning. Remove jargon.' },
+  { key: 'series',    label: 'Content series',        preview: 'Multi-part series, each piece stands alone',                text: 'Turn this into a multi-part content series. Each piece should stand alone but connect to the others.' },
+  { key: 'draft',     label: 'Draft from notes',      preview: 'Treat as notes — write a first draft, flag assumptions',    text: 'Use these notes as a brief. Write a first draft. Fill in gaps with reasonable assumptions and flag them.' },
 ];
 
 const SOURCE_DEFS: { key: SourceType; label: string; icon: JSX.Element }[] = [
@@ -109,13 +113,6 @@ function parseResults(raw: string): Record<string, string> {
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
-const CHIP_BASE: React.CSSProperties = {
-  display: 'inline-flex', alignItems: 'center', gap: 6,
-  padding: '6px 14px', borderRadius: 'var(--radius-full)',
-  fontSize: 13, lineHeight: '18px', fontFamily: 'var(--font-sans)',
-  cursor: 'pointer', transition: 'border-color 120ms, background 120ms, color 120ms',
-  whiteSpace: 'nowrap', userSelect: 'none',
-};
 const FIELD_LABEL: React.CSSProperties = {
   display: 'block', fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-sans)',
   color: 'var(--color-text-secondary)', marginBottom: 6, letterSpacing: 0.1,
@@ -533,33 +530,88 @@ const STYLES = `
   @keyframes qm-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(201,48,48,0.4); } 50% { box-shadow: 0 0 0 8px rgba(201,48,48,0); } }
   @keyframes spin { to { transform: rotate(360deg); } }
   .qm-source-input { transition: opacity 200ms; }
-  .qm-chip {
-    background: transparent;
-    border: 1px solid var(--color-border-default);
-    color: var(--color-text-secondary);
+
+  /* Source tabs */
+  .qm-tabs {
+    display: flex; align-items: stretch; gap: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+    margin-bottom: 16px;
   }
-  .qm-chip:hover {
-    border-color: var(--color-border-strong);
+  .qm-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px; background: transparent; border: none;
+    font-family: var(--font-sans); font-size: 13px; line-height: 18px;
+    color: var(--color-text-tertiary); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: color 120ms, border-color 120ms;
+  }
+  .qm-tab:hover { color: var(--color-text-primary); }
+  .qm-tab.active {
     color: var(--color-text-primary);
+    border-bottom-color: var(--color-accent);
   }
-  .qm-chip.active {
-    border-color: var(--color-accent);
-    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
-    color: var(--color-accent);
+  .qm-tab-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--color-accent); flex-shrink: 0;
   }
-  .qm-chip.active:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
+
+  /* Checklist */
+  .qm-check-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: var(--radius-md);
+    cursor: pointer; user-select: none;
+    transition: background 120ms;
   }
-  .qm-template-row {
-    position: relative;
+  .qm-check-row:hover { background: var(--color-bg-subtle); }
+  .qm-check-box {
+    width: 16px; height: 16px; border-radius: 4px;
+    border: 1.5px solid var(--color-border-default);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 120ms, border-color 120ms;
   }
-  .qm-template-row::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0; bottom: 0; width: 32px;
-    pointer-events: none;
-    background: linear-gradient(to right, transparent, var(--color-bg));
+  .qm-check-row.active .qm-check-box {
+    background: var(--color-accent); border-color: var(--color-accent);
+  }
+  .qm-check-tick {
+    opacity: 0; transition: opacity 120ms;
+  }
+  .qm-check-row.active .qm-check-tick { opacity: 1; }
+
+  /* Template menu */
+  .qm-template-trigger {
+    background: transparent; border: none; padding: 0;
+    font-family: var(--font-sans); font-size: 13px;
+    color: var(--color-text-secondary); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: color 120ms;
+  }
+  .qm-template-trigger:hover { color: var(--color-accent); }
+  .qm-template-menu {
+    position: absolute; right: 0; top: calc(100% + 6px);
+    min-width: 320px; max-width: 380px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-panel);
+    z-index: 30; overflow: hidden;
+  }
+  .qm-template-item {
+    display: block; width: 100%; text-align: left;
+    padding: 10px 14px; background: transparent; border: none;
+    cursor: pointer; transition: background 120ms;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .qm-template-item:last-child { border-bottom: none; }
+  .qm-template-item:hover { background: var(--color-bg-subtle); }
+  .qm-template-name {
+    display: block; font-family: var(--font-sans);
+    font-size: 13px; font-weight: 600;
+    color: var(--color-text-primary); margin-bottom: 2px;
+  }
+  .qm-template-preview {
+    display: block; font-family: var(--font-sans);
+    font-size: 12px; line-height: 16px;
+    color: var(--color-text-tertiary);
   }
 `;
 
@@ -572,6 +624,36 @@ export default function QuickMode() {
   const store = useQuickModeStore();
 
   const [view, setView] = useState<View>('setup');
+  const [activeSourceTab, setActiveSourceTab] = useState<SourceType>(
+    store.selectedSources[0] ?? 'text'
+  );
+  const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
+  const templateMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!templateMenuOpen) return;
+    const h = (e: MouseEvent) => {
+      if (templateMenuRef.current && !templateMenuRef.current.contains(e.target as Node)) {
+        setTemplateMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', h, true);
+    return () => document.removeEventListener('pointerdown', h, true);
+  }, [templateMenuOpen]);
+
+  const sourceHasContent = useCallback((type: SourceType): boolean => {
+    if (type === 'text')  return store.textValue.trim().length > 0;
+    if (type === 'url')   return store.urlFetchedText.trim().length > 0;
+    if (type === 'file')  return store.fileText.trim().length > 0;
+    if (type === 'voice') return store.voiceTranscript.trim().length > 0;
+    return false;
+  }, [store.textValue, store.urlFetchedText, store.fileText, store.voiceTranscript]);
+
+  const switchTab = useCallback((type: SourceType) => {
+    setActiveSourceTab(type);
+    if (!store.selectedSources.includes(type)) {
+      store.setSources([...store.selectedSources, type]);
+    }
+  }, [store]);
 
   // Run state lives locally — resets on mode switch, which is fine
   const [runState, setRunState] = useState<RunState>('idle');
@@ -599,17 +681,6 @@ export default function QuickMode() {
     return false;
   });
   const canRun = hasSourceContent && store.promptValue.trim().length > 0 && store.selectedOutputs.length > 0;
-
-  // ── Source chip toggle ──
-  const toggleSource = useCallback((type: SourceType) => {
-    const cur = store.selectedSources;
-    if (cur.includes(type)) {
-      if (cur.length === 1) return;
-      store.setSources(cur.filter(t => t !== type));
-    } else {
-      store.setSources([...cur, type]);
-    }
-  }, [store]);
 
   // ── Output chip toggle ──
   const toggleOutput = useCallback((key: string) => {
@@ -803,19 +874,18 @@ export default function QuickMode() {
 
   // ── Setup page ──
   // Status line: what's missing, or a live summary of what's picked.
+  const sourcesWithContent = (['text','url','file','voice'] as const).filter(sourceHasContent);
   let statusLine: React.ReactNode;
   if (!hasSourceContent) {
-    statusLine = store.selectedSources.length === 0
-      ? 'Pick a source to start'
-      : 'Add content to your source';
+    statusLine = 'Add content to a source to start';
   } else if (store.promptValue.trim().length === 0) {
     statusLine = 'Write a prompt or pick a template';
   } else if (store.selectedOutputs.length === 0) {
     statusLine = 'Pick at least one output format';
   } else {
-    const srcWord = store.selectedSources.length === 1 ? 'source' : 'sources';
+    const srcWord = sourcesWithContent.length === 1 ? 'source' : 'sources';
     const outWord = store.selectedOutputs.length === 1 ? 'output' : 'outputs';
-    statusLine = `${store.selectedSources.length} ${srcWord} · ${sourceCharCount.toLocaleString()} chars · ${store.selectedOutputs.length} ${outWord}`;
+    statusLine = `${sourcesWithContent.length} ${srcWord} · ${sourceCharCount.toLocaleString()} chars · ${store.selectedOutputs.length} ${outWord}`;
   }
 
   return (
@@ -826,52 +896,72 @@ export default function QuickMode() {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{ maxWidth: CONTENT_MAX_WIDTH, margin: '0 auto' }}>
           <Section index={1} title="Sources" sub="What you're working with">
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: store.selectedSources.length > 0 ? 16 : 0 }}>
+            <div className="qm-tabs">
               {SOURCE_DEFS.map(({ key, label, icon }) => {
-                const active = store.selectedSources.includes(key);
+                const active = activeSourceTab === key;
+                const hasContent = sourceHasContent(key);
                 return (
-                  <button key={key} onClick={() => toggleSource(key)} className={`qm-chip${active ? ' active' : ''}`} style={CHIP_BASE}>
-                    {icon}{label}
+                  <button
+                    key={key}
+                    onClick={() => switchTab(key)}
+                    className={`qm-tab${active ? ' active' : ''}`}
+                  >
+                    {icon}
+                    <span>{label}</span>
+                    {hasContent && <span className="qm-tab-dot" aria-label="has content" />}
                   </button>
                 );
               })}
             </div>
-            {store.selectedSources.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {store.selectedSources.map(type => (
-                  <div key={type} className="qm-source-input">
-                    {type === 'text'  && <TextInput />}
-                    {type === 'url'   && <UrlInput />}
-                    {type === 'file'  && <FileInput />}
-                    {type === 'voice' && <VoiceInput />}
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="qm-source-input">
+              {activeSourceTab === 'text'  && <TextInput />}
+              {activeSourceTab === 'url'   && <UrlInput />}
+              {activeSourceTab === 'file'  && <FileInput />}
+              {activeSourceTab === 'voice' && <VoiceInput />}
+            </div>
           </Section>
 
           <div style={SECTION_DIVIDER} />
 
           <Section index={2} title="Prompt" sub="What you want it to do">
-            <div className="qm-template-row" style={{ marginBottom: 10 }}>
-              <div style={{ overflowX: 'auto', display: 'flex', gap: 8, paddingBottom: 4, paddingRight: 32, scrollbarWidth: 'none' }}>
-                {QUICK_TEMPLATES.map(tpl => {
-                  const active = store.templateKey === tpl.key;
-                  return (
-                    <button
-                      key={tpl.key}
-                      onClick={() => selectTemplate(tpl.key)}
-                      className={`qm-chip${active ? ' active' : ''}`} style={{ ...CHIP_BASE, flexShrink: 0 }}
-                    >
-                      {tpl.label}
-                    </button>
-                  );
-                })}
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={FIELD_LABEL}>Instruction</span>
+              <div ref={templateMenuRef} style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  className="qm-template-trigger"
+                  onClick={() => setTemplateMenuOpen(o => !o)}
+                >
+                  {(() => {
+                    const active = QUICK_TEMPLATES.find(t => t.key === store.templateKey);
+                    return active
+                      ? <>Template: <span style={{ color: 'var(--color-accent)', fontWeight: 500 }}>{active.label}</span> · change</>
+                      : <>Start from a template</>;
+                  })()}
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: templateMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}>
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </button>
+                {templateMenuOpen && (
+                  <div className="qm-template-menu">
+                    {QUICK_TEMPLATES.map(tpl => (
+                      <button
+                        key={tpl.key}
+                        type="button"
+                        className="qm-template-item"
+                        onClick={() => { selectTemplate(tpl.key); setTemplateMenuOpen(false); }}
+                      >
+                        <span className="qm-template-name">{tpl.label}</span>
+                        <span className="qm-template-preview">{tpl.preview}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <textarea
               style={{ ...TEXTAREA, minHeight: 120 }}
-              placeholder="Write your instruction here, or pick a template above"
+              placeholder="Write your instruction here, or pick a template"
               value={store.promptValue}
               onChange={e => { store.setPrompt(e.target.value); if (store.templateKey) store.setTemplate(null); }}
               onFocus={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
@@ -882,17 +972,45 @@ export default function QuickMode() {
           <div style={SECTION_DIVIDER} />
 
           <Section index={3} title="Outputs" sub="Formats to generate">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-              {QUICK_OUTPUTS.map(({ key, label }) => {
-                const active = store.selectedOutputs.includes(key);
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {OUTPUT_GROUPS.map(group => {
+                const items = QUICK_OUTPUTS.filter(o => o.group === group);
                 return (
-                  <button
-                    key={key}
-                    onClick={() => toggleOutput(key)}
-                    className={`qm-chip${active ? ' active' : ''}`} style={{ ...CHIP_BASE, borderRadius: 'var(--radius-md)', padding: '10px 14px', justifyContent: 'flex-start' }}
-                  >
-                    {label}
-                  </button>
+                  <div key={group}>
+                    <div style={{
+                      fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-sans)',
+                      color: 'var(--color-text-tertiary)', letterSpacing: 0.5,
+                      textTransform: 'uppercase', marginBottom: 6,
+                    }}>{group}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 }}>
+                      {items.map(({ key, label, meta }) => {
+                        const active = store.selectedOutputs.includes(key);
+                        return (
+                          <div
+                            key={key}
+                            role="checkbox"
+                            aria-checked={active}
+                            tabIndex={0}
+                            onClick={() => toggleOutput(key)}
+                            onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleOutput(key); } }}
+                            className={`qm-check-row${active ? ' active' : ''}`}
+                          >
+                            <span className="qm-check-box">
+                              <svg className="qm-check-tick" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M5 12l5 5L20 7"/>
+                              </svg>
+                            </span>
+                            <span style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', flex: 1, lineHeight: '18px' }}>
+                              {label}
+                            </span>
+                            <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)', flexShrink: 0 }}>
+                              {meta}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
               })}
             </div>
