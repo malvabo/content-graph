@@ -460,7 +460,11 @@ struct ChatView: View {
     @State private var inputTextBeforeDictation: String = ""
     @State private var inputFocused: Bool = false
 
-    private let bg = AppBackground.primary
+    private let bg = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.09, green: 0.08, blue: 0.07, alpha: 1.0)
+            : UIColor(red: 0.965, green: 0.955, blue: 0.935, alpha: 1.0)
+    })
 
     private var documentSources: [ChatContextSource] {
         cachedProjects.map { proj in
