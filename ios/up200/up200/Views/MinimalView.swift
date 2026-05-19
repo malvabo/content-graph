@@ -433,14 +433,13 @@ struct MinimalNoteDetailPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            // Bottom-leading: the AI toolbar (sparkles / chat / wand).
-            // Hidden while dictating so the recording row owns the bottom
-            // edge and the user can't accidentally tap into AI sheets
+            // Bottom-leading: the AI toolbar (sparkles / wand). Hidden
+            // while dictating so the recording row owns the bottom edge
+            // and the user can't accidentally tap into AI sheets
             // mid-utterance.
             if !dictation.isRecording {
                 HStack(spacing: 12) {
                     aiSparklesButton
-                    aiChatButton
                     aiWandButton
                 }
                 .padding(.leading, 20)
@@ -449,28 +448,35 @@ struct MinimalNoteDetailPage: View {
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
 
-            // Bottom-trailing: in-editor dictation. Only mounts once the
-            // user has tapped into a field — there's nowhere for the
-            // transcribed text to land otherwise.
-            if dictation.isRecording || editorFocused {
-                DictationControls(
-                    dictation: dictation,
-                    onStart: {
-                        bodyBeforeDictation = editText
-                        dictation.start()
-                    },
-                    onCancel: {
-                        dictation.cancel()
-                        editText = bodyBeforeDictation
-                    },
-                    onConfirm: {
-                        dictation.stop()
-                    }
-                )
-                .padding(.trailing, 20)
-                .padding(.bottom, 8)
-                .transition(.scale(scale: 0.85).combined(with: .opacity))
+            // Bottom-trailing: chat sits on top, in-editor dictation
+            // stacks below it when the user focuses the editor. Both are
+            // hidden while dictating except for the dictation row itself.
+            VStack(spacing: 12) {
+                if !dictation.isRecording {
+                    aiChatButton
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
+                }
+                if dictation.isRecording || editorFocused {
+                    DictationControls(
+                        dictation: dictation,
+                        onStart: {
+                            bodyBeforeDictation = editText
+                            dictation.start()
+                        },
+                        onCancel: {
+                            dictation.cancel()
+                            editText = bodyBeforeDictation
+                        },
+                        onConfirm: {
+                            dictation.stop()
+                        }
+                    )
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
+                }
             }
+            .padding(.trailing, 20)
+            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: isGenerating)

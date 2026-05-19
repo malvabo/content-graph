@@ -1021,38 +1021,44 @@ private struct NoteEditorPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            // Idle mic only appears once the user has tapped into a field —
-            // the recording row stays for the duration of dictation so the
-            // user can always cancel or confirm.
-            if dictation.isRecording || focus != nil {
-                DictationControls(
-                    dictation: dictation,
-                    onStart: {
-                        bodyBeforeDictation = noteBody
-                        dictation.start()
-                    },
-                    onCancel: {
-                        dictation.cancel()
-                        noteBody = bodyBeforeDictation
-                    },
-                    onConfirm: {
-                        dictation.stop()
-                    }
-                )
-                .padding(.trailing, 20)
-                .padding(.bottom, 8)
-                .transition(.scale(scale: 0.85).combined(with: .opacity))
+            // Bottom-trailing: chat sits on top, dictation stacks below
+            // it once the user focuses a field. The dictation row stays
+            // for the duration of recording so the user can always
+            // cancel or confirm; chat hides while dictating so the
+            // recording row owns the bottom edge.
+            VStack(spacing: 12) {
+                if !dictation.isRecording {
+                    chatButton
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
+                }
+                if dictation.isRecording || focus != nil {
+                    DictationControls(
+                        dictation: dictation,
+                        onStart: {
+                            bodyBeforeDictation = noteBody
+                            dictation.start()
+                        },
+                        onCancel: {
+                            dictation.cancel()
+                            noteBody = bodyBeforeDictation
+                        },
+                        onConfirm: {
+                            dictation.stop()
+                        }
+                    )
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
+                }
             }
+            .padding(.trailing, 20)
+            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
 
             if !dictation.isRecording {
-                HStack(spacing: 12) {
-                    magicButton
-                    chatButton
-                }
-                .padding(.leading, 20)
-                .padding(.bottom, 8)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .transition(.scale(scale: 0.85).combined(with: .opacity))
+                magicButton
+                    .padding(.leading, 20)
+                    .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
