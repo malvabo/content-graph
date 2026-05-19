@@ -32,6 +32,12 @@ private enum CapturePhase {
 struct OnboardingView: View {
     var onGetStarted: () -> Void
     var onLogin: () -> Void
+    /// Optional close affordance for re-triggered presentations (e.g.
+    /// "Show onboarding" from Profile). When non-nil, a small X button
+    /// renders in the top-right and dismisses without requiring the
+    /// user to complete the flow. First-launch presentations pass nil
+    /// to enforce a complete sign-in path.
+    var onClose: (() -> Void)? = nil
 
     @State private var step: OnboardingStep = .intro
     @State private var appeared = false
@@ -213,6 +219,34 @@ struct OnboardingView: View {
             case .intro:         introOverlay
             case .constellation: constellationOverlay
             case .capture:       captureOverlay
+            }
+
+            // Top-right close button, only when an `onClose` callback was
+            // supplied. Sits above the rest of the overlays so it remains
+            // reachable across every step (intro / constellation / capture).
+            if let onClose {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: onClose) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(Color.white.opacity(0.70))
+                                .frame(width: 32, height: 32)
+                                .background(Color.white.opacity(0.10))
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(Color.white.opacity(0.15), lineWidth: 0.5))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Close onboarding")
+                        .padding(.trailing, 12)
+                        .padding(.top, 8)
+                    }
+                    Spacer()
+                }
+                .ignoresSafeArea(edges: [])
             }
         }
         .onAppear { appeared = true }
