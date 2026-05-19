@@ -63,6 +63,14 @@ struct OnboardingView: View {
     // scene used during .capture/.generating, so the "one idea → graph"
     // metaphor is spoken in the same visual vocabulary across onboarding.
     @State private var constellationStartedAt: Date = .distantPast
+    // Set at the instant the .constellation → .capture dive begins. The
+    // cluster scene freezes at this time for the duration of the scale-out:
+    // without it, the cluster's rotation + amber spark firings keep running
+    // *while* the view is being scaled 1× → 3.5×, and every pixel of that
+    // internal motion gets amplified by the scale-up — the eye reads it as
+    // trembling rather than a clean dive. Holding the cluster on a single
+    // frame for the dive makes the zoom a pure motion of one still image.
+    @State private var diveStartedAt: Date? = nil
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
@@ -83,18 +91,24 @@ struct OnboardingView: View {
             }
 
             if step == .constellation {
-                GeneratingCloudScene(generationStartedAt: constellationStartedAt)
+                GeneratingCloudScene(generationStartedAt: constellationStartedAt,
+                                     frozenAt: diveStartedAt)
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
                     // On removal (.constellation → .capture) the cluster
                     // scales past the camera and fades — the user is
                     // *flying into* the cloud rather than cutting to a new
-                    // screen. Insertion stays as a plain fade so arriving
-                    // at this step is unchanged.
+                    // screen. Scale dialled back from 4.5× → 3.5× because
+                    // the larger value over-amplified the cluster's still
+                    // visible internal animations at the edges of the dive
+                    // even with the scene frozen; 3.5× is enough to read
+                    // as "past the camera" without the corners shearing.
+                    // Insertion stays as a plain fade so arriving at this
+                    // step is unchanged.
                     .transition(
                         .asymmetric(
                             insertion: .opacity,
-                            removal: .scale(scale: 4.5).combined(with: .opacity)
+                            removal: .scale(scale: 3.5).combined(with: .opacity)
                         )
                     )
             }
@@ -297,11 +311,24 @@ struct OnboardingView: View {
             try? await Task.sleep(nanoseconds: 6_500_000_000)
             guard !Task.isCancelled else { return }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            // Longer than a regular step swap — the cluster has to
-            // travel from a comfortable read-size to past-camera scale,
-            // and the starfield has to settle back from its rushing
-            // entry. Below ~0.85s the dive reads as a snap zoom.
-            withAnimation(.easeInOut(duration: 0.95)) {
+            // Freeze the cluster on a single frame for the duration of the
+            // dive (see comment on `diveStartedAt`). Has to be set on the
+            // same runloop tick as the step change so the scene picks up
+            // the frozen time before its removal transition starts
+            // animating — otherwise we get one or two frames of live
+            // rotation that read as a jolt right at the start of the dive.
+            diveStartedAt = Date()
+            // 0.85s, easeIn — with the cluster frozen on a single frame,
+            // the dive is just a still image scaling + fading. easeIn
+            // (gentle start, accelerating into the end) reads as a real
+            // camera pushing forward: the cluster sits a beat, the camera
+            // starts moving, then plunges through. easeInOut had a slow
+            // ending that lingered on the magnified, mostly-faded frame,
+            // and easeOut started with a jolt before there was anything
+            // to dive through. The shorter window (0.85s vs 0.95s) cuts
+            // the late, near-zero-opacity tail where the scaled-up cluster
+            // would otherwise still be detectable.
+            withAnimation(.easeIn(duration: 0.85)) {
                 step = .capture
             }
         }
@@ -996,6 +1023,14 @@ private struct OnboardingRecordingWaveform: View {
 ///    returns and the view is replaced.
 private struct GeneratingCloudScene: View {
     let generationStartedAt: Date
+    // When non-nil, the scene renders as if `elapsed` were locked at
+    // `frozenAt - generationStartedAt` and the TimelineView's ongoing
+    // ticks are ignored. Used during the onboarding dive (.constellation
+    // → .capture) to hold the cluster on a single frame while the view
+    // is scaled past the camera — no rotation + spark amplification at
+    // 3.5× scale. Default nil keeps the long-running .generating use of
+    // this scene unchanged.
+    var frozenAt: Date? = nil
 
     private let centralStarCount = 120
     private let amber = Color(red: 1.00, green: 0.68, blue: 0.20)
@@ -1029,7 +1064,8 @@ private struct GeneratingCloudScene: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 40.0)) { context in
-            let elapsed = context.date.timeIntervalSince(generationStartedAt)
+            let now = frozenAt ?? context.date
+            let elapsed = now.timeIntervalSince(generationStartedAt)
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
