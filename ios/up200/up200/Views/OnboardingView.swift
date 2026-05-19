@@ -124,14 +124,25 @@ struct OnboardingView: View {
             // pressed-and-held, rather than a flat black screen. Hit
             // testing is disabled outside .prompt so the blob buttons
             // (rendered above in `captureOverlay`) still receive taps.
-            if step == .capture && (capturePhase == .prompt || capturePhase == .choose) {
-                StarfieldBlurb(active: true)
+            //
+            // Held alive throughout the entire .capture step (rather than
+            // being inserted/removed on each active sub-phase) so the
+            // SwiftUI transition fires exactly once — on the
+            // .constellation → .capture crossing — and the 0.85s delay
+            // below applies only to that one entry. In-capture phase
+            // crossings (.recording → .choose etc.) are driven by the
+            // .opacity modifier on `starfieldVisible` with a prompt 0.45s
+            // curve, so the field reappears under the blob chooser
+            // immediately rather than inheriting the entry delay.
+            if step == .capture {
+                let starfieldVisible = capturePhase == .prompt || capturePhase == .choose
+                StarfieldBlurb(active: starfieldVisible)
                     .ignoresSafeArea()
                     // Held at a permanent dim so the captureOverlay headline
                     // ("Let's capture your first idea") and the press-and-hold
                     // caption read cleanly on top — the blurb is the destination
                     // background, not the focal element.
-                    .opacity(0.65)
+                    .opacity(starfieldVisible ? 0.65 : 0)
                     .contentShape(Rectangle())
                     .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 30) {
                         guard capturePhase == .prompt else { return }
@@ -144,20 +155,20 @@ struct OnboardingView: View {
                     // .choose keeps the gesture from competing for taps
                     // near the bottom blobs.
                     .allowsHitTesting(capturePhase == .prompt)
-                    // Plain cross-fade. The previous insertion was
-                    // .scale(scale: 1.8) combined with opacity, which made
-                    // the destination blurb appear at 1.8× and contract
-                    // into place on top of the still-dispersing cluster —
-                    // the eye read it as a second image landing on top
-                    // mid-zoom. Removing the scale lets the cluster's own
-                    // scale-out own the entire "zoom in" beat, and the
-                    // blurb just fades up from behind it on the same curve.
-                    // Removal stays as a plain fade so transitioning out
-                    // of .choose into the waveform / generating scene is
-                    // calm.
+                    .animation(.easeInOut(duration: 0.45), value: capturePhase)
+                    // Insertion delayed by the cluster's full 0.85s dive
+                    // duration so the starfield only begins fading in
+                    // *after* the cluster has scaled past the camera and
+                    // cleared the frame. Without the delay, the new
+                    // full-screen blurb fades up at 0% over a still-
+                    // dispersing structured cluster, and the eye reads the
+                    // two layers as overlapping starfields instead of one
+                    // continuous "fly through the cloud into open space"
+                    // beat. Removal stays as a plain fade so leaving
+                    // .capture (no path today, but defensive) is calm.
                     .transition(
                         .asymmetric(
-                            insertion: .opacity,
+                            insertion: .opacity.animation(.easeOut(duration: 0.40).delay(0.85)),
                             removal: .opacity
                         )
                     )
@@ -380,18 +391,18 @@ struct OnboardingView: View {
         // screen where the long-press silently fails to fire.
         .allowsHitTesting(capturePhase != .prompt)
         .animation(.easeInOut(duration: 0.45), value: capturePhase)
-        // Enter: hold the headline back until the dive has resolved
-        // (cluster has scaled past the camera and the starfield has
-        // settled). Pushed further than the previous overlays (0.50 vs
-        // 0.35) because the .constellation → .capture transition is a
-        // 0.95s dive — appearing at 0.25s used to spawn the headline
-        // while the cluster was still blowing past, which made the new
-        // copy land on top of the old one.
+        // Enter: hold the headline back until the cluster's 0.85s dive
+        // has fully resolved, so the copy lands on the same beat as the
+        // starfield blurb behind it rather than 0.35s ahead. Previous
+        // 0.50 delay had the headline appear mid-dive on top of a still-
+        // dispersing cluster; matching the starfield's 0.85 delay keeps
+        // the entire new screen — background + copy — arriving as one
+        // coherent beat after the cluster is gone.
         // Exit: not actually used today (.capture is terminal in
         // onboarding) but mirror the pattern so it's correct if the flow
         // ever reverses.
         .transition(.asymmetric(
-            insertion: .opacity.animation(.easeOut(duration: 0.40).delay(0.50)),
+            insertion: .opacity.animation(.easeOut(duration: 0.40).delay(0.85)),
             removal:   .opacity.animation(.easeOut(duration: 0.22))
         ))
         .task {
