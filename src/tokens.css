@@ -302,7 +302,7 @@
   --color-nav-item-active: #232323;
   --color-nav-item-hover: rgba(230, 230, 230, 0.06);
   --color-bg: #0d0d0f;
-  --color-bg-canvas: radial-gradient(ellipse 70% 50% at 90% 100%, rgba(10,50,22,0.28) 0%, rgba(8,28,14,0.1) 45%, transparent 70%), #0d0d0f;
+  --color-bg-canvas: radial-gradient(ellipse 80% 60% at 90% 95%, rgba(12,65,30,0.6) 0%, rgba(8,32,16,0.25) 38%, transparent 62%), #0d0d0f;
   --color-bg-surface: #161616;
   --color-bg-card: #1f1f1f;
   --color-bg-modal: #141414;
