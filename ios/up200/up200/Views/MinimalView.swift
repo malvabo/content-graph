@@ -387,8 +387,6 @@ struct MinimalNoteDetailPage: View {
 
     @State private var aiFailed = false
     @State private var aiFailReason = ""
-    @State private var copied = false
-    @State private var copiedResetTask: Task<Void, Never>? = nil
 
     private static let maxPreviewVariants = 5
 
@@ -433,14 +431,13 @@ struct MinimalNoteDetailPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            // Bottom-leading: the AI toolbar (sparkles / chat / wand).
-            // Hidden while dictating so the recording row owns the bottom
-            // edge and the user can't accidentally tap into AI sheets
+            // Bottom-leading: the AI toolbar (sparkles / wand). Hidden
+            // while dictating so the recording row owns the bottom edge
+            // and the user can't accidentally tap into AI sheets
             // mid-utterance.
             if !dictation.isRecording {
                 HStack(spacing: 12) {
                     aiSparklesButton
-                    aiChatButton
                     aiWandButton
                 }
                 .padding(.leading, 20)
@@ -449,28 +446,35 @@ struct MinimalNoteDetailPage: View {
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
 
-            // Bottom-trailing: in-editor dictation. Only mounts once the
-            // user has tapped into a field — there's nowhere for the
-            // transcribed text to land otherwise.
-            if dictation.isRecording || editorFocused {
-                DictationControls(
-                    dictation: dictation,
-                    onStart: {
-                        bodyBeforeDictation = editText
-                        dictation.start()
-                    },
-                    onCancel: {
-                        dictation.cancel()
-                        editText = bodyBeforeDictation
-                    },
-                    onConfirm: {
-                        dictation.stop()
-                    }
-                )
-                .padding(.trailing, 20)
-                .padding(.bottom, 8)
-                .transition(.scale(scale: 0.85).combined(with: .opacity))
+            // Bottom-trailing: chat sits on top, in-editor dictation
+            // stacks below it when the user focuses the editor. Both are
+            // hidden while dictating except for the dictation row itself.
+            VStack(spacing: 12) {
+                if !dictation.isRecording {
+                    aiChatButton
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
+                }
+                if dictation.isRecording || editorFocused {
+                    DictationControls(
+                        dictation: dictation,
+                        onStart: {
+                            bodyBeforeDictation = editText
+                            dictation.start()
+                        },
+                        onCancel: {
+                            dictation.cancel()
+                            editText = bodyBeforeDictation
+                        },
+                        onConfirm: {
+                            dictation.stop()
+                        }
+                    )
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
+                }
             }
+            .padding(.trailing, 20)
+            .padding(.bottom, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: isGenerating)
@@ -515,7 +519,6 @@ struct MinimalNoteDetailPage: View {
             maybeDiscardEmptyNote()
             generateTask?.cancel()
             aiTransformTask?.cancel()
-            copiedResetTask?.cancel()
         }
         .onReceive(NotificationCenter.default.publisher(for: .minimalGenStoreDidChange)) { _ in
             reloadGenerations()
@@ -690,28 +693,14 @@ struct MinimalNoteDetailPage: View {
             Spacer()
 
             TopBarPill {
-                Button {
-                    UIPasteboard.general.string = editText
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(AppAnimation.quick) { copied = true }
-                    copiedResetTask?.cancel()
-                    copiedResetTask = Task { @MainActor in
-                        try? await Task.sleep(nanoseconds: 2_000_000_000)
-                        guard !Task.isCancelled else { return }
-                        withAnimation { copied = false }
-                    }
-                } label: {
-                    Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                        .contentTransition(.symbolEffect(.replace))
-                        .topBarPillLabel()
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(copied ? "Copied" : "Copy")
-
-                TopBarPillDivider()
-
                 Menu {
                     if !editText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Button {
+                            UIPasteboard.general.string = editText
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        } label: {
+                            Label("Copy", systemImage: "doc.on.doc")
+                        }
                         ShareLink(item: editText) {
                             Label("Share", systemImage: "square.and.arrow.up")
                         }
@@ -874,13 +863,22 @@ struct MinimalNoteDetailPage: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
             } else {
-                Text(AppMarkdown.render(editText))
-                    .appReadingBodyText()
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.top, isNoteTab ? 4 : 8)
-                    .padding(.bottom, 96)
+                // Split on blank lines and render each paragraph as its
+                // own Text so SwiftUI lays them out with 10pt gaps —
+                // AttributedString-level paragraphSpacing isn't reliably
+                // honoured by SwiftUI Text, so a VStack is the path that
+                // actually ships the visible breathing room.
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(paragraphs(in: editText).enumerated()), id: \.offset) { _, paragraph in
+                        Text(AppMarkdown.render(paragraph))
+                            .appReadingBodyText()
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, isNoteTab ? 4 : 8)
+                .padding(.bottom, 96)
             }
         }
         .contentShape(Rectangle())
@@ -888,6 +886,29 @@ struct MinimalNoteDetailPage: View {
             isEditingBody = true
             DispatchQueue.main.async { editorFocused = true }
         }
+    }
+
+    /// Splits the body on one-or-more blank lines so the reader can lay
+    /// each paragraph out as its own Text. Within-paragraph single
+    /// newlines are preserved so the rendered text still soft-breaks
+    /// where the user wrote a line break.
+    private func paragraphs(in raw: String) -> [String] {
+        var result: [String] = []
+        var current: [String] = []
+        for line in raw.components(separatedBy: "\n") {
+            if line.trimmingCharacters(in: .whitespaces).isEmpty {
+                if !current.isEmpty {
+                    result.append(current.joined(separator: "\n"))
+                    current = []
+                }
+            } else {
+                current.append(line)
+            }
+        }
+        if !current.isEmpty {
+            result.append(current.joined(separator: "\n"))
+        }
+        return result
     }
 
     // MARK: Floating buttons
