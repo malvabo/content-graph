@@ -814,22 +814,10 @@ struct MinimalNoteDetailPage: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
             } else {
-                // Split on blank lines and render each paragraph as its
-                // own Text so SwiftUI lays them out with 10pt gaps —
-                // AttributedString-level paragraphSpacing isn't reliably
-                // honoured by SwiftUI Text, so a VStack is the path that
-                // actually ships the visible breathing room.
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(Array(paragraphs(in: editText).enumerated()), id: \.offset) { _, paragraph in
-                        Text(AppMarkdown.render(paragraph))
-                            .appReadingBodyText()
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, isNoteTab ? 4 : 8)
-                .padding(.bottom, 96)
+                BodyParagraphsView(raw: editText)
+                    .padding(.horizontal, 20)
+                    .padding(.top, isNoteTab ? 4 : 8)
+                    .padding(.bottom, 96)
             }
         }
         .contentShape(Rectangle())
@@ -844,17 +832,6 @@ struct MinimalNoteDetailPage: View {
             editSelection = TextSelection(insertionPoint: editText.startIndex)
             DispatchQueue.main.async { editorFocused = true }
         }
-    }
-
-    /// Treats every non-empty line as its own paragraph so the reader
-    /// VStack lays them out with a visible 10pt gap. The old "split only
-    /// on blank lines" rule meant the spacing never showed up unless the
-    /// user pressed Enter twice between paragraphs — most users press it
-    /// once. Whitespace-only lines drop out, so double newlines collapse
-    /// to a single paragraph separator.
-    private func paragraphs(in raw: String) -> [String] {
-        raw.components(separatedBy: "\n")
-            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
     // MARK: Floating buttons

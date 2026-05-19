@@ -746,10 +746,7 @@ struct ProjectGroupDetailView: View {
                                     }
                             } else {
                                 ScrollView {
-                                    Text(AppMarkdown.render(editText))
-                                        .appReadingBodyText()
-                                        .textSelection(.enabled)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    BodyParagraphsView(raw: editText)
                                         .padding(.horizontal, inCardPreview ? 14 : 20)
                                         .padding(.top, inCardPreview ? 4 : 8)
                                         .padding(.bottom, 96)
@@ -3292,12 +3289,19 @@ struct AIPreviewSheet: View {
 
             ZStack {
                 ScrollView(showsIndicators: false) {
-                    Text(currentVariant.isEmpty ? AttributedString(" ") : AppMarkdown.render(currentVariant))
-                        .appReadingBodyText()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .textSelection(.enabled)
+                    if currentVariant.isEmpty {
+                        // Keep the placeholder space so the sheet doesn't
+                        // collapse while a fresh variant is still loading.
+                        Text(" ")
+                            .appReadingBodyText()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                    } else {
+                        BodyParagraphsView(raw: currentVariant)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                    }
                 }
                 if isLoading {
                     Color.black.opacity(0.25).allowsHitTesting(false)
@@ -3488,12 +3492,17 @@ struct ThisButDeltaView: View {
             }
 
             ScrollView(showsIndicators: false) {
-                Text(sourceText.isEmpty ? AttributedString(" ") : AppMarkdown.render(sourceText))
-                    .appReadingBodyText()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-                    .textSelection(.enabled)
+                if sourceText.isEmpty {
+                    Text(" ")
+                        .appReadingBodyText()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
+                } else {
+                    BodyParagraphsView(raw: sourceText)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
+                }
             }
 
             inputBar
@@ -3567,6 +3576,45 @@ struct ThisButDeltaView: View {
 }
 
 // MARK: - Markdown rendering
+
+/// Shared paragraph rhythm for body text. `.appReadingBodyText()` ships
+/// `.lineSpacing(8)` between lines within a paragraph; this enum's
+/// spacing sits on top of that so paragraphs read with a clear 10pt
+/// extra break beyond the within-paragraph line gap (18 = 8 + 10).
+enum AppParagraphs {
+    static let spacing: CGFloat = 18
+
+    /// Treats every non-empty line as its own paragraph. Whitespace-only
+    /// lines drop out, so double newlines collapse to a single
+    /// separator. Users hit Enter once between paragraphs far more
+    /// often than twice — splitting only on blank lines meant the
+    /// spacing never showed up for the common typing pattern.
+    static func split(_ raw: String) -> [String] {
+        raw.components(separatedBy: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+    }
+}
+
+/// Renders raw body text as a VStack of markdown-rendered paragraphs
+/// with the shared `AppParagraphs.spacing` gap between them. Use this
+/// anywhere body text is displayed read-only — note bodies, generated
+/// content, AI previews. SwiftUI's Text does not reliably honour
+/// AttributedString-level paragraphSpacing, so a VStack split is the
+/// path that actually ships the visible breathing room.
+struct BodyParagraphsView: View {
+    let raw: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppParagraphs.spacing) {
+            ForEach(Array(AppParagraphs.split(raw).enumerated()), id: \.offset) { _, paragraph in
+                Text(AppMarkdown.render(paragraph))
+                    .appReadingBodyText()
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+}
 
 enum AppMarkdown {
     static func render(_ raw: String) -> AttributedString {
