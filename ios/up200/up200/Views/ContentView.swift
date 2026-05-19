@@ -2375,7 +2375,8 @@ struct ContentView: View {
                 .environmentObject(bannerController)
                 .environmentObject(chromeController)
                 .environmentObject(recordingController)
-                .sheet(isPresented: $recordingController.showingSheet) {
+                .sheet(isPresented: $recordingController.showingSheet,
+                       onDismiss: { recordingController.reconcileDismissal() }) {
                     NoteVoiceSheet()
                         .environmentObject(recordingController)
                 }

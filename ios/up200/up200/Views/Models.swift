@@ -723,6 +723,17 @@ final class RecordingController: ObservableObject {
         reset()
     }
 
+    /// Reconcile a sheet-driven dismissal. If the user swipe-dismisses the
+    /// voice sheet without tapping Finish or Cancel, `showingSheet` flips
+    /// to false but `saveHandler` (and any running engine) lingers — the
+    /// closure captures `notes`, etc., leaking those references until the
+    /// next begin() call clears them. Call this from the sheet's
+    /// `onDismiss` to treat a swipe-dismissal as a Cancel only when no
+    /// explicit termination has run yet.
+    func reconcileDismissal() {
+        if saveHandler != nil { cancel() }
+    }
+
     private func reset() {
         isRecording = false
         isPaused = false
