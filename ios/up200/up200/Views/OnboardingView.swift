@@ -534,7 +534,7 @@ struct OnboardingView: View {
             .transition(.opacity)
 
         case .choose:
-            chooseFluidBlobsField
+            chooseCirclesField
                 // Pure fade-in. The slide directions (.bottom, then .top)
                 // both pulled the eye in a direction; a dissolve is the
                 // calmer "appears" the design ask wants.
@@ -622,38 +622,31 @@ struct OnboardingView: View {
         }
     }
 
-    /// The four `.choose` options rendered as a single fluid metaball field
-    /// rather than four separate buttons. Each "drop" is an
-    /// `OnboardingBlobShape` placed in a 2×2 layout with the centres close
-    /// enough that their Gaussian-blurred halos overlap; an
-    /// `alphaThreshold` filter then turns the blurred mass back into a
-    /// hard-edged shape so adjacent drops fuse into one continuous body
-    /// with stretching, pinching strands between them — water on glass,
-    /// not four flat pills. The wobble amplitude and phase speed are
-    /// dialled up so the morphing is clearly visible rather than a barely
-    /// perceptible breathe.
-    private var chooseFluidBlobsField: some View {
-        let options: [(label: String, icon: String, seed: Double, action: () -> Void)] = [
-            ("A LinkedIn post", "person.2.fill", 0.0, {
+    /// The four `.choose` options rendered as plain circles in a 2×2 grid.
+    /// Each circle has a thin white stroke with a soft outer glow — the
+    /// sharp stroke gives the edge, a blurred copy underneath gives the
+    /// halo. Static, no morphing; circles don't touch or fuse.
+    private var chooseCirclesField: some View {
+        let options: [(label: String, icon: String, action: () -> Void)] = [
+            ("A LinkedIn post", "person.2.fill", {
                 startGeneration(label: "A LinkedIn post", formatID: "linkedin", customPrompt: "")
             }),
-            ("A Twitter thread", "text.bubble", 1.3, {
+            ("A Twitter thread", "text.bubble", {
                 startGeneration(label: "A Twitter thread", formatID: "twitter", customPrompt: "")
             }),
-            ("Something else", "sparkles", 2.6, {
+            ("Something else", "sparkles", {
                 startSpecifyRecording()
             }),
-            ("Just save my note for now", "tray.and.arrow.down", 3.9, {
+            ("Just save my note for now", "tray.and.arrow.down", {
                 saveIdeaAndExit()
             })
         ]
 
         return GeometryReader { geo in
-            // Centres are close enough that the blurred halos of neighbouring
-            // drops overlap — that's what makes the alphaThreshold fuse them
-            // into one continuous body with stretched strands between.
-            let blobRadius: CGFloat = min(geo.size.width * 0.26, 88)
-            let cellOffset: CGFloat = blobRadius * 0.95
+            let circleRadius: CGFloat = min(geo.size.width * 0.24, 84)
+            // Small gap between circles so the strokes read as four
+            // discrete shapes rather than a touching cluster.
+            let cellOffset: CGFloat = circleRadius * 1.08
             let cx = geo.size.width / 2
             let cy = geo.size.height / 2
             let positions: [CGPoint] = [
@@ -664,42 +657,6 @@ struct OnboardingView: View {
             ]
 
             ZStack {
-                // Merged fluid fill. The Canvas draws each blob opaque, the
-                // blur softens edges into halos, and alphaThreshold cuts
-                // the result back to a hard edge — anywhere two halos
-                // overlap above the threshold becomes connecting tissue.
-                TimelineView(.animation) { ctx in
-                    let phase: Double = UIAccessibility.isReduceMotionEnabled
-                        ? 0
-                        : ctx.date.timeIntervalSinceReferenceDate * 1.05
-
-                    Canvas(opaque: false) { canvas, _ in
-                        canvas.drawLayer { layer in
-                            layer.addFilter(.alphaThreshold(
-                                min: 0.5,
-                                color: Color.white.opacity(0.13)
-                            ))
-                            layer.addFilter(.blur(radius: 18))
-                            for (idx, opt) in options.enumerated() {
-                                let pos = positions[idx]
-                                let rect = CGRect(
-                                    x: pos.x - blobRadius,
-                                    y: pos.y - blobRadius,
-                                    width: blobRadius * 2,
-                                    height: blobRadius * 2
-                                )
-                                let path = OnboardingBlobShape(phase: phase, seed: opt.seed).path(in: rect)
-                                layer.fill(path, with: .color(.white))
-                            }
-                        }
-                    }
-                }
-                .allowsHitTesting(false)
-
-                // Tap targets + icon/label per drop. Positioned over each
-                // blob centre — the fluid fill is decorative, the hit area
-                // is a plain circle so a tap near the connecting strand
-                // still resolves to the nearest drop's action.
                 ForEach(Array(options.enumerated()), id: \.offset) { idx, opt in
                     Button(action: opt.action) {
                         VStack(spacing: 10) {
@@ -715,7 +672,22 @@ struct OnboardingView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         .padding(.horizontal, 16)
-                        .frame(width: blobRadius * 1.7, height: blobRadius * 1.7)
+                        .frame(width: circleRadius * 2, height: circleRadius * 2)
+                        .background(
+                            Circle()
+                                .fill(Color.white.opacity(0.03))
+                        )
+                        .overlay(
+                            // Blurred outer stroke = soft glow halo.
+                            Circle()
+                                .stroke(Color.white.opacity(0.35), lineWidth: 1.4)
+                                .blur(radius: 3)
+                        )
+                        .overlay(
+                            // Sharp thin stroke on top defines the edge.
+                            Circle()
+                                .stroke(Color.white.opacity(0.55), lineWidth: 0.5)
+                        )
                         .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
@@ -723,10 +695,9 @@ struct OnboardingView: View {
                 }
             }
         }
-        // Reserve enough vertical room for two rows of blobs (each ~176pt
-        // diameter at max) plus the gap a metaball connection wants. The
-        // captureCenter surrounds this in Spacers, so any leftover space
-        // is absorbed there.
+        // Reserve enough vertical room for two rows of circles (each ~168pt
+        // diameter at max) plus the inter-row gap. The captureCenter
+        // surrounds this in Spacers, so any leftover space is absorbed there.
         .frame(height: 360)
     }
 
@@ -1430,44 +1401,6 @@ private struct InsideSphereScene: View {
     private func pseudoRandom(_ n: Int) -> Double {
         let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
         return v - floor(v)
-    }
-}
-
-/// Wobbly circle whose outline is a unit circle perturbed by three
-/// low-frequency harmonics. `phase` slides the wave continuously so the
-/// shape never settles; `seed` shifts each harmonic so two blobs with
-/// different seeds never line up.
-private struct OnboardingBlobShape: Shape {
-    var phase: Double
-    var seed: Double
-
-    func path(in rect: CGRect) -> Path {
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        let baseRadius = min(rect.width, rect.height) / 2
-        // 14% deformation — clearly fluid; with the metaball alpha
-        // threshold on top this is what makes the connecting strands
-        // between adjacent drops stretch and pinch instead of holding
-        // a static neck.
-        let amplitude = baseRadius * 0.14
-
-        var path = Path()
-        let steps = 96
-        for i in 0...steps {
-            let theta = Double(i) / Double(steps) * 2 * .pi
-            let wobble =
-                sin(3 * theta + phase * 1.0 + seed * 1.7) * 0.55 +
-                sin(5 * theta - phase * 0.7 + seed * 0.9) * 0.30 +
-                sin(2 * theta + phase * 0.4 + seed * 2.3) * 0.40
-            // Subtract half the max amplitude so the path stays inside
-            // the frame's inscribed circle on the outward swings.
-            let r = baseRadius - amplitude * 0.5 + amplitude * wobble
-            let x = center.x + r * cos(theta)
-            let y = center.y + r * sin(theta)
-            if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
-            else { path.addLine(to: CGPoint(x: x, y: y)) }
-        }
-        path.closeSubpath()
-        return path
     }
 }
 
