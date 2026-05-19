@@ -459,6 +459,10 @@ struct ChatView: View {
     @StateObject private var dictation = NoteDictation()
     @State private var inputTextBeforeDictation: String = ""
     @State private var inputFocused: Bool = false
+    // Cancellable deferred focus assignment fired from .onAppear. A fast
+    // dismissal of the chat sheet within the 350ms delay cancels the
+    // pending focus so it can't write into a destroyed view.
+    @State private var focusTask: Task<Void, Never>? = nil
 
     private let bg = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
@@ -734,10 +738,20 @@ struct ChatView: View {
             // Auto-open the keyboard when the chat screen appears. A short
             // delay is needed because @FocusState inside a sheet doesn't
             // reliably take effect until the sheet's presentation transition
-            // has settled.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            // has settled. Wrapped in a Task so a fast-dismiss within the
+            // 350ms window cancels the focus assignment instead of writing
+            // to a destroyed view (which logs a SwiftUI warning and can
+            // ghost the keyboard).
+            focusTask?.cancel()
+            focusTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 350_000_000)
+                guard !Task.isCancelled else { return }
                 inputFocused = true
             }
+        }
+        .onDisappear {
+            focusTask?.cancel()
+            focusTask = nil
         }
         .onChange(of: projectsData) { rebuildProjects() }
     }
