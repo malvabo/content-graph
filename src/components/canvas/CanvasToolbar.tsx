@@ -169,7 +169,7 @@ export default function CanvasToolbar({
         </div>
 
         {/* Center: graph name */}
-        <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, maxWidth: 420, minWidth: 120 }}>
+        <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, maxWidth: 600, minWidth: 120 }}>
           <input
             aria-label="Graph name"
             className="graph-name-input outline-none"
@@ -178,7 +178,7 @@ export default function CanvasToolbar({
               fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)',
               letterSpacing: '-0.01em', background: 'none', border: 'none',
               borderBottom: '1px solid transparent', borderRadius: 0,
-              padding: '2px 4px', maxWidth: 280, textAlign: 'center',
+              padding: '2px 4px', maxWidth: 480, textAlign: 'center',
               overflow: 'hidden', textOverflow: 'ellipsis',
             }}
             value={graphName}
@@ -192,23 +192,25 @@ export default function CanvasToolbar({
         {/* Right: actions */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--space-1)' }}>
 
-          <button
-            className="btn-ghost btn-sm hidden md:inline-flex"
-            style={{ gap: 6, border: 'none' }}
-            onClick={autoLayout}
-          >
-            <LayoutIcon />
-            Auto-layout
-          </button>
+          {mode !== 'quick' && (
+            <button
+              className="btn-ghost btn-sm hidden md:inline-flex"
+              style={{ gap: 6, border: 'none' }}
+              onClick={autoLayout}
+            >
+              <LayoutIcon />
+              Auto-layout
+            </button>
+          )}
 
-          <button
+          {mode !== 'quick' && <button
             onClick={handleRunAll}
             disabled={isRunning}
             className={`btn btn-sm btn-run${isRunning ? ' loading' : ''}`}
             style={{ opacity: isRunning ? 0.6 : 1 }}
           >
             ▶ Run
-          </button>
+          </button>}
 
           {/* Settings gear */}
           <div ref={gearRef} style={{ position: 'relative' }}>

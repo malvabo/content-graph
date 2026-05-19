@@ -503,21 +503,28 @@ const ResultCard = memo(function ResultCard({ label, content }: { label: string;
 const CONTENT_MAX_WIDTH = 880;
 const SECTION_PAD_X = 32;
 
-function Section({ title, sub, children }: {
-  title: string; sub: string; children: React.ReactNode;
+function Section({ index, title, sub, children }: {
+  index: number; title: string; sub: string; children: React.ReactNode;
 }) {
   return (
     <div>
       <div
         style={{
           display: 'flex', alignItems: 'baseline', gap: 10,
-          padding: `20px ${SECTION_PAD_X}px 12px`, userSelect: 'none',
+          padding: `16px ${SECTION_PAD_X}px 8px`, userSelect: 'none',
         }}
       >
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 18, height: 18, borderRadius: '50%',
+          background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border-subtle)',
+          fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-sans)',
+          color: 'var(--color-text-tertiary)', flexShrink: 0,
+        }}>{index}</span>
         <span style={{ fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--color-text-primary)', lineHeight: '22px' }}>{title}</span>
-        <span style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>— {sub}</span>
+        <span style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-text-tertiary)' }}>{sub}</span>
       </div>
-      <div style={{ padding: `0 ${SECTION_PAD_X}px 24px` }}>{children}</div>
+      <div style={{ padding: `0 ${SECTION_PAD_X}px 20px` }}>{children}</div>
     </div>
   );
 }
@@ -528,13 +535,31 @@ const STYLES = `
   .qm-source-input { transition: opacity 200ms; }
   .qm-chip {
     background: transparent;
-    border: 1px solid transparent;
-    color: var(--color-text-tertiary);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-secondary);
+  }
+  .qm-chip:hover {
+    border-color: var(--color-border-strong);
+    color: var(--color-text-primary);
   }
   .qm-chip.active {
     border-color: var(--color-accent);
     background: color-mix(in srgb, var(--color-accent) 10%, transparent);
     color: var(--color-accent);
+  }
+  .qm-chip.active:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+  .qm-template-row {
+    position: relative;
+  }
+  .qm-template-row::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; width: 32px;
+    pointer-events: none;
+    background: linear-gradient(to right, transparent, var(--color-bg));
   }
 `;
 
@@ -800,8 +825,8 @@ export default function QuickMode() {
       {/* Scrollable composition area, centered with a desktop max-width. */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{ maxWidth: CONTENT_MAX_WIDTH, margin: '0 auto' }}>
-          <Section title="Sources" sub="Choose what you're working with">
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: store.selectedSources.length > 0 ? 20 : 0 }}>
+          <Section index={1} title="Sources" sub="What you're working with">
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: store.selectedSources.length > 0 ? 16 : 0 }}>
               {SOURCE_DEFS.map(({ key, label, icon }) => {
                 const active = store.selectedSources.includes(key);
                 return (
@@ -812,7 +837,7 @@ export default function QuickMode() {
               })}
             </div>
             {store.selectedSources.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {store.selectedSources.map(type => (
                   <div key={type} className="qm-source-input">
                     {type === 'text'  && <TextInput />}
@@ -827,23 +852,25 @@ export default function QuickMode() {
 
           <div style={SECTION_DIVIDER} />
 
-          <Section title="Prompt" sub="Tell it what to do">
-            <div style={{ overflowX: 'auto', display: 'flex', gap: 8, paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 12 }}>
-              {QUICK_TEMPLATES.map(tpl => {
-                const active = store.templateKey === tpl.key;
-                return (
-                  <button
-                    key={tpl.key}
-                    onClick={() => selectTemplate(tpl.key)}
-                    className={`qm-chip${active ? ' active' : ''}`} style={{ ...CHIP_BASE, flexShrink: 0 }}
-                  >
-                    {tpl.label}
-                  </button>
-                );
-              })}
+          <Section index={2} title="Prompt" sub="What you want it to do">
+            <div className="qm-template-row" style={{ marginBottom: 10 }}>
+              <div style={{ overflowX: 'auto', display: 'flex', gap: 8, paddingBottom: 4, paddingRight: 32, scrollbarWidth: 'none' }}>
+                {QUICK_TEMPLATES.map(tpl => {
+                  const active = store.templateKey === tpl.key;
+                  return (
+                    <button
+                      key={tpl.key}
+                      onClick={() => selectTemplate(tpl.key)}
+                      className={`qm-chip${active ? ' active' : ''}`} style={{ ...CHIP_BASE, flexShrink: 0 }}
+                    >
+                      {tpl.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <textarea
-              style={{ ...TEXTAREA, minHeight: 100 }}
+              style={{ ...TEXTAREA, minHeight: 96 }}
               placeholder="Write your instruction here, or pick a template above"
               value={store.promptValue}
               onChange={e => { store.setPrompt(e.target.value); if (store.templateKey) store.setTemplate(null); }}
@@ -854,8 +881,8 @@ export default function QuickMode() {
 
           <div style={SECTION_DIVIDER} />
 
-          <Section title="Outputs" sub="Pick your formats">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
+          <Section index={3} title="Outputs" sub="Formats to generate">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
               {QUICK_OUTPUTS.map(({ key, label }) => {
                 const active = store.selectedOutputs.includes(key);
                 return (
