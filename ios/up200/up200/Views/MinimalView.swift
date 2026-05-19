@@ -89,6 +89,7 @@ extension Notification.Name {
 struct MinimalHomePage: View {
     var onProfileTap: () -> Void = {}
 
+    @EnvironmentObject private var recording: RecordingController
     @State private var notes: [Note] = []
     @State private var selectedNote: Note? = nil
     @State private var pendingSave: DispatchWorkItem? = nil
@@ -103,9 +104,9 @@ struct MinimalHomePage: View {
                         TopBarPill {
                             TopBarPillButton(systemImage: "square.and.pencil") {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                composeNew()
+                                startAudioNote()
                             }
-                            .accessibilityLabel("New note")
+                            .accessibilityLabel("New voice note")
                         }
                         TopBarPill {
                             TopBarPillButton(systemImage: "person.crop.circle") {
@@ -124,9 +125,9 @@ struct MinimalHomePage: View {
                         EmptyStateView(
                             illustration: NotesIllustration(),
                             title: "No notes yet",
-                            subtitle: "Capture an idea to get started",
-                            actionTitle: "New note",
-                            action: composeNew
+                            subtitle: "Tap the pencil to capture an idea by voice",
+                            actionTitle: "Start recording",
+                            action: startAudioNote
                         )
                     } else {
                         List {
@@ -197,11 +198,21 @@ struct MinimalHomePage: View {
         notes.sorted { $0.updatedAt > $1.updatedAt }
     }
 
-    private func composeNew() {
-        let note = Note()
-        notes.insert(note, at: 0)
-        scheduleSave()
-        selectedNote = note
+    /// Voice-first capture, matching classic NotesView. The transcript
+    /// callback fires when the user stops the recording sheet — at which
+    /// point a new note is materialised with the transcript as the body
+    /// and the detail page is pushed so the user can edit / generate
+    /// from it immediately.
+    private func startAudioNote() {
+        recording.begin { transcript in
+            var note = Note()
+            note.body = transcript
+            note.updatedAt = Date()
+            notes.insert(note, at: 0)
+            scheduleSave()
+            selectedNote = note
+        }
+        recording.showingSheet = true
     }
 
     private func delete(_ note: Note) {
