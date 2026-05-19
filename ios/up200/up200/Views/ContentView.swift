@@ -678,11 +678,22 @@ struct ProjectGroupDetailView: View {
                                 Button { selectTab(idx) } label: {
                                     Text(tabLabel(item))
                                         .font(.app(size: 14, weight: selectedIndex == idx ? .semibold : .regular))
-                                        .foregroundColor(selectedIndex == idx ? .white : AppInk.solid(0.55))
+                                        .foregroundColor(selectedIndex == idx ? AppText.primary : AppText.secondary)
                                         .padding(.horizontal, 14)
-                                        .padding(.vertical, 7)
-                                        .background(selectedIndex == idx ? AnyShapeStyle(BrandColor.ctaPrimary) : AnyShapeStyle(Color.clear))
-                                        .clipShape(Capsule())
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            ZStack {
+                                                if selectedIndex == idx {
+                                                    Capsule(style: .continuous)
+                                                        .fill(AppInk.solid(0.14))
+                                                        .overlay(
+                                                            Capsule(style: .continuous)
+                                                                .stroke(AppInk.solid(0.22), lineWidth: 0.5)
+                                                        )
+                                                }
+                                            }
+                                        )
+                                        .contentShape(Capsule(style: .continuous))
                                 }
                                 .buttonStyle(.plain)
                                 .animation(AppAnimation.quick, value: selectedIndex)
