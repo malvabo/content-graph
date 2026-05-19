@@ -1843,7 +1843,7 @@ private struct SavedChatsSheet: View {
                 Spacer()
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 0, alignment: .leading) {
+                    LazyVStack(alignment: .leading, spacing: 0) {
                         ForEach(groupedChats) { group in
                             sectionHeader(group.label)
                             ForEach(group.chats) { chat in
