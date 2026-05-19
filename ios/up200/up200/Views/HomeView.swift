@@ -2358,13 +2358,12 @@ private struct FormatsBlock: View {
                     showPicker = true
                 } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(AppInk.solid(0.70))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(AppText.primary)
                         .frame(width: 36, height: 36)
-                        .background(AppInk.solid(0.12), in: Capsule(style: .continuous))
+                        .background(AppBackground.surface, in: Circle())
                         .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(AppInk.solid(0.14), lineWidth: 0.5)
+                            Circle().stroke(AppInk.solid(0.18), lineWidth: 0.5)
                         )
                 }
                 .buttonStyle(.plain)
