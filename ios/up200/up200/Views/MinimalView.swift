@@ -92,9 +92,12 @@ extension Notification.Name {
 /// `MinimalNoteDetailPage` (with generation tabs) instead of the
 /// classic single-note editor.
 struct MinimalHomePage: View {
+    /// Bumped externally (by ContentView when the floating mic capture
+    /// fires) to ask the embedded NotesView to begin a voice note. Same
+    /// hand-off pattern Simple mode uses with `SimpleCreateBar`.
+    var newNoteTrigger: Int = 0
     var onProfileTap: () -> Void = {}
 
-    @State private var newNoteTrigger: Int = 0
     @State private var showSearch = false
     @State private var searchText = ""
     @FocusState private var searchFocused: Bool
@@ -178,18 +181,10 @@ struct MinimalHomePage: View {
                     .fixedSize(horizontal: true, vertical: false)
                     .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 8)
+                // No pencil here — voice capture lives in the floating
+                // mic that ContentView parks at the bottom (same as
+                // Simple mode). Top bar carries only search + profile.
                 TopBarPill {
-                    TopBarPillButton(systemImage: "square.and.pencil") {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        // NotesView reacts to a bumped `newNoteTrigger`
-                        // by calling its private `startAudioNote()` —
-                        // same affordance the classic top bar gives.
-                        newNoteTrigger &+= 1
-                    }
-                    .accessibilityLabel("New voice note")
-
-                    TopBarPillDivider()
-
                     TopBarPillButton(
                         systemImage: showSearch ? "xmark" : "magnifyingglass",
                         isActive: showSearch
