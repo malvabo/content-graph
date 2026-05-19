@@ -1971,7 +1971,6 @@ private struct SavedChatsSheet: View {
         return "\(weeks / 52)y"
     }
 }
-}
 
 // MARK: - Mention-styled composer text view
 
