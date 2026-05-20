@@ -2356,9 +2356,10 @@ private struct SimpleHomeHeader: View {
 
 /// Bottom chrome in Simple mode: a single floating capture button parked
 /// at the bottom-right corner. Tapping it begins voice recording right
-/// away — no intermediate menu. Styled as a flat amber-tinted glass disc
-/// with `livephoto` concentric rings as the glyph (recorder-coded but
-/// visually distinct from the typical mic / record-dot icons).
+/// away — no intermediate menu. Styled to match the notes dictation
+/// control (`DictationControls.idleMic`): a small `mic.badge.plus` glyph
+/// on a glass disc, so the recorder reads the same everywhere — on the
+/// home list and on a generated content file.
 private struct SimpleCreateBar: View {
     let onTap: () -> Void
 
@@ -2376,25 +2377,15 @@ private struct SimpleCreateBar: View {
             impact.impactOccurred()
             onTap()
         } label: {
-            Image(systemName: "mic.fill")
-                .font(.system(size: 24, weight: .regular))
-                .foregroundColor(BrandColor.amber)
-                .frame(width: 64, height: 64)
-                .background(Circle().fill(BrandColor.amber.opacity(0.12)))
-                .appLiquidGlass(in: Circle())
-                .overlay(
+            Image(systemName: "mic.badge.plus")
+                .font(.system(size: 19, weight: .regular))
+                .foregroundColor(AppText.primary)
+                .frame(width: 56, height: 56)
+                .background(
                     Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    BrandColor.amber.opacity(0.42),
-                                    BrandColor.amber.opacity(0.12)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            ),
-                            lineWidth: 0.6
-                        )
+                        .fill(.regularMaterial)
+                        .overlay(Circle().stroke(AppInk.solid(0.15), lineWidth: 0.5))
+                        .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
                 )
                 .contentShape(Circle())
         }
