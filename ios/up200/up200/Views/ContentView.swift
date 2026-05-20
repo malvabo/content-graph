@@ -3178,6 +3178,11 @@ struct AIActionsSheet: View {
 
     private let sheetBg = AppBackground.primary
 
+    // Measured height of the action list. Seeded with an estimate (5 rows at
+    // the default Dynamic Type size) so the sheet opens at roughly the right
+    // height on the first frame, then corrected by the live measurement.
+    @State private var contentHeight: CGFloat = 292
+
     var body: some View {
         ScrollView {
             VStack(spacing: 2) {
@@ -3188,17 +3193,19 @@ struct AIActionsSheet: View {
             .padding(.top, 12)
             .padding(.bottom, 12)
             .frame(maxWidth: .infinity, alignment: .top)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
         }
         .scrollIndicators(.hidden)
         .background(sheetBg)
         .presentationBackground(sheetBg)
         .presentationCornerRadius(32)
-        // [.medium, .large] (was a fixed .height(fittedHeight) computed
-        // from a hardcoded 52pt row). At AX5 Dynamic Type, the row labels
-        // render taller than 52pt and the fixed sheet height clipped the
-        // bottom rows. Adaptive detents + a ScrollView around the list
-        // let large-type users reach every action.
-        .presentationDetents([.medium, .large])
+        // Size the sheet to its content instead of a fixed [.medium, .large].
+        // The earlier fixed .height(fittedHeight) assumed a hardcoded 52pt row
+        // and clipped bottom rows at AX5 Dynamic Type. Measuring the list with
+        // onGeometryChange tracks the real rendered height at any type size;
+        // SwiftUI caps a .height detent to the screen, and the ScrollView lets
+        // large-type users still reach every action.
+        .presentationDetents([.height(contentHeight)])
         .presentationDragIndicator(.visible)
     }
 
