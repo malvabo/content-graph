@@ -839,16 +839,16 @@ struct OnboardingView: View {
                             // so the bleed doesn't extend visibly past the
                             // sharp edge.
                             Circle()
-                                .stroke(Color.white.opacity(0.10), lineWidth: 1.0)
+                                .stroke(Color.white.opacity(0.06), lineWidth: 1.0)
                                 .blur(radius: 2)
                                 .padding(-2)
                         )
                         .overlay(
                             // Sharp thin stroke on top — the only edge the
-                            // eye actually reads. Dialed from 0.60 → 0.38
-                            // so the ring is present but not bright.
+                            // eye actually reads. Dialed from 0.38 → 0.20
+                            // so the ring is barely-there rather than bright.
                             Circle()
-                                .stroke(Color.white.opacity(0.38), lineWidth: 0.5)
+                                .stroke(Color.white.opacity(0.20), lineWidth: 0.5)
                         )
                         .contentShape(Circle())
                     }
