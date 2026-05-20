@@ -403,6 +403,30 @@ struct SavedChatsStore {
     }
 }
 
+// MARK: - Chat Draft Session
+
+/// In-memory restore cache for a chat in progress. The page that
+/// presents the chat sheet owns one as a `@StateObject`, so an
+/// unfinished conversation survives the sheet being closed and
+/// reopened *on that page* — but is discarded the moment the user
+/// navigates away and the page view is torn down. Sent turns are
+/// still written to `SavedChatsStore` for the history list; this only
+/// governs what the sheet shows when it reopens on the same page.
+final class ChatDraftSession: ObservableObject {
+    /// False until at least one turn has been sent — a bare seeded
+    /// chat with no messages should re-seed fresh, not restore.
+    var hasContent = false
+    var messages: [ChatMessage] = []
+    var inputText = ""
+    var activeSavedChatID = UUID()
+    var attachedFiles: [ChatContextSource] = []
+    var selectedContextIDs: Set<String> = []
+    var seededContextID: String?
+    var seededSelectionSourceID: String?
+    var seededSelectionRange: NSRange?
+    var appliedRewriteKeys: Set<String> = []
+}
+
 // MARK: - Chat View
 
 struct ChatView: View {
@@ -421,6 +445,12 @@ struct ChatView: View {
     /// range so the surgical edit doesn't accidentally match — and
     /// replace — a similar string elsewhere in the document.
     var initialSelectionRange: NSRange? = nil
+    /// Restore cache owned by the presenting page. When supplied, an
+    /// in-progress conversation is written back to it on dismiss so
+    /// reopening the chat sheet on the same page resumes where the user
+    /// left off; the page tearing down (navigating away) drops the
+    /// cache, resetting the chat. `nil` keeps the always-fresh behavior.
+    var draftSession: ChatDraftSession? = nil
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage("library_projects") private var projectsData: Data = Data()
@@ -440,6 +470,10 @@ struct ChatView: View {
     @State private var seededContextID: String? = nil
     @State private var didSeedContext = false
     @State private var didSeedSelection = false
+    /// Guards `restoreFromDraft` to the first appear only — `.onAppear`
+    /// fires again when an inner cover (the mention picker) dismisses,
+    /// and a second restore would overwrite fresh edits with stale data.
+    @State private var didRestoreFromDraft = false
     /// Source-id of the .selection chip we seeded on appear, paired with
     /// the NSRange the snippet occupied in its parent doc body. Used to
     /// route an accepted rewrite back to that exact range instead of a
@@ -724,8 +758,14 @@ struct ChatView: View {
             // rewrite card was applied (which doesn't itself trigger a
             // save) or a tab swap dismissed the sheet mid-edit.
             persistActiveChat()
+            // Hand the in-progress conversation to the page's draft cache
+            // so reopening the chat on this page resumes it.
+            saveToDraft()
         }
         .onAppear {
+            // Resume an in-progress conversation before any seeding runs,
+            // so a restored chat keeps its own context chips intact.
+            restoreFromDraft()
             rebuildProjects()
             Task {
                 let loaded = await NotesStore.loadAsync()
@@ -1183,6 +1223,46 @@ struct ChatView: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         inputFocused = false
         showSavedChatsPicker = true
+    }
+
+    /// Pull an in-progress conversation back out of the page's draft
+    /// cache. Marks the seed flags satisfied so `attemptSeedContext`
+    /// won't stamp a fresh context chip onto a conversation that already
+    /// carries one. No-op for a fresh session (no sent turns yet).
+    private func restoreFromDraft() {
+        guard !didRestoreFromDraft else { return }
+        didRestoreFromDraft = true
+        guard let draft = draftSession, draft.hasContent else { return }
+        messages = draft.messages
+        inputText = draft.inputText
+        activeSavedChatID = draft.activeSavedChatID
+        attachedFiles = draft.attachedFiles
+        selectedContextIDs = draft.selectedContextIDs
+        seededContextID = draft.seededContextID
+        seededSelectionSourceID = draft.seededSelectionSourceID
+        seededSelectionRange = draft.seededSelectionRange
+        appliedRewriteKeys = draft.appliedRewriteKeys
+        didSeedContext = true
+        didSeedSelection = true
+    }
+
+    /// Snapshot the live conversation into the page's draft cache so a
+    /// reopen of the chat sheet on the same page resumes it. Runs on
+    /// dismiss — which always precedes the next appear — so the per-turn
+    /// state doesn't need its own write. `hasContent` gates on sent
+    /// turns: a bare seeded chat should re-seed fresh on reopen.
+    private func saveToDraft() {
+        guard let draft = draftSession else { return }
+        draft.hasContent = !messages.isEmpty
+        draft.messages = messages
+        draft.inputText = inputText
+        draft.activeSavedChatID = activeSavedChatID
+        draft.attachedFiles = attachedFiles
+        draft.selectedContextIDs = selectedContextIDs
+        draft.seededContextID = seededContextID
+        draft.seededSelectionSourceID = seededSelectionSourceID
+        draft.seededSelectionRange = seededSelectionRange
+        draft.appliedRewriteKeys = appliedRewriteKeys
     }
 
     /// Persist the current `messages` array into the saved-chats store

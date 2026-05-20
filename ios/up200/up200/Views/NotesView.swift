@@ -847,6 +847,10 @@ private struct NoteEditorPage: View {
     @State private var bodyBeforeDictation: String = ""
     @State private var didDelete: Bool = false
     @State private var showChat: Bool = false
+    /// Page-scoped restore cache for the chat sheet — keeps an
+    /// in-progress conversation alive across close/reopen while the
+    /// user stays on this note, and is dropped when the page is left.
+    @StateObject private var chatDraft = ChatDraftSession()
     @State private var showCreate: Bool = false
     /// Snapshot of the selection captured at the moment a custom menu
     /// action fires — held on its own so the chat sheet's seed survives
@@ -1118,7 +1122,8 @@ private struct NoteEditorPage: View {
                 initialNoteContextID: original.id,
                 initialSelection: pendingSelectionText,
                 initialSelectionTitle: pendingSelectionText == nil ? nil : selectionTitle,
-                initialSelectionRange: pendingSelectionRange
+                initialSelectionRange: pendingSelectionRange,
+                draftSession: chatDraft
             )
         }
         .sheet(item: $rewriteRequest, onDismiss: refreshAfterChat) { request in
