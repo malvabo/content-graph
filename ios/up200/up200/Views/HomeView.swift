@@ -2445,7 +2445,7 @@ private struct PromptField: View {
             Text("Leave empty to generate from sources and format.")
                 .foregroundStyle(AppInk.solid(0.40))
         }
-        .font(.appCaption)
+        .font(.appSubtext)
         .lineSpacing(4)
         .foregroundColor(AppInk.solid(0.92))
         .tint(AppText.primary)
