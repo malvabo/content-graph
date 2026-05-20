@@ -71,7 +71,7 @@ struct OnboardingView: View {
     // value. Cancelled when a new recording starts so the second pass
     // can't clobber the first idea.
     @State private var firstIdeaSnapshotTask: Task<Void, Never>? = nil
-    @State private var resultBatch: OnboardingResultBatch? = nil
+    @State private var resultNote: Note? = nil
     @State private var generatingStartedAt: Date = .distantPast
     // Step 3 (.constellation) renders the same orange-spark / central-cloud
     // scene used during .capture/.generating, so the "one idea → graph"
@@ -94,8 +94,6 @@ struct OnboardingView: View {
     // 6.5s auto-task or the manual Continue button can drive it, but only
     // one of them should actually flip the step.
     @State private var diveInFlight = false
-
-    @AppStorage("library_projects") private var projectsData: Data = Data()
 
     var body: some View {
         ZStack {
@@ -540,15 +538,13 @@ struct OnboardingView: View {
             generatingTask?.cancel()
             generatingTask = nil
         }
-        // Drop the user straight into the same detail surface the app uses
-        // for every other generation result. When they dismiss it, fall
-        // through to onGetStarted so onboarding exits — they've now seen
-        // both the create flow and the result page, so showing the main
-        // tab bar is the right next beat.
-        .fullScreenCover(item: $resultBatch, onDismiss: { onGetStarted() }) { batch in
-            ProjectGroupDetailView(groupTitle: batch.title,
-                                   initialItems: batch.items,
-                                   showsFreshBanner: true)
+        // Drop the user straight onto the per-note detail page the app uses
+        // for every note — a "Note" tab plus a tab for the generation just
+        // produced. When they dismiss it, fall through to onGetStarted so
+        // onboarding exits: they've now seen both the create flow and the
+        // notes-and-generations surface they'll live in.
+        .fullScreenCover(item: $resultNote, onDismiss: { onGetStarted() }) { note in
+            MinimalNoteDetailPage(initialNote: note)
                 .preferredColorScheme(.dark)
         }
     }
@@ -955,7 +951,7 @@ struct OnboardingView: View {
         // Persist the raw idea as a Note unconditionally — if the API call
         // fails, the user still has their thought saved when they land in
         // the app instead of losing the recording entirely.
-        saveTranscriptAsNote(transcript)
+        let note = saveTranscriptAsNote(transcript)
 
         withAnimation(.easeInOut(duration: 0.45)) {
             capturePhase = .generating
@@ -966,7 +962,8 @@ struct OnboardingView: View {
             await runGeneration(label: label,
                                 formatID: formatID,
                                 customPrompt: customPrompt,
-                                transcript: transcript)
+                                transcript: transcript,
+                                note: note)
         }
     }
 
@@ -974,7 +971,8 @@ struct OnboardingView: View {
     private func runGeneration(label: String,
                                formatID: String,
                                customPrompt: String,
-                               transcript: String) async {
+                               transcript: String,
+                               note: Note) async {
         // No API key configured (e.g. fresh install before the key sheet) —
         // can't generate, so drop the user into the app where they can add
         // a key from Profile. Note is already saved.
@@ -1001,15 +999,19 @@ struct OnboardingView: View {
 
         switch result {
         case .success(let text):
-            let project = GenerationProject(
-                title: deriveTitle(from: transcript, fallback: label),
+            // Attach the generation to the note just saved so the handoff
+            // page renders the standard two-tab note detail — a "Note" tab
+            // plus this generation — instead of a standalone library card.
+            let generation = MinimalGeneration(
+                noteId: note.id,
+                sourceNoteIds: [note.id],
+                sourceLabels: [note.displayTitle],
                 outputType: formatID,
-                preview: String(text.prefix(160)),
                 content: text,
                 date: Date()
             )
-            saveProjectToLibrary(project)
-            resultBatch = OnboardingResultBatch(title: project.title, items: [project])
+            MinimalGenStore.insertBatch([generation])
+            resultNote = note
         case .failure:
             // Note is already saved — quietly exit into the app rather than
             // stranding the user on the generating pill. A failure banner
@@ -1018,7 +1020,8 @@ struct OnboardingView: View {
         }
     }
 
-    private func saveTranscriptAsNote(_ text: String) {
+    @discardableResult
+    private func saveTranscriptAsNote(_ text: String) -> Note {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         // Empty input usually means speech recognition produced nothing — mic
         // worked but the user spoke too quietly, or the recogniser timed out.
@@ -1042,7 +1045,7 @@ struct OnboardingView: View {
 
         // Skip AI-titling for placeholder notes — there's no content to
         // summarise and we'd just send the placeholder text to the model.
-        guard !isPlaceholder else { return }
+        guard !isPlaceholder else { return note }
 
         // Title in the background so the notes list shows a 3-word summary
         // instead of the first transcript line. This is the only persistence
@@ -1058,37 +1061,13 @@ struct OnboardingView: View {
             latest[idx].updatedAt = Date()
             NotesStore.save(latest)
         }
-    }
 
-    private func saveProjectToLibrary(_ project: GenerationProject) {
-        var projects: [GenerationProject]
-        switch loadBlob([GenerationProject].self, from: projectsData) {
-        case .empty: projects = []
-        case .ok(let existing): projects = existing
-        case .corrupt: return
-        }
-        projects.insert(project, at: 0)
-        if let encoded = try? JSONEncoder().encode(projects) {
-            projectsData = encoded
-        }
-    }
-
-    private func deriveTitle(from transcript: String, fallback: String) -> String {
-        let first = transcript.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
-        let trimmed = first.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { return fallback }
-        return String(trimmed.prefix(60))
+        return note
     }
 
     private func formatCaptureTime(_ s: Int) -> String {
         String(format: "%d:%02d", s / 60, s % 60)
     }
-}
-
-private struct OnboardingResultBatch: Identifiable {
-    let id = UUID()
-    let title: String
-    let items: [GenerationProject]
 }
 
 // MARK: - Starfield blurb
