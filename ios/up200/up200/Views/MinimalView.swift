@@ -312,6 +312,16 @@ struct MinimalNoteDetailPage: View {
     }
 
     private var isNoteTab: Bool { selectedIndex == 0 }
+
+    /// True while the Note tab's body editor is active. The editor binds
+    /// the whole `editText`, so its first line *is* the title — rendering
+    /// the `visibleTitle` heading at the same time would echo that first
+    /// line twice (once big, once in the editor). Generation tabs are
+    /// unaffected: their editor holds the generation content, not the
+    /// note body, so the heading never duplicates anything there.
+    private var isEditingNoteTab: Bool {
+        isNoteTab && (isEditingBody || editorFocused)
+    }
     private var currentGeneration: MinimalGeneration? {
         guard selectedIndex > 0, generations.indices.contains(selectedIndex - 1) else { return nil }
         return generations[selectedIndex - 1]
@@ -356,7 +366,7 @@ struct MinimalNoteDetailPage: View {
                     .padding(.top, 4)
                     .padding(.bottom, 6)
 
-                if !visibleTitle.isEmpty {
+                if !visibleTitle.isEmpty && !isEditingNoteTab {
                     Text(visibleTitle)
                         .font(.appTitle)
                         .foregroundColor(AppText.primary)
