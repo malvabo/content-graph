@@ -63,7 +63,7 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: 'var(--space-4)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', textAlign: 'left', transition: 'border-color 120ms, box-shadow 120ms, background 120ms', whiteSpace: 'normal', width: '100%' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.background = 'var(--color-bg-card)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}>
-                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: 'var(--leading-snug)', display: 'block', width: '100%' }}>{t.label}</span>
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: 'var(--leading-snug)', width: '100%', minHeight: 'calc(2em * var(--leading-snug))', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t.label}</span>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', lineHeight: 'var(--leading-snug)', display: 'block', width: '100%' }}>{t.description}</span>
                 </button>
               ))}
