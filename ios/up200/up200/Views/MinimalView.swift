@@ -265,6 +265,11 @@ struct MinimalNoteDetailPage: View {
     @State private var isEditingBody: Bool = false
     @FocusState private var editorFocused: Bool
 
+    /// Page-scoped restore cache for the chat sheet — keeps an
+    /// in-progress conversation alive across close/reopen while the
+    /// user stays on this note, and is dropped when the page is left.
+    @StateObject private var chatDraft = ChatDraftSession()
+
     /// Live cursor / selection state in the body editor. When the user
     /// has highlighted a range, both the sparkles AI menu and the chat
     /// sheet operate on that substring (rather than the whole tab) and
@@ -526,7 +531,8 @@ struct MinimalNoteDetailPage: View {
                 initialNoteContextID: note.id,
                 initialSelection: snippet,
                 initialSelectionTitle: selectionTitle,
-                initialSelectionRange: range
+                initialSelectionRange: range,
+                draftSession: chatDraft
             )
         }
         .fullScreenCover(isPresented: $showCreateModal) {

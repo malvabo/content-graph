@@ -474,6 +474,10 @@ struct ProjectGroupDetailView: View {
     @State private var copiedResetTask: Task<Void, Never>? = nil
     @State private var showAIMenu = false
     @State private var showChat = false
+    /// Page-scoped restore cache for the chat sheet — keeps an
+    /// in-progress conversation alive across close/reopen while the
+    /// user stays on this document, and is dropped when the page is left.
+    @StateObject private var chatDraft = ChatDraftSession()
     @State private var isAIProcessing = false
     @State private var aiTransformTask: Task<Void, Never>? = nil
     @State private var aiFailed = false
@@ -969,7 +973,8 @@ struct ProjectGroupDetailView: View {
                 initialContextIDs: seedID.map { Set([$0]) } ?? [],
                 initialSelection: selSnippet,
                 initialSelectionTitle: selectionTitle,
-                initialSelectionRange: selRange
+                initialSelectionRange: selRange,
+                draftSession: chatDraft
             )
         }
         .sheet(isPresented: $showAIPreview) {
