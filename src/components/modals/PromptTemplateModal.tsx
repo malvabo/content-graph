@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { Dialog, DialogContent } from '../ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from '../ui/dialog';
 
 type Category = 'All' | 'Positioning' | 'Structure' | 'Objective' | 'Audience';
 const FILTERS: Category[] = ['All', 'Positioning', 'Structure', 'Objective', 'Audience'];
@@ -27,17 +34,12 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
 
   return (
     <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
-      <DialogContent maxWidth={820} hideClose style={{ maxHeight: 'calc(100vh - 48px)', fontFamily: 'var(--font-sans)' }}>
+      <DialogContent maxWidth={820} style={{ maxHeight: 'calc(100vh - 48px)', fontFamily: 'var(--font-sans)' }}>
         {/* Header */}
-        <div style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)', flexShrink: 0 }}>
-          <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Start with a template</h2>
-          <button onClick={onClose} aria-label="Close"
-            style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', borderRadius: 'var(--radius-md)', color: 'var(--color-text-tertiary)', cursor: 'pointer' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-interactive-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-tertiary)'; }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-          </button>
-        </div>
+        <DialogHeader className="border-b border-[var(--color-border-subtle)]">
+          <DialogTitle>Start with a template</DialogTitle>
+          <DialogDescription>Pick a tone or angle to seed your prompt — or start blank.</DialogDescription>
+        </DialogHeader>
 
         {/* Body */}
         <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
@@ -54,15 +56,15 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
           </aside>
 
           {/* Template grid */}
-          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 'var(--space-4)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-2)', alignContent: 'start' }}>
+          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 'var(--space-5)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)', alignContent: 'start' }}>
               {visible.map(t => (
                 <button key={t.label} onClick={() => onPick(t.text)}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, padding: 'var(--space-3)', background: 'var(--color-bg-card)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', textAlign: 'left', transition: 'border-color 120ms, box-shadow 120ms', overflow: 'visible', whiteSpace: 'normal', width: '100%' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: 1.3, display: 'block', width: '100%' }}>{t.label}</span>
-                  <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)', lineHeight: 1.4, display: 'block', width: '100%' }}>{t.description}</span>
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: 'var(--space-4)', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', textAlign: 'left', transition: 'border-color 120ms, box-shadow 120ms, background 120ms', whiteSpace: 'normal', width: '100%' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.background = 'var(--color-bg-card)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}>
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: 'var(--leading-snug)', display: 'block', width: '100%' }}>{t.label}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', lineHeight: 'var(--leading-snug)', display: 'block', width: '100%' }}>{t.description}</span>
                 </button>
               ))}
             </div>
@@ -70,14 +72,14 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
         </div>
 
         {/* Footer */}
-        <div style={{ padding: 'var(--space-3) var(--space-6)', borderTop: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
+        <DialogFooter>
           <button onClick={onScratch}
             style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-normal)', color: 'var(--color-text-tertiary)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)' }}
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)'; e.currentTarget.style.background = 'var(--color-bg-surface)'; }}
             onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-tertiary)'; e.currentTarget.style.background = 'transparent'; }}>
             Or write from scratch →
           </button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
