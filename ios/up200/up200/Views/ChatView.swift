@@ -1610,7 +1610,7 @@ private struct RewriteSuggestionCard: View {
                     .font(.appBody)
                     .foregroundColor(AppText.tertiary)
                     .strikethrough(true, color: AppInk.solid(0.35))
-                    .lineSpacing(6)
+                    .lineSpacing(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)
             }
@@ -1622,7 +1622,7 @@ private struct RewriteSuggestionCard: View {
                 Text(Self.renderMarkdown(suggestion.after))
                     .font(.appBody)
                     .foregroundColor(AppText.primary)
-                    .lineSpacing(6)
+                    .lineSpacing(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)
             }
