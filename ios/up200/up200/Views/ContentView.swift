@@ -1427,12 +1427,8 @@ struct ProfileView: View {
                 .presentationBackground(AppBackground.primary)
             }
             .fullScreenCover(isPresented: $showOnboarding) {
-                // onClose surfaces an X in the top-right of OnboardingView
-                // so a user who taps "Show onboarding" from Profile can
-                // back out without being forced through the whole flow.
                 OnboardingView(onGetStarted: { showOnboarding = false },
-                               onLogin: { showOnboarding = false },
-                               onClose: { showOnboarding = false })
+                               onLogin: { showOnboarding = false })
                     .preferredColorScheme(.dark)
             }
         }
