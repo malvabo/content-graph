@@ -27,7 +27,7 @@ export default function PromptTemplateModal({ onClose, onPick, onScratch }: Prop
 
   return (
     <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
-      <DialogContent maxWidth={600} hideClose style={{ maxHeight: 'calc(100vh - 48px)', fontFamily: 'var(--font-sans)' }}>
+      <DialogContent maxWidth={820} hideClose style={{ maxHeight: 'calc(100vh - 48px)', fontFamily: 'var(--font-sans)' }}>
         {/* Header */}
         <div style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-subtle)', flexShrink: 0 }}>
           <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>Start with a template</h2>
