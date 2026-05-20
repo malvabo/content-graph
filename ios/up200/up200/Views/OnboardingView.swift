@@ -420,15 +420,28 @@ struct OnboardingView: View {
         guard !diveInFlight, step == .constellation else { return }
         diveInFlight = true
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        // Freeze the cluster on a single frame for the duration of the
-        // dive (see comment on `diveStartedAt`). Has to be set on the
-        // same runloop tick as the step change so the scene picks up
-        // the frozen time before its removal transition starts animating.
+        // Freeze the cluster first, then flip the step on a later runloop
+        // turn — the two changes must land in *separate* transactions.
+        // SwiftUI animates a removed `if` branch using the last version of
+        // that view it committed while the branch was still on screen. If
+        // `diveStartedAt` and `step` change together, the branch is already
+        // gone by the time the new `frozenAt` is seen, so the cloud scene
+        // that scales to 3.5× is the last *unfrozen* one: its rotation and
+        // amber spark firings keep running, and the zoom amplifies that
+        // internal motion into the shake. Setting diveStartedAt on its own
+        // forces a commit where the on-screen cloud is already frozen; that
+        // frozen frame is then the still image the dive carries past the
+        // camera.
         diveStartedAt = Date()
-        // 0.85s, easeIn — cluster freezes, scene scales + fades through
-        // the camera. See the original task body for the curve rationale.
-        withAnimation(.easeIn(duration: 0.85)) {
-            step = .capture
+        Task { @MainActor in
+            // ~3 frames — long enough for SwiftUI to commit the frozen
+            // render before the step flip removes the cloud.
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            // 0.85s, easeIn — the frozen scene scales + fades through the
+            // camera. See the constellation task body for the curve rationale.
+            withAnimation(.easeIn(duration: 0.85)) {
+                self.step = .capture
+            }
         }
     }
 
