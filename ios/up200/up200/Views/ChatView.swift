@@ -1271,9 +1271,17 @@ struct ChatView: View {
     /// cache. Marks the seed flags satisfied so `attemptSeedContext`
     /// won't stamp a fresh context chip onto a conversation that already
     /// carries one. No-op for a fresh session (no sent turns yet).
+    ///
+    /// Skipped entirely when the chat was opened from an explicit text
+    /// highlight (`initialSelectionRange` set): that's a deliberate "ask
+    /// about THIS line" gesture, so the selection must seed fresh rather
+    /// than be shadowed by an older conversation. The plain chat button
+    /// (no highlight) still restores; this turn's chat is written back
+    /// to the draft on dismiss either way.
     private func restoreFromDraft() {
         guard !didRestoreFromDraft else { return }
         didRestoreFromDraft = true
+        guard initialSelectionRange == nil else { return }
         guard let draft = draftSession, draft.hasContent else { return }
         messages = draft.messages
         inputText = draft.inputText
