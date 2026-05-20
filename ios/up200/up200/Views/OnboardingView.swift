@@ -947,7 +947,13 @@ struct OnboardingView: View {
     private func saveIdeaAndExit() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         captureRecorder.stop()
-        saveTranscriptAsNote(firstIdeaTranscript)
+        let note = saveTranscriptAsNote(firstIdeaTranscript)
+        // Title the note in the background so the library shows a 3-word
+        // summary rather than the raw first transcript line.
+        let transcript = firstIdeaTranscript
+        Task.detached(priority: .utility) {
+            await Self.applyNoteTitle(noteID: note.id, transcript: transcript)
+        }
         onGetStarted()
     }
 
@@ -988,8 +994,12 @@ struct OnboardingView: View {
                                note: Note) async {
         // No API key configured (e.g. fresh install before the key sheet) —
         // can't generate, so drop the user into the app where they can add
-        // a key from Profile. Note is already saved.
+        // a key from Profile. Note is already saved; still title it so the
+        // library shows a summary rather than the raw first line.
         guard ContentGenerator.isKeyConfigured else {
+            Task.detached(priority: .utility) {
+                await Self.applyNoteTitle(noteID: note.id, transcript: transcript)
+            }
             onGetStarted()
             return
         }
@@ -1012,23 +1022,28 @@ struct OnboardingView: View {
 
         switch result {
         case .success(let text):
-            // Attach the generation to the note just saved so the handoff
-            // page renders the standard two-tab note detail — a "Note" tab
-            // plus this generation — instead of a standalone library card.
+            // Give the note a title line so the handoff page's "Note" tab
+            // renders the captured transcript as body, then attach the
+            // generation to it so the page shows the standard two-tab note
+            // detail — a "Note" tab plus this generation.
+            let displayNote = await Self.applyNoteTitle(noteID: note.id, transcript: transcript) ?? note
             let generation = MinimalGeneration(
-                noteId: note.id,
-                sourceNoteIds: [note.id],
-                sourceLabels: [note.displayTitle],
+                noteId: displayNote.id,
+                sourceNoteIds: [displayNote.id],
+                sourceLabels: [displayNote.displayTitle],
                 outputType: formatID,
                 content: text,
                 date: Date()
             )
             MinimalGenStore.insertBatch([generation])
-            resultNote = note
+            resultNote = displayNote
         case .failure:
             // Note is already saved — quietly exit into the app rather than
             // stranding the user on the generating pill. A failure banner
             // in the middle of onboarding would be more noise than signal.
+            Task.detached(priority: .utility) {
+                await Self.applyNoteTitle(noteID: note.id, transcript: transcript)
+            }
             onGetStarted()
         }
     }
@@ -1042,40 +1057,54 @@ struct OnboardingView: View {
         // now" with a failed transcription exited onboarding having persisted
         // nothing. Save a placeholder so the user still finds *a* note in
         // their library and can investigate (mic / permissions / Siri lang)
-        // instead of thinking the app discarded their idea.
-        let isPlaceholder = trimmed.isEmpty
-        let body = isPlaceholder
-            ? "Your first voice idea — transcription was empty. Try recording again from the Notes tab."
+        // instead of thinking the app discarded their idea. The placeholder
+        // already leads with a title line so the note-detail page renders
+        // the rest as the body rather than swallowing it into the heading.
+        let body = trimmed.isEmpty
+            ? "Your first idea\nTranscription was empty — record again from the Notes tab to capture it."
             : trimmed
 
         var stored = NotesStore.load()
         var note = Note()
         note.body = body
         note.updatedAt = Date()
-        let noteID = note.id
         stored.insert(note, at: 0)
         NotesStore.save(stored)
+        return note
+    }
 
-        // Skip AI-titling for placeholder notes — there's no content to
-        // summarise and we'd just send the placeholder text to the model.
-        guard !isPlaceholder else { return note }
+    /// Rewrites a freshly-saved onboarding note so its stored body leads with
+    /// a short title line. The note-detail page treats the first line as the
+    /// heading and renders everything after it as the body — without a title
+    /// line an untitled single-paragraph transcript shows its whole text as
+    /// the heading and an empty body. Returns the updated note.
+    @discardableResult
+    private static func applyNoteTitle(noteID: UUID, transcript: String) async -> Note? {
+        let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        let titledBody: String?
+        if trimmed.isEmpty {
+            // Placeholder note — already saved with a title line.
+            titledBody = nil
+        } else if let titled = await AIService.prependTitleIfMissing(to: trimmed) {
+            titledBody = titled
+        } else if trimmed.contains("\n") {
+            // prependTitleIfMissing only declines a multi-line body when its
+            // first line already reads as a title — keep it as-is.
+            titledBody = nil
+        } else {
+            // Single paragraph, no AI title available — prepend a generic
+            // heading so the transcript still renders below the tabs.
+            titledBody = "Your first idea\n" + trimmed
+        }
 
-        // Title in the background so the notes list shows a 3-word summary
-        // instead of the first transcript line. This is the only persistence
-        // path for onboarding transcripts — there is no editor sweep here to
-        // catch it on dismissal.
-        Task.detached(priority: .utility) {
-            guard let updatedBody = await AIService.prependTitleIfMissing(to: trimmed) else { return }
-            var latest = NotesStore.load()
-            guard let idx = latest.firstIndex(where: { $0.id == noteID }) else { return }
-            // Don't clobber edits the user may have made after onboarding handed off.
-            guard latest[idx].body == trimmed else { return }
-            latest[idx].body = updatedBody
+        var latest = NotesStore.load()
+        guard let idx = latest.firstIndex(where: { $0.id == noteID }) else { return nil }
+        if let titledBody, latest[idx].body != titledBody {
+            latest[idx].body = titledBody
             latest[idx].updatedAt = Date()
             NotesStore.save(latest)
         }
-
-        return note
+        return latest[idx]
     }
 
     private func formatCaptureTime(_ s: Int) -> String {
