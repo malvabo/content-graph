@@ -174,7 +174,15 @@ struct ChatContextSource: Identifiable, Equatable, Codable {
 // MARK: - Chat Service
 
 private struct ChatService {
-    static func send(messages: [ChatMessage], contextItems: [ChatContextSource]) async -> Result<String, APICallError> {
+    /// Streams a model reply over server-sent events. `onDelta` fires on
+    /// the main actor with the full text accumulated so far each time a
+    /// chunk lands, so the chat can render the answer growing line by
+    /// line instead of appearing all at once.
+    static func streamSend(
+        messages: [ChatMessage],
+        contextItems: [ChatContextSource],
+        onDelta: @escaping (String) -> Void
+    ) async -> Result<String, APICallError> {
         guard let apiKey = KeychainService.load(), !apiKey.isEmpty,
               let url = URL(string: "https://api.anthropic.com/v1/messages") else {
             return .failure(.http(401, "Missing API key"))
@@ -246,32 +254,60 @@ private struct ChatService {
             "model": "claude-sonnet-4-6",
             "max_tokens": 1024,
             "system": systemText,
-            "messages": apiMessages
+            "messages": apiMessages,
+            "stream": true
         ]
         guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
             return .failure(.decode)
         }
         req.httpBody = httpBody
 
-        let data: Data
+        let bytes: URLSession.AsyncBytes
         let resp: URLResponse
         do {
-            (data, resp) = try await URLSession.shared.data(for: req)
+            (bytes, resp) = try await URLSession.shared.bytes(for: req)
         } catch {
             return .failure(.network(error.localizedDescription))
         }
 
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
-            return .failure(.http(status, anthropicErrorMessage(from: data)))
+            let errData = (try? await bytes.reduce(into: Data()) { $0.append($1) }) ?? Data()
+            return .failure(.http(status, anthropicErrorMessage(from: errData)))
         }
 
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let content = (json["content"] as? [[String: Any]])?.first,
-              let text = content["text"] as? String
-        else { return .failure(.decode) }
+        // Walk the SSE stream, accumulating `text_delta` chunks. Each
+        // update is handed to `onDelta` so the chat bubble grows in
+        // place as the model writes rather than popping in fully formed.
+        var accumulated = ""
+        do {
+            for try await line in bytes.lines {
+                guard line.hasPrefix("data:") else { continue }
+                let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
+                guard !payload.isEmpty,
+                      let chunk = payload.data(using: .utf8),
+                      let json = try? JSONSerialization.jsonObject(with: chunk) as? [String: Any],
+                      let type = json["type"] as? String
+                else { continue }
+                if type == "content_block_delta",
+                   let delta = json["delta"] as? [String: Any],
+                   let piece = delta["text"] as? String {
+                    accumulated += piece
+                    let snapshot = accumulated
+                    await MainActor.run { onDelta(snapshot) }
+                } else if type == "error" {
+                    let msg = (json["error"] as? [String: Any])?["message"] as? String
+                    return .failure(.http(status, msg ?? "The model stream failed."))
+                }
+            }
+        } catch {
+            // A cancelled task (sheet dismissed mid-stream) throws here;
+            // the caller drops the result on its `Task.isCancelled`
+            // guard, so this message never reaches the user.
+            return .failure(.network(error.localizedDescription))
+        }
 
-        let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let result = accumulated.trimmingCharacters(in: .whitespacesAndNewlines)
         return result.isEmpty ? .failure(.empty) : .success(result)
     }
 }
@@ -925,6 +961,12 @@ struct ChatView: View {
                 withAnimation(.easeOut(duration: 0.2)) {
                     proxy.scrollTo(messages.last?.id, anchor: .bottom)
                 }
+            }
+            // Keep the latest bubble pinned to the bottom as a streamed
+            // reply grows line by line — without this the text would
+            // spill below the fold while the model is still writing.
+            .onChange(of: messages.last?.content) { _, _ in
+                proxy.scrollTo(messages.last?.id, anchor: .bottom)
             }
             .onChange(of: isLoading) { _, loading in
                 if loading {
@@ -1614,18 +1656,44 @@ struct ChatView: View {
         isLoading = true
         let snapshot = messages
         let ctx = contextItems
+        // Identity for the assistant turn the stream writes into: the
+        // first delta appends the bubble, later deltas grow it in place.
+        let replyID = UUID()
         sendTask = Task {
-            let outcome = await ChatService.send(messages: snapshot, contextItems: ctx)
+            let outcome = await ChatService.streamSend(
+                messages: snapshot,
+                contextItems: ctx,
+                onDelta: { partial in
+                    guard !Task.isCancelled else { return }
+                    // First chunk: swap the typing indicator for the bubble.
+                    if isLoading { isLoading = false }
+                    if let idx = messages.firstIndex(where: { $0.id == replyID }) {
+                        messages[idx].content = partial
+                    } else {
+                        messages.append(
+                            ChatMessage(id: replyID, role: "assistant", content: partial)
+                        )
+                    }
+                }
+            )
             await MainActor.run {
                 isLoading = false
                 guard !Task.isCancelled else { return }
                 switch outcome {
                 case .success(let reply):
-                    messages.append(ChatMessage(role: "assistant", content: reply))
+                    if let idx = messages.firstIndex(where: { $0.id == replyID }) {
+                        messages[idx].content = reply
+                    } else {
+                        messages.append(
+                            ChatMessage(id: replyID, role: "assistant", content: reply)
+                        )
+                    }
                     persistActiveChat()
                 case .failure(let err):
-                    // Surface as an alert so the error doesn't masquerade as
-                    // a model response in the chat history.
+                    // Drop any partial bubble and surface the error as an
+                    // alert so a half-written reply isn't mistaken for the
+                    // model's actual answer.
+                    messages.removeAll { $0.id == replyID }
                     chatFailReason = err.userMessage
                     chatFailed = true
                 }
