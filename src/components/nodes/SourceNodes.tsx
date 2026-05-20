@@ -276,10 +276,12 @@ export function TextSourceInline({ id }: { id: string }) {
             </div>
             {title && text && (
               <div style={{
-                marginTop: 4,
+                flex: 1, minHeight: 0, marginTop: 4,
                 fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
                 color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-snug)',
-                overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'hidden',
+                WebkitMaskImage: 'linear-gradient(to bottom, #000 78%, transparent 100%)',
+                maskImage: 'linear-gradient(to bottom, #000 78%, transparent 100%)',
               }}>
                 {text}
               </div>
