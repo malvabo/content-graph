@@ -918,20 +918,31 @@ private struct NoteEditorPage: View {
         guard !didDelete else { return }
         let bodyChanged = (combined != original.body)
         var saved = original
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedBody = noteBody.trimmingCharacters(in: .whitespacesAndNewlines)
         if bodyChanged {
             saved.body = combined
             saved.title = ""
             saved.updatedAt = Date()
+            if trimmedTitle.isEmpty && !trimmedBody.isEmpty {
+                let snapshotBody = noteBody
+                let fallbackBody = combined
+                let baseNote = saved
+                let save = onSave
+                Task {
+                    var updated = baseNote
+                    updated.body = await AIService.prependTitleIfMissing(to: snapshotBody) ?? fallbackBody
+                    await MainActor.run { save(updated) }
+                }
+                return
+            }
             onSave(saved)
         }
 
         // Title every non-empty body without a user-supplied title, even when
-        // the editor didn't change anything — voice notes are saved on the way
-        // in (see `startAudioNote`) and the user often dismisses the editor
-        // without typing, so this path is the only place the AI title runs.
-        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        // the editor didn't change anything — this keeps older raw transcript
+        // notes from staying titleless after the user opens and closes them.
         guard trimmedTitle.isEmpty else { return }
-        let trimmedBody = noteBody.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedBody.isEmpty else { return }
 
         let snapshotBody = noteBody
@@ -1408,20 +1419,23 @@ struct NotesView: View {
 
     private func startAudioNote() {
         recording.begin { transcript in
-            var note = Note()
-            note.body = transcript
-            note.updatedAt = Date()
-            notes.append(note)
-            // Persist immediately rather than via the 350 ms debounce —
-            // the navigation push below opens a detail page that may
-            // start editing the same note straight away (in-editor
-            // dictation, a typed addition). A debounced save would then
-            // race the detail page's save and overwrite the user's
-            // edits with the bare transcript snapshot.
-            NotesStore.saveInBackground(notes)
-            editingNote = note
+            saveRecordedTranscript(transcript)
         }
         recording.showingSheet = true
+    }
+
+    private func saveRecordedTranscript(_ transcript: String) {
+        let capturedAt = Date()
+        Task {
+            let body = await AIService.prependTitleIfMissing(to: transcript) ?? transcript
+            await MainActor.run {
+                var note = Note()
+                note.body = body
+                note.updatedAt = capturedAt
+                notes.append(note)
+                NotesStore.saveInBackground(notes)
+            }
+        }
     }
 
     private let builtinTags = ["Talk Copenhagen", "Talk London", "Article"]
