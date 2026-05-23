@@ -1081,30 +1081,39 @@ struct OnboardingView: View {
     @discardableResult
     private static func applyNoteTitle(noteID: UUID, transcript: String) async -> Note? {
         let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        let titledBody: String?
+        let finalBody: String
         if trimmed.isEmpty {
             // Placeholder note — already saved with a title line.
-            titledBody = nil
+            finalBody = "Your first idea\nTranscription was empty — record again from the Notes tab to capture it."
         } else if let titled = await AIService.prependTitleIfMissing(to: trimmed) {
-            titledBody = titled
+            finalBody = titled
         } else if trimmed.contains("\n") {
             // prependTitleIfMissing only declines a multi-line body when its
             // first line already reads as a title — keep it as-is.
-            titledBody = nil
+            finalBody = trimmed
         } else {
             // Single paragraph, no AI title available — prepend a generic
             // heading so the transcript still renders below the tabs.
-            titledBody = "Your first idea\n" + trimmed
+            finalBody = "Your first idea\n" + trimmed
         }
 
         var latest = NotesStore.load()
-        guard let idx = latest.firstIndex(where: { $0.id == noteID }) else { return nil }
-        if let titledBody, latest[idx].body != titledBody {
-            latest[idx].body = titledBody
-            latest[idx].updatedAt = Date()
+        if let idx = latest.firstIndex(where: { $0.id == noteID }) {
+            if latest[idx].body != finalBody {
+                latest[idx].body = finalBody
+                latest[idx].updatedAt = Date()
+                NotesStore.save(latest)
+            }
+            return latest[idx]
+        } else {
+            var note = Note()
+            note.id = noteID
+            note.body = finalBody
+            note.updatedAt = Date()
+            latest.insert(note, at: 0)
             NotesStore.save(latest)
+            return note
         }
-        return latest[idx]
     }
 
     private func formatCaptureTime(_ s: Int) -> String {
