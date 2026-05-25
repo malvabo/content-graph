@@ -1077,7 +1077,7 @@ struct ProjectGroupDetailView: View {
                             .controlSize(.small)
                             .tint(AppText.primary)
                     } else {
-                        Image(systemName: "sparkles")
+                        Image(systemName: "wand.and.stars")
                             .font(.system(size: 19, weight: .semibold))
                             .foregroundColor(AppText.primary)
                     }
@@ -1096,7 +1096,7 @@ struct ProjectGroupDetailView: View {
                 persistCurrent()
                 showChat = true
             } label: {
-                Image(systemName: "wand.and.stars")
+                Image(systemName: "message")
                     .font(.system(size: 19, weight: .regular))
                     .foregroundColor(AppText.primary)
                     .frame(width: 48, height: 48)
