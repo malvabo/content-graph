@@ -45,3 +45,16 @@ create policy "Users can upsert own settings"
 
 create policy "Users can update own settings"
   on user_settings for update using (auth.uid() = user_id);
+
+-- Apple Sign in users captured by the iOS onboarding flow.
+-- The Vercel backend writes this table with the Supabase service role after
+-- verifying Apple's identity token. There are no client RLS policies.
+create table if not exists apple_auth_users (
+  apple_sub text primary key,
+  email text,
+  full_name text,
+  created_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now()
+);
+
+alter table apple_auth_users enable row level security;

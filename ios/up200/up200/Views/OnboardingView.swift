@@ -1270,6 +1270,7 @@ private struct PostGenerationAuthView: View {
 
 private final class AppleSignInCoordinator: NSObject, ObservableObject {
     private var completion: ((Result<Void, Error>) -> Void)?
+    private let authEndpoint = URL(string: "https://content-graph-five.vercel.app/api/auth/apple")!
 
     func start(completion: @escaping (Result<Void, Error>) -> Void) {
         self.completion = completion
@@ -1282,6 +1283,60 @@ private final class AppleSignInCoordinator: NSObject, ObservableObject {
         controller.presentationContextProvider = self
         controller.performRequests()
     }
+
+    private func finish(_ result: Result<Void, Error>) {
+        DispatchQueue.main.async { [weak self] in
+            self?.completion?(result)
+            self?.completion = nil
+        }
+    }
+
+    private func authenticateWithBackend(credential: ASAuthorizationAppleIDCredential) async throws {
+        guard let identityTokenData = credential.identityToken,
+              let identityToken = String(data: identityTokenData, encoding: .utf8) else {
+            throw AppleSignInError.missingIdentityToken
+        }
+
+        let authorizationCode = credential.authorizationCode.flatMap {
+            String(data: $0, encoding: .utf8)
+        }
+
+        let fullName = credential.fullName.map {
+            PersonNameComponentsFormatter().string(from: $0)
+        }?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let body = AppleAuthRequest(
+            identityToken: identityToken,
+            authorizationCode: authorizationCode,
+            user: credential.user,
+            email: credential.email,
+            fullName: fullName?.isEmpty == false ? fullName : nil
+        )
+
+        var request = URLRequest(url: authEndpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AppleSignInError.backend("Could not read the sign-in response.")
+        }
+
+        if !(200..<300).contains(httpResponse.statusCode) {
+            let apiError = try? JSONDecoder().decode(AppleAuthErrorResponse.self, from: data)
+            throw AppleSignInError.backend(apiError?.error ?? "Apple sign-in could not be verified.")
+        }
+
+        let authResponse = try JSONDecoder().decode(AppleAuthResponse.self, from: data)
+        UserDefaults.standard.set(authResponse.user.id, forKey: "apple_user_id")
+        if let email = authResponse.user.email {
+            UserDefaults.standard.set(email, forKey: "apple_auth_email")
+        }
+        if let fullName = authResponse.user.fullName {
+            UserDefaults.standard.set(fullName, forKey: "apple_auth_full_name")
+        }
+    }
 }
 
 extension AppleSignInCoordinator: ASAuthorizationControllerDelegate {
@@ -1290,17 +1345,18 @@ extension AppleSignInCoordinator: ASAuthorizationControllerDelegate {
         didCompleteWithAuthorization authorization: ASAuthorization
     ) {
         guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-            DispatchQueue.main.async { [completion] in
-                completion?(.failure(AppleSignInError.invalidCredential))
-            }
-            completion = nil
+            finish(.failure(AppleSignInError.invalidCredential))
             return
         }
-        UserDefaults.standard.set(credential.user, forKey: "apple_user_id")
-        DispatchQueue.main.async { [completion] in
-            completion?(.success(()))
+
+        Task { [weak self] in
+            do {
+                try await self?.authenticateWithBackend(credential: credential)
+                self?.finish(.success(()))
+            } catch {
+                self?.finish(.failure(error))
+            }
         }
-        completion = nil
     }
 
     func authorizationController(
@@ -1313,10 +1369,7 @@ extension AppleSignInCoordinator: ASAuthorizationControllerDelegate {
             completion = nil
             return
         }
-        DispatchQueue.main.async { [completion] in
-            completion?(.failure(error))
-        }
-        completion = nil
+        finish(.failure(error))
     }
 }
 
@@ -1331,10 +1384,41 @@ extension AppleSignInCoordinator: ASAuthorizationControllerPresentationContextPr
 
 private enum AppleSignInError: LocalizedError {
     case invalidCredential
+    case missingIdentityToken
+    case backend(String)
 
     var errorDescription: String? {
-        "Could not read Apple credentials. Try again."
+        switch self {
+        case .invalidCredential:
+            "Could not read Apple credentials. Try again."
+        case .missingIdentityToken:
+            "Apple did not return a sign-in token. Try again."
+        case .backend(let message):
+            message
+        }
     }
+}
+
+private struct AppleAuthRequest: Encodable {
+    let identityToken: String
+    let authorizationCode: String?
+    let user: String
+    let email: String?
+    let fullName: String?
+}
+
+private struct AppleAuthResponse: Decodable {
+    let user: AppleAuthUser
+}
+
+private struct AppleAuthUser: Decodable {
+    let id: String
+    let email: String?
+    let fullName: String?
+}
+
+private struct AppleAuthErrorResponse: Decodable {
+    let error: String
 }
 
 // MARK: - Starfield blurb
