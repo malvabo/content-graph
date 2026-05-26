@@ -1215,6 +1215,7 @@ private enum ProfileDestination: Hashable {
     case templates
     case templateNew
     case templateEdit(UUID)
+    case privacy
 }
 
 private let builtInTemplates: [(title: String, subtitle: String, icon: String)] = [
@@ -1343,6 +1344,18 @@ struct ProfileView: View {
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
 
                     SettingsRow(
+                        title: "Privacy & Data",
+                        trailing: .chevron
+                    ) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        path.append(.privacy)
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(AppInk.solid(0.06))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+
+                    SettingsRow(
                         title: "Log out",
                         trailing: .icon("rectangle.portrait.and.arrow.right"),
                         titleColor: logoutRed,
@@ -1385,6 +1398,8 @@ struct ProfileView: View {
             .onDisappear { chrome.hideTabBar = false }
             .navigationDestination(for: ProfileDestination.self) { dest in
                 switch dest {
+                case .privacy:
+                    PrivacyDataView()
                 case .templates:
                     TemplatesListPage(custom: custom, path: $path)
                 case .templateNew:
