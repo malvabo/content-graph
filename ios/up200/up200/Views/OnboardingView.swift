@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 
 // MARK: - UIKit bridge
@@ -35,6 +36,8 @@ struct OnboardingView: View {
 
     @State private var step: OnboardingStep = .intro
     @State private var appeared = false
+    @StateObject private var appleSignIn = AppleSignInCoordinator()
+    @State private var authError: String? = nil
     // Typewriter state for the brand mark — char-by-char typing of
     // "Oula" in the mono font.
     @State private var brandTypedLength: Int = 0
@@ -284,21 +287,34 @@ struct OnboardingView: View {
 
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onLogin()
+                    startAppleLogin()
                 }) {
-                    Text("Log in")
-                        .font(.app(size: 17, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.70))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(Color.white.opacity(0.07))
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-                        )
+                    HStack(spacing: 8) {
+                        Image(systemName: "apple.logo")
+                            .font(.system(size: 17, weight: .semibold))
+                        Text("Log in with Apple")
+                            .font(.app(size: 17, weight: .medium))
+                    }
+                    .foregroundColor(Color.white.opacity(0.82))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.white.opacity(0.07))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                            .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
+                    )
                 }
                 .buttonStyle(.plain)
+
+                if let authError {
+                    Text(authError)
+                        .font(.appSmall)
+                        .foregroundColor(Color(red: 0.95, green: 0.42, blue: 0.34))
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 4)
+                }
             }
             .padding(.horizontal, 28)
             .opacity(appeared ? 1 : 0)
@@ -315,6 +331,18 @@ struct OnboardingView: View {
             insertion: .opacity,
             removal: .opacity.animation(.easeInOut(duration: 0.20))
         ))
+    }
+
+    private func startAppleLogin() {
+        authError = nil
+        appleSignIn.start { result in
+            switch result {
+            case .success:
+                onLogin()
+            case .failure(let error):
+                authError = error.localizedDescription
+            }
+        }
     }
 
     // MARK: Step 3 — content graph
@@ -1140,6 +1168,8 @@ struct OnboardingView: View {
 private struct PostGenerationAuthView: View {
     let onSignUp: () -> Void
     let onLogin: () -> Void
+    @StateObject private var appleSignIn = AppleSignInCoordinator()
+    @State private var authError: String? = nil
 
     var body: some View {
         ZStack {
@@ -1183,40 +1213,127 @@ private struct PostGenerationAuthView: View {
                 VStack(spacing: 12) {
                     Button {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        onSignUp()
+                        startAppleSignIn(completion: onSignUp)
                     } label: {
-                        Text("Sign up")
-                            .font(.appLabelBold)
-                            .foregroundColor(AppBackground.primary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 54)
-                            .background(AppText.primary)
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                        appleButtonLabel("Sign up with Apple")
                     }
                     .buttonStyle(.plain)
 
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        onLogin()
+                        startAppleSignIn(completion: onLogin)
                     } label: {
-                        Text("Log in")
-                            .font(.appLabelBold)
-                            .foregroundColor(AppText.primary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 54)
-                            .background(AppInk.solid(0.08))
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                    .stroke(AppInk.solid(0.12), lineWidth: 0.5)
-                            )
+                        appleButtonLabel("Log in with Apple")
                     }
                     .buttonStyle(.plain)
+
+                    if let authError {
+                        Text(authError)
+                            .font(.appSmall)
+                            .foregroundColor(Color(red: 0.95, green: 0.42, blue: 0.34))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 8)
+                    }
                 }
                 .padding(.horizontal, 28)
                 .padding(.bottom, 52)
             }
         }
+    }
+
+    private func appleButtonLabel(_ title: String) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: "apple.logo")
+                .font(.system(size: 18, weight: .semibold))
+            Text(title)
+                .font(.appLabelBold)
+        }
+        .foregroundColor(AppBackground.primary)
+        .frame(maxWidth: .infinity)
+        .frame(height: 54)
+        .background(AppText.primary)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+    }
+
+    private func startAppleSignIn(completion: @escaping () -> Void) {
+        authError = nil
+        appleSignIn.start { result in
+            switch result {
+            case .success:
+                completion()
+            case .failure(let error):
+                authError = error.localizedDescription
+            }
+        }
+    }
+}
+
+private final class AppleSignInCoordinator: NSObject, ObservableObject {
+    private var completion: ((Result<Void, Error>) -> Void)?
+
+    func start(completion: @escaping (Result<Void, Error>) -> Void) {
+        self.completion = completion
+        let provider = ASAuthorizationAppleIDProvider()
+        let request = provider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = self
+        controller.presentationContextProvider = self
+        controller.performRequests()
+    }
+}
+
+extension AppleSignInCoordinator: ASAuthorizationControllerDelegate {
+    func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithAuthorization authorization: ASAuthorization
+    ) {
+        guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+            DispatchQueue.main.async { [completion] in
+                completion?(.failure(AppleSignInError.invalidCredential))
+            }
+            completion = nil
+            return
+        }
+        UserDefaults.standard.set(credential.user, forKey: "apple_user_id")
+        DispatchQueue.main.async { [completion] in
+            completion?(.success(()))
+        }
+        completion = nil
+    }
+
+    func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithError error: Error
+    ) {
+        let nsError = error as NSError
+        if nsError.domain == ASAuthorizationError.errorDomain,
+           nsError.code == ASAuthorizationError.canceled.rawValue {
+            completion = nil
+            return
+        }
+        DispatchQueue.main.async { [completion] in
+            completion?(.failure(error))
+        }
+        completion = nil
+    }
+}
+
+extension AppleSignInCoordinator: ASAuthorizationControllerPresentationContextProviding {
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
+    }
+}
+
+private enum AppleSignInError: LocalizedError {
+    case invalidCredential
+
+    var errorDescription: String? {
+        "Could not read Apple credentials. Try again."
     }
 }
 

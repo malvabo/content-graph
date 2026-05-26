@@ -33,6 +33,7 @@
 		A2000003 /* WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebView.swift; sourceTree = "<group>"; };
 		A2000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A2000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A2000007 /* up200.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = up200.entitlements; sourceTree = "<group>"; };
 		A2000006 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A2000008 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		A2000009 /* APIKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeySetupView.swift; sourceTree = "<group>"; };
@@ -68,6 +69,7 @@
 				A3000006 /* Fonts */,
 				A2000004 /* Assets.xcassets */,
 				A2000005 /* Info.plist */,
+				A2000007 /* up200.entitlements */,
 			);
 			path = up200;
 			sourceTree = "<group>";
@@ -210,6 +212,7 @@
 				ANTHROPIC_API_KEY = "";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = up200/up200.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 4ALG4CS7DT;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -237,6 +240,7 @@
 				ANTHROPIC_API_KEY = "";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = up200/up200.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 4ALG4CS7DT;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
