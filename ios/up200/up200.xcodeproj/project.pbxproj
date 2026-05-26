@@ -21,11 +21,15 @@
 		A1000014 /* NotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000016 /* NotesView.swift */; };
 		A1000015 /* SwipeBackGesture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000017 /* SwipeBackGesture.swift */; };
 		A1000030 /* MinimalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000030 /* MinimalView.swift */; };
+		A1000031 /* AuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000031 /* AuthSession.swift */; };
+		A1000032 /* AuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000032 /* AuthClient.swift */; };
+		A1000033 /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000033 /* SyncManager.swift */; };
+		A1000034 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A2000034 /* PrivacyInfo.xcprivacy */; };
 		A1000020 /* Lora-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000020 /* Lora-Regular.ttf */; };
 		A1000021 /* Lora-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000021 /* Lora-Medium.ttf */; };
 		A1000022 /* Lora-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000022 /* Lora-SemiBold.ttf */; };
 		A1000023 /* Lora-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000023 /* Lora-Bold.ttf */; };
-		A1000025 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A2000025 /* PrivacyInfo.xcprivacy */; };
+
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,11 +50,15 @@
 		A2000016 /* NotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesView.swift; sourceTree = "<group>"; };
 		A2000017 /* SwipeBackGesture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeBackGesture.swift; sourceTree = "<group>"; };
 		A2000030 /* MinimalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalView.swift; sourceTree = "<group>"; };
+		A2000031 /* AuthSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSession.swift; sourceTree = "<group>"; };
+		A2000032 /* AuthClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthClient.swift; sourceTree = "<group>"; };
+		A2000033 /* SyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncManager.swift; sourceTree = "<group>"; };
+		A2000034 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A2000020 /* Lora-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-Regular.ttf"; sourceTree = "<group>"; };
 		A2000021 /* Lora-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-Medium.ttf"; sourceTree = "<group>"; };
 		A2000022 /* Lora-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-SemiBold.ttf"; sourceTree = "<group>"; };
 		A2000023 /* Lora-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-Bold.ttf"; sourceTree = "<group>"; };
-		A2000025 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -72,7 +80,7 @@
 				A2000004 /* Assets.xcassets */,
 				A2000005 /* Info.plist */,
 				A2000007 /* up200.entitlements */,
-				A2000025 /* PrivacyInfo.xcprivacy */,
+				A2000034 /* PrivacyInfo.xcprivacy */,
 			);
 			path = up200;
 			sourceTree = "<group>";
@@ -91,6 +99,9 @@
 				A2000016 /* NotesView.swift */,
 				A2000017 /* SwipeBackGesture.swift */,
 				A2000030 /* MinimalView.swift */,
+				A2000031 /* AuthSession.swift */,
+				A2000032 /* AuthClient.swift */,
+				A2000033 /* SyncManager.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -175,11 +186,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000004 /* Assets.xcassets in Resources */,
+				A1000034 /* PrivacyInfo.xcprivacy in Resources */,
 				A1000020 /* Lora-Regular.ttf in Resources */,
 				A1000021 /* Lora-Medium.ttf in Resources */,
 				A1000022 /* Lora-SemiBold.ttf in Resources */,
 				A1000023 /* Lora-Bold.ttf in Resources */,
-				A1000025 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -203,6 +214,9 @@
 				A1000014 /* NotesView.swift in Sources */,
 				A1000015 /* SwipeBackGesture.swift in Sources */,
 				A1000030 /* MinimalView.swift in Sources */,
+				A1000031 /* AuthSession.swift in Sources */,
+				A1000032 /* AuthClient.swift in Sources */,
+				A1000033 /* SyncManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

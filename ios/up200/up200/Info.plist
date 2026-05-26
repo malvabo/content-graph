@@ -34,7 +34,7 @@
 	</dict>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
@@ -44,13 +44,8 @@
 	<string>UIStatusBarStyleDefault</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Voice input for Oula</string>
+	<string>Oula uses the microphone to capture your voice notes and ideas.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Speech recognition is used to transcribe your voice notes</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
