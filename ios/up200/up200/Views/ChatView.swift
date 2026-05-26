@@ -183,17 +183,9 @@ private struct ChatService {
         contextItems: [ChatContextSource],
         onDelta: @escaping (String) -> Void
     ) async -> Result<String, APICallError> {
-        guard let apiKey = KeychainService.load(), !apiKey.isEmpty,
-              let url = URL(string: "https://api.anthropic.com/v1/messages") else {
-            return .failure(.http(401, "Missing API key"))
+        guard AnthropicClient.isConfigured else {
+            return .failure(.http(401, "Not signed in"))
         }
-
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        req.timeoutInterval = 60
 
         var systemText = """
         You are a content and writing assistant.
@@ -257,10 +249,9 @@ private struct ChatService {
             "messages": apiMessages,
             "stream": true
         ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
+        guard let req = AnthropicClient.makeRequest(body: body) else {
             return .failure(.decode)
         }
-        req.httpBody = httpBody
 
         let bytes: URLSession.AsyncBytes
         let resp: URLResponse

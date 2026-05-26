@@ -1336,6 +1336,9 @@ private final class AppleSignInCoordinator: NSObject, ObservableObject {
         if let fullName = authResponse.user.fullName {
             UserDefaults.standard.set(fullName, forKey: "apple_auth_full_name")
         }
+        if let token = authResponse.sessionToken {
+            SessionTokenService.save(token)
+        }
     }
 }
 
@@ -1409,6 +1412,7 @@ private struct AppleAuthRequest: Encodable {
 
 private struct AppleAuthResponse: Decodable {
     let user: AppleAuthUser
+    let sessionToken: String?
 }
 
 private struct AppleAuthUser: Decodable {

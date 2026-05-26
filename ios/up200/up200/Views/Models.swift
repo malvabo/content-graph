@@ -490,6 +490,80 @@ func anthropicErrorMessage(from data: Data) -> String {
     return String(data: data, encoding: .utf8).map { String($0.prefix(200)) } ?? ""
 }
 
+struct SessionTokenService {
+    private static let account = "com.up200.app.session_token"
+
+    @discardableResult
+    static func save(_ value: String) -> Bool {
+        let data = Data(value.utf8)
+        let query: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrAccount: account,
+            kSecValueData: data
+        ]
+        SecItemDelete(query as CFDictionary)
+        return SecItemAdd(query as CFDictionary, nil) == errSecSuccess
+    }
+
+    static func load() -> String? {
+        let query: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrAccount: account,
+            kSecReturnData: true,
+            kSecMatchLimit: kSecMatchLimitOne
+        ]
+        var result: AnyObject?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+              let data = result as? Data,
+              let value = String(data: data, encoding: .utf8),
+              !value.isEmpty else { return nil }
+        return value
+    }
+
+    static func delete() {
+        let query: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrAccount: account
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
+}
+
+/// Builds a URLRequest aimed at either the first-party proxy (when a session
+/// token is present) or directly at the Anthropic API (BYOK legacy path).
+/// Returns nil when neither credential is available.
+enum AnthropicClient {
+    private static let proxyURL = URL(string: "https://content-graph-five.vercel.app/api/claude")!
+    private static let directURL = URL(string: "https://api.anthropic.com/v1/messages")!
+
+    static func makeRequest(body: [String: Any], timeout: TimeInterval = 60) -> URLRequest? {
+        if let token = SessionTokenService.load() {
+            var req = URLRequest(url: proxyURL)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            req.timeoutInterval = timeout
+            req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+            return req
+        }
+        if let key = KeychainService.load(), !key.isEmpty {
+            var req = URLRequest(url: directURL)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue(key, forHTTPHeaderField: "x-api-key")
+            req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+            req.timeoutInterval = timeout
+            req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+            return req
+        }
+        return nil
+    }
+
+    static var isConfigured: Bool {
+        SessionTokenService.load() != nil || !(KeychainService.load() ?? "").isEmpty
+    }
+}
+
 struct KeychainService {
     private static let account = "com.up200.app.anthropic_api_key"
 

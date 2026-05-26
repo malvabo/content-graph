@@ -1413,12 +1413,13 @@ struct ProfileView: View {
             .alert("Log out?", isPresented: $showLogOutConfirm) {
                 Button("Cancel", role: .cancel) {}
                 Button("Log out", role: .destructive) {
+                    SessionTokenService.delete()
                     KeychainService.delete()
                     refreshAPIKeyState()
                     onboardingComplete = false
                 }
             } message: {
-                Text("Your API key will be removed from this device.")
+                Text("You'll be signed out on this device.")
             }
             .sheet(isPresented: $showKeyUpdate) {
                 APIKeySetupView {
@@ -1444,7 +1445,7 @@ struct ProfileView: View {
     }
 
     private func refreshAPIKeyState() {
-        apiKeyActive = !(KeychainService.load() ?? "").isEmpty
+        apiKeyActive = AnthropicClient.isConfigured
     }
 
     // MARK: - Layout cycling
@@ -1917,18 +1918,6 @@ private struct TemplateEditPage: View {
 
 private struct TemplatePromptEnhancer {
     static func enhance(title: String, currentPrompt: String, formats: [String]) async -> Result<String, APICallError> {
-        guard let apiKey = KeychainService.load(), !apiKey.isEmpty,
-              let url = URL(string: "https://api.anthropic.com/v1/messages") else {
-            return .failure(.http(401, "Missing API key"))
-        }
-
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        req.timeoutInterval = 60
-
         let system = "You rewrite content-generation template prompts so an AI can follow them reliably. Keep the user's intent, voice, and any concrete requirements they specified. Make the instructions clearer, more specific, and actionable — never add new requirements they didn't imply. Output only the improved prompt text, no preamble, no quotes, no explanation."
 
         var userParts: [String] = []
@@ -1943,10 +1932,9 @@ private struct TemplatePromptEnhancer {
             "system": system,
             "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]]
         ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
-            return .failure(.decode)
+        guard let req = AnthropicClient.makeRequest(body: body) else {
+            return .failure(.http(401, "Not signed in"))
         }
-        req.httpBody = httpBody
 
         let data: Data
         let resp: URLResponse
@@ -1971,17 +1959,6 @@ private struct TemplatePromptEnhancer {
     }
 
     static func generateTitle(prompt: String, formats: [String]) async -> Result<String, APICallError> {
-        guard let apiKey = KeychainService.load(), !apiKey.isEmpty,
-              let url = URL(string: "https://api.anthropic.com/v1/messages") else {
-            return .failure(.http(401, "Missing API key"))
-        }
-
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        req.timeoutInterval = 30
 
         // Same titling rules as `AIService.titleSystemPrompt`, specialized for
         // prompt templates — the title names what the template *produces*, so
@@ -2010,10 +1987,9 @@ private struct TemplatePromptEnhancer {
             "system": system,
             "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]]
         ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
-            return .failure(.decode)
+        guard let req = AnthropicClient.makeRequest(body: body, timeout: 30) else {
+            return .failure(.http(401, "Not signed in"))
         }
-        req.httpBody = httpBody
 
         let data: Data
         let resp: URLResponse
@@ -3039,24 +3015,9 @@ struct SearchOverlay<Results: View>: View {
 // MARK: - AI transform service
 
 struct AITransformService {
-    static var isKeyConfigured: Bool {
-        guard let key = KeychainService.load() else { return false }
-        return !key.isEmpty && !key.hasPrefix("$(")
-    }
+    static var isKeyConfigured: Bool { AnthropicClient.isConfigured }
 
     static func transform(text: String, instruction: String) async -> Result<String, APICallError> {
-        let apiKey = KeychainService.load() ?? ""
-        guard !apiKey.isEmpty, let url = URL(string: "https://api.anthropic.com/v1/messages") else {
-            return .failure(.http(401, "Missing API key"))
-        }
-
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        req.timeoutInterval = 60
-
         let system = "You rewrite the user's text following their instruction. Preserve formatting, structure, and tone unless the instruction asks to change them. Output only the rewritten text, no preamble, no commentary, no quotes around the output."
         let user = "Instruction: \(instruction)\n\nText:\n\(text)"
 
@@ -3066,10 +3027,9 @@ struct AITransformService {
             "system": system,
             "messages": [["role": "user", "content": user]]
         ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
-            return .failure(.decode)
+        guard let req = AnthropicClient.makeRequest(body: body) else {
+            return .failure(.http(401, "Not signed in"))
         }
-        req.httpBody = httpBody
 
         let data: Data
         let resp: URLResponse
@@ -3099,18 +3059,6 @@ struct AITransformService {
     /// free-form note from the user becomes the dominant steer for the new
     /// variant (e.g. "make it punchier", "lean into the data").
     static func variant(text: String, instruction: String, existing: [String], userDelta: String? = nil) async -> Result<String, APICallError> {
-        let apiKey = KeychainService.load() ?? ""
-        guard !apiKey.isEmpty, let url = URL(string: "https://api.anthropic.com/v1/messages") else {
-            return .failure(.http(401, "Missing API key"))
-        }
-
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        req.timeoutInterval = 60
-
         let system = "You rewrite the user's text following their instruction. Preserve formatting, structure, and tone unless the instruction asks to change them. The user has already seen the variant(s) below — produce a fresh take that is meaningfully different in wording, structure, or angle while still satisfying the instruction. If the user also provided a 'This but' note, that note is the primary steer for what should change. Output only the rewritten text, no preamble, no commentary, no quotes around the output."
 
         var lines: [String] = ["Instruction: \(instruction)"]
@@ -3136,10 +3084,9 @@ struct AITransformService {
             "system": system,
             "messages": [["role": "user", "content": user]]
         ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
-            return .failure(.decode)
+        guard let req = AnthropicClient.makeRequest(body: body) else {
+            return .failure(.http(401, "Not signed in"))
         }
-        req.httpBody = httpBody
 
         let data: Data
         let resp: URLResponse
