@@ -117,22 +117,13 @@ struct AIService {
     }
 
     private static func callAnthropic(text: String) async -> String? {
-        guard let url = URL(string: "https://api.anthropic.com/v1/messages") else { return nil }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        req.timeoutInterval = 8
-
         let body: [String: Any] = [
             "model": "claude-haiku-4-5-20251001",
             "max_tokens": 30,
             "system": titleSystemPrompt,
             "messages": [["role": "user", "content": String(text.prefix(1200))]]
         ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else { return nil }
-        req.httpBody = httpBody
+        guard let req = AnthropicClient.makeRequest(body: body, timeout: 8) else { return nil }
 
         guard let (data, _) = try? await URLSession.shared.data(for: req),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -249,10 +240,7 @@ struct GeneratedResult: Identifiable {
 }
 
 struct ContentGenerator {
-    static var isKeyConfigured: Bool {
-        guard let key = KeychainService.load() else { return false }
-        return !key.isEmpty && !key.hasPrefix("$(")
-    }
+    static var isKeyConfigured: Bool { AnthropicClient.isConfigured }
 
     static func generate(
         sources: [SourceItem],
@@ -261,18 +249,6 @@ struct ContentGenerator {
         customPrompt: String,
         brand: String
     ) async -> Result<String, APICallError> {
-        let apiKey = KeychainService.load() ?? ""
-        guard !apiKey.isEmpty, let url = URL(string: "https://api.anthropic.com/v1/messages") else {
-            return .failure(.http(401, "Missing API key"))
-        }
-
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        req.timeoutInterval = 60
-
         let sourceText = sources
             .filter { !$0.content.isEmpty }
             .enumerated()
@@ -292,10 +268,9 @@ struct ContentGenerator {
             "system": systemPrompt(for: formatID),
             "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]]
         ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
-            return .failure(.decode)
+        guard let req = AnthropicClient.makeRequest(body: body) else {
+            return .failure(.http(401, "Not signed in"))
         }
-        req.httpBody = httpBody
 
         let data: Data
         let resp: URLResponse
