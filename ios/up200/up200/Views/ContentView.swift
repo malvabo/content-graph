@@ -1428,12 +1428,16 @@ struct ProfileView: View {
             .alert("Log out?", isPresented: $showLogOutConfirm) {
                 Button("Cancel", role: .cancel) {}
                 Button("Log out", role: .destructive) {
+                    let defaults = UserDefaults.standard
+                    defaults.removeObject(forKey: "apple_user_id")
+                    defaults.removeObject(forKey: "apple_auth_email")
+                    defaults.removeObject(forKey: "apple_auth_full_name")
                     KeychainService.delete()
                     refreshAPIKeyState()
                     onboardingComplete = false
                 }
             } message: {
-                Text("Your API key will be removed from this device.")
+                Text("Your account and API key will be signed out. Your notes and generated content stay on this device.")
             }
             .sheet(isPresented: $showKeyUpdate) {
                 APIKeySetupView {
