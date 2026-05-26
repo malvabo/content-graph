@@ -227,8 +227,6 @@ export default function WorkflowLibraryView({ onOpen }: { onOpen: () => void }) 
             <tbody>
               {filtered.map(item => {
                 const { visible, remaining } = chipList(item);
-                const hasNodes = item.nodes.length > 0;
-                const stateLabel = hasNodes ? 'Saved' : 'Draft';
                 return (
                   <tr key={item.id}
                     onClick={() => handleLoad(item)}

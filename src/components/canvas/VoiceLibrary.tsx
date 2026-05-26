@@ -111,36 +111,6 @@ async function generateSmartTitle(transcript: string): Promise<string> {
 }
 
 
-/** Deterministic ~32-bar waveform derived from the note id.
- *  Decorative: no real FFT — just gives each row a unique-looking sparkline. */
-function Waveform({ seed, durationMs, width = 104, height = 20 }: { seed: string; durationMs: number; width?: number; height?: number }) {
-  const bars = 32;
-  const step = width / bars;
-  // Cheap deterministic hash — fine for decoration.
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
-  const rnd = (i: number) => {
-    const x = Math.sin((h + i * 9301) * 0.0001) * 10000;
-    return Math.abs(x - Math.floor(x));
-  };
-  // Envelope ramps up then tails down so the waveform feels like speech.
-  const envelope = (i: number) => {
-    const t = i / (bars - 1);
-    return Math.min(1, 1.1 * Math.sin(Math.PI * t) + 0.15);
-  };
-  const minLen = Math.max(1, Math.log10(durationMs / 1000 + 1) * 2);
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden style={{ flexShrink: 0, display: 'block' }}>
-      {Array.from({ length: bars }).map((_, i) => {
-        const amp = envelope(i) * (0.35 + rnd(i) * 0.65);
-        const barH = Math.max(minLen, amp * height * 0.9);
-        const x = i * step + step * 0.25;
-        const y = (height - barH) / 2;
-        return <rect key={i} x={x} y={y} width={step * 0.5} height={barH} rx={0.5} fill="var(--color-text-disabled, #a8a29e)" />;
-      })}
-    </svg>
-  );
-}
 
 interface OverlayProps {
   onStop: () => void;

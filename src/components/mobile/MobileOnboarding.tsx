@@ -156,7 +156,7 @@ const HEADLINE_CHAR_VARIANTS = {
     x: Math.cos(i * 2.1) * 18, y: Math.sin(i * 2.1) * 18,
     transition: { duration: 0.28, ease: [0.4, 0, 0.8, 1] as [number,number,number,number] },
   }),
-  visible: (i: number) => ({
+  visible: (_i: number) => ({
     opacity: 1, scale: 1, x: 0, y: 0,
     transition: { duration: 0.52, ease: [0.16, 1, 0.3, 1] as [number,number,number,number] },
   }),
