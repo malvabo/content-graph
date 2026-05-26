@@ -32,7 +32,7 @@ struct APIKeySetupView: View {
                     }
 
                     VStack(spacing: 10) {
-                        Text("Enter your API key")
+                        Text("Anthropic API key")
                             .font(.app(size: 24, weight: .bold))
                             .foregroundColor(AppText.primary)
                         Text("Get one free at console.anthropic.com\nunder API Keys. It starts with sk-ant-")
@@ -78,7 +78,7 @@ struct APIKeySetupView: View {
                 Spacer()
 
                 Button(action: save) {
-                    Text("Save & continue")
+                    Text("Save & activate")
                         .font(.app(size: 17, weight: .semibold))
                         .foregroundColor(canSave ? .white : AppText.disabled)
                         .frame(maxWidth: .infinity)

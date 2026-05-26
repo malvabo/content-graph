@@ -72,6 +72,7 @@ struct OnboardingView: View {
     // can't clobber the first idea.
     @State private var firstIdeaSnapshotTask: Task<Void, Never>? = nil
     @State private var resultNote: Note? = nil
+    @State private var showPostGenerationAuth = false
     @State private var generatingStartedAt: Date = .distantPast
     // Step 3 (.constellation) renders the same orange-spark / central-cloud
     // scene used during .capture/.generating, so the "one idea → graph"
@@ -556,9 +557,22 @@ struct OnboardingView: View {
         // produced. When they dismiss it, fall through to onGetStarted so
         // onboarding exits: they've now seen both the create flow and the
         // notes-and-generations surface they'll live in.
-        .fullScreenCover(item: $resultNote, onDismiss: { onGetStarted() }) { note in
+        .fullScreenCover(item: $resultNote, onDismiss: { showPostGenerationAuth = true }) { note in
             MinimalNoteDetailPage(initialNote: note)
                 .preferredColorScheme(.dark)
+        }
+        .fullScreenCover(isPresented: $showPostGenerationAuth) {
+            PostGenerationAuthView(
+                onSignUp: {
+                    showPostGenerationAuth = false
+                    onGetStarted()
+                },
+                onLogin: {
+                    showPostGenerationAuth = false
+                    onLogin()
+                }
+            )
+            .preferredColorScheme(.dark)
         }
     }
 
@@ -1118,6 +1132,91 @@ struct OnboardingView: View {
 
     private func formatCaptureTime(_ s: Int) -> String {
         String(format: "%d:%02d", s / 60, s % 60)
+    }
+}
+
+// MARK: - Post-generation auth
+
+private struct PostGenerationAuthView: View {
+    let onSignUp: () -> Void
+    let onLogin: () -> Void
+
+    var body: some View {
+        ZStack {
+            AppBackground.primary.ignoresSafeArea()
+            RadialGradient(
+                colors: [BrandColor.amber.opacity(0.16), .clear],
+                center: .init(x: 0.5, y: 0.32),
+                startRadius: 0,
+                endRadius: 420
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                VStack(spacing: 14) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 30, weight: .semibold))
+                        .foregroundColor(BrandColor.amber)
+                        .frame(width: 76, height: 76)
+                        .background(BrandColor.amber.opacity(0.12))
+                        .clipShape(Circle())
+
+                    Text("Your first generation is ready")
+                        .font(.lora(size: 27, weight: .medium))
+                        .kerning(-0.3)
+                        .foregroundColor(AppText.primary)
+                        .multilineTextAlignment(.center)
+
+                    Text("Create an account or log in to keep your notes and generations available next time.")
+                        .font(.appBody)
+                        .foregroundColor(AppText.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(3)
+                        .padding(.horizontal, 8)
+                }
+                .padding(.horizontal, 28)
+
+                Spacer()
+
+                VStack(spacing: 12) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        onSignUp()
+                    } label: {
+                        Text("Sign up")
+                            .font(.appLabelBold)
+                            .foregroundColor(AppBackground.primary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(AppText.primary)
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onLogin()
+                    } label: {
+                        Text("Log in")
+                            .font(.appLabelBold)
+                            .foregroundColor(AppText.primary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(AppInk.solid(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                    .stroke(AppInk.solid(0.12), lineWidth: 0.5)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 52)
+            }
+        }
     }
 }
 

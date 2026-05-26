@@ -1248,6 +1248,7 @@ struct ProfileView: View {
     @State private var showLogOutConfirm = false
     @State private var showKeyUpdate = false
     @State private var showOnboarding = false
+    @State private var apiKeyActive = false
     @EnvironmentObject private var chrome: ChromeController
 
     private let bg = AppBackground.primary
@@ -1330,8 +1331,8 @@ struct ProfileView: View {
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
 
                     SettingsRow(
-                        title: "API key",
-                        trailing: .icon("key.horizontal")
+                        title: "Anthropic API key",
+                        trailing: .value(apiKeyActive ? "Active" : "Add key")
                     ) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         showKeyUpdate = true
@@ -1364,6 +1365,7 @@ struct ProfileView: View {
             .onChange(of: customData, initial: true) {
                 custom = (try? JSONDecoder().decode([CustomTemplate].self, from: customData)) ?? []
             }
+            .onAppear { refreshAPIKeyState() }
             // Classic mode: returning to the Profile tab should land on the
             // settings root, not whatever sub-page the user pushed last time.
             // Reset the nav stack as soon as the selection leaves this tab.
@@ -1412,6 +1414,7 @@ struct ProfileView: View {
                 Button("Cancel", role: .cancel) {}
                 Button("Log out", role: .destructive) {
                     KeychainService.delete()
+                    refreshAPIKeyState()
                     onboardingComplete = false
                 }
             } message: {
@@ -1419,6 +1422,7 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showKeyUpdate) {
                 APIKeySetupView {
+                    refreshAPIKeyState()
                     showKeyUpdate = false
                 }
                 .presentationDetents([.large])
@@ -1437,6 +1441,10 @@ struct ProfileView: View {
     private func saveCustom() {
         if case .corrupt = loadBlob([CustomTemplate].self, from: customData) { return }
         if let data = try? JSONEncoder().encode(custom) { customData = data }
+    }
+
+    private func refreshAPIKeyState() {
+        apiKeyActive = !(KeychainService.load() ?? "").isEmpty
     }
 
     // MARK: - Layout cycling
