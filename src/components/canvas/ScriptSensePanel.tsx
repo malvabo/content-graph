@@ -1,13 +1,12 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useBrandsStore, getActiveBrand } from '../../store/brandsStore';
-import { useGraphStore } from '../../store/graphStore';
 import { useScriptStore } from '../../store/scriptStore';
 import { generateAndSaveCards } from '../../utils/scriptToCards';
 
 interface Props { scriptId?: string; initialText?: string; onBack?: () => void; onOpenInCards?: (id?: string) => void; onSendToWorkflow?: () => void; onDelete?: () => void }
 
-export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpenInCards, onSendToWorkflow, onDelete }: Props) {
+export default function ScriptSensePanel({ scriptId, initialText, onBack, onOpenInCards, onSendToWorkflow: _onSendToWorkflow, onDelete }: Props) {
   const title = useScriptStore(s => s.scripts.find(sc => sc.id === scriptId)?.title ?? '');
   const scriptContent = useScriptStore(s => s.scripts.find(sc => sc.id === scriptId)?.content ?? '');
   const updateScript = useScriptStore(s => s.updateScript);
