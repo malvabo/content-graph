@@ -1,4 +1,4 @@
-import { RefObject, useRef } from 'react';
+import { type RefObject, useRef } from 'react';
 
 interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
@@ -13,7 +13,7 @@ interface FloatingChatProps {
   onSend: (text?: string) => void;
   suggestions?: string[];
   apiKeyWarning?: React.ReactNode;
-  chatEndRef: RefObject<HTMLDivElement>;
+  chatEndRef: RefObject<HTMLDivElement | null>;
   placeholder?: string;
 }
 

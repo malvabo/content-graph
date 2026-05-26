@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect, memo } from 'react';
+import { useRef, useState, useCallback, useEffect, memo, type ReactElement } from 'react';
 import { useQuickModeStore, type SourceType } from '../../store/quickModeStore';
 import { useSettingsStore } from '../../store/settingsStore';
 
@@ -29,7 +29,7 @@ const QUICK_TEMPLATES = [
   { key: 'draft',     label: 'Draft from notes',      preview: 'Treat as notes — write a first draft, flag assumptions',    text: 'Use these notes as a brief. Write a first draft. Fill in gaps with reasonable assumptions and flag them.' },
 ];
 
-const SOURCE_DEFS: { key: SourceType; label: string; icon: JSX.Element }[] = [
+const SOURCE_DEFS: { key: SourceType; label: string; icon: ReactElement }[] = [
   {
     key: 'text', label: 'Text',
     icon: (
@@ -249,7 +249,6 @@ function UrlInput() {
 }
 
 function FileInput() {
-  const fileText = useQuickModeStore(s => s.fileText);
   const fileName = useQuickModeStore(s => s.fileName);
   const fileSize = useQuickModeStore(s => s.fileSize);
   const setFile = useQuickModeStore(s => s.setFile);
@@ -337,16 +336,24 @@ function FileInput() {
 function VoiceInput() {
   const transcript = useQuickModeStore(s => s.voiceTranscript);
   const setVoice = useQuickModeStore(s => s.setVoice);
-  const recRef = useRef<SpeechRecognition | null>(null);
+  interface SRInstance {
+    continuous: boolean; interimResults: boolean;
+    onstart: (() => void) | null;
+    onresult: ((event: SpeechRecognitionEvent) => void) | null;
+    onend: (() => void) | null;
+    onerror: (() => void) | null;
+    start(): void; stop(): void;
+  }
+  type SRConstructor = new () => SRInstance;
+  const recRef = useRef<SRInstance | null>(null);
   const transcriptRef = useRef(transcript);
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
   const [recState, setRecState] = useState<'idle' | 'recording' | 'processing' | 'done'>(
     transcript ? 'done' : 'idle'
   );
 
-  const SR = typeof window !== 'undefined'
-    ? (window.SpeechRecognition ?? (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition)
-    : undefined;
+  const w = typeof window !== 'undefined' ? (window as unknown as { SpeechRecognition?: SRConstructor; webkitSpeechRecognition?: SRConstructor }) : undefined;
+  const SR = w?.SpeechRecognition ?? w?.webkitSpeechRecognition;
 
   const startRecording = useCallback(() => {
     if (!SR) return;

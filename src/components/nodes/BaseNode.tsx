@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, memo } from 'react';
 import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import ContentModal from '../modals/ContentModal';
-import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, DEFAULT_MODELS, MODEL_OPTIONS } from '../../utils/nodeDefs';
+import { BADGE_COLORS, NODE_DEFS_BY_SUBTYPE, DEFAULT_MODELS } from '../../utils/nodeDefs';
 import { aiExecute } from '../../utils/aiExecutor';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import type { ContentNode } from '../../store/graphStore';

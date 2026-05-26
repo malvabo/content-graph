@@ -357,7 +357,6 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
   }, []);
 
   const fontRerender = useCallback(() => setFontTick(t => t + 1), []);
-  const svg = editing ? (() => { const d = parseInfographicData(editing.json); return d ? renderSVG(d, fontRerender) : null; })() : null;
 
   // ─── HOME VIEW ───
   if (!editingId) {
