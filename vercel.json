@@ -5,6 +5,8 @@
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/scriptsense/(.*)", "destination": "/scriptsense/$1" },
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/privacy.html", "destination": "/privacy.html" },
     { "source": "/hand-tracking", "destination": "/hand-tracking.html" },
     { "source": "/hand-tracking.html", "destination": "/hand-tracking.html" },
     { "source": "/continuous-line", "destination": "/continuous-line-preview.html" },

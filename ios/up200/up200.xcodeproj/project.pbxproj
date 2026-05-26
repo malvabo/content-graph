@@ -25,6 +25,7 @@
 		A1000021 /* Lora-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000021 /* Lora-Medium.ttf */; };
 		A1000022 /* Lora-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000022 /* Lora-SemiBold.ttf */; };
 		A1000023 /* Lora-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000023 /* Lora-Bold.ttf */; };
+		A1000025 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A2000025 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +50,7 @@
 		A2000021 /* Lora-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-Medium.ttf"; sourceTree = "<group>"; };
 		A2000022 /* Lora-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-SemiBold.ttf"; sourceTree = "<group>"; };
 		A2000023 /* Lora-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-Bold.ttf"; sourceTree = "<group>"; };
+		A2000025 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -70,6 +72,7 @@
 				A2000004 /* Assets.xcassets */,
 				A2000005 /* Info.plist */,
 				A2000007 /* up200.entitlements */,
+				A2000025 /* PrivacyInfo.xcprivacy */,
 			);
 			path = up200;
 			sourceTree = "<group>";
@@ -176,6 +179,7 @@
 				A1000021 /* Lora-Medium.ttf in Resources */,
 				A1000022 /* Lora-SemiBold.ttf in Resources */,
 				A1000023 /* Lora-Bold.ttf in Resources */,
+				A1000025 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

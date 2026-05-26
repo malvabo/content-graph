@@ -1343,6 +1343,20 @@ struct ProfileView: View {
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
 
                     SettingsRow(
+                        title: "Privacy Policy",
+                        trailing: .icon("arrow.up.right.square")
+                    ) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        if let url = URL(string: "https://content-graph-five.vercel.app/privacy") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(AppInk.solid(0.06))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+
+                    SettingsRow(
                         title: "Log out",
                         trailing: .icon("rectangle.portrait.and.arrow.right"),
                         titleColor: logoutRed,
