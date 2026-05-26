@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createPublicKey, verify, createHmac } from 'node:crypto';
+import { createPublicKey, verify } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const APPLE_KEYS_URL = 'https://appleid.apple.com/auth/keys';
@@ -40,6 +40,12 @@ type AppleAuthBody = {
   user?: unknown;
   email?: unknown;
   fullName?: unknown;
+};
+
+type SupabaseSession = {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
 };
 
 class HttpError extends Error {
@@ -148,17 +154,119 @@ function asOptionalString(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function issueSessionToken(sub: string): string | null {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) return null;
-
-  const exp = Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60; // 90 days
-  const payloadB64 = Buffer.from(JSON.stringify({ sub, exp })).toString('base64url');
-  const sig = createHmac('sha256', secret).update(payloadB64).digest('base64url');
-  return `${payloadB64}.${sig}`;
+// Resolves the email to use for the Supabase user. On first sign-in Apple
+// provides the email; on subsequent sign-ins it is absent. We fall back to
+// the email stored in apple_auth_users, then to a deterministic synthetic
+// address so the Supabase user always has something in the email field.
+function resolveEmail(
+  payload: AppleTokenPayload,
+  body: AppleAuthBody,
+  storedEmail: string | null
+): string {
+  return (
+    payload.email ??
+    asOptionalString(body.email) ??
+    storedEmail ??
+    `${payload.sub}@privaterelay.appleid.com`
+  );
 }
 
-async function persistAppleUser(payload: AppleTokenPayload, body: AppleAuthBody): Promise<boolean> {
+// Creates or returns the existing Supabase auth user for this Apple sub, then
+// issues a fresh session via the admin generateLink + verifyOtp path. This
+// does not rely on Supabase's Apple provider being configured.
+async function getOrCreateSession(
+  payload: AppleTokenPayload,
+  body: AppleAuthBody
+): Promise<{ session: SupabaseSession; supabaseUserId: string } | null> {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey || !anonKey) return null;
+
+  const adminSb = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // Look up existing record for a previously linked Supabase user + stored email.
+  const { data: existingRecord } = await adminSb
+    .from('apple_auth_users')
+    .select('supabase_user_id, email')
+    .eq('apple_sub', payload.sub)
+    .maybeSingle();
+
+  const storedEmail = (existingRecord?.email as string | null) ?? null;
+  const email = resolveEmail(payload, body, storedEmail);
+  let supabaseUserId = (existingRecord?.supabase_user_id as string | null) ?? null;
+
+  if (!supabaseUserId) {
+    // First-time link: create a Supabase auth user for this Apple account.
+    const { data: created, error: createError } = await adminSb.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: {
+        apple_sub: payload.sub,
+        full_name: asOptionalString(body.fullName),
+      },
+    });
+
+    if (createError) {
+      // Email already claimed by a prior partial run — find that user.
+      const { data: list } = await adminSb.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const match = list?.users.find((u) => u.email === email);
+      if (match) {
+        supabaseUserId = match.id;
+      } else {
+        console.error('apple auth: could not create Supabase user', createError);
+        return null;
+      }
+    } else {
+      supabaseUserId = created.user.id;
+    }
+  }
+
+  // Generate a one-time OTP and immediately exchange it for a session.
+  // This avoids any email being sent and produces a real Supabase JWT pair.
+  const { data: linkData, error: linkError } = await adminSb.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+  });
+
+  if (linkError || !linkData?.properties?.email_otp) {
+    console.error('apple auth: could not generate magic link', linkError);
+    return null;
+  }
+
+  const anonSb = createClient(supabaseUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const { data: sessionData, error: sessionError } = await anonSb.auth.verifyOtp({
+    email,
+    token: linkData.properties.email_otp,
+    type: 'email',
+  });
+
+  if (sessionError || !sessionData?.session) {
+    console.error('apple auth: could not verify OTP for session', sessionError);
+    return null;
+  }
+
+  return {
+    session: {
+      access_token: sessionData.session.access_token,
+      refresh_token: sessionData.session.refresh_token,
+      expires_at: sessionData.session.expires_at ?? Math.floor(Date.now() / 1000) + 3600,
+    },
+    supabaseUserId,
+  };
+}
+
+async function persistAppleUser(
+  payload: AppleTokenPayload,
+  body: AppleAuthBody,
+  supabaseUserId: string | null
+): Promise<boolean> {
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -170,17 +278,19 @@ async function persistAppleUser(payload: AppleTokenPayload, body: AppleAuthBody)
   const email = payload.email ?? asOptionalString(body.email);
   const fullName = asOptionalString(body.fullName);
 
+  const record: Record<string, unknown> = {
+    apple_sub: payload.sub,
+    email,
+    full_name: fullName,
+    last_seen_at: new Date().toISOString(),
+  };
+  if (supabaseUserId) {
+    record.supabase_user_id = supabaseUserId;
+  }
+
   const { error } = await sb
     .from('apple_auth_users')
-    .upsert(
-      {
-        apple_sub: payload.sub,
-        email,
-        full_name: fullName,
-        last_seen_at: new Date().toISOString(),
-      },
-      { onConflict: 'apple_sub' }
-    );
+    .upsert(record, { onConflict: 'apple_sub' });
 
   if (error) {
     throw new HttpError(500, error.message);
@@ -211,18 +321,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new HttpError(401, 'Apple user does not match identity token');
     }
 
-    const backendStored = await persistAppleUser(payload, body);
-    const sessionToken = issueSessionToken(payload.sub);
+    // Create or retrieve the Supabase account and session for this Apple user.
+    const sessionResult = await getOrCreateSession(payload, body);
+
+    const backendStored = await persistAppleUser(payload, body, sessionResult?.supabaseUserId ?? null);
 
     return res.status(200).json({
       user: {
         id: payload.sub,
+        supabaseId: sessionResult?.supabaseUserId ?? null,
         email: payload.email ?? asOptionalString(body.email),
         fullName: asOptionalString(body.fullName),
         emailVerified: payload.email_verified ?? null,
         privateEmail: payload.is_private_email ?? null,
       },
-      sessionToken,
+      session: sessionResult?.session ?? null,
       backendStored,
       authorizationCodeReceived: Boolean(asOptionalString(body.authorizationCode)),
     });

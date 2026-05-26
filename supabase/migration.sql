@@ -53,8 +53,12 @@ create table if not exists apple_auth_users (
   apple_sub text primary key,
   email text,
   full_name text,
+  supabase_user_id uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
   last_seen_at timestamptz not null default now()
 );
 
 alter table apple_auth_users enable row level security;
+
+-- Run this when applying to an existing database:
+-- alter table apple_auth_users add column if not exists supabase_user_id uuid references auth.users(id) on delete set null;
