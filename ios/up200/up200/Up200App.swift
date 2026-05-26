@@ -39,6 +39,13 @@ struct Up200App: App {
                                 KeychainService.load() != nil
                             }.value
                             needsSetup = !hasKey
+
+                            // Pull server state on every launch when signed in.
+                            // Runs after the key check so it doesn't delay the
+                            // API key setup sheet.
+                            if SessionStore.shared.load() != nil {
+                                await SyncManager.shared.pull()
+                            }
                         }
                 }
             }
@@ -47,7 +54,10 @@ struct Up200App: App {
             // so the system status bar (using UIStatusBarStyleDefault) picks dark
             // content in light mode and light content in dark mode — otherwise it
             // follows the device's system setting, which may not match the app.
-            .onAppear { applyInterfaceStyle() }
+            .onAppear {
+                applyInterfaceStyle()
+                Task { await SyncManager.shared.setup() }
+            }
             .onChange(of: darkModeEnabled) { _, _ in applyInterfaceStyle() }
         }
     }

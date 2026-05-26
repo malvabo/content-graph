@@ -1364,6 +1364,9 @@ extension AppleSignInCoordinator: ASAuthorizationControllerDelegate {
         Task { [weak self] in
             do {
                 try await self?.authenticateWithBackend(credential: credential)
+                // Pull server data now that we have a valid session so the user
+                // immediately sees any notes/generations from a previous device.
+                await SyncManager.shared.pull()
                 self?.finish(.success(()))
             } catch {
                 self?.finish(.failure(error))
