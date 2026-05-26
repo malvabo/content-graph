@@ -50,7 +50,7 @@
 		<true/>
 	</dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Voice input for ScriptSense</string>
+	<string>Voice input for Oula</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Speech recognition is used to transcribe your voice notes</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
