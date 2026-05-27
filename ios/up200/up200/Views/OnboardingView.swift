@@ -235,7 +235,7 @@ struct OnboardingView: View {
                     .foregroundColor(AppText.primary)
 
                 Text("Framing your ideas beautifully")
-                    .font(.system(size: 17, weight: .regular, design: .rounded))
+                    .font(.system(size: 22, weight: .regular, design: .rounded))
                     .foregroundColor(Color.white.opacity(0.72))
                     .multilineTextAlignment(.center)
             }
