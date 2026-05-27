@@ -9,15 +9,15 @@ const VARIANTS: Record<Variant, {
   presence: {
     bg: '#ffffff',
     orbs: [
-      { r: 196, g: 181, b: 253, a: 0.18, cx: 0.22, cy: 0.30, radius: 0.90, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.0, ampX: 0.10, ampY: 0.08 },
-      { r: 147, g: 197, b: 253, a: 0.13, cx: 0.72, cy: 0.62, radius: 0.85, freqX: 0.06, freqY: 0.05, phaseX: 2.2, phaseY: 0.5, ampX: 0.09, ampY: 0.10 },
+      { r: 196, g: 181, b: 253, a: 0.62, cx: 0.20, cy: 0.25, radius: 0.70, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.0, ampX: 0.10, ampY: 0.08 },
+      { r: 147, g: 197, b: 253, a: 0.50, cx: 0.75, cy: 0.65, radius: 0.65, freqX: 0.06, freqY: 0.05, phaseX: 2.2, phaseY: 0.5, ampX: 0.09, ampY: 0.10 },
     ],
   },
   warmth: {
     bg: '#ffffff',
     orbs: [
-      { r: 252, g: 165, b: 165, a: 0.15, cx: 0.28, cy: 0.35, radius: 0.90, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.2, ampX: 0.10, ampY: 0.08 },
-      { r: 252, g: 211, b:  77, a: 0.10, cx: 0.68, cy: 0.60, radius: 0.85, freqX: 0.06, freqY: 0.05, phaseX: 1.8, phaseY: 0.4, ampX: 0.09, ampY: 0.10 },
+      { r: 252, g: 165, b: 165, a: 0.55, cx: 0.25, cy: 0.30, radius: 0.70, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.2, ampX: 0.10, ampY: 0.08 },
+      { r: 252, g: 211, b:  77, a: 0.42, cx: 0.70, cy: 0.65, radius: 0.65, freqX: 0.06, freqY: 0.05, phaseX: 1.8, phaseY: 0.4, ampX: 0.09, ampY: 0.10 },
     ],
   },
 };
@@ -72,9 +72,10 @@ export default function SmartGradient({
         const x = w * (o.cx + o.ampX * Math.sin(t * o.freqX + o.phaseX));
         const y = h * (o.cy + o.ampY * Math.cos(t * o.freqY + o.phaseY));
         const grad = ctx.createRadialGradient(x, y, 0, x, y, r * o.radius);
-        grad.addColorStop(0,   `rgba(${o.r}, ${o.g}, ${o.b}, ${o.a})`);
-        grad.addColorStop(0.5, `rgba(${o.r}, ${o.g}, ${o.b}, ${+(o.a * 0.4).toFixed(3)})`);
-        grad.addColorStop(1,   `rgba(${o.r}, ${o.g}, ${o.b}, 0)`);
+        grad.addColorStop(0,    `rgba(${o.r}, ${o.g}, ${o.b}, ${o.a})`);
+        grad.addColorStop(0.35, `rgba(${o.r}, ${o.g}, ${o.b}, ${+(o.a * 0.55).toFixed(3)})`);
+        grad.addColorStop(0.70, `rgba(${o.r}, ${o.g}, ${o.b}, ${+(o.a * 0.15).toFixed(3)})`);
+        grad.addColorStop(1,    `rgba(${o.r}, ${o.g}, ${o.b}, 0)`);
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
       }
