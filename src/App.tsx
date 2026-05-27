@@ -14,6 +14,7 @@ import AuthGate from './components/auth/AuthGate';
 // initial JS parse cost on startup. Each chunk loads on first navigation.
 import TypewriterLogo from './components/TypewriterLogo';
 import SmartGradient from './components/SmartGradient';
+import GradientPreview from './components/GradientPreview';
 import ParticleField from './components/ParticleField';
 
 const GraphCanvas = lazy(() => import('./components/canvas/GraphCanvas'));
@@ -297,7 +298,7 @@ function AppInner() {
 
         {activeView === 'settings' && <SettingsPanel />}
 
-        {activeView === 'gradient' && <SmartGradient style={{ flex: 1, width: '100%', height: '100%' }} />}
+        {activeView === 'gradient' && <GradientPreview style={{ flex: 1, width: '100%', height: '100%' }} />}
         {activeView === 'particles' && <ParticleField style={{ flex: 1, width: '100%', height: '100%' }} />}
 
         {activeView === 'cardslibrary' && <CardsLibrary onOpen={(id: string) => { setActiveView('cards:' + id); }} />}
