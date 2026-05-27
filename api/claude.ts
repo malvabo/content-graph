@@ -1,14 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createClient } from '@supabase/supabase-js';
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+const FREE_LIMIT = parseInt(process.env.FREE_GENERATION_LIMIT ?? '3', 10);
 
-function verifySessionToken(token: string): boolean {
+function verifySessionToken(token: string): string | null {
   const secret = process.env.JWT_SECRET;
-  if (!secret) return false;
+  if (!secret) return null;
 
   const dotIdx = token.lastIndexOf('.');
-  if (dotIdx === -1) return false;
+  if (dotIdx === -1) return null;
 
   const payloadB64 = token.slice(0, dotIdx);
   const sigB64 = token.slice(dotIdx + 1);
@@ -18,18 +20,46 @@ function verifySessionToken(token: string): boolean {
   try {
     const a = Buffer.from(sigB64, 'base64url');
     const b = Buffer.from(expected, 'base64url');
-    if (a.length !== b.length) return false;
-    if (!timingSafeEqual(a, b)) return false;
+    if (a.length !== b.length) return null;
+    if (!timingSafeEqual(a, b)) return null;
   } catch {
-    return false;
+    return null;
   }
 
   try {
-    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as { exp?: number };
-    return typeof payload.exp === 'number' && payload.exp > Math.floor(Date.now() / 1000);
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as { sub?: string; exp?: number };
+    if (typeof payload.exp !== 'number' || payload.exp <= Math.floor(Date.now() / 1000)) return null;
+    return payload.sub ?? null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+function getSupabase() {
+  const url = process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+async function checkLimit(sub: string): Promise<boolean> {
+  const sb = getSupabase();
+  if (!sb) return true; // if Supabase not configured, allow through
+
+  const { data } = await sb
+    .from('ai_generation_counts')
+    .select('count')
+    .eq('user_sub', sub)
+    .maybeSingle();
+
+  const count = (data as { count: number } | null)?.count ?? 0;
+  return count < FREE_LIMIT;
+}
+
+async function incrementUsage(sub: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+  await sb.rpc('increment_ai_usage', { p_sub: sub });
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -40,7 +70,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const auth = req.headers.authorization;
   if (!auth?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
-  if (!verifySessionToken(auth.slice(7))) return res.status(401).json({ error: 'Invalid or expired session' });
+
+  const sub = verifySessionToken(auth.slice(7));
+  if (!sub) return res.status(401).json({ error: 'Invalid or expired session' });
+
+  const allowed = await checkLimit(sub);
+  if (!allowed) {
+    return res.status(402).json({
+      type: 'error',
+      error: {
+        type: 'limit_exceeded',
+        message: `You've used all ${FREE_LIMIT} free generations.`,
+      },
+    });
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Server misconfigured' });
@@ -71,6 +114,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (e) {
     const err = e as { message?: string };
     return res.status(502).json({ error: err?.message ?? 'Upstream fetch failed' });
+  }
+
+  if (upstream.status === 200) {
+    await incrementUsage(sub);
   }
 
   if (stream) {
