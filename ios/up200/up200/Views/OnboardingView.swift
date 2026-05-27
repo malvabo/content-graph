@@ -1329,12 +1329,21 @@ private final class AppleSignInCoordinator: NSObject, ObservableObject {
         }
 
         let authResponse = try JSONDecoder().decode(AppleAuthResponse.self, from: data)
-        UserDefaults.standard.set(authResponse.user.id, forKey: "apple_user_id")
-        if let email = authResponse.user.email {
-            UserDefaults.standard.set(email, forKey: "apple_auth_email")
-        }
-        if let fullName = authResponse.user.fullName {
-            UserDefaults.standard.set(fullName, forKey: "apple_auth_full_name")
+
+        // Persist the Supabase session so subsequent API calls can attach
+        // a Bearer token. If the backend couldn't create a session (e.g.
+        // service env vars missing) we still complete sign-in locally.
+        if let session = authResponse.session,
+           let supabaseId = authResponse.user.supabaseId {
+            let appSession = AppSession(
+                accessToken: session.accessToken,
+                refreshToken: session.refreshToken,
+                expiresAt: session.expiresAt,
+                supabaseUserId: supabaseId,
+                email: authResponse.user.email,
+                fullName: authResponse.user.fullName
+            )
+            SessionStore.shared.save(appSession)
         }
         if let token = authResponse.sessionToken {
             SessionTokenService.save(token)
@@ -1355,6 +1364,9 @@ extension AppleSignInCoordinator: ASAuthorizationControllerDelegate {
         Task { [weak self] in
             do {
                 try await self?.authenticateWithBackend(credential: credential)
+                // Pull server data now that we have a valid session so the user
+                // immediately sees any notes/generations from a previous device.
+                await SyncManager.shared.pull()
                 self?.finish(.success(()))
             } catch {
                 self?.finish(.failure(error))
@@ -1412,13 +1424,26 @@ private struct AppleAuthRequest: Encodable {
 
 private struct AppleAuthResponse: Decodable {
     let user: AppleAuthUser
-    let sessionToken: String?
+    let session: AppleAuthSession?
 }
 
 private struct AppleAuthUser: Decodable {
     let id: String
+    let supabaseId: String?
     let email: String?
     let fullName: String?
+}
+
+private struct AppleAuthSession: Decodable {
+    let accessToken: String
+    let refreshToken: String
+    let expiresAt: Int
+
+    enum CodingKeys: String, CodingKey {
+        case accessToken = "access_token"
+        case refreshToken = "refresh_token"
+        case expiresAt = "expires_at"
+    }
 }
 
 private struct AppleAuthErrorResponse: Decodable {

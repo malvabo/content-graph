@@ -53,8 +53,68 @@ create table if not exists apple_auth_users (
   apple_sub text primary key,
   email text,
   full_name text,
+  supabase_user_id uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
   last_seen_at timestamptz not null default now()
 );
 
 alter table apple_auth_users enable row level security;
+
+-- Run this when applying to an existing database:
+-- alter table apple_auth_users add column if not exists supabase_user_id uuid references auth.users(id) on delete set null;
+
+-- iOS notes synced from the app. Drawing data is excluded (text only).
+create table if not exists ios_notes (
+  id uuid primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  body text not null default '',
+  updated_at timestamptz not null,
+  is_pinned boolean not null default false,
+  tags text[] not null default '{}',
+  kind text not null default 'text'
+);
+
+create index if not exists ios_notes_user_id_idx on ios_notes(user_id);
+
+alter table ios_notes enable row level security;
+
+create policy "Users can read own ios notes"
+  on ios_notes for select using (auth.uid() = user_id);
+
+create policy "Users can insert own ios notes"
+  on ios_notes for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own ios notes"
+  on ios_notes for update using (auth.uid() = user_id);
+
+create policy "Users can delete own ios notes"
+  on ios_notes for delete using (auth.uid() = user_id);
+
+-- iOS generations synced from the app.
+create table if not exists ios_generations (
+  id uuid primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  note_id uuid not null,
+  source_note_ids uuid[] not null default '{}',
+  source_labels text[] not null default '{}',
+  output_type text not null default '',
+  content text not null default '',
+  date timestamptz not null
+);
+
+create index if not exists ios_generations_user_id_idx on ios_generations(user_id);
+create index if not exists ios_generations_note_id_idx on ios_generations(note_id);
+
+alter table ios_generations enable row level security;
+
+create policy "Users can read own ios generations"
+  on ios_generations for select using (auth.uid() = user_id);
+
+create policy "Users can insert own ios generations"
+  on ios_generations for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own ios generations"
+  on ios_generations for update using (auth.uid() = user_id);
+
+create policy "Users can delete own ios generations"
+  on ios_generations for delete using (auth.uid() = user_id);

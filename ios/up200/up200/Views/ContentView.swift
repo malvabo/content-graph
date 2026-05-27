@@ -1246,6 +1246,8 @@ struct ProfileView: View {
     @State private var custom: [CustomTemplate] = []
     @State private var path: [ProfileDestination] = []
     @State private var showLogOutConfirm = false
+    @State private var showDeleteAccountConfirm = false
+    @State private var deleteAccountError: String? = nil
     @State private var showKeyUpdate = false
     @State private var showOnboarding = false
     @State private var apiKeyActive = false
@@ -1369,6 +1371,20 @@ struct ProfileView: View {
                     .listRowBackground(Color.clear)
                     .listRowSeparatorTint(AppInk.solid(0.06))
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+
+                    SettingsRow(
+                        title: "Delete account",
+                        trailing: .icon("trash"),
+                        titleColor: logoutRed,
+                        trailingColor: logoutRed
+                    ) {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        showDeleteAccountConfirm = true
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparatorTint(AppInk.solid(0.06))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
@@ -1429,11 +1445,28 @@ struct ProfileView: View {
                 Button("Log out", role: .destructive) {
                     SessionTokenService.delete()
                     KeychainService.delete()
+                    SessionStore.shared.delete()
                     refreshAPIKeyState()
                     onboardingComplete = false
                 }
             } message: {
                 Text("You'll be signed out on this device.")
+            }
+            .alert("Delete account?", isPresented: $showDeleteAccountConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete account", role: .destructive) {
+                    Task { await performDeleteAccount() }
+                }
+            } message: {
+                Text("This permanently deletes your account and all synced notes and generations from our servers. Your device data will also be cleared. This cannot be undone.")
+            }
+            .alert("Couldn't delete account", isPresented: Binding(
+                get: { deleteAccountError != nil },
+                set: { if !$0 { deleteAccountError = nil } }
+            )) {
+                Button("OK", role: .cancel) { deleteAccountError = nil }
+            } message: {
+                Text(deleteAccountError ?? "")
             }
             .sheet(isPresented: $showKeyUpdate) {
                 APIKeySetupView {
@@ -1460,6 +1493,28 @@ struct ProfileView: View {
 
     private func refreshAPIKeyState() {
         apiKeyActive = AnthropicClient.isConfigured
+    }
+
+    private func performDeleteAccount() async {
+        let accountURL = URL(string: "https://content-graph-five.vercel.app/api/account")!
+        do {
+            _ = try await AuthClient.shared.delete(accountURL)
+        } catch AuthClientError.noSession {
+            // No valid session — server data may already be gone; clear local.
+        } catch {
+            deleteAccountError = error.localizedDescription
+            return
+        }
+        clearAllLocalData()
+    }
+
+    private func clearAllLocalData() {
+        SessionStore.shared.delete()
+        KeychainService.delete()
+        UserDefaults.standard.removeObject(forKey: NotesStore.key)
+        UserDefaults.standard.removeObject(forKey: MinimalGenStore.key)
+        refreshAPIKeyState()
+        onboardingComplete = false
     }
 
     // MARK: - Layout cycling
