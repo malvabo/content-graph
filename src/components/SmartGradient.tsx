@@ -39,8 +39,8 @@ export default function SmartGradient({ style }: { style?: React.CSSProperties }
       ctx.fillRect(0, 0, w, h);
 
       // Orb 1: large mint bloom, upper-left drift
-      const x1 = w * (0.08 + 0.12 * Math.sin(t * 0.28));
-      const y1 = h * (0.18 + 0.10 * Math.cos(t * 0.22));
+      const x1 = w * (0.08 + 0.18 * Math.sin(t * 0.55));
+      const y1 = h * (0.18 + 0.16 * Math.cos(t * 0.45));
       const g1 = ctx.createRadialGradient(x1, y1, 0, x1, y1, r * 0.68);
       g1.addColorStop(0,    'rgba(138, 220, 210, 0.92)');
       g1.addColorStop(0.45, 'rgba(98,  178, 163, 0.48)');
@@ -49,8 +49,8 @@ export default function SmartGradient({ style }: { style?: React.CSSProperties }
       ctx.fillRect(0, 0, w, h);
 
       // Orb 2: mid-teal, center-right, slower drift
-      const x2 = w * (0.74 + 0.09 * Math.sin(t * 0.17 + 1.5));
-      const y2 = h * (0.38 + 0.13 * Math.cos(t * 0.14 + 2.0));
+      const x2 = w * (0.74 + 0.14 * Math.sin(t * 0.38 + 1.5));
+      const y2 = h * (0.38 + 0.20 * Math.cos(t * 0.32 + 2.0));
       const g2 = ctx.createRadialGradient(x2, y2, 0, x2, y2, r * 0.52);
       g2.addColorStop(0,    'rgba(72, 152, 138, 0.78)');
       g2.addColorStop(0.55, 'rgba(52, 112,  98, 0.38)');
@@ -59,8 +59,8 @@ export default function SmartGradient({ style }: { style?: React.CSSProperties }
       ctx.fillRect(0, 0, w, h);
 
       // Orb 3: lighter mint accent, lower-center drift
-      const x3 = w * (0.42 + 0.18 * Math.sin(t * 0.13 + 3.2));
-      const y3 = h * (0.74 + 0.08 * Math.cos(t * 0.19 + 0.8));
+      const x3 = w * (0.42 + 0.22 * Math.sin(t * 0.48 + 3.2));
+      const y3 = h * (0.74 + 0.14 * Math.cos(t * 0.42 + 0.8));
       const g3 = ctx.createRadialGradient(x3, y3, 0, x3, y3, r * 0.42);
       g3.addColorStop(0, 'rgba(108, 194, 180, 0.62)');
       g3.addColorStop(1, 'rgba(78,  150, 135, 0)');
@@ -68,8 +68,8 @@ export default function SmartGradient({ style }: { style?: React.CSSProperties }
       ctx.fillRect(0, 0, w, h);
 
       // Orb 4: dark-green anchor, top-right corner
-      const x4 = w * (0.88 + 0.06 * Math.sin(t * 0.11 + 0.4));
-      const y4 = h * (0.08 + 0.06 * Math.cos(t * 0.09 + 1.2));
+      const x4 = w * (0.88 + 0.10 * Math.sin(t * 0.28 + 0.4));
+      const y4 = h * (0.08 + 0.12 * Math.cos(t * 0.24 + 1.2));
       const g4 = ctx.createRadialGradient(x4, y4, 0, x4, y4, r * 0.38);
       g4.addColorStop(0, 'rgba(42, 90, 52, 0.80)');
       g4.addColorStop(1, 'rgba(32, 68, 40, 0)');
