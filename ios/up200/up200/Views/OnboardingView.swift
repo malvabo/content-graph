@@ -259,34 +259,6 @@ struct OnboardingView: View {
             Spacer().frame(height: 48)
 
             VStack(spacing: 12) {
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    // Stamp the constellation clock 1.2s in the future so the
-                    // central bulb is visible immediately on screen 3 but the
-                    // amber spark firings hold off until the transition has
-                    // settled — the orange animation reads as starting after
-                    // a beat rather than launching mid-fade.
-                    constellationStartedAt = Date().addingTimeInterval(1.2)
-                    // easeOut so the zoom-out decelerates into rest — the
-                    // cloud reads as a camera pulling back and settling at
-                    // its final distance. 0.85s gives the eye time to track
-                    // the contraction; the previous 0.45s easeInOut was too
-                    // fast for the new spatial motion to register and the
-                    // crossing felt like a cut.
-                    withAnimation(.easeOut(duration: 0.85)) {
-                        step = .constellation
-                    }
-                }) {
-                    Text("Get started")
-                        .font(.app(size: 17, weight: .semibold))
-                        .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(Color.white.opacity(0.94))
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                }
-                .buttonStyle(.plain)
-
                 SignInWithAppleButton(.signIn) { request in
                     pendingNonce = appleSignIn.setupRequest(request)
                 } onCompletion: { result in
