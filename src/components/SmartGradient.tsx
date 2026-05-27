@@ -9,15 +9,15 @@ const VARIANTS: Record<Variant, {
   presence: {
     bg: '#ffffff',
     orbs: [
-      { r: 196, g: 181, b: 253, a: 0.62, cx: 0.20, cy: 0.25, radius: 0.70, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.0, ampX: 0.10, ampY: 0.08 },
-      { r: 147, g: 197, b: 253, a: 0.50, cx: 0.75, cy: 0.65, radius: 0.65, freqX: 0.06, freqY: 0.05, phaseX: 2.2, phaseY: 0.5, ampX: 0.09, ampY: 0.10 },
+      { r: 196, g: 181, b: 253, a: 0.62, cx: 0.20, cy: 0.25, radius: 0.70, freqX: 0.35, freqY: 0.28, phaseX: 0,   phaseY: 1.0, ampX: 0.14, ampY: 0.12 },
+      { r: 147, g: 197, b: 253, a: 0.50, cx: 0.75, cy: 0.65, radius: 0.65, freqX: 0.25, freqY: 0.20, phaseX: 2.2, phaseY: 0.5, ampX: 0.12, ampY: 0.14 },
     ],
   },
   warmth: {
     bg: '#ffffff',
     orbs: [
-      { r: 252, g: 165, b: 165, a: 0.55, cx: 0.25, cy: 0.30, radius: 0.70, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.2, ampX: 0.10, ampY: 0.08 },
-      { r: 252, g: 211, b:  77, a: 0.42, cx: 0.70, cy: 0.65, radius: 0.65, freqX: 0.06, freqY: 0.05, phaseX: 1.8, phaseY: 0.4, ampX: 0.09, ampY: 0.10 },
+      { r: 252, g: 165, b: 165, a: 0.55, cx: 0.25, cy: 0.30, radius: 0.70, freqX: 0.35, freqY: 0.28, phaseX: 0,   phaseY: 1.2, ampX: 0.14, ampY: 0.12 },
+      { r: 252, g: 211, b:  77, a: 0.42, cx: 0.70, cy: 0.65, radius: 0.65, freqX: 0.25, freqY: 0.20, phaseX: 1.8, phaseY: 0.4, ampX: 0.12, ampY: 0.14 },
     ],
   },
 };
