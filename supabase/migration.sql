@@ -32,7 +32,9 @@ create table if not exists user_settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
   anthropic_key text default '',
   openai_key text default '',
-  google_key text default ''
+  google_key text default '',
+  groq_key text default '',
+  together_key text default ''
 );
 
 alter table user_settings enable row level security;
@@ -60,8 +62,10 @@ create table if not exists apple_auth_users (
 
 alter table apple_auth_users enable row level security;
 
--- Run this when applying to an existing database:
+-- Run these when applying to an existing database:
 -- alter table apple_auth_users add column if not exists supabase_user_id uuid references auth.users(id) on delete set null;
+-- alter table user_settings add column if not exists groq_key text default '';
+-- alter table user_settings add column if not exists together_key text default '';
 
 -- iOS notes synced from the app. Drawing data is excluded (text only).
 create table if not exists ios_notes (
