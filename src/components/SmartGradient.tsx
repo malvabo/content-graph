@@ -45,25 +45,25 @@ export default function SmartGradient({
     <div style={{ position: 'relative', background: '#ffffff', overflow: 'hidden', ...style }}>
       <style>{KEYFRAMES}</style>
 
-      {/* Orb 1 — upper-left */}
+      {/* Orb 1 — upper-left, oversized to bleed across most of canvas */}
       <div style={{
         position: 'absolute',
-        width: '80%',
-        height: '80%',
-        top: '-15%',
-        left: '-10%',
+        width: '140%',
+        height: '140%',
+        top: '-40%',
+        left: '-30%',
         background: orb1,
         animation: 'sg-orb-1 16s ease-in-out infinite',
         willChange: 'transform',
       }} />
 
-      {/* Orb 2 — lower-right */}
+      {/* Orb 2 — lower-right, overlaps with orb 1 to fill the rest */}
       <div style={{
         position: 'absolute',
-        width: '75%',
-        height: '75%',
-        bottom: '-15%',
-        right: '-10%',
+        width: '130%',
+        height: '130%',
+        bottom: '-40%',
+        right: '-30%',
         background: orb2,
         animation: 'sg-orb-2 20s ease-in-out infinite',
         willChange: 'transform',
