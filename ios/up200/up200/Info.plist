@@ -47,7 +47,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Oula uses the microphone to capture your voice notes and ideas.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Speech recognition is used to transcribe your voice notes</string>
+	<string>Oula transcribes your voice recordings on-device into text notes. Audio is not sent to any server.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIAppFonts</key>
