@@ -1510,6 +1510,7 @@ struct ProfileView: View {
 
     private func clearAllLocalData() {
         SessionStore.shared.delete()
+        SessionTokenService.delete()
         KeychainService.delete()
         UserDefaults.standard.removeObject(forKey: NotesStore.key)
         UserDefaults.standard.removeObject(forKey: MinimalGenStore.key)
