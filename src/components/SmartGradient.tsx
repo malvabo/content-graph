@@ -1,11 +1,39 @@
 import { useEffect, useRef } from 'react';
 
+type Variant = 'presence' | 'warmth';
+
+const VARIANTS: Record<Variant, {
+  bg: string;
+  orbs: Array<{ r: number; g: number; b: number; a: number; cx: number; cy: number; radius: number; freqX: number; freqY: number; phaseX: number; phaseY: number; ampX: number; ampY: number }>;
+}> = {
+  presence: {
+    bg: '#07070f',
+    orbs: [
+      { r: 196, g: 181, b: 253, a: 0.07, cx: 0.22, cy: 0.30, radius: 0.90, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.0, ampX: 0.10, ampY: 0.08 },
+      { r: 147, g: 197, b: 253, a: 0.05, cx: 0.72, cy: 0.62, radius: 0.85, freqX: 0.06, freqY: 0.05, phaseX: 2.2, phaseY: 0.5, ampX: 0.09, ampY: 0.10 },
+    ],
+  },
+  warmth: {
+    bg: '#07070f',
+    orbs: [
+      { r: 252, g: 165, b: 165, a: 0.05, cx: 0.28, cy: 0.35, radius: 0.90, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.2, ampX: 0.10, ampY: 0.08 },
+      { r: 252, g: 211, b:  77, a: 0.03, cx: 0.68, cy: 0.60, radius: 0.85, freqX: 0.06, freqY: 0.05, phaseX: 1.8, phaseY: 0.4, ampX: 0.09, ampY: 0.10 },
+    ],
+  },
+};
+
 /**
- * Option B — Presence.
- * Two large soft orbs (violet #C4B5FD at 7%, sky blue #93C5FD at 5%)
- * drifting very slowly on near-black. Calm and alive.
+ * Soft ambient gradient for avatar/presence contexts.
+ * variant="presence" — violet + sky blue (calm, intelligent)
+ * variant="warmth"   — blush + amber (warm, expressive)
  */
-export default function SmartGradient({ style }: { style?: React.CSSProperties }) {
+export default function SmartGradient({
+  style,
+  variant = 'presence',
+}: {
+  style?: React.CSSProperties;
+  variant?: Variant;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -33,29 +61,21 @@ export default function SmartGradient({ style }: { style?: React.CSSProperties }
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
       const r = Math.max(w, h);
+      const { bg, orbs } = VARIANTS[variant];
 
-      ctx.fillStyle = '#07070f';
+      ctx.fillStyle = bg;
       ctx.fillRect(0, 0, w, h);
 
-      // Orb 1: violet #C4B5FD at 7% — upper-left, slow drift
-      const x1 = w * (0.22 + 0.10 * Math.sin(t * 0.08));
-      const y1 = h * (0.30 + 0.08 * Math.cos(t * 0.07 + 1.0));
-      const g1 = ctx.createRadialGradient(x1, y1, 0, x1, y1, r * 0.90);
-      g1.addColorStop(0,   'rgba(196, 181, 253, 0.07)');
-      g1.addColorStop(0.5, 'rgba(196, 181, 253, 0.03)');
-      g1.addColorStop(1,   'rgba(196, 181, 253, 0)');
-      ctx.fillStyle = g1;
-      ctx.fillRect(0, 0, w, h);
-
-      // Orb 2: sky blue #93C5FD at 5% — lower-right, slightly different phase
-      const x2 = w * (0.72 + 0.09 * Math.sin(t * 0.06 + 2.2));
-      const y2 = h * (0.62 + 0.10 * Math.cos(t * 0.05 + 0.5));
-      const g2 = ctx.createRadialGradient(x2, y2, 0, x2, y2, r * 0.85);
-      g2.addColorStop(0,   'rgba(147, 197, 253, 0.05)');
-      g2.addColorStop(0.5, 'rgba(147, 197, 253, 0.02)');
-      g2.addColorStop(1,   'rgba(147, 197, 253, 0)');
-      ctx.fillStyle = g2;
-      ctx.fillRect(0, 0, w, h);
+      for (const o of orbs) {
+        const x = w * (o.cx + o.ampX * Math.sin(t * o.freqX + o.phaseX));
+        const y = h * (o.cy + o.ampY * Math.cos(t * o.freqY + o.phaseY));
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, r * o.radius);
+        grad.addColorStop(0,   `rgba(${o.r}, ${o.g}, ${o.b}, ${o.a})`);
+        grad.addColorStop(0.5, `rgba(${o.r}, ${o.g}, ${o.b}, ${+(o.a * 0.4).toFixed(3)})`);
+        grad.addColorStop(1,   `rgba(${o.r}, ${o.g}, ${o.b}, 0)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+      }
 
       raf = requestAnimationFrame(draw);
     };
@@ -65,27 +85,17 @@ export default function SmartGradient({ style }: { style?: React.CSSProperties }
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
     };
-  }, []);
+  }, [variant]);
 
   return (
-    <div style={{ position: 'relative', background: '#07070f', overflow: 'hidden', ...style }}>
+    <div style={{ position: 'relative', background: VARIANTS[variant].bg, overflow: 'hidden', ...style }}>
       <canvas
         ref={canvasRef}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       />
-
-      {/* Static grain on top */}
       <svg
         aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-          mixBlendMode: 'soft-light',
-          opacity: 0.35,
-        }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', mixBlendMode: 'soft-light', opacity: 0.35 }}
         xmlns="http://www.w3.org/2000/svg"
       >
         <filter id="sg-grain" x="0%" y="0%" width="100%" height="100%" colorInterpolationFilters="sRGB">
