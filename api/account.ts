@@ -1,16 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { getAllowedOrigin } from './_cors';
 
 function getToken(req: VercelRequest): string | null {
   const h = req.headers.authorization;
   return h?.startsWith('Bearer ') ? h.slice(7) : null;
-}
-
-function getAllowedOrigin(req: VercelRequest): string {
-  const origin = req.headers.origin ?? '';
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin;
-  if (/\.vercel\.app$/.test(origin)) return origin;
-  return '';
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

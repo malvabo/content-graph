@@ -1,4 +1,5 @@
 import AuthenticationServices
+import CryptoKit
 import SwiftUI
 
 // MARK: - UIKit bridge
@@ -1271,12 +1272,23 @@ private struct PostGenerationAuthView: View {
 private final class AppleSignInCoordinator: NSObject, ObservableObject {
     private var completion: ((Result<Void, Error>) -> Void)?
     private let authEndpoint = URL(string: "https://content-graph-five.vercel.app/api/auth/apple")!
+    private var pendingNonce: String?
 
     func start(completion: @escaping (Result<Void, Error>) -> Void) {
         self.completion = completion
         let provider = ASAuthorizationAppleIDProvider()
         let request = provider.createRequest()
         request.requestedScopes = [.fullName, .email]
+
+        // Generate a nonce so the server can verify the token was issued
+        // for this exact request and not replayed from an earlier one.
+        let rawNonce = (0..<32).map { _ in UInt8.random(in: 0...255) }
+        let rawNonceData = Data(rawNonce)
+        let rawNonceHex = rawNonceData.map { String(format: "%02x", $0) }.joined()
+        let hash = SHA256.hash(data: rawNonceData)
+        let hashedNonce = hash.map { String(format: "%02x", $0) }.joined()
+        pendingNonce = rawNonceHex
+        request.nonce = hashedNonce
 
         let controller = ASAuthorizationController(authorizationRequests: [request])
         controller.delegate = self
@@ -1310,8 +1322,10 @@ private final class AppleSignInCoordinator: NSObject, ObservableObject {
             authorizationCode: authorizationCode,
             user: credential.user,
             email: credential.email,
-            fullName: fullName?.isEmpty == false ? fullName : nil
+            fullName: fullName?.isEmpty == false ? fullName : nil,
+            nonce: pendingNonce
         )
+        pendingNonce = nil
 
         var request = URLRequest(url: authEndpoint)
         request.httpMethod = "POST"
@@ -1344,9 +1358,6 @@ private final class AppleSignInCoordinator: NSObject, ObservableObject {
                 fullName: authResponse.user.fullName
             )
             SessionStore.shared.save(appSession)
-        }
-        if let token = authResponse.sessionToken {
-            SessionTokenService.save(token)
         }
     }
 }
@@ -1420,6 +1431,7 @@ private struct AppleAuthRequest: Encodable {
     let user: String
     let email: String?
     let fullName: String?
+    let nonce: String?
 }
 
 private struct AppleAuthResponse: Decodable {

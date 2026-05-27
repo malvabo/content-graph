@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createPublicKey, verify, createHmac } from 'node:crypto';
+import { createPublicKey, verify, createHash } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
+import { getAllowedOrigin } from '../_cors';
 
 const APPLE_KEYS_URL = 'https://appleid.apple.com/auth/keys';
 const DEFAULT_IOS_BUNDLE_ID = 'com.up200.app';
@@ -29,6 +30,8 @@ type AppleTokenPayload = {
   exp: number;
   iat: number;
   sub: string;
+  nonce?: string;
+  nonce_supported?: boolean;
   email?: string;
   email_verified?: string | boolean;
   is_private_email?: string | boolean;
@@ -40,6 +43,7 @@ type AppleAuthBody = {
   user?: unknown;
   email?: unknown;
   fullName?: unknown;
+  nonce?: unknown;
 };
 
 type SupabaseSession = {
@@ -58,13 +62,6 @@ class HttpError extends Error {
 }
 
 let cachedAppleKeys: { keys: AppleJWK[]; expiresAt: number } | null = null;
-
-function getAllowedOrigin(req: VercelRequest): string {
-  const origin = req.headers.origin ?? '';
-  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin;
-  if (/\.vercel\.app$/.test(origin)) return origin;
-  return '';
-}
 
 function base64UrlToBuffer(value: string): Buffer {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
@@ -317,6 +314,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !serviceRoleKey || !anonKey) {
+    return res.status(503).json({ error: 'Auth service not configured' });
+  }
+
   try {
     const body = (req.body ?? {}) as AppleAuthBody;
     const identityToken = asOptionalString(body.identityToken);
@@ -328,6 +332,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const clientAppleUser = asOptionalString(body.user);
     if (clientAppleUser && clientAppleUser !== payload.sub) {
       throw new HttpError(401, 'Apple user does not match identity token');
+    }
+
+    // Validate nonce if the client sent one. Apple embeds SHA256(rawNonce)
+    // in the JWT nonce claim; we recompute it to confirm the token was
+    // issued for this exact request and wasn't replayed.
+    const rawNonce = asOptionalString(body.nonce);
+    if (rawNonce) {
+      const expectedNonceHash = createHash('sha256').update(rawNonce).digest('hex');
+      if (payload.nonce !== expectedNonceHash) {
+        throw new HttpError(401, 'Nonce mismatch');
+      }
+    } else if (payload.nonce) {
+      // JWT has a nonce but client didn't send one — reject to prevent
+      // a downgrade where an attacker strips the nonce from the request.
+      throw new HttpError(401, 'Nonce required');
     }
 
     // Create or retrieve the Supabase account and session for this Apple user.
