@@ -266,7 +266,7 @@ struct OnboardingView: View {
                 }
                 .signInWithAppleButtonStyle(.whiteOutline)
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(height: 40)
                 .cornerRadius(Radius.card)
 
                 if let authError {
