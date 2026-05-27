@@ -1,31 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 
-interface Star {
-  x: number;
-  y: number;
-  z: number;
-  size: number;
-  baseAlpha: number;
-  twinklePhase: number;
-}
-
-function makeStars(count: number, w: number, h: number): Star[] {
-  const out: Star[] = [];
-  for (let i = 0; i < count; i++) {
-    const r = Math.random();
-    out.push({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      z: r * r,
-      size: 0.5 + Math.random() * 1.6,
-      baseAlpha: 0.25 + Math.random() * 0.7,
-      twinklePhase: Math.random() * Math.PI * 2,
-    });
-  }
-  return out;
-}
-
 export default function WelcomeScreen({
   onGetStarted,
   onLogIn,
@@ -47,7 +22,6 @@ export default function WelcomeScreen({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let stars: Star[] = [];
     let raf = 0;
     const start = performance.now();
 
@@ -58,7 +32,6 @@ export default function WelcomeScreen({
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      stars = makeStars(180, w, h);
     };
     resize();
     window.addEventListener('resize', resize);
@@ -67,23 +40,50 @@ export default function WelcomeScreen({
       const t = (now - start) / 1000;
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
-      ctx.clearRect(0, 0, w, h);
+      const r = Math.max(w, h);
 
-      ctx.fillStyle = 'rgba(217,115,26,0.10)';
-      ctx.beginPath();
-      ctx.ellipse(w * 0.1, h * 0.05, 320, 220, 0, 0, Math.PI * 2);
-      ctx.fill();
+      // Base: dark forest green
+      ctx.fillStyle = '#2A5032';
+      ctx.fillRect(0, 0, w, h);
 
-      for (const s of stars) {
-        const tw = 0.55 + 0.45 * Math.sin(t * 1.4 + s.twinklePhase);
-        const alpha = Math.max(0, Math.min(1, s.baseAlpha * tw));
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
+      // Orb 1: large mint bloom, upper-left drift
+      const x1 = w * (0.08 + 0.12 * Math.sin(t * 0.28));
+      const y1 = h * (0.18 + 0.10 * Math.cos(t * 0.22));
+      const g1 = ctx.createRadialGradient(x1, y1, 0, x1, y1, r * 0.68);
+      g1.addColorStop(0,   'rgba(138, 220, 210, 0.92)');
+      g1.addColorStop(0.45,'rgba(98,  178, 163, 0.48)');
+      g1.addColorStop(1,   'rgba(72,  138, 120, 0)');
+      ctx.fillStyle = g1;
+      ctx.fillRect(0, 0, w, h);
+
+      // Orb 2: mid-teal, center-right, slower drift
+      const x2 = w * (0.74 + 0.09 * Math.sin(t * 0.17 + 1.5));
+      const y2 = h * (0.38 + 0.13 * Math.cos(t * 0.14 + 2.0));
+      const g2 = ctx.createRadialGradient(x2, y2, 0, x2, y2, r * 0.52);
+      g2.addColorStop(0,   'rgba(72, 152, 138, 0.78)');
+      g2.addColorStop(0.55,'rgba(52, 112,  98, 0.38)');
+      g2.addColorStop(1,   'rgba(42,  85,  72, 0)');
+      ctx.fillStyle = g2;
+      ctx.fillRect(0, 0, w, h);
+
+      // Orb 3: lighter mint accent, lower-center drift
+      const x3 = w * (0.42 + 0.18 * Math.sin(t * 0.13 + 3.2));
+      const y3 = h * (0.74 + 0.08 * Math.cos(t * 0.19 + 0.8));
+      const g3 = ctx.createRadialGradient(x3, y3, 0, x3, y3, r * 0.42);
+      g3.addColorStop(0,   'rgba(108, 194, 180, 0.62)');
+      g3.addColorStop(1,   'rgba(78,  150, 135, 0)');
+      ctx.fillStyle = g3;
+      ctx.fillRect(0, 0, w, h);
+
+      // Orb 4: subtle dark-green anchor, top-right corner
+      const x4 = w * (0.88 + 0.06 * Math.sin(t * 0.11 + 0.4));
+      const y4 = h * (0.08 + 0.06 * Math.cos(t * 0.09 + 1.2));
+      const g4 = ctx.createRadialGradient(x4, y4, 0, x4, y4, r * 0.38);
+      g4.addColorStop(0,   'rgba(42, 90, 52, 0.80)');
+      g4.addColorStop(1,   'rgba(32, 68, 40, 0)');
+      ctx.fillStyle = g4;
+      ctx.fillRect(0, 0, w, h);
+
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
@@ -100,18 +100,45 @@ export default function WelcomeScreen({
         position: 'fixed',
         inset: 0,
         zIndex: 200,
-        background: '#050505',
+        background: '#2A5032',
         color: '#fff',
         fontFamily: 'var(--font-sans, system-ui)',
         overflow: 'hidden',
       }}
     >
+      {/* Animated gradient canvas — movement lives here */}
       <canvas
         ref={canvasRef}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       />
 
-      {/* Floating tag — mirrors the demo screenshot */}
+      {/* Grain overlay — static film grain sits on top of the moving gradient */}
+      <svg
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          mixBlendMode: 'soft-light',
+          opacity: 0.55,
+        }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <filter id="grain-filter" x="0%" y="0%" width="100%" height="100%" colorInterpolationFilters="sRGB">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.68"
+            numOctaves="4"
+            stitchTiles="stitch"
+          />
+          <feColorMatrix type="saturate" values="0" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#grain-filter)" />
+      </svg>
+
+      {/* Floating tag */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={appeared ? { opacity: 1, y: 0 } : {}}
