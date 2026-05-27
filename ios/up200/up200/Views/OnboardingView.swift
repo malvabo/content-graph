@@ -39,6 +39,7 @@ struct OnboardingView: View {
     @State private var appeared = false
     @StateObject private var appleSignIn = AppleSignInCoordinator()
     @State private var authError: String? = nil
+    @State private var pendingNonce: String?
     // Typewriter state for the brand mark — char-by-char typing of
     // "Oula" in the mono font.
     @State private var brandTypedLength: Int = 0
@@ -286,27 +287,15 @@ struct OnboardingView: View {
                 }
                 .buttonStyle(.plain)
 
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    startAppleLogin()
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "apple.logo")
-                            .font(.system(size: 17, weight: .semibold))
-                        Text("Log in with Apple")
-                            .font(.app(size: 17, weight: .medium))
-                    }
-                    .foregroundColor(Color.white.opacity(0.82))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color.white.opacity(0.07))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                            .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-                    )
+                SignInWithAppleButton(.signIn) { request in
+                    pendingNonce = appleSignIn.setupRequest(request)
+                } onCompletion: { result in
+                    startAppleLoginWithResult(result)
                 }
-                .buttonStyle(.plain)
+                .signInWithAppleButtonStyle(.whiteOutline)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .cornerRadius(Radius.card)
 
                 if let authError {
                     Text(authError)
@@ -334,13 +323,23 @@ struct OnboardingView: View {
         ))
     }
 
-    private func startAppleLogin() {
+    private func startAppleLoginWithResult(_ result: Result<ASAuthorization, Error>) {
         authError = nil
-        appleSignIn.start { result in
-            switch result {
-            case .success:
-                onLogin()
-            case .failure(let error):
+        let nonce = pendingNonce
+        pendingNonce = nil
+        switch result {
+        case .failure(let error as NSError)
+            where error.domain == ASAuthorizationError.errorDomain
+            && error.code == ASAuthorizationError.canceled.rawValue:
+            return
+        case .failure(let error):
+            authError = error.localizedDescription
+        case .success(let auth):
+            guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else {
+                authError = "Could not read Apple credentials. Try again."
+                return
+            }
+            appleSignIn.handleCredential(credential, nonce: nonce, onSuccess: onLogin) { error in
                 authError = error.localizedDescription
             }
         }
@@ -1171,6 +1170,7 @@ private struct PostGenerationAuthView: View {
     let onLogin: () -> Void
     @StateObject private var appleSignIn = AppleSignInCoordinator()
     @State private var authError: String? = nil
+    @State private var pendingNonce: String?
 
     var body: some View {
         ZStack {
@@ -1212,21 +1212,25 @@ private struct PostGenerationAuthView: View {
                 Spacer()
 
                 VStack(spacing: 12) {
-                    Button {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        startAppleSignIn(completion: onSignUp)
-                    } label: {
-                        appleButtonLabel("Sign up with Apple")
+                    SignInWithAppleButton(.signUp) { request in
+                        pendingNonce = appleSignIn.setupRequest(request)
+                    } onCompletion: { result in
+                        handleAppleResult(result, completion: onSignUp)
                     }
-                    .buttonStyle(.plain)
+                    .signInWithAppleButtonStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .cornerRadius(Radius.card)
 
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        startAppleSignIn(completion: onLogin)
-                    } label: {
-                        appleButtonLabel("Log in with Apple")
+                    SignInWithAppleButton(.signIn) { request in
+                        pendingNonce = appleSignIn.setupRequest(request)
+                    } onCompletion: { result in
+                        handleAppleResult(result, completion: onLogin)
                     }
-                    .buttonStyle(.plain)
+                    .signInWithAppleButtonStyle(.whiteOutline)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .cornerRadius(Radius.card)
 
                     if let authError {
                         Text(authError)
@@ -1242,27 +1246,23 @@ private struct PostGenerationAuthView: View {
         }
     }
 
-    private func appleButtonLabel(_ title: String) -> some View {
-        HStack(spacing: 9) {
-            Image(systemName: "apple.logo")
-                .font(.system(size: 18, weight: .semibold))
-            Text(title)
-                .font(.appLabelBold)
-        }
-        .foregroundColor(AppBackground.primary)
-        .frame(maxWidth: .infinity)
-        .frame(height: 54)
-        .background(AppText.primary)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-    }
-
-    private func startAppleSignIn(completion: @escaping () -> Void) {
+    private func handleAppleResult(_ result: Result<ASAuthorization, Error>, completion: @escaping () -> Void) {
         authError = nil
-        appleSignIn.start { result in
-            switch result {
-            case .success:
-                completion()
-            case .failure(let error):
+        let nonce = pendingNonce
+        pendingNonce = nil
+        switch result {
+        case .failure(let error as NSError)
+            where error.domain == ASAuthorizationError.errorDomain
+            && error.code == ASAuthorizationError.canceled.rawValue:
+            return
+        case .failure(let error):
+            authError = error.localizedDescription
+        case .success(let auth):
+            guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else {
+                authError = "Could not read Apple credentials. Try again."
+                return
+            }
+            appleSignIn.handleCredential(credential, nonce: nonce, onSuccess: completion) { error in
                 authError = error.localizedDescription
             }
         }
@@ -1270,40 +1270,42 @@ private struct PostGenerationAuthView: View {
 }
 
 private final class AppleSignInCoordinator: NSObject, ObservableObject {
-    private var completion: ((Result<Void, Error>) -> Void)?
     private let authEndpoint = URL(string: "https://content-graph-five.vercel.app/api/auth/apple")!
-    private var pendingNonce: String?
 
-    func start(completion: @escaping (Result<Void, Error>) -> Void) {
-        self.completion = completion
-        let provider = ASAuthorizationAppleIDProvider()
-        let request = provider.createRequest()
+    // Called from SignInWithAppleButton's onRequest closure.
+    // Sets the nonce on the request and returns the raw hex nonce to store in view state.
+    func setupRequest(_ request: ASAuthorizationAppleIDRequest) -> String {
+        let rawBytes = (0..<32).map { _ in UInt8.random(in: 0...255) }
+        let rawData = Data(rawBytes)
+        let rawHex = rawData.map { String(format: "%02x", $0) }.joined()
+        let hash = SHA256.hash(data: rawData)
+        request.nonce = hash.map { String(format: "%02x", $0) }.joined()
         request.requestedScopes = [.fullName, .email]
-
-        // Generate a nonce so the server can verify the token was issued
-        // for this exact request and not replayed from an earlier one.
-        let rawNonce = (0..<32).map { _ in UInt8.random(in: 0...255) }
-        let rawNonceData = Data(rawNonce)
-        let rawNonceHex = rawNonceData.map { String(format: "%02x", $0) }.joined()
-        let hash = SHA256.hash(data: rawNonceData)
-        let hashedNonce = hash.map { String(format: "%02x", $0) }.joined()
-        pendingNonce = rawNonceHex
-        request.nonce = hashedNonce
-
-        let controller = ASAuthorizationController(authorizationRequests: [request])
-        controller.delegate = self
-        controller.presentationContextProvider = self
-        controller.performRequests()
+        return rawHex
     }
 
-    private func finish(_ result: Result<Void, Error>) {
-        DispatchQueue.main.async { [weak self] in
-            self?.completion?(result)
-            self?.completion = nil
+    // Called from SignInWithAppleButton's onCompletion closure.
+    func handleCredential(
+        _ credential: ASAuthorizationAppleIDCredential,
+        nonce: String?,
+        onSuccess: @escaping () -> Void,
+        onError: @escaping (Error) -> Void
+    ) {
+        Task { [weak self] in
+            do {
+                try await self?.authenticateWithBackend(credential: credential, nonce: nonce)
+                await SyncManager.shared.pull()
+                await MainActor.run { onSuccess() }
+            } catch {
+                await MainActor.run { onError(error) }
+            }
         }
     }
 
-    private func authenticateWithBackend(credential: ASAuthorizationAppleIDCredential) async throws {
+    private func authenticateWithBackend(
+        credential: ASAuthorizationAppleIDCredential,
+        nonce: String?
+    ) async throws {
         guard let identityTokenData = credential.identityToken,
               let identityToken = String(data: identityTokenData, encoding: .utf8) else {
             throw AppleSignInError.missingIdentityToken
@@ -1323,9 +1325,8 @@ private final class AppleSignInCoordinator: NSObject, ObservableObject {
             user: credential.user,
             email: credential.email,
             fullName: fullName?.isEmpty == false ? fullName : nil,
-            nonce: pendingNonce
+            nonce: nonce
         )
-        pendingNonce = nil
 
         var request = URLRequest(url: authEndpoint)
         request.httpMethod = "POST"
@@ -1344,9 +1345,6 @@ private final class AppleSignInCoordinator: NSObject, ObservableObject {
 
         let authResponse = try JSONDecoder().decode(AppleAuthResponse.self, from: data)
 
-        // Persist the Supabase session so subsequent API calls can attach
-        // a Bearer token. If the backend couldn't create a session (e.g.
-        // service env vars missing) we still complete sign-in locally.
         if let session = authResponse.session,
            let supabaseId = authResponse.user.supabaseId {
             let appSession = AppSession(
@@ -1362,52 +1360,6 @@ private final class AppleSignInCoordinator: NSObject, ObservableObject {
         if let token = authResponse.sessionToken {
             SessionTokenService.save(token)
         }
-    }
-}
-
-extension AppleSignInCoordinator: ASAuthorizationControllerDelegate {
-    func authorizationController(
-        controller: ASAuthorizationController,
-        didCompleteWithAuthorization authorization: ASAuthorization
-    ) {
-        guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-            finish(.failure(AppleSignInError.invalidCredential))
-            return
-        }
-
-        Task { [weak self] in
-            do {
-                try await self?.authenticateWithBackend(credential: credential)
-                // Pull server data now that we have a valid session so the user
-                // immediately sees any notes/generations from a previous device.
-                await SyncManager.shared.pull()
-                self?.finish(.success(()))
-            } catch {
-                self?.finish(.failure(error))
-            }
-        }
-    }
-
-    func authorizationController(
-        controller: ASAuthorizationController,
-        didCompleteWithError error: Error
-    ) {
-        let nsError = error as NSError
-        if nsError.domain == ASAuthorizationError.errorDomain,
-           nsError.code == ASAuthorizationError.canceled.rawValue {
-            completion = nil
-            return
-        }
-        finish(.failure(error))
-    }
-}
-
-extension AppleSignInCoordinator: ASAuthorizationControllerPresentationContextProviding {
-    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
-            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
     }
 }
 

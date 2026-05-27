@@ -1248,6 +1248,7 @@ struct ProfileView: View {
     @State private var showLogOutConfirm = false
     @State private var showDeleteAccountConfirm = false
     @State private var deleteAccountError: String? = nil
+    @State private var showDeleteAccountSuccess = false
     @State private var showKeyUpdate = false
     @State private var showOnboarding = false
     @State private var apiKeyActive = false
@@ -1468,6 +1469,11 @@ struct ProfileView: View {
             } message: {
                 Text(deleteAccountError ?? "")
             }
+            .alert("Account deleted", isPresented: $showDeleteAccountSuccess) {
+                Button("Done") { clearAllLocalData() }
+            } message: {
+                Text("Your account and all data have been permanently removed from our servers.")
+            }
             .sheet(isPresented: $showKeyUpdate) {
                 APIKeySetupView {
                     refreshAPIKeyState()
@@ -1505,7 +1511,7 @@ struct ProfileView: View {
             deleteAccountError = error.localizedDescription
             return
         }
-        clearAllLocalData()
+        showDeleteAccountSuccess = true
     }
 
     private func clearAllLocalData() {
