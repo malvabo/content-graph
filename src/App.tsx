@@ -14,6 +14,7 @@ import AuthGate from './components/auth/AuthGate';
 // initial JS parse cost on startup. Each chunk loads on first navigation.
 import TypewriterLogo from './components/TypewriterLogo';
 import SmartGradient from './components/SmartGradient';
+import ParticleField from './components/ParticleField';
 
 const GraphCanvas = lazy(() => import('./components/canvas/GraphCanvas'));
 const CanvasToolbar = lazy(() => import('./components/canvas/CanvasToolbar'));
@@ -71,7 +72,7 @@ function AppInner() {
     () => !localStorage.getItem('onboarding_complete')
   );
 
-  const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'gradient'];
+  const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'gradient', 'particles'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'library'; };
   const getHashParam = () => { const h = window.location.hash.slice(1); const i = h.indexOf(':'); return i === -1 ? undefined : h.slice(i + 1) || undefined; };
   const [activeView, setActiveViewRaw] = useState(getViewFromHash);
@@ -297,6 +298,7 @@ function AppInner() {
         {activeView === 'settings' && <SettingsPanel />}
 
         {activeView === 'gradient' && <SmartGradient style={{ flex: 1, width: '100%', height: '100%' }} />}
+        {activeView === 'particles' && <ParticleField style={{ flex: 1, width: '100%', height: '100%' }} />}
 
         {activeView === 'cardslibrary' && <CardsLibrary onOpen={(id: string) => { setActiveView('cards:' + id); }} />}
 
