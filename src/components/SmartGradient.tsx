@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Full-bleed animated teal/green gradient with static film grain on top.
- * Gradient orbs drift organically via offset sine/cosine curves.
- * Grain layer (SVG feTurbulence, soft-light blend) stays stationary above.
+ * Dark ambient gradient — violet + deep teal orbs drifting very slowly over
+ * a near-black surface. Grain layer (SVG feTurbulence) sits stationary on top.
  */
 export default function SmartGradient({ style }: { style?: React.CSSProperties }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -34,46 +33,38 @@ export default function SmartGradient({ style }: { style?: React.CSSProperties }
       const h = canvas.clientHeight;
       const r = Math.max(w, h);
 
-      // Base: dark forest green
-      ctx.fillStyle = '#2A5032';
+      // Near-black base with faint blue-violet tint
+      ctx.fillStyle = '#07070f';
       ctx.fillRect(0, 0, w, h);
 
-      // Orb 1: large mint bloom, upper-left drift
-      const x1 = w * (0.08 + 0.18 * Math.sin(t * 0.55));
-      const y1 = h * (0.18 + 0.16 * Math.cos(t * 0.45));
-      const g1 = ctx.createRadialGradient(x1, y1, 0, x1, y1, r * 0.68);
-      g1.addColorStop(0,    'rgba(138, 220, 210, 0.92)');
-      g1.addColorStop(0.45, 'rgba(98,  178, 163, 0.48)');
-      g1.addColorStop(1,    'rgba(72,  138, 120, 0)');
+      // Orb 1: deep violet — large, drifts upper-left → center-left
+      // ~80px travel over ~20s on a 375px screen (amplitude 0.12, freq 0.08)
+      const x1 = w * (0.18 + 0.12 * Math.sin(t * 0.08));
+      const y1 = h * (0.28 + 0.10 * Math.cos(t * 0.07 + 1.0));
+      const g1 = ctx.createRadialGradient(x1, y1, 0, x1, y1, r * 0.80);
+      g1.addColorStop(0,    'rgba(130, 50, 220, 0.72)');
+      g1.addColorStop(0.40, 'rgba(90,  30, 160, 0.35)');
+      g1.addColorStop(1,    'rgba(50,  10,  90, 0)');
       ctx.fillStyle = g1;
       ctx.fillRect(0, 0, w, h);
 
-      // Orb 2: mid-teal, center-right, slower drift
-      const x2 = w * (0.74 + 0.14 * Math.sin(t * 0.38 + 1.5));
-      const y2 = h * (0.38 + 0.20 * Math.cos(t * 0.32 + 2.0));
-      const g2 = ctx.createRadialGradient(x2, y2, 0, x2, y2, r * 0.52);
-      g2.addColorStop(0,    'rgba(72, 152, 138, 0.78)');
-      g2.addColorStop(0.55, 'rgba(52, 112,  98, 0.38)');
-      g2.addColorStop(1,    'rgba(42,  85,  72, 0)');
+      // Orb 2: deep teal — medium, drifts right side downward
+      const x2 = w * (0.78 + 0.10 * Math.sin(t * 0.06 + 2.2));
+      const y2 = h * (0.55 + 0.12 * Math.cos(t * 0.05 + 0.5));
+      const g2 = ctx.createRadialGradient(x2, y2, 0, x2, y2, r * 0.65);
+      g2.addColorStop(0,    'rgba(0, 150, 170, 0.65)');
+      g2.addColorStop(0.45, 'rgba(0, 100, 120, 0.28)');
+      g2.addColorStop(1,    'rgba(0,  55,  70, 0)');
       ctx.fillStyle = g2;
       ctx.fillRect(0, 0, w, h);
 
-      // Orb 3: lighter mint accent, lower-center drift
-      const x3 = w * (0.42 + 0.22 * Math.sin(t * 0.48 + 3.2));
-      const y3 = h * (0.74 + 0.14 * Math.cos(t * 0.42 + 0.8));
-      const g3 = ctx.createRadialGradient(x3, y3, 0, x3, y3, r * 0.42);
-      g3.addColorStop(0, 'rgba(108, 194, 180, 0.62)');
-      g3.addColorStop(1, 'rgba(78,  150, 135, 0)');
+      // Orb 3: indigo accent — smaller, lower-center
+      const x3 = w * (0.48 + 0.09 * Math.sin(t * 0.09 + 4.1));
+      const y3 = h * (0.75 + 0.08 * Math.cos(t * 0.07 + 2.8));
+      const g3 = ctx.createRadialGradient(x3, y3, 0, x3, y3, r * 0.45);
+      g3.addColorStop(0,    'rgba(70, 40, 180, 0.55)');
+      g3.addColorStop(1,    'rgba(40, 20, 110, 0)');
       ctx.fillStyle = g3;
-      ctx.fillRect(0, 0, w, h);
-
-      // Orb 4: dark-green anchor, top-right corner
-      const x4 = w * (0.88 + 0.10 * Math.sin(t * 0.28 + 0.4));
-      const y4 = h * (0.08 + 0.12 * Math.cos(t * 0.24 + 1.2));
-      const g4 = ctx.createRadialGradient(x4, y4, 0, x4, y4, r * 0.38);
-      g4.addColorStop(0, 'rgba(42, 90, 52, 0.80)');
-      g4.addColorStop(1, 'rgba(32, 68, 40, 0)');
-      ctx.fillStyle = g4;
       ctx.fillRect(0, 0, w, h);
 
       raf = requestAnimationFrame(draw);
@@ -87,7 +78,7 @@ export default function SmartGradient({ style }: { style?: React.CSSProperties }
   }, []);
 
   return (
-    <div style={{ position: 'relative', background: '#2A5032', overflow: 'hidden', ...style }}>
+    <div style={{ position: 'relative', background: '#07070f', overflow: 'hidden', ...style }}>
       {/* Moving gradient layer */}
       <canvas
         ref={canvasRef}
@@ -104,7 +95,7 @@ export default function SmartGradient({ style }: { style?: React.CSSProperties }
           height: '100%',
           pointerEvents: 'none',
           mixBlendMode: 'soft-light',
-          opacity: 0.55,
+          opacity: 0.45,
         }}
         xmlns="http://www.w3.org/2000/svg"
       >
