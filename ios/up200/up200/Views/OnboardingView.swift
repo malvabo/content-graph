@@ -1425,6 +1425,7 @@ private struct AppleAuthRequest: Encodable {
 private struct AppleAuthResponse: Decodable {
     let user: AppleAuthUser
     let session: AppleAuthSession?
+    let sessionToken: String?
 }
 
 private struct AppleAuthUser: Decodable {

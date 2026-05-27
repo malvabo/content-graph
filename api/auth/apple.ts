@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createPublicKey, verify } from 'node:crypto';
+import { createPublicKey, verify, createHmac } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const APPLE_KEYS_URL = 'https://appleid.apple.com/auth/keys';
@@ -262,6 +262,15 @@ async function getOrCreateSession(
   };
 }
 
+function issueSessionToken(sub: string): string | null {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return null;
+  const exp = Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60;
+  const payloadB64 = Buffer.from(JSON.stringify({ sub, exp })).toString('base64url');
+  const sig = createHmac('sha256', secret).update(payloadB64).digest('base64url');
+  return `${payloadB64}.${sig}`;
+}
+
 async function persistAppleUser(
   payload: AppleTokenPayload,
   body: AppleAuthBody,
@@ -336,6 +345,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         privateEmail: payload.is_private_email ?? null,
       },
       session: sessionResult?.session ?? null,
+      sessionToken: issueSessionToken(payload.sub),
       backendStored,
       authorizationCodeReceived: Boolean(asOptionalString(body.authorizationCode)),
     });
