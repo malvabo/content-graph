@@ -1240,8 +1240,6 @@ struct ProfileView: View {
     @AppStorage("custom_templates") private var customData: Data = Data()
     @AppStorage("notifications_enabled") private var notificationsEnabled: Bool = true
     @AppStorage("appearance_dark_mode") private var darkModeEnabled: Bool = true
-    @AppStorage("simple_mode") private var simpleMode: Bool = false
-    @AppStorage("minimal_mode") private var minimalMode: Bool = false
     @AppStorage("onboarding_complete") private var onboardingComplete: Bool = false
     @State private var custom: [CustomTemplate] = []
     @State private var path: [ProfileDestination] = []
@@ -1303,18 +1301,6 @@ struct ProfileView: View {
                     ) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         darkModeEnabled.toggle()
-                    }
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparatorTint(AppInk.solid(0.06))
-                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
-
-                    SettingsRow(
-                        title: "Layout",
-                        trailing: .value(layoutLabel)
-                    ) {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        cycleLayout()
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
@@ -1524,45 +1510,6 @@ struct ProfileView: View {
         onboardingComplete = false
     }
 
-    // MARK: - Layout cycling
-    //
-    // Layout cycles Standard → Simple → Minimal 1 → Standard. Only one of
-    // the two mode flags is true at a time; "Standard" is the empty state
-    // (both false). When transitioning into a mode whose chrome differs
-    // from the current screen (the modal Profile vs. the Profile tab vs.
-    // a top-bar pill in Minimal), pre-select Profile or dismiss the modal
-    // so the user keeps seeing the same screen across the transition —
-    // same posture as the original two-state toggle.
-    private var layoutLabel: String {
-        if minimalMode { return "Minimal 1" }
-        if simpleMode { return "Simple" }
-        return "Standard"
-    }
-
-    private func cycleLayout() {
-        if minimalMode {
-            // Minimal → Standard. The modal Profile is the only way Profile
-            // is reachable in Minimal, so dismiss it and land back on the
-            // (now-classic) Profile tab.
-            minimalMode = false
-            simpleMode = false
-            if isModal {
-                selectedTab = .profile
-                dismiss()
-            }
-        } else if simpleMode {
-            // Simple → Minimal. ContentView's onChange flips the chrome;
-            // we just need to swap the flags.
-            simpleMode = false
-            minimalMode = true
-            if isModal {
-                // Stay in the modal Profile — Minimal also uses it.
-            }
-        } else {
-            // Standard → Simple. Same as the original toggle did.
-            simpleMode = true
-        }
-    }
 }
 
 private enum SettingsRowTrailing {
@@ -2454,11 +2401,6 @@ private struct SimpleCreateBar: View {
 // MARK: - Content View
 
 struct ContentView: View {
-    @AppStorage("simple_mode") private var simpleMode: Bool = false
-    /// Minimal 1: the experimental flattened layout. When on, takes
-    /// precedence over `simple_mode`. The two flags are independent so
-    /// switching back to Standard/Simple restores the user's prior choice.
-    @AppStorage("minimal_mode") private var minimalMode: Bool = false
     @State private var selectedTab: AppTab = .notes
     @State private var keyboardVisible = false
     @State private var showProfile = false
@@ -2466,7 +2408,6 @@ struct ContentView: View {
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
     @StateObject private var recordingController = RecordingController()
-    @Namespace private var tabPillNS
 
     init() {
         UITabBar.appearance().isHidden = true
@@ -2493,25 +2434,10 @@ struct ContentView: View {
                 // outer inset content appears above inner inset content.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     if !keyboardVisible && !chromeController.hideTabBar {
-                        Group {
-                            if minimalMode {
-                                // Minimal 1 shares Simple's floating mic
-                                // — voice capture is the only top-level
-                                // affordance, so a single capture button
-                                // is enough chrome.
-                                SimpleCreateBar(onTap: {
-                                    selectedTab = .notes
-                                    newNoteTrigger &+= 1
-                                })
-                            } else if simpleMode {
-                                SimpleCreateBar(onTap: {
-                                    selectedTab = .notes
-                                    newNoteTrigger &+= 1
-                                })
-                            } else {
-                                ClassicAppTabBar(selected: $selectedTab, pillNS: tabPillNS)
-                            }
-                        }
+                        SimpleCreateBar(onTap: {
+                            selectedTab = .notes
+                            newNoteTrigger &+= 1
+                        })
                         .padding(.horizontal, 16)
                         .padding(.bottom, 6)
                     }
@@ -2571,70 +2497,14 @@ struct ContentView: View {
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
-        .onChange(of: simpleMode) { _, isSimple in
-            if isSimple {
-                // Classic → Simple. Simple's TabView doesn't include
-                // .create / .profile, so move the user off those tabs.
-                // For Profile we also re-open it as the Simple-mode modal
-                // so the screen they were on stays visible across the
-                // transition. The Simple → Classic direction is handled
-                // in ProfileView's Layout row, which pre-selects the
-                // Profile tab before dismissing the modal.
-                if selectedTab == .profile {
-                    selectedTab = .notes
-                    showProfile = true
-                } else if selectedTab == .create {
-                    selectedTab = .notes
-                }
-            } else if !minimalMode {
-                // Simple → Classic (not Simple → Minimal). Tear down any
-                // Simple-only chrome left over from the previous mode.
-                // When going Simple → Minimal, leave showProfile alone:
-                // Minimal also reaches Profile through the same modal, so
-                // dismissing it mid-transition would yank the screen the
-                // user was just looking at.
-                showProfile = false
-            }
-        }
-        .onChange(of: minimalMode) { _, isMinimal in
-            // Same rationale as the simple-mode handler above — Minimal 1
-            // doesn't have a .create / .library / .profile tab, so park
-            // the selection on .notes when flipping in, and re-open the
-            // modal Profile if that's where the user was so the screen
-            // they were on stays visible across the transition.
-            if isMinimal {
-                if selectedTab == .profile {
-                    selectedTab = .notes
-                    showProfile = true
-                } else if selectedTab == .create || selectedTab == .library {
-                    selectedTab = .notes
-                }
-            } else {
-                showProfile = false
-            }
-        }
     }
 
     @ViewBuilder
     private var tabsLayer: some View {
-        if minimalMode {
-            MinimalHomePage(
-                newNoteTrigger: newNoteTrigger,
-                onProfileTap: { showProfile = true }
-            )
-        } else if simpleMode {
-            SimpleHomePage(
-                newNoteTrigger: newNoteTrigger,
-                onProfileTap: { showProfile = true }
-            )
-        } else {
-            TabView(selection: $selectedTab) {
-                NotesView().tag(AppTab.notes)
-                HomeView().tag(AppTab.create)
-                LibraryView().tag(AppTab.library)
-                ProfileView(selectedTab: $selectedTab).tag(AppTab.profile)
-            }
-        }
+        SimpleHomePage(
+            newNoteTrigger: newNoteTrigger,
+            onProfileTap: { showProfile = true }
+        )
     }
 }
 
