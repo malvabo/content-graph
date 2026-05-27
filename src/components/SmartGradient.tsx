@@ -9,15 +9,15 @@ const VARIANTS: Record<Variant, {
   presence: {
     bg: '#ffffff',
     orbs: [
-      { r: 196, g: 181, b: 253, a: 0.38, cx: 0.22, cy: 0.30, radius: 0.90, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.0, ampX: 0.10, ampY: 0.08 },
-      { r: 147, g: 197, b: 253, a: 0.28, cx: 0.72, cy: 0.62, radius: 0.85, freqX: 0.06, freqY: 0.05, phaseX: 2.2, phaseY: 0.5, ampX: 0.09, ampY: 0.10 },
+      { r: 196, g: 181, b: 253, a: 0.18, cx: 0.22, cy: 0.30, radius: 0.90, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.0, ampX: 0.10, ampY: 0.08 },
+      { r: 147, g: 197, b: 253, a: 0.13, cx: 0.72, cy: 0.62, radius: 0.85, freqX: 0.06, freqY: 0.05, phaseX: 2.2, phaseY: 0.5, ampX: 0.09, ampY: 0.10 },
     ],
   },
   warmth: {
     bg: '#ffffff',
     orbs: [
-      { r: 252, g: 165, b: 165, a: 0.30, cx: 0.28, cy: 0.35, radius: 0.90, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.2, ampX: 0.10, ampY: 0.08 },
-      { r: 252, g: 211, b:  77, a: 0.20, cx: 0.68, cy: 0.60, radius: 0.85, freqX: 0.06, freqY: 0.05, phaseX: 1.8, phaseY: 0.4, ampX: 0.09, ampY: 0.10 },
+      { r: 252, g: 165, b: 165, a: 0.15, cx: 0.28, cy: 0.35, radius: 0.90, freqX: 0.08, freqY: 0.07, phaseX: 0,   phaseY: 1.2, ampX: 0.10, ampY: 0.08 },
+      { r: 252, g: 211, b:  77, a: 0.10, cx: 0.68, cy: 0.60, radius: 0.85, freqX: 0.06, freqY: 0.05, phaseX: 1.8, phaseY: 0.4, ampX: 0.09, ampY: 0.10 },
     ],
   },
 };
@@ -97,7 +97,7 @@ export default function SmartGradient({
       />
       <svg
         aria-hidden="true"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', mixBlendMode: 'multiply', opacity: 0.18 }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', mixBlendMode: 'multiply', opacity: 0.08 }}
         xmlns="http://www.w3.org/2000/svg"
       >
         <filter id="sg-grain" x="0%" y="0%" width="100%" height="100%" colorInterpolationFilters="sRGB">
