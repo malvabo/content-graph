@@ -234,7 +234,7 @@ struct OnboardingView: View {
                     .kerning(-0.5)
                     .foregroundColor(AppText.primary)
 
-                Text("Your AI content graph")
+                Text("Framing your ideas beautifully")
                     .font(.system(size: 17, weight: .regular, design: .rounded))
                     .foregroundColor(Color.white.opacity(0.72))
                     .multilineTextAlignment(.center)
@@ -259,7 +259,7 @@ struct OnboardingView: View {
             Spacer().frame(height: 48)
 
             VStack(spacing: 12) {
-                SignInWithAppleButton(.signIn) { request in
+                SignInWithAppleButton(.continue) { request in
                     pendingNonce = appleSignIn.setupRequest(request)
                 } onCompletion: { result in
                     startAppleLoginWithResult(result)
