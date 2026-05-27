@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createPublicKey, verify, createHash } from 'node:crypto';
+import { createPublicKey, verify, createHash, createHmac } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { getAllowedOrigin } from '../_cors';
 

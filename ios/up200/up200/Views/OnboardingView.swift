@@ -1359,6 +1359,9 @@ private final class AppleSignInCoordinator: NSObject, ObservableObject {
             )
             SessionStore.shared.save(appSession)
         }
+        if let token = authResponse.sessionToken {
+            SessionTokenService.save(token)
+        }
     }
 }
 
