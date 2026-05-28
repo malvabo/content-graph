@@ -271,7 +271,10 @@ struct OnboardingView: View {
 
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onGetStarted()
+                    constellationStartedAt = Date()
+                    withAnimation(.easeOut(duration: 0.85)) {
+                        step = .constellation
+                    }
                 }) {
                     Text("Just explore")
                         .font(.app(size: 16, weight: .regular))
