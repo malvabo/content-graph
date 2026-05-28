@@ -619,6 +619,71 @@ const NOTE_TINT: Record<string, string> = {
   'twitter-single': '29,155,240',
 };
 
+/** Mini graph: note source node → platform generation nodes.
+ *  Replaces the text preview on cards that have multiple generations. */
+function MultiGenGraphThumb({ primaryKind, extraKinds }: { primaryKind: AssetKind | null; extraKinds: AssetKind[] }) {
+  const PLATFORM_COLOR: Record<AssetKind, string> = {
+    'linkedin-post':  '#4ea2e8',
+    'twitter-thread': '#5cbcf7',
+    'twitter-single': '#5cbcf7',
+  };
+  const PLATFORM_SHORT: Record<AssetKind, string> = {
+    'linkedin-post':  'LI',
+    'twitter-thread': 'TW',
+    'twitter-single': 'TW',
+  };
+
+  const allKinds: AssetKind[] = [
+    ...(primaryKind ? [primaryKind] : []),
+    ...extraKinds.filter(k => k !== primaryKind),
+  ];
+
+  const W = 220, H = 52;
+  const srcX = 18, srcY = H / 2;
+  const nodeR = 9, srcR = 7;
+  const nodeX = W - 28;
+  const count = allKinds.length;
+  // Spread nodes vertically
+  const spacing = Math.min(22, (H - 16) / Math.max(count - 1, 1));
+  const nodeYs = allKinds.map((_, i) =>
+    count === 1 ? H / 2 : H / 2 - ((count - 1) / 2) * spacing + i * spacing
+  );
+
+  return (
+    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMinYMid meet"
+      style={{ display: 'block', overflow: 'visible' }} aria-hidden>
+      {/* lines from source to each gen node */}
+      {allKinds.map((_, i) => (
+        <line key={i}
+          x1={srcX + srcR} y1={srcY}
+          x2={nodeX - nodeR} y2={nodeYs[i]}
+          stroke="rgba(255,255,255,0.14)" strokeWidth={1.2} strokeLinecap="round"
+        />
+      ))}
+      {/* source node */}
+      <circle cx={srcX} cy={srcY} r={srcR}
+        fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.28)" strokeWidth={1.2} />
+      <line x1={srcX - 3} y1={srcY} x2={srcX + 3} y2={srcY} stroke="rgba(255,255,255,0.55)" strokeWidth={1} strokeLinecap="round"/>
+      <line x1={srcX} y1={srcY - 3} x2={srcX} y2={srcY + 3} stroke="rgba(255,255,255,0.55)" strokeWidth={1} strokeLinecap="round"/>
+      {/* gen nodes */}
+      {allKinds.map((k, i) => {
+        const col = PLATFORM_COLOR[k];
+        return (
+          <g key={i}>
+            <circle cx={nodeX} cy={nodeYs[i]} r={nodeR}
+              fill={`${col}22`} stroke={col} strokeWidth={1.2} />
+            <text x={nodeX} y={nodeYs[i] + 4} textAnchor="middle"
+              fontSize={6} fontWeight={600} fill={col} fontFamily="var(--font-sans)"
+              letterSpacing="0.02em">
+              {PLATFORM_SHORT[k]}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 /** Amber folder with three fanned blue-tinted doc pages — shown on cards that
  *  have secondary-platform generations stored. */
 function FolderDocsIcon({ size = 36 }: { size?: number }) {
@@ -655,6 +720,9 @@ function NoteCard({ note, onOpen, showTranscript }: { note: VoiceNote; onOpen: (
   const isError = note.status === 'error';
   const tintRgb = showTranscript ? null : (note.lastGeneration?.kind ? NOTE_TINT[note.lastGeneration.kind] : null);
   const hasExtraGenerations = !!(note.extraGenerations && Object.values(note.extraGenerations).some(v => v && v.length > 0));
+  const extraKinds = note.extraGenerations
+    ? (Object.entries(note.extraGenerations).filter(([, v]) => v && v.length > 0).map(([k]) => k as AssetKind))
+    : [];
 
   const displayTitle = isAudioOnly && note.title === 'Untitled note' ? 'Audio recording' : note.title;
 
@@ -708,27 +776,21 @@ function NoteCard({ note, onOpen, showTranscript }: { note: VoiceNote; onOpen: (
         transition: 'border-color 220ms, filter 220ms',
       }}
     >
-      {/* Title row — title text + optional folder-with-docs badge */}
-      <div style={{ position: 'relative', zIndex: 1, width: '100%', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+      {/* Title row */}
+      <div style={{ position: 'relative', zIndex: 1, width: '100%' }}>
         <span ref={titleRef} style={{
-          flex: 1, minWidth: 0,
-          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-heading)', fontWeight: 500,
-          lineHeight: '24px',
-          color: 'rgba(255,255,255,0.92)',
           display: '-webkit-box',
           WebkitLineClamp: 2,
           WebkitBoxOrient: 'vertical',
           overflow: 'hidden',
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-heading)', fontWeight: 500,
+          lineHeight: '24px',
+          color: 'rgba(255,255,255,0.92)',
           wordBreak: 'normal', overflowWrap: 'normal',
           textAlign: 'left',
         }}>
           {displayTitle}
         </span>
-        {hasExtraGenerations && (
-          <div style={{ flexShrink: 0, marginTop: 2 }}>
-            <FolderDocsIcon size={34} />
-          </div>
-        )}
       </div>
 
       {/* Metadata — time directly under title */}
@@ -742,8 +804,15 @@ function NoteCard({ note, onOpen, showTranscript }: { note: VoiceNote; onOpen: (
         {meta}
       </span>
 
-      {/* Preview / state hint — only when the title is a single line */}
-      {showPreview && previewText && (
+      {/* Multi-gen graph replaces text preview when secondary generations exist */}
+      {hasExtraGenerations ? (
+        <div style={{ position: 'relative', zIndex: 1, width: '100%', marginTop: 4 }}>
+          <MultiGenGraphThumb
+            primaryKind={note.lastGeneration?.kind ?? null}
+            extraKinds={extraKinds}
+          />
+        </div>
+      ) : (showPreview && previewText && (
         <span style={{
           position: 'relative', zIndex: 1,
           width: '100%',
@@ -757,7 +826,7 @@ function NoteCard({ note, onOpen, showTranscript }: { note: VoiceNote; onOpen: (
         }}>
           {previewText}
         </span>
-      )}
+      ))}
     </button>
   );
 }
