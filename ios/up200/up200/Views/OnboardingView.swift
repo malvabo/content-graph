@@ -782,11 +782,9 @@ struct OnboardingView: View {
         }
     }
 
-    /// The four `.choose` options rendered as plain circles in a 2×2 grid.
-    /// Each circle has a thin white stroke — the stroke alone defines the
-    /// edge, with only a whisper of a halo for soft depth. The earlier
-    /// brighter blurred halo read as "glowing buttons," which fought the
-    /// quiet starfield behind them.
+    /// The four `.choose` options rendered as glowing semi-transparent circles
+    /// in a 2×2 grid. Each circle has a blurred halo overlay for a soft glow
+    /// effect, plus a sharp stroke edge, against the starfield background.
     private var chooseCirclesField: some View {
         struct ChooseOption {
             let label: String
@@ -855,31 +853,18 @@ struct OnboardingView: View {
                         .padding(.horizontal, 16)
                         .frame(width: circleRadius * 2, height: circleRadius * 2)
                         .background(
-                            // Mostly-opaque dark disc so the circle reads as
-                            // a discrete button rather than a transparent
-                            // ring with stars drifting through it. A bit of
-                            // alpha left so the boundary doesn't read as a
-                            // hard coal cutout against the cosmos behind.
                             Circle()
-                                .fill(Color.black.opacity(0.72))
+                                .fill(Color.black.opacity(0.35))
                         )
                         .overlay(
-                            // Whisper of a halo for a hint of depth against
-                            // the starfield — much dimmer than before so it
-                            // doesn't read as "glowing." Padding kept tight
-                            // so the bleed doesn't extend visibly past the
-                            // sharp edge.
                             Circle()
-                                .stroke(Color.white.opacity(0.06), lineWidth: 1.0)
-                                .blur(radius: 2)
-                                .padding(-2)
+                                .stroke(Color.white.opacity(0.28), lineWidth: 1.5)
+                                .blur(radius: 6)
+                                .padding(-4)
                         )
                         .overlay(
-                            // Sharp thin stroke on top — the only edge the
-                            // eye actually reads. Dialed from 0.38 → 0.20
-                            // so the ring is barely-there rather than bright.
                             Circle()
-                                .stroke(Color.white.opacity(0.20), lineWidth: 0.5)
+                                .stroke(Color.white.opacity(0.38), lineWidth: 0.8)
                         )
                         .contentShape(Circle())
                     }
