@@ -2047,7 +2047,6 @@ private struct ClassicAppTabBar: View {
 
     private let mainItems: [(AppTab, String, String)] = [
         (.notes,     "doc.text",   "Notes"),
-        (.library,   "book.closed", "Library"),
         (.profile,   "person.crop.circle", "Profile"),
     ]
 
@@ -2158,7 +2157,6 @@ private struct SimpleHomePage: View {
     var newNoteTrigger: Int = 0
     var onProfileTap: () -> Void = {}
 
-    @State private var section: AppTab = .notes
     @State private var showSearch = false
     @State private var searchText = ""
     @FocusState private var searchFocused: Bool
@@ -2170,7 +2168,6 @@ private struct SimpleHomePage: View {
 
                 VStack(spacing: 0) {
                     SimpleHomeHeader(
-                        section: $section,
                         showSearch: $showSearch,
                         searchText: $searchText,
                         searchFocused: $searchFocused,
@@ -2205,22 +2202,12 @@ private struct SimpleHomePage: View {
                         .fill(AppInk.solid(0.06))
                         .frame(height: 0.5)
 
-                    Group {
-                        if section == .notes {
-                            NotesView(
-                                newNoteTrigger: newNoteTrigger,
-                                embedded: true,
-                                externalShowSearch: $showSearch,
-                                externalSearchText: $searchText
-                            )
-                        } else {
-                            LibraryView(
-                                embedded: true,
-                                externalShowSearch: $showSearch,
-                                externalSearchText: $searchText
-                            )
-                        }
-                    }
+                    NotesView(
+                        newNoteTrigger: newNoteTrigger,
+                        embedded: true,
+                        externalShowSearch: $showSearch,
+                        externalSearchText: $searchText
+                    )
                 }
                 // Pin the whole page above the keyboard's safe area so
                 // raising / dismissing the search keyboard doesn't shove
@@ -2232,28 +2219,15 @@ private struct SimpleHomePage: View {
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
         }
-        // Section change should not leak stale search state from the
-        // previously-active section.
-        .onChange(of: section) { _, _ in
-            withAnimation(AppAnimation.standard) {
-                showSearch = false
-                searchText = ""
-            }
-            searchFocused = false
-        }
     }
 }
 
 private struct SimpleHomeHeader: View {
-    @Binding var section: AppTab
     @Binding var showSearch: Bool
     @Binding var searchText: String
     var searchFocused: FocusState<Bool>.Binding
     let onProfileTap: () -> Void
     let onSearchToggle: () -> Void
-
-    private static let selectSpring = Animation.spring(response: 0.34, dampingFraction: 0.86)
-    @Namespace private var segmentPillNS
 
     var body: some View {
         // ZStack with opacity-driven swap so the two layouts crossfade
@@ -2264,7 +2238,9 @@ private struct SimpleHomeHeader: View {
         // hit-testing change with `showSearch`.
         ZStack {
             HStack(spacing: 12) {
-                segmentedTabs
+                Text("Notes")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(AppText.primary)
                 Spacer(minLength: 8)
                 TopBarPill {
                     TopBarPillButton(
@@ -2290,7 +2266,7 @@ private struct SimpleHomeHeader: View {
 
             HStack(spacing: 12) {
                 AppSearchField(
-                    placeholder: section == .notes ? "Search notes" : "Search library",
+                    placeholder: "Search notes",
                     text: $searchText,
                     isFocused: searchFocused
                 )
@@ -2319,40 +2295,6 @@ private struct SimpleHomeHeader: View {
         .animation(AppAnimation.standard, value: showSearch)
     }
 
-    private var segmentedTabs: some View {
-        HStack(spacing: 6) {
-            segment(.notes, label: "Notes")
-            segment(.library, label: "Library")
-        }
-    }
-
-    @ViewBuilder
-    private func segment(_ tab: AppTab, label: String) -> some View {
-        let selected = section == tab
-        Button {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            withAnimation(Self.selectSpring) { section = tab }
-        } label: {
-            Text(label)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(selected ? AppText.primary : AppText.tertiary)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 9)
-                .background(
-                    ZStack {
-                        if selected {
-                            Capsule(style: .continuous)
-                                .fill(AppInk.solid(0.20))
-                                .matchedGeometryEffect(id: "homeSegmentPill", in: segmentPillNS)
-                        }
-                    }
-                )
-                .contentShape(Capsule(style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
-        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
-    }
 }
 
 // MARK: - Simple bottom create button
