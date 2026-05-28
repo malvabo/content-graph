@@ -2443,7 +2443,7 @@ struct ContentView: View {
 
     @ViewBuilder
     private var tabsLayer: some View {
-        SimpleHomePage(
+        MinimalHomePage(
             newNoteTrigger: newNoteTrigger,
             onProfileTap: { showProfile = true }
         )
