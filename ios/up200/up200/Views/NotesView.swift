@@ -368,21 +368,38 @@ private struct NoteListRow: View {
 
 private struct Waveform: View {
     let dictation: NoteDictation
-
-    private let barCount = 14
-    private let amber = BrandColor.amber
+    private let particleCount = 25
 
     var body: some View {
-        // TimelineView drives rendering — we read audioLevel directly here
-        // so no @Published binding is needed and no parent re-renders occur.
         TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let level = dictation.audioLevel
-            HStack(spacing: 3) {
-                ForEach(0..<barCount, id: \.self) { i in
-                    Capsule()
-                        .fill(amber)
-                        .frame(width: 3, height: barHeight(level: level, index: i, time: t))
+            Canvas { ctx, size in
+                let cy = size.height / 2
+                let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
+                let amplitude = amplified * cy * 0.75
+                for i in 0..<particleCount {
+                    let fi = Double(i)
+                    let progress = fi / Double(particleCount - 1)
+                    let baseX = progress * size.width
+                    let phase1 = t * 3.5 + progress * .pi * 3.0
+                    let phase2 = t * 2.1 + progress * .pi * 6.0
+                    let targetY = cy + sin(phase1) * amplitude * 0.65 + sin(phase2) * amplitude * 0.35
+                    let seed1 = fi * 13.7; let seed2 = fi * 29.1
+                    let scatterY = 1.5 + amplified * 4.0
+                    let jitterX = sin(t * 0.7 + seed1) * 1.5
+                    let jitterY = sin(t * 0.9 + seed2) * scatterY + cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4
+                    let px = baseX + jitterX; let py = targetY + jitterY
+                    let pr = pseudoRandom(i * 3)
+                    let waveMag = (sin(phase1) + 1.0) / 2.0
+                    let radius = 0.8 + pr * 1.2 + waveMag * 1.5 * amplified
+                    let normJitter = abs(jitterY) / max(scatterY * 1.5, 1.0)
+                    let proximityAlpha = max(0.0, 1.0 - normJitter)
+                    let pulse = 0.65 + 0.35 * sin(t * 1.8 + fi * 0.35)
+                    let alpha = proximityAlpha * pulse * (0.40 + amplified * 0.55)
+                    ctx.fill(Path(ellipseIn: CGRect(x: px - radius, y: py - radius,
+                                                    width: radius * 2, height: radius * 2)),
+                             with: .color(BrandColor.amber.opacity(alpha)))
                 }
             }
         }
@@ -390,12 +407,9 @@ private struct Waveform: View {
         .accessibilityHidden(true)
     }
 
-    private func barHeight(level: Float, index: Int, time: Double) -> CGFloat {
-        let phase = time * 5.0 + Double(index) * 0.55
-        let wave = (sin(phase) + 1.0) / 2.0
-        let amplified = min(1.6, pow(Double(level), 0.35) * 3.0)
-        let scaled = wave * amplified
-        return CGFloat(max(4.0, 4.0 + scaled * 22.0))
+    private func pseudoRandom(_ n: Int) -> Double {
+        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
+        return v - floor(v)
     }
 }
 
@@ -498,25 +512,40 @@ struct DictationControls: View {
 // MARK: - Voice Start Sheet
 
 struct NoteWaveform: View {
-    // Reads audioLevel from RecordingController directly inside TimelineView.
-    // No level parameter means no @Published binding — NoteVoiceSheet never
-    // re-renders from audio level changes.
     @EnvironmentObject private var recording: RecordingController
-    private let barCount = 38
+    private let particleCount = 55
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let level = recording.audioLevel
-            HStack(spacing: 2.5) {
-                ForEach(0..<barCount, id: \.self) { i in
-                    Capsule()
-                        // glowGradientBright skips the neutral-grey middle stop
-                        // of `glowGradient`, so the tall center bars read as
-                        // warm amber instead of washed-out white.
-                        .fill(BrandColor.glowGradientBright)
-                        .frame(width: 3, height: barHeight(level: level, index: i, time: t))
-                        .opacity(barOpacity(index: i))
+            Canvas { ctx, size in
+                let cy = size.height / 2
+                let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
+                let amplitude = amplified * cy * 0.80
+                for i in 0..<particleCount {
+                    let fi = Double(i)
+                    let progress = fi / Double(particleCount - 1)
+                    let baseX = progress * size.width
+                    let envelope = sin(progress * .pi)
+                    let phase1 = t * 3.5 + progress * .pi * 4.0
+                    let phase2 = t * 2.1 + progress * .pi * 7.0
+                    let targetY = cy + sin(phase1) * amplitude * 0.65 * envelope + sin(phase2) * amplitude * 0.35 * envelope
+                    let seed1 = fi * 13.7; let seed2 = fi * 29.1
+                    let scatterY = 4.0 + amplified * 10.0
+                    let jitterX = sin(t * 0.7 + seed1) * 2.5
+                    let jitterY = sin(t * 0.9 + seed2) * scatterY + cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4
+                    let px = baseX + jitterX; let py = targetY + jitterY
+                    let pr = pseudoRandom(i * 3)
+                    let waveMag = (sin(phase1) + 1.0) / 2.0
+                    let radius = 1.0 + pr * 1.8 + waveMag * 2.0 * amplified
+                    let normJitter = abs(jitterY) / max(scatterY * 1.5, 1.0)
+                    let proximityAlpha = max(0.0, 1.0 - normJitter) * envelope
+                    let pulse = 0.65 + 0.35 * sin(t * 1.8 + fi * 0.35)
+                    let alpha = proximityAlpha * pulse * (0.35 + amplified * 0.60)
+                    ctx.fill(Path(ellipseIn: CGRect(x: px - radius, y: py - radius,
+                                                    width: radius * 2, height: radius * 2)),
+                             with: .color(BrandColor.amber.opacity(alpha)))
                 }
             }
         }
@@ -524,20 +553,9 @@ struct NoteWaveform: View {
         .accessibilityHidden(true)
     }
 
-    private func barHeight(level: Float, index: Int, time: Double) -> CGFloat {
-        let pos = Double(index) / Double(barCount - 1)
-        let envelope = sin(pos * .pi)
-        let phase1 = time * 4.5 + Double(index) * 0.42
-        let phase2 = time * 2.8 + Double(index) * 0.65
-        let wave = (sin(phase1) * 0.65 + sin(phase2) * 0.35 + 1.0) / 2.0
-        let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
-        let dynamic = wave * amplified * envelope
-        return 3 + CGFloat(dynamic) * 72
-    }
-
-    private func barOpacity(index: Int) -> Double {
-        let pos = Double(index) / Double(barCount - 1)
-        return 0.55 + sin(pos * .pi) * 0.45
+    private func pseudoRandom(_ n: Int) -> Double {
+        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
+        return v - floor(v)
     }
 }
 
