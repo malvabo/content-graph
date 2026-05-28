@@ -60,6 +60,7 @@ let allFormats: [ContentFormat] = [
     ContentFormat(id: "landing",        label: "Landing Page",       description: "Headline, sections and CTA copy"),
     ContentFormat(id: "twitter-single", label: "Twitter Single",     description: "Most quotable insight, one tweet"),
     ContentFormat(id: "video",          label: "Video Script",       description: "AI video generation script"),
+    ContentFormat(id: "message",        label: "Message",            description: "Short conversational message or text"),
 ]
 
 private struct ContentTemplate: Identifiable {
@@ -320,6 +321,8 @@ struct ContentGenerator {
             return "You are a conversion copywriter. Write landing page copy: Hero headline + subheadline, 3 benefit blocks (bold title + 1-sentence description), social proof placeholder, CTA button text + supporting micro-copy."
         case "video":
             return "You are a short-form video script writer. Write a 60–90 second script: HOOK (5s bold statement), PROBLEM (10s), SOLUTION (30s with 3 points), CTA (15s). Include [VISUAL] direction notes."
+        case "message":
+            return "You are a concise messaging assistant. Write a short, natural message (1–4 sentences) in a warm conversational tone, as if texting or messaging a friend or colleague. No subject line, no sign-off, no formatting — just the message text."
         default:
             return "You are a professional content writer. Write clear, high-quality content based on the provided source material."
         }
