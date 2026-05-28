@@ -357,17 +357,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const backendStored = await persistAppleUser(payload, body, sessionResult?.supabaseUserId ?? null);
 
+    if (!sessionResult) {
+      return res.status(500).json({ error: 'Sign-in verified but session could not be created. Please try again.' });
+    }
+
+    const sessionToken = issueSessionToken(payload.sub);
+    const sessionTokenExpiresAt = sessionToken
+      ? Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60
+      : null;
+
     return res.status(200).json({
       user: {
         id: payload.sub,
-        supabaseId: sessionResult?.supabaseUserId ?? null,
+        supabaseId: sessionResult.supabaseUserId,
         email: payload.email ?? asOptionalString(body.email),
         fullName: asOptionalString(body.fullName),
         emailVerified: payload.email_verified ?? null,
         privateEmail: payload.is_private_email ?? null,
       },
-      session: sessionResult?.session ?? null,
-      sessionToken: issueSessionToken(payload.sub),
+      session: sessionResult.session,
+      sessionToken,
+      sessionTokenExpiresAt,
       backendStored,
       authorizationCodeReceived: Boolean(asOptionalString(body.authorizationCode)),
     });

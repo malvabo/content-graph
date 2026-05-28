@@ -492,6 +492,7 @@ func anthropicErrorMessage(from data: Data) -> String {
 
 struct SessionTokenService {
     private static let account = "com.up200.app.session_token"
+    static let expiresAtKey = "com.up200.app.session_token_expires_at"
 
     @discardableResult
     static func save(_ value: String) -> Bool {
@@ -520,12 +521,47 @@ struct SessionTokenService {
         return value
     }
 
+    /// True when the stored token will expire within the next 7 days.
+    static var needsRefresh: Bool {
+        let exp = UserDefaults.standard.integer(forKey: expiresAtKey)
+        guard exp > 0 else { return false }
+        let sevenDays: TimeInterval = 7 * 24 * 60 * 60
+        return TimeInterval(exp) - Date().timeIntervalSince1970 < sevenDays
+    }
+
     static func delete() {
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrAccount: account
         ]
         SecItemDelete(query as CFDictionary)
+        UserDefaults.standard.removeObject(forKey: expiresAtKey)
+    }
+}
+
+// MARK: - Session token refresh
+
+/// Exchanges a near-expiry HMAC session token for a fresh one.
+/// Called by AnthropicClient when the proxy returns 401.
+enum SessionTokenRefresher {
+    private struct RefreshResponse: Decodable {
+        let sessionToken: String
+        let sessionTokenExpiresAt: Int
+    }
+
+    static func refresh() async {
+        guard let oldToken = SessionTokenService.load() else { return }
+        var req = URLRequest(url: AppConfig.API.tokenRefresh)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("Bearer \(oldToken)", forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        guard let (data, response) = try? await URLSession.shared.data(for: req),
+              let http = response as? HTTPURLResponse,
+              http.statusCode == 200,
+              let body = try? JSONDecoder().decode(RefreshResponse.self, from: data) else { return }
+        SessionTokenService.save(body.sessionToken)
+        UserDefaults.standard.set(body.sessionTokenExpiresAt, forKey: SessionTokenService.expiresAtKey)
     }
 }
 
@@ -533,18 +569,11 @@ struct SessionTokenService {
 /// token is present) or directly at the Anthropic API (BYOK legacy path).
 /// Returns nil when neither credential is available.
 enum AnthropicClient {
-    private static let proxyURL = URL(string: "https://content-graph-five.vercel.app/api/claude")!
     private static let directURL = URL(string: "https://api.anthropic.com/v1/messages")!
 
     static func makeRequest(body: [String: Any], timeout: TimeInterval = 60) -> URLRequest? {
         if let token = SessionTokenService.load() {
-            var req = URLRequest(url: proxyURL)
-            req.httpMethod = "POST"
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            req.timeoutInterval = timeout
-            req.httpBody = try? JSONSerialization.data(withJSONObject: body)
-            return req
+            return proxyRequest(token: token, body: body, timeout: timeout)
         }
         if let key = KeychainService.load(), !key.isEmpty {
             var req = URLRequest(url: directURL)
@@ -557,6 +586,16 @@ enum AnthropicClient {
             return req
         }
         return nil
+    }
+
+    static func proxyRequest(token: String, body: [String: Any], timeout: TimeInterval) -> URLRequest {
+        var req = URLRequest(url: AppConfig.API.claude)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = timeout
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        return req
     }
 
     static var isConfigured: Bool {

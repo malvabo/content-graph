@@ -22,11 +22,10 @@ type ClientNote = {
 };
 
 function getSupabase(token: string) {
-  return createClient(
-    process.env.VITE_SUPABASE_URL!,
-    process.env.VITE_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
-  );
+  const url = process.env.VITE_SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { global: { headers: { Authorization: `Bearer ${token}` } } });
 }
 
 function getToken(req: VercelRequest): string | null {
@@ -46,6 +45,9 @@ function toClient(row: NoteRow) {
   };
 }
 
+const MAX_NOTES = 500;
+const MAX_BODY_BYTES = 100_000;
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = getAllowedOrigin(req);
   if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
@@ -57,6 +59,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
   const sb = getSupabase(token);
+  if (!sb) return res.status(503).json({ error: 'Service not configured' });
+
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return res.status(401).json({ error: 'Invalid token' });
 
@@ -75,6 +79,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const clientNotes = req.body?.notes;
       if (!Array.isArray(clientNotes)) {
         return res.status(400).json({ error: 'notes array required' });
+      }
+      if (clientNotes.length > MAX_NOTES) {
+        return res.status(400).json({ error: `Too many notes (max ${MAX_NOTES})` });
       }
 
       if (clientNotes.length > 0) {
@@ -101,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .map((n) => ({
             id: n.id as string,
             user_id: user.id,
-            body: typeof n.body === 'string' ? n.body : '',
+            body: typeof n.body === 'string' ? n.body.slice(0, MAX_BODY_BYTES) : '',
             updated_at: typeof n.updatedAt === 'string' ? n.updatedAt : new Date().toISOString(),
             is_pinned: Boolean(n.isPinned),
             tags: Array.isArray(n.tags) ? (n.tags as string[]) : [],
@@ -128,8 +135,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
-    const err = e as { message?: string; code?: string };
+    const err = e as { message?: string };
     console.error('notes handler:', err);
-    return res.status(500).json({ error: err?.message ?? 'Server error', code: err?.code });
+    return res.status(500).json({ error: err?.message ?? 'Server error' });
   }
 }

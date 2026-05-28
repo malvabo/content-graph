@@ -2,7 +2,13 @@
   "buildCommand": "vite build",
   "outputDirectory": "dist",
   "functions": {
-    "api/claude.ts": { "maxDuration": 60 }
+    "api/claude.ts":              { "maxDuration": 60 },
+    "api/auth/apple.ts":          { "maxDuration": 30 },
+    "api/auth/refresh.ts":        { "maxDuration": 15 },
+    "api/auth/token-refresh.ts":  { "maxDuration": 10 },
+    "api/notes.ts":               { "maxDuration": 30 },
+    "api/generations.ts":         { "maxDuration": 30 },
+    "api/workflows.ts":           { "maxDuration": 20 }
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },

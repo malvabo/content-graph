@@ -1,9 +1,21 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
+import { getAllowedOrigin } from './_cors';
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_VERSION = '2023-06-01';
 const FREE_LIMIT = parseInt(process.env.FREE_GENERATION_LIMIT ?? '3', 10);
+const MAX_TOKENS_CAP = 8192;
+const ALLOWED_MODELS = new Set([
+  'claude-haiku-4-5',
+  'claude-haiku-4-5-20251001',
+  'claude-sonnet-4-5',
+  'claude-sonnet-4-5-20251001',
+  'claude-sonnet-4-6',
+  'claude-opus-4-5',
+  'claude-opus-4-8',
+]);
 
 function verifySessionToken(token: string): string | null {
   const secret = process.env.JWT_SECRET;
@@ -44,7 +56,7 @@ function getSupabase() {
 
 async function checkLimit(sub: string): Promise<boolean> {
   const sb = getSupabase();
-  if (!sb) return true; // if Supabase not configured, allow through
+  if (!sb) return false; // fail closed — don't allow if rate-limit DB is unavailable
 
   const { data } = await sb
     .from('ai_generation_counts')
@@ -63,6 +75,8 @@ async function incrementUsage(sub: string): Promise<void> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const origin = getAllowedOrigin(req);
+  if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -99,6 +113,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!model || !max_tokens || !messages) {
     return res.status(400).json({ error: 'model, max_tokens, and messages are required' });
   }
+  if (!ALLOWED_MODELS.has(model)) {
+    return res.status(400).json({ error: 'Unsupported model' });
+  }
+  if (typeof max_tokens !== 'number' || max_tokens < 1 || max_tokens > MAX_TOKENS_CAP) {
+    return res.status(400).json({ error: `max_tokens must be between 1 and ${MAX_TOKENS_CAP}` });
+  }
 
   let upstream: Response;
   try {
@@ -107,7 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'anthropic-version': ANTHROPIC_VERSION,
       },
       body: JSON.stringify({ model, max_tokens, system, messages, stream }),
     });

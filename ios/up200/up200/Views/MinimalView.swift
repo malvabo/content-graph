@@ -686,9 +686,8 @@ struct MinimalNoteDetailPage: View {
                     }
                     if let gen = currentGeneration {
                         Button(role: .destructive) {
-                            MinimalGenStore.delete(id: gen.id)
-                            // store change triggers a reload that snaps
-                            // selection back to a safe index.
+                            let genId = gen.id
+                            Task { await SyncManager.shared.deleteGeneration(id: genId) }
                         } label: {
                             Label("Delete this generation", systemImage: "trash")
                         }
@@ -1092,9 +1091,10 @@ struct MinimalNoteDetailPage: View {
     }
 
     private func performDelete() {
-        MinimalGenStore.deleteAll(forNoteID: note.id)
+        let noteId = note.id
+        Task { await SyncManager.shared.deleteAllGenerations(forNoteID: noteId) }
         var fresh = NotesStore.load()
-        fresh.removeAll { $0.id == note.id }
+        fresh.removeAll { $0.id == noteId }
         NotesStore.saveInBackground(fresh)
         dismiss()
     }

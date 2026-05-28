@@ -33,7 +33,7 @@ enum AuthClientError: LocalizedError {
 actor AuthClient {
     static let shared = AuthClient()
 
-    private let refreshURL = URL(string: "https://content-graph-five.vercel.app/api/auth/refresh")!
+    private let refreshURL = AppConfig.API.authRefresh
     private var refreshTask: Task<AppSession, Error>?
 
     private init() {}
@@ -80,17 +80,13 @@ actor AuthClient {
             return session
         }
 
-        let task = Task<AppSession, Error> { [self] in
-            defer { Task { await self.clearRefreshTask() } }
+        let task = Task<AppSession, Error> {
             return try await self.performRefresh(using: SessionStore.shared.load()?.refreshToken ?? "")
         }
         refreshTask = task
+        defer { refreshTask = nil }
         session = try await task.value
         return session
-    }
-
-    private func clearRefreshTask() {
-        refreshTask = nil
     }
 
     private func performRefresh(using refreshToken: String) async throws -> AppSession {

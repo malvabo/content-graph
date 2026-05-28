@@ -24,11 +24,10 @@ type ClientGen = {
 };
 
 function getSupabase(token: string) {
-  return createClient(
-    process.env.VITE_SUPABASE_URL!,
-    process.env.VITE_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
-  );
+  const url = process.env.VITE_SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { global: { headers: { Authorization: `Bearer ${token}` } } });
 }
 
 function getToken(req: VercelRequest): string | null {
@@ -49,10 +48,13 @@ function toClient(row: GenRow) {
   };
 }
 
+const MAX_ITEMS = 500;
+const MAX_CONTENT_BYTES = 100_000;
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = getAllowedOrigin(req);
   if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -60,6 +62,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
   const sb = getSupabase(token);
+  if (!sb) return res.status(503).json({ error: 'Service not configured' });
+
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return res.status(401).json({ error: 'Invalid token' });
 
@@ -79,6 +83,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!Array.isArray(clientGens)) {
         return res.status(400).json({ error: 'generations array required' });
       }
+      if (clientGens.length > MAX_ITEMS) {
+        return res.status(400).json({ error: `Too many generations (max ${MAX_ITEMS})` });
+      }
 
       if (clientGens.length > 0) {
         const toUpsert = (clientGens as ClientGen[])
@@ -90,7 +97,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             source_note_ids: Array.isArray(g.sourceNoteIds) ? (g.sourceNoteIds as string[]) : [],
             source_labels: Array.isArray(g.sourceLabels) ? (g.sourceLabels as string[]) : [],
             output_type: typeof g.outputType === 'string' ? g.outputType : '',
-            content: typeof g.content === 'string' ? g.content : '',
+            content: typeof g.content === 'string'
+              ? g.content.slice(0, MAX_CONTENT_BYTES)
+              : '',
             date: typeof g.date === 'string' ? g.date : new Date().toISOString(),
           }));
 
@@ -111,10 +120,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json({ generations: (all ?? []).map(r => toClient(r as GenRow)) });
     }
 
+    if (req.method === 'DELETE') {
+      // Supports both /api/generations/:id (path param via query) and body {id}.
+      const id = (typeof req.query.id === 'string' ? req.query.id : null)
+        ?? (typeof req.body?.id === 'string' ? req.body.id : null);
+      if (!id) return res.status(400).json({ error: 'id required' });
+      const { error } = await sb
+        .from('ios_generations')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return res.status(204).end();
+    }
+
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
-    const err = e as { message?: string; code?: string };
+    const err = e as { message?: string };
     console.error('generations handler:', err);
-    return res.status(500).json({ error: err?.message ?? 'Server error', code: err?.code });
+    return res.status(500).json({ error: err?.message ?? 'Server error' });
   }
 }

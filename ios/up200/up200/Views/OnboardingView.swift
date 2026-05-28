@@ -1259,7 +1259,7 @@ private struct PostGenerationAuthView: View {
 }
 
 private final class AppleSignInCoordinator: NSObject, ObservableObject {
-    private let authEndpoint = URL(string: "https://content-graph-five.vercel.app/api/auth/apple")!
+    private let authEndpoint = AppConfig.API.appleAuth
 
     // Called from SignInWithAppleButton's onRequest closure.
     // Sets the nonce on the request and returns the raw hex nonce to store in view state.
@@ -1321,6 +1321,7 @@ private final class AppleSignInCoordinator: NSObject, ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(body)
+        request.timeoutInterval = 30
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -1334,20 +1335,25 @@ private final class AppleSignInCoordinator: NSObject, ObservableObject {
 
         let authResponse = try JSONDecoder().decode(AppleAuthResponse.self, from: data)
 
-        if let session = authResponse.session,
-           let supabaseId = authResponse.user.supabaseId {
-            let appSession = AppSession(
-                accessToken: session.accessToken,
-                refreshToken: session.refreshToken,
-                expiresAt: session.expiresAt,
-                supabaseUserId: supabaseId,
-                email: authResponse.user.email,
-                fullName: authResponse.user.fullName
-            )
-            SessionStore.shared.save(appSession)
+        guard let session = authResponse.session,
+              let supabaseId = authResponse.user.supabaseId else {
+            throw AppleSignInError.backend("Sign-in succeeded but no session was created. Please try again.")
         }
+
+        SessionStore.shared.save(AppSession(
+            accessToken: session.accessToken,
+            refreshToken: session.refreshToken,
+            expiresAt: session.expiresAt,
+            supabaseUserId: supabaseId,
+            email: authResponse.user.email,
+            fullName: authResponse.user.fullName
+        ))
+
         if let token = authResponse.sessionToken {
             SessionTokenService.save(token)
+        }
+        if let expiresAt = authResponse.sessionTokenExpiresAt {
+            UserDefaults.standard.set(expiresAt, forKey: SessionTokenService.expiresAtKey)
         }
     }
 }
@@ -1382,6 +1388,7 @@ private struct AppleAuthResponse: Decodable {
     let user: AppleAuthUser
     let session: AppleAuthSession?
     let sessionToken: String?
+    let sessionTokenExpiresAt: Int?
 }
 
 private struct AppleAuthUser: Decodable {
