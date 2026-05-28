@@ -543,15 +543,14 @@ export function VoiceRecordSheet({ isOpen, onClose, onSave }: {
     type WindowWithSR = Window & { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown };
     const SRctor = (window as unknown as WindowWithSR).SpeechRecognition ?? (window as unknown as WindowWithSR).webkitSpeechRecognition;
     if (!SRctor) {
-      // Without SpeechRecognition this sheet has no transcription fallback,
-      // so entering 'recording' would leave the user stuck at "Tap orb to
-      // record" forever after stopping. Tell them up front.
       setUnsupportedMsg('Voice recording isn\'t supported on this browser. Try Safari on iOS or Chrome on desktop.');
       return;
     }
+    // Stop any lingering instance before starting a new one.
+    try { recognitionRef.current?.stop?.(); } catch { /* noop */ }
+    recognitionRef.current = null;
     setUnsupportedMsg(null);
     setSeconds(0); setTranscript('');
-    setRecording(true);
     type RecLike = { continuous: boolean; interimResults: boolean; onresult: (e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void; start: () => void; stop: () => void };
     const rec = new (SRctor as unknown as new () => RecLike)();
     rec.continuous = true; rec.interimResults = true;
@@ -560,7 +559,8 @@ export function VoiceRecordSheet({ isOpen, onClose, onSave }: {
       for (let i = 0; i < e.results.length; i++) full += e.results[i][0].transcript + ' ';
       setTranscript(full.trim());
     };
-    try { rec.start(); recognitionRef.current = rec; } catch { /* noop */ }
+    // Only enter recording state after the engine actually starts.
+    try { rec.start(); recognitionRef.current = rec; setRecording(true); } catch { /* noop */ }
   };
   const stopRec = () => {
     setRecording(false);
