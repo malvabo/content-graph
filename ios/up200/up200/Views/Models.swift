@@ -485,6 +485,9 @@ func anthropicErrorMessage(from data: Data) -> String {
     if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
        let err = json["error"] as? [String: Any],
        let msg = err["message"] as? String {
+        if err["type"] as? String == "limit_exceeded" {
+            return "\(msg) To keep going, add your Anthropic API key in Settings → Anthropic API key."
+        }
         return msg
     }
     return String(data: data, encoding: .utf8).map { String($0.prefix(200)) } ?? ""
