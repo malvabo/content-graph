@@ -454,7 +454,8 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
 
   useEffect(() => {
     let actx: AudioContext | null = null;
-    let levelRaf: number;
+    let levelRaf = 0;
+    let cancelled = false;
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     if (SpeechRecognition) {
       try {
@@ -480,6 +481,8 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
     }
     let capturedStream: MediaStream | null = null;
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      // Cleanup already ran (fast cancel) — release the stream immediately.
+      if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
       capturedStream = stream;
       try {
         actx = new AudioContext();
@@ -496,6 +499,7 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
       } catch { /* noop */ }
     }).catch(onCancel);
     return () => {
+      cancelled = true;
       shouldRestartRef2.current = false;
       try { recognitionRef2.current?.stop(); } catch { /* noop */ }
       cancelAnimationFrame(levelRaf);
