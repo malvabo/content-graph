@@ -39,12 +39,12 @@ const PLATFORM_GLOW: Record<AssetKind, { rgb: string; accent: string; dur: numbe
  * pattern (editable text, length indicator, Copy chip, Regenerate). No card,
  * no border — just rows.
  */
-function SecondaryGenRow({ kind, transcript, onTextChange }: { kind: AssetKind; transcript: string; onTextChange?: (kind: AssetKind, text: string) => void }) {
+function SecondaryGenRow({ kind, transcript, onTextChange, initialText }: { kind: AssetKind; transcript: string; onTextChange?: (kind: AssetKind, text: string) => void; initialText?: string }) {
   const meta = PLATFORM_GLOW[kind];
-  const [text, setText] = useState('');
-  const [originalText, setOriginalText] = useState('');
+  const [text, setText] = useState(initialText ?? '');
+  const [originalText, setOriginalText] = useState(initialText ?? '');
   const [isStreaming, setIsStreaming] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(!!initialText);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement>(null);
@@ -619,11 +619,42 @@ const NOTE_TINT: Record<string, string> = {
   'twitter-single': '29,155,240',
 };
 
+/** Amber folder with three fanned blue-tinted doc pages — shown on cards that
+ *  have secondary-platform generations stored. */
+function FolderDocsIcon({ size = 36 }: { size?: number }) {
+  const h = Math.round(size * 35 / 40);
+  return (
+    <svg width={size} height={h} viewBox="0 0 40 35" fill="none" aria-hidden>
+      {/* Folder back — behind docs */}
+      <rect x="2" y="15" width="36" height="18" rx="3"
+        fill="rgba(255,195,65,0.18)" stroke="rgba(255,195,65,0.36)" strokeWidth="1.2"/>
+      <path d="M2 15 L2 12 Q2 10 4 10 L14 10 L16.5 15 Z"
+        fill="rgba(255,195,65,0.24)" stroke="rgba(255,195,65,0.36)" strokeWidth="1.2" strokeLinejoin="round"/>
+      {/* Doc 3 — leftmost, angled back-left */}
+      <rect x="9" y="2" width="11" height="17" rx="2"
+        fill="rgba(148,176,255,0.20)" stroke="rgba(148,176,255,0.38)" strokeWidth="1"
+        transform="rotate(-13 14.5 10.5)"/>
+      {/* Doc 2 — center, slight left lean */}
+      <rect x="15" y="1" width="11" height="17" rx="2"
+        fill="rgba(160,190,255,0.26)" stroke="rgba(160,190,255,0.46)" strokeWidth="1"
+        transform="rotate(-3 20.5 9.5)"/>
+      {/* Doc 1 — rightmost, slight right lean */}
+      <rect x="21" y="2" width="11" height="17" rx="2"
+        fill="rgba(172,202,255,0.32)" stroke="rgba(172,202,255,0.54)" strokeWidth="1"
+        transform="rotate(7 26.5 10.5)"/>
+      {/* Folder front face — drawn last, covers doc bottoms */}
+      <rect x="2" y="18" width="36" height="15" rx="3"
+        fill="rgba(255,200,72,0.21)" stroke="rgba(255,200,72,0.36)" strokeWidth="1.2"/>
+    </svg>
+  );
+}
+
 function NoteCard({ note, onOpen, showTranscript }: { note: VoiceNote; onOpen: () => void; showTranscript?: boolean }) {
   const isTranscribing = note.status === 'transcribing';
   const isAudioOnly = note.status === 'ready' && !note.transcript;
   const isError = note.status === 'error';
   const tintRgb = showTranscript ? null : (note.lastGeneration?.kind ? NOTE_TINT[note.lastGeneration.kind] : null);
+  const hasExtraGenerations = !!(note.extraGenerations && Object.values(note.extraGenerations).some(v => v && v.length > 0));
 
   const displayTitle = isAudioOnly && note.title === 'Untitled note' ? 'Audio recording' : note.title;
 
@@ -677,22 +708,28 @@ function NoteCard({ note, onOpen, showTranscript }: { note: VoiceNote; onOpen: (
         transition: 'border-color 220ms, filter 220ms',
       }}
     >
-      {/* Title — clamped to 2 lines, broken at word boundaries */}
-      <span ref={titleRef} style={{
-        position: 'relative', zIndex: 1,
-        width: '100%',
-        fontFamily: 'var(--font-sans)', fontSize: 'var(--text-heading)', fontWeight: 500,
-        lineHeight: '24px',
-        color: 'rgba(255,255,255,0.92)',
-        display: '-webkit-box',
-        WebkitLineClamp: 2,
-        WebkitBoxOrient: 'vertical',
-        overflow: 'hidden',
-        wordBreak: 'normal', overflowWrap: 'normal',
-        textAlign: 'left',
-      }}>
-        {displayTitle}
-      </span>
+      {/* Title row — title text + optional folder-with-docs badge */}
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        <span ref={titleRef} style={{
+          flex: 1, minWidth: 0,
+          fontFamily: 'var(--font-sans)', fontSize: 'var(--text-heading)', fontWeight: 500,
+          lineHeight: '24px',
+          color: 'rgba(255,255,255,0.92)',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          wordBreak: 'normal', overflowWrap: 'normal',
+          textAlign: 'left',
+        }}>
+          {displayTitle}
+        </span>
+        {hasExtraGenerations && (
+          <div style={{ flexShrink: 0, marginTop: 2 }}>
+            <FolderDocsIcon size={34} />
+          </div>
+        )}
+      </div>
 
       {/* Metadata — time directly under title */}
       <span style={{
@@ -862,7 +899,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   // Delete confirmation
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   // Track secondary gen text per kind so 'Export all' can combine everything.
-  const [secondaryGens, setSecondaryGens] = useState<Partial<Record<AssetKind, string>>>({});
+  const [secondaryGens, setSecondaryGens] = useState<Partial<Record<AssetKind, string>>>(note.extraGenerations ?? {});
   const [exportToast, setExportToast] = useState<string | null>(null);
   // Editable-field affordances on the primary post
   const [postFocused, setPostFocused] = useState(false);
@@ -1830,7 +1867,16 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                 Also generate for…
               </div>
               {ALL_KINDS.filter(k => k !== gen.kind).map(k => (
-                <SecondaryGenRow key={k} kind={k} transcript={note.transcript} onTextChange={(kk, t) => setSecondaryGens(s => ({ ...s, [kk]: t }))} />
+                <SecondaryGenRow
+                  key={k}
+                  kind={k}
+                  transcript={note.transcript}
+                  initialText={note.extraGenerations?.[k]}
+                  onTextChange={(kk, t) => {
+                    setSecondaryGens(s => ({ ...s, [kk]: t }));
+                    if (t) updateNote(note.id, { extraGenerations: { ...(note.extraGenerations ?? {}), [kk]: t } });
+                  }}
+                />
               ))}
             </div>
           </>

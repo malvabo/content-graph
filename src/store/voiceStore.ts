@@ -20,6 +20,8 @@ export interface VoiceNote {
   /** Last successful generation — persisted so the user doesn't lose an asset
    *  they just crafted on mobile if they scroll the card out of view or reload. */
   lastGeneration?: GeneratedAsset;
+  /** Secondary platform generations created via "Also generate for…" */
+  extraGenerations?: Partial<Record<GeneratedAssetKind, string>>;
 }
 
 interface VoiceState {
