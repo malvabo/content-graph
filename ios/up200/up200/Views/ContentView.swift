@@ -1963,7 +1963,8 @@ private struct TemplatePromptEnhancer {
             "model": "claude-sonnet-4-6",
             "max_tokens": 600,
             "system": system,
-            "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]]
+            "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]],
+            "is_helper": true
         ]
         guard let req = AnthropicClient.makeRequest(body: body) else {
             return .failure(.http(401, "Not signed in"))
@@ -2018,7 +2019,8 @@ private struct TemplatePromptEnhancer {
             "model": "claude-sonnet-4-6",
             "max_tokens": 30,
             "system": system,
-            "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]]
+            "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]],
+            "is_helper": true
         ]
         guard let req = AnthropicClient.makeRequest(body: body, timeout: 30) else {
             return .failure(.http(401, "Not signed in"))

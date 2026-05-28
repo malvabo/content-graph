@@ -88,26 +88,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sub = verifySessionToken(auth.slice(7));
   if (!sub) return res.status(401).json({ error: 'Invalid or expired session' });
 
-  const allowed = await checkLimit(sub);
-  if (!allowed) {
-    return res.status(402).json({
-      type: 'error',
-      error: {
-        type: 'limit_exceeded',
-        message: `You've used all ${FREE_LIMIT} free generations.`,
-      },
-    });
-  }
-
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Server misconfigured' });
 
-  const { model, max_tokens, system, messages, stream } = req.body as {
+  const { model, max_tokens, system, messages, stream, is_helper } = req.body as {
     model?: string;
     max_tokens?: number;
     system?: string;
     messages?: unknown[];
     stream?: boolean;
+    is_helper?: boolean;
   };
 
   if (!model || !max_tokens || !messages) {
@@ -118,6 +108,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (typeof max_tokens !== 'number' || max_tokens < 1 || max_tokens > MAX_TOKENS_CAP) {
     return res.status(400).json({ error: `max_tokens must be between 1 and ${MAX_TOKENS_CAP}` });
+  }
+
+  // Helper calls (template title/prompt enhancement) are exempt from the
+  // free-generation limit — they're internal authoring utilities capped at
+  // low token counts, not the user-visible generate/chat/quick-edit features.
+  const skipLimit = is_helper === true && max_tokens <= 1000;
+
+  if (!skipLimit) {
+    const allowed = await checkLimit(sub);
+    if (!allowed) {
+      return res.status(402).json({
+        type: 'error',
+        error: {
+          type: 'limit_exceeded',
+          message: `You've used all ${FREE_LIMIT} free generations.`,
+        },
+      });
+    }
   }
 
   let upstream: Response;
@@ -136,7 +144,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(502).json({ error: err?.message ?? 'Upstream fetch failed' });
   }
 
-  if (upstream.status === 200) {
+  if (!skipLimit && upstream.status === 200) {
     await incrementUsage(sub);
   }
 
