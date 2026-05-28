@@ -470,6 +470,13 @@ struct OnboardingView: View {
             Spacer().frame(height: 24)
 
             captureHeadline
+                .padding(.vertical, 10)
+                .padding(.horizontal, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.black.opacity(0.40))
+                        .blur(radius: 20)
+                )
                 .padding(.horizontal, 28)
                 .padding(.top, 12)
 
@@ -600,18 +607,12 @@ struct OnboardingView: View {
                 .lineSpacing(4)
                 .transition(.opacity)
         case .choose:
-            VStack(spacing: 6) {
-                Text("Shaping your first idea\u{2026}")
-                    .font(.lora(size: 20, weight: .medium))
-                    .kerning(-0.3)
-                    .foregroundColor(AppText.primary)
-                Text("What do you want to create?")
-                    .font(.lora(size: 20, weight: .medium))
-                    .kerning(-0.3)
-                    .foregroundColor(Color.white.opacity(0.72))
-            }
-            .multilineTextAlignment(.center)
-            .transition(.opacity)
+            Text("What do you want to create?")
+                .font(.lora(size: 20, weight: .medium))
+                .kerning(-0.3)
+                .foregroundColor(AppText.primary)
+                .multilineTextAlignment(.center)
+                .transition(.opacity)
         case .generating:
             // The "What do you want to create?" question is past — the user
             // has picked. Keeping just the reassurance line lets the cloud
@@ -1468,39 +1469,62 @@ private struct StarfieldBlurb: View {
 /// later inside the app.
 private struct OnboardingRecordingWaveform: View {
     let recorder: VoiceRecorder
-    private let barCount = 38
+    private let particleCount = 80
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let level = recorder.audioLevel
-            HStack(spacing: 3) {
-                ForEach(0..<barCount, id: \.self) { i in
-                    Capsule()
-                        .fill(BrandColor.amber.opacity(barOpacity(index: i)))
-                        .frame(width: 3, height: barHeight(level: level, index: i, time: t))
+            Canvas { ctx, size in
+                let cy = size.height / 2
+                let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
+                let amplitude = amplified * cy * 0.80
+
+                for i in 0..<particleCount {
+                    let fi = Double(i)
+                    let progress = fi / Double(particleCount - 1)
+                    let baseX = progress * size.width
+
+                    let phase1 = t * 3.5 + progress * .pi * 4.0
+                    let phase2 = t * 2.1 + progress * .pi * 7.0
+                    let targetY = cy
+                        + sin(phase1) * amplitude * 0.65
+                        + sin(phase2) * amplitude * 0.35
+
+                    let seed1 = fi * 13.7
+                    let seed2 = fi * 29.1
+                    let scatterY = 5.0 + amplified * 12.0
+                    let jitterX = sin(t * 0.7 + seed1) * 2.5
+                    let jitterY = sin(t * 0.9 + seed2) * scatterY
+                        + cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4
+
+                    let px = baseX + jitterX
+                    let py = targetY + jitterY
+
+                    let pr = pseudoRandom(i * 3)
+                    let waveMag = (sin(phase1) + 1.0) / 2.0
+                    let radius = 1.2 + pr * 1.8 + waveMag * 2.0 * amplified
+
+                    let normJitter = abs(jitterY) / max(scatterY * 1.5, 1.0)
+                    let proximityAlpha = max(0.0, 1.0 - normJitter)
+                    let pulse = 0.65 + 0.35 * sin(t * 1.8 + fi * 0.35)
+                    let alpha = proximityAlpha * pulse * (0.35 + amplified * 0.60)
+
+                    ctx.fill(
+                        Path(ellipseIn: CGRect(x: px - radius, y: py - radius,
+                                               width: radius * 2, height: radius * 2)),
+                        with: .color(BrandColor.amber.opacity(alpha))
+                    )
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(.horizontal, 18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityHidden(true)
     }
 
-    private func barHeight(level: Float, index: Int, time: Double) -> CGFloat {
-        let pos = Double(index) / Double(barCount - 1)
-        let envelope = sin(pos * .pi)
-        let phase1 = time * 4.5 + Double(index) * 0.42
-        let phase2 = time * 2.8 + Double(index) * 0.65
-        let wave = (sin(phase1) * 0.65 + sin(phase2) * 0.35 + 1.0) / 2.0
-        let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
-        let dynamic = wave * amplified * envelope
-        return 6 + CGFloat(dynamic) * 140
-    }
-
-    private func barOpacity(index: Int) -> Double {
-        let pos = Double(index) / Double(barCount - 1)
-        return 0.55 + sin(pos * .pi) * 0.45
+    private func pseudoRandom(_ n: Int) -> Double {
+        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
+        return v - floor(v)
     }
 }
 
