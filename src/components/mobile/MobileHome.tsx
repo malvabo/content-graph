@@ -308,9 +308,12 @@ const fmtDate = (iso: string) => {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
-function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: () => void; onCancel: () => void; startTime: number; liveText: string }) {
+function RecordingOverlay({ onStop, onCancel, startTime, liveText, stream }: {
+  onStop: () => void; onCancel: () => void; startTime: number; liveText: string; stream: MediaStream | null;
+}) {
   const [elapsed, setElapsed] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioLevelRef = useRef(0);
   const liveTextRef = useRef(liveText);
   useEffect(() => { liveTextRef.current = liveText; }, [liveText]);
 
@@ -319,14 +322,35 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
     return () => clearInterval(iv);
   }, [startTime]);
 
-  // Canvas cloud animation — 4 soft green radial blobs orbiting the center.
-  // When speech arrives the orbital spread lerps to ~0 so they merge into one glow.
+  // AudioContext → live audio level
+  useEffect(() => {
+    if (!stream) return;
+    let actx: AudioContext | null = null;
+    let raf: number;
+    try {
+      actx = new AudioContext();
+      const analyser = actx.createAnalyser();
+      analyser.fftSize = 256;
+      actx.createMediaStreamSource(stream).connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        audioLevelRef.current = data.reduce((a, b) => a + b, 0) / (data.length * 255);
+        raf = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch { /* AudioContext blocked */ }
+    return () => { cancelAnimationFrame(raf); actx?.close().catch(() => {}); };
+  }, [stream]);
+
+  // Amber particle wave canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
-    let t = 0, spread = 88, raf: number;
-
+    let raf: number;
+    const N = 80;
+    const pseudoRandom = (n: number) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = window.innerWidth * dpr;
@@ -335,34 +359,38 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
     };
     resize();
     window.addEventListener('resize', resize);
-
     const draw = () => {
       const w = window.innerWidth, h = window.innerHeight;
-      const cx = w / 2, cy = h * 0.54;
-
-      const hasSpeech = liveTextRef.current.length > 3;
-      const targetSpread = hasSpeech ? 10 : 60;
-      spread += (targetSpread - spread) * 0.035;
-
+      const t = performance.now() / 1000;
+      const level = audioLevelRef.current;
+      const cy = h * 0.52;
       ctx.fillStyle = '#080910';
       ctx.fillRect(0, 0, w, h);
-
-      for (let i = 0; i < 4; i++) {
-        const angle = t * 0.65 + i * (Math.PI * 0.5);
-        const r = spread + Math.sin(t * 0.45 + i * 1.1) * 14;
-        const px = cx + Math.cos(angle) * r * 0.88;
-        const py = cy + Math.sin(angle) * r * 0.72;
-        const sz = 95 + Math.sin(t * 0.9 + i * 0.8) * 22;
-        const grad = ctx.createRadialGradient(px, py, 0, px, py, sz);
-        const hue = 145 + i * 5;
-        grad.addColorStop(0, `hsla(${hue},58%,52%,0.22)`);
-        grad.addColorStop(0.5, `hsla(${hue},50%,48%,0.06)`);
-        grad.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
+      const amplified = Math.min(1.0, Math.pow(Math.max(level, 0.005), 0.28) * 2.8);
+      const amplitude = amplified * h * 0.16;
+      for (let i = 0; i < N; i++) {
+        const progress = i / (N - 1);
+        const baseX = progress * w;
+        const phase1 = t * 3.5 + progress * Math.PI * 4.0;
+        const phase2 = t * 2.1 + progress * Math.PI * 7.0;
+        const targetY = cy + Math.sin(phase1) * amplitude * 0.65 + Math.sin(phase2) * amplitude * 0.35;
+        const seed1 = i * 13.7, seed2 = i * 29.1;
+        const scatterY = 4.0 + amplified * 14.0;
+        const jX = Math.sin(t * 0.7 + seed1) * 2.5;
+        const jY = Math.sin(t * 0.9 + seed2) * scatterY + Math.cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4;
+        const px = baseX + jX, py = targetY + jY;
+        const pr = pseudoRandom(i * 3);
+        const waveMag = (Math.sin(phase1) + 1.0) / 2.0;
+        const radius = 1.2 + pr * 2.2 + waveMag * 2.5 * amplified;
+        const normJitter = Math.abs(jY) / Math.max(scatterY * 1.5, 1.0);
+        const proxAlpha = Math.max(0.0, 1.0 - normJitter);
+        const pulse = 0.65 + 0.35 * Math.sin(t * 1.8 + i * 0.35);
+        const alpha = proxAlpha * pulse * (0.35 + amplified * 0.60);
+        ctx.fillStyle = `rgba(246,185,59,${alpha.toFixed(3)})`;
+        ctx.beginPath();
+        ctx.ellipse(px, py, radius, radius, 0, 0, Math.PI * 2);
+        ctx.fill();
       }
-
-      t += 0.010;
       raf = requestAnimationFrame(draw);
     };
     draw();
@@ -377,12 +405,9 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
       <style>{`@keyframes rec-cursor { 0%,49%{opacity:1} 50%,100%{opacity:0} }`}</style>
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
-
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
-
-        {/* ── Top: transcript + timer ── */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', padding: '60px 32px 24px', width: '100%', boxSizing: 'border-box' }}>
-          <div aria-live="polite" style={{ fontSize: 'var(--text-body)', fontFamily: 'var(--font-sans)', color: 'rgba(13,191,90,0.82)', textAlign: 'center', lineHeight: 1.55, minHeight: 22, maxWidth: 300 }}>
+          <div aria-live="polite" style={{ fontSize: 'var(--text-body)', fontFamily: 'var(--font-sans)', color: 'rgba(246,185,59,0.82)', textAlign: 'center', lineHeight: 1.55, minHeight: 22, maxWidth: 300 }}>
             {tail
               ? <>{tail}<span aria-hidden style={{ animation: 'rec-cursor 1.2s step-end infinite', marginLeft: 1 }}>|</span></>
               : <span style={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.30)' }}>Listening…</span>
@@ -392,29 +417,23 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
             {mm}:{ss}
           </div>
         </div>
-
-        {/* ── Centre: stop button ── */}
         <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '28px 0' }}>
           <button
             onClick={onStop}
             aria-label="Stop and save recording"
             style={{
               width: 64, height: 64, borderRadius: '50%', border: 'none',
-              background: 'rgba(13,191,90,0.88)', color: '#fff', cursor: 'pointer',
+              background: 'rgba(246,185,59,0.88)', color: '#000', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 36px rgba(13,191,90,0.30), 0 4px 16px rgba(0,0,0,0.35)',
+              boxShadow: '0 0 36px rgba(246,185,59,0.30), 0 4px 16px rgba(0,0,0,0.35)',
             }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="6" width="12" height="12" rx="2" />
-            </svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
           </button>
           <div style={{ fontSize: 'var(--text-tag)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.02em' }}>
             Tap to stop
           </div>
         </div>
-
-        {/* ── Bottom: discard ── */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', paddingBottom: 'calc(44px + env(safe-area-inset-bottom, 0px))' }}>
           <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', cursor: 'pointer', padding: '10px 32px', minHeight: 44 }}>
             Discard
@@ -423,6 +442,161 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText }: { onStop: (
       </div>
     </div>,
     document.body,
+  );
+}
+
+function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string) => void; onCancel: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioLevelRef = useRef(0);
+  const transcriptRef = useRef('');
+  const recognitionRef2 = useRef<any>(null);
+  const shouldRestartRef2 = useRef(false);
+
+  useEffect(() => {
+    let actx: AudioContext | null = null;
+    let levelRaf: number;
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (SpeechRecognition) {
+      try {
+        const recog = new SpeechRecognition();
+        recog.continuous = true; recog.interimResults = true;
+        recog.lang = navigator.language || 'en-US';
+        let finalT = '';
+        recog.onresult = (e: any) => {
+          let interim = '';
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const t = e.results[i][0].transcript;
+            if (e.results[i].isFinal) finalT += t + ' ';
+            else interim += t;
+          }
+          transcriptRef.current = (finalT + interim).trim();
+        };
+        recog.onerror = () => {};
+        recog.onend = () => { if (shouldRestartRef2.current) { try { recog.start(); } catch { /* noop */ } } };
+        shouldRestartRef2.current = true;
+        recog.start();
+        recognitionRef2.current = recog;
+      } catch { /* noop */ }
+    }
+    let capturedStream: MediaStream | null = null;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      capturedStream = stream;
+      try {
+        actx = new AudioContext();
+        const analyser = actx.createAnalyser();
+        analyser.fftSize = 256;
+        actx.createMediaStreamSource(stream).connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        const tick = () => {
+          analyser.getByteFrequencyData(data);
+          audioLevelRef.current = data.reduce((a, b) => a + b, 0) / (data.length * 255);
+          levelRaf = requestAnimationFrame(tick);
+        };
+        tick();
+      } catch { /* noop */ }
+    }).catch(onCancel);
+    return () => {
+      shouldRestartRef2.current = false;
+      try { recognitionRef2.current?.stop(); } catch { /* noop */ }
+      cancelAnimationFrame(levelRaf);
+      actx?.close().catch(() => {});
+      capturedStream?.getTracks().forEach(t => t.stop());
+    };
+  }, [onCancel]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    let raf: number;
+    const N = 25;
+    const pseudoRandom = (n: number) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+    const ro = new ResizeObserver(() => {
+      const dpr = window.devicePixelRatio || 1;
+      const r = canvas.getBoundingClientRect();
+      canvas.width = r.width * dpr;
+      canvas.height = r.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    });
+    ro.observe(canvas);
+    const draw = () => {
+      const r = canvas.getBoundingClientRect();
+      const w = r.width, h = r.height;
+      if (!w || !h) { raf = requestAnimationFrame(draw); return; }
+      const t = performance.now() / 1000;
+      const level = audioLevelRef.current;
+      const cy = h / 2;
+      ctx.clearRect(0, 0, w, h);
+      const amplified = Math.min(1.0, Math.pow(Math.max(level, 0.005), 0.28) * 2.8);
+      const amplitude = amplified * cy * 0.75;
+      for (let i = 0; i < N; i++) {
+        const progress = i / (N - 1);
+        const baseX = progress * w;
+        const phase1 = t * 3.5 + progress * Math.PI * 3.0;
+        const phase2 = t * 2.1 + progress * Math.PI * 6.0;
+        const targetY = cy + Math.sin(phase1) * amplitude * 0.65 + Math.sin(phase2) * amplitude * 0.35;
+        const seed1 = i * 13.7, seed2 = i * 29.1;
+        const scatterY = 1.5 + amplified * 4.0;
+        const jX = Math.sin(t * 0.7 + seed1) * 1.5;
+        const jY = Math.sin(t * 0.9 + seed2) * scatterY + Math.cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4;
+        const px = baseX + jX, py = targetY + jY;
+        const pr = pseudoRandom(i * 3);
+        const waveMag = (Math.sin(phase1) + 1.0) / 2.0;
+        const radius = 0.8 + pr * 1.2 + waveMag * 1.5 * amplified;
+        const normJitter = Math.abs(jY) / Math.max(scatterY * 1.5, 1.0);
+        const proxAlpha = Math.max(0.0, 1.0 - normJitter);
+        const pulse = 0.65 + 0.35 * Math.sin(t * 1.8 + i * 0.35);
+        const alpha = proxAlpha * pulse * (0.40 + amplified * 0.55);
+        ctx.fillStyle = `rgba(246,185,59,${alpha.toFixed(3)})`;
+        ctx.beginPath();
+        ctx.ellipse(px, py, radius, radius, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <button
+        onClick={onCancel}
+        aria-label="Cancel dictation"
+        style={{
+          flexShrink: 0, width: 44, height: 44, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)',
+          color: 'rgba(255,255,255,0.65)', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <div style={{
+        flex: 1, height: 44, borderRadius: 999, overflow: 'hidden',
+        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
+        padding: '0 16px', boxSizing: 'border-box',
+      }}>
+        <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} aria-hidden />
+      </div>
+      <button
+        onClick={() => onConfirm(transcriptRef.current)}
+        aria-label="Finish dictation"
+        style={{
+          flexShrink: 0, width: 44, height: 44, borderRadius: '50%',
+          background: 'rgba(246,185,59,0.88)', border: 'none',
+          color: '#000', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 0 16px rgba(246,185,59,0.25)',
+        }}
+      >
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </button>
+    </div>
   );
 }
 
@@ -672,6 +846,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [showInlineDictation, setShowInlineDictation] = useState(false);
   // Steerable regenerate
   const [chooserOpen, setChooserOpen] = useState(false);
   const [customMode, setCustomMode] = useState(false);
@@ -1772,6 +1947,39 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
             </button>
+
+            {showInlineDictation ? (
+              <DictationBar
+                onCancel={() => setShowInlineDictation(false)}
+                onConfirm={(text) => {
+                  setShowInlineDictation(false);
+                  if (!text.trim()) return;
+                  const updated = note.transcript ? note.transcript + ' ' + text.trim() : text.trim();
+                  updateNote(note.id, { transcript: updated });
+                  setShowStaleBanner(true);
+                }}
+              />
+            ) : (
+              <button
+                onClick={() => setShowInlineDictation(true)}
+                aria-label="Add voice to note"
+                style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body-sm)', fontWeight: 500,
+                  color: 'rgba(255,255,255,0.40)',
+                  padding: '8px 0',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  alignSelf: 'flex-start',
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                </svg>
+                Add voice
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -2457,6 +2665,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
   useAuthStore();
 
   const [recording, setRecording] = useState(false);
+  const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
   const [showTypeNote, setShowTypeNote] = useState(false);
   const [liveText, setLiveText] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -2552,6 +2761,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRef.current = stream;
+      setActiveStream(stream);
       const mime = pickMimeType();
       const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
       mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
@@ -2611,6 +2821,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     const blob = chunksRef.current.length ? new Blob(chunksRef.current, { type: mimeType }) : null;
     chunksRef.current = [];
     setRecording(false);
+    setActiveStream(null);
 
     let errorReason: string | null = null;
     if (!transcript && blob && blob.size > 0 && groqKeyRef.current) {
@@ -2650,6 +2861,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     chunksRef.current = [];
     removeNote(noteIdRef.current);
     setRecording(false);
+    setActiveStream(null);
   }, [removeNote]);
 
   const openNote = openNoteId ? notes.find(n => n.id === openNoteId) : null;
@@ -2760,7 +2972,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         </div>
       )}
 
-      {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} />}
+      {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} stream={activeStream} />}
 
       {showTypeNote && <TypeNoteSheet onSave={handleSaveTypedNote} onClose={() => setShowTypeNote(false)} />}
 
