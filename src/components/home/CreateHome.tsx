@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useGenerationsStore } from '../../store/generationsStore';
+import { usePresetsStore, type FormatPreset } from '../../store/presetsStore';
 
 // ─── Models ────────────────────────────────────────────────────────────────
 
@@ -19,10 +20,7 @@ const allFormats: ContentFormat[] = [
   { id: 'instagram',      label: 'Instagram Caption', description: 'Short engaging caption with hashtags' },
   { id: 'youtube',        label: 'YouTube Script',    description: 'Hook, body & CTA for video' },
   { id: 'podcast',        label: 'Podcast Script',    description: 'Episode outline and talking points' },
-  { id: 'press',          label: 'Press Release',     description: 'Formal media announcement' },
-  { id: 'landing',        label: 'Landing Page',      description: 'Headline, sections and CTA copy' },
   { id: 'twitter-single', label: 'Twitter Single',    description: 'Most quotable insight, one tweet' },
-  { id: 'video',          label: 'Video Script',      description: 'AI video generation script' },
 ];
 
 const brands = ['Default', 'Personal', 'Work', 'Brand A', 'Brand B'];
@@ -631,27 +629,44 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
 }) {
   const [pending, setPending] = useState<Set<string>>(new Set(selected));
   const [search, setSearch] = useState('');
-  const [showAllTemplates, setShowAllTemplates] = useState(false);
+  const [showAllPresets, setShowAllPresets] = useState(false);
+  const [savingPreset, setSavingPreset] = useState(false);
+  const [presetName, setPresetName] = useState('');
+  const presetNameRef = useRef<HTMLInputElement>(null);
+
+  const { presets, addPreset, removePreset } = usePresetsStore();
 
   useEffect(() => {
-    if (isOpen) { setPending(new Set(selected)); setSearch(''); setShowAllTemplates(false); }
+    if (isOpen) { setPending(new Set(selected)); setSearch(''); setShowAllPresets(false); setSavingPreset(false); setPresetName(''); }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (savingPreset) setTimeout(() => presetNameRef.current?.focus(), 50);
+  }, [savingPreset]);
+
   const q = search.toLowerCase();
-  const filteredTemplates = allTemplates.filter(t =>
-    !q || t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q) ||
-    t.formatIDs.some(id => allFormats.find(f => f.id === id)?.label.toLowerCase().includes(q))
-  );
   const filteredFormats = allFormats.filter(f =>
     !q || f.label.toLowerCase().includes(q) || f.description.toLowerCase().includes(q)
   );
-  const displayedTemplates = (!q && !showAllTemplates) ? filteredTemplates.slice(0, 5) : filteredTemplates;
+  const filteredPresets = presets.filter(p =>
+    !q || p.name.toLowerCase().includes(q)
+  );
+  const displayedPresets = (!q && !showAllPresets) ? filteredPresets.slice(0, 5) : filteredPresets;
+  const noResults = filteredFormats.length === 0 && (q ? filteredPresets.length === 0 : false);
 
   const toggleFormat = (id: string) =>
     setPending(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
-  const addTemplate = (formatIDs: string[]) =>
+  const applyPreset = (formatIDs: string[]) =>
     setPending(prev => { const n = new Set(prev); formatIDs.forEach(id => n.add(id)); return n; });
+
+  const savePreset = () => {
+    const name = presetName.trim();
+    if (!name || pending.size === 0) return;
+    addPreset({ id: `preset-${Date.now()}`, name, formatIDs: Array.from(pending), createdAt: new Date().toISOString() });
+    setSavingPreset(false);
+    setPresetName('');
+  };
 
   const doneLabel = pending.size === 0 ? 'Done' : `Done · ${pending.size} selected`;
   const commit = () => { onChange(pending); onClose(); };
@@ -660,14 +675,13 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
     <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.06em', padding: '18px 16px 8px', textTransform: 'uppercase' }}>{title}</div>
   );
   const RowDivider = () => <div style={{ height: 0.5, background: 'rgba(255,255,255,0.06)', margin: '0 16px' }} />;
-  const noResults = filteredTemplates.length === 0 && filteredFormats.length === 0;
 
   return (
     <Sheet isOpen={isOpen} onClose={onClose} height="86vh" scrollable={false}>
       {/* Header */}
       <div style={{ padding: '8px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <button onClick={onClose} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 16, cursor: 'pointer', padding: 0, fontFamily: 'var(--font-sans)' }}>Cancel</button>
-        <div style={{ color: '#fff', fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Format</div>
+        <div style={{ color: '#fff', fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Choose formats</div>
         <div style={{ minWidth: 56, textAlign: 'right' }} />
       </div>
 
@@ -678,7 +692,7 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search formats and templates"
+            placeholder="Search formats and presets"
             style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', color: '#fff', fontSize: 15, fontFamily: 'var(--font-sans)' }}
           />
           {search && (
@@ -695,46 +709,53 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.30)', fontSize: 15, fontFamily: 'var(--font-sans)' }}>No matches.</div>
         ) : (
           <>
-            {filteredTemplates.length > 0 && (
+            {/* My presets — only shown when presets exist (or search matches) */}
+            {filteredPresets.length > 0 && (
               <>
-                <SectionHeader title="Quick picks" />
-                {displayedTemplates.map((tpl, i) => {
-                  const active = tpl.formatIDs.every(id => pending.has(id));
+                <SectionHeader title="My presets" />
+                {displayedPresets.map((preset, i) => {
+                  const active = preset.formatIDs.every(id => pending.has(id));
                   return (
-                    <div key={tpl.id}>
-                      <button
-                        onClick={() => addTemplate(tpl.formatIDs)}
-                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12, fontFamily: 'var(--font-sans)' }}
-                      >
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.88)', marginBottom: 6 }}>{tpl.name}</div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 5 }}>
-                            {tpl.formatIDs.slice(0, 4).map(id => {
-                              const fmt = allFormats.find(f => f.id === id);
-                              return fmt ? (
-                                <span key={id} style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.55)', background: active ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)', borderRadius: 999, padding: '3px 7px' }}>{fmt.label}</span>
-                              ) : null;
-                            })}
-                            {tpl.formatIDs.length > 4 && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>+{tpl.formatIDs.length - 4}</span>}
+                    <div key={preset.id}>
+                      <div style={{ display: 'flex', alignItems: 'center', padding: '0 8px 0 0' }}>
+                        <button
+                          onClick={() => applyPreset(preset.formatIDs)}
+                          style={{ flex: 1, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--font-sans)' }}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.88)' }}>{preset.name}</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
+                              {preset.formatIDs.slice(0, 4).map(id => {
+                                const fmt = allFormats.find(f => f.id === id);
+                                return fmt ? (
+                                  <span key={id} style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.50)', background: active ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)', borderRadius: 999, padding: '2px 7px' }}>{fmt.label}</span>
+                                ) : null;
+                              })}
+                              {preset.formatIDs.length > 4 && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)' }}>+{preset.formatIDs.length - 4}</span>}
+                            </div>
                           </div>
-                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{tpl.description}</div>
-                        </div>
-                        {active && (
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 2, flexShrink: 0 }}><path d="M20 6L9 17l-5-5"/></svg>
-                        )}
-                      </button>
-                      {i < displayedTemplates.length - 1 && <RowDivider />}
+                          {active && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M20 6L9 17l-5-5"/></svg>}
+                        </button>
+                        <button
+                          onClick={() => removePreset(preset.id)}
+                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '8px', color: 'rgba(255,255,255,0.20)', display: 'flex', flexShrink: 0 }}
+                          aria-label="Delete preset"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </div>
+                      {i < displayedPresets.length - 1 && <RowDivider />}
                     </div>
                   );
                 })}
-                {!q && !showAllTemplates && allTemplates.length > 5 && (
+                {!q && !showAllPresets && presets.length > 5 && (
                   <>
                     <RowDivider />
                     <button
-                      onClick={() => setShowAllTemplates(true)}
-                      style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.50)', fontSize: 15 }}
+                      onClick={() => setShowAllPresets(true)}
+                      style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', padding: '13px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.45)', fontSize: 14 }}
                     >
-                      See all templates
+                      Show all {presets.length} presets
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.30)" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
                   </>
@@ -775,8 +796,34 @@ function FormatPickerSheet({ isOpen, onClose, selected, onChange }: {
         )}
       </div>
 
-      {/* Done button */}
+      {/* Footer */}
       <div style={{ flexShrink: 0, padding: '12px 16px 28px', borderTop: '0.5px solid rgba(255,255,255,0.07)' }}>
+        {savingPreset ? (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <input
+              ref={presetNameRef}
+              value={presetName}
+              onChange={e => setPresetName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') savePreset(); if (e.key === 'Escape') setSavingPreset(false); }}
+              placeholder="Preset name"
+              style={{ flex: 1, height: 44, border: '1px solid rgba(255,255,255,0.14)', borderRadius: 10, background: 'rgba(255,255,255,0.06)', outline: 'none', padding: '0 12px', color: '#fff', fontSize: 15, fontFamily: 'var(--font-sans)' }}
+            />
+            <button
+              onClick={savePreset}
+              disabled={!presetName.trim()}
+              style={{ height: 44, padding: '0 16px', border: 'none', borderRadius: 10, background: presetName.trim() ? GREEN : 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: presetName.trim() ? 'pointer' : 'default', fontFamily: 'var(--font-sans)' }}
+            >Save</button>
+            <button
+              onClick={() => setSavingPreset(false)}
+              style={{ height: 44, padding: '0 12px', border: 'none', borderRadius: 10, background: 'transparent', color: 'rgba(255,255,255,0.40)', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+            >Cancel</button>
+          </div>
+        ) : pending.size > 0 ? (
+          <button
+            onClick={() => setSavingPreset(true)}
+            style={{ display: 'block', width: '100%', border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.40)', fontSize: 13, cursor: 'pointer', padding: '0 0 10px', fontFamily: 'var(--font-sans)', textAlign: 'center' }}
+          >+ Save as preset</button>
+        ) : null}
         <button
           onClick={commit}
           style={{
