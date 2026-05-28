@@ -40,7 +40,12 @@ final class SessionStore {
         if updateStatus == errSecItemNotFound {
             var addQuery = query
             addQuery[kSecValueData] = data
-            SecItemAdd(addQuery as CFDictionary, nil)
+            let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+            if addStatus != errSecSuccess {
+                print("[SessionStore] SecItemAdd failed: \(addStatus)")
+            }
+        } else if updateStatus != errSecSuccess {
+            print("[SessionStore] SecItemUpdate failed: \(updateStatus)")
         }
     }
 

@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 // MARK: - Wire types matching the backend JSON
 
@@ -61,10 +62,11 @@ private func toSyncNote(_ note: Note) -> SyncNote {
 
 private func fromSyncNote(_ s: SyncNote) -> Note? {
     guard let uuid = UUID(uuidString: s.id) else { return nil }
+    guard let updatedAt = parseISO(s.updatedAt) else { return nil }
     var n = Note()
     n.id = uuid
     n.body = s.body
-    n.updatedAt = parseISO(s.updatedAt) ?? Date()
+    n.updatedAt = updatedAt
     n.isPinned = s.isPinned
     n.tags = s.tags
     n.kind = NoteKind(rawValue: s.kind) ?? .text
@@ -85,7 +87,8 @@ private func toSyncGen(_ g: MinimalGeneration) -> SyncGeneration {
 
 private func fromSyncGen(_ s: SyncGeneration) -> MinimalGeneration? {
     guard let id = UUID(uuidString: s.id),
-          let noteId = UUID(uuidString: s.noteId) else { return nil }
+          let noteId = UUID(uuidString: s.noteId),
+          let date = parseISO(s.date) else { return nil }
     return MinimalGeneration(
         id: id,
         noteId: noteId,
@@ -93,26 +96,62 @@ private func fromSyncGen(_ s: SyncGeneration) -> MinimalGeneration? {
         sourceLabels: s.sourceLabels,
         outputType: s.outputType,
         content: s.content,
-        date: parseISO(s.date) ?? Date()
+        date: date
     )
+}
+
+// MARK: - Deleted generations tombstone store
+
+/// Tracks locally deleted generation IDs so they aren't re-added on the next
+/// pull. Capped at 1 000 entries to prevent unbounded growth.
+private enum DeletedGenTombstones {
+    private static let key = "com.up200.app.deleted_gen_ids_v1"
+    private static let cap = 1_000
+
+    static func load() -> Set<UUID> {
+        guard let strings = UserDefaults.standard.stringArray(forKey: key) else { return [] }
+        return Set(strings.compactMap(UUID.init))
+    }
+
+    static func insert(_ id: UUID) {
+        var current = load()
+        current.insert(id)
+        if current.count > cap {
+            // Drop oldest by truncating arbitrarily — exact ordering doesn't matter.
+            let trimmed = Array(current).dropFirst(current.count - cap)
+            UserDefaults.standard.set(trimmed.map(\.uuidString), forKey: key)
+        } else {
+            UserDefaults.standard.set(current.map(\.uuidString), forKey: key)
+        }
+    }
+
+    static func contains(_ id: UUID) -> Bool {
+        load().contains(id)
+    }
 }
 
 // MARK: - SyncManager
 
+private let logger = Logger(subsystem: "com.up200.app", category: "SyncManager")
+
 /// Bidirectional sync between the local UserDefaults stores and the backend.
 /// Sync rules:
 ///   - Push: uploads all local items; server keeps the version with the
-///     newer `updatedAt` (notes) or any new `date` (generations).
+///     newer `updatedAt` (notes) or newer `date` (generations).
 ///   - Pull: downloads all server items and merges into local, taking the
-///     newer version for each ID and adding any server-only items.
+///     server version when it is at least as new as the local copy and
+///     adding any server-only items (unless locally deleted).
 ///   - Drawing notes (kind == .drawing) are excluded — their binary data is
 ///     too large for the current text-only schema.
-///   - Sync failures are silent; local data is never overwritten on error.
+///   - Sync failures are logged; local data is never overwritten on error.
 actor SyncManager {
     static let shared = SyncManager()
 
-    private let notesURL = URL(string: "https://content-graph-five.vercel.app/api/notes")!
-    private let gensURL  = URL(string: "https://content-graph-five.vercel.app/api/generations")!
+    /// Exposed so the UI can show a sync-error badge.
+    @MainActor private(set) var lastSyncError: String?
+
+    private let notesURL = AppConfig.API.notes
+    private let gensURL  = AppConfig.API.generations
 
     private var pushDebounce: Task<Void, Never>?
     private var observerTokens: [NSObjectProtocol] = []
@@ -149,8 +188,10 @@ actor SyncManager {
             let data = try await AuthClient.shared.get(notesURL)
             let serverNotes = try JSONDecoder().decode([SyncNote].self, from: data)
             await MainActor.run { mergeServerNotes(serverNotes) }
+            await setError(nil)
         } catch {
-            // Sync errors must not surface to the user.
+            logger.error("pullNotes failed: \(error.localizedDescription)")
+            await setError("Notes sync failed: \(error.localizedDescription)")
         }
     }
 
@@ -159,7 +200,10 @@ actor SyncManager {
             let data = try await AuthClient.shared.get(gensURL)
             let serverGens = try JSONDecoder().decode([SyncGeneration].self, from: data)
             await MainActor.run { mergeServerGens(serverGens) }
-        } catch {}
+        } catch {
+            logger.error("pullGenerations failed: \(error.localizedDescription)")
+            await setError("Generations sync failed: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Push: local → server
@@ -168,34 +212,86 @@ actor SyncManager {
     /// after every store change.
     func push() async {
         guard SessionStore.shared.load() != nil else { return }
-        await pushNotes()
-        await pushGenerations()
+        var pushError: String?
+
+        do { try await pushNotes() }
+        catch {
+            logger.error("pushNotes failed: \(error.localizedDescription)")
+            pushError = "Notes sync failed"
+        }
+
+        do { try await pushGenerations() }
+        catch {
+            logger.error("pushGenerations failed: \(error.localizedDescription)")
+            pushError = pushError ?? "Generations sync failed"
+        }
+
+        await setError(pushError)
+
+        if pushError != nil {
+            // Retry once after 10 s on push failure.
+            try? await Task.sleep(nanoseconds: 10_000_000_000)
+            guard !Task.isCancelled else { return }
+            do { try await pushNotes() } catch { logger.error("pushNotes retry failed: \(error.localizedDescription)") }
+            do { try await pushGenerations() } catch { logger.error("pushGenerations retry failed: \(error.localizedDescription)") }
+        }
     }
 
-    private func pushNotes() async {
+    private func pushNotes() async throws {
         let local = await Task { @MainActor in NotesStore.load() }.value
         let syncNotes = local.filter { $0.kind == .text }.map(toSyncNote)
         guard !syncNotes.isEmpty else { return }
 
         struct Body: Encodable { let notes: [SyncNote] }
-        do {
-            let data = try await AuthClient.shared.post(notesURL, body: Body(notes: syncNotes))
-            let response = try JSONDecoder().decode(NotesResponse.self, from: data)
-            await MainActor.run { mergeServerNotes(response.notes) }
-        } catch {}
+        let data = try await AuthClient.shared.post(notesURL, body: Body(notes: syncNotes))
+        let response = try JSONDecoder().decode(NotesResponse.self, from: data)
+        await MainActor.run { mergeServerNotes(response.notes) }
     }
 
-    private func pushGenerations() async {
+    private func pushGenerations() async throws {
         let local = await Task { @MainActor in MinimalGenStore.load() }.value
         let syncGens = local.map(toSyncGen)
         guard !syncGens.isEmpty else { return }
 
         struct Body: Encodable { let generations: [SyncGeneration] }
+        let data = try await AuthClient.shared.post(gensURL, body: Body(generations: syncGens))
+        let response = try JSONDecoder().decode(GensResponse.self, from: data)
+        await MainActor.run { mergeServerGens(response.generations) }
+    }
+
+    // MARK: - Delete a generation (local + remote)
+
+    /// Removes a generation from local storage, records a tombstone so it
+    /// won't be re-added on the next pull, and sends DELETE to the server.
+    func deleteGeneration(id: UUID) async {
+        await MainActor.run {
+            MinimalGenStore.delete(id: id)
+        }
+        DeletedGenTombstones.insert(id)
+
+        guard SessionStore.shared.load() != nil else { return }
+        let url = gensURL.appendingPathComponent(id.uuidString)
         do {
-            let data = try await AuthClient.shared.post(gensURL, body: Body(generations: syncGens))
-            let response = try JSONDecoder().decode(GensResponse.self, from: data)
-            await MainActor.run { mergeServerGens(response.generations) }
-        } catch {}
+            _ = try await AuthClient.shared.delete(url)
+        } catch {
+            // Non-fatal: tombstone prevents resurrection on pull.
+            logger.warning("deleteGeneration server call failed (non-fatal): \(error.localizedDescription)")
+        }
+    }
+
+    /// Removes all generations for a note from local storage, records tombstones,
+    /// and sends DELETE requests to the server for each one.
+    func deleteAllGenerations(forNoteID noteId: UUID) async {
+        let gens = await MainActor.run { MinimalGenStore.load().filter { $0.noteId == noteId } }
+        await MainActor.run { MinimalGenStore.deleteAll(forNoteID: noteId) }
+        for gen in gens {
+            DeletedGenTombstones.insert(gen.id)
+            if SessionStore.shared.load() != nil {
+                let url = gensURL.appendingPathComponent(gen.id.uuidString)
+                do { _ = try await AuthClient.shared.delete(url) }
+                catch { logger.warning("deleteAllGenerations server call failed for \(gen.id): \(error.localizedDescription)") }
+            }
+        }
     }
 
     // MARK: - Debounce
@@ -225,7 +321,8 @@ actor SyncManager {
                   let serverDate = parseISO(sn.updatedAt) else { continue }
 
             if let idx = localById[note.id] {
-                if serverDate > local[idx].updatedAt {
+                // Use >= so that same-millisecond ties prefer the server version.
+                if serverDate >= local[idx].updatedAt {
                     local[idx] = note
                     changed = true
                 }
@@ -244,19 +341,44 @@ actor SyncManager {
     @MainActor
     private func mergeServerGens(_ serverGens: [SyncGeneration]) {
         var local = MinimalGenStore.load()
-        let localIds = Set(local.map(\.id))
+        var localById: [UUID: Int] = Dictionary(
+            uniqueKeysWithValues: local.enumerated().compactMap { idx, g in (g.id, idx) }
+        )
         var changed = false
+        var newGens: [MinimalGeneration] = []
 
         for sg in serverGens {
             guard let gen = fromSyncGen(sg) else { continue }
-            if !localIds.contains(gen.id) {
-                local.insert(gen, at: 0)
+            // Skip generations the user deleted locally.
+            guard !DeletedGenTombstones.contains(gen.id) else { continue }
+
+            if let idx = localById[gen.id] {
+                // Update existing if server version is newer.
+                if gen.date >= local[idx].date {
+                    local[idx] = gen
+                    changed = true
+                }
+            } else {
+                newGens.append(gen)
                 changed = true
             }
+        }
+
+        if !newGens.isEmpty {
+            // Append new items then sort newest-first.
+            local.append(contentsOf: newGens)
+            local.sort { $0.date > $1.date }
         }
 
         if changed {
             MinimalGenStore.save(local)
         }
+    }
+
+    // MARK: - Helpers
+
+    @MainActor
+    private func setError(_ message: String?) {
+        lastSyncError = message
     }
 }

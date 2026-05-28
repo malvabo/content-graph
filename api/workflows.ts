@@ -3,11 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import { getAllowedOrigin } from './_cors';
 
 function getSupabase(token: string) {
-  return createClient(
-    process.env.VITE_SUPABASE_URL!,
-    process.env.VITE_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
-  );
+  const url = process.env.VITE_SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { global: { headers: { Authorization: `Bearer ${token}` } } });
 }
 
 function getToken(req: VercelRequest): string | null {
@@ -27,6 +26,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
   const sb = getSupabase(token);
+  if (!sb) return res.status(503).json({ error: 'Service not configured' });
+
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return res.status(401).json({ error: 'Invalid token' });
 
@@ -65,8 +66,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
-    const err = e as { message?: string; code?: string; details?: string; hint?: string };
+    const err = e as { message?: string };
     console.error('workflows handler:', err);
-    res.status(500).json({ error: err?.message || 'Server error', code: err?.code, details: err?.details, hint: err?.hint });
+    res.status(500).json({ error: err?.message || 'Server error' });
   }
 }

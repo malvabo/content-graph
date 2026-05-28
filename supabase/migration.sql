@@ -122,3 +122,29 @@ create policy "Users can update own ios generations"
 
 create policy "Users can delete own ios generations"
   on ios_generations for delete using (auth.uid() = user_id);
+
+-- AI generation usage counters (keyed by Apple sub / user_sub from the session token).
+-- Written by the Vercel backend using the service role; no client access.
+create table if not exists ai_generation_counts (
+  user_sub text primary key,
+  count    integer not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+alter table ai_generation_counts enable row level security;
+
+-- Atomically increments the counter for a given sub, inserting the row if absent.
+create or replace function increment_ai_usage(p_sub text)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  insert into ai_generation_counts (user_sub, count, updated_at)
+    values (p_sub, 1, now())
+  on conflict (user_sub)
+  do update set
+    count      = ai_generation_counts.count + 1,
+    updated_at = now();
+end;
+$$;

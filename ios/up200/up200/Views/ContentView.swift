@@ -1498,7 +1498,7 @@ struct ProfileView: View {
     }
 
     private func performDeleteAccount() async {
-        let accountURL = URL(string: "https://content-graph-five.vercel.app/api/account")!
+        let accountURL = AppConfig.baseURL.appendingPathComponent("api/account")
         do {
             _ = try await AuthClient.shared.delete(accountURL)
         } catch AuthClientError.noSession {
