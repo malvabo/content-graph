@@ -684,32 +684,24 @@ function MultiGenGraphThumb({ primaryKind, extraKinds }: { primaryKind: AssetKin
   );
 }
 
-/** Amber folder with three fanned blue-tinted doc pages — shown on cards that
- *  have secondary-platform generations stored. */
+/** Folder icon with two solid doc pages peeking out the top. */
 function FolderDocsIcon({ size = 36 }: { size?: number }) {
-  const h = Math.round(size * 35 / 40);
+  const h = Math.round(size * 33 / 40);
   return (
-    <svg width={size} height={h} viewBox="0 0 40 35" fill="none" aria-hidden>
-      {/* Folder back — behind docs */}
-      <rect x="2" y="15" width="36" height="18" rx="3"
-        fill="rgba(255,195,65,0.18)" stroke="rgba(255,195,65,0.36)" strokeWidth="1.2"/>
-      <path d="M2 15 L2 12 Q2 10 4 10 L14 10 L16.5 15 Z"
-        fill="rgba(255,195,65,0.24)" stroke="rgba(255,195,65,0.36)" strokeWidth="1.2" strokeLinejoin="round"/>
-      {/* Doc 3 — leftmost, angled back-left */}
-      <rect x="9" y="2" width="11" height="17" rx="2"
-        fill="rgba(148,176,255,0.20)" stroke="rgba(148,176,255,0.38)" strokeWidth="1"
-        transform="rotate(-13 14.5 10.5)"/>
-      {/* Doc 2 — center, slight left lean */}
-      <rect x="15" y="1" width="11" height="17" rx="2"
-        fill="rgba(160,190,255,0.26)" stroke="rgba(160,190,255,0.46)" strokeWidth="1"
-        transform="rotate(-3 20.5 9.5)"/>
-      {/* Doc 1 — rightmost, slight right lean */}
-      <rect x="21" y="2" width="11" height="17" rx="2"
-        fill="rgba(172,202,255,0.32)" stroke="rgba(172,202,255,0.54)" strokeWidth="1"
-        transform="rotate(7 26.5 10.5)"/>
-      {/* Folder front face — drawn last, covers doc bottoms */}
-      <rect x="2" y="18" width="36" height="15" rx="3"
-        fill="rgba(255,200,72,0.21)" stroke="rgba(255,200,72,0.36)" strokeWidth="1.2"/>
+    <svg width={size} height={h} viewBox="0 0 40 33" fill="none" aria-hidden>
+      {/* Pages behind folder — solid, angled */}
+      <rect x="7" y="2" width="11" height="17" rx="2"
+        fill="#C6D8FF"
+        transform="rotate(-11 12.5 10.5)"/>
+      <rect x="22" y="2" width="11" height="17" rx="2"
+        fill="#B8CCFF"
+        transform="rotate(11 27.5 10.5)"/>
+      {/* Folder tab */}
+      <path d="M2 15 L2 12 Q2 10 4 10 L15 10 Q16.5 10 17.5 12 L19 15 Z"
+        fill="#FFC340"/>
+      {/* Folder body — covers lower halves of pages */}
+      <rect x="2" y="14" width="36" height="18" rx="3"
+        fill="#FFC340"/>
     </svg>
   );
 }
