@@ -469,6 +469,8 @@ enum APICallError: Error {
             return "Anthropic is temporarily overloaded. Try again in a moment."
         case .http(400, let msg):
             return msg.isEmpty ? "The request was rejected (400)." : "Request rejected: \(msg)"
+        case .http(402, let msg):
+            return msg.isEmpty ? "Generation limit reached." : msg
         case .http(let code, let msg):
             return msg.isEmpty ? "Server returned \(code)." : "Server returned \(code): \(msg)"
         case .decode:
