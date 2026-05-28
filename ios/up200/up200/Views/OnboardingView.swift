@@ -798,8 +798,8 @@ struct OnboardingView: View {
             ChooseOption(label: "A Twitter thread", action: {
                 startGeneration(label: "A Twitter thread", formatID: "twitter", customPrompt: "")
             }),
-            ChooseOption(label: "Something else", action: {
-                startSpecifyRecording()
+            ChooseOption(label: "A message", action: {
+                startGeneration(label: "A message", formatID: "message", customPrompt: "")
             }),
             ChooseOption(label: "Just save my note for now", action: {
                 saveIdeaAndExit()
