@@ -804,13 +804,10 @@ function NoteCard({ note, onOpen, showTranscript }: { note: VoiceNote; onOpen: (
         {meta}
       </span>
 
-      {/* Multi-gen graph replaces text preview when secondary generations exist */}
+      {/* Folder-with-docs icon replaces text preview when secondary generations exist */}
       {hasExtraGenerations ? (
-        <div style={{ position: 'relative', zIndex: 1, width: '100%', marginTop: 4 }}>
-          <MultiGenGraphThumb
-            primaryKind={note.lastGeneration?.kind ?? null}
-            extraKinds={extraKinds}
-          />
+        <div style={{ position: 'relative', zIndex: 1, marginTop: 2, lineHeight: '20px', display: 'flex', alignItems: 'center' }}>
+          <FolderDocsIcon size={44} />
         </div>
       ) : (showPreview && previewText && (
         <span style={{
