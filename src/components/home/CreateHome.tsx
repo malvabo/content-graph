@@ -201,6 +201,20 @@ function truncateLabel(raw: string, max = 32): string {
 function Sheet({ isOpen, onClose, children, height = 'auto', scrollable = true }: {
   isOpen: boolean; onClose: () => void; children: React.ReactNode; height?: number | 'auto' | string; scrollable?: boolean;
 }) {
+  const [isMini, setIsMini] = useState(false);
+  const MINI_PEEK = 108; // px visible above bottom edge when collapsed
+
+  // Compute how far down to translate for mini state (from the height prop)
+  const miniY = useMemo(() => {
+    if (typeof height === 'number') return Math.max(0, height - MINI_PEEK);
+    if (typeof height === 'string' && height.endsWith('vh')) {
+      return Math.max(0, (window.innerHeight * parseFloat(height) / 100) - MINI_PEEK);
+    }
+    return Math.max(0, window.innerHeight * 0.8 - MINI_PEEK);
+  }, [height]);
+
+  useEffect(() => { if (!isOpen) setIsMini(false); }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -211,10 +225,20 @@ function Sheet({ isOpen, onClose, children, height = 'auto', scrollable = true }
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 999 }}
           />
           <motion.div
-            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+            initial={{ y: '100%' }}
+            animate={{ y: isMini ? miniY : 0 }}
+            exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-            drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.4 }}
-            onDragEnd={(_, info) => { if (info.offset.y > 120 || info.velocity.y > 500) onClose(); }}
+            drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0.2, bottom: 0.35 }}
+            onDragEnd={(_, info) => {
+              if (!isMini) {
+                if (info.offset.y > 100 || info.velocity.y > 400) setIsMini(true);
+              } else {
+                if (info.offset.y > 60 || info.velocity.y > 300) onClose();
+                else if (info.offset.y < -80 || info.velocity.y < -300) setIsMini(false);
+              }
+            }}
+            onClick={() => { if (isMini) setIsMini(false); }}
             style={{
               position: 'fixed', left: 0, right: 0, bottom: 0,
               background: BG, borderTopLeftRadius: 20, borderTopRightRadius: 20,
@@ -222,6 +246,7 @@ function Sheet({ isOpen, onClose, children, height = 'auto', scrollable = true }
               height: typeof height === 'number' ? `${height}px` : height,
               overflow: 'hidden', display: 'flex', flexDirection: 'column',
               boxShadow: '0 -8px 32px rgba(0,0,0,0.6)',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, paddingBottom: 4, flexShrink: 0 }}>
