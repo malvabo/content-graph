@@ -788,28 +788,20 @@ struct OnboardingView: View {
     private var chooseCirclesField: some View {
         struct ChooseOption {
             let label: String
-            let symbol: String
             let action: () -> Void
         }
 
         let options: [ChooseOption] = [
-            // LinkedIn: briefcase reads as "professional post" and keeps the
-            // four icons in the same outline-SF-Symbol vocabulary. The
-            // previous typographic "LI" sat as a flat letterform next to
-            // three graphical glyphs and visually didn't belong.
-            ChooseOption(label: "A LinkedIn post", symbol: "briefcase", action: {
+            ChooseOption(label: "A LinkedIn post", action: {
                 startGeneration(label: "A LinkedIn post", formatID: "linkedin", customPrompt: "")
             }),
-            ChooseOption(label: "A Twitter thread", symbol: "text.bubble", action: {
+            ChooseOption(label: "A Twitter thread", action: {
                 startGeneration(label: "A Twitter thread", formatID: "twitter", customPrompt: "")
             }),
-            ChooseOption(label: "Something else", symbol: "sparkles", action: {
+            ChooseOption(label: "Something else", action: {
                 startSpecifyRecording()
             }),
-            // square.and.arrow.down is the universal iOS save glyph;
-            // bookmark read more like "bookmark an item" than "save my
-            // note," which is what this action actually does.
-            ChooseOption(label: "Just save my note for now", symbol: "square.and.arrow.down", action: {
+            ChooseOption(label: "Just save my note for now", action: {
                 saveIdeaAndExit()
             })
         ]
@@ -838,19 +830,14 @@ struct OnboardingView: View {
             ZStack {
                 ForEach(Array(options.enumerated()), id: \.offset) { idx, opt in
                     Button(action: opt.action) {
-                        VStack(spacing: 10) {
-                            Image(systemName: opt.symbol)
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(AppText.primary)
-                            Text(opt.label)
-                                .font(.app(size: 14, weight: .medium))
-                                .foregroundColor(AppText.primary)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(3)
-                                .minimumScaleFactor(0.85)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .padding(.horizontal, 16)
+                        Text(opt.label)
+                            .font(.app(size: 18, weight: .medium))
+                            .foregroundColor(AppText.primary)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.85)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 16)
                         .frame(width: circleRadius * 2, height: circleRadius * 2)
                         .background(
                             Circle()
