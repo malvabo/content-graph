@@ -1307,17 +1307,19 @@ struct ProfileView: View {
                     .listRowSeparatorTint(AppInk.solid(0.06))
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
 
-                    SettingsRow(
-                        title: "Onboarding",
-                        trailing: .icon("sun.max")
-                    ) {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        showOnboarding = true
+                    if isDevAccount {
+                        SettingsRow(
+                            title: "Onboarding",
+                            trailing: .icon("sun.max")
+                        ) {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            showOnboarding = true
+                        }
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .listRowSeparatorTint(AppInk.solid(0.06))
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
                     }
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparatorTint(AppInk.solid(0.06))
-                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
 
                     SettingsRow(
                         title: "Anthropic API key",
@@ -1481,6 +1483,10 @@ struct ProfileView: View {
     private func saveCustom() {
         if case .corrupt = loadBlob([CustomTemplate].self, from: customData) { return }
         if let data = try? JSONEncoder().encode(custom) { customData = data }
+    }
+
+    private var isDevAccount: Bool {
+        SessionStore.shared.load()?.email == "borysova.mary@gmail.com"
     }
 
     private func refreshAPIKeyState() {
