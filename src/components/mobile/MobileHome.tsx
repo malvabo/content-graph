@@ -691,10 +691,10 @@ function FolderDocsIcon({ size = 36 }: { size?: number }) {
     <svg width={size} height={h} viewBox="0 0 40 33" fill="none" aria-hidden>
       {/* Pages behind folder — solid, angled */}
       <rect x="7" y="2" width="11" height="17" rx="2"
-        fill="#C6D8FF"
+        fill="#5E7BB8"
         transform="rotate(-11 12.5 10.5)"/>
       <rect x="22" y="2" width="11" height="17" rx="2"
-        fill="#B8CCFF"
+        fill="#4F6EA8"
         transform="rotate(11 27.5 10.5)"/>
       {/* Folder tab */}
       <path d="M2 15 L2 12 Q2 10 4 10 L15 10 Q16.5 10 17.5 12 L19 15 Z"
