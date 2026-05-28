@@ -347,12 +347,7 @@ private struct NoteListRow: View {
                     .font(.appSmall)
                     .foregroundColor(AppText.tertiary)
 
-                if !note.tags.isEmpty {
-                    Text(note.tags.joined(separator: " · "))
-                        .font(.appMicro)
-                        .foregroundColor(amber.opacity(0.75))
-                        .lineLimit(1)
-                }
+
             }
 
             Spacer(minLength: 0)
