@@ -339,7 +339,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // issued for this exact request and wasn't replayed.
     const rawNonce = asOptionalString(body.nonce);
     if (rawNonce) {
-      const expectedNonceHash = createHash('sha256').update(rawNonce).digest('hex');
+      // iOS generates 32 random bytes, hex-encodes them as the "raw nonce", and
+      // hashes the raw bytes (not the hex string) for the Apple request nonce.
+      // Decode hex → bytes here before hashing so the comparison matches.
+      const expectedNonceHash = createHash('sha256').update(Buffer.from(rawNonce, 'hex')).digest('hex');
       if (payload.nonce !== expectedNonceHash) {
         throw new HttpError(401, 'Nonce mismatch');
       }
