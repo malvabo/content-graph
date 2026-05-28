@@ -1825,7 +1825,6 @@ private struct TemplateEditPage: View {
                             .lineLimit(3)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 20)
-                            .animation(AppAnimation.quick, value: derivedTitle)
 
                         // TextField with axis:.vertical grows with content
                         // and lets the page-level ScrollView handle scrolling.
