@@ -569,7 +569,9 @@ struct NoteVoiceSheet: View {
     @State private var selectedDetent: PresentationDetent = .medium
     @State private var showingComposer: Bool = false
 
+    private static let miniDetent: PresentationDetent = .height(88)
     private let sheetBg = AppBackground.primary
+    private var isMini: Bool { selectedDetent == Self.miniDetent }
 
     private var timeLabel: String {
         String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)
@@ -591,11 +593,13 @@ struct NoteVoiceSheet: View {
                         dismiss()
                     }
                 )
+            } else if isMini {
+                miniBar
             } else {
                 voiceUI
             }
         }
-        .presentationDetents([.medium, .large], selection: $selectedDetent)
+        .presentationDetents([Self.miniDetent, .medium, .large], selection: $selectedDetent)
         .presentationDragIndicator(.visible)
         .presentationBackground(sheetBg)
         .presentationCornerRadius(Radius.sheet)
@@ -619,6 +623,37 @@ struct NoteVoiceSheet: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         recording.finish()
         dismiss()
+    }
+
+    private var miniBar: some View {
+        HStack(spacing: 14) {
+            Circle()
+                .fill(BrandColor.amber)
+                .frame(width: 8, height: 8)
+                .shadow(color: BrandColor.amber.opacity(0.6), radius: 4)
+            Text(timeLabel)
+                .font(.system(size: 17, weight: .medium, design: .monospaced))
+                .foregroundColor(AppText.primary)
+            Text(recording.isPaused ? "Paused" : "Recording")
+                .font(.appSmall)
+                .foregroundColor(AppText.tertiary)
+            Spacer()
+            Button { endRecording() } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("End")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(.black)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Capsule(style: .continuous).fill(Color.white))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var voiceUI: some View {
