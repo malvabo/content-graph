@@ -169,34 +169,34 @@ struct AIService {
     """
 
     /// Strips the wrappers a model sometimes adds — surrounding quotes, leading
-    /// “Title:” labels, trailing punctuation — collapses to one line, and
+    /// "Title:" labels, trailing punctuation — collapses to one line, and
     /// trims to at most six words. Trailing connectors/articles (and, or, the…)
     /// are stripped so a cut phrase never ends mid-thought.
     /// Connector/article words that should never appear at the end of a title.
     /// Shared by sanitize() and indirectly related to the stop list in fallback().
     private static let trailingStopWords: Set<String> = [
-        “and”,”or”,”the”,”a”,”an”,”of”,”in”,”on”,”at”,”to”,”for”,”by”,”with”,”from”,”but”,”nor”
+        "and","or","the","a","an","of","in","on","at","to","for","by","with","from","but","nor"
     ]
 
     static func sanitize(_ raw: String) -> String {
         var t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if let nl = t.firstIndex(where: \.isNewline) { t = String(t[..<nl]) }
-        if t.lowercased().hasPrefix(“title:”) {
-            t = String(t.dropFirst(“title:”.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.lowercased().hasPrefix("title:") {
+            t = String(t.dropFirst("title:".count)).trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        let trimChars = CharacterSet(charactersIn: “\”’””’’`.,;:!?—–-”)
+        let trimChars = CharacterSet(charactersIn: "\"'\u{201C}\u{201D}\u{2018}\u{2019}`.,;:!?\u{2014}\u{2013}-")
         t = t.trimmingCharacters(in: trimChars).trimmingCharacters(in: .whitespacesAndNewlines)
         var words = t.split(whereSeparator: \.isWhitespace).prefix(6).map(String.init)
         while let last = words.last, trailingStopWords.contains(last.lowercased()) {
             words.removeLast()
         }
-        return words.joined(separator: “ “)
+        return words.joined(separator: " ")
     }
 
     private static let fallbackStopWords: Set<String> = [
-        “the”,”a”,”an”,”is”,”it”,”in”,”on”,”at”,”to”,”for”,”of”,”and”,”or”,”but”,
-        “i”,”you”,”we”,”they”,”this”,”that”,”with”,”from”,”by”,”as”,”be”,”are”,
-        “was”,”were”,”have”,”has”,”had”,”do”,”did”,”will”,”would”,”could”,”should”
+        "the","a","an","is","it","in","on","at","to","for","of","and","or","but",
+        "i","you","we","they","this","that","with","from","by","as","be","are",
+        "was","were","have","has","had","do","did","will","would","could","should"
     ]
 
     static func fallback(from text: String) -> String {
