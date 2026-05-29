@@ -615,7 +615,7 @@ struct MinimalNoteDetailPage: View {
             }
         }
         .alert("AI request failed", isPresented: $aiFailed) {
-            Button("OK", role: .cancel) {}
+            Button("OK", role: .cancel) { aiSelectionRange = nil }
         } message: {
             Text(aiFailReason.isEmpty
                  ? "Could not reach the API. Check your network and try again."
@@ -1207,6 +1207,7 @@ struct MinimalNoteDetailPage: View {
             aiFailed = true
             return
         }
+        guard !isAIProcessing else { return }
         aiPreviewLabel = label
         aiPreviewIcon = icon
         aiPreviewInstruction = trimmedInstruction
