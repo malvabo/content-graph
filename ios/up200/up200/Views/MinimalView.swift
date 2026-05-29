@@ -199,8 +199,7 @@ struct MinimalHomePage: View {
                         }
                     }
                     .accessibilityLabel(showSearch ? "Close search" : "Search")
-                }
-                TopBarPill {
+                    TopBarPillDivider()
                     TopBarPillButton(systemImage: "person.crop.circle") {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         onProfileTap()
