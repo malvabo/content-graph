@@ -1250,6 +1250,7 @@ struct ProfileView: View {
     @State private var showKeyUpdate = false
     @State private var showOnboarding = false
     @State private var apiKeyActive = false
+    @State private var showLimitAlertPreview = false
     @EnvironmentObject private var chrome: ChromeController
 
     private let bg = AppBackground.primary
@@ -1314,6 +1315,18 @@ struct ProfileView: View {
                         ) {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             showOnboarding = true
+                        }
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .listRowSeparatorTint(AppInk.solid(0.06))
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
+
+                        SettingsRow(
+                            title: "Preview: limit alert",
+                            trailing: .icon("exclamationmark.bubble")
+                        ) {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            showLimitAlertPreview = true
                         }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
@@ -1461,6 +1474,11 @@ struct ProfileView: View {
                 Button("Done") { clearAllLocalData() }
             } message: {
                 Text("Your account and all data have been permanently removed from our servers.")
+            }
+            .alert("Generation failed", isPresented: $showLimitAlertPreview) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("You've used all 3 free generations. To keep going, add your Anthropic API key in Settings → Anthropic API key.")
             }
             .sheet(isPresented: $showKeyUpdate) {
                 APIKeySetupView {
