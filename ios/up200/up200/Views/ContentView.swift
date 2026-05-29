@@ -1506,7 +1506,11 @@ struct ProfileView: View {
     }
 
     private var isDevAccount: Bool {
-        SessionStore.shared.load()?.email == "borysova.mary@gmail.com"
+        #if DEBUG
+        return true
+        #else
+        return false
+        #endif
     }
 
     private func refreshAPIKeyState() {
