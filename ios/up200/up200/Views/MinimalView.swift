@@ -393,43 +393,23 @@ struct MinimalNoteDetailPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            // Unified bottom bar with three persistent components: the
-            // Create wand on the left, the "Ask AI" chat pill in the
-            // middle, and the dictation mic on the right. All three
-            // stay visible whether or not the editor is focused so the
-            // user can pick a generation path without first tapping
-            // into the body. Dictation's recording row takes the whole
-            // bar over while it's live so the user can't tap into the
-            // chat sheet mid-utterance.
+        }
+        // Unified bottom bar docked via safeAreaInset so it sits flush
+        // against the keyboard (or home indicator when no keyboard is
+        // shown) and the TextEditor's scrollable area is properly inset
+        // above it — cursor never hides behind the bar.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
                 if !dictation.isRecording && !hasActiveTextSelection {
                     if isNoteTab {
-                        // The Note tab's wand opens the full Create
-                        // modal — it targets the whole body, not the
-                        // highlighted span, so we still hide it while
-                        // a live selection is active (the in-selection
-                        // AI menu the system surfaces would otherwise
-                        // duplicate it).
                         aiWandButton
                             .transition(.scale(scale: 0.85).combined(with: .opacity))
                     } else {
-                        // Generation tabs offer quick rewrite actions
-                        // (Make Shorter, Fix Grammar, …) instead of the
-                        // Create flow — the user is already inside an
-                        // AI output and the natural next step is to
-                        // refine it, not generate something new.
                         aiSparklesButton
                             .transition(.scale(scale: 0.85).combined(with: .opacity))
                     }
                 }
 
-                // Keep the pill in the layout (its inner frame(maxWidth:
-                // .infinity) absorbs the slack and pushes DictationControls
-                // to the trailing edge) but fade it out and disable taps
-                // while dictation is live. Previous version conditionally
-                // swapped to a Spacer, and the Spacer's silent insertion
-                // popped the dictation row visibly each time the user
-                // started or finished recording.
                 aiChatPill
                     .opacity(dictation.isRecording ? 0 : 1)
                     .allowsHitTesting(!dictation.isRecording)
@@ -452,7 +432,9 @@ struct MinimalNoteDetailPage: View {
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
             .padding(.horizontal, 20)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .padding(.top, 8)
+            .padding(.bottom, 8)
+            .background(AppBackground.primary)
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
