@@ -1132,7 +1132,7 @@ private struct NoteEditorPage: View {
             // cancel or confirm; chat hides while dictating so the
             // recording row owns the bottom edge.
             VStack(spacing: 12) {
-                if !dictation.isRecording {
+                if !dictation.isRecording && focus == nil {
                     chatButton
                         .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
@@ -1158,7 +1158,7 @@ private struct NoteEditorPage: View {
             .padding(.bottom, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
 
-            if !dictation.isRecording {
+            if !dictation.isRecording && focus == nil {
                 magicButton
                     .padding(.leading, 20)
                     .padding(.bottom, 8)
