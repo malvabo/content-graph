@@ -960,7 +960,9 @@ private struct NoteEditorPage: View {
         // Preserve a title-only note across save/reopen by trailing a newline,
         // which `split` uses to distinguish it from a body-only note.
         if bTrim.isEmpty { return t + "\n" }
-        if t.isEmpty { return noteBody }
+        // Use bTrim (not raw noteBody) so trailing whitespace from voice
+        // dictation doesn't make combined != original.body on every open/close.
+        if t.isEmpty { return bTrim }
         return t + "\n" + noteBody
     }
 
@@ -1005,6 +1007,7 @@ private struct NoteEditorPage: View {
         guard !trimmedBody.isEmpty else { return }
 
         let snapshotBody = noteBody
+        let bodyRef = $noteBody          // binding reads live @State storage
         let baseNote = saved
         let save = onSave
         Task {
@@ -1020,7 +1023,12 @@ private struct NoteEditorPage: View {
             var updated = baseNote
             updated.body = cleaned + "\n" + snapshotBody
             updated.updatedAt = Date()
-            await MainActor.run { save(updated) }
+            await MainActor.run {
+                // Guard against the user editing the note while generateTitle
+                // was in-flight — mirrors retroTitleUntitledNotes line 1568.
+                guard bodyRef.wrappedValue == snapshotBody else { return }
+                save(updated)
+            }
         }
     }
 
@@ -1040,12 +1048,16 @@ private struct NoteEditorPage: View {
     /// compared against a stale baseline.
     private func refreshAfterChat() {
         let id = original.id
+        // Snapshot combined NOW (before the disk read) so the TOCTOU window
+        // between loadAsync() completing and the comparison firing doesn't let
+        // a user edit during the read slip through the guard undetected.
+        let preChatBody = combined
         Task {
             let fresh = await NotesStore.loadAsync()
             guard let updated = fresh.first(where: { $0.id == id }) else { return }
             let migrated = Note.migrated(updated)
             await MainActor.run {
-                if combined == original.body {
+                if preChatBody == original.body {
                     let (t, b) = Self.split(migrated.body)
                     title = t
                     noteBody = b
