@@ -793,10 +793,9 @@ struct OnboardingView: View {
         // pushed past the bottom row's inscribed circle and clipped.
         return GeometryReader { geo in
             let dim = min(geo.size.width, geo.size.height)
-            let circleRadius: CGFloat = min(dim * 0.288, 100)
-            // Small gap between circles so the strokes read as four
-            // discrete shapes rather than a touching cluster.
-            let cellOffset: CGFloat = circleRadius * 1.08
+            let circleRadius: CGFloat = min(dim * 0.21, 73)
+            // Generous gap so the four circles breathe rather than crowd.
+            let cellOffset: CGFloat = circleRadius * 1.12
             let cx = geo.size.width / 2
             let cy = geo.size.height / 2
             let positions: [CGPoint] = [
@@ -813,7 +812,7 @@ struct OnboardingView: View {
                 }
             }
         }
-        .frame(maxHeight: 432)
+        .frame(maxHeight: 310)
     }
 
     @ViewBuilder
@@ -828,13 +827,13 @@ struct OnboardingView: View {
     private func chooseCircleContent(label: String, radius: CGFloat) -> some View {
         let d = radius * 2
         Text(label)
-            .font(.lora(size: 24, weight: .medium))
+            .font(.lora(size: 16, weight: .medium))
             .foregroundColor(AppText.primary)
             .multilineTextAlignment(.center)
             .lineLimit(3)
             .minimumScaleFactor(0.85)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 13)
             .frame(width: d, height: d)
             .background(circleButtonBackground)
             .overlay(circleGlowOuter)
