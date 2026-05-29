@@ -657,7 +657,7 @@ struct OnboardingView: View {
                 let waveSize = UIScreen.main.bounds.width * 2 / 3
                 OnboardingRecordingWaveform(recorder: captureRecorder)
                     .frame(width: waveSize, height: waveSize)
-                    .background(Color.white.opacity(0.09))
+                    .background(Color.white.opacity(0.05))
                     .clipShape(Circle())
 
                 HStack(spacing: 8) {
@@ -686,7 +686,7 @@ struct OnboardingView: View {
                 let waveSize = UIScreen.main.bounds.width * 2 / 3
                 OnboardingRecordingWaveform(recorder: captureRecorder)
                     .frame(width: waveSize, height: waveSize)
-                    .background(Color.white.opacity(0.09))
+                    .background(Color.white.opacity(0.05))
                     .clipShape(Circle())
 
                 HStack(spacing: 8) {
@@ -855,7 +855,7 @@ struct OnboardingView: View {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 13)
             .frame(width: d, height: d)
-            .background(shape.fill(Color.white.opacity(0.08)))
+            .background(shape.fill(Color.white.opacity(0.05)))
             .overlay(outerGlow)
             .overlay(midGlow)
             .overlay(innerRim)
@@ -1445,11 +1445,17 @@ private struct OnboardingRecordingWaveform: View {
                     let isLarge = p.pr3 > 0.90
                     let dotR = ((isLarge ? 2.6 : 1.1) + p.pr2 * 2.0) * pulse + amplified * 1.8
                     let alphaPulse = 0.6 + 0.4 * sin(t * 0.28 + p.fi * 0.3)
-                    let alpha = (0.20 + p.pr3 * 0.52) * alphaPulse * (0.30 + amplified * 0.68)
+                    let alpha = (0.20 + p.pr3 * 0.52) * alphaPulse * (0.32 + amplified * 0.65)
+                    // Interpolate colour: white-grey when silent → amber when speaking
+                    let particleColor = Color(
+                        red:   0.80 + amplified * 0.20,
+                        green: 0.80 - amplified * 0.12,
+                        blue:  0.80 - amplified * 0.60
+                    )
                     ctx.fill(
                         Path(ellipseIn: CGRect(x: px - dotR, y: py - dotR,
                                                width: dotR * 2, height: dotR * 2)),
-                        with: .color(BrandColor.amber.opacity(alpha))
+                        with: .color(particleColor.opacity(alpha))
                     )
                 }
             }
