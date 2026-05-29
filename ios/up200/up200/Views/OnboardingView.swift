@@ -855,7 +855,7 @@ struct OnboardingView: View {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 13)
             .frame(width: d, height: d)
-            .background(shape.fill(Color.black.opacity(0.35)))
+            .background(shape.fill(Color.white.opacity(0.08)))
             .overlay(outerGlow)
             .overlay(midGlow)
             .overlay(innerRim)
