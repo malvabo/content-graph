@@ -1730,10 +1730,16 @@ struct ChatView: View {
                     streamBuffer = ""
                     persistActiveChat()
                 case .failure(let err):
-                    // Drop any partial bubble and surface the error as an
-                    // alert so a half-written reply isn't mistaken for the
-                    // model's actual answer.
-                    messages.removeAll { $0.id == replyID }
+                    // If we received partial content before the connection
+                    // dropped, keep it — a truncated answer is more useful
+                    // than an empty screen and the user can see where to
+                    // retry. Only remove the bubble when nothing arrived.
+                    let partial = streamBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if partial.isEmpty {
+                        messages.removeAll { $0.id == replyID }
+                    } else if let idx = messages.firstIndex(where: { $0.id == replyID }) {
+                        messages[idx].content = partial
+                    }
                     streamBuffer = ""
                     if case .signupRequired = err {
                         showSignUpSheet = true
