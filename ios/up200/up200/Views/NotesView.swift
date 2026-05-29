@@ -2027,12 +2027,12 @@ private struct NewTagSheet: View {
             .background(AppBackground.primary.ignoresSafeArea())
             .navigationTitle("New Tag")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(AppBackground.primary, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
-                        .foregroundColor(AppText.secondary)
+                        .foregroundStyle(AppText.secondary)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Add") { onAdd() }
