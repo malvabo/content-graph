@@ -574,13 +574,19 @@ struct OnboardingView: View {
             captureRecorder.stop()
             generatingTask?.cancel()
             generatingTask = nil
+            firstIdeaSnapshotTask?.cancel()
+            firstIdeaSnapshotTask = nil
         }
         // Drop the user straight onto the per-note detail page the app uses
         // for every note — a "Note" tab plus a tab for the generation just
         // produced. When they dismiss it, fall through to onGetStarted so
         // onboarding exits: they've now seen both the create flow and the
         // notes-and-generations surface they'll live in.
-        .sheet(item: $resultNote, onDismiss: { onGetStarted() }) { note in
+        .sheet(item: $resultNote, onDismiss: {
+            generatingTask?.cancel()
+            generatingTask = nil
+            onGetStarted()
+        }) { note in
             MinimalNoteDetailPage(initialNote: note, initialTabIndex: 1)
                 .preferredColorScheme(.dark)
         }
@@ -877,6 +883,7 @@ struct OnboardingView: View {
     }
 
     private func finishCaptureRecording() {
+        guard capturePhase == .recording else { return }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         // Take an immediate snapshot as a floor, then re-snapshot after a
         // short delay so the recognizer's final isFinal callback (which
@@ -948,6 +955,7 @@ struct OnboardingView: View {
     }
 
     private func startGeneration(label: String, formatID: String, customPrompt: String) {
+        guard capturePhase == .choose else { return }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         captureRecorder.stop()
         chosenContentLabel = label
@@ -990,6 +998,7 @@ struct OnboardingView: View {
             Task.detached(priority: .utility) {
                 await Self.applyNoteTitle(noteID: note.id, transcript: transcript)
             }
+            capturePhase = .prompt
             onGetStarted()
             return
         }
