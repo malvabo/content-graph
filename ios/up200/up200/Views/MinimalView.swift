@@ -308,11 +308,12 @@ struct MinimalNoteDetailPage: View {
 
     private static let maxPreviewVariants = 5
 
-    init(initialNote: Note) {
+    init(initialNote: Note, initialTabIndex: Int = 0) {
         self.initialNote = initialNote
         let migrated = Note.migrated(initialNote)
         self._note = State(initialValue: migrated)
         self._editText = State(initialValue: migrated.body)
+        self._selectedIndex = State(initialValue: initialTabIndex)
     }
 
     private var isNoteTab: Bool { selectedIndex == 0 }
