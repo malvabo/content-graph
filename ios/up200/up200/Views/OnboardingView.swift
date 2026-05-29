@@ -648,9 +648,10 @@ struct OnboardingView: View {
             // speaking into a deaf microphone during the gap.
             let isLive = captureRecorder.isRecording
             VStack(spacing: 18) {
+                let waveSize = UIScreen.main.bounds.width * 2 / 3
                 OnboardingRecordingWaveform(recorder: captureRecorder)
-                    .frame(height: 180)
-                    .frame(maxWidth: .infinity)
+                    .frame(width: waveSize, height: waveSize)
+                    .clipShape(Circle())
 
                 HStack(spacing: 8) {
                     Circle()
@@ -675,9 +676,10 @@ struct OnboardingView: View {
         case .specify:
             let isLive = captureRecorder.isRecording
             VStack(spacing: 18) {
+                let waveSize = UIScreen.main.bounds.width * 2 / 3
                 OnboardingRecordingWaveform(recorder: captureRecorder)
-                    .frame(height: 180)
-                    .frame(maxWidth: .infinity)
+                    .frame(width: waveSize, height: waveSize)
+                    .clipShape(Circle())
 
                 HStack(spacing: 8) {
                     Circle()
@@ -731,10 +733,10 @@ struct OnboardingView: View {
                 Text("Finish recording")
                     .font(.app(size: 17, weight: .semibold))
                     .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                    .frame(width: UIScreen.main.bounds.width * 2 / 3)
+                    .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(BrandColor.amber)
-                    .clipShape(Capsule())
+                    .background(Color.white.opacity(0.94))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
             .buttonStyle(.plain)
             .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -745,10 +747,10 @@ struct OnboardingView: View {
                 Text("Finish recording")
                     .font(.app(size: 17, weight: .semibold))
                     .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                    .frame(width: UIScreen.main.bounds.width * 2 / 3)
+                    .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(BrandColor.amber)
-                    .clipShape(Capsule())
+                    .background(Color.white.opacity(0.94))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
             .buttonStyle(.plain)
             .transition(.opacity.combined(with: .move(edge: .bottom)))
