@@ -90,15 +90,26 @@ final class NoteDictation: ObservableObject {
     }
 
     private func activateAndStart() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-        } catch {
-            startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
-            return
+        // setCategory + setActive can block the main thread for 50-300 ms.
+        // Run them on a detached task, then hop back to the main actor to
+        // wire the recognizer and engine (mirrors RecordingController).
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let session = AVAudioSession.sharedInstance()
+            do {
+                try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+                try session.setActive(true, options: .notifyOthersOnDeactivation)
+            } catch {
+                await MainActor.run {
+                    self?.startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
+                }
+                return
+            }
+            await MainActor.run { self?.continueStartingEngine() }
         }
+    }
 
+    private func continueStartingEngine() {
+        guard !Task.isCancelled else { return }
         request = SFSpeechAudioBufferRecognitionRequest()
         guard let req = request, let rec = recognizer else {
             startupError = "Speech recognition isn't available on this device."
@@ -109,8 +120,6 @@ final class NoteDictation: ObservableObject {
         task = rec.recognitionTask(with: req) { [weak self] result, error in
             DispatchQueue.main.async {
                 guard let self else { return }
-                // Late callbacks after cancel() would otherwise overwrite the
-                // intentionally cleared transcript with stale text.
                 guard self.isRecording else { return }
                 if let result {
                     self.transcript = result.bestTranscription.formattedString
