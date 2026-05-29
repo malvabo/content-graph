@@ -816,53 +816,33 @@ struct OnboardingView: View {
 
             ZStack {
                 ForEach(Array(options.enumerated()), id: \.offset) { idx, opt in
-                    Button(action: opt.action) {
-                        Text(opt.label)
-                            .font(.lora(size: 14, weight: .medium))
-                            .foregroundColor(AppText.primary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(3)
-                            .minimumScaleFactor(0.85)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 16)
-                        .frame(width: circleRadius * 2, height: circleRadius * 2)
-                        .background(
-                            Circle()
-                                .fill(Color.black.opacity(0.35))
-                        )
-                        // Broad outer halo
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white.opacity(0.30), lineWidth: 3)
-                                .blur(radius: 12)
-                                .padding(-8)
-                        )
-                        // Tight inner glow
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white.opacity(0.45), lineWidth: 1.5)
-                                .blur(radius: 5)
-                                .padding(-3)
-                        )
-                        // Sharp crisp edge
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white.opacity(0.55), lineWidth: 0.8)
-                        )
-                        .contentShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .position(positions[idx])
+                    chooseCircleButton(label: opt.label, radius: circleRadius, action: opt.action)
+                        .position(positions[idx])
                 }
             }
         }
-        // Reserve enough vertical room for two rows of circles (each ~168pt
-        // diameter at max) plus the inter-row gap. Computed from the same
-        // sizing math as the inner GeometryReader so the field never
-        // requests more height than its circles need — important on
-        // iPhone SE-class screens where a fixed 360pt frame was forcing
-        // the inner VStack to clip the bottom row's labels.
         .frame(maxHeight: 360)
+    }
+
+    @ViewBuilder
+    private func chooseCircleButton(label: String, radius: CGFloat, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.lora(size: 14, weight: .medium))
+                .foregroundColor(AppText.primary)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .minimumScaleFactor(0.85)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 16)
+                .frame(width: radius * 2, height: radius * 2)
+                .background(Circle().fill(Color.black.opacity(0.35)))
+                .overlay(Circle().stroke(Color.white.opacity(0.30), lineWidth: 3).blur(radius: 12).padding(-8))
+                .overlay(Circle().stroke(Color.white.opacity(0.45), lineWidth: 1.5).blur(radius: 5).padding(-3))
+                .overlay(Circle().stroke(Color.white.opacity(0.55), lineWidth: 0.8))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func startCaptureRecording() {
