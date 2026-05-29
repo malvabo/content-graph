@@ -831,7 +831,7 @@ struct OnboardingView: View {
                 ForEach(Array(options.enumerated()), id: \.offset) { idx, opt in
                     Button(action: opt.action) {
                         Text(opt.label)
-                            .font(.app(size: 18, weight: .medium))
+                            .font(.lora(size: 14, weight: .medium))
                             .foregroundColor(AppText.primary)
                             .multilineTextAlignment(.center)
                             .lineLimit(3)
@@ -843,15 +843,24 @@ struct OnboardingView: View {
                             Circle()
                                 .fill(Color.black.opacity(0.35))
                         )
+                        // Broad outer halo
                         .overlay(
                             Circle()
-                                .stroke(Color.white.opacity(0.28), lineWidth: 1.5)
-                                .blur(radius: 6)
-                                .padding(-4)
+                                .stroke(Color.white.opacity(0.30), lineWidth: 3)
+                                .blur(radius: 12)
+                                .padding(-8)
                         )
+                        // Tight inner glow
                         .overlay(
                             Circle()
-                                .stroke(Color.white.opacity(0.38), lineWidth: 0.8)
+                                .stroke(Color.white.opacity(0.45), lineWidth: 1.5)
+                                .blur(radius: 5)
+                                .padding(-3)
+                        )
+                        // Sharp crisp edge
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.55), lineWidth: 0.8)
                         )
                         .contentShape(Circle())
                     }
