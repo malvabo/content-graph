@@ -243,7 +243,7 @@ private struct ChatService {
         let apiMessages = messages.map { ["role": $0.role, "content": $0.content] }
         let body: [String: Any] = [
             "model": "claude-sonnet-4-6",
-            "max_tokens": 1024,
+            "max_tokens": 2048,
             "system": systemText,
             "messages": apiMessages,
             "stream": true
@@ -326,15 +326,22 @@ struct SavedChat: Identifiable, Codable {
 
     /// Latest message body, single-line, capped — second row used as the
     /// preview subtitle in the saved-chats sheet so the user can scan
-    /// what the chat ended on.
+    /// what the chat ended on. Rewrite XML blocks are stripped first so
+    /// the subtitle never shows raw `<rewrite>` tags.
     var preview: String {
         let last = messages.last?.content ?? ""
-        let trimmed = last.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return "" }
-        let firstLine = trimmed
+        let stripped = last
+            .replacingOccurrences(
+                of: "<rewrite>[\\s\\S]*?</rewrite>",
+                with: "",
+                options: .regularExpression
+            )
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let source = stripped.isEmpty ? last : stripped
+        let firstLine = source
             .split(whereSeparator: \.isNewline)
             .first
-            .map(String.init) ?? trimmed
+            .map(String.init) ?? source
         return String(firstLine.prefix(140))
     }
 
@@ -973,8 +980,12 @@ struct ChatView: View {
             // Keep the latest bubble pinned to the bottom as a streamed
             // reply grows line by line — without this the text would
             // spill below the fold while the model is still writing.
+            // The animation eases the scroll so the ~30fps drain-pump
+            // updates don't produce visible jitter.
             .onChange(of: messages.last?.content) { _, _ in
-                proxy.scrollTo(messages.last?.id, anchor: .bottom)
+                withAnimation(.easeOut(duration: 0.1)) {
+                    proxy.scrollTo(messages.last?.id, anchor: .bottom)
+                }
             }
             .onChange(of: isLoading) { _, loading in
                 if loading {
@@ -1536,7 +1547,20 @@ struct ChatView: View {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             let looksLikeHeader = firstLine.hasSuffix(":") || firstLine.count <= 40
             if looksLikeHeader, !rest.isEmpty, let r = body.range(of: rest) {
-                return body.replacingCharacters(in: r, with: after)
+                // If the model symmetrically included the same header line
+                // in `after`, strip it to avoid duplicating the header at
+                // the replacement site (the header already exists in body
+                // at the surrounding text; re-inserting it via `after`
+                // would produce "Header:\nHeader:\nNew text").
+                let headerStr = String(firstLine)
+                let cleanAfter: String
+                if after.hasPrefix(headerStr) {
+                    cleanAfter = String(after.dropFirst(headerStr.count))
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                } else {
+                    cleanAfter = after
+                }
+                return body.replacingCharacters(in: r, with: cleanAfter)
             }
         }
         // Case-insensitive fallback — handles model capitalisation drift.
@@ -1546,14 +1570,19 @@ struct ChatView: View {
         // Smart-quote normalisation fallback — models frequently emit
         // curly quotes ("…") while source text uses straight ones ("…").
         let normBefore = Self.normalizeTypography(trimmed)
-        let normBody   = Self.normalizeTypography(body)
-        if normBefore != trimmed, let r = normBody.range(of: normBefore) {
-            // Map the range back to the original body via byte offset.
-            let start = normBody.distance(from: normBody.startIndex, to: r.lowerBound)
-            let len   = normBody.distance(from: r.lowerBound, to: r.upperBound)
-            if let origStart = body.index(body.startIndex, offsetBy: start, limitedBy: body.endIndex),
-               let origEnd   = body.index(origStart, offsetBy: len, limitedBy: body.endIndex) {
-                return body.replacingCharacters(in: origStart..<origEnd, with: after)
+        if normBefore != trimmed {
+            // Strategy 5a: the source body already uses straight quotes —
+            // search for the normalised form directly in the original body.
+            if let r = body.range(of: normBefore) {
+                return body.replacingCharacters(in: r, with: after)
+            }
+            // Strategy 5b: both body and before have curly quotes. Normalise
+            // the entire body and do the replacement there. The body's
+            // typography is already non-standard, so normalising it is
+            // acceptable as a last resort.
+            let normBody = Self.normalizeTypography(body)
+            if normBody.contains(normBefore) {
+                return normBody.replacingOccurrences(of: normBefore, with: after)
             }
         }
         return nil
@@ -1598,6 +1627,7 @@ struct ChatView: View {
             ) {
                 newProjects[idx].content = updated
                 projectsChanged = true
+                break // apply to the first matching doc only — stop here
             } else if let updated = applyRewriteByContains(
                 in: newProjects[idx].content,
                 before: before,
@@ -1605,6 +1635,7 @@ struct ChatView: View {
             ) {
                 newProjects[idx].content = updated
                 projectsChanged = true
+                break // same — one surgical edit, not a bulk find/replace
             }
         }
         if projectsChanged {
@@ -1635,6 +1666,7 @@ struct ChatView: View {
                     allNotes[idx].body = updated
                     allNotes[idx].updatedAt = Date()
                     notesChanged = true
+                    break // one note, one edit
                 } else if let updated = applyRewriteByContains(
                     in: allNotes[idx].body,
                     before: before,
@@ -1643,6 +1675,7 @@ struct ChatView: View {
                     allNotes[idx].body = updated
                     allNotes[idx].updatedAt = Date()
                     notesChanged = true
+                    break // same
                 }
             }
             if notesChanged {
@@ -1668,7 +1701,7 @@ struct ChatView: View {
                     id: f.id,
                     kind: f.kind,
                     title: f.title,
-                    preview: f.preview,
+                    preview: String(updated.prefix(120)),
                     content: updated
                 )
                 filesChanged = true
@@ -1688,6 +1721,20 @@ struct ChatView: View {
     /// turn sends the updated text as context rather than the stale
     /// original. Also clears `seededSelectionRange` — the old byte
     /// offset no longer maps into the updated body.
+    /// Trim the candidate string to hide any open (unclosed) `<rewrite>`
+    /// block. This prevents the drain pump from briefly showing raw XML
+    /// tags to the user before the closing `</rewrite>` arrives.
+    private static func drainSafeContent(_ s: String) -> String {
+        guard let openRange = s.range(of: "<rewrite>", options: .backwards) else {
+            return s
+        }
+        guard s.range(of: "</rewrite>", range: openRange.upperBound..<s.endIndex) == nil else {
+            return s // block is closed — safe to show
+        }
+        return String(s[s.startIndex..<openRange.lowerBound])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private func syncSelectionChip(before: String, after: String) {
         for idx in attachedFiles.indices where attachedFiles[idx].kind == .selection {
             let f = attachedFiles[idx]
@@ -1740,7 +1787,10 @@ struct ChatView: View {
                 let gap = target - shown
                 let step = min(gap, 4 + gap / 8)
                 shown = min(shown + step, target)
-                let newContent = String(buf.prefix(shown))
+                // Don't show partial <rewrite> XML — wait until the closing
+                // tag has been drained so the card appears atomically.
+                let candidate = String(buf.prefix(shown))
+                let newContent = Self.drainSafeContent(candidate)
                 if let idx = messages.firstIndex(where: { $0.id == replyID }) {
                     messages[idx].content = newContent
                 }
@@ -1899,7 +1949,7 @@ private struct RewriteSuggestionCard: View {
                 Text("From:")
                     .font(.app(size: 13, weight: .semibold))
                     .foregroundColor(AppText.secondary)
-                Text(Self.renderMarkdown(suggestion.before))
+                Text(suggestion.before)
                     .font(.appBody)
                     .foregroundColor(AppText.tertiary)
                     .strikethrough(true, color: AppInk.solid(0.35))
