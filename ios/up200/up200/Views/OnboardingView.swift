@@ -816,7 +816,7 @@ struct OnboardingView: View {
                         let driftY = cos(t * (0.27 + fi * 0.023) + fi * 2.3) * 4.5
                         let pos = CGPoint(x: positions[idx].x + driftX,
                                           y: positions[idx].y + driftY)
-                        chooseCircleButton(label: opt.label, radius: circleRadius, action: opt.action)
+                        chooseCircleButton(label: opt.label, seed: idx, radius: circleRadius, action: opt.action)
                             .position(pos)
                     }
                 }
@@ -826,16 +826,17 @@ struct OnboardingView: View {
     }
 
     @ViewBuilder
-    private func chooseCircleButton(label: String, radius: CGFloat, action: @escaping () -> Void) -> some View {
+    private func chooseCircleButton(label: String, seed: Int, radius: CGFloat, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            chooseCircleContent(label: label, radius: radius)
+            chooseCircleContent(label: label, seed: seed, radius: radius)
         }
         .buttonStyle(.plain)
     }
 
     @ViewBuilder
-    private func chooseCircleContent(label: String, radius: CGFloat) -> some View {
+    private func chooseCircleContent(label: String, seed: Int, radius: CGFloat) -> some View {
         let d = radius * 2
+        let shape = WobblyCircle(seed: seed)
         Text(label)
             .font(.lora(size: 16, weight: .medium))
             .foregroundColor(AppText.primary)
@@ -845,27 +846,11 @@ struct OnboardingView: View {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 13)
             .frame(width: d, height: d)
-            .background(circleButtonBackground)
-            .overlay(circleGlowOuter)
-            .overlay(circleGlowMid)
-            .overlay(circleGlowInner)
-            .contentShape(Circle())
-    }
-
-    private var circleButtonBackground: some View {
-        Circle().fill(Color.black.opacity(0.35))
-    }
-
-    private var circleGlowOuter: some View {
-        Circle().stroke(Color.white.opacity(0.30), lineWidth: 3).blur(radius: 12).padding(-8)
-    }
-
-    private var circleGlowMid: some View {
-        Circle().stroke(Color.white.opacity(0.45), lineWidth: 1.5).blur(radius: 5).padding(-3)
-    }
-
-    private var circleGlowInner: some View {
-        Circle().stroke(Color.white.opacity(0.55), lineWidth: 0.8)
+            .background(shape.fill(Color.black.opacity(0.35)))
+            .overlay(shape.stroke(Color.white.opacity(0.30), lineWidth: 3).blur(radius: 12).padding(-8))
+            .overlay(shape.stroke(Color.white.opacity(0.45), lineWidth: 1.5).blur(radius: 5).padding(-3))
+            .overlay(shape.stroke(Color.white.opacity(0.55), lineWidth: 0.8))
+            .contentShape(shape)
     }
 
     private func startCaptureRecording() {
@@ -1333,6 +1318,40 @@ private struct StarfieldBlurb: View {
     private func pseudoRandom(_ n: Int) -> Double {
         let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
         return v - floor(v)
+    }
+}
+
+// MARK: - Onboarding recording waveform
+
+// MARK: - Wobbly circle shape
+
+/// A near-circle with subtle low-frequency harmonic perturbations.
+/// Each `seed` produces a distinct irregular outline so the four
+/// option circles each look slightly different — organic, not mechanical.
+private struct WobblyCircle: Shape {
+    let seed: Int
+    private let wobble: Double = 0.032  // ~3% radius deviation
+
+    func path(in rect: CGRect) -> Path {
+        let cx = rect.midX, cy = rect.midY
+        let r = min(rect.width, rect.height) / 2
+        let s = Double(seed)
+        let steps = 72
+        var path = Path()
+        for i in 0...steps {
+            let a = Double(i) / Double(steps) * .pi * 2
+            let factor = 1.0 + wobble * (
+                sin(a * 3.0 + s * 1.73) * 0.50 +
+                sin(a * 5.0 + s * 2.39) * 0.30 +
+                sin(a * 7.0 + s * 3.07) * 0.20
+            )
+            let px = cx + cos(a) * r * factor
+            let py = cy + sin(a) * r * factor
+            if i == 0 { path.move(to: CGPoint(x: px, y: py)) }
+            else       { path.addLine(to: CGPoint(x: px, y: py)) }
+        }
+        path.closeSubpath()
+        return path
     }
 }
 
