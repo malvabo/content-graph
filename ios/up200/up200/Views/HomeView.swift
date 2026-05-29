@@ -2588,7 +2588,7 @@ struct HomeView: View {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         bannerController.onOpen?()
                     },
-                    onDismiss: { bannerController.onCancel?() }
+                    onDismiss: { bannerController.isVisible = false }
                 )
                 .padding(.horizontal, 12)
                 .padding(.top, 8)
@@ -2766,8 +2766,10 @@ struct HomeView: View {
                     // and never touch library_projects.
                     resultsHandler(results, capturedSources)
                     bannerController.isReady = true
+                    bannerController.isVisible = true
                 } else if saveToLibrary(results, sources: capturedSources) {
                     bannerController.isReady = true
+                    bannerController.isVisible = true
                 } else {
                     // Persistence refused (corrupt blob) or JSON encode failed.
                     // Showing "Content ready" here would mislead the user into
