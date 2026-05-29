@@ -130,6 +130,11 @@ final class NoteDictation: ObservableObject {
             }
         }
 
+        guard !Task.isCancelled else {
+            task?.cancel()
+            task = nil
+            return
+        }
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
@@ -614,6 +619,8 @@ struct NoteVoiceSheet: View {
             let large = (newDetent == .large)
             if large && (recording.isRecording || recording.isPaused) {
                 recording.pause()
+            } else if !large && recording.isPaused {
+                recording.resume()
             }
             withAnimation(AppAnimation.standard) {
                 showingComposer = large
@@ -1137,23 +1144,21 @@ private struct NoteEditorPage: View {
                     chatButton
                         .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
-                if dictation.isRecording || focus != nil {
-                    DictationControls(
-                        dictation: dictation,
-                        onStart: {
-                            bodyBeforeDictation = noteBody
-                            dictation.start()
-                        },
-                        onCancel: {
-                            dictation.cancel()
-                            noteBody = bodyBeforeDictation
-                        },
-                        onConfirm: {
-                            dictation.stop()
-                        }
-                    )
-                    .transition(.scale(scale: 0.85).combined(with: .opacity))
-                }
+                DictationControls(
+                    dictation: dictation,
+                    onStart: {
+                        bodyBeforeDictation = noteBody
+                        dictation.start()
+                    },
+                    onCancel: {
+                        dictation.cancel()
+                        noteBody = bodyBeforeDictation
+                    },
+                    onConfirm: {
+                        dictation.stop()
+                    }
+                )
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
             .padding(.trailing, 20)
             .padding(.bottom, 8)
@@ -2380,10 +2385,11 @@ private struct SelectableNoteEditor: UIViewRepresentable {
         if tv.textContainerInset.bottom != bottomInset {
             tv.textContainerInset.bottom = bottomInset
         }
+        let targetFocused = isFocused
         DispatchQueue.main.async {
-            if isFocused && !tv.isFirstResponder {
+            if targetFocused && !tv.isFirstResponder {
                 tv.becomeFirstResponder()
-            } else if !isFocused && tv.isFirstResponder {
+            } else if !targetFocused && tv.isFirstResponder {
                 tv.resignFirstResponder()
             }
         }

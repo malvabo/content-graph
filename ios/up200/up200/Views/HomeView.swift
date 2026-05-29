@@ -1265,6 +1265,7 @@ private struct LinkInputSheet: View {
         Task {
             var results: [(String, String)] = []
             for link in pending {
+                guard !Task.isCancelled else { return }
                 guard let url = URL(string: link) else {
                     results.append((link, ""))
                     continue
@@ -2791,7 +2792,9 @@ struct HomeView: View {
         switch loadBlob([GenerationProject].self, from: projectsData) {
         case .empty: projects = []
         case .ok(let existing): projects = existing
-        case .corrupt: return false
+        case .corrupt:
+            lastBatchIDs = []
+            return false
         }
 
         let sourceTitle = sources.first?.label ?? "Untitled"
@@ -2806,7 +2809,10 @@ struct HomeView: View {
             )
         }
         projects.insert(contentsOf: newProjects, at: 0)
-        guard let encoded = try? JSONEncoder().encode(projects) else { return false }
+        guard let encoded = try? JSONEncoder().encode(projects) else {
+            lastBatchIDs = []
+            return false
+        }
         projectsData = encoded
         lastBatchIDs = newProjects.map { $0.id }
         return true
