@@ -211,14 +211,17 @@ private struct ChatService {
         the app can locate and replace it. Quote a tight span: the \
         sentence, phrase, or paragraph that actually changes, not the \
         whole source.
-        - Emit multiple <rewrite> blocks if the user asked for several \
-        edits; each block stands alone.
+        - Emit multiple <rewrite> blocks only when the user explicitly \
+        asked for several separate, distinct edits; each block stands \
+        alone. Never split a single selection into multiple blocks.
         - When a [selection] context item is attached, the user has \
         flagged that text as the surgical target — the inline-editing \
-        pathway. Always answer that request with a <rewrite> block whose \
-        <before> is the selection's content (or a tight subset of it), \
-        even when your edit covers the entire selection. Do not respond \
-        in prose for selection-targeted edits.
+        pathway. Output ONLY a single <rewrite> block, no surrounding \
+        prose, no intro sentence, no explanation. The <before> field \
+        MUST be the complete selection text copied character-for-character \
+        from the source — do not paraphrase it, do not use a subset, do \
+        not split it. The app does an exact string match; any deviation \
+        will prevent the edit from being applied.
         - For broad rewrites of an entire document with no [selection] \
         attached, do not use this block — answer normally. The block is \
         for surgical edits on a specific span.
@@ -1490,29 +1493,31 @@ struct ChatView: View {
         guard let nsRange = seededSelectionRange,
               let range = Range(nsRange, in: body) else { return nil }
         let current = String(body[range])
-        // Accept either an exact match or the trimmed forms agreeing, so
-        // a stray newline at the edge of the user's highlight doesn't
-        // bounce a valid surgical edit.
-        let normalize: (String) -> String = {
-            $0.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        guard current == before || normalize(current) == normalize(before) else {
-            return nil
-        }
+        // Accept the match when the texts agree under increasingly lenient
+        // normalisations so stray whitespace, case drift, or smart-quote
+        // substitutions from the model don't force a risky document-wide
+        // find/replace.
+        let trim: (String) -> String = { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        let normCurrent = Self.normalizeTypography(trim(current)).lowercased()
+        let normBefore  = Self.normalizeTypography(trim(before)).lowercased()
+        guard current == before
+            || trim(current) == trim(before)
+            || normCurrent == normBefore
+        else { return nil }
         var updated = body
         updated.replaceSubrange(range, with: after)
         return updated
     }
 
-    /// Locate `before` inside `body` with a small set of fallbacks so a
+    /// Locate `before` inside `body` with a set of fallbacks so a
     /// near-miss quote from the model still lands. Returns the body with
     /// `after` spliced in at the first matching span, or nil if no
     /// strategy found a span. Strategies, in order:
     /// 1. exact substring
     /// 2. whitespace-trimmed `before`
-    /// 3. `before` with a leading "Title-ish:\n" line stripped — the
-    ///    common failure where the model quotes the source title header
-    ///    along with the body.
+    /// 3. `before` with a leading "Title-ish:\n" line stripped
+    /// 4. case-insensitive match of trimmed `before`
+    /// 5. smart-quote–normalised match (model often outputs " vs ")
     private func applyRewriteByContains(
         in body: String,
         before: String,
@@ -1529,15 +1534,39 @@ struct ChatView: View {
             let firstLine = trimmed[trimmed.startIndex..<newline.lowerBound]
             let rest = String(trimmed[newline.upperBound...])
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            // Only strip the first line when it looks like a metadata
-            // header (ends in ":" or is very short ≤ 40 chars) so we
-            // don't silently discard real body sentences.
             let looksLikeHeader = firstLine.hasSuffix(":") || firstLine.count <= 40
             if looksLikeHeader, !rest.isEmpty, let r = body.range(of: rest) {
                 return body.replacingCharacters(in: r, with: after)
             }
         }
+        // Case-insensitive fallback — handles model capitalisation drift.
+        if !trimmed.isEmpty, let r = body.range(of: trimmed, options: .caseInsensitive) {
+            return body.replacingCharacters(in: r, with: after)
+        }
+        // Smart-quote normalisation fallback — models frequently emit
+        // curly quotes ("…") while source text uses straight ones ("…").
+        let normBefore = Self.normalizeTypography(trimmed)
+        let normBody   = Self.normalizeTypography(body)
+        if normBefore != trimmed, let r = normBody.range(of: normBefore) {
+            // Map the range back to the original body via byte offset.
+            let start = normBody.distance(from: normBody.startIndex, to: r.lowerBound)
+            let len   = normBody.distance(from: r.lowerBound, to: r.upperBound)
+            if let origStart = body.index(body.startIndex, offsetBy: start, limitedBy: body.endIndex),
+               let origEnd   = body.index(origStart, offsetBy: len, limitedBy: body.endIndex) {
+                return body.replacingCharacters(in: origStart..<origEnd, with: after)
+            }
+        }
         return nil
+    }
+
+    private static func normalizeTypography(_ s: String) -> String {
+        s.replacingOccurrences(of: "\u{2018}", with: "'")   // '
+         .replacingOccurrences(of: "\u{2019}", with: "'")   // '
+         .replacingOccurrences(of: "\u{201C}", with: "\"")  // "
+         .replacingOccurrences(of: "\u{201D}", with: "\"")  // "
+         .replacingOccurrences(of: "\u{2013}", with: "-")   // –
+         .replacingOccurrences(of: "\u{2014}", with: "--")  // —
+         .replacingOccurrences(of: "\u{2026}", with: "...")  // …
     }
 
     /// Apply a rewrite suggestion against the attached context sources.
@@ -1584,6 +1613,7 @@ struct ChatView: View {
                 cachedProjects = newProjects
             }
             appliedRewriteKeys.insert(suggestion.stableKey)
+            syncSelectionChip(before: before, after: after)
             return true
         }
 
@@ -1619,6 +1649,7 @@ struct ChatView: View {
                 NotesStore.saveInBackground(allNotes)
                 notes = allNotes
                 appliedRewriteKeys.insert(suggestion.stableKey)
+                syncSelectionChip(before: before, after: after)
                 return true
             }
         }
@@ -1650,6 +1681,25 @@ struct ChatView: View {
 
         rewriteFailed = true
         return false
+    }
+
+    /// After a rewrite is successfully applied to a document or note,
+    /// patch the `.selection` chip in `attachedFiles` so any follow-up
+    /// turn sends the updated text as context rather than the stale
+    /// original. Also clears `seededSelectionRange` — the old byte
+    /// offset no longer maps into the updated body.
+    private func syncSelectionChip(before: String, after: String) {
+        for idx in attachedFiles.indices where attachedFiles[idx].kind == .selection {
+            let f = attachedFiles[idx]
+            guard let updated = applyRewriteByContains(
+                in: f.content, before: before, after: after
+            ) else { continue }
+            attachedFiles[idx] = ChatContextSource(
+                id: f.id, kind: f.kind, title: f.title,
+                preview: String(updated.prefix(120)), content: updated
+            )
+        }
+        seededSelectionRange = nil
     }
 
     private func sendMessage() {
