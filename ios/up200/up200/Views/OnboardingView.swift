@@ -580,8 +580,8 @@ struct OnboardingView: View {
         // produced. When they dismiss it, fall through to onGetStarted so
         // onboarding exits: they've now seen both the create flow and the
         // notes-and-generations surface they'll live in.
-        .fullScreenCover(item: $resultNote, onDismiss: { onGetStarted() }) { note in
-            MinimalNoteDetailPage(initialNote: note)
+        .sheet(item: $resultNote, onDismiss: { onGetStarted() }) { note in
+            MinimalNoteDetailPage(initialNote: note, initialTabIndex: 1)
                 .preferredColorScheme(.dark)
         }
     }
