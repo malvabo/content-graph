@@ -651,6 +651,7 @@ struct OnboardingView: View {
                 let waveSize = UIScreen.main.bounds.width * 2 / 3
                 OnboardingRecordingWaveform(recorder: captureRecorder)
                     .frame(width: waveSize, height: waveSize)
+                    .background(Color.white.opacity(0.05))
                     .clipShape(Circle())
 
                 HStack(spacing: 8) {
@@ -679,6 +680,7 @@ struct OnboardingView: View {
                 let waveSize = UIScreen.main.bounds.width * 2 / 3
                 OnboardingRecordingWaveform(recorder: captureRecorder)
                     .frame(width: waveSize, height: waveSize)
+                    .background(Color.white.opacity(0.05))
                     .clipShape(Circle())
 
                 HStack(spacing: 8) {
@@ -1333,7 +1335,7 @@ private struct StarfieldBlurb: View {
 /// later inside the app.
 private struct OnboardingRecordingWaveform: View {
     let recorder: VoiceRecorder
-    private let particleCount = 80
+    private let particleCount = 160
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
@@ -1349,8 +1351,8 @@ private struct OnboardingRecordingWaveform: View {
                     let progress = fi / Double(particleCount - 1)
                     let baseX = progress * size.width
 
-                    let phase1 = t * 3.5 + progress * .pi * 4.0
-                    let phase2 = t * 2.1 + progress * .pi * 7.0
+                    let phase1 = t * 2.45 + progress * .pi * 4.0
+                    let phase2 = t * 1.47 + progress * .pi * 7.0
                     let targetY = cy
                         + sin(phase1) * amplitude * 0.65
                         + sin(phase2) * amplitude * 0.35
@@ -1358,9 +1360,9 @@ private struct OnboardingRecordingWaveform: View {
                     let seed1 = fi * 13.7
                     let seed2 = fi * 29.1
                     let scatterY = 5.0 + amplified * 12.0
-                    let jitterX = sin(t * 0.7 + seed1) * 2.5
-                    let jitterY = sin(t * 0.9 + seed2) * scatterY
-                        + cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4
+                    let jitterX = sin(t * 0.49 + seed1) * 2.5
+                    let jitterY = sin(t * 0.63 + seed2) * scatterY
+                        + cos(t * 0.91 + seed1 * 0.5) * scatterY * 0.4
 
                     let px = baseX + jitterX
                     let py = targetY + jitterY
@@ -1371,7 +1373,7 @@ private struct OnboardingRecordingWaveform: View {
 
                     let normJitter = abs(jitterY) / max(scatterY * 1.5, 1.0)
                     let proximityAlpha = max(0.0, 1.0 - normJitter)
-                    let pulse = 0.65 + 0.35 * sin(t * 1.8 + fi * 0.35)
+                    let pulse = 0.65 + 0.35 * sin(t * 1.26 + fi * 0.35)
                     let alpha = proximityAlpha * pulse * (0.35 + amplified * 0.60)
 
                     ctx.fill(
