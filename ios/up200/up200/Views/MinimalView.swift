@@ -1099,8 +1099,8 @@ struct MinimalNoteDetailPage: View {
     }
 
     /// Same logic as NoteEditorPage.persistIfNeeded — if the note body
-    /// reads like prose with no user-supplied title (first line >4 words),
-    /// ask the model for a 3-word title and prepend it once. Runs only
+    /// reads like prose with no user-supplied title (first line >6 words),
+    /// ask the model for a title and prepend it once. Runs only
     /// when leaving the screen so the user's editing isn't interrupted
     /// mid-flow.
     private func maybeGenerateTitle() {
@@ -1108,7 +1108,7 @@ struct MinimalNoteDetailPage: View {
         guard !trimmedBody.isEmpty else { return }
         let firstLine = trimmedBody.split(whereSeparator: \.isNewline).first.map(String.init) ?? trimmedBody
         let wordCount = firstLine.split(whereSeparator: \.isWhitespace).count
-        guard wordCount > 4 else { return }
+        guard wordCount > 6 else { return }
 
         let snapshotBody = note.body
         let baseNote = note
