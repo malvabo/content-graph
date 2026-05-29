@@ -805,10 +805,20 @@ struct OnboardingView: View {
                 CGPoint(x: cx + cellOffset, y: cy + cellOffset),
             ]
 
-            ZStack {
-                ForEach(Array(options.enumerated()), id: \.offset) { idx, opt in
-                    chooseCircleButton(label: opt.label, radius: circleRadius, action: opt.action)
-                        .position(positions[idx])
+            TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { context in
+                let t = context.date.timeIntervalSinceReferenceDate
+                ZStack {
+                    ForEach(Array(options.enumerated()), id: \.offset) { idx, opt in
+                        let fi = Double(idx)
+                        // Each circle drifts at a slightly different frequency so
+                        // they float independently rather than moving in unison.
+                        let driftX = sin(t * (0.31 + fi * 0.019) + fi * 1.7) * 4.5
+                        let driftY = cos(t * (0.27 + fi * 0.023) + fi * 2.3) * 4.5
+                        let pos = CGPoint(x: positions[idx].x + driftX,
+                                          y: positions[idx].y + driftY)
+                        chooseCircleButton(label: opt.label, radius: circleRadius, action: opt.action)
+                            .position(pos)
+                    }
                 }
             }
         }
