@@ -651,12 +651,6 @@ struct OnboardingView: View {
                 OnboardingRecordingWaveform(recorder: captureRecorder)
                     .frame(height: 180)
                     .frame(maxWidth: .infinity)
-                    .background(BrandColor.amber.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .stroke(BrandColor.amber.opacity(0.20), lineWidth: 0.5)
-                    )
 
                 HStack(spacing: 8) {
                     Circle()
@@ -684,12 +678,6 @@ struct OnboardingView: View {
                 OnboardingRecordingWaveform(recorder: captureRecorder)
                     .frame(height: 180)
                     .frame(maxWidth: .infinity)
-                    .background(BrandColor.amber.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .stroke(BrandColor.amber.opacity(0.20), lineWidth: 0.5)
-                    )
 
                 HStack(spacing: 8) {
                     Circle()
@@ -743,10 +731,10 @@ struct OnboardingView: View {
                 Text("Finish recording")
                     .font(.app(size: 17, weight: .semibold))
                     .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                    .frame(maxWidth: .infinity)
+                    .frame(width: UIScreen.main.bounds.width * 2 / 3)
                     .frame(height: 54)
-                    .background(Color.white.opacity(0.94))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    .background(BrandColor.amber)
+                    .clipShape(Capsule())
             }
             .buttonStyle(.plain)
             .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -757,10 +745,10 @@ struct OnboardingView: View {
                 Text("Finish recording")
                     .font(.app(size: 17, weight: .semibold))
                     .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                    .frame(maxWidth: .infinity)
+                    .frame(width: UIScreen.main.bounds.width * 2 / 3)
                     .frame(height: 54)
-                    .background(Color.white.opacity(0.94))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    .background(BrandColor.amber)
+                    .clipShape(Capsule())
             }
             .buttonStyle(.plain)
             .transition(.opacity.combined(with: .move(edge: .bottom)))
