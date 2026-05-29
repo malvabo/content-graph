@@ -2670,6 +2670,8 @@ private struct SelectionRewriteSheet: View {
             return "Couldn't read the rewrite response."
         case .empty:
             return "The rewrite came back empty. Try again."
+        case .signupRequired:
+            return "Sign in with Apple to use rewrite."
         }
     }
 }
