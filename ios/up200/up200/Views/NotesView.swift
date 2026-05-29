@@ -542,18 +542,20 @@ struct NoteWaveform: View {
                     let px = baseX + jitterX; let py = targetY + jitterY
                     let pr = pseudoRandom(i * 3)
                     let waveMag = (sin(phase1) + 1.0) / 2.0
-                    let radius = 1.0 + pr * 1.8 + waveMag * 2.0 * amplified
+                    // 3× bigger dots
+                    let radius = (1.0 + pr * 1.8 + waveMag * 2.0 * amplified) * 3.0
                     let normJitter = abs(jitterY) / max(scatterY * 1.5, 1.0)
                     let proximityAlpha = max(0.0, 1.0 - normJitter) * envelope
                     let pulse = 0.65 + 0.35 * sin(t * 1.8 + fi * 0.35)
-                    let alpha = proximityAlpha * pulse * (0.35 + amplified * 0.60)
+                    // High contrast: nearly invisible when silent, vivid when speaking
+                    let alpha = proximityAlpha * pulse * (0.10 + amplified * 0.90)
                     ctx.fill(Path(ellipseIn: CGRect(x: px - radius, y: py - radius,
                                                     width: radius * 2, height: radius * 2)),
                              with: .color(BrandColor.amber.opacity(alpha)))
                 }
             }
         }
-        .frame(height: 75)
+        .frame(height: 90)
         .accessibilityHidden(true)
     }
 
