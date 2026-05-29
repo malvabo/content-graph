@@ -717,6 +717,19 @@ struct ChatView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 inputArea
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if showMentionPicker {
+                    MentionInlinePicker(
+                        documents: documentSources,
+                        notes: noteSources,
+                        onSelect: { source in attachMention(source) },
+                        onDismiss: { showMentionPicker = false }
+                    )
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 4)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
         .animation(.spring(response: 0.28, dampingFraction: 0.82), value: showMentionPicker)
         .sheet(isPresented: $showSavedChatsPicker) {
@@ -1138,19 +1151,6 @@ struct ChatView: View {
 
     private var inputArea: some View {
         VStack(spacing: 0) {
-            if showMentionPicker {
-                MentionInlinePicker(
-                    documents: documentSources,
-                    notes: noteSources,
-                    onSelect: { source in
-                        attachMention(source)
-                    },
-                    onDismiss: { showMentionPicker = false }
-                )
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-                .padding(.horizontal, 12)
-                .padding(.bottom, 6)
-            }
             if shouldShowQuickActions {
                 quickActionsRow
                     .transition(.opacity)
@@ -1983,7 +1983,7 @@ private struct MentionInlinePicker: View {
                 .padding(.vertical, 12)
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 0) {
+                    VStack(spacing: 0) {
                         ForEach(Array(filtered.enumerated()), id: \.element.id) { idx, item in
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
