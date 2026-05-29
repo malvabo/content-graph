@@ -78,7 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = getAllowedOrigin(req);
   if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Device-ID');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -123,7 +123,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Helper calls (template title/prompt enhancement) are exempt from the
   // free-generation limit — they're internal authoring utilities capped at
   // low token counts, not the user-visible generate/chat/quick-edit features.
-  const skipLimit = is_helper === true && max_tokens <= 1000;
+  // Anonymous device sessions are never exempt — they have no trusted identity.
+  const skipLimit = !isAnonymous && is_helper === true && max_tokens <= 1000;
 
   if (!skipLimit) {
     const deviceLimit = isAnonymous ? 1 : FREE_LIMIT;
