@@ -2282,6 +2282,7 @@ private struct MentionTextView: UIViewRepresentable {
                 length: min(sel.length, max(0, len - sel.location))
             )
             coordinator.suppressEcho = false
+            tv.invalidateHeight()
         }
         if tv.placeholder != placeholder {
             tv.placeholder = placeholder
@@ -2310,7 +2311,9 @@ private struct MentionTextView: UIViewRepresentable {
             let sel = tv.selectedRange
             tv.attributedText = parent.buildAttributed(newText)
             tv.selectedRange = sel
-            (tv as? ChatComposerUITextView)?.refreshPlaceholderVisibility()
+            let ctv = tv as? ChatComposerUITextView
+            ctv?.refreshPlaceholderVisibility()
+            ctv?.invalidateHeight()
         }
 
         func textViewDidBeginEditing(_ tv: UITextView) {
@@ -2405,25 +2408,27 @@ private final class ChatComposerUITextView: UITextView {
     }
 
     override var intrinsicContentSize: CGSize {
-        let base = super.intrinsicContentSize
+        // sizeThatFits gives the true content height regardless of whether
+        // scrolling is enabled — super.intrinsicContentSize returns
+        // noIntrinsicMetric when isScrollEnabled is true, making it useless
+        // for the cap calculation.
+        guard bounds.width > 0 else {
+            return CGSize(width: UIView.noIntrinsicMetric, height: 44)
+        }
+        let fit = sizeThatFits(CGSize(width: bounds.width, height: .greatestFiniteMagnitude))
         let lineHeight = (font ?? .systemFont(ofSize: 17)).lineHeight
         let cap = lineHeight * CGFloat(maxLines) + textContainerInset.top + textContainerInset.bottom
-        // Width must be noIntrinsicMetric so SwiftUI gives us the parent's
-        // width and the text container wraps; otherwise a long pasted line
-        // reports its full unbroken width here and stretches the composer.
-        let height: CGFloat
-        if base.height > cap {
+        if fit.height > cap {
             isScrollEnabled = true
-            height = cap
+            return CGSize(width: UIView.noIntrinsicMetric, height: cap)
         } else {
             isScrollEnabled = false
-            height = base.height
+            return CGSize(width: UIView.noIntrinsicMetric, height: fit.height)
         }
-        return CGSize(width: UIView.noIntrinsicMetric, height: height)
     }
 
-    override func layoutSubviews() {
-        super.layoutSubviews()
+    /// Call after any text change so SwiftUI re-queries our size.
+    func invalidateHeight() {
         invalidateIntrinsicContentSize()
     }
 }
