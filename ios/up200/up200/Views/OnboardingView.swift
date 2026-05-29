@@ -77,7 +77,7 @@ struct OnboardingView: View {
     // can't clobber the first idea.
     @State private var firstIdeaSnapshotTask: Task<Void, Never>? = nil
     @State private var resultNote: Note? = nil
-    @State private var showPostGenerationAuth = false
+
     @State private var generatingStartedAt: Date = .distantPast
     // Step 3 (.constellation) renders the same orange-spark / central-cloud
     // scene used during .capture/.generating, so the "one idea → graph"
@@ -580,22 +580,9 @@ struct OnboardingView: View {
         // produced. When they dismiss it, fall through to onGetStarted so
         // onboarding exits: they've now seen both the create flow and the
         // notes-and-generations surface they'll live in.
-        .fullScreenCover(item: $resultNote, onDismiss: { showPostGenerationAuth = true }) { note in
+        .fullScreenCover(item: $resultNote, onDismiss: { onGetStarted() }) { note in
             MinimalNoteDetailPage(initialNote: note)
                 .preferredColorScheme(.dark)
-        }
-        .fullScreenCover(isPresented: $showPostGenerationAuth) {
-            PostGenerationAuthView(
-                onSignUp: {
-                    showPostGenerationAuth = false
-                    onGetStarted()
-                },
-                onLogin: {
-                    showPostGenerationAuth = false
-                    onLogin()
-                }
-            )
-            .preferredColorScheme(.dark)
         }
     }
 
@@ -1149,112 +1136,6 @@ struct OnboardingView: View {
 
     private func formatCaptureTime(_ s: Int) -> String {
         String(format: "%d:%02d", s / 60, s % 60)
-    }
-}
-
-// MARK: - Post-generation auth
-
-private struct PostGenerationAuthView: View {
-    let onSignUp: () -> Void
-    let onLogin: () -> Void
-    @StateObject private var appleSignIn = AppleSignInCoordinator()
-    @State private var authError: String? = nil
-    @State private var pendingNonce: String?
-
-    var body: some View {
-        ZStack {
-            AppBackground.primary.ignoresSafeArea()
-            RadialGradient(
-                colors: [BrandColor.amber.opacity(0.16), .clear],
-                center: .init(x: 0.5, y: 0.32),
-                startRadius: 0,
-                endRadius: 420
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                Spacer()
-
-                VStack(spacing: 14) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 30, weight: .semibold))
-                        .foregroundColor(BrandColor.amber)
-                        .frame(width: 76, height: 76)
-                        .background(BrandColor.amber.opacity(0.12))
-                        .clipShape(Circle())
-
-                    Text("Your first generation is ready")
-                        .font(.lora(size: 27, weight: .medium))
-                        .kerning(-0.3)
-                        .foregroundColor(AppText.primary)
-                        .multilineTextAlignment(.center)
-
-                    Text("Create an account or log in to keep your notes and generations available next time.")
-                        .font(.appBody)
-                        .foregroundColor(AppText.secondary)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(3)
-                        .padding(.horizontal, 8)
-                }
-                .padding(.horizontal, 28)
-
-                Spacer()
-
-                VStack(spacing: 12) {
-                    SignInWithAppleButton(.signUp) { request in
-                        pendingNonce = appleSignIn.setupRequest(request)
-                    } onCompletion: { result in
-                        handleAppleResult(result, completion: onSignUp)
-                    }
-                    .signInWithAppleButtonStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .cornerRadius(Radius.card)
-
-                    SignInWithAppleButton(.signIn) { request in
-                        pendingNonce = appleSignIn.setupRequest(request)
-                    } onCompletion: { result in
-                        handleAppleResult(result, completion: onLogin)
-                    }
-                    .signInWithAppleButtonStyle(.whiteOutline)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .cornerRadius(Radius.card)
-
-                    if let authError {
-                        Text(authError)
-                            .font(.appSmall)
-                            .foregroundColor(Color(red: 0.95, green: 0.42, blue: 0.34))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 8)
-                    }
-                }
-                .padding(.horizontal, 28)
-                .padding(.bottom, 52)
-            }
-        }
-    }
-
-    private func handleAppleResult(_ result: Result<ASAuthorization, Error>, completion: @escaping () -> Void) {
-        authError = nil
-        let nonce = pendingNonce
-        pendingNonce = nil
-        switch result {
-        case .failure(let error as NSError)
-            where error.domain == ASAuthorizationError.errorDomain
-            && error.code == ASAuthorizationError.canceled.rawValue:
-            return
-        case .failure(let error):
-            authError = error.localizedDescription
-        case .success(let auth):
-            guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else {
-                authError = "Could not read Apple credentials. Try again."
-                return
-            }
-            appleSignIn.handleCredential(credential, nonce: nonce, onSuccess: completion) { error in
-                authError = error.localizedDescription
-            }
-        }
     }
 }
 
