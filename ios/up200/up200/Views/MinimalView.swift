@@ -863,7 +863,7 @@ struct MinimalNoteDetailPage: View {
             } else {
                 BodyParagraphsView(raw: displayText)
                     .padding(.horizontal, 20)
-                    .padding(.top, isNoteTab ? 4 : 8)
+                    .padding(.top, 4)
                     .padding(.bottom, 96)
             }
         }
