@@ -519,6 +519,10 @@ struct ChatView: View {
     // dismissal of the chat sheet within the 350ms delay cancels the
     // pending focus so it can't write into a destroyed view.
     @State private var focusTask: Task<Void, Never>? = nil
+    // Stream drain pump — SSE chunks land in streamBuffer; drainTask reads
+    // them out at a smooth ~30fps cadence so text flows rather than jumps.
+    @State private var streamBuffer = ""
+    @State private var drainTask: Task<Void, Never>? = nil
 
     private let bg = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
@@ -772,6 +776,7 @@ struct ChatView: View {
         .presentationBackground(bg)
         .onDisappear {
             sendTask?.cancel()
+            drainTask?.cancel()
             fileImportTask?.cancel()
             dictation.cancel()
             // Catch any final state the per-turn saves missed — eg. if a
@@ -1335,7 +1340,9 @@ struct ChatView: View {
         // for the loaded one, so an in-progress conversation isn't lost.
         persistActiveChat()
         sendTask?.cancel()
-        sendTask = nil
+        drainTask?.cancel()
+        drainTask = nil
+        streamBuffer = ""
         activeSavedChatID = chat.id
         messages = chat.messages
         inputText = ""
@@ -1663,6 +1670,31 @@ struct ChatView: View {
         // Identity for the assistant turn the stream writes into: the
         // first delta appends the bubble, later deltas grow it in place.
         let replyID = UUID()
+        streamBuffer = ""
+
+        // Drain pump: reads from streamBuffer and advances the displayed
+        // message by a handful of characters per 33ms tick (~30fps). The
+        // step is adaptive — larger gaps drain faster so the view stays
+        // close to the SSE head without ever jumping many chars at once.
+        drainTask?.cancel()
+        drainTask = Task { @MainActor in
+            var shown = 0
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 33_000_000)
+                guard !Task.isCancelled else { break }
+                let buf = streamBuffer
+                let target = buf.count
+                guard shown < target else { continue }
+                let gap = target - shown
+                let step = min(gap, 4 + gap / 8)
+                shown = min(shown + step, target)
+                let newContent = String(buf.prefix(shown))
+                if let idx = messages.firstIndex(where: { $0.id == replyID }) {
+                    messages[idx].content = newContent
+                }
+            }
+        }
+
         sendTask = Task {
             let outcome = await ChatService.streamSend(
                 messages: snapshot,
@@ -1671,17 +1703,20 @@ struct ChatView: View {
                     guard !Task.isCancelled else { return }
                     // First chunk: swap the typing indicator for the bubble.
                     if isLoading { isLoading = false }
-                    if let idx = messages.firstIndex(where: { $0.id == replyID }) {
-                        messages[idx].content = partial
-                    } else {
+                    // Feed the full accumulated text into the buffer; the
+                    // drain pump will reveal it smoothly frame by frame.
+                    streamBuffer = partial
+                    if messages.firstIndex(where: { $0.id == replyID }) == nil {
                         messages.append(
-                            ChatMessage(id: replyID, role: "assistant", content: partial)
+                            ChatMessage(id: replyID, role: "assistant", content: "")
                         )
                     }
                 }
             )
             await MainActor.run {
                 isLoading = false
+                drainTask?.cancel()
+                drainTask = nil
                 guard !Task.isCancelled else { return }
                 switch outcome {
                 case .success(let reply):
@@ -1692,12 +1727,14 @@ struct ChatView: View {
                             ChatMessage(id: replyID, role: "assistant", content: reply)
                         )
                     }
+                    streamBuffer = ""
                     persistActiveChat()
                 case .failure(let err):
                     // Drop any partial bubble and surface the error as an
                     // alert so a half-written reply isn't mistaken for the
                     // model's actual answer.
                     messages.removeAll { $0.id == replyID }
+                    streamBuffer = ""
                     if case .signupRequired = err {
                         showSignUpSheet = true
                     } else {
