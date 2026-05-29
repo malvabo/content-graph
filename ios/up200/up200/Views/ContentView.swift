@@ -1272,17 +1272,19 @@ struct ProfileView: View {
                 }
 
                 List {
-                    SettingsRow(
-                        title: "Templates",
-                        trailing: .chevron
-                    ) {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        path.append(.templates)
+                    if isDevAccount {
+                        SettingsRow(
+                            title: "Templates",
+                            trailing: .chevron
+                        ) {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            path.append(.templates)
+                        }
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .listRowSeparatorTint(AppInk.solid(0.06))
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
                     }
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparatorTint(AppInk.solid(0.06))
-                    .alignmentGuide(.listRowSeparatorLeading) { _ in 20 }
 
                     SettingsRow(
                         title: "Notifications",
@@ -1504,11 +1506,7 @@ struct ProfileView: View {
     }
 
     private var isDevAccount: Bool {
-        #if DEBUG
-        return true
-        #else
-        return false
-        #endif
+        SessionStore.shared.load()?.email == "borysova.mary@gmail.com"
     }
 
     private func refreshAPIKeyState() {
