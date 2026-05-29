@@ -452,7 +452,6 @@ struct MinimalNoteDetailPage: View {
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
