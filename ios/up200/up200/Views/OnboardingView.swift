@@ -815,22 +815,44 @@ struct OnboardingView: View {
     @ViewBuilder
     private func chooseCircleButton(label: String, radius: CGFloat, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(label)
-                .font(.lora(size: 14, weight: .medium))
-                .foregroundColor(AppText.primary)
-                .multilineTextAlignment(.center)
-                .lineLimit(3)
-                .minimumScaleFactor(0.85)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 16)
-                .frame(width: radius * 2, height: radius * 2)
-                .background(Circle().fill(Color.black.opacity(0.35)))
-                .overlay(Circle().stroke(Color.white.opacity(0.30), lineWidth: 3).blur(radius: 12).padding(-8))
-                .overlay(Circle().stroke(Color.white.opacity(0.45), lineWidth: 1.5).blur(radius: 5).padding(-3))
-                .overlay(Circle().stroke(Color.white.opacity(0.55), lineWidth: 0.8))
-                .contentShape(Circle())
+            chooseCircleContent(label: label, radius: radius)
         }
         .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func chooseCircleContent(label: String, radius: CGFloat) -> some View {
+        let d = radius * 2
+        Text(label)
+            .font(.lora(size: 14, weight: .medium))
+            .foregroundColor(AppText.primary)
+            .multilineTextAlignment(.center)
+            .lineLimit(3)
+            .minimumScaleFactor(0.85)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 16)
+            .frame(width: d, height: d)
+            .background(circleButtonBackground)
+            .overlay(circleGlowOuter)
+            .overlay(circleGlowMid)
+            .overlay(circleGlowInner)
+            .contentShape(Circle())
+    }
+
+    private var circleButtonBackground: some View {
+        Circle().fill(Color.black.opacity(0.35))
+    }
+
+    private var circleGlowOuter: some View {
+        Circle().stroke(Color.white.opacity(0.30), lineWidth: 3).blur(radius: 12).padding(-8)
+    }
+
+    private var circleGlowMid: some View {
+        Circle().stroke(Color.white.opacity(0.45), lineWidth: 1.5).blur(radius: 5).padding(-3)
+    }
+
+    private var circleGlowInner: some View {
+        Circle().stroke(Color.white.opacity(0.55), lineWidth: 0.8)
     }
 
     private func startCaptureRecording() {
