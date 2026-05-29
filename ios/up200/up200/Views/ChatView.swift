@@ -789,7 +789,10 @@ struct ChatView: View {
         .presentationBackground(bg)
         .onDisappear {
             sendTask?.cancel()
+            sendTask = nil
             drainTask?.cancel()
+            drainTask = nil
+            streamBuffer = ""
             fileImportTask?.cancel()
             dictation.cancel()
             // Catch any final state the per-turn saves missed — eg. if a
@@ -831,7 +834,7 @@ struct ChatView: View {
             focusTask?.cancel()
             focusTask = nil
         }
-        .onChange(of: projectsData) { rebuildProjects() }
+        .onChange(of: projectsData) { _, _ in rebuildProjects() }
     }
 
     // MARK: Header
@@ -1257,7 +1260,7 @@ struct ChatView: View {
 
     private func presentMentionPicker() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        showMentionPicker = true
+        showMentionPicker.toggle()
     }
 
     private func presentSavedChatsPicker() {
@@ -1338,6 +1341,7 @@ struct ChatView: View {
         // for the loaded one, so an in-progress conversation isn't lost.
         persistActiveChat()
         sendTask?.cancel()
+        sendTask = nil
         drainTask?.cancel()
         drainTask = nil
         streamBuffer = ""
@@ -1447,7 +1451,7 @@ struct ChatView: View {
         } else {
             let segments = AssistantParser.parse(msg.content)
             VStack(alignment: .leading, spacing: 10) {
-                ForEach(segments) { segment in
+                ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
                     switch segment {
                     case .text(let text):
                         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1514,23 +1518,23 @@ struct ChatView: View {
         before: String,
         after: String
     ) -> String? {
-        if body.contains(before) {
-            return body.replacingOccurrences(of: before, with: after)
+        if let r = body.range(of: before) {
+            return body.replacingCharacters(in: r, with: after)
         }
         let trimmed = before.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty, trimmed != before, body.contains(trimmed) {
-            return body.replacingOccurrences(of: trimmed, with: after)
+        if !trimmed.isEmpty, trimmed != before, let r = body.range(of: trimmed) {
+            return body.replacingCharacters(in: r, with: after)
         }
         if let newline = trimmed.range(of: "\n") {
             let firstLine = trimmed[trimmed.startIndex..<newline.lowerBound]
             let rest = String(trimmed[newline.upperBound...])
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             // Only strip the first line when it looks like a metadata
-            // header — short, ends in ":", or is the source's title —
-            // so we don't silently drop real body text.
-            let looksLikeHeader = firstLine.hasSuffix(":") || firstLine.count <= 80
-            if looksLikeHeader, !rest.isEmpty, body.contains(rest) {
-                return body.replacingOccurrences(of: rest, with: after)
+            // header (ends in ":" or is very short ≤ 40 chars) so we
+            // don't silently discard real body sentences.
+            let looksLikeHeader = firstLine.hasSuffix(":") || firstLine.count <= 40
+            if looksLikeHeader, !rest.isEmpty, let r = body.range(of: rest) {
+                return body.replacingCharacters(in: r, with: after)
             }
         }
         return nil
