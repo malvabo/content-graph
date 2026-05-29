@@ -104,8 +104,8 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, strea
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
-    const POSITIONS = 80;
-    const LAYERS = 4; // staggered lifecycle layers per X position
+    const POSITIONS = 100;
+    const LAYERS = 6; // more layers = broader, denser band
     let t = 0, raf: number;
 
     const pseudoRandom = (n: number) => {
@@ -130,7 +130,8 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, strea
 
       const level = audioLevelRef.current;
       const amplified = Math.min(1.0, Math.pow(Math.max(level, 0.005), 0.28) * 2.8);
-      const amplitude = amplified * cy * 0.68;
+      // Less movement: lower amplitude, slower wave
+      const amplitude = amplified * cy * 0.42;
 
       for (let layer = 0; layer < LAYERS; layer++) {
         for (let i = 0; i < POSITIONS; i++) {
@@ -141,33 +142,33 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, strea
           const r2 = pseudoRandom(idx + 500);
           const r3 = pseudoRandom(idx + 1000);
 
-          // Each particle cycles through a 0→1 lifecycle (far → at wave → far)
-          // Layers are evenly offset so at any moment all lifecycle stages are present
+          // Staggered lifecycle phases so all stages are visible at once
           const phaseOffset = (layer / LAYERS) + r1 * (1 / LAYERS);
-          const phase = (t * 0.28 + phaseOffset) % 1.0;
+          const phase = (t * 0.2 + phaseOffset) % 1.0;
 
-          // Wave target position at this X
-          const wave1 = Math.sin(progress * Math.PI * 4 + t * 1.6) * amplitude;
-          const wave2 = Math.sin(progress * Math.PI * 6.3 + t * 2.2 + 1.1) * amplitude * 0.4;
+          // Slower, smoother wave — fewer cycles, lower frequency
+          const wave1 = Math.sin(progress * Math.PI * 3.0 + t * 0.9) * amplitude;
+          const wave2 = Math.sin(progress * Math.PI * 5.0 + t * 1.3 + 1.1) * amplitude * 0.28;
           const waveY = cy + wave1 + wave2;
 
-          // Particle approaches from above (side=-1) or below (side=1)
+          // Approach from above or below
           const side = r2 < 0.5 ? -1 : 1;
-          const travelDist = 18 + r3 * 38;
+          // Wider travel distance for a broader band
+          const travelDist = 30 + r3 * 58;
 
-          // distFrac: 1=at spawn, 0=at wave. phase 0.5 = wave, edges = far
+          // distFrac: 0 = at wave (phase 0.5), 1 = at spawn
           const distFrac = Math.abs(phase - 0.5) * 2;
-          const easedDist = distFrac * distFrac; // ease-in: slower near wave
+          const easedDist = distFrac * distFrac;
           const yOffset = side * travelDist * easedDist;
 
-          // Size: tiny when far, full when at wave
+          // Particles grow as they converge — broader visible size range
           const proximity = 1 - distFrac;
-          const size = Math.max(0.2, (0.3 + proximity * 2.6) * (0.5 + r3 * 0.9) * (1 + amplified * 0.5));
+          const size = Math.max(0.2, (0.4 + proximity * 3.8) * (0.5 + r3 * 0.8) * (1 + amplified * 0.5));
 
-          // Alpha: transparent when far, bright at wave
-          const alpha = proximity * proximity * (0.55 + r1 * 0.35);
+          // Higher alpha ceiling so the wave is clearly visible
+          const alpha = proximity * proximity * (0.75 + r1 * 0.22);
 
-          // Fade at horizontal edges so particles don't hard-clip
+          // Fade at horizontal edges
           const envelope = Math.sin(progress * Math.PI);
           const finalAlpha = alpha * envelope;
 
@@ -180,7 +181,7 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, strea
         }
       }
 
-      t += 0.016;
+      t += 0.011;
       raf = requestAnimationFrame(draw);
     };
     draw();
@@ -193,7 +194,7 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, strea
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center" style={{ background: 'var(--color-overlay-backdrop)', backdropFilter: 'blur(2px)', opacity: visible ? 1 : 0, transition: 'opacity 150ms' }}>
       <div className="flex flex-col w-full overflow-hidden rounded-t-[16px] md:rounded-[16px]"
-        style={{ maxWidth: 480, minHeight: 280, maxHeight: '80vh', background: '#0d0e16', boxShadow: '0 16px 48px rgba(0,0,0,0.4)', transform: visible ? 'translateY(0)' : 'translateY(16px)', transition: 'transform 150ms ease, opacity 150ms ease', position: 'relative' }}>
+        style={{ maxWidth: 480, minHeight: 320, maxHeight: '80vh', background: '#0d0e16', boxShadow: '0 16px 48px rgba(0,0,0,0.4)', transform: visible ? 'translateY(0)' : 'translateY(16px)', transition: 'transform 150ms ease, opacity 150ms ease', position: 'relative' }}>
         <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', borderRadius: 'inherit' }} />
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 24px 32px', gap: 14 }}>
           <div style={{ fontSize: 48, fontWeight: 300, fontFamily: 'var(--font-sans)', color: '#fff', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>{mm}:{ss}</div>
