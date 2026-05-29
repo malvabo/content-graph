@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createPublicKey, verify, createHash, createHmac } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { getAllowedOrigin } from '../_cors';
+import { getAllowedOrigin } from '../_cors.js';
 
 const APPLE_KEYS_URL = 'https://appleid.apple.com/auth/keys';
 const DEFAULT_IOS_BUNDLE_ID = 'com.up200.app';

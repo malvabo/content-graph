@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { getAllowedOrigin } from '../_cors';
+import { getAllowedOrigin } from '../_cors.js';
 
 function verifySessionToken(token: string): string | null {
   const secret = process.env.JWT_SECRET;
