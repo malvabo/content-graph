@@ -104,8 +104,8 @@ private func fromSyncGen(_ s: SyncGeneration) -> MinimalGeneration? {
 
 /// Tracks locally deleted generation IDs so they aren't re-added on the next
 /// pull. Capped at 1 000 entries to prevent unbounded growth.
-private enum DeletedGenTombstones {
-    private static let key = "com.up200.app.deleted_gen_ids_v1"
+enum DeletedGenTombstones {
+    static let key = "com.up200.app.deleted_gen_ids_v1"
     private static let cap = 1_000
 
     static func load() -> Set<UUID> {
