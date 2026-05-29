@@ -2022,7 +2022,7 @@ private struct TemplatePromptEnhancer {
         You title content-generation prompt templates. The title sits in a list of templates the user picks from, so it has to name what the template produces.
 
         Output exactly one title and nothing else:
-        - 3 to 7 words
+        - 2 to 6 words — always a complete, self-contained phrase (never end on a preposition, conjunction, or article)
         - Sentence case: capitalize the first word and proper nouns only
         - No quotes, no trailing punctuation, no emoji, no preamble
         - No em-dashes; use a colon if you need separation
@@ -2038,7 +2038,7 @@ private struct TemplatePromptEnhancer {
 
         let body: [String: Any] = [
             "model": "claude-sonnet-4-6",
-            "max_tokens": 30,
+            "max_tokens": 50,
             "system": system,
             "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]],
             "is_helper": true

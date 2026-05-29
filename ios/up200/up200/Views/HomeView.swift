@@ -172,28 +172,35 @@ struct AIService {
     /// “Title:” labels, trailing punctuation — collapses to one line, and
     /// trims to at most six words. Trailing connectors/articles (and, or, the…)
     /// are stripped so a cut phrase never ends mid-thought.
+    /// Connector/article words that should never appear at the end of a title.
+    /// Shared by sanitize() and indirectly related to the stop list in fallback().
+    private static let trailingStopWords: Set<String> = [
+        “and”,”or”,”the”,”a”,”an”,”of”,”in”,”on”,”at”,”to”,”for”,”by”,”with”,”from”,”but”,”nor”
+    ]
+
     static func sanitize(_ raw: String) -> String {
         var t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if let nl = t.firstIndex(where: \.isNewline) { t = String(t[..<nl]) }
-        let prefixes = [“Title:”, “title:”, “TITLE:”]
-        for p in prefixes where t.hasPrefix(p) {
-            t = String(t.dropFirst(p.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.lowercased().hasPrefix(“title:”) {
+            t = String(t.dropFirst(“title:”.count)).trimmingCharacters(in: .whitespacesAndNewlines)
         }
         let trimChars = CharacterSet(charactersIn: “\”’””’’`.,;:!?—–-”)
         t = t.trimmingCharacters(in: trimChars).trimmingCharacters(in: .whitespacesAndNewlines)
         var words = t.split(whereSeparator: \.isWhitespace).prefix(6).map(String.init)
-        // Strip trailing connector/article words so titles never end mid-thought.
-        let trailingStop = Set([“and”,”or”,”the”,”a”,”an”,”of”,”in”,”on”,”at”,”to”,”for”,”by”,”with”,”from”,”but”,”nor”])
-        while let last = words.last, trailingStop.contains(last.lowercased()) {
+        while let last = words.last, trailingStopWords.contains(last.lowercased()) {
             words.removeLast()
         }
         return words.joined(separator: “ “)
     }
 
+    private static let fallbackStopWords: Set<String> = [
+        “the”,”a”,”an”,”is”,”it”,”in”,”on”,”at”,”to”,”for”,”of”,”and”,”or”,”but”,
+        “i”,”you”,”we”,”they”,”this”,”that”,”with”,”from”,”by”,”as”,”be”,”are”,
+        “was”,”were”,”have”,”has”,”had”,”do”,”did”,”will”,”would”,”could”,”should”
+    ]
+
     static func fallback(from text: String) -> String {
-        let stop = Set(["the","a","an","is","it","in","on","at","to","for","of","and","or","but",
-                        "i","you","we","they","this","that","with","from","by","as","be","are",
-                        "was","were","have","has","had","do","did","will","would","could","should"])
+        let stop = fallbackStopWords
         let firstLine = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? text
         let words = firstLine.split { !$0.isLetter && !$0.isNumber }
             .map(String.init)
@@ -210,7 +217,7 @@ struct AIService {
         return cased.joined(separator: " ")
     }
 
-    /// Returns a body with a fresh AI 3-word title prepended as the first
+    /// Returns a body with a fresh AI title (2–6 words) prepended as the first
     /// line, or nil when the body already looks titled, when the generated
     /// title duplicates the existing first line, or when generation fails.
     /// Shared by every call site that lands a raw transcript on disk so the
@@ -218,9 +225,10 @@ struct AIService {
     static func prependTitleIfMissing(to body: String) async -> String? {
         let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
-        // Treat a short (≤4 word) first line followed by a newline as an
+        // Treat a short (≤6 word) first line followed by a newline as an
         // existing title. Word-count is more reliable than char-count for
         // recognising prior AI titles regardless of language.
+        // Keep this threshold in sync with needsTitle() in NotesView.swift.
         if let nl = trimmed.firstIndex(of: "\n") {
             let firstLine = String(trimmed[..<nl])
             let wordCount = firstLine.split(whereSeparator: \.isWhitespace).count
