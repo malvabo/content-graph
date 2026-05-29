@@ -1087,6 +1087,7 @@ private struct NoteEditorPage: View {
                 .foregroundColor(AppText.primary)
                 .tint(AppText.primary)
                 .lineLimit(1...3)
+                .allowsTightening(true)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
                 .focused($focus, equals: .title)
@@ -1437,6 +1438,7 @@ struct NotesView: View {
     /// behaviour intact.
     var detailFor: ((Note) -> AnyView)? = nil
     @EnvironmentObject private var recording: RecordingController
+    @EnvironmentObject private var chrome: ChromeController
     @Environment(\.scenePhase) private var scenePhase
     @State private var notes: [Note] = []
     @State private var editingNote: Note? = nil
@@ -2008,6 +2010,12 @@ struct NotesView: View {
         }
         .onChange(of: newNoteTrigger) { _, _ in
             startAudioNote()
+        }
+        .onChange(of: editingNote) { _, note in
+            // Guarantee the floating mic button reappears whenever the user
+            // navigates back from a note — onDisappear on the destination can
+            // race with SwiftUI transitions and leave hideTabBar stuck as true.
+            if note == nil { chrome.hideTabBar = false }
         }
     }
 }

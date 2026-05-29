@@ -381,7 +381,8 @@ struct MinimalNoteDetailPage: View {
                         // factor lets a moderately-long title squeeze
                         // onto one line before wrapping.
                         .lineLimit(2)
-                        .minimumScaleFactor(0.85)
+                        .minimumScaleFactor(0.80)
+                        .allowsTightening(true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 12)
