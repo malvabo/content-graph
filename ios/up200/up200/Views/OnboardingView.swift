@@ -1345,44 +1345,37 @@ private struct OnboardingRecordingWaveform: View {
                 let cy = size.height / 2
                 let maxR = min(cx, cy) * 0.88
                 let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
-                // Speed multiplier: quiet = gentle drift, loud = fast swirl
-                let speedMult = 0.28 + amplified * 2.2
+                // Orbital speed: slow ambient drift when quiet, fast swirl when speaking.
+                // Multiplier goes from 1× (silence) to 7× (full voice).
+                // Each particle has a FIXED radius — no radial jumps, ever.
+                let speedMult = 1.0 + amplified * 6.0
 
                 for i in 0..<particleCount {
                     let fi = Double(i)
-                    // Per-particle deterministic seeds
                     let pr0 = pseudoRandom(i)
                     let pr1 = pseudoRandom(i + 1000)
                     let pr2 = pseudoRandom(i + 2000)
                     let pr3 = pseudoRandom(i + 3000)
 
-                    // Spread particles across the full disc (bias toward middle)
-                    let baseR = (0.08 + pow(pr0, 0.7) * 0.88) * maxR
+                    // Fixed orbital radius spread across the full disc
+                    let r = (0.08 + pow(pr0, 0.7) * 0.88) * maxR
 
-                    // Mix CW and CCW orbits for a nebula look
+                    // Mix CW / CCW; inner particles orbit faster (differential rotation)
                     let dir: Double = pr1 < 0.5 ? 1.0 : -1.0
-                    // Inner particles orbit faster (galaxy differential rotation)
-                    let orbitSpeed = (0.10 + (1.0 - pr0) * 0.22) * speedMult * dir
-
-                    let startAngle = pr2 * .pi * 2
-                    let angle = startAngle + t * orbitSpeed
-
-                    // Radial breath: particles pulse in/out, more so when speaking
-                    let breathFreq = (0.18 + pr1 * 0.28) * speedMult
-                    let breathAmp = maxR * (0.03 + amplified * 0.13)
-                    let r = baseR + sin(t * breathFreq + pr3 * .pi * 2) * breathAmp
+                    let baseSpeed = 0.055 + (1.0 - pr0) * 0.13
+                    let angle = pr2 * .pi * 2 + t * baseSpeed * speedMult * dir
 
                     let px = cx + cos(angle) * r
                     let py = cy + sin(angle) * r
 
-                    // Size pulses with voice; a few particles are large anchors
-                    let sizeSeed = 0.65 + 0.35 * sin(t * (0.9 + pr1) * speedMult * 0.4 + fi * 0.4)
-                    let isLarge = pr3 > 0.88
-                    let dotR = (isLarge ? 2.8 : 1.2) + pr2 * 2.0 + amplified * 2.5 * sizeSeed
+                    // Gentle size pulse — slow, audio-independent, no jumps
+                    let pulse = 0.75 + 0.25 * sin(t * 0.35 + fi * 0.4)
+                    let isLarge = pr3 > 0.90
+                    let dotR = ((isLarge ? 2.6 : 1.1) + pr2 * 2.0) * pulse + amplified * 1.8
 
-                    // Opacity: brighter when speaking
-                    let alphaPulse = 0.55 + 0.45 * sin(t * (0.7 + pr2) * speedMult * 0.35 + fi * 0.3)
-                    let alpha = (0.22 + pr3 * 0.55) * alphaPulse * (0.28 + amplified * 0.72)
+                    // Opacity brightens when speaking
+                    let alphaPulse = 0.6 + 0.4 * sin(t * 0.28 + fi * 0.3)
+                    let alpha = (0.20 + pr3 * 0.52) * alphaPulse * (0.30 + amplified * 0.68)
 
                     ctx.fill(
                         Path(ellipseIn: CGRect(x: px - dotR, y: py - dotR,
