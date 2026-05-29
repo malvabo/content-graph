@@ -662,13 +662,13 @@ struct OnboardingView: View {
 
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(isLive ? BrandColor.amber : Color.white.opacity(0.4))
+                        .fill(Color.white.opacity(0.5))
                         .frame(width: 7, height: 7)
                     Text(isLive
                          ? "Recording  \(formatCaptureTime(recordingSeconds))"
                          : "Listening\u{2026}")
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundColor((isLive ? BrandColor.amber : Color.white.opacity(0.6)).opacity(0.92))
+                        .foregroundColor(Color.white.opacity(0.55))
                 }
             }
             .transition(.opacity)
@@ -691,13 +691,13 @@ struct OnboardingView: View {
 
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(isLive ? BrandColor.amber : Color.white.opacity(0.4))
+                        .fill(Color.white.opacity(0.5))
                         .frame(width: 7, height: 7)
                     Text(isLive
                          ? "Recording  \(formatCaptureTime(specifySeconds))"
                          : "Listening\u{2026}")
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundColor((isLive ? BrandColor.amber : Color.white.opacity(0.6)).opacity(0.92))
+                        .foregroundColor(Color.white.opacity(0.55))
                 }
             }
             .transition(.opacity)
@@ -1432,7 +1432,9 @@ private struct OnboardingRecordingWaveform: View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let level = recorder.audioLevel
-            let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
+            // Noise floor ~0.02; speech typically 0.06–0.35. Linear remap so
+            // amplified is truly 0 at silence and 1 at normal speech level.
+            let amplified = max(0.0, min(1.0, (Double(level) - 0.02) / 0.28))
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
