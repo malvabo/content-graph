@@ -1357,55 +1357,83 @@ private struct WobblyCircle: Shape {
 
 // MARK: - Onboarding recording waveform
 
+/// Persistent per-particle orbital state. Angles are accumulated via dt
+/// each frame so changing orbital speed (which tracks audio level) never
+/// causes a positional jump — only angular velocity changes, not position.
+private final class ParticleOrbitStore: ObservableObject {
+    struct Particle {
+        var angle: Double       // accumulated, radians
+        let baseSpeed: Double   // radians/sec base rate
+        let dir: Double         // +1 or -1
+        let normR: Double       // normalised orbital radius 0–1
+        let pr2: Double         // size seed
+        let pr3: Double         // alpha / isLarge seed
+        let fi: Double          // float index for pulse phases
+    }
+
+    private(set) var particles: [Particle] = []
+    var lastT: Double = -1
+
+    init(count: Int) {
+        for i in 0..<count {
+            let pr0 = Self.prng(i)
+            let pr1 = Self.prng(i + 1000)
+            let pr2 = Self.prng(i + 2000)
+            let pr3 = Self.prng(i + 3000)
+            particles.append(Particle(
+                angle: pr2 * .pi * 2,
+                baseSpeed: 0.055 + (1.0 - pr0) * 0.13,
+                dir: pr1 < 0.5 ? 1.0 : -1.0,
+                normR: 0.08 + pow(pr0, 0.7) * 0.88,
+                pr2: pr2, pr3: pr3,
+                fi: Double(i)
+            ))
+        }
+    }
+
+    func step(t: Double, amplified: Double) {
+        guard lastT > 0 else { lastT = t; return }
+        // Cap dt so the very first tick (or a background-to-foreground resume)
+        // can't produce a giant angle step.
+        let dt = min(t - lastT, 0.067)
+        lastT = t
+        let speedMult = 1.0 + amplified * 6.0
+        for i in particles.indices {
+            particles[i].angle += particles[i].baseSpeed * speedMult * particles[i].dir * dt
+        }
+    }
+
+    private static func prng(_ n: Int) -> Double {
+        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
+        return v - floor(v)
+    }
+}
+
 /// Full-circle orbital particle field driven by the live mic level.
-/// Particles orbit the center at varying radii — some CW, some CCW —
-/// filling the entire circle. Speed and energy scale with audio level
-/// so the field visibly accelerates as the user speaks.
+/// Angle is accumulated via dt — speed changes with audio level
+/// never cause positional discontinuities.
 private struct OnboardingRecordingWaveform: View {
     let recorder: VoiceRecorder
-    private let particleCount = 200
+    @StateObject private var store = ParticleOrbitStore(count: 200)
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let level = recorder.audioLevel
+            let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
                 let maxR = min(cx, cy) * 0.88
-                let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
-                // Orbital speed: slow ambient drift when quiet, fast swirl when speaking.
-                // Multiplier goes from 1× (silence) to 7× (full voice).
-                // Each particle has a FIXED radius — no radial jumps, ever.
-                let speedMult = 1.0 + amplified * 6.0
-
-                for i in 0..<particleCount {
-                    let fi = Double(i)
-                    let pr0 = pseudoRandom(i)
-                    let pr1 = pseudoRandom(i + 1000)
-                    let pr2 = pseudoRandom(i + 2000)
-                    let pr3 = pseudoRandom(i + 3000)
-
-                    // Fixed orbital radius spread across the full disc
-                    let r = (0.08 + pow(pr0, 0.7) * 0.88) * maxR
-
-                    // Mix CW / CCW; inner particles orbit faster (differential rotation)
-                    let dir: Double = pr1 < 0.5 ? 1.0 : -1.0
-                    let baseSpeed = 0.055 + (1.0 - pr0) * 0.13
-                    let angle = pr2 * .pi * 2 + t * baseSpeed * speedMult * dir
-
-                    let px = cx + cos(angle) * r
-                    let py = cy + sin(angle) * r
-
-                    // Gentle size pulse — slow, audio-independent, no jumps
-                    let pulse = 0.75 + 0.25 * sin(t * 0.35 + fi * 0.4)
-                    let isLarge = pr3 > 0.90
-                    let dotR = ((isLarge ? 2.6 : 1.1) + pr2 * 2.0) * pulse + amplified * 1.8
-
-                    // Opacity brightens when speaking
-                    let alphaPulse = 0.6 + 0.4 * sin(t * 0.28 + fi * 0.3)
-                    let alpha = (0.20 + pr3 * 0.52) * alphaPulse * (0.30 + amplified * 0.68)
-
+                for p in store.particles {
+                    let r = p.normR * maxR
+                    let px = cx + cos(p.angle) * r
+                    let py = cy + sin(p.angle) * r
+                    let pulse = 0.75 + 0.25 * sin(t * 0.35 + p.fi * 0.4)
+                    let isLarge = p.pr3 > 0.90
+                    let dotR = ((isLarge ? 2.6 : 1.1) + p.pr2 * 2.0) * pulse + amplified * 1.8
+                    let alphaPulse = 0.6 + 0.4 * sin(t * 0.28 + p.fi * 0.3)
+                    let alpha = (0.20 + p.pr3 * 0.52) * alphaPulse * (0.30 + amplified * 0.68)
                     ctx.fill(
                         Path(ellipseIn: CGRect(x: px - dotR, y: py - dotR,
                                                width: dotR * 2, height: dotR * 2)),
@@ -1413,14 +1441,12 @@ private struct OnboardingRecordingWaveform: View {
                     )
                 }
             }
+            .onChange(of: context.date) { _, _ in
+                store.step(t: t, amplified: amplified)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityHidden(true)
-    }
-
-    private func pseudoRandom(_ n: Int) -> Double {
-        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
-        return v - floor(v)
     }
 }
 
