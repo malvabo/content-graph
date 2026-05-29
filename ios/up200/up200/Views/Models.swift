@@ -454,6 +454,7 @@ enum APICallError: Error {
     case http(Int, String)
     case decode
     case empty
+    case signupRequired
 
     var userMessage: String {
         switch self {
@@ -477,6 +478,8 @@ enum APICallError: Error {
             return "Unexpected response from Anthropic. Try again."
         case .empty:
             return "The model returned an empty response. Try again."
+        case .signupRequired:
+            return "Sign in with Apple to get 3 free generations."
         }
     }
 }
@@ -484,15 +487,24 @@ enum APICallError: Error {
 /// Reads an Anthropic error message from a non-200 response body.
 /// Anthropic returns `{"type":"error","error":{"type":"...","message":"..."}}`.
 func anthropicErrorMessage(from data: Data) -> String {
+    anthropicAPIError(from: data, statusCode: 0).userMessage
+}
+
+func anthropicAPIError(from data: Data, statusCode: Int) -> APICallError {
     if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
        let err = json["error"] as? [String: Any],
        let msg = err["message"] as? String {
-        if err["type"] as? String == "limit_exceeded" {
-            return "\(msg) To keep going, add your Anthropic API key in Settings → Anthropic API key."
+        switch err["type"] as? String {
+        case "signup_required":
+            return .signupRequired
+        case "limit_exceeded":
+            return .http(statusCode, "\(msg) To keep going, add your Anthropic API key in Settings → Anthropic API key.")
+        default:
+            return .http(statusCode, msg)
         }
-        return msg
     }
-    return String(data: data, encoding: .utf8).map { String($0.prefix(200)) } ?? ""
+    let raw = String(data: data, encoding: .utf8).map { String($0.prefix(200)) } ?? ""
+    return .http(statusCode, raw)
 }
 
 struct SessionTokenService {
@@ -576,7 +588,16 @@ enum SessionTokenRefresher {
 enum AnthropicClient {
     private static let directURL = URL(string: "https://api.anthropic.com/v1/messages")!
 
-    static func makeRequest(body: [String: Any], timeout: TimeInterval = 60) -> URLRequest? {
+    /// Stable per-install device identifier stored in UserDefaults.
+    static var deviceID: String {
+        let key = "com.up200.app.device_id"
+        if let existing = UserDefaults.standard.string(forKey: key) { return existing }
+        let new = UUID().uuidString
+        UserDefaults.standard.set(new, forKey: key)
+        return new
+    }
+
+    static func makeRequest(body: [String: Any], timeout: TimeInterval = 60) -> URLRequest {
         if let token = SessionTokenService.load() {
             return proxyRequest(token: token, body: body, timeout: timeout)
         }
@@ -590,7 +611,8 @@ enum AnthropicClient {
             req.httpBody = try? JSONSerialization.data(withJSONObject: body)
             return req
         }
-        return nil
+        // Anonymous path — send device ID so the backend can give 1 free try.
+        return anonymousProxyRequest(body: body, timeout: timeout)
     }
 
     static func proxyRequest(token: String, body: [String: Any], timeout: TimeInterval) -> URLRequest {
@@ -598,6 +620,16 @@ enum AnthropicClient {
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = timeout
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        return req
+    }
+
+    private static func anonymousProxyRequest(body: [String: Any], timeout: TimeInterval) -> URLRequest {
+        var req = URLRequest(url: AppConfig.API.claude)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(deviceID, forHTTPHeaderField: "X-Device-ID")
         req.timeoutInterval = timeout
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         return req

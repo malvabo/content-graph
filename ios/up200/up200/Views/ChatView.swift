@@ -183,10 +183,6 @@ private struct ChatService {
         contextItems: [ChatContextSource],
         onDelta: @escaping (String) -> Void
     ) async -> Result<String, APICallError> {
-        guard AnthropicClient.isConfigured else {
-            return .failure(.http(401, "Not signed in"))
-        }
-
         var systemText = """
         You are a content and writing assistant.
 
@@ -249,9 +245,7 @@ private struct ChatService {
             "messages": apiMessages,
             "stream": true
         ]
-        guard let req = AnthropicClient.makeRequest(body: body) else {
-            return .failure(.decode)
-        }
+        let req = AnthropicClient.makeRequest(body: body)
 
         let bytes: URLSession.AsyncBytes
         let resp: URLResponse
@@ -264,7 +258,7 @@ private struct ChatService {
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
             let errData = (try? await bytes.reduce(into: Data()) { $0.append($1) }) ?? Data()
-            return .failure(.http(status, anthropicErrorMessage(from: errData)))
+            return .failure(anthropicAPIError(from: errData, statusCode: status))
         }
 
         // Walk the SSE stream, accumulating `text_delta` chunks. Each
@@ -515,6 +509,7 @@ struct ChatView: View {
     @State private var attachedFiles: [ChatContextSource] = []
     @State private var chatFailed: Bool = false
     @State private var chatFailReason: String = ""
+    @State private var showSignUpSheet = false
     @State private var appliedRewriteKeys: Set<String> = []
     @State private var rewriteFailed: Bool = false
     @StateObject private var dictation = NoteDictation()
@@ -735,6 +730,12 @@ struct ChatView: View {
         ) { result in
             guard case .success(let urls) = result, let url = urls.first else { return }
             importFile(at: url)
+        }
+        .fullScreenCover(isPresented: $showSignUpSheet) {
+            OnboardingView(
+                onGetStarted: { showSignUpSheet = false },
+                onLogin: { showSignUpSheet = false }
+            )
         }
         .alert("Message failed", isPresented: $chatFailed) {
             Button("OK", role: .cancel) {}
@@ -1697,8 +1698,12 @@ struct ChatView: View {
                     // alert so a half-written reply isn't mistaken for the
                     // model's actual answer.
                     messages.removeAll { $0.id == replyID }
-                    chatFailReason = err.userMessage
-                    chatFailed = true
+                    if case .signupRequired = err {
+                        showSignUpSheet = true
+                    } else {
+                        chatFailReason = err.userMessage
+                        chatFailed = true
+                    }
                 }
             }
         }

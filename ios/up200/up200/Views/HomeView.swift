@@ -124,7 +124,7 @@ struct AIService {
             "system": titleSystemPrompt,
             "messages": [["role": "user", "content": String(text.prefix(1200))]]
         ]
-        guard let req = AnthropicClient.makeRequest(body: body, timeout: 8) else { return nil }
+        let req = AnthropicClient.makeRequest(body: body, timeout: 8)
 
         guard let (data, _) = try? await URLSession.shared.data(for: req),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -269,9 +269,7 @@ struct ContentGenerator {
             "system": systemPrompt(for: formatID),
             "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]]
         ]
-        guard let req = AnthropicClient.makeRequest(body: body) else {
-            return .failure(.http(401, "Not signed in"))
-        }
+        let req = AnthropicClient.makeRequest(body: body)
 
         let data: Data
         let resp: URLResponse
@@ -283,7 +281,7 @@ struct ContentGenerator {
 
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
-            return .failure(.http(status, anthropicErrorMessage(from: data)))
+            return .failure(anthropicAPIError(from: data, statusCode: status))
         }
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -2521,6 +2519,7 @@ struct HomeView: View {
     @State private var generationFailReason = ""
     @State private var generationTask: Task<Void, Never>? = nil
     @State private var showNoKeySheet = false
+    @State private var showSignUpSheet = false
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
@@ -2650,15 +2649,16 @@ struct HomeView: View {
                 onDismiss: { showNoKeySheet = false }
             )
         }
+        .fullScreenCover(isPresented: $showSignUpSheet) {
+            OnboardingView(
+                onGetStarted: { showSignUpSheet = false },
+                onLogin: { showSignUpSheet = false }
+            )
+        }
     }
 
     private func startGeneration() {
         guard canGenerate else { return }
-
-        guard ContentGenerator.isKeyConfigured else {
-            showNoKeySheet = true
-            return
-        }
 
         let effectiveSources = sources.filter { !$0.content.isEmpty }
         guard !effectiveSources.isEmpty else {
@@ -2726,8 +2726,12 @@ struct HomeView: View {
                 }
                 if results.isEmpty {
                     bannerController.isVisible = false
-                    generationFailReason = firstError?.userMessage ?? ""
-                    generationFailed = true
+                    if case .signupRequired = firstError {
+                        showSignUpSheet = true
+                    } else {
+                        generationFailReason = firstError?.userMessage ?? ""
+                        generationFailed = true
+                    }
                 } else if let resultsHandler {
                     // Minimal 1 host owns persistence — hand the results
                     // over, mark the banner ready (taps just dismiss),
