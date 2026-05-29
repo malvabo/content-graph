@@ -651,7 +651,7 @@ struct OnboardingView: View {
                 let waveSize = UIScreen.main.bounds.width * 2 / 3
                 OnboardingRecordingWaveform(recorder: captureRecorder)
                     .frame(width: waveSize, height: waveSize)
-                    .background(Color.white.opacity(0.05))
+                    .background(Color.white.opacity(0.09))
                     .clipShape(Circle())
 
                 HStack(spacing: 8) {
@@ -680,7 +680,7 @@ struct OnboardingView: View {
                 let waveSize = UIScreen.main.bounds.width * 2 / 3
                 OnboardingRecordingWaveform(recorder: captureRecorder)
                     .frame(width: waveSize, height: waveSize)
-                    .background(Color.white.opacity(0.05))
+                    .background(Color.white.opacity(0.09))
                     .clipShape(Circle())
 
                 HStack(spacing: 8) {
@@ -1328,56 +1328,65 @@ private struct StarfieldBlurb: View {
 
 // MARK: - Onboarding recording waveform
 
-/// Amber bar waveform driven by the live mic level. Mirrors the look of the
-/// in-app `VoiceRecorderWaveform` (taller bars + same envelope curve) so the
-/// onboarding recorder feels like the same instrument the user will see
-/// later inside the app.
+/// Full-circle orbital particle field driven by the live mic level.
+/// Particles orbit the center at varying radii — some CW, some CCW —
+/// filling the entire circle. Speed and energy scale with audio level
+/// so the field visibly accelerates as the user speaks.
 private struct OnboardingRecordingWaveform: View {
     let recorder: VoiceRecorder
-    private let particleCount = 160
+    private let particleCount = 200
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let level = recorder.audioLevel
             Canvas { ctx, size in
+                let cx = size.width / 2
                 let cy = size.height / 2
+                let maxR = min(cx, cy) * 0.88
                 let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
-                let amplitude = amplified * cy * 1.60
+                // Speed multiplier: quiet = gentle drift, loud = fast swirl
+                let speedMult = 0.28 + amplified * 2.2
 
                 for i in 0..<particleCount {
                     let fi = Double(i)
-                    let progress = fi / Double(particleCount - 1)
-                    let baseX = progress * size.width
+                    // Per-particle deterministic seeds
+                    let pr0 = pseudoRandom(i)
+                    let pr1 = pseudoRandom(i + 1000)
+                    let pr2 = pseudoRandom(i + 2000)
+                    let pr3 = pseudoRandom(i + 3000)
 
-                    let phase1 = t * 2.45 + progress * .pi * 4.0
-                    let phase2 = t * 1.47 + progress * .pi * 7.0
-                    let targetY = cy
-                        + sin(phase1) * amplitude * 0.65
-                        + sin(phase2) * amplitude * 0.35
+                    // Spread particles across the full disc (bias toward middle)
+                    let baseR = (0.08 + pow(pr0, 0.7) * 0.88) * maxR
 
-                    let seed1 = fi * 13.7
-                    let seed2 = fi * 29.1
-                    let scatterY = 8.0 + amplified * 22.0
-                    let jitterX = sin(t * 0.49 + seed1) * 2.5
-                    let jitterY = sin(t * 0.63 + seed2) * scatterY
-                        + cos(t * 0.91 + seed1 * 0.5) * scatterY * 0.4
+                    // Mix CW and CCW orbits for a nebula look
+                    let dir: Double = pr1 < 0.5 ? 1.0 : -1.0
+                    // Inner particles orbit faster (galaxy differential rotation)
+                    let orbitSpeed = (0.10 + (1.0 - pr0) * 0.22) * speedMult * dir
 
-                    let px = baseX + jitterX
-                    let py = targetY + jitterY
+                    let startAngle = pr2 * .pi * 2
+                    let angle = startAngle + t * orbitSpeed
 
-                    let pr = pseudoRandom(i * 3)
-                    let waveMag = (sin(phase1) + 1.0) / 2.0
-                    let radius = 1.2 + pr * 1.8 + waveMag * 2.0 * amplified
+                    // Radial breath: particles pulse in/out, more so when speaking
+                    let breathFreq = (0.18 + pr1 * 0.28) * speedMult
+                    let breathAmp = maxR * (0.03 + amplified * 0.13)
+                    let r = baseR + sin(t * breathFreq + pr3 * .pi * 2) * breathAmp
 
-                    let normJitter = abs(jitterY) / max(scatterY * 1.5, 1.0)
-                    let proximityAlpha = max(0.0, 1.0 - normJitter)
-                    let pulse = 0.65 + 0.35 * sin(t * 1.26 + fi * 0.35)
-                    let alpha = proximityAlpha * pulse * (0.35 + amplified * 0.60)
+                    let px = cx + cos(angle) * r
+                    let py = cy + sin(angle) * r
+
+                    // Size pulses with voice; a few particles are large anchors
+                    let sizeSeed = 0.65 + 0.35 * sin(t * (0.9 + pr1) * speedMult * 0.4 + fi * 0.4)
+                    let isLarge = pr3 > 0.88
+                    let dotR = (isLarge ? 2.8 : 1.2) + pr2 * 2.0 + amplified * 2.5 * sizeSeed
+
+                    // Opacity: brighter when speaking
+                    let alphaPulse = 0.55 + 0.45 * sin(t * (0.7 + pr2) * speedMult * 0.35 + fi * 0.3)
+                    let alpha = (0.22 + pr3 * 0.55) * alphaPulse * (0.28 + amplified * 0.72)
 
                     ctx.fill(
-                        Path(ellipseIn: CGRect(x: px - radius, y: py - radius,
-                                               width: radius * 2, height: radius * 2)),
+                        Path(ellipseIn: CGRect(x: px - dotR, y: py - dotR,
+                                               width: dotR * 2, height: dotR * 2)),
                         with: .color(BrandColor.amber.opacity(alpha))
                     )
                 }
