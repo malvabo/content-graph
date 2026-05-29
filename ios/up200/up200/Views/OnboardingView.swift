@@ -828,13 +828,13 @@ struct OnboardingView: View {
     private func chooseCircleContent(label: String, radius: CGFloat) -> some View {
         let d = radius * 2
         Text(label)
-            .font(.lora(size: 24, weight: .medium))
+            .font(.lora(size: 16, weight: .medium))
             .foregroundColor(AppText.primary)
             .multilineTextAlignment(.center)
             .lineLimit(3)
             .minimumScaleFactor(0.85)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 13)
             .frame(width: d, height: d)
             .background(circleButtonBackground)
             .overlay(circleGlowOuter)
