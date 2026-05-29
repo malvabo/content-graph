@@ -54,7 +54,7 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-async function checkLimit(sub: string): Promise<boolean> {
+async function checkLimit(sub: string, limit = FREE_LIMIT): Promise<boolean> {
   const sb = getSupabase();
   if (!sb) return false; // fail closed — don't allow if rate-limit DB is unavailable
 
@@ -65,7 +65,7 @@ async function checkLimit(sub: string): Promise<boolean> {
     .maybeSingle();
 
   const count = (data as { count: number } | null)?.count ?? 0;
-  return count < FREE_LIMIT;
+  return count < limit;
 }
 
 async function incrementUsage(sub: string): Promise<void> {
@@ -83,10 +83,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const auth = req.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+  const deviceId = req.headers['x-device-id'];
 
-  const sub = verifySessionToken(auth.slice(7));
-  if (!sub) return res.status(401).json({ error: 'Invalid or expired session' });
+  let sub: string | null = null;
+  let isAnonymous = false;
+
+  if (auth?.startsWith('Bearer ')) {
+    sub = verifySessionToken(auth.slice(7));
+    if (!sub) return res.status(401).json({ error: 'Invalid or expired session' });
+  } else if (typeof deviceId === 'string' && deviceId.length > 0) {
+    sub = `device:${deviceId}`;
+    isAnonymous = true;
+  } else {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Server misconfigured' });
@@ -116,8 +126,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const skipLimit = is_helper === true && max_tokens <= 1000;
 
   if (!skipLimit) {
-    const allowed = await checkLimit(sub);
+    const deviceLimit = isAnonymous ? 1 : FREE_LIMIT;
+    const allowed = await checkLimit(sub, deviceLimit);
     if (!allowed) {
+      if (isAnonymous) {
+        return res.status(402).json({
+          type: 'error',
+          error: {
+            type: 'signup_required',
+            message: 'Sign in with Apple to get 3 free generations.',
+          },
+        });
+      }
       return res.status(402).json({
         type: 'error',
         error: {

@@ -1989,9 +1989,7 @@ private struct TemplatePromptEnhancer {
             "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]],
             "is_helper": true
         ]
-        guard let req = AnthropicClient.makeRequest(body: body) else {
-            return .failure(.http(401, "Not signed in"))
-        }
+        let req = AnthropicClient.makeRequest(body: body)
 
         let data: Data
         let resp: URLResponse
@@ -2003,7 +2001,7 @@ private struct TemplatePromptEnhancer {
 
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
-            return .failure(.http(status, anthropicErrorMessage(from: data)))
+            return .failure(anthropicAPIError(from: data, statusCode: status))
         }
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -2045,9 +2043,7 @@ private struct TemplatePromptEnhancer {
             "messages": [["role": "user", "content": userParts.joined(separator: "\n\n")]],
             "is_helper": true
         ]
-        guard let req = AnthropicClient.makeRequest(body: body, timeout: 30) else {
-            return .failure(.http(401, "Not signed in"))
-        }
+        let req = AnthropicClient.makeRequest(body: body, timeout: 30)
 
         let data: Data
         let resp: URLResponse
@@ -2059,7 +2055,7 @@ private struct TemplatePromptEnhancer {
 
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
-            return .failure(.http(status, anthropicErrorMessage(from: data)))
+            return .failure(anthropicAPIError(from: data, statusCode: status))
         }
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -2950,9 +2946,7 @@ struct AITransformService {
             "system": system,
             "messages": [["role": "user", "content": user]]
         ]
-        guard let req = AnthropicClient.makeRequest(body: body) else {
-            return .failure(.http(401, "Not signed in"))
-        }
+        let req = AnthropicClient.makeRequest(body: body)
 
         let data: Data
         let resp: URLResponse
@@ -2964,7 +2958,7 @@ struct AITransformService {
 
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
-            return .failure(.http(status, anthropicErrorMessage(from: data)))
+            return .failure(anthropicAPIError(from: data, statusCode: status))
         }
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -3007,9 +3001,7 @@ struct AITransformService {
             "system": system,
             "messages": [["role": "user", "content": user]]
         ]
-        guard let req = AnthropicClient.makeRequest(body: body) else {
-            return .failure(.http(401, "Not signed in"))
-        }
+        let req = AnthropicClient.makeRequest(body: body)
 
         let data: Data
         let resp: URLResponse
@@ -3021,7 +3013,7 @@ struct AITransformService {
 
         let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
-            return .failure(.http(status, anthropicErrorMessage(from: data)))
+            return .failure(anthropicAPIError(from: data, statusCode: status))
         }
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
