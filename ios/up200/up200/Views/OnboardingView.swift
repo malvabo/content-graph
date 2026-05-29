@@ -1344,7 +1344,7 @@ private struct OnboardingRecordingWaveform: View {
             Canvas { ctx, size in
                 let cy = size.height / 2
                 let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
-                let amplitude = amplified * cy * 0.80
+                let amplitude = amplified * cy * 1.60
 
                 for i in 0..<particleCount {
                     let fi = Double(i)
@@ -1359,7 +1359,7 @@ private struct OnboardingRecordingWaveform: View {
 
                     let seed1 = fi * 13.7
                     let seed2 = fi * 29.1
-                    let scatterY = 5.0 + amplified * 12.0
+                    let scatterY = 8.0 + amplified * 22.0
                     let jitterX = sin(t * 0.49 + seed1) * 2.5
                     let jitterY = sin(t * 0.63 + seed2) * scatterY
                         + cos(t * 0.91 + seed1 * 0.5) * scatterY * 0.4
