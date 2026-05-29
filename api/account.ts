@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { getAllowedOrigin } from './_cors';
+import { getAllowedOrigin } from './_cors.js';
 
 function getToken(req: VercelRequest): string | null {
   const h = req.headers.authorization;
