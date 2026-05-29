@@ -2459,7 +2459,7 @@ struct ContentView: View {
                         bannerController.onOpen?()
                     },
                     onDismiss: {
-                        bannerController.onCancel?()
+                        bannerController.isVisible = false
                     }
                 )
                 .padding(.horizontal, 12)
