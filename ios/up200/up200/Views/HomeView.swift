@@ -183,10 +183,10 @@ struct AIService {
         if let nl = t.firstIndex(where: \.isNewline) { t = String(t[..<nl]) }
         // Strip surrounding quotes FIRST so ‘”Title: foo”’ doesn’t fool the
         // prefix check below (leading ‘”’ would make hasPrefix(“title:”) false).
-        let trimChars = CharacterSet(charactersIn: “\”’”\u{201C}\u{201D}\u{2018}\u{2019}’’`.,;:!?\u{2014}\u{2013}-”)
+        let trimChars = CharacterSet(charactersIn: "\"'\u{201C}\u{201D}\u{2018}\u{2019}`.,;:!?\u{2014}\u{2013}-")
         t = t.trimmingCharacters(in: trimChars).trimmingCharacters(in: .whitespacesAndNewlines)
-        if t.lowercased().hasPrefix(“title:”) {
-            t = String(t.dropFirst(“title:”.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.lowercased().hasPrefix("title:") {
+            t = String(t.dropFirst("title:".count)).trimmingCharacters(in: .whitespacesAndNewlines)
         }
         t = t.trimmingCharacters(in: trimChars).trimmingCharacters(in: .whitespacesAndNewlines)
         var words = t.split(whereSeparator: \.isWhitespace).prefix(6).map(String.init)
