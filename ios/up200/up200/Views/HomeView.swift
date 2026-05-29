@@ -181,10 +181,13 @@ struct AIService {
     static func sanitize(_ raw: String) -> String {
         var t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if let nl = t.firstIndex(where: \.isNewline) { t = String(t[..<nl]) }
-        if t.lowercased().hasPrefix("title:") {
-            t = String(t.dropFirst("title:".count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        // Strip surrounding quotes FIRST so ‘”Title: foo”’ doesn’t fool the
+        // prefix check below (leading ‘”’ would make hasPrefix(“title:”) false).
+        let trimChars = CharacterSet(charactersIn: “\”’”\u{201C}\u{201D}\u{2018}\u{2019}’’`.,;:!?\u{2014}\u{2013}-”)
+        t = t.trimmingCharacters(in: trimChars).trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.lowercased().hasPrefix(“title:”) {
+            t = String(t.dropFirst(“title:”.count)).trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        let trimChars = CharacterSet(charactersIn: "\"'\u{201C}\u{201D}\u{2018}\u{2019}`.,;:!?\u{2014}\u{2013}-")
         t = t.trimmingCharacters(in: trimChars).trimmingCharacters(in: .whitespacesAndNewlines)
         var words = t.split(whereSeparator: \.isWhitespace).prefix(6).map(String.init)
         while let last = words.last, trailingStopWords.contains(last.lowercased()) {
@@ -225,15 +228,13 @@ struct AIService {
     static func prependTitleIfMissing(to body: String) async -> String? {
         let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
-        // Treat a short (≤6 word) first line followed by a newline as an
-        // existing title. Word-count is more reliable than char-count for
-        // recognising prior AI titles regardless of language.
+        // Treat a short (≤6 word) first line as an existing title — whether or
+        // not a newline follows. A note like "Buy milk tomorrow" (no newline,
+        // ≤6 words) is complete on its own and should not get a title prepended.
         // Keep this threshold in sync with needsTitle() in NotesView.swift.
-        if let nl = trimmed.firstIndex(of: "\n") {
-            let firstLine = String(trimmed[..<nl])
-            let wordCount = firstLine.split(whereSeparator: \.isWhitespace).count
-            if wordCount <= 6 { return nil }
-        }
+        let existingFirstLine = trimmed.firstIndex(of: "\n")
+            .map { String(trimmed[..<$0]) } ?? trimmed
+        if existingFirstLine.split(whereSeparator: \.isWhitespace).count <= 6 { return nil }
         let aiTitle = await generateTitle(from: trimmed)
         let cleaned = aiTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty else { return nil }
@@ -1302,15 +1303,19 @@ private struct LinkInputSheet: View {
         return title.isEmpty ? nil : title
     }
 
+    private static let htmlBlockRegexes: [NSRegularExpression] = {
+        ["script", "style", "nav", "header", "footer", "noscript"].compactMap {
+            try? NSRegularExpression(pattern: "<\($0)[^>]*>[\\s\\S]*?</\($0)>", options: .caseInsensitive)
+        }
+    }()
+    private static let htmlTagRegex = try? NSRegularExpression(pattern: "<[^>]+>")
+
     private func extractBodyText(from html: String) -> String {
         var text = html
-        for tag in ["script", "style", "nav", "header", "footer", "noscript"] {
-            let pattern = "<\(tag)[^>]*>[\\s\\S]*?</\(tag)>"
-            if let re = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
-                text = re.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text), withTemplate: " ")
-            }
+        for re in Self.htmlBlockRegexes {
+            text = re.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text), withTemplate: " ")
         }
-        if let re = try? NSRegularExpression(pattern: "<[^>]+>") {
+        if let re = Self.htmlTagRegex {
             text = re.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text), withTemplate: " ")
         }
         text = text
@@ -1549,8 +1554,12 @@ struct VoiceRecordSheet: View {
     }
 
     private func handleDone() {
-        recorder.stop()
+        // Snapshot transcript BEFORE stop() — the final isFinal callback from
+        // SFSpeechRecognizer arrives asynchronously after endAudio() and would
+        // race with the synchronous read below, potentially returning "" even
+        // when the user spoke. The snapshot captures the last partial result.
         let transcript = recorder.transcript
+        recorder.stop()
         guard !transcript.isEmpty else { dismiss(); return }
         isGenerating = true
         Task {
@@ -1795,9 +1804,12 @@ private struct SourcesBlock: View {
         guard let fh = try? FileHandle(forReadingFrom: url) else { return "" }
         defer { try? fh.close() }
         guard let data = try? fh.read(upToCount: 64_000) else { return "" }
+        // String(data:encoding:.utf8) returns nil when the 64 KB boundary lands
+        // mid-sequence. String(decoding:as:) replaces the broken tail with U+FFFD
+        // instead of falling back to ISO-Latin-1, which would mojibake the whole
+        // file for any non-ASCII UTF-8 content.
         if let text = String(data: data, encoding: .utf8) { return String(text.prefix(8000)) }
-        if let text = String(data: data, encoding: .isoLatin1) { return String(text.prefix(8000)) }
-        return ""
+        return String(String(decoding: data, as: UTF8.self).prefix(8000))
     }
 
     private func extractTextFromPhoto(item: PhotosPickerItem) async -> String {
