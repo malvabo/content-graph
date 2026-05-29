@@ -2520,6 +2520,7 @@ struct HomeView: View {
     @State private var generationFailed = false
     @State private var generationFailReason = ""
     @State private var generationTask: Task<Void, Never>? = nil
+    @State private var showNoKeySheet = false
 
     @AppStorage("library_projects") private var projectsData: Data = Data()
 
@@ -2640,14 +2641,22 @@ struct HomeView: View {
                  ? "Could not reach the API. Check your network connection and try again."
                  : generationFailReason)
         }
+        .fullScreenCover(isPresented: $showNoKeySheet) {
+            APIKeySetupView(
+                onSaved: {
+                    showNoKeySheet = false
+                    startGeneration()
+                },
+                onDismiss: { showNoKeySheet = false }
+            )
+        }
     }
 
     private func startGeneration() {
         guard canGenerate else { return }
 
         guard ContentGenerator.isKeyConfigured else {
-            generationFailReason = "No API key found. Add your Anthropic API key in Profile."
-            generationFailed = true
+            showNoKeySheet = true
             return
         }
 

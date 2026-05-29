@@ -2,6 +2,7 @@ import SwiftUI
 
 struct APIKeySetupView: View {
     var onSaved: () -> Void
+    var onDismiss: (() -> Void)? = nil
     @State private var keyText = ""
     @FocusState private var focused: Bool
 
@@ -11,12 +12,27 @@ struct APIKeySetupView: View {
     private var canSave: Bool { trimmed.hasPrefix("sk-ant-") && trimmed.count > 20 }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .topTrailing) {
             AppBackground.primary.ignoresSafeArea()
             RadialGradient(
                 colors: [amber.opacity(0.14), .clear],
                 center: .init(x: 0.5, y: 0.35), startRadius: 0, endRadius: 380
             ).ignoresSafeArea()
+
+            if let onDismiss {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(AppText.tertiary)
+                        .frame(width: 32, height: 32)
+                        .background(AppInk.solid(0.08))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 56)
+                .padding(.trailing, 24)
+                .zIndex(1)
+            }
 
             VStack(spacing: 0) {
                 Spacer()
@@ -32,10 +48,11 @@ struct APIKeySetupView: View {
                     }
 
                     VStack(spacing: 10) {
-                        Text("Anthropic API key")
-                            .font(.app(size: 24, weight: .bold))
+                        Text("Your ideas are ready")
+                            .font(.lora(size: 26, weight: .medium))
                             .foregroundColor(AppText.primary)
-                        Text("Get one free at console.anthropic.com\nunder API Keys. It starts with sk-ant-")
+                            .multilineTextAlignment(.center)
+                        Text("Add your Anthropic API key to bring them to life.\nGet one free at console.anthropic.com")
                             .font(.app(size: 15))
                             .foregroundColor(AppInk.solid(0.45))
                             .multilineTextAlignment(.center)
