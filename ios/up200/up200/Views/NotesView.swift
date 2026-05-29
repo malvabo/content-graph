@@ -1842,13 +1842,11 @@ struct NotesView: View {
                     }
                 }
 
-                // Filter chips bar is purely a tag-selector for the
-                // collapsed list view; during search it's covered by the
-                // overlay's opaque surface AND is reachable by VoiceOver,
-                // so collapse it out of the layout entirely while showSearch
-                // is true.
-                if !showSearch {
-                    ScrollView(.horizontal, showsIndicators: false) {
+                // Filter chips bar stays in the layout at all times so the
+                // notes list position never shifts — only opacity toggles to
+                // hide it behind the search overlay. VoiceOver is silenced
+                // while search is active via accessibilityHidden.
+                ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         FilterChip(
                                 label: "All",
@@ -1890,7 +1888,9 @@ struct NotesView: View {
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
                     }
-                }
+                    .opacity(showSearch ? 0 : 1)
+                    .accessibilityHidden(showSearch)
+                    .animation(AppAnimation.standard, value: showSearch)
 
                     Rectangle()
                         .fill(AppInk.solid(0.06))
@@ -1904,7 +1904,6 @@ struct NotesView: View {
                     )
                 }
                 .allowsHitTesting(!showSearch)
-                .animation(AppAnimation.standard, value: showSearch)
                 // The notes list never owns the keyboard (only the SearchOverlay
                 // does), so don't let the keyboard's safe-area inset reshape the
                 // list. Without this, Cancel-ing search makes the keyboard
