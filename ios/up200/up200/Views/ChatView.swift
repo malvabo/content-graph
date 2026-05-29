@@ -1827,12 +1827,48 @@ private struct MentionInlinePicker: View {
     let onSelect: (ChatContextSource) -> Void
     let onDismiss: () -> Void
 
-    private var allItems: [ChatContextSource] { documents + notes }
+    @State private var query = ""
 
+    private var allItems: [ChatContextSource] { documents + notes }
     private var isEmpty: Bool { allItems.isEmpty }
+
+    private var filtered: [ChatContextSource] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return allItems }
+        return allItems.filter {
+            $0.title.localizedCaseInsensitiveContains(q) ||
+            $0.preview.localizedCaseInsensitiveContains(q)
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
+            // Search field
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundColor(AppInk.solid(0.35))
+                TextField("Search", text: $query)
+                    .font(.app(size: 15, weight: .regular))
+                    .foregroundColor(AppText.primary)
+                    .tint(AppText.primary)
+                    .autocorrectionDisabled()
+                if !query.isEmpty {
+                    Button { query = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 13))
+                            .foregroundColor(AppInk.solid(0.30))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+
+            Rectangle()
+                .fill(AppInk.solid(0.06))
+                .frame(height: 0.5)
+
             if isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: "tray")
@@ -1845,10 +1881,22 @@ private struct MentionInlinePicker: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
+            } else if filtered.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundColor(AppInk.solid(0.28))
+                    Text("No results")
+                        .font(.appSmall)
+                        .foregroundColor(AppInk.solid(0.38))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
             } else {
                 ScrollView(showsIndicators: false) {
                     LazyVStack(spacing: 0) {
-                        ForEach(Array(allItems.enumerated()), id: \.element.id) { idx, item in
+                        ForEach(Array(filtered.enumerated()), id: \.element.id) { idx, item in
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 onSelect(item)
@@ -1870,7 +1918,7 @@ private struct MentionInlinePicker: View {
                             }
                             .buttonStyle(.plain)
 
-                            if idx < allItems.count - 1 {
+                            if idx < filtered.count - 1 {
                                 Rectangle()
                                     .fill(AppInk.solid(0.05))
                                     .frame(height: 0.5)
@@ -1879,7 +1927,7 @@ private struct MentionInlinePicker: View {
                         }
                     }
                 }
-                .frame(maxHeight: 220)
+                .frame(maxHeight: 200)
             }
         }
         .background(
