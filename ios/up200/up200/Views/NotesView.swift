@@ -1587,7 +1587,7 @@ struct NotesView: View {
         guard !body.isEmpty else { return false }
         let firstLine = body.split(whereSeparator: \.isNewline).first.map(String.init) ?? body
         let wordCount = firstLine.split(whereSeparator: \.isWhitespace).count
-        return wordCount > 4
+        return wordCount > 6
     }
 
     private func scheduleSave() {

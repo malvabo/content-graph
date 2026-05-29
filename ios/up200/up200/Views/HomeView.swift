@@ -120,7 +120,7 @@ struct AIService {
     private static func callAnthropic(text: String) async -> String? {
         let body: [String: Any] = [
             "model": "claude-haiku-4-5-20251001",
-            "max_tokens": 30,
+            "max_tokens": 50,
             "system": titleSystemPrompt,
             "messages": [["role": "user", "content": String(text.prefix(1200))]]
         ]
@@ -142,7 +142,7 @@ struct AIService {
     You title notes. The title sits in a note app, so it has to read well in a list of fifty other notes and help the user find this one later.
 
     Output exactly one title and nothing else:
-    - Exactly 3 words — never more, never fewer
+    - 2 to 6 words — always a complete, self-contained phrase (never end on a preposition, conjunction, or article)
     - Sentence case: capitalize the first word and proper nouns only
     - No quotes, no trailing punctuation, no emoji, no preamble
     - No em-dashes; use a colon if you need separation
@@ -163,23 +163,31 @@ struct AIService {
 
     Input: long brainstorm on onboarding flow ideas for a new plant care app
     Output: Plant care onboarding
+
+    Input: notes on building design culture and psychological safety in a team
+    Output: Building design culture
     """
 
     /// Strips the wrappers a model sometimes adds — surrounding quotes, leading
-    /// "Title:" labels, trailing punctuation — collapses to one line, and
-    /// trims to at most three words so a long-winded model reply still lands
-    /// as a 3-word summary in the list.
+    /// “Title:” labels, trailing punctuation — collapses to one line, and
+    /// trims to at most six words. Trailing connectors/articles (and, or, the…)
+    /// are stripped so a cut phrase never ends mid-thought.
     static func sanitize(_ raw: String) -> String {
         var t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if let nl = t.firstIndex(where: \.isNewline) { t = String(t[..<nl]) }
-        let prefixes = ["Title:", "title:", "TITLE:"]
+        let prefixes = [“Title:”, “title:”, “TITLE:”]
         for p in prefixes where t.hasPrefix(p) {
             t = String(t.dropFirst(p.count)).trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        let trimChars = CharacterSet(charactersIn: "\"'“”‘’`.,;:!?—–-")
+        let trimChars = CharacterSet(charactersIn: “\”’””’’`.,;:!?—–-”)
         t = t.trimmingCharacters(in: trimChars).trimmingCharacters(in: .whitespacesAndNewlines)
-        let words = t.split(whereSeparator: \.isWhitespace).prefix(3).map(String.init)
-        return words.joined(separator: " ")
+        var words = t.split(whereSeparator: \.isWhitespace).prefix(6).map(String.init)
+        // Strip trailing connector/article words so titles never end mid-thought.
+        let trailingStop = Set([“and”,”or”,”the”,”a”,”an”,”of”,”in”,”on”,”at”,”to”,”for”,”by”,”with”,”from”,”but”,”nor”])
+        while let last = words.last, trailingStop.contains(last.lowercased()) {
+            words.removeLast()
+        }
+        return words.joined(separator: “ “)
     }
 
     static func fallback(from text: String) -> String {
@@ -190,7 +198,7 @@ struct AIService {
         let words = firstLine.split { !$0.isLetter && !$0.isNumber }
             .map(String.init)
             .filter { $0.count > 2 && !stop.contains($0.lowercased()) }
-        let picked = Array(words.prefix(3))
+        let picked = Array(words.prefix(5))
         guard !picked.isEmpty else { return "Untitled" }
         // Sentence case: first word capitalized, rest lowercase except all-caps
         // tokens (likely acronyms) which we preserve.
@@ -216,7 +224,7 @@ struct AIService {
         if let nl = trimmed.firstIndex(of: "\n") {
             let firstLine = String(trimmed[..<nl])
             let wordCount = firstLine.split(whereSeparator: \.isWhitespace).count
-            if wordCount <= 4 { return nil }
+            if wordCount <= 6 { return nil }
         }
         let aiTitle = await generateTitle(from: trimmed)
         let cleaned = aiTitle.trimmingCharacters(in: .whitespacesAndNewlines)
