@@ -719,15 +719,7 @@ struct ChatView: View {
                 inputArea
             }
         }
-        .fullScreenCover(isPresented: $showMentionPicker) {
-            MentionPickerSheet(
-                documents: documentSources,
-                notes: noteSources,
-                onSelect: { source in
-                    attachMention(source)
-                }
-            )
-        }
+        .animation(.spring(response: 0.28, dampingFraction: 0.82), value: showMentionPicker)
         .sheet(isPresented: $showSavedChatsPicker) {
             SavedChatsSheet(
                 currentChatID: activeSavedChatID,
@@ -1142,6 +1134,19 @@ struct ChatView: View {
 
     private var inputArea: some View {
         VStack(spacing: 0) {
+            if showMentionPicker {
+                MentionInlinePicker(
+                    documents: documentSources,
+                    notes: noteSources,
+                    onSelect: { source in
+                        attachMention(source)
+                    },
+                    onDismiss: { showMentionPicker = false }
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .padding(.horizontal, 12)
+                .padding(.bottom, 6)
+            }
             if shouldShowQuickActions {
                 quickActionsRow
                     .transition(.opacity)
@@ -1248,7 +1253,6 @@ struct ChatView: View {
 
     private func presentMentionPicker() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        inputFocused = false
         showMentionPicker = true
     }
 
@@ -1817,195 +1821,76 @@ private struct TypingIndicator: View {
 
 // MARK: - Mention Picker Sheet
 
-private struct MentionPickerSheet: View {
+private struct MentionInlinePicker: View {
     let documents: [ChatContextSource]
     let notes: [ChatContextSource]
     let onSelect: (ChatContextSource) -> Void
-    @Environment(\.dismiss) private var dismiss
+    let onDismiss: () -> Void
 
-    @State private var query = ""
-    @FocusState private var fieldFocused: Bool
+    private var allItems: [ChatContextSource] { documents + notes }
 
-    private let cardBg = AppBackground.primary
-
-    private var isEmpty: Bool { documents.isEmpty && notes.isEmpty }
-
-    private var filteredDocuments: [ChatContextSource] {
-        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !q.isEmpty else { return documents }
-        return documents.filter {
-            $0.title.localizedCaseInsensitiveContains(q) ||
-            $0.preview.localizedCaseInsensitiveContains(q)
-        }
-    }
-
-    private var filteredNotes: [ChatContextSource] {
-        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !q.isEmpty else { return notes }
-        return notes.filter {
-            $0.title.localizedCaseInsensitiveContains(q) ||
-            $0.preview.localizedCaseInsensitiveContains(q)
-        }
-    }
-
-    private var hasResults: Bool { !filteredDocuments.isEmpty || !filteredNotes.isEmpty }
+    private var isEmpty: Bool { allItems.isEmpty }
 
     var body: some View {
-        ZStack {
-            Color.black.opacity(0.55)
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    fieldFocused = false
-                    dismiss()
+        VStack(spacing: 0) {
+            if isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundColor(AppInk.solid(0.28))
+                    Text("No notes or documents to mention")
+                        .font(.appSmall)
+                        .foregroundColor(AppInk.solid(0.38))
                 }
-
-            VStack(spacing: 0) {
-                HStack(spacing: 12) {
-                    Text("Mention")
-                        .font(.appBodyBold)
-                        .foregroundColor(AppText.primary)
-                        .accessibilityAddTraits(.isHeader)
-                    Spacer()
-                    Button {
-                        fieldFocused = false
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(AppText.secondary)
-                            .frame(width: 30, height: 30)
-                            .background(AppInk.solid(0.10))
-                            .clipShape(Circle())
-                            .appIconHitArea()
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Close")
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 12)
-
-                AppSearchField(
-                    placeholder: "Search",
-                    text: $query,
-                    isFocused: $fieldFocused
-                )
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
-
-                if isEmpty {
-                    VStack(spacing: 8) {
-                        Spacer().frame(height: 28)
-                        Image(systemName: "tray")
-                            .font(.system(size: 32, weight: .light))
-                            .foregroundColor(AppInk.solid(0.18))
-                        Text("Nothing to mention yet")
-                            .font(.appSubtext)
-                            .foregroundColor(AppInk.solid(0.30))
-                        Text("Create a note or document to reference it here.")
-                            .font(.appSmall)
-                            .foregroundColor(AppInk.solid(0.22))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 32)
-                        Spacer().frame(height: 28)
-                    }
-                    .frame(maxWidth: .infinity)
-                } else if !hasResults {
-                    VStack(spacing: 8) {
-                        Spacer().frame(height: 28)
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 32, weight: .light))
-                            .foregroundColor(AppInk.solid(0.18))
-                        Text("No results")
-                            .font(.appSubtext)
-                            .foregroundColor(AppInk.solid(0.30))
-                        Spacer().frame(height: 28)
-                    }
-                    .frame(maxWidth: .infinity)
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        LazyVStack(spacing: 0) {
-                            if !filteredDocuments.isEmpty {
-                                sectionRows(title: "Documents", items: filteredDocuments)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+            } else {
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(allItems.enumerated()), id: \.element.id) { idx, item in
+                            Button {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                onSelect(item)
+                            } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: icon(for: item.kind))
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(AppInk.solid(0.50))
+                                        .frame(width: 20)
+                                    Text(item.title)
+                                        .font(.app(size: 15, weight: .medium))
+                                        .foregroundColor(AppInk.solid(0.88))
+                                        .lineLimit(1)
+                                    Spacer(minLength: 0)
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 11)
+                                .contentShape(Rectangle())
                             }
-                            if !filteredNotes.isEmpty {
-                                sectionRows(title: "Notes", items: filteredNotes)
+                            .buttonStyle(.plain)
+
+                            if idx < allItems.count - 1 {
+                                Rectangle()
+                                    .fill(AppInk.solid(0.05))
+                                    .frame(height: 0.5)
+                                    .padding(.leading, 44)
                             }
                         }
                     }
                 }
-            }
-            .frame(maxWidth: 460, maxHeight: 520)
-            .background(
-                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .fill(cardBg)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.sheet, style: .continuous)
-                    .stroke(AppInk.solid(0.08), lineWidth: 0.5)
-            )
-            .shadow(color: Color.black.opacity(0.45), radius: 30, y: 10)
-            .padding(.horizontal, 14)
-            .padding(.top, 72)
-            .padding(.bottom, 24)
-            .frame(maxHeight: .infinity, alignment: .top)
-        }
-    }
-
-    @ViewBuilder
-    private func sectionRows(title: String, items: [ChatContextSource]) -> some View {
-        HStack {
-            Text(title)
-                .font(.app(size: 11, weight: .semibold))
-                .foregroundColor(AppInk.solid(0.40))
-                .textCase(.uppercase)
-                .tracking(0.5)
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 14)
-        .padding(.bottom, 4)
-
-        ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                onSelect(item)
-            } label: {
-                HStack(alignment: .top, spacing: 14) {
-                    Image(systemName: icon(for: item.kind))
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(AppInk.solid(0.55))
-                        .frame(width: 24, height: 24)
-                        .padding(.top, 1)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(item.title)
-                            .font(.app(size: 16, weight: .medium))
-                            .foregroundColor(AppInk.solid(0.92))
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                        if !item.preview.isEmpty {
-                            Text(item.preview)
-                                .font(.appSmall)
-                                .foregroundColor(AppText.tertiary)
-                                .lineLimit(1)
-                        }
-                    }
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if idx < items.count - 1 {
-                Rectangle()
-                    .fill(AppInk.solid(0.05))
-                    .frame(height: 0.5)
-                    .padding(.leading, 54)
+                .frame(maxHeight: 220)
             }
         }
+        .background(
+            RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
+                .fill(AppBackground.primary)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.bubble, style: .continuous)
+                .stroke(AppInk.solid(0.10), lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.18), radius: 16, y: -4)
     }
 
     private func icon(for kind: ChatContextSource.Kind) -> String {
