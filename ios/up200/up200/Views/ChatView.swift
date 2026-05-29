@@ -1004,33 +1004,31 @@ struct ChatView: View {
     }
 
     private var quickActionsRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(quickActions, id: \.label) { action in
-                    Button {
-                        applyQuickAction(action)
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: action.icon)
-                                .font(.system(size: 12, weight: .regular))
-                                .foregroundColor(AppInk.solid(0.55))
-                            Text(action.label)
-                                .font(.app(size: 14, weight: .medium))
-                                .foregroundColor(AppText.primary)
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(AppInk.solid(0.10))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule().stroke(AppInk.solid(0.14), lineWidth: 0.5)
-                        )
+        ChipFlow(spacing: 8) {
+            ForEach(quickActions, id: \.label) { action in
+                Button {
+                    applyQuickAction(action)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: action.icon)
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(AppInk.solid(0.55))
+                        Text(action.label)
+                            .font(.app(size: 14, weight: .medium))
+                            .foregroundColor(AppText.primary)
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(AppInk.solid(0.10))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(AppInk.solid(0.14), lineWidth: 0.5)
+                    )
                 }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
         }
+        .padding(.horizontal, 16)
         .padding(.bottom, 8)
     }
 
@@ -1750,6 +1748,48 @@ struct ChatView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Chip Flow Layout
+
+/// Wrapping layout for chip rows. Children are placed left-to-right; a new
+/// row starts whenever the next chip would exceed the available width.
+private struct ChipFlow: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
+        layout(subviews: subviews, in: proposal.replacingUnspecifiedDimensions().width).size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) {
+        let result = layout(subviews: subviews, in: bounds.width)
+        for (i, subview) in subviews.enumerated() {
+            subview.place(
+                at: CGPoint(x: result.frames[i].minX + bounds.minX,
+                            y: result.frames[i].minY + bounds.minY),
+                proposal: .unspecified
+            )
+        }
+    }
+
+    private func layout(subviews: Subviews, in maxWidth: CGFloat) -> (frames: [CGRect], size: CGSize) {
+        var frames: [CGRect] = []
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth, x > 0 {
+                y += rowHeight + spacing
+                x = 0
+                rowHeight = 0
+            }
+            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        return (frames, CGSize(width: maxWidth, height: y + rowHeight))
     }
 }
 
