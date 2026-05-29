@@ -526,7 +526,7 @@ struct ChatView: View {
 
     private let bg = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.09, green: 0.08, blue: 0.07, alpha: 1.0)
+            ? UIColor(white: 0.05, alpha: 1.0)
             : UIColor(red: 0.965, green: 0.955, blue: 0.935, alpha: 1.0)
     })
 
