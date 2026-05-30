@@ -298,6 +298,8 @@ function pickMimeType(): string | undefined {
 }
 
 
+const pseudoRandom = (n: number) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+
 const fmtDate = (iso: string) => {
   const d = new Date(iso);
   const diff = Date.now() - d.getTime();
@@ -351,7 +353,6 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText, stream }: {
     const ctx = canvas.getContext('2d')!;
     let raf: number;
     const N = 80;
-    const pseudoRandom = (n: number) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = window.innerWidth * dpr;
@@ -518,18 +519,18 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
     const ctx = canvas.getContext('2d')!;
     let raf: number;
     const N = 25;
-    const pseudoRandom = (n: number) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+    let cachedW = 0, cachedH = 0;
     const ro = new ResizeObserver(() => {
       const dpr = window.devicePixelRatio || 1;
       const r = canvas.getBoundingClientRect();
+      cachedW = r.width; cachedH = r.height;
       canvas.width = r.width * dpr;
       canvas.height = r.height * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     });
     ro.observe(canvas);
     const draw = () => {
-      const r = canvas.getBoundingClientRect();
-      const w = r.width, h = r.height;
+      const w = cachedW, h = cachedH;
       if (!w || !h) { raf = requestAnimationFrame(draw); return; }
       const t = performance.now() / 1000;
       const level = audioLevelRef.current;
