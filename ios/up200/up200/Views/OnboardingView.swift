@@ -843,9 +843,9 @@ struct OnboardingView: View {
     private func chooseCircleContent(label: String, seed: Int, radius: CGFloat) -> some View {
         let d = radius * 2
         let shape = WobblyCircle(seed: seed)
-        let outerGlow = shape.stroke(Color.white.opacity(0.30), lineWidth: 3).blur(radius: 12).padding(-8)
-        let midGlow   = shape.stroke(Color.white.opacity(0.45), lineWidth: 1.5).blur(radius: 5).padding(-3)
-        let innerRim  = shape.stroke(Color.white.opacity(0.55), lineWidth: 0.8)
+        let outerGlow = shape.stroke(Color.white.opacity(0.15), lineWidth: 3).blur(radius: 12).padding(-8)
+        let midGlow   = shape.stroke(Color.white.opacity(0.25), lineWidth: 1.5).blur(radius: 5).padding(-3)
+        let innerRim  = shape.stroke(Color.white.opacity(0.50), lineWidth: 0.8)
         Text(label)
             .font(.lora(size: 16, weight: .medium))
             .foregroundColor(AppText.primary)
@@ -855,7 +855,7 @@ struct OnboardingView: View {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 13)
             .frame(width: d, height: d)
-            .background(shape.fill(Color.white.opacity(0.05)))
+            .background(shape.fill(Color.white.opacity(0.20)))
             .overlay(outerGlow)
             .overlay(midGlow)
             .overlay(innerRim)
