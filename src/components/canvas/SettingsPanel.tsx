@@ -70,7 +70,6 @@ function SettingsGroup({ label, children }: { label?: string; children: React.Re
         background: 'var(--color-bg-card)',
         borderRadius: 12,
         border: '0.5px solid var(--color-border-subtle)',
-        overflow: 'hidden',
       }}>
         {children}
       </div>
@@ -218,6 +217,7 @@ function APIKeysGroup() {
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -233,8 +233,9 @@ function APIKeysGroup() {
     (store as any)[PROVIDERS.find(p => p.key === key)!.setter](cleaned);
     setEditKey(null);
     await useSettingsStore.getState().save();
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
+    savedTimerRef.current = setTimeout(() => setSaved(false), 1500);
   };
 
   const handleDelete = async (key: string) => {
@@ -248,7 +249,6 @@ function APIKeysGroup() {
       {PROVIDERS.map((p, i) => {
         const value = store[p.key];
         const isEditing = editKey === p.key;
-        const isLast = i === PROVIDERS.length - 1;
 
         return (
           <React.Fragment key={p.key}>
@@ -317,7 +317,7 @@ function APIKeysGroup() {
                   )}
                   <div style={{ position: 'relative' }}>
                     <button
-                      onClick={() => setMenuOpen(menuOpen === p.key ? null : p.key)}
+                      onClick={() => setMenuOpen(prev => prev === p.key ? null : p.key)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
                         padding: '4px 6px', borderRadius: 'var(--radius-sm)',
@@ -454,7 +454,7 @@ function BrandKitsGroup() {
                   <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
                     <button
                       aria-label="Brand kit options"
-                      onClick={e => { e.stopPropagation(); setMenuId(menuId === b.id ? null : b.id); }}
+                      onClick={e => { e.stopPropagation(); setMenuId(prev => prev === b.id ? null : b.id); }}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
                         padding: '4px 6px', borderRadius: 'var(--radius-sm)',

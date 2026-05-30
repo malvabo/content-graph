@@ -247,16 +247,19 @@ function RecordingCanvas({ onStop }: { onStop: () => void }) {
     const ctx = canvas.getContext('2d')!;
     let t = 0, spread = 88, raf: number;
     let analyser: AnalyserNode | null = null, audioCtx: AudioContext | null = null, stream: MediaStream | null = null;
+    let cancelled = false;
     const arr = new Uint8Array(128);
     const resize = () => { const dpr = devicePixelRatio||1; canvas.width=innerWidth*dpr; canvas.height=innerHeight*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); };
     resize(); addEventListener('resize', resize);
     navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(s=>{
+      if (cancelled) { s.getTracks().forEach(tr=>tr.stop()); return; }
       stream=s; audioCtx=new AudioContext(); audioCtx.resume().catch(()=>{}); analyser=audioCtx.createAnalyser(); analyser.fftSize=256; analyser.smoothingTimeConstant=0.88;
       audioCtx.createMediaStreamSource(stream).connect(analyser);
     }).catch(()=>{});
     const birthStart = Date.now();
     const BIRTH_MS = 950;
     const draw = () => {
+      if (cancelled) return;
       const w=innerWidth,h=innerHeight,cx=w/2,cy=h*0.52;
       if(analyser){analyser.getByteFrequencyData(arr);let s=0;for(let k=0;k<arr.length;k++)s+=arr[k];levelRef.current=Math.min(1,(s/arr.length)/110);}
       const lv=levelRef.current; spread+=((lv>0.12?10:60)-spread)*0.04;
@@ -275,7 +278,7 @@ function RecordingCanvas({ onStop }: { onStop: () => void }) {
       t+=0.010; raf=requestAnimationFrame(draw);
     };
     draw();
-    return ()=>{ cancelAnimationFrame(raf); removeEventListener('resize',resize); stream?.getTracks().forEach(tr=>tr.stop()); audioCtx?.close().catch(()=>{}); };
+    return ()=>{ cancelled = true; cancelAnimationFrame(raf); removeEventListener('resize',resize); stream?.getTracks().forEach(tr=>tr.stop()); audioCtx?.close().catch(()=>{}); };
   }, []);
   return <canvas ref={canvasRef} onClick={onStop} style={{position:'absolute',inset:0,width:'100%',height:'100%',cursor:'pointer',zIndex:20,touchAction:'none'}} />;
 }

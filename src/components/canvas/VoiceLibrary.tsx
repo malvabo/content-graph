@@ -97,7 +97,7 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, strea
       };
       tick();
     } catch { /* mic unavailable */ }
-    return () => { cancelAnimationFrame(raf); audioCtx?.close(); };
+    return () => { cancelAnimationFrame(raf); audioCtx?.close(); audioLevelRef.current = 0; };
   }, [stream]);
 
   // Amber particle wave — particles converge on wave from above and below
@@ -134,6 +134,7 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, strea
       // Less movement: lower amplitude, slower wave
       const amplitude = amplified * cy * 0.42;
 
+      ctx.fillStyle = '#f6b93b';
       for (let layer = 0; layer < LAYERS; layer++) {
         for (let i = 0; i < POSITIONS; i++) {
           const idx = layer * POSITIONS + i;
@@ -175,12 +176,13 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, strea
 
           if (finalAlpha < 0.015) continue;
 
+          ctx.globalAlpha = finalAlpha;
           ctx.beginPath();
           ctx.arc(w * progress, waveY + yOffset, size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(246,185,59,${finalAlpha.toFixed(3)})`;
           ctx.fill();
         }
       }
+      ctx.globalAlpha = 1;
 
       t += 0.011;
       raf = requestAnimationFrame(draw);

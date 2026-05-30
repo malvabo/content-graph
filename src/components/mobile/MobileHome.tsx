@@ -298,6 +298,8 @@ function pickMimeType(): string | undefined {
 }
 
 
+const pseudoRandom = (n: number) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+
 const fmtDate = (iso: string) => {
   const d = new Date(iso);
   const diff = Date.now() - d.getTime();
@@ -341,7 +343,7 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText, stream }: {
       };
       tick();
     } catch { /* AudioContext blocked */ }
-    return () => { cancelAnimationFrame(raf); actx?.close().catch(() => {}); };
+    return () => { cancelAnimationFrame(raf); actx?.close().catch(() => {}); audioLevelRef.current = 0; };
   }, [stream]);
 
   // Amber particle wave canvas
@@ -351,7 +353,6 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText, stream }: {
     const ctx = canvas.getContext('2d')!;
     let raf: number;
     const N = 80;
-    const pseudoRandom = (n: number) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = window.innerWidth * dpr;
@@ -369,6 +370,7 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText, stream }: {
       ctx.fillRect(0, 0, w, h);
       const amplified = Math.min(1.0, 0.12 + Math.max(0, level - 0.03) * 7.0);
       const amplitude = amplified * h * 0.16;
+      ctx.fillStyle = '#f6b93b';
       for (let i = 0; i < N; i++) {
         const progress = i / (N - 1);
         const baseX = progress * w;
@@ -387,11 +389,12 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText, stream }: {
         const proxAlpha = Math.max(0.0, 1.0 - normJitter);
         const pulse = 0.65 + 0.35 * Math.sin(t * 1.8 + i * 0.35);
         const alpha = proxAlpha * pulse * (0.35 + amplified * 0.60);
-        ctx.fillStyle = `rgba(246,185,59,${alpha.toFixed(3)})`;
+        ctx.globalAlpha = alpha;
         ctx.beginPath();
         ctx.ellipse(px, py, radius, radius, 0, 0, Math.PI * 2);
         ctx.fill();
       }
+      ctx.globalAlpha = 1;
       raf = requestAnimationFrame(draw);
     };
     draw();
@@ -452,6 +455,8 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
   const transcriptRef = useRef('');
   const recognitionRef2 = useRef<any>(null);
   const shouldRestartRef2 = useRef(false);
+  const onCancelRef = useRef(onCancel);
+  useEffect(() => { onCancelRef.current = onCancel; }, [onCancel]);
 
   useEffect(() => {
     let actx: AudioContext | null = null;
@@ -487,6 +492,7 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
       capturedStream = stream;
       try {
         actx = new AudioContext();
+        actx.resume().catch(() => {});
         const analyser = actx.createAnalyser();
         analyser.fftSize = 256;
         actx.createMediaStreamSource(stream).connect(analyser);
@@ -498,7 +504,7 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
         };
         tick();
       } catch { /* noop */ }
-    }).catch(onCancel);
+    }).catch(() => onCancelRef.current());
     return () => {
       cancelled = true;
       shouldRestartRef2.current = false;
@@ -507,7 +513,7 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
       actx?.close().catch(() => {});
       capturedStream?.getTracks().forEach(t => t.stop());
     };
-  }, [onCancel]);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -515,18 +521,18 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
     const ctx = canvas.getContext('2d')!;
     let raf: number;
     const N = 25;
-    const pseudoRandom = (n: number) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+    let cachedW = 0, cachedH = 0;
     const ro = new ResizeObserver(() => {
       const dpr = window.devicePixelRatio || 1;
       const r = canvas.getBoundingClientRect();
+      cachedW = r.width; cachedH = r.height;
       canvas.width = r.width * dpr;
       canvas.height = r.height * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     });
     ro.observe(canvas);
     const draw = () => {
-      const r = canvas.getBoundingClientRect();
-      const w = r.width, h = r.height;
+      const w = cachedW, h = cachedH;
       if (!w || !h) { raf = requestAnimationFrame(draw); return; }
       const t = performance.now() / 1000;
       const level = audioLevelRef.current;
@@ -534,6 +540,7 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
       ctx.clearRect(0, 0, w, h);
       const amplified = Math.min(1.0, 0.12 + Math.max(0, level - 0.03) * 7.0);
       const amplitude = amplified * cy * 0.75;
+      ctx.fillStyle = '#f6b93b';
       for (let i = 0; i < N; i++) {
         const progress = i / (N - 1);
         const baseX = progress * w;
@@ -552,11 +559,12 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
         const proxAlpha = Math.max(0.0, 1.0 - normJitter);
         const pulse = 0.65 + 0.35 * Math.sin(t * 1.8 + i * 0.35);
         const alpha = proxAlpha * pulse * (0.40 + amplified * 0.55);
-        ctx.fillStyle = `rgba(246,185,59,${alpha.toFixed(3)})`;
+        ctx.globalAlpha = alpha;
         ctx.beginPath();
         ctx.ellipse(px, py, radius, radius, 0, 0, Math.PI * 2);
         ctx.fill();
       }
+      ctx.globalAlpha = 1;
       raf = requestAnimationFrame(draw);
     };
     draw();
