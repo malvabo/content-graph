@@ -1796,7 +1796,7 @@ struct ChatView: View {
                 let target = buf.count
                 guard shown < target else { continue }
                 let gap = target - shown
-                let step = max(1, gap / 10)
+                let step = min(gap, 5)
                 shown = min(shown + step, target)
                 // Don't show partial <rewrite> XML — wait until the closing
                 // tag has been drained so the card appears atomically.
@@ -1912,60 +1912,6 @@ private struct ChipFlow: Layout {
 
 // MARK: - Fade-in Text for streaming assistant responses
 
-/// Renders assistant message text with a smooth fade-in for new content.
-/// A stable "committed" base layer stays fully opaque at all times; an
-/// overlay layer carries the full current content and fades from 0 → 1
-/// each time a new batch of text arrives. Because the committed portion
-/// is identical in both layers, it stays at 100% brightness — only the
-/// newly appended characters fade in.
-private struct FadeInText: View {
-    let content: String
-
-    @State private var committed: String = ""
-    @State private var latestContent: String = ""
-    @State private var overlayOpacity: Double = 1.0
-    @State private var fadeTask: Task<Void, Never>?
-
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            Text(AppMarkdown.render(committed))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .textSelection(.disabled)
-            Text(AppMarkdown.render(content))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .opacity(overlayOpacity)
-        }
-        .appBodyText()
-        .textSelection(.enabled)
-        .onChange(of: content) { _, newValue in
-            latestContent = newValue
-            guard overlayOpacity >= 0.99 else { return }
-            beginFade()
-        }
-        .onAppear {
-            committed = content
-            latestContent = content
-        }
-        .onDisappear { fadeTask?.cancel() }
-    }
-
-    private func beginFade() {
-        overlayOpacity = 0.0
-        withAnimation(.easeOut(duration: 0.28)) {
-            overlayOpacity = 1.0
-        }
-        fadeTask?.cancel()
-        fadeTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            guard !Task.isCancelled else { return }
-            // latestContent is @State — reads the live value at execution time,
-            // not the value captured when the Task was created.
-            committed = latestContent
-            overlayOpacity = 1.0
-        }
-    }
-}
-
 // MARK: - Message Bubble
 
 private struct MessageBubble: View {
@@ -1996,7 +1942,10 @@ private struct MessageBubble: View {
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         } else {
-            FadeInText(content: message.content)
+            Text(AppMarkdown.render(message.content))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .appBodyText()
+                .textSelection(.enabled)
         }
     }
 }
