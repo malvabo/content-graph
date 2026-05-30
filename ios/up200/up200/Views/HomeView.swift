@@ -1792,6 +1792,10 @@ private struct SourcesBlock: View {
                 activeSheet = s
             }
         }
+        .onDisappear {
+            photoExtractTask?.cancel()
+            fileImportTask?.cancel()
+        }
     }
 
     private func readFileContent(from url: URL) -> String {

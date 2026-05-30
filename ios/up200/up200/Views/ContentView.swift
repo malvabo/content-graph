@@ -1692,6 +1692,7 @@ private struct TemplateEditPage: View {
     private let originalFormatIDs: [String]
     @State private var promptBeforeDictation: String = ""
     @State private var isEnhancing: Bool = false
+    @State private var enhanceTask: Task<Void, Never>? = nil
     @State private var enhanceFailed: Bool = false
     @State private var enhanceFailReason: String = ""
     @StateObject private var dictation = NoteDictation()
@@ -1774,7 +1775,7 @@ private struct TemplateEditPage: View {
         isEnhancing = true
         let titleSnapshot = derivedTitle
         let formatLabels = allFormats.filter { originalFormatIDs.contains($0.id) }.map(\.label)
-        Task {
+        enhanceTask = Task {
             let result = await TemplatePromptEnhancer.enhance(
                 title: titleSnapshot,
                 currentPrompt: trimmed,
@@ -1901,6 +1902,7 @@ private struct TemplateEditPage: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .swipeBackGesture { dismiss() }
         .onDisappear {
+            enhanceTask?.cancel()
             dictation.stop()
             persist()
         }
