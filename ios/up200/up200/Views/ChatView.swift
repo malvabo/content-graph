@@ -1976,7 +1976,7 @@ private struct RewriteSuggestionCard: View {
                         .font(.app(size: 15, weight: .semibold))
                 }
                 .foregroundColor(isApplied ? AppText.secondary : .white)
-                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 10)
                 .frame(height: 44)
                 .background(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
