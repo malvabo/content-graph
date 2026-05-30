@@ -251,7 +251,7 @@ function RecordingCanvas({ onStop }: { onStop: () => void }) {
     const resize = () => { const dpr = devicePixelRatio||1; canvas.width=innerWidth*dpr; canvas.height=innerHeight*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); };
     resize(); addEventListener('resize', resize);
     navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(s=>{
-      stream=s; audioCtx=new AudioContext(); analyser=audioCtx.createAnalyser(); analyser.fftSize=256; analyser.smoothingTimeConstant=0.88;
+      stream=s; audioCtx=new AudioContext(); audioCtx.resume().catch(()=>{}); analyser=audioCtx.createAnalyser(); analyser.fftSize=256; analyser.smoothingTimeConstant=0.88;
       audioCtx.createMediaStreamSource(stream).connect(analyser);
     }).catch(()=>{});
     const birthStart = Date.now();
@@ -267,11 +267,11 @@ function RecordingCanvas({ onStop }: { onStop: () => void }) {
       for(let i=0;i<4;i++){
         const ang=t*0.65+i*(Math.PI*0.5),r=(spread+Math.sin(t*0.45+i*1.1)*14)*birth;
         const px=cx+Math.cos(ang)*r*0.88,py=cy+Math.sin(ang)*r*0.72,sz=(95+Math.sin(t*0.9+i*0.8)*22)*(1+lv*0.5);
-        const al=(0.22+lv*0.32)*birth,hue=145+i*5,gr=ctx.createRadialGradient(px,py,0,px,py,sz);
-        gr.addColorStop(0,`hsla(${hue},58%,52%,${al.toFixed(2)})`); gr.addColorStop(0.5,`hsla(${hue},50%,48%,${(al*0.28).toFixed(2)})`); gr.addColorStop(1,'transparent');
+        const al=(0.22+lv*0.32)*birth,gr=ctx.createRadialGradient(px,py,0,px,py,sz);
+        gr.addColorStop(0,`rgba(246,185,59,${al.toFixed(2)})`); gr.addColorStop(0.5,`rgba(246,185,59,${(al*0.28).toFixed(2)})`); gr.addColorStop(1,'transparent');
         ctx.fillStyle=gr; ctx.fillRect(0,0,w,h);
       }
-      if(lv>0.05){const g=ctx.createRadialGradient(cx,cy,0,cx,cy,75+lv*50);g.addColorStop(0,`hsla(150,60%,55%,${(lv*0.28).toFixed(2)})`);g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);}
+      if(lv>0.05){const g=ctx.createRadialGradient(cx,cy,0,cx,cy,75+lv*50);g.addColorStop(0,`rgba(246,185,59,${(lv*0.28).toFixed(2)})`);g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);}
       t+=0.010; raf=requestAnimationFrame(draw);
     };
     draw();

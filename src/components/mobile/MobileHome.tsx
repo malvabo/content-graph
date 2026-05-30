@@ -329,6 +329,7 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText, stream }: {
     let raf: number;
     try {
       actx = new AudioContext();
+      actx.resume().catch(() => {});
       const analyser = actx.createAnalyser();
       analyser.fftSize = 256;
       actx.createMediaStreamSource(stream).connect(analyser);
@@ -366,7 +367,7 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText, stream }: {
       const cy = h * 0.52;
       ctx.fillStyle = '#080910';
       ctx.fillRect(0, 0, w, h);
-      const amplified = Math.min(1.0, Math.pow(Math.max(level, 0.005), 0.28) * 2.8);
+      const amplified = Math.min(1.0, 0.12 + Math.max(0, level - 0.03) * 7.0);
       const amplitude = amplified * h * 0.16;
       for (let i = 0; i < N; i++) {
         const progress = i / (N - 1);
@@ -531,7 +532,7 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
       const level = audioLevelRef.current;
       const cy = h / 2;
       ctx.clearRect(0, 0, w, h);
-      const amplified = Math.min(1.0, Math.pow(Math.max(level, 0.005), 0.28) * 2.8);
+      const amplified = Math.min(1.0, 0.12 + Math.max(0, level - 0.03) * 7.0);
       const amplitude = amplified * cy * 0.75;
       for (let i = 0; i < N; i++) {
         const progress = i / (N - 1);
