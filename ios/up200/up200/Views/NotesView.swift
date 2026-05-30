@@ -998,10 +998,14 @@ private struct NoteEditorPage: View {
                 let fallbackBody = combined
                 let baseNote = saved
                 let save = onSave
+                let bodyRef = $noteBody
                 Task {
                     var updated = baseNote
                     updated.body = await AIService.prependTitleIfMissing(to: snapshotBody) ?? fallbackBody
-                    await MainActor.run { save(updated) }
+                    await MainActor.run {
+                        guard bodyRef.wrappedValue == snapshotBody else { return }
+                        save(updated)
+                    }
                 }
                 return
             }
