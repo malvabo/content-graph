@@ -104,7 +104,7 @@ struct MinimalHomePage: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .top) {
                 AmbientBackground()
 
                 VStack(spacing: 0) {
@@ -153,6 +153,10 @@ struct MinimalHomePage: View {
                 // for search doesn't shove the list up and slam it back.
                 .ignoresSafeArea(.keyboard)
             }
+            // ZStack-level keyboard ignore so the container never resizes
+            // and re-centres on keyboard dismissal (the root cause of the
+            // "content slides up from below" artefact on search close).
+            .ignoresSafeArea(.keyboard)
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
         }

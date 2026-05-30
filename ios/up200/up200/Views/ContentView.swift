@@ -119,7 +119,7 @@ struct LibraryView: View {
     }
 
     private var content: some View {
-        ZStack {
+        ZStack(alignment: .top) {
             AmbientBackground()
 
             VStack(spacing: 0) {
@@ -192,6 +192,10 @@ struct LibraryView: View {
                     .transition(.opacity)
                 }
             }
+        // Same fix as NotesView: prevent the ZStack from resizing with the
+        // keyboard, which would re-centre children and animate the list
+        // up from below on search close.
+        .ignoresSafeArea(.keyboard)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
         .task { buildGroups() }
@@ -2217,7 +2221,7 @@ private struct SimpleHomePage: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .top) {
                 AmbientBackground()
 
                 VStack(spacing: 0) {
@@ -2270,6 +2274,10 @@ private struct SimpleHomePage: View {
                 // cancel.
                 .ignoresSafeArea(.keyboard)
             }
+            // ZStack-level fix: without this the container re-centres its
+            // children as it gains height on keyboard dismissal, animating
+            // the list up from below during the search-close fade.
+            .ignoresSafeArea(.keyboard)
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
         }

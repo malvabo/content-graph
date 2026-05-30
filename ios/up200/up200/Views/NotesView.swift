@@ -1809,7 +1809,7 @@ struct NotesView: View {
     }
 
     private var content: some View {
-        ZStack {
+        ZStack(alignment: .top) {
             AmbientBackground()
 
             VStack(spacing: 0) {
@@ -1947,6 +1947,12 @@ struct NotesView: View {
                     .transition(.opacity)
                 }
             }
+            // Prevent the ZStack from resizing when the keyboard appears/
+            // disappears. Without this the container re-centres its children
+            // as it gains height, which animates the notes list up from below
+            // during the search-close fade — the bug that survived all prior
+            // attempts because they only fixed the inner VStack, not the ZStack.
+            .ignoresSafeArea(.keyboard)
             .toolbar(.hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(item: $editingNote) { note in
