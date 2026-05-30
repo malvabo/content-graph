@@ -2385,11 +2385,19 @@ private struct SelectableNoteEditor: UIViewRepresentable {
         if tv.textContainerInset.bottom != bottomInset {
             tv.textContainerInset.bottom = bottomInset
         }
-        let targetFocused = isFocused
+        // Read focus from the coordinator's parent rather than capturing isFocused as a
+        // Bool snapshot. Each updateUIView call refreshes coordinator.parent, so all
+        // pending async blocks see the *current* focus state when they run. Without this,
+        // a stale block queued from the initial (unfocused) render fires after the user
+        // taps and calls resignFirstResponder(), then the subsequent block calls
+        // becomeFirstResponder() programmatically, which resets the cursor to position 0
+        // instead of the tap location.
+        let coordinator = context.coordinator
         DispatchQueue.main.async {
-            if targetFocused && !tv.isFirstResponder {
+            let focused = coordinator.parent.isFocused
+            if focused && !tv.isFirstResponder {
                 tv.becomeFirstResponder()
-            } else if !targetFocused && tv.isFirstResponder {
+            } else if !focused && tv.isFirstResponder {
                 tv.resignFirstResponder()
             }
         }
