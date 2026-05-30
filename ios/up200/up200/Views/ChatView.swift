@@ -727,6 +727,19 @@ struct ChatView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 inputArea
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if showMentionPicker {
+                    MentionInlinePicker(
+                        documents: documentSources,
+                        notes: noteSources,
+                        onSelect: { source in attachMention(source) },
+                        onDismiss: { showMentionPicker = false }
+                    )
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 4)
+                    .transition(.opacity)
+                }
+            }
         }
         .animation(.spring(response: 0.28, dampingFraction: 0.82), value: showMentionPicker)
         .sheet(isPresented: $showSavedChatsPicker) {
@@ -1155,17 +1168,6 @@ struct ChatView: View {
 
     private var inputArea: some View {
         VStack(spacing: 0) {
-            if showMentionPicker {
-                MentionInlinePicker(
-                    documents: documentSources,
-                    notes: noteSources,
-                    onSelect: { source in attachMention(source) },
-                    onDismiss: { showMentionPicker = false }
-                )
-                .padding(.horizontal, 12)
-                .padding(.bottom, 4)
-                .transition(.opacity)
-            }
             if shouldShowQuickActions {
                 quickActionsRow
                     .transition(.opacity)
@@ -2155,7 +2157,7 @@ private struct MentionInlinePicker: View {
                                     Spacer(minLength: 0)
                                 }
                                 .padding(.horizontal, 14)
-                                .padding(.vertical, 11)
+                                .padding(.vertical, 14)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
