@@ -1907,6 +1907,7 @@ private struct FadeInText: View {
     let content: String
 
     @State private var committed: String = ""
+    @State private var latestContent: String = ""
     @State private var overlayOpacity: Double = 1.0
     @State private var fadeTask: Task<Void, Never>?
 
@@ -1921,11 +1922,15 @@ private struct FadeInText: View {
         }
         .appBodyText()
         .textSelection(.enabled)
-        .onChange(of: content) { _, _ in
+        .onChange(of: content) { _, newValue in
+            latestContent = newValue
             guard overlayOpacity >= 0.99 else { return }
             beginFade()
         }
-        .onAppear { committed = content }
+        .onAppear {
+            committed = content
+            latestContent = content
+        }
         .onDisappear { fadeTask?.cancel() }
     }
 
@@ -1938,7 +1943,9 @@ private struct FadeInText: View {
         fadeTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 300_000_000)
             guard !Task.isCancelled else { return }
-            committed = content
+            // latestContent is @State — reads the live value at execution time,
+            // not the value captured when the Task was created.
+            committed = latestContent
             overlayOpacity = 1.0
         }
     }
