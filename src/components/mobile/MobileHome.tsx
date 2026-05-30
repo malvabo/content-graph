@@ -455,6 +455,8 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
   const transcriptRef = useRef('');
   const recognitionRef2 = useRef<any>(null);
   const shouldRestartRef2 = useRef(false);
+  const onCancelRef = useRef(onCancel);
+  useEffect(() => { onCancelRef.current = onCancel; }, [onCancel]);
 
   useEffect(() => {
     let actx: AudioContext | null = null;
@@ -502,7 +504,7 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
         };
         tick();
       } catch { /* noop */ }
-    }).catch(onCancel);
+    }).catch(() => onCancelRef.current());
     return () => {
       cancelled = true;
       shouldRestartRef2.current = false;
@@ -511,7 +513,7 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
       actx?.close().catch(() => {});
       capturedStream?.getTracks().forEach(t => t.stop());
     };
-  }, [onCancel]);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;

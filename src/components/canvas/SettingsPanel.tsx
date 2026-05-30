@@ -70,7 +70,6 @@ function SettingsGroup({ label, children }: { label?: string; children: React.Re
         background: 'var(--color-bg-card)',
         borderRadius: 12,
         border: '0.5px solid var(--color-border-subtle)',
-        overflow: 'hidden',
       }}>
         {children}
       </div>
