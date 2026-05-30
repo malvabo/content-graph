@@ -1432,9 +1432,9 @@ private struct OnboardingRecordingWaveform: View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let level = recorder.audioLevel
-            // Noise floor ~0.02; speech typically 0.06–0.35. Linear remap so
-            // amplified is truly 0 at silence and 1 at normal speech level.
-            let amplified = max(0.0, min(1.0, (Double(level) - 0.02) / 0.28))
+            // RMS floor ~0.008 (mic hiss); normal speech 0.02–0.06.
+            // Multiply by 18 so full amber is reached at ~0.063.
+            let amplified = min(1.0, max(0.0, Double(level) - 0.008) * 18.0)
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
