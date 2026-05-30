@@ -533,6 +533,7 @@ struct ChatView: View {
     // them out at a smooth ~30fps cadence so text flows rather than jumps.
     @State private var streamBuffer = ""
     @State private var drainTask: Task<Void, Never>? = nil
+    @State private var currentReplyID: UUID? = nil
 
     private let bg = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
@@ -798,11 +799,20 @@ struct ChatView: View {
         }
         .presentationBackground(bg)
         .onDisappear {
+            // Flush any network content not yet drain-pumped to the bubble,
+            // so the saved draft has the full response rather than whatever
+            // frame the pump happened to be on when the user left.
+            if let rid = currentReplyID,
+               let idx = messages.firstIndex(where: { $0.id == rid }) {
+                let safe = Self.drainSafeContent(streamBuffer)
+                if !safe.isEmpty { messages[idx].content = safe }
+            }
             sendTask?.cancel()
             sendTask = nil
             drainTask?.cancel()
             drainTask = nil
             streamBuffer = ""
+            currentReplyID = nil
             fileImportTask?.cancel()
             dictation.cancel()
             // Catch any final state the per-turn saves missed — eg. if a
@@ -1769,6 +1779,7 @@ struct ChatView: View {
         // Identity for the assistant turn the stream writes into: the
         // first delta appends the bubble, later deltas grow it in place.
         let replyID = UUID()
+        currentReplyID = replyID
         streamBuffer = ""
 
         // Drain pump: reads from streamBuffer and advances the displayed
@@ -1830,6 +1841,7 @@ struct ChatView: View {
                         )
                     }
                     streamBuffer = ""
+                    currentReplyID = nil
                     persistActiveChat()
                 case .failure(let err):
                     // If we received partial content before the connection
@@ -1843,6 +1855,7 @@ struct ChatView: View {
                         messages[idx].content = partial
                     }
                     streamBuffer = ""
+                    currentReplyID = nil
                     if case .signupRequired = err {
                         showSignUpSheet = true
                     } else {
