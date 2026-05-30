@@ -401,7 +401,7 @@ struct MinimalNoteDetailPage: View {
         // above it — cursor never hides behind the bar.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
-                if !dictation.isRecording && !hasActiveTextSelection {
+                if !dictation.isRecording && !hasActiveTextSelection && !editorFocused {
                     if isNoteTab {
                         aiWandButton
                             .transition(.scale(scale: 0.85).combined(with: .opacity))
@@ -411,9 +411,13 @@ struct MinimalNoteDetailPage: View {
                     }
                 }
 
+                // Keep the pill in the layout (its inner frame(maxWidth:
+                // .infinity) absorbs the slack and pushes DictationControls
+                // to the trailing edge) but fade it out and disable taps
+                // while dictation is live or editor is focused.
                 aiChatPill
-                    .opacity(dictation.isRecording ? 0 : 1)
-                    .allowsHitTesting(!dictation.isRecording)
+                    .opacity(dictation.isRecording || editorFocused ? 0 : 1)
+                    .allowsHitTesting(!dictation.isRecording && !editorFocused)
 
                 DictationControls(
                     dictation: dictation,
