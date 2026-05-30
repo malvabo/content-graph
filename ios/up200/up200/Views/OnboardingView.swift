@@ -1507,28 +1507,27 @@ private struct GeneratingCloudScene: View {
     private struct Satellite {
         let delay: Double
         let angle: Double
-        // Per-satellite distance / size so the four don't sit on a perfect
-        // circle. Each value is a multiplier of the central coreRadius —
-        // organic asymmetry reads better than a clock-face arrangement.
-        let distanceFactor: Double
+        // Fraction of the screen-edge distance in this direction (0–1).
+        // Using edge-fraction rather than a coreRadius multiplier makes
+        // each satellite travel to the same relative position regardless
+        // of screen aspect ratio — so tall phones fill vertical space too.
+        let edgeFraction: Double
         let sizeFactor: Double
         let starCount: Int
     }
-    // Four anchor points around the central sphere, staggered in time so
-    // the sparks read as individual firings rather than a chord, and at
-    // varied distances / sizes so the resulting graph feels composed
-    // rather than mechanical. Distances are 1.7-2.1x core radius (was a
-    // uniform 3.3x), so the satellites cluster near the parent instead
-    // of drifting to the edges of the viewport.
+    // Four satellites, one per screen quadrant. Angles chosen so they
+    // spread toward the four corners rather than clustering on a diagonal.
+    // edgeFraction targets 65–72% of the distance to the nearest screen
+    // edge in each satellite's direction.
     private let satellites: [Satellite] = [
-        Satellite(delay: 0.55, angle: -.pi / 2 + 0.18,
-                  distanceFactor: 1.80, sizeFactor: 0.55, starCount: 28),
-        Satellite(delay: 1.75, angle:  .pi / 5,
-                  distanceFactor: 2.10, sizeFactor: 0.42, starCount: 20),
-        Satellite(delay: 2.95, angle:  .pi - .pi / 7,
-                  distanceFactor: 1.90, sizeFactor: 0.48, starCount: 24),
-        Satellite(delay: 4.15, angle: -2 * .pi / 3,
-                  distanceFactor: 1.70, sizeFactor: 0.38, starCount: 18),
+        Satellite(delay: 0.55, angle: -2.05,   // upper-left
+                  edgeFraction: 0.68, sizeFactor: 0.70, starCount: 36),
+        Satellite(delay: 1.75, angle: -0.85,   // upper-right
+                  edgeFraction: 0.72, sizeFactor: 0.60, starCount: 28),
+        Satellite(delay: 2.95, angle:  0.55,   // right-lower
+                  edgeFraction: 0.68, sizeFactor: 0.65, starCount: 32),
+        Satellite(delay: 4.15, angle:  2.30,   // left-lower
+                  edgeFraction: 0.65, sizeFactor: 0.55, starCount: 24),
     ]
 
     var body: some View {
@@ -1556,7 +1555,14 @@ private struct GeneratingCloudScene: View {
                     guard progress > 0 else { continue }
                     let eased = 1 - pow(1 - progress, 3)
 
-                    let satDistance = coreRadius * sat.distanceFactor
+                    // Distance to screen edge in this satellite's direction,
+                    // then travel edgeFraction of that — fills all four
+                    // screen quadrants regardless of device aspect ratio.
+                    let ca = abs(cos(sat.angle)), sa = abs(sin(sat.angle))
+                    let distToEdge = ca < 1e-9 ? cy
+                                   : sa < 1e-9 ? cx
+                                   : min(cx / ca, cy / sa)
+                    let satDistance = distToEdge * sat.edgeFraction
                     let satX = cx + cos(sat.angle) * satDistance * eased
                     let satY = cy + sin(sat.angle) * satDistance * eased
 
