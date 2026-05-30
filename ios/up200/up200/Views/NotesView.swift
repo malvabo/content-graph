@@ -1911,12 +1911,8 @@ struct NotesView: View {
                     )
                 }
                 .allowsHitTesting(!showSearch)
-                // The notes list never owns the keyboard (only the SearchOverlay
-                // does), so don't let the keyboard's safe-area inset reshape the
-                // list. Without this, Cancel-ing search makes the keyboard
-                // descend and the list's bottom edge animates outward — which
-                // reads as content jumping up from below during the overlay fade.
                 .ignoresSafeArea(.keyboard)
+                .transaction { $0.animation = nil }
 
                 if showSearch {
                     SearchOverlay(
