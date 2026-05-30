@@ -147,6 +147,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       });
     }
+    // Increment before the upstream call to close the concurrent-request race
+    // window. Without this, multiple simultaneous requests all pass checkLimit
+    // before any of them increments, bypassing the limit entirely.
+    await incrementUsage(sub);
   }
 
   let upstream: Response;
@@ -163,10 +167,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (e) {
     const err = e as { message?: string };
     return res.status(502).json({ error: err?.message ?? 'Upstream fetch failed' });
-  }
-
-  if (!skipLimit && upstream.status === 200) {
-    await incrementUsage(sub);
   }
 
   if (stream) {

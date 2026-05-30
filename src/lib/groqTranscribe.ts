@@ -2,6 +2,13 @@
 // (VoiceLibrary) and the post-onboarding "Import audio recordings" action both
 // run blobs through here so error handling stays in lockstep.
 
+function mimeToExt(type: string): string {
+  if (type.includes('mp4') || type.includes('m4a') || type.includes('aac')) return 'mp4';
+  if (type.includes('ogg')) return 'ogg';
+  if (type.includes('wav')) return 'wav';
+  return 'webm';
+}
+
 export async function transcribeWithGroq(blob: Blob, apiKey: string): Promise<string> {
   const key = apiKey.trim().replace(/^['"`]+|['"`]+$/g, '');
   console.info('[Groq]', { keyLen: key.length, prefix: key.slice(0, 4), suffix: key.slice(-4), blobBytes: blob.size, blobType: blob.type });
@@ -10,7 +17,8 @@ export async function transcribeWithGroq(blob: Blob, apiKey: string): Promise<st
     throw new Error('That doesn\'t look like a Groq key — it should start with "gsk_". Get one from https://console.groq.com/keys.');
   }
   const form = new FormData();
-  form.append('file', blob, blob instanceof File ? blob.name : 'recording.webm');
+  const ext = blob instanceof File ? (blob.name.split('.').pop() ?? 'webm') : mimeToExt(blob.type);
+  form.append('file', blob, `recording.${ext}`);
   form.append('model', 'whisper-large-v3');
   form.append('response_format', 'json');
   const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {

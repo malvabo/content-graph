@@ -77,7 +77,10 @@ export const useInfographicStore = create<InfographicState>()(
         if (!item || !item.history?.length) return null;
         const prev = item.history[item.history.length - 1];
         set((s) => ({
-          items: s.items.map(i => i.id === id ? { ...i, history: (i.history || []).slice(0, -1) } : i),
+          items: s.items.map(i => {
+            if (i.id !== id || !i.history?.length) return i;
+            return { ...i, history: i.history.slice(0, -1) };
+          }),
         }));
         return prev;
       },

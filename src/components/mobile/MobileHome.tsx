@@ -479,7 +479,7 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
           transcriptRef.current = (finalT + interim).trim();
         };
         recog.onerror = () => {};
-        recog.onend = () => { if (shouldRestartRef2.current) { try { recog.start(); } catch { /* noop */ } } };
+        recog.onend = () => { if (shouldRestartRef2.current) { setTimeout(() => { try { recog.start(); } catch { /* noop */ } }, 200); } };
         shouldRestartRef2.current = true;
         recog.start();
         recognitionRef2.current = recog;
@@ -504,7 +504,8 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
         };
         tick();
       } catch { /* noop */ }
-    }).catch(() => onCancelRef.current());
+
+    }).catch(() => {});
     return () => {
       cancelled = true;
       shouldRestartRef2.current = false;
@@ -893,6 +894,33 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
 
+  // Reset all local state when the sheet is reused for a different note so
+  // stale drafts, generation results, and in-flight requests never bleed across.
+  useEffect(() => {
+    setEditTitle(note.title);
+    setIsEditingTitle(false);
+    setGen(note.lastGeneration
+      ? { kind: note.lastGeneration.kind, text: note.lastGeneration.text, originalText: note.lastGeneration.text, loading: false }
+      : null);
+    setVersions([]);
+    setVersionsOpen(false);
+    setIsEditingTranscript(false);
+    setTranscriptDraft(note.transcript ?? '');
+    setShowStaleBanner(false);
+    setSecondaryGens(note.extraGenerations ?? {});
+    setMenuOpen(false);
+    setChooserOpen(false);
+    setCustomMode(false);
+    setCustomText('');
+    abortRef.current?.abort();
+    streamCancelRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note.id]);
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); streamCancelRef.current = true; };
+  }, []);
+
   const saveTitle = useCallback(() => {
     const t = editTitle.trim();
     if (!t) { setEditTitle(note.title); return; }
@@ -1126,7 +1154,8 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
       if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); sizeTranscriptEditor(); }
     }, 0);
     return () => clearTimeout(id);
-  }, [isEditingTranscript, note.transcript, sizeTranscriptEditor]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditingTranscript]); // intentionally excludes note.transcript — seed the draft once on open, don't overwrite in-progress edits
 
   const saveTranscript = useCallback(() => {
     const t = transcriptDraft.trim();
@@ -1144,10 +1173,12 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
   const regenerateAllPosts = useCallback(async () => {
     setShowStaleBanner(false);
+    setSecondaryGens({});
+    updateNote(note.id, { extraGenerations: {} });
     if (gen?.kind) {
       await generate(gen.kind);
     }
-  }, [gen?.kind, generate]);
+  }, [gen?.kind, generate, note.id, updateNote]);
 
   const exportAllGenerated = useCallback(async () => {
     const blocks: string[] = [];
@@ -1537,7 +1568,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                           onClick={() => setVersionsOpen(o => !o)}
                           aria-haspopup="menu"
                           aria-expanded={versionsOpen}
-                          aria-label={`Version ${versions.length + 1} of ${versions.length + 1}. View previous versions.`}
+                          aria-label={`Current version v${versions.length + 1}. View previous versions.`}
                           style={{
                             background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px',
                             fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 600,
@@ -1844,7 +1875,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
               </div>
               {ALL_KINDS.filter(k => k !== gen.kind).map(k => (
                 <SecondaryGenRow
-                  key={k}
+                  key={`${note.id}-${k}`}
                   kind={k}
                   transcript={note.transcript}
                   initialText={note.extraGenerations?.[k]}
@@ -2459,7 +2490,7 @@ function CreateSheet({ onClose, onVoice, onText }: { onClose: () => void; onVoic
   return createPortal(
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
+        position: 'fixed', inset: 0, zIndex: 9998,
         background: 'rgba(0,0,0,0.6)',
         backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         display: 'flex', alignItems: 'flex-end',
@@ -2731,6 +2762,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
   const finalRef = useRef('');
   const interimRef = useRef('');
   const shouldRestartRef = useRef(false);
+  const detectedMimeRef = useRef<string>('audio/mp4');
   const groqKeyRef = useRef(groqKey);
   useEffect(() => { groqKeyRef.current = groqKey; }, [groqKey]);
 
@@ -2757,6 +2789,28 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     interimRef.current = '';
     chunksRef.current = [];
 
+    // Acquire mic before SR starts — one getUserMedia in flight at a time.
+    // SR.start() issues its own internal getUserMedia on iOS; establishing
+    // the session here first prevents two simultaneous acquisitions from
+    // fighting over the AVAudioSession slot.
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setErrorMsg('Microphone access denied.');
+      return;
+    }
+    mediaRef.current = stream;
+    setActiveStream(stream);
+    setOpenNoteId(null);
+
+    const mime = pickMimeType();
+    detectedMimeRef.current = mime ?? 'audio/mp4';
+    const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
+    mr.start(1000);
+    recorderRef.current = mr;
+
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     if (SpeechRecognition) {
       try {
@@ -2764,6 +2818,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         recog.continuous = true; recog.interimResults = true;
         recog.lang = navigator.language || 'en-US';
         recog.onresult = (e: any) => {
+          if (recognitionRef.current !== recog) return;
           let interim = '';
           for (let i = e.resultIndex; i < e.results.length; i++) {
             const t = e.results[i][0].transcript;
@@ -2773,28 +2828,15 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
           interimRef.current = interim;
           setLiveText((finalRef.current + ' ' + interim).trim());
         };
-        recog.onend = () => { if (shouldRestartRef.current) { try { recog.start(); } catch { /* already started */ } } };
+        recog.onend = () => {
+          if (shouldRestartRef.current) {
+            setTimeout(() => { try { recog.start(); } catch { /* noop */ } }, 200);
+          }
+        };
         shouldRestartRef.current = true;
         recog.start();
         recognitionRef.current = recog;
       } catch { /* fall back to Whisper on stop */ }
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRef.current = stream;
-      setActiveStream(stream);
-      const mime = pickMimeType();
-      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
-      mr.start(1000);
-      recorderRef.current = mr;
-    } catch {
-      shouldRestartRef.current = false;
-      try { recognitionRef.current?.stop(); } catch { /* noop */ }
-      recognitionRef.current = null;
-      setErrorMsg('Microphone access denied.');
-      return;
     }
 
     const id = `vn-${Date.now()}`;
@@ -2802,7 +2844,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     startTimeRef.current = Date.now();
     setRecording(true);
     addNote({ id, title: 'Recording…', durationMs: 0, transcript: '', status: 'recording', createdAt: new Date().toISOString() });
-  }, [addNote]);
+  }, [addNote, setOpenNoteId]);
 
   const handleSaveTypedNote = useCallback((text: string) => {
     const id = `note-typed-${Date.now()}`;
@@ -2839,7 +2881,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     const duration = Date.now() - startTimeRef.current;
     let transcript = [finalRef.current.trim(), interimRef.current.trim()].filter(Boolean).join(' ').trim();
 
-    const mimeType = (chunksRef.current[0] as Blob | undefined)?.type || 'audio/webm';
+    const mimeType = chunksRef.current.find(c => (c as Blob).type)?.type || detectedMimeRef.current;
     const blob = chunksRef.current.length ? new Blob(chunksRef.current, { type: mimeType }) : null;
     chunksRef.current = [];
     setRecording(false);
@@ -2994,7 +3036,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         </div>
       )}
 
-      {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} stream={activeStream} />}
+      {recording && !openNoteId && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} stream={activeStream} />}
 
       {showTypeNote && <TypeNoteSheet onSave={handleSaveTypedNote} onClose={() => setShowTypeNote(false)} />}
 

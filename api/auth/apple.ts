@@ -339,6 +339,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // issued for this exact request and wasn't replayed.
     const rawNonce = asOptionalString(body.nonce);
     if (rawNonce) {
+      if (!/^[0-9a-f]+$/i.test(rawNonce)) {
+        throw new HttpError(401, 'Invalid nonce format');
+      }
       // iOS generates 32 random bytes, hex-encodes them as the "raw nonce", and
       // hashes the raw bytes (not the hex string) for the Apple request nonce.
       // Decode hex → bytes here before hashing so the comparison matches.

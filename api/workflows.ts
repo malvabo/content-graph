@@ -64,10 +64,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(204).end();
     }
 
-    res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
     const err = e as { message?: string };
     console.error('workflows handler:', err);
-    res.status(500).json({ error: err?.message || 'Server error' });
+    return res.status(500).json({ error: err?.message || 'Server error' });
   }
 }

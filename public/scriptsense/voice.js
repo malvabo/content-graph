@@ -165,7 +165,7 @@
 
     recognition.onend = () => {
       if (listening) {
-        try { recognition.start(); } catch(e){}
+        setTimeout(() => { try { recognition.start(); } catch(e){} }, 200);
       }
     };
 

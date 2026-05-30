@@ -26,8 +26,8 @@ export function useAutoSaveWorkflow() {
     if (timerRef.current) window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(async () => {
       const s = useGraphStore.getState();
-      const id = s.workflowId || `wf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      if (!s.workflowId) s.setWorkflowId(id);
+      const existingId = s.workflowId;
+      const id = existingId || `wf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       try {
         await saveWorkflow({
           id,
@@ -37,6 +37,7 @@ export function useAutoSaveWorkflow() {
           savedAt: new Date().toISOString(),
           brandId: s.brandId,
         });
+        if (!existingId) useGraphStore.getState().setWorkflowId(id);
       } catch { /* ignored — next edit will retry */ }
     }, 1000);
 
