@@ -470,6 +470,7 @@ export function VoiceRecordSheet({ isOpen, onClose, onSave }: {
         stream = s;
         const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         audioCtx = new Ctx();
+        audioCtx.resume().catch(() => { /* iOS resume */ });
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.88;
         audioCtx.createMediaStreamSource(stream).connect(analyser);
@@ -501,16 +502,15 @@ export function VoiceRecordSheet({ isOpen, onClose, onSave }: {
           const py = cy + Math.sin(ang) * r * 0.72;
           const sz = (95 + Math.sin(t * 0.9 + i * 0.8) * 22) * (1 + lv * 0.5);
           const al = (0.22 + lv * 0.32) * birth;
-          const hue = 145 + i * 5;
           const g = ctx.createRadialGradient(px, py, 0, px, py, sz);
-          g.addColorStop(0, `hsla(${hue},58%,52%,${al.toFixed(2)})`);
-          g.addColorStop(0.5, `hsla(${hue},50%,48%,${(al * 0.28).toFixed(2)})`);
+          g.addColorStop(0, `rgba(246,185,59,${al.toFixed(2)})`);
+          g.addColorStop(0.5, `rgba(246,185,59,${(al * 0.28).toFixed(2)})`);
           g.addColorStop(1, 'transparent');
           ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
         }
         if (lv > 0.05) {
           const gg = ctx.createRadialGradient(cx, cy, 0, cx, cy, 75 + lv * 50);
-          gg.addColorStop(0, `hsla(150,60%,55%,${(lv * 0.28).toFixed(2)})`);
+          gg.addColorStop(0, `rgba(246,185,59,${(lv * 0.28).toFixed(2)})`);
           gg.addColorStop(1, 'transparent');
           ctx.fillStyle = gg; ctx.fillRect(0, 0, w, h);
         }

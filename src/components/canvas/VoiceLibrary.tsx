@@ -85,6 +85,7 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, strea
     let raf: number;
     try {
       audioCtx = new AudioContext();
+      audioCtx.resume().catch(() => { /* iOS resume */ });
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       audioCtx.createMediaStreamSource(stream).connect(analyser);
@@ -129,7 +130,7 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, strea
       ctx.fillRect(0, 0, w, h);
 
       const level = audioLevelRef.current;
-      const amplified = Math.min(1.0, Math.pow(Math.max(level, 0.005), 0.28) * 2.8);
+      const amplified = Math.min(1.0, 0.12 + Math.max(0, level - 0.03) * 7.0);
       // Less movement: lower amplitude, slower wave
       const amplitude = amplified * cy * 0.42;
 
