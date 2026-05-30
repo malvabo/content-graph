@@ -610,6 +610,7 @@ struct NoteVoiceSheet: View {
         .presentationDragIndicator(.visible)
         .presentationBackground(sheetBg)
         .presentationCornerRadius(Radius.sheet)
+        .presentationBackgroundInteraction(.enabled(upThrough: Self.miniDetent))
         .onChange(of: selectedDetent) { _, newDetent in
             // Only treat a confirmed snap to .large as "expand to editor".
             // The previous negation (newDetent != .medium) also fired during
