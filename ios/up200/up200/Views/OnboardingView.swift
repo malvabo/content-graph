@@ -1394,7 +1394,7 @@ private final class ParticleOrbitStore: ObservableObject {
             let pr3 = Self.prng(i + 3000)
             particles.append(Particle(
                 angle: pr2 * .pi * 2,
-                baseSpeed: 0.055 + (1.0 - pr0) * 0.13,
+                baseSpeed: 0.10 + (1.0 - pr0) * 0.20,
                 dir: pr1 < 0.5 ? 1.0 : -1.0,
                 normR: 0.08 + pow(pr0, 0.7) * 0.88,
                 pr2: pr2, pr3: pr3,
@@ -1409,7 +1409,7 @@ private final class ParticleOrbitStore: ObservableObject {
         // can't produce a giant angle step.
         let dt = min(t - lastT, 0.067)
         lastT = t
-        let speedMult = 1.0 + amplified * 6.0
+        let speedMult = 1.8 + amplified * 6.0
         for i in particles.indices {
             particles[i].angle += particles[i].baseSpeed * speedMult * particles[i].dir * dt
         }
