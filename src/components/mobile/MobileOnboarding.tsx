@@ -259,6 +259,7 @@ function RecordingCanvas({ onStop }: { onStop: () => void }) {
     const birthStart = Date.now();
     const BIRTH_MS = 950;
     const draw = () => {
+      if (cancelled) return;
       const w=innerWidth,h=innerHeight,cx=w/2,cy=h*0.52;
       if(analyser){analyser.getByteFrequencyData(arr);let s=0;for(let k=0;k<arr.length;k++)s+=arr[k];levelRef.current=Math.min(1,(s/arr.length)/110);}
       const lv=levelRef.current; spread+=((lv>0.12?10:60)-spread)*0.04;
