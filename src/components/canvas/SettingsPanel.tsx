@@ -234,8 +234,8 @@ function APIKeysGroup() {
     (store as any)[PROVIDERS.find(p => p.key === key)!.setter](cleaned);
     setEditKey(null);
     await useSettingsStore.getState().save();
-    setSaved(true);
     if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    setSaved(true);
     savedTimerRef.current = setTimeout(() => setSaved(false), 1500);
   };
 

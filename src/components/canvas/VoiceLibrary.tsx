@@ -97,7 +97,7 @@ function RecordingOverlay({ onStop, onDiscard, startTime, errorMsg, fatal, strea
       };
       tick();
     } catch { /* mic unavailable */ }
-    return () => { cancelAnimationFrame(raf); audioCtx?.close(); };
+    return () => { cancelAnimationFrame(raf); audioCtx?.close(); audioLevelRef.current = 0; };
   }, [stream]);
 
   // Amber particle wave — particles converge on wave from above and below

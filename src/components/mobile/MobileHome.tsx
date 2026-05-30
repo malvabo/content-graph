@@ -343,7 +343,7 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText, stream }: {
       };
       tick();
     } catch { /* AudioContext blocked */ }
-    return () => { cancelAnimationFrame(raf); actx?.close().catch(() => {}); };
+    return () => { cancelAnimationFrame(raf); actx?.close().catch(() => {}); audioLevelRef.current = 0; };
   }, [stream]);
 
   // Amber particle wave canvas
