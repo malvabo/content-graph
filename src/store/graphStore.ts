@@ -74,13 +74,13 @@ export const useGraphStore = create<GraphState>()(
         addNode: (node) => set((s) => ({ nodes: [...s.nodes, node] })),
 
         removeNode: (id) => {
+          useExecutionStore.getState().resetNode(id);
+          useOutputStore.getState().clearNode(id);
           set((s) => ({
             nodes: s.nodes.filter((n) => n.id !== id),
             edges: s.edges.filter((e) => e.source !== id && e.target !== id),
             selectedNodeId: s.selectedNodeId === id ? null : s.selectedNodeId,
           }));
-          useExecutionStore.getState().resetNode(id);
-          useOutputStore.getState().clearNode(id);
         },
 
         updateNodeConfig: (id, config) => set((s) => ({

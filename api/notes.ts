@@ -103,16 +103,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (typeof n.id !== 'string') return false;
             const serverTs = serverUpdatedAt.get(n.id);
             if (!serverTs) return true;
-            return new Date(n.updatedAt as string) >= new Date(serverTs);
+            const clientDate = new Date(n.updatedAt as string);
+            if (isNaN(clientDate.getTime())) return false;
+            return clientDate >= new Date(serverTs);
           })
           .map((n) => ({
             id: n.id as string,
             user_id: user.id,
             body: typeof n.body === 'string' ? n.body.slice(0, MAX_BODY_BYTES) : '',
-            updated_at: typeof n.updatedAt === 'string' ? n.updatedAt : new Date().toISOString(),
+            updated_at: typeof n.updatedAt === 'string' && !isNaN(new Date(n.updatedAt).getTime()) ? (n.updatedAt as string) : new Date().toISOString(),
             is_pinned: Boolean(n.isPinned),
             tags: Array.isArray(n.tags) ? (n.tags as string[]) : [],
-            kind: typeof n.kind === 'string' ? n.kind : 'text',
+            kind: typeof n.kind === 'string' && n.kind.length <= 32 ? n.kind : 'text',
           }));
 
         if (toUpsert.length > 0) {

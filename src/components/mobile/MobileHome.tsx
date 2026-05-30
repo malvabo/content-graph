@@ -894,6 +894,33 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
 
+  // Reset all local state when the sheet is reused for a different note so
+  // stale drafts, generation results, and in-flight requests never bleed across.
+  useEffect(() => {
+    setEditTitle(note.title);
+    setIsEditingTitle(false);
+    setGen(note.lastGeneration
+      ? { kind: note.lastGeneration.kind, text: note.lastGeneration.text, originalText: note.lastGeneration.text, loading: false }
+      : null);
+    setVersions([]);
+    setVersionsOpen(false);
+    setIsEditingTranscript(false);
+    setTranscriptDraft(note.transcript ?? '');
+    setShowStaleBanner(false);
+    setSecondaryGens(note.extraGenerations ?? {});
+    setMenuOpen(false);
+    setChooserOpen(false);
+    setCustomMode(false);
+    setCustomText('');
+    abortRef.current?.abort();
+    streamCancelRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note.id]);
+
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); streamCancelRef.current = true; };
+  }, []);
+
   const saveTitle = useCallback(() => {
     const t = editTitle.trim();
     if (!t) { setEditTitle(note.title); return; }
@@ -1127,7 +1154,8 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
       if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); sizeTranscriptEditor(); }
     }, 0);
     return () => clearTimeout(id);
-  }, [isEditingTranscript, note.transcript, sizeTranscriptEditor]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditingTranscript]); // intentionally excludes note.transcript — seed the draft once on open, don't overwrite in-progress edits
 
   const saveTranscript = useCallback(() => {
     const t = transcriptDraft.trim();
@@ -1145,10 +1173,12 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
   const regenerateAllPosts = useCallback(async () => {
     setShowStaleBanner(false);
+    setSecondaryGens({});
+    updateNote(note.id, { extraGenerations: {} });
     if (gen?.kind) {
       await generate(gen.kind);
     }
-  }, [gen?.kind, generate]);
+  }, [gen?.kind, generate, note.id, updateNote]);
 
   const exportAllGenerated = useCallback(async () => {
     const blocks: string[] = [];
@@ -1538,7 +1568,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
                           onClick={() => setVersionsOpen(o => !o)}
                           aria-haspopup="menu"
                           aria-expanded={versionsOpen}
-                          aria-label={`Version ${versions.length + 1} of ${versions.length + 1}. View previous versions.`}
+                          aria-label={`Current version v${versions.length + 1}. View previous versions.`}
                           style={{
                             background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 6px',
                             fontFamily: 'var(--font-mono)', fontSize: 'var(--text-caption)', fontWeight: 600,
@@ -1845,7 +1875,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
               </div>
               {ALL_KINDS.filter(k => k !== gen.kind).map(k => (
                 <SecondaryGenRow
-                  key={k}
+                  key={`${note.id}-${k}`}
                   kind={k}
                   transcript={note.transcript}
                   initialText={note.extraGenerations?.[k]}
@@ -2460,7 +2490,7 @@ function CreateSheet({ onClose, onVoice, onText }: { onClose: () => void; onVoic
   return createPortal(
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
+        position: 'fixed', inset: 0, zIndex: 9998,
         background: 'rgba(0,0,0,0.6)',
         backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         display: 'flex', alignItems: 'flex-end',
@@ -2788,6 +2818,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         recog.continuous = true; recog.interimResults = true;
         recog.lang = navigator.language || 'en-US';
         recog.onresult = (e: any) => {
+          if (recognitionRef.current !== recog) return;
           let interim = '';
           for (let i = e.resultIndex; i < e.results.length; i++) {
             const t = e.results[i][0].transcript;
