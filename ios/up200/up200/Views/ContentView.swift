@@ -217,15 +217,33 @@ private func outputTypesList(_ items: [GenerationProject]) -> String {
     return labels.joined(separator: ", ")
 }
 
-/// Folder-shaped thumbnail for a single text note or library item.
+/// Single text-document thumbnail: rounded card with a bold title bar and
+/// four thinner body lines. Used in both the Library list (single-item
+/// groups) and the Notes list (text notes without multiple generations).
 struct DocCardThumb: View {
     var width: CGFloat = 42
     var height: CGFloat = 52
 
+    private static let lineWidths: [CGFloat] = [16, 28, 22, 30, 20]
+
     var body: some View {
-        FolderShape()
-            .fill(AppInk.solid(0.13))
-            .overlay(FolderShape().stroke(AppInk.solid(0.09), lineWidth: 0.5))
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(AppInk.solid(0.07))
+            .overlay(
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(0..<5, id: \.self) { i in
+                        Capsule()
+                            .fill(AppInk.solid(i == 0 ? 0.55 : 0.20))
+                            .frame(width: Self.lineWidths[i], height: i == 0 ? 2.5 : 1.5)
+                    }
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(AppInk.solid(0.09), lineWidth: 0.5)
+            )
             .frame(width: width, height: height)
     }
 }
