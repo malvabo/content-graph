@@ -355,6 +355,10 @@ function VoiceInput() {
   const w = typeof window !== 'undefined' ? (window as unknown as { SpeechRecognition?: SRConstructor; webkitSpeechRecognition?: SRConstructor }) : undefined;
   const SR = w?.SpeechRecognition ?? w?.webkitSpeechRecognition;
 
+  useEffect(() => {
+    return () => { recRef.current?.abort(); recRef.current = null; };
+  }, []);
+
   const startRecording = useCallback(() => {
     if (!SR) return;
     const rec = new SR();

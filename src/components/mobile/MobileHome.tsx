@@ -479,7 +479,7 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
           transcriptRef.current = (finalT + interim).trim();
         };
         recog.onerror = () => {};
-        recog.onend = () => { if (shouldRestartRef2.current) { try { recog.start(); } catch { /* noop */ } } };
+        recog.onend = () => { if (shouldRestartRef2.current) { setTimeout(() => { try { recog.start(); } catch { /* noop */ } }, 200); } };
         shouldRestartRef2.current = true;
         recog.start();
         recognitionRef2.current = recog;
@@ -504,7 +504,8 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
         };
         tick();
       } catch { /* noop */ }
-    }).catch(() => onCancelRef.current());
+
+    }).catch(() => {});
     return () => {
       cancelled = true;
       shouldRestartRef2.current = false;
@@ -2731,6 +2732,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
   const finalRef = useRef('');
   const interimRef = useRef('');
   const shouldRestartRef = useRef(false);
+  const detectedMimeRef = useRef<string>('audio/mp4');
   const groqKeyRef = useRef(groqKey);
   useEffect(() => { groqKeyRef.current = groqKey; }, [groqKey]);
 
@@ -2757,6 +2759,28 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     interimRef.current = '';
     chunksRef.current = [];
 
+    // Acquire mic before SR starts — one getUserMedia in flight at a time.
+    // SR.start() issues its own internal getUserMedia on iOS; establishing
+    // the session here first prevents two simultaneous acquisitions from
+    // fighting over the AVAudioSession slot.
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setErrorMsg('Microphone access denied.');
+      return;
+    }
+    mediaRef.current = stream;
+    setActiveStream(stream);
+    setOpenNoteId(null);
+
+    const mime = pickMimeType();
+    detectedMimeRef.current = mime ?? 'audio/mp4';
+    const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
+    mr.start(1000);
+    recorderRef.current = mr;
+
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     if (SpeechRecognition) {
       try {
@@ -2773,28 +2797,15 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
           interimRef.current = interim;
           setLiveText((finalRef.current + ' ' + interim).trim());
         };
-        recog.onend = () => { if (shouldRestartRef.current) { try { recog.start(); } catch { /* already started */ } } };
+        recog.onend = () => {
+          if (shouldRestartRef.current) {
+            setTimeout(() => { try { recog.start(); } catch { /* noop */ } }, 200);
+          }
+        };
         shouldRestartRef.current = true;
         recog.start();
         recognitionRef.current = recog;
       } catch { /* fall back to Whisper on stop */ }
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRef.current = stream;
-      setActiveStream(stream);
-      const mime = pickMimeType();
-      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
-      mr.start(1000);
-      recorderRef.current = mr;
-    } catch {
-      shouldRestartRef.current = false;
-      try { recognitionRef.current?.stop(); } catch { /* noop */ }
-      recognitionRef.current = null;
-      setErrorMsg('Microphone access denied.');
-      return;
     }
 
     const id = `vn-${Date.now()}`;
@@ -2802,7 +2813,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     startTimeRef.current = Date.now();
     setRecording(true);
     addNote({ id, title: 'Recording…', durationMs: 0, transcript: '', status: 'recording', createdAt: new Date().toISOString() });
-  }, [addNote]);
+  }, [addNote, setOpenNoteId]);
 
   const handleSaveTypedNote = useCallback((text: string) => {
     const id = `note-typed-${Date.now()}`;
@@ -2839,7 +2850,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     const duration = Date.now() - startTimeRef.current;
     let transcript = [finalRef.current.trim(), interimRef.current.trim()].filter(Boolean).join(' ').trim();
 
-    const mimeType = (chunksRef.current[0] as Blob | undefined)?.type || 'audio/webm';
+    const mimeType = chunksRef.current.find(c => (c as Blob).type)?.type || detectedMimeRef.current;
     const blob = chunksRef.current.length ? new Blob(chunksRef.current, { type: mimeType }) : null;
     chunksRef.current = [];
     setRecording(false);
@@ -2994,7 +3005,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         </div>
       )}
 
-      {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} stream={activeStream} />}
+      {recording && !openNoteId && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} stream={activeStream} />}
 
       {showTypeNote && <TypeNoteSheet onSave={handleSaveTypedNote} onClose={() => setShowTypeNote(false)} />}
 
