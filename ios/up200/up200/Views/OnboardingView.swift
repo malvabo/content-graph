@@ -1504,7 +1504,7 @@ private struct GeneratingCloudScene: View {
     // edgeFraction targets 65–72% of the distance to the nearest screen
     // edge in each satellite's direction.
     private let satellites: [Satellite] = [
-        Satellite(delay: 0.55, angle: -2.05,   // upper-left
+        Satellite(delay: 0.55, angle: -2.30,   // upper-left
                   edgeFraction: 0.68, sizeFactor: 0.70, starCount: 36),
         Satellite(delay: 1.75, angle: -0.85,   // upper-right
                   edgeFraction: 0.72, sizeFactor: 0.60, starCount: 28),
