@@ -2405,10 +2405,12 @@ private struct SimpleCreateBar: View {
 // MARK: - Content View
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: AppTab = .notes
     @State private var keyboardVisible = false
     @State private var showProfile = false
     @State private var newNoteTrigger = 0
+    @State private var recordingPausedForBackground = false
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
     @StateObject private var recordingController = RecordingController()
@@ -2508,6 +2510,21 @@ struct ContentView: View {
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background:
+                if recordingController.isRecording, !recordingController.isPaused {
+                    recordingController.pauseForSystem()
+                    recordingPausedForBackground = true
+                }
+            case .active:
+                if recordingPausedForBackground {
+                    recordingPausedForBackground = false
+                    recordingController.resumeIfSystemPaused()
+                }
+            default: break
+            }
+        }
     }
 
     @ViewBuilder
