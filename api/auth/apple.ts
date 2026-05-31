@@ -186,11 +186,14 @@ async function getOrCreateSession(
   });
 
   // Look up existing record for a previously linked Supabase user + stored email.
-  const { data: existingRecord } = await adminSb
+  const { data: existingRecord, error: lookupError } = await adminSb
     .from('apple_auth_users')
     .select('supabase_user_id, email')
     .eq('apple_sub', payload.sub)
     .maybeSingle();
+  if (lookupError) {
+    console.error('apple auth: apple_auth_users lookup failed', lookupError);
+  }
 
   const storedEmail = (existingRecord?.email as string | null) ?? null;
   const email = resolveEmail(payload, body, storedEmail);
@@ -299,7 +302,8 @@ async function persistAppleUser(
     .upsert(record, { onConflict: 'apple_sub' });
 
   if (error) {
-    throw new HttpError(500, error.message);
+    console.error('apple auth: apple_auth_users upsert failed', error);
+    throw new HttpError(500, 'Sign-in succeeded but user record could not be saved. Please try again.');
   }
 
   return true;
@@ -358,11 +362,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Create or retrieve the Supabase account and session for this Apple user.
     const sessionResult = await getOrCreateSession(payload, body);
 
-    const backendStored = await persistAppleUser(payload, body, sessionResult?.supabaseUserId ?? null);
-
     if (!sessionResult) {
       return res.status(500).json({ error: 'Sign-in verified but session could not be created. Please try again.' });
     }
+
+    const backendStored = await persistAppleUser(payload, body, sessionResult.supabaseUserId);
 
     const sessionToken = issueSessionToken(payload.sub);
     const sessionTokenExpiresAt = sessionToken
