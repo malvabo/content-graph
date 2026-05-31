@@ -21,6 +21,9 @@ final class NoteDictation: ObservableObject {
         ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var teardownTask: Task<Void, Never>? = nil
     private var startupTask: Task<Void, Never>? = nil
+    // Accumulates text from completed SR sessions so transcript is always
+    // the full cumulative text across the ~60-second restart boundaries.
+    private var sessionBase = ""
 
     func start() {
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
@@ -37,6 +40,7 @@ final class NoteDictation: ObservableObject {
                             return
                         }
                         self.transcript = ""
+                        self.sessionBase = ""
                         self.audioLevel = 0
                         self.startEngine()
                     }
@@ -50,12 +54,13 @@ final class NoteDictation: ObservableObject {
         teardown()
     }
 
-    /// Stop and suppress the trailing final transcript (so caller can revert
-    /// the body without a late `onChange` overwriting the rollback).
+    /// Stop and suppress the transcript (so caller can revert the body
+    /// without a late onChange overwriting the rollback).
     func cancel() {
         task?.cancel()
         task = nil
         transcript = ""
+        sessionBase = ""
         teardown()
     }
 
@@ -90,13 +95,11 @@ final class NoteDictation: ObservableObject {
     }
 
     private func activateAndStart() {
-        // setCategory + setActive can block the main thread for 50-300 ms.
-        // Run them on a detached task, then hop back to the main actor to
-        // wire the recognizer and engine (mirrors RecordingController).
         Task.detached(priority: .userInitiated) { [weak self] in
             let session = AVAudioSession.sharedInstance()
             do {
-                try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+                try session.setCategory(.playAndRecord, mode: .measurement,
+                                       options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
                 try session.setActive(true, options: .notifyOthersOnDeactivation)
             } catch {
                 await MainActor.run {
@@ -110,62 +113,67 @@ final class NoteDictation: ObservableObject {
 
     private func continueStartingEngine() {
         guard !Task.isCancelled else { return }
-        request = SFSpeechAudioBufferRecognitionRequest()
-        guard let req = request, let rec = recognizer else {
+        guard recognizer != nil else {
             startupError = "Speech recognition isn't available on this device."
             return
         }
-        req.shouldReportPartialResults = true
 
-        task = rec.recognitionTask(with: req) { [weak self] result, error in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                guard self.isRecording else { return }
-                if let result {
-                    self.transcript = result.bestTranscription.formattedString
-                }
-                if error != nil || (result?.isFinal ?? false) {
-                    self.teardown()
-                }
-            }
-        }
-
-        guard !Task.isCancelled else {
-            task?.cancel()
-            task = nil
-            return
-        }
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         var lastLevelDispatch: Double = 0
+        // Dynamic request reference: restartSpeechRecognition() swaps self.request
+        // without reinstalling the tap, so all sessions share the same tap lifetime.
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            req.append(buffer)
+            self?.request?.append(buffer)
             guard let channels = buffer.floatChannelData else { return }
             let frames = Int(buffer.frameLength)
             guard frames > 0 else { return }
             let samples = channels[0]
             var sum: Float = 0
-            for i in 0..<frames {
-                let s = samples[i]
-                sum += s * s
-            }
+            for i in 0..<frames { let s = samples[i]; sum += s * s }
             let rms = (sum / Float(frames)).squareRoot()
             let now = CFAbsoluteTimeGetCurrent()
             guard now - lastLevelDispatch >= 1.0 / 20.0 else { return }
             lastLevelDispatch = now
-            DispatchQueue.main.async { [weak self] in
-                self?.audioLevel = rms
-            }
+            DispatchQueue.main.async { [weak self] in self?.audioLevel = rms }
         }
 
         audioEngine.prepare()
         do {
             try audioEngine.start()
             isRecording = true
+            restartSpeechRecognition()
         } catch {
             startupError = "Couldn't start the microphone: \(error.localizedDescription)"
             inputNode.removeTap(onBus: 0)
+        }
+    }
+
+    private func restartSpeechRecognition() {
+        task?.cancel()
+        task = nil
+        guard isRecording, let rec = recognizer else { return }
+        let req = SFSpeechAudioBufferRecognitionRequest()
+        req.shouldReportPartialResults = true
+        request = req
+        task = rec.recognitionTask(with: req) { [weak self] result, error in
+            DispatchQueue.main.async {
+                guard let self, self.isRecording else { return }
+                if let result {
+                    let current = result.bestTranscription.formattedString
+                    self.transcript = self.sessionBase.isEmpty
+                        ? current
+                        : self.sessionBase + " " + current
+                }
+                if result?.isFinal == true {
+                    // Accumulate completed session, restart SR on the same engine.
+                    self.sessionBase = self.transcript
+                    self.restartSpeechRecognition()
+                } else if error != nil {
+                    self.restartSpeechRecognition()
+                }
+            }
         }
     }
 }
@@ -929,7 +937,9 @@ private struct NoteEditorPage: View {
     @StateObject private var dictation = NoteDictation()
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
+    @EnvironmentObject private var recording: RecordingController
     @FocusState private var focus: Field?
+    @State private var pausedRecordingForDictation = false
 
     private enum Field { case title, body }
 
@@ -1153,14 +1163,41 @@ private struct NoteEditorPage: View {
                     dictation: dictation,
                     onStart: {
                         bodyBeforeDictation = noteBody
-                        dictation.start()
+                        // Pause the floating recorder so both don't compete
+                        // for the same AVAudioSession input simultaneously.
+                        if recording.isRecording, !recording.isPaused {
+                            recording.pauseForSystem()
+                            pausedRecordingForDictation = true
+                            // Wait for RecordingController's async setActive(false)
+                            // to complete before activating NoteDictation's session.
+                            Task {
+                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await MainActor.run { dictation.start() }
+                            }
+                        } else {
+                            dictation.start()
+                        }
                     },
                     onCancel: {
                         dictation.cancel()
                         noteBody = bodyBeforeDictation
+                        if pausedRecordingForDictation {
+                            pausedRecordingForDictation = false
+                            Task {
+                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await MainActor.run { recording.resumeIfSystemPaused() }
+                            }
+                        }
                     },
                     onConfirm: {
                         dictation.stop()
+                        if pausedRecordingForDictation {
+                            pausedRecordingForDictation = false
+                            Task {
+                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await MainActor.run { recording.resumeIfSystemPaused() }
+                            }
+                        }
                     }
                 )
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
@@ -1235,6 +1272,13 @@ private struct NoteEditorPage: View {
             chrome.hideTabBar = false
             dictation.stop()
             persistIfNeeded()
+            if pausedRecordingForDictation {
+                pausedRecordingForDictation = false
+                Task {
+                    try? await Task.sleep(nanoseconds: 400_000_000)
+                    await MainActor.run { recording.resumeIfSystemPaused() }
+                }
+            }
         }
     }
 

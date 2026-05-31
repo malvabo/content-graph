@@ -799,6 +799,10 @@ final class RecordingController: ObservableObject {
     private var timer: Timer?
     private var saveHandler: ((String) -> Void)?
     private var teardownTask: Task<Void, Never>? = nil
+    private var pausedBySystem = false
+    private var srRestartCount = 0
+    private var interruptionObserver: NSObjectProtocol?
+    private var routeChangeObserver: NSObjectProtocol?
 
     var fullTranscript: String {
         if accumulated.isEmpty { return transcript }
@@ -807,18 +811,16 @@ final class RecordingController: ObservableObject {
     }
 
     func begin(saveHandler: @escaping (String) -> Void) {
-        if isRecording || isPaused {
-            finish()
-        }
-        // Defensive: an earlier session may have left a tap installed and the
-        // audio session active (e.g. SFSpeechRecognizer emitted isFinal without
-        // a user-driven stop). Re-installing on a tapped input crashes.
+        if isRecording || isPaused { finish() }
         teardownEngine()
+        teardownAudioNotifications()
         self.saveHandler = saveHandler
         accumulated = ""
         transcript = ""
         audioLevel = 0
         seconds = 0
+        srRestartCount = 0
+        setupAudioNotifications()
         startTimer()
         requestAuthAndStart()
     }
@@ -884,15 +886,34 @@ final class RecordingController: ObservableObject {
         if saveHandler != nil { cancel() }
     }
 
+    /// Pause on behalf of the system (interruption, route change, background).
+    /// Use `resumeIfSystemPaused()` to undo — it is a no-op if the user
+    /// paused manually in the meantime.
+    func pauseForSystem() {
+        guard isRecording, !isPaused else { return }
+        pausedBySystem = true
+        pause()
+    }
+
+    /// Resume only if the most recent pause was system-initiated.
+    func resumeIfSystemPaused() {
+        guard isPaused, pausedBySystem else { return }
+        pausedBySystem = false
+        resume()
+    }
+
     private func reset() {
         isRecording = false
         isPaused = false
+        pausedBySystem = false
+        srRestartCount = 0
         transcript = ""
         accumulated = ""
         audioLevel = 0
         seconds = 0
         showingSheet = false
         saveHandler = nil
+        teardownAudioNotifications()
     }
 
     private func startTimer() {
@@ -910,12 +931,9 @@ final class RecordingController: ObservableObject {
     }
 
     private func teardownEngine() {
-        // Set flags immediately (still on MainActor) so any re-entrant call
-        // from the recognition task callback sees isRecording=false and bails.
         isRecording = false
         audioLevel = 0
-        // Cancel the recognition task so its callback stops firing and can't
-        // update transcript or trigger a second teardown after this one.
+        stopTimer()
         task?.cancel()
         task = nil
         // Capture what we need before hopping off the main actor — AVAudioEngine
@@ -980,7 +998,8 @@ final class RecordingController: ObservableObject {
         Task.detached(priority: .userInitiated) { [weak self] in
             let session = AVAudioSession.sharedInstance()
             do {
-                try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+                try session.setCategory(.playAndRecord, mode: .measurement,
+                                       options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
                 try session.setActive(true, options: .notifyOthersOnDeactivation)
             } catch {
                 await MainActor.run {
@@ -995,70 +1014,119 @@ final class RecordingController: ObservableObject {
     }
 
     private func continueStartingEngine() {
-        // Bail if the user cancelled while the session was activating —
-        // saveHandler == nil means cancel()/reset() ran in the gap.
         guard saveHandler != nil else { return }
-
-        request = SFSpeechAudioBufferRecognitionRequest()
-        guard let req = request, let rec = recognizer else {
+        guard recognizer != nil else {
             startupError = "Speech recognition isn't available on this device."
             return
-        }
-        req.shouldReportPartialResults = true
-
-        task = rec.recognitionTask(with: req) { [weak self] result, error in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                // Drop late callbacks after cancel/reset — they would otherwise
-                // overwrite an intentionally cleared transcript with stale text.
-                guard self.isRecording || self.isPaused else { return }
-                if let result {
-                    self.transcript = result.bestTranscription.formattedString
-                }
-                // Guard against double teardown: if teardownEngine() was already
-                // called (e.g. user tapped End mid-gesture), isRecording and
-                // request are already cleared. A second teardown would race
-                // with the first detached Task inside teardownEngine().
-                if error != nil || (result?.isFinal ?? false) {
-                    self.teardownEngine()
-                }
-            }
         }
 
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
-        // Throttle UI updates to 20 Hz. The audio callback fires ~43×/sec
-        // (1024 samples @ 44100 Hz); dispatching to main every call floods the
-        // main queue and freezes gesture handling (e.g. dragging the sheet down).
         var lastLevelDispatch: Double = 0
+        // The tap closure reads self.request dynamically so that restartSpeechRecognition()
+        // can swap in a fresh request without reinstalling the tap.
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            req.append(buffer)
+            self?.request?.append(buffer)
             guard let channels = buffer.floatChannelData else { return }
             let frames = Int(buffer.frameLength)
             guard frames > 0 else { return }
             let samples = channels[0]
             var sum: Float = 0
-            for i in 0..<frames {
-                let s = samples[i]
-                sum += s * s
-            }
+            for i in 0..<frames { let s = samples[i]; sum += s * s }
             let rms = (sum / Float(frames)).squareRoot()
             let now = CFAbsoluteTimeGetCurrent()
             guard now - lastLevelDispatch >= 1.0 / 20.0 else { return }
             lastLevelDispatch = now
-            DispatchQueue.main.async {
-                self?.audioLevel = rms
-            }
+            DispatchQueue.main.async { self?.audioLevel = rms }
         }
 
         audioEngine.prepare()
         do {
             try audioEngine.start()
             isRecording = true
+            restartSpeechRecognition()
         } catch {
             startupError = "Couldn't start the microphone: \(error.localizedDescription)"
             inputNode.removeTap(onBus: 0)
         }
+    }
+
+    // Wire a fresh SFSpeechAudioBufferRecognitionRequest onto the running engine.
+    // Called both on initial start (from continueStartingEngine) and on every
+    // isFinal — the engine tap stays mounted; only the SR request cycles.
+    private func restartSpeechRecognition() {
+        task?.cancel()
+        task = nil
+        startupError = nil
+        guard let rec = recognizer, isRecording || isPaused else { return }
+        // Cap restarts so a hard SR failure doesn't spin forever.
+        guard srRestartCount < 20 else {
+            startupError = "Speech recognition became unavailable. Tap Stop to save."
+            return
+        }
+        srRestartCount += 1
+        let req = SFSpeechAudioBufferRecognitionRequest()
+        req.shouldReportPartialResults = true
+        request = req  // tap closure routes new buffers here immediately
+        task = rec.recognitionTask(with: req) { [weak self] result, error in
+            DispatchQueue.main.async {
+                guard let self, self.isRecording || self.isPaused else { return }
+                if let result { self.transcript = result.bestTranscription.formattedString }
+                if result?.isFinal == true {
+                    // Normal session-limit end — accumulate and restart.
+                    self.accumulated = self.fullTranscript
+                    self.transcript = ""
+                    self.restartSpeechRecognition()
+                } else if error != nil {
+                    // Error without isFinal — restart (cancellation errors from
+                    // our own task?.cancel() are harmless; the cap handles loops).
+                    self.restartSpeechRecognition()
+                }
+            }
+        }
+    }
+
+    private func setupAudioNotifications() {
+        let session = AVAudioSession.sharedInstance()
+        interruptionObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: session, queue: .main
+        ) { [weak self] in self?.handleInterruption($0) }
+        routeChangeObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.routeChangeNotification,
+            object: session, queue: .main
+        ) { [weak self] in self?.handleRouteChange($0) }
+    }
+
+    private func teardownAudioNotifications() {
+        if let obs = interruptionObserver {
+            NotificationCenter.default.removeObserver(obs)
+            interruptionObserver = nil
+        }
+        if let obs = routeChangeObserver {
+            NotificationCenter.default.removeObserver(obs)
+            routeChangeObserver = nil
+        }
+    }
+
+    private func handleInterruption(_ notification: Notification) {
+        guard let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
+        switch type {
+        case .began:
+            if isRecording { pauseForSystem() }
+        case .ended:
+            let opts = AVAudioSession.InterruptionOptions(
+                rawValue: notification.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0)
+            if isPaused, pausedBySystem, opts.contains(.shouldResume) { resumeIfSystemPaused() }
+        @unknown default: break
+        }
+    }
+
+    private func handleRouteChange(_ notification: Notification) {
+        guard let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else { return }
+        if reason == .oldDeviceUnavailable, isRecording { pauseForSystem() }
     }
 }
