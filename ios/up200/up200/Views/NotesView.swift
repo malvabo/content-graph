@@ -1509,13 +1509,19 @@ struct NotesView: View {
 
     private func saveRecordedTranscript(_ transcript: String) {
         let capturedAt = Date()
+        // Persist immediately so a background/kill during title generation
+        // doesn't lose the transcript. Title is patched in afterwards.
+        var note = Note()
+        note.body = transcript
+        note.updatedAt = capturedAt
+        notes.append(note)
+        NotesStore.saveInBackground(notes)
+        let noteID = note.id
         Task {
-            let body = await AIService.prependTitleIfMissing(to: transcript) ?? transcript
+            guard let body = await AIService.prependTitleIfMissing(to: transcript) else { return }
             await MainActor.run {
-                var note = Note()
-                note.body = body
-                note.updatedAt = capturedAt
-                notes.append(note)
+                guard let idx = notes.firstIndex(where: { $0.id == noteID }) else { return }
+                notes[idx].body = body
                 NotesStore.saveInBackground(notes)
             }
         }

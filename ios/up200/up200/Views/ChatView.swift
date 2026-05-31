@@ -1383,9 +1383,11 @@ struct ChatView: View {
         didSeedSelection = true
         didSeedContext = true
         appliedRewriteKeys = []
+        currentReplyID = nil
         isLoading = false
         chatFailed = false
         rewriteFailed = false
+        showMentionPicker = false
         showSavedChatsPicker = false
     }
 
@@ -2402,11 +2404,18 @@ private struct MentionTextView: UIViewRepresentable {
             tv.placeholder = placeholder
         }
         tv.refreshPlaceholderVisibility()
-        DispatchQueue.main.async {
-            if isFocused && !tv.isFirstResponder {
-                tv.becomeFirstResponder()
-            } else if !isFocused && tv.isFirstResponder {
-                tv.resignFirstResponder()
+        let currentFocused = isFocused
+        if currentFocused != coordinator.lastReportedFocused {
+            coordinator.lastReportedFocused = currentFocused
+            coordinator.focusGeneration += 1
+            let gen = coordinator.focusGeneration
+            DispatchQueue.main.async {
+                guard coordinator.focusGeneration == gen else { return }
+                if currentFocused && !tv.isFirstResponder {
+                    tv.becomeFirstResponder()
+                } else if !currentFocused && tv.isFirstResponder {
+                    tv.resignFirstResponder()
+                }
             }
         }
     }
@@ -2416,6 +2425,8 @@ private struct MentionTextView: UIViewRepresentable {
     final class Coordinator: NSObject, UITextViewDelegate {
         let parent: MentionTextView
         var suppressEcho = false
+        var lastReportedFocused: Bool = false
+        var focusGeneration: Int = 0
         init(_ parent: MentionTextView) { self.parent = parent }
 
         func textViewDidChange(_ tv: UITextView) {
