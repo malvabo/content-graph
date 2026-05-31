@@ -258,10 +258,14 @@ struct MinimalNoteDetailPage: View {
     @State private var generations: [MinimalGeneration] = []
     /// 0 = Note tab; 1+N = generations[N-1].
     @State private var selectedIndex: Int = 0
-    /// Mirror of the active tab's text. Edits here flow back to either
-    /// `note.body` or the matching generation's `content` on persist.
+    /// Title line — kept separate so it always renders at appTitle size
+    /// regardless of whether the body editor is active.
+    @State private var editTitle: String = ""
+    /// Body text only (title line excluded). Edits flow back to note.body
+    /// (combined as title + "\n" + body) or the generation's content.
     @State private var editText: String = ""
     @State private var isEditingBody: Bool = false
+    @FocusState private var titleFocused: Bool
     @FocusState private var editorFocused: Bool
 
     /// Page-scoped restore cache for the chat sheet — keeps an
@@ -312,18 +316,34 @@ struct MinimalNoteDetailPage: View {
         self.initialNote = initialNote
         let migrated = Note.migrated(initialNote)
         self._note = State(initialValue: migrated)
-        self._editText = State(initialValue: migrated.body)
+        let (t, b) = Self.splitTitleBody(migrated.body)
+        self._editTitle = State(initialValue: t)
+        self._editText  = State(initialValue: b)
         self._selectedIndex = State(initialValue: initialTabIndex)
+    }
+
+    /// Splits a raw note body (title\nbody) into its two parts.
+    private static func splitTitleBody(_ raw: String) -> (title: String, body: String) {
+        guard let nl = raw.firstIndex(of: "\n") else {
+            return (raw.trimmingCharacters(in: .whitespacesAndNewlines), "")
+        }
+        let title = String(raw[..<nl]).trimmingCharacters(in: .whitespacesAndNewlines)
+        var rest  = String(raw[raw.index(after: nl)...])
+        while let c = rest.first, c == "\n" || c == "\r" { rest.removeFirst() }
+        return (title, rest)
+    }
+
+    /// Reconstructs note.body from the two edit fields.
+    private func titleBodyCombined() -> String {
+        let t = editTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let b = editText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.isEmpty { return b }
+        if b.isEmpty { return t }
+        return t + "\n" + b
     }
 
     private var isNoteTab: Bool { selectedIndex == 0 }
 
-    /// True while the Note tab's body editor is active. The editor binds
-    /// the whole `editText`, so its first line *is* the title — rendering
-    /// the `visibleTitle` heading at the same time would echo that first
-    /// line twice (once big, once in the editor). Generation tabs are
-    /// unaffected: their editor holds the generation content, not the
-    /// note body, so the heading never duplicates anything there.
     private var isEditingNoteTab: Bool {
         isNoteTab && (isEditingBody || editorFocused)
     }
@@ -332,29 +352,12 @@ struct MinimalNoteDetailPage: View {
         return generations[selectedIndex - 1]
     }
 
-    /// Title shown in the prominent row between the top bar and the tabs.
-    /// On the Note tab it tracks `editText`'s first line live so the
-    /// heading updates as the user types; on generation tabs it shows
-    /// the source note's title (the format label already lives in the
-    /// tab pill, so we don't repeat it here).
+    /// Title for the heading row. On the Note tab this is `editTitle`
+    /// (live); on generation tabs it's the source note's stored title.
     private var visibleTitle: String {
-        if isNoteTab {
-            let firstLine = editText.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
-            return firstLine.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
+        if isNoteTab { return editTitle.trimmingCharacters(in: .whitespacesAndNewlines) }
         let trimmed = note.displayTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed == "Untitled" ? "" : trimmed
-    }
-
-    /// Note-tab body with the title line stripped so the reader doesn't
-    /// echo the heading shown above the tabs. Returns "" when the body
-    /// has no newline (the whole text is the title with nothing after).
-    private var noteBodyWithoutTitle: String {
-        let body = editText
-        guard let nl = body.firstIndex(of: "\n") else { return "" }
-        var rest = String(body[body.index(after: nl)...])
-        while let c = rest.first, c == "\n" || c == "\r" { rest.removeFirst() }
-        return rest
     }
 
     private func formatLabel(_ outputType: String) -> String {
@@ -371,15 +374,27 @@ struct MinimalNoteDetailPage: View {
                     .padding(.top, 4)
                     .padding(.bottom, 6)
 
-                if !visibleTitle.isEmpty && !isEditingNoteTab {
+                if isNoteTab {
+                    TextField(
+                        "",
+                        text: $editTitle,
+                        prompt: Text("Title").foregroundColor(AppInk.solid(0.25)),
+                        axis: .vertical
+                    )
+                    .font(.appTitle)
+                    .foregroundColor(AppText.primary)
+                    .tint(AppText.primary)
+                    .lineLimit(1...3)
+                    .allowsTightening(true)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 12)
+                    .focused($titleFocused)
+                    .submitLabel(.next)
+                    .onSubmit { editorFocused = true }
+                } else if !visibleTitle.isEmpty {
                     Text(visibleTitle)
                         .font(.appTitle)
                         .foregroundColor(AppText.primary)
-                        // Cap at 2 lines so a long note title doesn't
-                        // push the tab strip below the fold on smaller
-                        // phones (or under AX Dynamic Type). The scale
-                        // factor lets a moderately-long title squeeze
-                        // onto one line before wrapping.
                         .lineLimit(2)
                         .minimumScaleFactor(0.80)
                         .allowsTightening(true)
@@ -401,7 +416,7 @@ struct MinimalNoteDetailPage: View {
         // above it — cursor never hides behind the bar.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
-                if !dictation.isRecording && !hasActiveTextSelection && !editorFocused {
+                if !dictation.isRecording && !hasActiveTextSelection && !editorFocused && !titleFocused {
                     if isNoteTab {
                         aiWandButton
                             .transition(.scale(scale: 0.85).combined(with: .opacity))
@@ -416,8 +431,8 @@ struct MinimalNoteDetailPage: View {
                 // to the trailing edge) but fade it out and disable taps
                 // while dictation is live or editor is focused.
                 aiChatPill
-                    .opacity(dictation.isRecording || editorFocused ? 0 : 1)
-                    .allowsHitTesting(!dictation.isRecording && !editorFocused)
+                    .opacity(dictation.isRecording || editorFocused || titleFocused ? 0 : 1)
+                    .allowsHitTesting(!dictation.isRecording && !editorFocused && !titleFocused)
 
                 DictationControls(
                     dictation: dictation,
@@ -442,6 +457,7 @@ struct MinimalNoteDetailPage: View {
             .background(AppBackground.primary)
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: titleFocused)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: hasActiveTextSelection)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: isNoteTab)
@@ -834,11 +850,7 @@ struct MinimalNoteDetailPage: View {
 
     private var readerView: some View {
         ScrollView {
-            // On the Note tab the first line is the heading shown above
-            // the tabs row, so the reader renders the body without it
-            // to avoid echoing the title. Generation tabs already have
-            // standalone content, so they render as-is.
-            let displayText = isNoteTab ? noteBodyWithoutTitle : editText
+            let displayText = editText
             if displayText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text(isNoteTab ? "Tap to start typing" : "No content")
                     .font(.appReadingBody)
@@ -1024,20 +1036,27 @@ struct MinimalNoteDetailPage: View {
         }
         persistCurrent()
         selectedIndex = index
-        editText = currentTextForTab(index)
+        if index == 0 {
+            let (t, b) = Self.splitTitleBody(note.body)
+            editTitle = t
+            editText  = b
+        } else {
+            editText = currentTextForTab(index)
+        }
         isEditingBody = false
     }
 
     private func currentTextForTab(_ index: Int) -> String {
-        if index == 0 { return note.body }
+        if index == 0 { return Self.splitTitleBody(note.body).body }
         guard generations.indices.contains(index - 1) else { return "" }
         return generations[index - 1].content
     }
 
     private func persistCurrent() {
         if isNoteTab {
-            guard editText != note.body else { return }
-            note.body = editText
+            let combined = titleBodyCombined()
+            guard combined != note.body else { return }
+            note.body = combined
             note.updatedAt = Date()
             persistNoteToStore()
         } else if let gen = currentGeneration, editText != gen.content {
@@ -1073,7 +1092,13 @@ struct MinimalNoteDetailPage: View {
         } else if selectedIndex > generations.count {
             selectedIndex = max(0, generations.count)
         }
-        editText = currentTextForTab(selectedIndex)
+        if selectedIndex == 0 {
+            let (t, b) = Self.splitTitleBody(note.body)
+            editTitle = t
+            editText  = b
+        } else {
+            editText = currentTextForTab(selectedIndex)
+        }
     }
 
     private func performDelete() {
