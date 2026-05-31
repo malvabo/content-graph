@@ -2396,20 +2396,27 @@ private struct SelectableNoteEditor: UIViewRepresentable {
         if tv.textContainerInset.bottom != bottomInset {
             tv.textContainerInset.bottom = bottomInset
         }
-        // Read focus from the coordinator's parent rather than capturing isFocused as a
-        // Bool snapshot. Each updateUIView call refreshes coordinator.parent, so all
-        // pending async blocks see the *current* focus state when they run. Without this,
-        // a stale block queued from the initial (unfocused) render fires after the user
-        // taps and calls resignFirstResponder(), then the subsequent block calls
-        // becomeFirstResponder() programmatically, which resets the cursor to position 0
-        // instead of the tap location.
-        let coordinator = context.coordinator
-        DispatchQueue.main.async {
-            let focused = coordinator.parent.isFocused
-            if focused && !tv.isFirstResponder {
-                tv.becomeFirstResponder()
-            } else if !focused && tv.isFirstResponder {
-                tv.resignFirstResponder()
+        // Only queue a focus-change block when isFocused actually transitions.
+        // Each block is stamped with a generation; if a newer updateUIView call has
+        // already superseded it, the block is a no-op. This prevents two failure modes:
+        // (1) a stale block queued from an earlier unfocused render firing after the user
+        //     taps, calling resignFirstResponder() and then a later block calling
+        //     becomeFirstResponder() — resetting the cursor to position 0.
+        // (2) animation-frame renders (from .animation(value: focus)) queuing one block
+        //     per frame where coordinator.parent may not yet reflect the latest focus.
+        let currentFocused = isFocused
+        if currentFocused != context.coordinator.lastReportedFocused {
+            context.coordinator.lastReportedFocused = currentFocused
+            context.coordinator.focusGeneration += 1
+            let gen = context.coordinator.focusGeneration
+            let coordinator = context.coordinator
+            DispatchQueue.main.async {
+                guard coordinator.focusGeneration == gen else { return }
+                if currentFocused && !tv.isFirstResponder {
+                    tv.becomeFirstResponder()
+                } else if !currentFocused && tv.isFirstResponder {
+                    tv.resignFirstResponder()
+                }
             }
         }
     }
@@ -2419,6 +2426,8 @@ private struct SelectableNoteEditor: UIViewRepresentable {
     final class Coordinator: NSObject, UITextViewDelegate {
         var parent: SelectableNoteEditor
         var suppressEcho = false
+        var lastReportedFocused: Bool = false
+        var focusGeneration: Int = 0
         init(_ parent: SelectableNoteEditor) { self.parent = parent }
 
         func textViewDidChange(_ tv: UITextView) {
