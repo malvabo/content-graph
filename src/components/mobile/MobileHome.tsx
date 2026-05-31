@@ -449,7 +449,7 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText, stream }: {
   );
 }
 
-function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string) => void; onCancel: () => void }) {
+function DictationBar({ onConfirm, onCancel, transcriptSink }: { onConfirm: (transcript: string) => void; onCancel: () => void; transcriptSink?: { current: string } }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioLevelRef = useRef(0);
   const transcriptRef = useRef('');
@@ -477,6 +477,7 @@ function DictationBar({ onConfirm, onCancel }: { onConfirm: (transcript: string)
             else interim += t;
           }
           transcriptRef.current = (finalT + interim).trim();
+          if (transcriptSink) transcriptSink.current = transcriptRef.current;
         };
         recog.onerror = () => {};
         recog.onend = () => { if (shouldRestartRef2.current) { setTimeout(() => { try { recog.start(); } catch { /* noop */ } }, 200); } };
@@ -888,6 +889,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
   const customInputRef = useRef<HTMLInputElement>(null);
   const streamCancelRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+  const dictationTranscriptRef = useRef('');
   const isError = note.status === 'error';
   const titleId = `voice-sheet-title-${note.id}`;
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -912,6 +914,8 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
     setChooserOpen(false);
     setCustomMode(false);
     setCustomText('');
+    setShowInlineDictation(false);
+    dictationTranscriptRef.current = '';
     abortRef.current?.abort();
     streamCancelRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -930,7 +934,27 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
   const finishTitleEdit = () => { saveTitle(); setIsEditingTitle(false); };
 
-  const close = useCallback(() => { saveTitle(); onClose(); }, [onClose, saveTitle]);
+  // Clear the dictation sink whenever the bar is hidden (confirmed or cancelled)
+  // so stale text can't be double-saved on a later close.
+  useEffect(() => {
+    if (!showInlineDictation) dictationTranscriptRef.current = '';
+  }, [showInlineDictation]);
+
+  const close = useCallback(() => {
+    // Flush any in-progress DictationBar transcript that the user didn't
+    // explicitly confirm — triggered by tapping back/close while dictating.
+    if (showInlineDictation) {
+      const text = dictationTranscriptRef.current.trim();
+      if (text) {
+        const updated = note.transcript ? note.transcript + ' ' + text : text;
+        updateNote(note.id, { transcript: updated });
+        setShowStaleBanner(true);
+      }
+      setShowInlineDictation(false);
+    }
+    saveTitle();
+    onClose();
+  }, [onClose, saveTitle, showInlineDictation, note.transcript, note.id, updateNote]);
 
   // Keep the title textarea sized to its content so long titles wrap and stay
   // fully visible (no horizontal clipping like a single-line <input> would do).
@@ -1331,7 +1355,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
               {isError && (
                 <button
                   role="menuitem"
-                  onClick={() => { setMenuOpen(false); onRerecord(); onClose(); }}
+                  onClick={async () => { setMenuOpen(false); await onRerecord(); }}
                   style={menuItemStyle}
                 >
                   Re-record
@@ -2003,6 +2027,7 @@ function NoteSheet({ note, onClose, onDelete, onRerecord }: {
 
             {showInlineDictation ? (
               <DictationBar
+                transcriptSink={dictationTranscriptRef}
                 onCancel={() => setShowInlineDictation(false)}
                 onConfirm={(text) => {
                   setShowInlineDictation(false);
@@ -2906,12 +2931,10 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
 
     const title = transcript ? transcript.split(/\s+/).slice(0, 5).join(' ') : 'Untitled note';
     updateNote(noteId, { title, durationMs: duration, transcript, status: 'ready', errorReason: undefined });
-    // Continuity cue: briefly flag the just-finished note so the card can
-    // signal "this is what you just made" (3s is enough to draw the eye
-    // without becoming stateful noise).
+    setOpenNoteId(noteId);
     setJustRecordedId(noteId);
     setTimeout(() => setJustRecordedId(curr => curr === noteId ? null : curr), 3000);
-  }, [updateNote]);
+  }, [updateNote, setOpenNoteId]);
 
   const cancelRecording = useCallback(() => {
     shouldRestartRef.current = false;
@@ -3036,7 +3059,7 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
         </div>
       )}
 
-      {recording && !openNoteId && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} stream={activeStream} />}
+      {recording && <RecordingOverlay onStop={stopRecording} onCancel={cancelRecording} startTime={startTimeRef.current} liveText={liveText} stream={activeStream} />}
 
       {showTypeNote && <TypeNoteSheet onSave={handleSaveTypedNote} onClose={() => setShowTypeNote(false)} />}
 
