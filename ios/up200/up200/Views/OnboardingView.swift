@@ -269,22 +269,6 @@ struct OnboardingView: View {
                 .frame(height: 50)
                 .cornerRadius(Radius.card)
 
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    constellationStartedAt = Date()
-                    withAnimation(.easeOut(duration: 0.85)) {
-                        step = .constellation
-                    }
-                }) {
-                    Text("Just explore")
-                        .font(.app(size: 16, weight: .regular))
-                        .foregroundColor(Color.white.opacity(0.50))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
                 if let authError {
                     Text(authError)
                         .font(.appSmall)
