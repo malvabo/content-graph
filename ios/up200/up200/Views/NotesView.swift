@@ -1704,6 +1704,11 @@ struct NotesView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Color.clear)
+            // UITableView adjusts contentInset for the keyboard at the UIKit
+            // level, bypassing SwiftUI's .transaction { $0.animation = nil }.
+            // Without this, the list content visibly slides during the keyboard
+            // dismiss animation — visible through the fading SearchOverlay.
+            .ignoresSafeArea(.keyboard)
         }
     }
 

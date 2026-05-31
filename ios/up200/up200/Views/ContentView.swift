@@ -2479,7 +2479,14 @@ struct ContentView: View {
                 keyboardVisible = true
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-                keyboardVisible = false
+                // keyboardWillHide fires at the START of the dismiss animation.
+                // Without disabling animations here, SwiftUI inherits the
+                // keyboard's UIKit animation context and animates the
+                // SimpleCreateBar safeAreaInset re-appearance with keyboard
+                // timing, which shifts content upward during the search close.
+                var t = Transaction()
+                t.disablesAnimations = true
+                withTransaction(t) { keyboardVisible = false }
             }
 
             if bannerController.isVisible {
