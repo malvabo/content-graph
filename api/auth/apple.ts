@@ -174,7 +174,7 @@ function resolveEmail(
 async function getOrCreateSession(
   payload: AppleTokenPayload,
   body: AppleAuthBody
-): Promise<{ session: SupabaseSession; supabaseUserId: string } | null> {
+): Promise<{ session: SupabaseSession; supabaseUserId: string; resolvedEmail: string } | null> {
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -259,6 +259,7 @@ async function getOrCreateSession(
       expires_at: sessionData.session.expires_at ?? Math.floor(Date.now() / 1000) + 3600,
     },
     supabaseUserId,
+    resolvedEmail: email,
   };
 }
 
@@ -274,7 +275,8 @@ function issueSessionToken(sub: string): string | null {
 async function persistAppleUser(
   payload: AppleTokenPayload,
   body: AppleAuthBody,
-  supabaseUserId: string | null
+  supabaseUserId: string | null,
+  resolvedEmail: string
 ): Promise<boolean> {
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -283,13 +285,14 @@ async function persistAppleUser(
     return false;
   }
 
-  const sb = createClient(supabaseUrl, serviceRoleKey);
-  const email = payload.email ?? asOptionalString(body.email);
+  const sb = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
   const fullName = asOptionalString(body.fullName);
 
   const record: Record<string, unknown> = {
     apple_sub: payload.sub,
-    email,
+    email: resolvedEmail,
     full_name: fullName,
     last_seen_at: new Date().toISOString(),
   };
@@ -366,7 +369,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Sign-in verified but session could not be created. Please try again.' });
     }
 
-    const backendStored = await persistAppleUser(payload, body, sessionResult.supabaseUserId);
+    let backendStored = false;
+    try {
+      backendStored = await persistAppleUser(payload, body, sessionResult.supabaseUserId, sessionResult.resolvedEmail);
+    } catch (e) {
+      console.error('apple auth: persistAppleUser failed (non-fatal):', e);
+    }
 
     const sessionToken = issueSessionToken(payload.sub);
     const sessionTokenExpiresAt = sessionToken
