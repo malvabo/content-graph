@@ -38,12 +38,25 @@ struct Up200App: App {
                             let hasKey = await Task.detached(priority: .userInitiated) {
                                 KeychainService.load() != nil
                             }.value
-                            needsSetup = !hasKey
+                            let hasSession = SessionStore.shared.load() != nil
 
-                            // Pull server state on every launch when signed in.
-                            // Runs after the key check so it doesn't delay the
-                            // API key setup sheet.
-                            if SessionStore.shared.load() != nil {
+                            guard hasKey || hasSession else {
+                                // No usable credential — send back to onboarding.
+                                // Covers users whose only access was the now-removed
+                                // "Just explore" anonymous path: their UserDefaults flag
+                                // is still true but they have no session or API key.
+                                withAnimation(.easeOut(duration: 0.4)) {
+                                    onboardingComplete = false
+                                }
+                                return
+                            }
+
+                            // An Apple session alone is sufficient; API key is opt-in
+                            // from Settings. Only show the setup sheet if neither exists
+                            // (edge case: corrupted state that passed the guard above).
+                            needsSetup = !hasKey && !hasSession
+
+                            if hasSession {
                                 await SyncManager.shared.pull()
                             }
                         }
