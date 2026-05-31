@@ -217,14 +217,15 @@ class OnboardingSceneViewController: UIViewController {
             mat.isDoubleSided        = true
 
             let dot = SCNNode(geometry: plane)
-            // Ellipsoid scale 10 × 14 × 6 — column-like shape that fills more
-            // of the portrait viewport's vertical extent than the previous
-            // 9×6×5 cluster (which left the top/bottom mostly empty). Dot
-            // count bumped to 200 above so the larger volume still reads as
-            // a dense cloud rather than scattered specks.
             let home = SCNVector3(nx * 10, ny * 14, nz * 6)
+            // Radial falloff: normalised distance from centre in ellipsoid space
+            // (0 = centre, 1 = surface). Dots at the outer shell get squared-down
+            // opacity so the cluster has a soft cloud edge rather than isolated
+            // outlier dots visible in the corners of the screen.
+            let normDist = sqrt(nx * nx + ny * ny + nz * nz)  // 0…1 (unit sphere)
+            let edgeFalloff = CGFloat(max(0, 1 - normDist * normDist * 0.85))
             dot.position = home
-            dot.opacity  = alpha
+            dot.opacity  = alpha * edgeFalloff
             dot.constraints = [SCNBillboardConstraint()]
             tiltNode.addChildNode(dot)
             // Bulb target: same random direction but compressed into a tight
