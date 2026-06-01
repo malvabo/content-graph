@@ -21,6 +21,7 @@ final class NoteDictation: ObservableObject {
         ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var teardownTask: Task<Void, Never>? = nil
     private var startupTask: Task<Void, Never>? = nil
+    private var activationTask: Task<Void, Never>? = nil
     // Incremented by start() and teardown() so that auth callbacks queued
     // before a stop() call are silently dropped when they eventually fire.
     private var startToken: Int = 0
@@ -28,6 +29,7 @@ final class NoteDictation: ObservableObject {
     // Accumulates text from completed SR sessions so transcript is always
     // the full cumulative text across the ~60-second restart boundaries.
     private var sessionBase = ""
+    private var configChangeObserver: NSObjectProtocol?
 
     func start() {
         startToken += 1
@@ -74,6 +76,9 @@ final class NoteDictation: ObservableObject {
     private func teardown() {
         startToken += 1   // drop any in-flight start() auth callbacks
         startupTask?.cancel()
+        activationTask?.cancel()
+        activationTask = nil
+        teardownNotifications()
         isRecording = false
         audioLevel = 0
         task?.cancel()
@@ -82,11 +87,15 @@ final class NoteDictation: ObservableObject {
         let req = sharedRequest.value
         sharedRequest.value = nil
         teardownTask = Task.detached(priority: .userInitiated) {
+            req?.endAudio()  // signal SR before stopping the engine feed
             engine.stop()
-            req?.endAudio()
             engine.inputNode.removeTap(onBus: 0)
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
+    }
+
+    func awaitTeardown() async {
+        await teardownTask?.value
     }
 
     private func startEngine() {
@@ -95,6 +104,10 @@ final class NoteDictation: ObservableObject {
         startupError = nil
         srRestartCount = 0
         startupTask?.cancel()
+        activationTask?.cancel()
+        activationTask = nil
+        teardownNotifications()
+        setupNotifications()
         let prev = teardownTask
         teardownTask = nil
         startupTask = Task { @MainActor [weak self] in
@@ -105,7 +118,7 @@ final class NoteDictation: ObservableObject {
     }
 
     private func activateAndStart() {
-        Task.detached(priority: .userInitiated) { [weak self] in
+        activationTask = Task.detached(priority: .userInitiated) { [weak self] in
             let session = AVAudioSession.sharedInstance()
             do {
                 try session.setCategory(.playAndRecord, mode: .measurement,
@@ -189,6 +202,29 @@ final class NoteDictation: ObservableObject {
                     self.restartSpeechRecognition()
                 }
             }
+        }
+    }
+
+    private func setupNotifications() {
+        configChangeObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioEngine.configurationChangeNotification,
+            object: audioEngine, queue: .main
+        ) { [weak self] _ in self?.handleConfigurationChange() }
+    }
+
+    private func teardownNotifications() {
+        if let obs = configChangeObserver {
+            NotificationCenter.default.removeObserver(obs)
+            configChangeObserver = nil
+        }
+    }
+
+    private func handleConfigurationChange() {
+        guard isRecording else { return }
+        teardown()
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            self?.startEngine()
         }
     }
 }
@@ -603,6 +639,9 @@ struct NoteVoiceSheet: View {
     @State private var pausedByDetent: Bool = false
     // stored so it can be cancelled if the user swipes back to large mid-wait
     @State private var resumeTask: Task<Void, Never>? = nil
+    // Owned here so NoteVoiceSheet can await its teardown before resuming
+    // RecordingController — prevents the setActive(false)/setActive(true) race.
+    @StateObject private var composerDictation = NoteDictation()
 
     private static let miniDetent: PresentationDetent = .height(88)
     private let sheetBg = AppBackground.primary
@@ -618,6 +657,7 @@ struct NoteVoiceSheet: View {
             if showingComposer {
                 NoteComposerSheet(
                     initialBody: recording.fullTranscript,
+                    dictation: composerDictation,
                     onSave: { body in
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         recording.finishWithText(body)
@@ -657,17 +697,16 @@ struct NoteVoiceSheet: View {
                     pausedByDetent = true
                 }
             } else if !large && pausedByDetent {
-                // Delay resume so NoteDictation.teardown()'s setActive(false)
-                // (fired from NoteComposerSheet.onDisappear on the same swipe)
-                // completes before RecordingController.activateAndStart() calls
-                // setActive(true). Without this gap, the deactivation races the
-                // activation and can kill the audio session, leaving SR silent.
-                // Store the task so a rapid re-swipe-to-large can cancel it.
+                // Wait for NoteComposerSheet.onDisappear to fire (animation ~300ms),
+                // then await the dictation teardown so setActive(false) completes
+                // before RecordingController calls setActive(true).
+                let d = composerDictation
                 resumeTask = Task {
                     do { try await Task.sleep(nanoseconds: 500_000_000) }
                     catch { return }
+                    await d.awaitTeardown()
                     await MainActor.run {
-                        guard recording.isPaused else { return }
+                        guard recording.isPaused, pausedByDetent else { return }
                         pausedByDetent = false
                         recording.resume()
                     }
@@ -830,15 +869,16 @@ private struct NoteComposerSheet: View {
     let onSave: (String) -> Void
     let onCancel: () -> Void
 
+    @ObservedObject var dictation: NoteDictation
     @State private var noteBody: String
     @State private var bodyBeforeDictation: String = ""
     @State private var showDiscardAlert: Bool = false
     @State private var dictationCancelled: Bool = false
-    @StateObject private var dictation = NoteDictation()
     @FocusState private var bodyFocused: Bool
 
-    init(initialBody: String, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
+    init(initialBody: String, dictation: NoteDictation, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
         self.initialBody = initialBody
+        self.dictation = dictation
         self.onSave = onSave
         self.onCancel = onCancel
         self._noteBody = State(initialValue: initialBody)
