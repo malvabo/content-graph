@@ -90,6 +90,7 @@ final class NoteDictation: ObservableObject {
         }
         startToken += 1   // drop any in-flight start() auth callbacks
         startupTask?.cancel()
+        startupTask = nil
         activationTask?.cancel()
         activationTask = nil
         isRecording = false
