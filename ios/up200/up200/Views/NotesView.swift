@@ -69,13 +69,13 @@ final class NoteDictation: ObservableObject {
         audioLevel = 0
         task?.cancel()
         task = nil
-        audioEngine.inputNode.removeTap(onBus: 0)
         let engine = audioEngine
         let req = sharedRequest.value
         sharedRequest.value = nil
         teardownTask = Task.detached(priority: .userInitiated) {
             engine.stop()
             req?.endAudio()
+            engine.inputNode.removeTap(onBus: 0)
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
