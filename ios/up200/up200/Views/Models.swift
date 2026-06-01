@@ -3,6 +3,7 @@ import Security
 import Speech
 import AVFoundation
 import SwiftUI
+import os.lock
 
 // MARK: - Design tokens
 
@@ -784,12 +785,12 @@ final class ChromeController: ObservableObject {
 // the current request; the main actor writes it on every SR session boundary.
 // Using a lock is the only safe way to share the reference across threads.
 final class LockedRequest: @unchecked Sendable {
-    private let lock = NSLock()
+    private var _lock = os_unfair_lock_s()
     private var _value: SFSpeechAudioBufferRecognitionRequest?
 
     var value: SFSpeechAudioBufferRecognitionRequest? {
-        get { lock.lock(); defer { lock.unlock() }; return _value }
-        set { lock.lock(); defer { lock.unlock() }; _value = newValue }
+        get { os_unfair_lock_lock(&_lock); defer { os_unfair_lock_unlock(&_lock) }; return _value }
+        set { os_unfair_lock_lock(&_lock); defer { os_unfair_lock_unlock(&_lock) }; _value = newValue }
     }
 }
 
@@ -814,10 +815,13 @@ final class RecordingController: ObservableObject {
     private var saveHandler: ((String) -> Void)?
     private var teardownTask: Task<Void, Never>? = nil
     private var startupTask: Task<Void, Never>? = nil
+    private var activationTask: Task<Void, Never>? = nil
     private var pausedBySystem = false
+    private var authToken: Int = 0
     private var srRestartCount = 0
     private var interruptionObserver: NSObjectProtocol?
     private var routeChangeObserver: NSObjectProtocol?
+    private var configChangeObserver: NSObjectProtocol?
 
     var fullTranscript: String {
         if accumulated.isEmpty { return transcript }
@@ -933,10 +937,8 @@ final class RecordingController: ObservableObject {
 
     private func startTimer() {
         timer?.invalidate()
-        DispatchQueue.main.async { [weak self] in
-            self?.timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-                Task { @MainActor in self?.seconds += 1 }
-            }
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.seconds += 1 }
         }
     }
 
@@ -951,6 +953,9 @@ final class RecordingController: ObservableObject {
         stopTimer()
         task?.cancel()
         task = nil
+        activationTask?.cancel()
+        activationTask = nil
+        authToken += 1
         let engine = audioEngine
         let req = sharedRequest.value
         sharedRequest.value = nil
@@ -961,17 +966,19 @@ final class RecordingController: ObservableObject {
         // Race safety: startEngine() always awaits teardownTask before calling
         // installTap, so removeTap completes before any new tap is installed.
         teardownTask = Task.detached(priority: .userInitiated) {
+            req?.endAudio()  // signal SR before stopping the engine feed
             engine.stop()
-            req?.endAudio()
             engine.inputNode.removeTap(onBus: 0)
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
 
     private func requestAuthAndStart() {
+        authToken += 1
+        let token = authToken
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             DispatchQueue.main.async {
-                guard let self else { return }
+                guard let self, self.authToken == token else { return }
                 // Guard: cancel() or finish() may have cleared saveHandler while the
                 // auth dialog was on screen. Don't start the engine for a dead session.
                 guard self.saveHandler != nil else { return }
@@ -982,6 +989,7 @@ final class RecordingController: ObservableObject {
                 }
                 AVAudioApplication.requestRecordPermission { granted in
                     DispatchQueue.main.async {
+                        guard let self, self.authToken == token else { return }
                         guard granted else {
                             self.permissionDenied = true
                             self.reset()
@@ -1001,6 +1009,8 @@ final class RecordingController: ObservableObject {
         startupError = nil
         srRestartCount = 0
         startupTask?.cancel()
+        activationTask?.cancel()
+        activationTask = nil
         let prev = teardownTask
         teardownTask = nil
         startupTask = Task { @MainActor [weak self] in
@@ -1015,7 +1025,7 @@ final class RecordingController: ObservableObject {
         // apps, etc. Running them on a detached task keeps gesture
         // handling responsive — once the session is live we hop back
         // to the main actor and finish wiring the recognizer + engine.
-        Task.detached(priority: .userInitiated) { [weak self] in
+        activationTask = Task.detached(priority: .userInitiated) { [weak self] in
             let session = AVAudioSession.sharedInstance()
             do {
                 try session.setCategory(.playAndRecord, mode: .measurement,
@@ -1119,6 +1129,10 @@ final class RecordingController: ObservableObject {
             forName: AVAudioSession.routeChangeNotification,
             object: session, queue: .main
         ) { [weak self] in self?.handleRouteChange($0) }
+        configChangeObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioEngine.configurationChangeNotification,
+            object: audioEngine, queue: .main
+        ) { [weak self] _ in self?.handleConfigurationChange() }
     }
 
     private func teardownAudioNotifications() {
@@ -1130,6 +1144,10 @@ final class RecordingController: ObservableObject {
             NotificationCenter.default.removeObserver(obs)
             routeChangeObserver = nil
         }
+        if let obs = configChangeObserver {
+            NotificationCenter.default.removeObserver(obs)
+            configChangeObserver = nil
+        }
     }
 
     private func handleInterruption(_ notification: Notification) {
@@ -1139,9 +1157,9 @@ final class RecordingController: ObservableObject {
         case .began:
             if isRecording { pauseForSystem() }
         case .ended:
-            let opts = AVAudioSession.InterruptionOptions(
-                rawValue: notification.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0)
-            if isPaused, pausedBySystem, opts.contains(.shouldResume) { resumeIfSystemPaused() }
+            // .shouldResume is unreliable on iOS 14+; always attempt resume if we
+            // initiated the pause on behalf of the system.
+            if pausedBySystem { resumeIfSystemPaused() }
         @unknown default: break
         }
     }
@@ -1150,5 +1168,14 @@ final class RecordingController: ObservableObject {
         guard let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
               let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else { return }
         if reason == .oldDeviceUnavailable, isRecording { pauseForSystem() }
+    }
+
+    private func handleConfigurationChange() {
+        guard isRecording else { return }
+        pauseForSystem()
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            self?.resumeIfSystemPaused()
+        }
     }
 }
