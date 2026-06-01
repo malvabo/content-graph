@@ -448,7 +448,7 @@ struct MinimalNoteDetailPage: View {
                             recording.pauseForSystem()
                             pausedRecordingForDictation = true
                             Task {
-                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await recording.awaitTeardown()
                                 await MainActor.run { dictation.start() }
                             }
                         } else {
@@ -461,7 +461,7 @@ struct MinimalNoteDetailPage: View {
                         if pausedRecordingForDictation {
                             pausedRecordingForDictation = false
                             Task {
-                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await dictation.awaitTeardown()
                                 await MainActor.run { recording.resumeIfSystemPaused() }
                             }
                         }
@@ -471,7 +471,7 @@ struct MinimalNoteDetailPage: View {
                         if pausedRecordingForDictation {
                             pausedRecordingForDictation = false
                             Task {
-                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await dictation.awaitTeardown()
                                 await MainActor.run { recording.resumeIfSystemPaused() }
                             }
                         }
@@ -1326,4 +1326,3 @@ struct MinimalNoteDetailPage: View {
         }
     }
 }
-

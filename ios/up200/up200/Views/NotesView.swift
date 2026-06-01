@@ -29,7 +29,6 @@ final class NoteDictation: ObservableObject {
     // Accumulates text from completed SR sessions so transcript is always
     // the full cumulative text across the ~60-second restart boundaries.
     private var sessionBase = ""
-    private var configChangeObserver: NSObjectProtocol?
 
     func start() {
         startToken += 1
@@ -78,7 +77,6 @@ final class NoteDictation: ObservableObject {
         startupTask?.cancel()
         activationTask?.cancel()
         activationTask = nil
-        teardownNotifications()
         isRecording = false
         audioLevel = 0
         task?.cancel()
@@ -86,11 +84,13 @@ final class NoteDictation: ObservableObject {
         let engine = audioEngine
         let req = sharedRequest.value
         sharedRequest.value = nil
-        teardownTask = Task.detached(priority: .userInitiated) {
+        teardownTask = Task { @MainActor in
             req?.endAudio()  // signal SR before stopping the engine feed
             engine.stop()
             engine.inputNode.removeTap(onBus: 0)
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            await Task.detached(priority: .userInitiated) {
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            }.value
         }
     }
 
@@ -106,18 +106,17 @@ final class NoteDictation: ObservableObject {
         startupTask?.cancel()
         activationTask?.cancel()
         activationTask = nil
-        teardownNotifications()
-        setupNotifications()
+        let token = startToken
         let prev = teardownTask
         teardownTask = nil
         startupTask = Task { @MainActor [weak self] in
             await prev?.value
-            guard let self, !Task.isCancelled else { return }
-            self.activateAndStart()
+            guard let self, self.startToken == token, !Task.isCancelled else { return }
+            self.activateAndStart(token: token)
         }
     }
 
-    private func activateAndStart() {
+    private func activateAndStart(token: Int) {
         activationTask = Task.detached(priority: .userInitiated) { [weak self] in
             let session = AVAudioSession.sharedInstance()
             do {
@@ -126,16 +125,21 @@ final class NoteDictation: ObservableObject {
                 try session.setActive(true, options: .notifyOthersOnDeactivation)
             } catch {
                 await MainActor.run {
+                    guard self?.startToken == token else { return }
                     self?.startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
                 }
                 return
             }
-            await MainActor.run { self?.continueStartingEngine() }
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard self?.startToken == token else { return }
+                self?.continueStartingEngine(token: token)
+            }
         }
     }
 
-    private func continueStartingEngine() {
-        guard !Task.isCancelled else { return }
+    private func continueStartingEngine(token: Int) {
+        guard startToken == token, !Task.isCancelled else { return }
         guard recognizer != nil else {
             startupError = "Speech recognition isn't available on this device."
             return
@@ -205,28 +209,6 @@ final class NoteDictation: ObservableObject {
         }
     }
 
-    private func setupNotifications() {
-        configChangeObserver = NotificationCenter.default.addObserver(
-            forName: .AVAudioEngineConfigurationChange,
-            object: audioEngine, queue: .main
-        ) { [weak self] _ in self?.handleConfigurationChange() }
-    }
-
-    private func teardownNotifications() {
-        if let obs = configChangeObserver {
-            NotificationCenter.default.removeObserver(obs)
-            configChangeObserver = nil
-        }
-    }
-
-    private func handleConfigurationChange() {
-        guard isRecording else { return }
-        teardown()
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            self?.startEngine()
-        }
-    }
 }
 
 // MARK: - Storage
@@ -702,8 +684,6 @@ struct NoteVoiceSheet: View {
                 // before RecordingController calls setActive(true).
                 let d = composerDictation
                 resumeTask = Task {
-                    do { try await Task.sleep(nanoseconds: 500_000_000) }
-                    catch { return }
                     await d.awaitTeardown()
                     await MainActor.run {
                         guard recording.isPaused, pausedByDetent else { return }
@@ -1005,13 +985,7 @@ private struct NoteComposerSheet: View {
         }
         .task {
             bodyBeforeDictation = noteBody
-            // Delay auto-start to let RecordingController's async audio
-            // teardown finish (setActive false runs in a detached task,
-            // 50-300 ms). Starting dictation immediately races setActive(true)
-            // against that setActive(false) on a background thread; if teardown
-            // wins last the session is deactivated and dictation silently fails.
-            do { try await Task.sleep(nanoseconds: 400_000_000) }
-            catch { return }
+            await recording.awaitTeardown()
             dictation.start()
         }
         .onDisappear { dictation.stop() }
@@ -1276,10 +1250,8 @@ private struct NoteEditorPage: View {
                         if recording.isRecording, !recording.isPaused {
                             recording.pauseForSystem()
                             pausedRecordingForDictation = true
-                            // Wait for RecordingController's async setActive(false)
-                            // to complete before activating NoteDictation's session.
                             Task {
-                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await recording.awaitTeardown()
                                 await MainActor.run { dictation.start() }
                             }
                         } else {
@@ -1292,7 +1264,7 @@ private struct NoteEditorPage: View {
                         if pausedRecordingForDictation {
                             pausedRecordingForDictation = false
                             Task {
-                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await dictation.awaitTeardown()
                                 await MainActor.run { recording.resumeIfSystemPaused() }
                             }
                         }
@@ -1302,7 +1274,7 @@ private struct NoteEditorPage: View {
                         if pausedRecordingForDictation {
                             pausedRecordingForDictation = false
                             Task {
-                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await dictation.awaitTeardown()
                                 await MainActor.run { recording.resumeIfSystemPaused() }
                             }
                         }
@@ -1383,7 +1355,7 @@ private struct NoteEditorPage: View {
             if pausedRecordingForDictation {
                 pausedRecordingForDictation = false
                 Task {
-                    try? await Task.sleep(nanoseconds: 400_000_000)
+                    await dictation.awaitTeardown()
                     await MainActor.run { recording.resumeIfSystemPaused() }
                 }
             }

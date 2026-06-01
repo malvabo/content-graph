@@ -821,7 +821,6 @@ final class RecordingController: ObservableObject {
     private var srRestartCount = 0
     private var interruptionObserver: NSObjectProtocol?
     private var routeChangeObserver: NSObjectProtocol?
-    private var configChangeObserver: NSObjectProtocol?
 
     var fullTranscript: String {
         if accumulated.isEmpty { return transcript }
@@ -959,18 +958,18 @@ final class RecordingController: ObservableObject {
         let engine = audioEngine
         let req = sharedRequest.value
         sharedRequest.value = nil
-        // engine.stop() and removeTap run off the main thread to avoid blocking
-        // it: removeTap waits for the I/O thread to drain its current buffer
-        // (~23 ms) and can throw an ObjC exception when called from the main
-        // thread while CoreAudio holds its internal lock.
-        // Race safety: startEngine() always awaits teardownTask before calling
-        // installTap, so removeTap completes before any new tap is installed.
-        teardownTask = Task.detached(priority: .userInitiated) {
+        teardownTask = Task { @MainActor in
             req?.endAudio()  // signal SR before stopping the engine feed
             engine.stop()
             engine.inputNode.removeTap(onBus: 0)
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            await Task.detached(priority: .userInitiated) {
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            }.value
         }
+    }
+
+    func awaitTeardown() async {
+        await teardownTask?.value
     }
 
     private func requestAuthAndStart() {
@@ -1011,15 +1010,17 @@ final class RecordingController: ObservableObject {
         startupTask?.cancel()
         activationTask?.cancel()
         activationTask = nil
+        let token = authToken
         let prev = teardownTask
         teardownTask = nil
         startupTask = Task { @MainActor [weak self] in
             await prev?.value
-            self?.activateAndStart()
+            guard let self, self.authToken == token, self.saveHandler != nil, !Task.isCancelled else { return }
+            self.activateAndStart(token: token)
         }
     }
 
-    private func activateAndStart() {
+    private func activateAndStart(token: Int) {
         // setCategory + setActive can block the main thread for 50-300ms
         // while the audio subsystem reconciles category, ducks other
         // apps, etc. Running them on a detached task keeps gesture
@@ -1033,18 +1034,21 @@ final class RecordingController: ObservableObject {
                 try session.setActive(true, options: .notifyOthersOnDeactivation)
             } catch {
                 await MainActor.run {
+                    guard self?.authToken == token else { return }
                     self?.startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
                 }
                 return
             }
+            guard !Task.isCancelled else { return }
             await MainActor.run {
-                self?.continueStartingEngine()
+                guard self?.authToken == token, self?.saveHandler != nil else { return }
+                self?.continueStartingEngine(token: token)
             }
         }
     }
 
-    private func continueStartingEngine() {
-        guard saveHandler != nil else { return }
+    private func continueStartingEngine(token: Int) {
+        guard authToken == token, saveHandler != nil else { return }
         guard recognizer != nil else {
             startupError = "Speech recognition isn't available on this device."
             return
@@ -1129,10 +1133,6 @@ final class RecordingController: ObservableObject {
             forName: AVAudioSession.routeChangeNotification,
             object: session, queue: .main
         ) { [weak self] in self?.handleRouteChange($0) }
-        configChangeObserver = NotificationCenter.default.addObserver(
-            forName: .AVAudioEngineConfigurationChange,
-            object: audioEngine, queue: .main
-        ) { [weak self] _ in self?.handleConfigurationChange() }
     }
 
     private func teardownAudioNotifications() {
@@ -1143,10 +1143,6 @@ final class RecordingController: ObservableObject {
         if let obs = routeChangeObserver {
             NotificationCenter.default.removeObserver(obs)
             routeChangeObserver = nil
-        }
-        if let obs = configChangeObserver {
-            NotificationCenter.default.removeObserver(obs)
-            configChangeObserver = nil
         }
     }
 
@@ -1170,12 +1166,4 @@ final class RecordingController: ObservableObject {
         if reason == .oldDeviceUnavailable, isRecording { pauseForSystem() }
     }
 
-    private func handleConfigurationChange() {
-        guard isRecording else { return }
-        pauseForSystem()
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            self?.resumeIfSystemPaused()
-        }
-    }
 }
