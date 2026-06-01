@@ -769,6 +769,7 @@ private struct NoteComposerSheet: View {
     @State private var noteBody: String
     @State private var bodyBeforeDictation: String = ""
     @State private var showDiscardAlert: Bool = false
+    @State private var dictationCancelled: Bool = false
     @StateObject private var dictation = NoteDictation()
     @FocusState private var bodyFocused: Bool
 
@@ -857,10 +858,12 @@ private struct NoteComposerSheet: View {
                 DictationControls(
                     dictation: dictation,
                     onStart: {
+                        dictationCancelled = false
                         bodyBeforeDictation = noteBody
                         dictation.start()
                     },
                     onCancel: {
+                        dictationCancelled = true
                         dictation.cancel()
                         noteBody = bodyBeforeDictation
                     },
@@ -872,6 +875,7 @@ private struct NoteComposerSheet: View {
                 .padding(.bottom, 20)
             }
             .onChange(of: dictation.transcript) { _, newValue in
+                guard !dictationCancelled else { return }
                 let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return }
                 if bodyBeforeDictation.isEmpty {
@@ -1496,7 +1500,8 @@ struct NotesView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var notes: [Note] = []
     @State private var editingNote: Note? = nil
-    @State private var pendingSave: DispatchWorkItem? = nil
+    @State private var saveGeneration: Int = 0
+    @State private var hasPendingSave: Bool = false
     @State private var localSearchText = ""
     @State private var localShowSearch = false
     @State private var selectedFilter: String? = nil
@@ -1665,23 +1670,20 @@ struct NotesView: View {
     }
 
     private func scheduleSave() {
-        pendingSave?.cancel()
+        saveGeneration &+= 1
+        let gen = saveGeneration
         let snapshot = notes
-        var work: DispatchWorkItem!
-        work = DispatchWorkItem {
+        hasPendingSave = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [self] in
+            guard saveGeneration == gen else { return }
             NotesStore.saveInBackground(snapshot)
-            // Only clear the marker if we're still the latest scheduled save.
-            // A newer scheduleSave() would have replaced pendingSave already.
-            if pendingSave === work { pendingSave = nil }
+            hasPendingSave = false
         }
-        pendingSave = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
     }
 
     private func flushSave() {
-        guard let work = pendingSave else { return }
-        work.cancel()
-        pendingSave = nil
+        saveGeneration &+= 1  // invalidate any pending debounced save
+        hasPendingSave = false
         NotesStore.saveInBackground(notes)
     }
 
@@ -2035,6 +2037,8 @@ struct NotesView: View {
                         onSave: { saved in
                             if let idx = notes.firstIndex(where: { $0.id == saved.id }) {
                                 notes[idx] = saved
+                            } else {
+                                notes.insert(saved, at: 0)
                             }
                             flushSave()
                         },
@@ -2062,7 +2066,7 @@ struct NotesView: View {
         .onReceive(NotificationCenter.default.publisher(for: .notesStoreDidChange)) { _ in
             // Skip if this view has a debounced save in flight; the disk may be
             // stale relative to in-memory edits and reloading would clobber them.
-            guard pendingSave == nil else { return }
+            guard !hasPendingSave else { return }
             reloadTask?.cancel()
             reloadTask = Task {
                 let fresh = await NotesStore.loadAsync()

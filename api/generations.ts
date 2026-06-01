@@ -64,10 +64,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sb = getSupabase(token);
   if (!sb) return res.status(503).json({ error: 'Service not configured' });
 
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return res.status(401).json({ error: 'Invalid token' });
-
   try {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return res.status(401).json({ error: 'Invalid token' });
+
     if (req.method === 'GET') {
       const { data, error } = await sb
         .from('ios_generations')
@@ -100,7 +100,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             content: typeof g.content === 'string'
               ? g.content.slice(0, MAX_CONTENT_BYTES)
               : '',
-            date: typeof g.date === 'string' ? g.date : new Date().toISOString(),
+            date: typeof g.date === 'string' && !isNaN(Date.parse(g.date)) ? g.date : new Date().toISOString(),
           }));
 
         if (toUpsert.length > 0) {

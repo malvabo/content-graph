@@ -2712,17 +2712,10 @@ struct HomeView: View {
                 bannerController.isVisible = false
                 dismiss()
             }
-        } else {
-            bannerController.onOpen = { [self] in
-                let projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
-                let batchItems = lastBatchIDs.compactMap { id in projects.first { $0.id == id } }
-                let items = batchItems.isEmpty ? (projects.first.map { [$0] } ?? []) : batchItems
-                if let first = items.first {
-                    resultBatch = ResultBatch(title: first.title, items: items)
-                }
-                bannerController.isVisible = false
-            }
         }
+        // For the library path the onOpen closure is assigned after saveToLibrary
+        // completes (below) so that it captures the freshly-populated lastBatchIDs
+        // and projectsData rather than the stale pre-save snapshot.
         bannerController.onCancel = { [self] in generationTask?.cancel(); generationTask = nil; isGenerating = false; bannerController.isVisible = false }
 
         let capturedSources = effectiveSources
@@ -2773,6 +2766,18 @@ struct HomeView: View {
                     bannerController.isReady = true
                     bannerController.isVisible = true
                 } else if saveToLibrary(results, sources: capturedSources) {
+                    // Assign onOpen here, after saveToLibrary has populated
+                    // lastBatchIDs and projectsData, so the closure sees the
+                    // correct batch rather than the pre-save empty snapshot.
+                    bannerController.onOpen = { [self] in
+                        let projects = (try? JSONDecoder().decode([GenerationProject].self, from: projectsData)) ?? []
+                        let batchItems = lastBatchIDs.compactMap { id in projects.first { $0.id == id } }
+                        let items = batchItems.isEmpty ? (projects.first.map { [$0] } ?? []) : batchItems
+                        if let first = items.first {
+                            resultBatch = ResultBatch(title: first.title, items: items)
+                        }
+                        bannerController.isVisible = false
+                    }
                     bannerController.isReady = true
                     bannerController.isVisible = true
                 } else {

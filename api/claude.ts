@@ -5,7 +5,8 @@ import { getAllowedOrigin } from './_cors.js';
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
-const FREE_LIMIT = parseInt(process.env.FREE_GENERATION_LIMIT ?? '3', 10);
+const parsedLimit = parseInt(process.env.FREE_GENERATION_LIMIT ?? '3', 10);
+const FREE_LIMIT = isNaN(parsedLimit) || parsedLimit < 0 ? 3 : parsedLimit;
 const MAX_TOKENS_CAP = 8192;
 const ALLOWED_MODELS = new Set([
   'claude-haiku-4-5',
@@ -170,6 +171,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (stream) {
+    if (!upstream.ok) {
+      const errText = await upstream.text().catch(() => 'Upstream error');
+      return res.status(upstream.status).json({ error: errText });
+    }
+
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.status(upstream.status);

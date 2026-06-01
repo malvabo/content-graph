@@ -28,10 +28,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sb = getSupabase(token);
   if (!sb) return res.status(503).json({ error: 'Service not configured' });
 
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return res.status(401).json({ error: 'Invalid token' });
-
   try {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return res.status(401).json({ error: 'Invalid token' });
+
     if (req.method === 'GET') {
       const { data, error } = await sb.from('workflows').select('*').eq('user_id', user.id).order('saved_at', { ascending: false });
       if (error) throw error;
@@ -41,18 +41,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'POST') {
       const { id, name, nodes, edges, savedAt } = req.body;
       if (!id || !name) return res.status(400).json({ error: 'id and name required' });
-      const saved_at = savedAt || new Date().toISOString();
-      // Check-then-update-or-insert (scoped to user_id) so we never overwrite
-      // another user's row and don't require a compound unique index.
-      const existing = await sb.from('workflows').select('id').eq('id', id).eq('user_id', user.id).maybeSingle();
-      if (existing.error) throw existing.error;
-      if (existing.data) {
-        const { error } = await sb.from('workflows').update({ name, nodes, edges, saved_at }).eq('id', id).eq('user_id', user.id);
-        if (error) throw error;
-      } else {
-        const { error } = await sb.from('workflows').insert({ id, user_id: user.id, name, nodes, edges, saved_at });
-        if (error) throw error;
-      }
+      const saved_at = typeof savedAt === 'string' && !isNaN(Date.parse(savedAt)) ? savedAt : new Date().toISOString();
+      const { error: upsertError } = await sb
+        .from('workflows')
+        .upsert({ id, user_id: user.id, name, nodes: nodes ?? [], edges: edges ?? [], saved_at }, { onConflict: 'id' });
+      if (upsertError) throw upsertError;
       return res.json({ id, name, nodes, edges, savedAt: saved_at });
     }
 
