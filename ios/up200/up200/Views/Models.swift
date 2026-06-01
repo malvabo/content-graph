@@ -813,6 +813,7 @@ final class RecordingController: ObservableObject {
     private var timer: Timer?
     private var saveHandler: ((String) -> Void)?
     private var teardownTask: Task<Void, Never>? = nil
+    private var startupTask: Task<Void, Never>? = nil
     private var pausedBySystem = false
     private var srRestartCount = 0
     private var interruptionObserver: NSObjectProtocol?
@@ -998,9 +999,10 @@ final class RecordingController: ObservableObject {
         task = nil
         startupError = nil
         srRestartCount = 0
+        startupTask?.cancel()
         let prev = teardownTask
         teardownTask = nil
-        Task { @MainActor [weak self] in
+        startupTask = Task { @MainActor [weak self] in
             await prev?.value
             self?.activateAndStart()
         }

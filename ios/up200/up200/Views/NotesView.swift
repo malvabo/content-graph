@@ -21,20 +21,27 @@ final class NoteDictation: ObservableObject {
         ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var teardownTask: Task<Void, Never>? = nil
     private var startupTask: Task<Void, Never>? = nil
+    // Incremented by start() and teardown() so that auth callbacks queued
+    // before a stop() call are silently dropped when they eventually fire.
+    private var startToken: Int = 0
+    private var srRestartCount = 0
     // Accumulates text from completed SR sessions so transcript is always
     // the full cumulative text across the ~60-second restart boundaries.
     private var sessionBase = ""
 
     func start() {
+        startToken += 1
+        let token = startToken
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             DispatchQueue.main.async {
-                guard let self else { return }
+                guard let self, self.startToken == token else { return }
                 guard status == .authorized else {
                     self.permissionDenied = true
                     return
                 }
-                AVAudioApplication.requestRecordPermission { granted in
+                AVAudioApplication.requestRecordPermission { [weak self] granted in
                     DispatchQueue.main.async {
+                        guard let self, self.startToken == token else { return }
                         guard granted else {
                             self.permissionDenied = true
                             return
@@ -65,6 +72,8 @@ final class NoteDictation: ObservableObject {
     }
 
     private func teardown() {
+        startToken += 1   // drop any in-flight start() auth callbacks
+        startupTask?.cancel()
         isRecording = false
         audioLevel = 0
         task?.cancel()
@@ -84,6 +93,7 @@ final class NoteDictation: ObservableObject {
         task?.cancel()
         task = nil
         startupError = nil
+        srRestartCount = 0
         startupTask?.cancel()
         let prev = teardownTask
         teardownTask = nil
@@ -154,6 +164,11 @@ final class NoteDictation: ObservableObject {
         task?.cancel()
         task = nil
         guard isRecording, let rec = recognizer else { return }
+        guard srRestartCount < 20 else {
+            startupError = "Speech recognition became unavailable. Tap the mic to retry."
+            return
+        }
+        srRestartCount += 1
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
         sharedRequest.value = req
@@ -583,6 +598,11 @@ struct NoteVoiceSheet: View {
     @EnvironmentObject private var recording: RecordingController
     @State private var selectedDetent: PresentationDetent = .medium
     @State private var showingComposer: Bool = false
+    // true only when this sheet triggered the pause (not a manual user pause),
+    // so we know to auto-resume on swipe back to medium.
+    @State private var pausedByDetent: Bool = false
+    // stored so it can be cancelled if the user swipes back to large mid-wait
+    @State private var resumeTask: Task<Void, Never>? = nil
 
     private static let miniDetent: PresentationDetent = .height(88)
     private let sheetBg = AppBackground.primary
@@ -626,18 +646,31 @@ struct NoteVoiceSheet: View {
             // values, which triggered recording.pause() → teardownEngine()
             // on the main thread mid-gesture → hard freeze.
             let large = (newDetent == .large)
-            if large && (recording.isRecording || recording.isPaused) {
-                recording.pause()
-            } else if !large && recording.isPaused {
+            if large {
+                // Cancel any pending resume — user is back in large detent.
+                resumeTask?.cancel()
+                resumeTask = nil
+                // Only auto-pause if we're the ones pausing (not already paused
+                // by the user); only then will we auto-resume on the way back.
+                if recording.isRecording && !recording.isPaused {
+                    recording.pause()
+                    pausedByDetent = true
+                }
+            } else if !large && pausedByDetent {
                 // Delay resume so NoteDictation.teardown()'s setActive(false)
                 // (fired from NoteComposerSheet.onDisappear on the same swipe)
                 // completes before RecordingController.activateAndStart() calls
                 // setActive(true). Without this gap, the deactivation races the
                 // activation and can kill the audio session, leaving SR silent.
-                Task {
+                // Store the task so a rapid re-swipe-to-large can cancel it.
+                resumeTask = Task {
                     do { try await Task.sleep(nanoseconds: 500_000_000) }
                     catch { return }
-                    await MainActor.run { recording.resume() }
+                    await MainActor.run {
+                        guard recording.isPaused else { return }
+                        pausedByDetent = false
+                        recording.resume()
+                    }
                 }
             }
             withAnimation(AppAnimation.standard) {
@@ -723,7 +756,14 @@ struct NoteVoiceSheet: View {
 
             Spacer(minLength: 16)
 
-            if !recording.fullTranscript.isEmpty {
+            if let err = recording.startupError {
+                Text(err)
+                    .font(.appSmall)
+                    .foregroundColor(.red.opacity(0.75))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+                Spacer(minLength: 16)
+            } else if !recording.fullTranscript.isEmpty {
                 ScrollView {
                     Text(recording.fullTranscript)
                         .font(.appBody)
