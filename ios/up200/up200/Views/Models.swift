@@ -602,6 +602,9 @@ enum AnthropicClient {
         if let token = SessionTokenService.load() {
             return proxyRequest(token: token, body: body, timeout: timeout)
         }
+        if let session = SessionStore.shared.load(), !session.accessToken.isEmpty {
+            return proxyRequest(token: session.accessToken, body: body, timeout: timeout)
+        }
         if let key = KeychainService.load(), !key.isEmpty {
             var req = URLRequest(url: directURL)
             req.httpMethod = "POST"
@@ -794,7 +797,7 @@ final class LockedRequest: @unchecked Sendable {
     }
 }
 
-private typealias AudioReleaseHandler = @MainActor () async -> Void
+typealias AudioReleaseHandler = @MainActor () async -> Void
 
 @MainActor
 final class AudioRecordingCoordinator {
@@ -1035,7 +1038,7 @@ final class RecordingController: ObservableObject {
                     self.reset()
                     return
                 }
-                AVAudioApplication.requestRecordPermission { granted in
+                AVAudioApplication.requestRecordPermission { [weak self] granted in
                     DispatchQueue.main.async {
                         guard let self, self.authToken == token else { return }
                         guard granted else {
@@ -1090,17 +1093,17 @@ final class RecordingController: ObservableObject {
             let session = AVAudioSession.sharedInstance()
             do {
                 try session.setCategory(.playAndRecord, mode: .measurement,
-                                       options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
+                                       options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers])
                 try session.setActive(true, options: .notifyOthersOnDeactivation)
             } catch {
-                await MainActor.run {
+                await MainActor.run { [weak self] in
                     guard self?.authToken == token else { return }
                     self?.startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
                 }
                 return
             }
             guard !Task.isCancelled else { return }
-            await MainActor.run {
+            await MainActor.run { [weak self] in
                 guard self?.authToken == token, self?.saveHandler != nil else { return }
                 self?.continueStartingEngine(token: token)
             }
@@ -1154,6 +1157,10 @@ final class RecordingController: ObservableObject {
         task = nil
         startupError = nil
         guard let rec = recognizer, isRecording || isPaused else { return }
+        guard rec.supportsOnDeviceRecognition else {
+            startupError = "On-device speech recognition isn't available for this language."
+            return
+        }
         // Cap restarts so a hard SR failure doesn't spin forever.
         guard srRestartCount < 20 else {
             startupError = "Speech recognition became unavailable. Tap Stop to save."
@@ -1162,6 +1169,7 @@ final class RecordingController: ObservableObject {
         srRestartCount += 1
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
+        req.requiresOnDeviceRecognition = true
         sharedRequest.value = req  // tap closure routes new buffers here immediately
         task = rec.recognitionTask(with: req) { [weak self] result, error in
             DispatchQueue.main.async {
@@ -1188,11 +1196,15 @@ final class RecordingController: ObservableObject {
         interruptionObserver = NotificationCenter.default.addObserver(
             forName: AVAudioSession.interruptionNotification,
             object: session, queue: .main
-        ) { [weak self] in self?.handleInterruption($0) }
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in self?.handleInterruption(notification) }
+        }
         routeChangeObserver = NotificationCenter.default.addObserver(
             forName: AVAudioSession.routeChangeNotification,
             object: session, queue: .main
-        ) { [weak self] in self?.handleRouteChange($0) }
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in self?.handleRouteChange(notification) }
+        }
     }
 
     private func teardownAudioNotifications() {

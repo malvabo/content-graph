@@ -28,7 +28,7 @@ struct WebView: UIViewRepresentable {
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playAndRecord,
                                  mode: .default,
-                                 options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
+                                 options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers])
         try? session.setActive(true)
 
         let config = WKWebViewConfiguration()

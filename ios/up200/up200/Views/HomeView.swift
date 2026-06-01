@@ -616,14 +616,14 @@ final class VoiceRecorder: ObservableObject {
                 try session.setCategory(.record, mode: .measurement, options: .duckOthers)
                 try session.setActive(true, options: .notifyOthersOnDeactivation)
             } catch {
-                await MainActor.run {
+                await MainActor.run { [weak self] in
                     guard self?.startToken == token else { return }
                     self?.startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
                 }
                 return
             }
             guard !Task.isCancelled else { return }
-            await MainActor.run {
+            await MainActor.run { [weak self] in
                 guard self?.startToken == token else { return }
                 self?.continueStartingEngine(token: token)
             }
@@ -638,7 +638,12 @@ final class VoiceRecorder: ObservableObject {
             startupError = "Speech recognition isn't available on this device."
             return
         }
+        guard rec.supportsOnDeviceRecognition else {
+            startupError = "On-device speech recognition isn't available for this language."
+            return
+        }
         request.shouldReportPartialResults = true
+        request.requiresOnDeviceRecognition = true
 
         recognitionTask = rec.recognitionTask(with: request) { [weak self] result, error in
             DispatchQueue.main.async {

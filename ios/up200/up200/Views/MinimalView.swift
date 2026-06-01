@@ -1132,10 +1132,10 @@ struct MinimalNoteDetailPage: View {
 
     private func performDelete() {
         let noteId = note.id
-        Task { await SyncManager.shared.deleteAllGenerations(forNoteID: noteId) }
         var fresh = NotesStore.load()
         fresh.removeAll { $0.id == noteId }
         NotesStore.saveInBackground(fresh)
+        Task { await SyncManager.shared.deleteNote(id: noteId, removeLocal: false) }
         dismiss()
     }
 

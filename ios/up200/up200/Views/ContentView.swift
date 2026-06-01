@@ -1564,6 +1564,7 @@ struct ProfileView: View {
         UserDefaults.standard.removeObject(forKey: SavedChatsStore.key)
         UserDefaults.standard.removeObject(forKey: "note_custom_tags")
         UserDefaults.standard.removeObject(forKey: "note_removed_deprecated_tags_v1")
+        UserDefaults.standard.removeObject(forKey: DeletedNoteTombstones.key)
         UserDefaults.standard.removeObject(forKey: DeletedGenTombstones.key)
         refreshAPIKeyState()
         onboardingComplete = false

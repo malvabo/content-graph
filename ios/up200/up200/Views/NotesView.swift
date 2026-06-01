@@ -141,17 +141,17 @@ final class NoteDictation: ObservableObject {
             let session = AVAudioSession.sharedInstance()
             do {
                 try session.setCategory(.playAndRecord, mode: .measurement,
-                                       options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
+                                       options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers])
                 try session.setActive(true, options: .notifyOthersOnDeactivation)
             } catch {
-                await MainActor.run {
+                await MainActor.run { [weak self] in
                     guard self?.startToken == token else { return }
                     self?.startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
                 }
                 return
             }
             guard !Task.isCancelled else { return }
-            await MainActor.run {
+            await MainActor.run { [weak self] in
                 guard self?.startToken == token else { return }
                 self?.continueStartingEngine(token: token)
             }
@@ -201,6 +201,10 @@ final class NoteDictation: ObservableObject {
         task?.cancel()
         task = nil
         guard isRecording, let rec = recognizer else { return }
+        guard rec.supportsOnDeviceRecognition else {
+            startupError = "On-device speech recognition isn't available for this language."
+            return
+        }
         guard srRestartCount < 20 else {
             startupError = "Speech recognition became unavailable. Tap the mic to retry."
             return
@@ -208,6 +212,7 @@ final class NoteDictation: ObservableObject {
         srRestartCount += 1
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
+        req.requiresOnDeviceRecognition = true
         sharedRequest.value = req
         task = rec.recognitionTask(with: req) { [weak self] result, error in
             DispatchQueue.main.async {
@@ -1005,7 +1010,6 @@ private struct NoteComposerSheet: View {
         }
         .task {
             bodyBeforeDictation = noteBody
-            await recording.awaitTeardown()
             dictation.start()
         }
         .onDisappear { dictation.stop() }
@@ -1698,6 +1702,7 @@ struct NotesView: View {
         // side made the red tint linger as the row collapsed.
         notes.removeAll { $0.id == note.id }
         scheduleSave()
+        Task { await SyncManager.shared.deleteNote(id: note.id, removeLocal: false) }
     }
 
     private func toggleTag(_ tag: String, for note: Note) {

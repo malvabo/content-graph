@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4B5C17C02FC8E5E20080FF28 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B5C17BF2FC8E5E10080FF28 /* AppConfig.swift */; };
 		A1000001 /* Up200App.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001 /* Up200App.swift */; };
 		A1000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000002 /* ContentView.swift */; };
 		A1000003 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000003 /* WebView.swift */; };
@@ -20,26 +21,26 @@
 		A1000013 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000015 /* ChatView.swift */; };
 		A1000014 /* NotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000016 /* NotesView.swift */; };
 		A1000015 /* SwipeBackGesture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000017 /* SwipeBackGesture.swift */; };
+		A1000020 /* Lora-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000020 /* Lora-Regular.ttf */; };
+		A1000021 /* Lora-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000021 /* Lora-Medium.ttf */; };
+		A1000022 /* Lora-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000022 /* Lora-SemiBold.ttf */; };
+		A1000023 /* Lora-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000023 /* Lora-Bold.ttf */; };
 		A1000030 /* MinimalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000030 /* MinimalView.swift */; };
 		A1000031 /* AuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000031 /* AuthSession.swift */; };
 		A1000032 /* AuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000032 /* AuthClient.swift */; };
 		A1000033 /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000033 /* SyncManager.swift */; };
 		A1000034 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A2000034 /* PrivacyInfo.xcprivacy */; };
-		A1000020 /* Lora-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000020 /* Lora-Regular.ttf */; };
-		A1000021 /* Lora-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000021 /* Lora-Medium.ttf */; };
-		A1000022 /* Lora-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000022 /* Lora-SemiBold.ttf */; };
-		A1000023 /* Lora-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000023 /* Lora-Bold.ttf */; };
-
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		4B5C17BF2FC8E5E10080FF28 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		A2000001 /* Up200App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Up200App.swift; sourceTree = "<group>"; };
 		A2000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A2000003 /* WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebView.swift; sourceTree = "<group>"; };
 		A2000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A2000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A2000007 /* up200.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = up200.entitlements; sourceTree = "<group>"; };
 		A2000006 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		A2000007 /* up200.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = up200.entitlements; sourceTree = "<group>"; };
 		A2000008 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		A2000009 /* APIKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeySetupView.swift; sourceTree = "<group>"; };
 		A2000010 /* up200.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = up200.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -49,16 +50,15 @@
 		A2000015 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		A2000016 /* NotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesView.swift; sourceTree = "<group>"; };
 		A2000017 /* SwipeBackGesture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeBackGesture.swift; sourceTree = "<group>"; };
+		A2000020 /* Lora-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-Regular.ttf"; sourceTree = "<group>"; };
+		A2000021 /* Lora-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-Medium.ttf"; sourceTree = "<group>"; };
+		A2000022 /* Lora-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-SemiBold.ttf"; sourceTree = "<group>"; };
+		A2000023 /* Lora-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-Bold.ttf"; sourceTree = "<group>"; };
 		A2000030 /* MinimalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalView.swift; sourceTree = "<group>"; };
 		A2000031 /* AuthSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSession.swift; sourceTree = "<group>"; };
 		A2000032 /* AuthClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthClient.swift; sourceTree = "<group>"; };
 		A2000033 /* SyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncManager.swift; sourceTree = "<group>"; };
 		A2000034 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		A2000020 /* Lora-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-Regular.ttf"; sourceTree = "<group>"; };
-		A2000021 /* Lora-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-Medium.ttf"; sourceTree = "<group>"; };
-		A2000022 /* Lora-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-SemiBold.ttf"; sourceTree = "<group>"; };
-		A2000023 /* Lora-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Lora-Bold.ttf"; sourceTree = "<group>"; };
-
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -74,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				A2000001 /* Up200App.swift */,
+				4B5C17BF2FC8E5E10080FF28 /* AppConfig.swift */,
 				A3000003 /* Views */,
 				A3000004 /* WebView */,
 				A3000006 /* Fonts */,
@@ -208,6 +209,7 @@
 				A1000007 /* Models.swift in Sources */,
 				A1000008 /* APIKeySetupView.swift in Sources */,
 				A1000009 /* Font+ABCDiatype.swift in Sources */,
+				4B5C17C02FC8E5E20080FF28 /* AppConfig.swift in Sources */,
 				A1000011 /* OnboardingSceneViewController.swift in Sources */,
 				A1000012 /* OnboardingView.swift in Sources */,
 				A1000013 /* ChatView.swift in Sources */,

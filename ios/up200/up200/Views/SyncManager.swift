@@ -130,6 +130,35 @@ enum DeletedGenTombstones {
     }
 }
 
+// MARK: - Deleted notes tombstone store
+
+/// Tracks locally deleted note IDs so a later pull cannot resurrect notes
+/// that still exist remotely because a previous DELETE failed or was offline.
+enum DeletedNoteTombstones {
+    static let key = "com.up200.app.deleted_note_ids_v1"
+    private static let cap = 1_000
+
+    static func load() -> Set<UUID> {
+        guard let strings = UserDefaults.standard.stringArray(forKey: key) else { return [] }
+        return Set(strings.compactMap(UUID.init))
+    }
+
+    static func insert(_ id: UUID) {
+        var current = load()
+        current.insert(id)
+        if current.count > cap {
+            let trimmed = Array(current).dropFirst(current.count - cap)
+            UserDefaults.standard.set(trimmed.map(\.uuidString), forKey: key)
+        } else {
+            UserDefaults.standard.set(current.map(\.uuidString), forKey: key)
+        }
+    }
+
+    static func contains(_ id: UUID) -> Bool {
+        load().contains(id)
+    }
+}
+
 // MARK: - SyncManager
 
 private let logger = Logger(subsystem: "com.up200.app", category: "SyncManager")
@@ -163,6 +192,7 @@ actor SyncManager {
     /// Registers for store-change notifications and schedules a debounced push
     /// whenever local data is modified.
     func setup() {
+        guard observerTokens.isEmpty else { return }
         let nc = NotificationCenter.default
         let names: [Notification.Name] = [.notesStoreDidChange, .minimalGenStoreDidChange]
         for name in names {
@@ -261,6 +291,32 @@ actor SyncManager {
 
     // MARK: - Delete a generation (local + remote)
 
+    /// Removes a note from local storage, records a tombstone so it is not
+    /// re-added on pull, deletes any attached generations, and sends DELETE
+    /// to the server when authenticated.
+    func deleteNote(id: UUID, removeLocal: Bool = true) async {
+        DeletedNoteTombstones.insert(id)
+
+        if removeLocal {
+            await MainActor.run {
+                var notes = NotesStore.load()
+                notes.removeAll { $0.id == id }
+                NotesStore.save(notes)
+            }
+        }
+
+        await deleteAllGenerations(forNoteID: id)
+
+        guard SessionStore.shared.load() != nil else { return }
+        let url = notesURL.appendingPathComponent(id.uuidString)
+        do {
+            _ = try await AuthClient.shared.delete(url)
+        } catch {
+            // Non-fatal: tombstone prevents resurrection on pull.
+            logger.warning("deleteNote server call failed (non-fatal): \(error.localizedDescription)")
+        }
+    }
+
     /// Removes a generation from local storage, records a tombstone so it
     /// won't be re-added on the next pull, and sends DELETE to the server.
     func deleteGeneration(id: UUID) async {
@@ -319,6 +375,7 @@ actor SyncManager {
             guard sn.kind != "drawing",
                   let note = fromSyncNote(sn),
                   let serverDate = parseISO(sn.updatedAt) else { continue }
+            guard !DeletedNoteTombstones.contains(note.id) else { continue }
 
             if let idx = localById[note.id] {
                 // Use >= so that same-millisecond ties prefer the server version.
@@ -341,7 +398,7 @@ actor SyncManager {
     @MainActor
     private func mergeServerGens(_ serverGens: [SyncGeneration]) {
         var local = MinimalGenStore.load()
-        var localById: [UUID: Int] = Dictionary(
+        let localById: [UUID: Int] = Dictionary(
             uniqueKeysWithValues: local.enumerated().compactMap { idx, g in (g.id, idx) }
         )
         var changed = false
