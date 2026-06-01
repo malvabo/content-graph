@@ -311,7 +311,11 @@ struct OnboardingView: View {
                 authError = "Could not read Apple credentials. Try again."
                 return
             }
-            appleSignIn.handleCredential(credential, nonce: nonce, onSuccess: onLogin) { error in
+            appleSignIn.handleCredential(credential, nonce: nonce, onSuccess: {
+                withAnimation(.easeOut(duration: 0.85)) {
+                    step = .constellation
+                }
+            }) { error in
                 authError = error.localizedDescription
             }
         }
