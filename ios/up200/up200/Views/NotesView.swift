@@ -15,7 +15,7 @@ final class NoteDictation: ObservableObject {
     var audioLevel: Float = 0.0  // RMS, ~0...1 — plain var, not @Published; waveforms read it via TimelineView
 
     private let audioEngine = AVAudioEngine()
-    private var request: SFSpeechAudioBufferRecognitionRequest?
+    private let sharedRequest = LockedRequest()
     private var task: SFSpeechRecognitionTask?
     private let recognizer = SFSpeechRecognizer(locale: Locale.current)
         ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -69,13 +69,13 @@ final class NoteDictation: ObservableObject {
         audioLevel = 0
         task?.cancel()
         task = nil
+        audioEngine.inputNode.removeTap(onBus: 0)
         let engine = audioEngine
-        let req = request
-        request = nil
+        let req = sharedRequest.value
+        sharedRequest.value = nil
         teardownTask = Task.detached(priority: .userInitiated) {
             engine.stop()
             req?.endAudio()
-            engine.inputNode.removeTap(onBus: 0)
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
@@ -122,10 +122,10 @@ final class NoteDictation: ObservableObject {
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         var lastLevelDispatch: Double = 0
-        // Dynamic request reference: restartSpeechRecognition() swaps self.request
+        // Dynamic request reference: restartSpeechRecognition() swaps sharedRequest
         // without reinstalling the tap, so all sessions share the same tap lifetime.
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            self?.request?.append(buffer)
+            self?.sharedRequest.value?.append(buffer)
             guard let channels = buffer.floatChannelData else { return }
             let frames = Int(buffer.frameLength)
             guard frames > 0 else { return }
@@ -156,7 +156,7 @@ final class NoteDictation: ObservableObject {
         guard isRecording, let rec = recognizer else { return }
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
-        request = req
+        sharedRequest.value = req
         task = rec.recognitionTask(with: req) { [weak self] result, error in
             DispatchQueue.main.async {
                 guard let self, self.isRecording else { return }
@@ -170,7 +170,7 @@ final class NoteDictation: ObservableObject {
                     // Accumulate completed session, restart SR on the same engine.
                     self.sessionBase = self.transcript
                     self.restartSpeechRecognition()
-                } else if error != nil {
+                } else if error != nil, self.isRecording {
                     self.restartSpeechRecognition()
                 }
             }

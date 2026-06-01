@@ -779,6 +779,20 @@ final class ChromeController: ObservableObject {
     @Published var hideTabBar = false
 }
 
+// Thread-safe wrapper for SFSpeechAudioBufferRecognitionRequest.
+// The audio tap closure runs on AVAudioEngine's real-time I/O thread and reads
+// the current request; the main actor writes it on every SR session boundary.
+// Using a lock is the only safe way to share the reference across threads.
+final class LockedRequest: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _value: SFSpeechAudioBufferRecognitionRequest?
+
+    var value: SFSpeechAudioBufferRecognitionRequest? {
+        get { lock.lock(); defer { lock.unlock() }; return _value }
+        set { lock.lock(); defer { lock.unlock() }; _value = newValue }
+    }
+}
+
 @MainActor
 final class RecordingController: ObservableObject {
     @Published var isRecording: Bool = false
@@ -792,7 +806,7 @@ final class RecordingController: ObservableObject {
     @Published var showingSheet: Bool = false
 
     private let audioEngine = AVAudioEngine()
-    private var request: SFSpeechAudioBufferRecognitionRequest?
+    private let sharedRequest = LockedRequest()
     private var task: SFSpeechRecognitionTask?
     private let recognizer = SFSpeechRecognizer(locale: Locale.current)
         ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -812,7 +826,6 @@ final class RecordingController: ObservableObject {
 
     func begin(saveHandler: @escaping (String) -> Void) {
         if isRecording || isPaused { finish() }
-        teardownEngine()
         teardownAudioNotifications()
         self.saveHandler = saveHandler
         accumulated = ""
@@ -936,16 +949,15 @@ final class RecordingController: ObservableObject {
         stopTimer()
         task?.cancel()
         task = nil
-        // Capture what we need before hopping off the main actor — AVAudioEngine
-        // and AVAudioSession calls can block 50-300 ms waiting for the audio
-        // subsystem to drain; running them on the main thread freezes gestures.
+        // Remove the tap synchronously on the main actor before stopping the engine.
+        // Doing this off-thread races with installTap in continueStartingEngine().
+        audioEngine.inputNode.removeTap(onBus: 0)
         let engine = audioEngine
-        let req = request
-        request = nil
+        let req = sharedRequest.value
+        sharedRequest.value = nil
         teardownTask = Task.detached(priority: .userInitiated) {
             engine.stop()
             req?.endAudio()
-            engine.inputNode.removeTap(onBus: 0)
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
@@ -981,6 +993,7 @@ final class RecordingController: ObservableObject {
         task?.cancel()
         task = nil
         startupError = nil
+        srRestartCount = 0
         let prev = teardownTask
         teardownTask = nil
         Task { @MainActor [weak self] in
@@ -1024,10 +1037,10 @@ final class RecordingController: ObservableObject {
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         var lastLevelDispatch: Double = 0
-        // The tap closure reads self.request dynamically so that restartSpeechRecognition()
+        // The tap closure reads sharedRequest dynamically so that restartSpeechRecognition()
         // can swap in a fresh request without reinstalling the tap.
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            self?.request?.append(buffer)
+            self?.sharedRequest.value?.append(buffer)
             guard let channels = buffer.floatChannelData else { return }
             let frames = Int(buffer.frameLength)
             guard frames > 0 else { return }
@@ -1068,7 +1081,7 @@ final class RecordingController: ObservableObject {
         srRestartCount += 1
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
-        request = req  // tap closure routes new buffers here immediately
+        sharedRequest.value = req  // tap closure routes new buffers here immediately
         task = rec.recognitionTask(with: req) { [weak self] result, error in
             DispatchQueue.main.async {
                 guard let self, self.isRecording || self.isPaused else { return }
@@ -1078,9 +1091,11 @@ final class RecordingController: ObservableObject {
                     self.accumulated = self.fullTranscript
                     self.transcript = ""
                     self.restartSpeechRecognition()
-                } else if error != nil {
-                    // Error without isFinal — restart (cancellation errors from
-                    // our own task?.cancel() are harmless; the cap handles loops).
+                } else if error != nil, self.isRecording {
+                    // Only restart on real errors while the engine is running.
+                    // When paused, the error is always the cancellation from
+                    // teardownEngine() — restarting on a stopped engine would
+                    // exhaust srRestartCount before the user resumes.
                     self.restartSpeechRecognition()
                 }
             }
