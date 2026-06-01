@@ -794,6 +794,44 @@ final class LockedRequest: @unchecked Sendable {
     }
 }
 
+private typealias AudioReleaseHandler = @MainActor () async -> Void
+
+@MainActor
+final class AudioRecordingCoordinator {
+    static let shared = AudioRecordingCoordinator()
+
+    private var activeOwner: UUID?
+    private var releaseHandler: AudioReleaseHandler?
+    private var requestSequence = 0
+
+    private init() {}
+
+    func acquire(owner: UUID, release: @escaping AudioReleaseHandler) async -> Bool {
+        if activeOwner == owner {
+            releaseHandler = release
+            return true
+        }
+
+        requestSequence += 1
+        let sequence = requestSequence
+        let previousRelease = releaseHandler
+        activeOwner = nil
+        releaseHandler = nil
+        await previousRelease?()
+
+        guard sequence == requestSequence else { return false }
+        activeOwner = owner
+        releaseHandler = release
+        return true
+    }
+
+    func release(owner: UUID) {
+        guard activeOwner == owner else { return }
+        activeOwner = nil
+        releaseHandler = nil
+    }
+}
+
 @MainActor
 final class RecordingController: ObservableObject {
     @Published var isRecording: Bool = false
@@ -816,6 +854,7 @@ final class RecordingController: ObservableObject {
     private var teardownTask: Task<Void, Never>? = nil
     private var startupTask: Task<Void, Never>? = nil
     private var activationTask: Task<Void, Never>? = nil
+    private let audioOwnerID = UUID()
     private var pausedBySystem = false
     private var authToken: Int = 0
     private var srRestartCount = 0
@@ -946,7 +985,10 @@ final class RecordingController: ObservableObject {
         timer = nil
     }
 
-    private func teardownEngine() {
+    private func teardownEngine(releaseOwnership: Bool = true) {
+        if releaseOwnership {
+            AudioRecordingCoordinator.shared.release(owner: audioOwnerID)
+        }
         isRecording = false
         audioLevel = 0
         stopTimer()
@@ -972,6 +1014,13 @@ final class RecordingController: ObservableObject {
         await teardownTask?.value
     }
 
+    private func forceReleaseForAudioCoordinator() async {
+        teardownEngine(releaseOwnership: false)
+        stopTimer()
+        reset()
+        await awaitTeardown()
+    }
+
     private func requestAuthAndStart() {
         authToken += 1
         let token = authToken
@@ -995,7 +1044,18 @@ final class RecordingController: ObservableObject {
                             return
                         }
                         guard self.saveHandler != nil else { return }
-                        self.startEngine()
+                        Task { @MainActor [weak self] in
+                            guard let self, self.authToken == token, self.saveHandler != nil else { return }
+                            let acquired = await AudioRecordingCoordinator.shared.acquire(owner: self.audioOwnerID) { [weak self] in
+                                await self?.forceReleaseForAudioCoordinator()
+                            }
+                            guard acquired else { return }
+                            guard self.authToken == token, self.saveHandler != nil else {
+                                AudioRecordingCoordinator.shared.release(owner: self.audioOwnerID)
+                                return
+                            }
+                            self.startEngine()
+                        }
                     }
                 }
             }

@@ -22,6 +22,7 @@ final class NoteDictation: ObservableObject {
     private var teardownTask: Task<Void, Never>? = nil
     private var startupTask: Task<Void, Never>? = nil
     private var activationTask: Task<Void, Never>? = nil
+    private let audioOwnerID = UUID()
     // Incremented by start() and teardown() so that auth callbacks queued
     // before a stop() call are silently dropped when they eventually fire.
     private var startToken: Int = 0
@@ -47,10 +48,21 @@ final class NoteDictation: ObservableObject {
                             self.permissionDenied = true
                             return
                         }
-                        self.transcript = ""
-                        self.sessionBase = ""
-                        self.audioLevel = 0
-                        self.startEngine()
+                        Task { @MainActor [weak self] in
+                            guard let self, self.startToken == token else { return }
+                            let acquired = await AudioRecordingCoordinator.shared.acquire(owner: self.audioOwnerID) { [weak self] in
+                                await self?.forceReleaseForAudioCoordinator()
+                            }
+                            guard acquired else { return }
+                            guard self.startToken == token else {
+                                AudioRecordingCoordinator.shared.release(owner: self.audioOwnerID)
+                                return
+                            }
+                            self.transcript = ""
+                            self.sessionBase = ""
+                            self.audioLevel = 0
+                            self.startEngine()
+                        }
                     }
                 }
             }
@@ -72,7 +84,10 @@ final class NoteDictation: ObservableObject {
         teardown()
     }
 
-    private func teardown() {
+    private func teardown(releaseOwnership: Bool = true) {
+        if releaseOwnership {
+            AudioRecordingCoordinator.shared.release(owner: audioOwnerID)
+        }
         startToken += 1   // drop any in-flight start() auth callbacks
         startupTask?.cancel()
         activationTask?.cancel()
@@ -96,6 +111,11 @@ final class NoteDictation: ObservableObject {
 
     func awaitTeardown() async {
         await teardownTask?.value
+    }
+
+    private func forceReleaseForAudioCoordinator() async {
+        teardown(releaseOwnership: false)
+        await awaitTeardown()
     }
 
     private func startEngine() {

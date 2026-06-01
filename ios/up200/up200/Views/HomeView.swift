@@ -508,24 +508,41 @@ final class VoiceRecorder: ObservableObject {
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private var teardownTask: Task<Void, Never>? = nil
+    private var activationTask: Task<Void, Never>? = nil
+    private let audioOwnerID = UUID()
+    private var startToken: Int = 0
     private let recognizer = SFSpeechRecognizer(locale: Locale.current)
         ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
 
     func start() {
+        startToken += 1
+        let token = startToken
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             DispatchQueue.main.async {
-                guard let self else { return }
+                guard let self, self.startToken == token else { return }
                 guard status == .authorized else {
                     self.permissionDenied = true
                     return
                 }
-                AVAudioApplication.requestRecordPermission { granted in
+                AVAudioApplication.requestRecordPermission { [weak self] granted in
                     DispatchQueue.main.async {
+                        guard let self, self.startToken == token else { return }
                         guard granted else {
                             self.permissionDenied = true
                             return
                         }
-                        self.startEngine()
+                        Task { @MainActor [weak self] in
+                            guard let self, self.startToken == token else { return }
+                            let acquired = await AudioRecordingCoordinator.shared.acquire(owner: self.audioOwnerID) { [weak self] in
+                                await self?.forceReleaseForAudioCoordinator()
+                            }
+                            guard acquired else { return }
+                            guard self.startToken == token else {
+                                AudioRecordingCoordinator.shared.release(owner: self.audioOwnerID)
+                                return
+                            }
+                            self.startEngine(token: token)
+                        }
                     }
                 }
             }
@@ -533,7 +550,16 @@ final class VoiceRecorder: ObservableObject {
     }
 
     func stop() {
-        guard isRecording else { return }
+        teardown()
+    }
+
+    private func teardown(releaseOwnership: Bool = true) {
+        if releaseOwnership {
+            AudioRecordingCoordinator.shared.release(owner: audioOwnerID)
+        }
+        startToken += 1
+        activationTask?.cancel()
+        activationTask = nil
         isRecording = false
         audioLevel = 0
         // End the audio buffer synchronously so SFSpeechRecognizer flushes
@@ -541,23 +567,36 @@ final class VoiceRecorder: ObservableObject {
         // on that result. The previous version called recognitionTask?.cancel()
         // here, which preempted the flush and silently dropped the user's
         // last sentence. We release our reference but let the underlying
-        // task live until it self-completes via line 597; any orphan is
+        // task live until it self-completes; any orphan is
         // cancelled by startEngine() at the start of the next recording.
         recognitionRequest?.endAudio()
         recognitionTask = nil
         let engine = audioEngine
         recognitionRequest = nil
-        teardownTask = Task.detached(priority: .userInitiated) {
+        teardownTask = Task { @MainActor in
             engine.stop()
             engine.inputNode.removeTap(onBus: 0)
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            await Task.detached(priority: .userInitiated) {
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            }.value
         }
     }
 
-    private func startEngine() {
+    private func awaitTeardown() async {
+        await teardownTask?.value
+    }
+
+    private func forceReleaseForAudioCoordinator() async {
+        teardown(releaseOwnership: false)
+        await awaitTeardown()
+    }
+
+    private func startEngine(token: Int) {
         recognitionTask?.cancel()
         recognitionTask = nil
         startupError = nil
+        activationTask?.cancel()
+        activationTask = nil
         // Await any in-flight teardown before activating the session — the
         // previous stop()'s setActive(false) runs in a detached task (50-300ms)
         // and will silently cancel a new setActive(true) that races with it.
@@ -565,19 +604,34 @@ final class VoiceRecorder: ObservableObject {
         teardownTask = nil
         Task { @MainActor [weak self] in
             await prev?.value
-            self?.activateAndStart()
+            guard let self, self.startToken == token else { return }
+            self.activateAndStart(token: token)
         }
     }
 
-    private func activateAndStart() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.record, mode: .measurement, options: .duckOthers)
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-        } catch {
-            startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
-            return
+    private func activateAndStart(token: Int) {
+        activationTask = Task.detached(priority: .userInitiated) { [weak self] in
+            let session = AVAudioSession.sharedInstance()
+            do {
+                try session.setCategory(.record, mode: .measurement, options: .duckOthers)
+                try session.setActive(true, options: .notifyOthersOnDeactivation)
+            } catch {
+                await MainActor.run {
+                    guard self?.startToken == token else { return }
+                    self?.startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
+                }
+                return
+            }
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard self?.startToken == token else { return }
+                self?.continueStartingEngine(token: token)
+            }
         }
+    }
+
+    private func continueStartingEngine(token: Int) {
+        guard startToken == token else { return }
 
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
         guard let request = recognitionRequest, let rec = recognizer else {
@@ -618,6 +672,10 @@ final class VoiceRecorder: ObservableObject {
         audioEngine.prepare()
         do {
             try audioEngine.start()
+            guard startToken == token else {
+                stop()
+                return
+            }
             isRecording = true
         } catch {
             startupError = "Couldn't start the microphone: \(error.localizedDescription)"
