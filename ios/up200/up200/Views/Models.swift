@@ -949,15 +949,19 @@ final class RecordingController: ObservableObject {
         stopTimer()
         task?.cancel()
         task = nil
-        // Remove the tap synchronously on the main actor before stopping the engine.
-        // Doing this off-thread races with installTap in continueStartingEngine().
-        audioEngine.inputNode.removeTap(onBus: 0)
         let engine = audioEngine
         let req = sharedRequest.value
         sharedRequest.value = nil
+        // engine.stop() and removeTap run off the main thread to avoid blocking
+        // it: removeTap waits for the I/O thread to drain its current buffer
+        // (~23 ms) and can throw an ObjC exception when called from the main
+        // thread while CoreAudio holds its internal lock.
+        // Race safety: startEngine() always awaits teardownTask before calling
+        // installTap, so removeTap completes before any new tap is installed.
         teardownTask = Task.detached(priority: .userInitiated) {
             engine.stop()
             req?.endAudio()
+            engine.inputNode.removeTap(onBus: 0)
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
