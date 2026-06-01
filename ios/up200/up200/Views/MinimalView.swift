@@ -257,6 +257,7 @@ struct MinimalNoteDetailPage: View {
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
+    @EnvironmentObject private var recording: RecordingController
 
     @State private var note: Note
     @State private var generations: [MinimalGeneration] = []
@@ -297,6 +298,7 @@ struct MinimalNoteDetailPage: View {
     /// eating any pre-existing body content.
     @StateObject private var dictation = NoteDictation()
     @State private var bodyBeforeDictation: String = ""
+    @State private var pausedRecordingForDictation = false
 
     @State private var showCreateModal = false
     @State private var showChat = false
@@ -442,14 +444,37 @@ struct MinimalNoteDetailPage: View {
                     dictation: dictation,
                     onStart: {
                         bodyBeforeDictation = editText
-                        dictation.start()
+                        if recording.isRecording && !recording.isPaused {
+                            recording.pauseForSystem()
+                            pausedRecordingForDictation = true
+                            Task {
+                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await MainActor.run { dictation.start() }
+                            }
+                        } else {
+                            dictation.start()
+                        }
                     },
                     onCancel: {
                         dictation.cancel()
                         editText = bodyBeforeDictation
+                        if pausedRecordingForDictation {
+                            pausedRecordingForDictation = false
+                            Task {
+                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await MainActor.run { recording.resumeIfSystemPaused() }
+                            }
+                        }
                     },
                     onConfirm: {
                         dictation.stop()
+                        if pausedRecordingForDictation {
+                            pausedRecordingForDictation = false
+                            Task {
+                                try? await Task.sleep(nanoseconds: 400_000_000)
+                                await MainActor.run { recording.resumeIfSystemPaused() }
+                            }
+                        }
                     },
                     idleDiameter: 52
                 )
