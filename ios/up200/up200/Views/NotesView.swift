@@ -629,7 +629,16 @@ struct NoteVoiceSheet: View {
             if large && (recording.isRecording || recording.isPaused) {
                 recording.pause()
             } else if !large && recording.isPaused {
-                recording.resume()
+                // Delay resume so NoteDictation.teardown()'s setActive(false)
+                // (fired from NoteComposerSheet.onDisappear on the same swipe)
+                // completes before RecordingController.activateAndStart() calls
+                // setActive(true). Without this gap, the deactivation races the
+                // activation and can kill the audio session, leaving SR silent.
+                Task {
+                    do { try await Task.sleep(nanoseconds: 500_000_000) }
+                    catch { return }
+                    await MainActor.run { recording.resume() }
+                }
             }
             withAnimation(AppAnimation.standard) {
                 showingComposer = large
@@ -712,7 +721,22 @@ struct NoteVoiceSheet: View {
                 .font(.system(size: 22, weight: .medium, design: .monospaced))
                 .foregroundColor(AppInk.solid(0.70))
 
-            Spacer(minLength: 24)
+            Spacer(minLength: 16)
+
+            if !recording.fullTranscript.isEmpty {
+                ScrollView {
+                    Text(recording.fullTranscript)
+                        .font(.appBody)
+                        .foregroundColor(AppText.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                }
+                .frame(maxHeight: 72)
+                Spacer(minLength: 16)
+            } else {
+                Spacer(minLength: 8)
+            }
 
             HStack(spacing: 12) {
                 Button {
