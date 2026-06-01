@@ -953,6 +953,8 @@ final class RecordingController: ObservableObject {
         stopTimer()
         task?.cancel()
         task = nil
+        startupTask?.cancel()
+        startupTask = nil
         activationTask?.cancel()
         activationTask = nil
         authToken += 1
@@ -1009,13 +1011,15 @@ final class RecordingController: ObservableObject {
         startupError = nil
         srRestartCount = 0
         startupTask?.cancel()
+        startupTask = nil
         activationTask?.cancel()
         activationTask = nil
         let prev = teardownTask
         teardownTask = nil
         startupTask = Task { @MainActor [weak self] in
             await prev?.value
-            self?.activateAndStart()
+            guard let self, !Task.isCancelled else { return }
+            self.activateAndStart()
         }
     }
 
@@ -1044,6 +1048,10 @@ final class RecordingController: ObservableObject {
     }
 
     private func continueStartingEngine() {
+        // Guard: teardownEngine() cancels activationTask; if that happened while
+        // setActive was in-flight on the background thread, abort here so we don't
+        // install a tap onto an engine that is already being torn down.
+        guard !Task.isCancelled else { return }
         guard saveHandler != nil else { return }
         guard recognizer != nil else {
             startupError = "Speech recognition isn't available on this device."
