@@ -541,7 +541,7 @@ struct SessionTokenService {
     /// True when the stored token will expire within the next 7 days.
     static var needsRefresh: Bool {
         let exp = UserDefaults.standard.integer(forKey: expiresAtKey)
-        guard exp > 0 else { return false }
+        guard exp > 0 else { return true }
         let sevenDays: TimeInterval = 7 * 24 * 60 * 60
         return TimeInterval(exp) - Date().timeIntervalSince1970 < sevenDays
     }
@@ -822,7 +822,8 @@ final class RecordingController: ObservableObject {
     var fullTranscript: String {
         if accumulated.isEmpty { return transcript }
         if transcript.isEmpty { return accumulated }
-        return accumulated + " " + transcript
+        let sep = accumulated.hasSuffix(" ") || accumulated.hasSuffix("\n") ? "" : " "
+        return accumulated + sep + transcript
     }
 
     func begin(saveHandler: @escaping (String) -> Void) {
@@ -932,9 +933,9 @@ final class RecordingController: ObservableObject {
 
     private func startTimer() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.seconds += 1
+        DispatchQueue.main.async { [weak self] in
+            self?.timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+                Task { @MainActor in self?.seconds += 1 }
             }
         }
     }
