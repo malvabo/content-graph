@@ -1130,7 +1130,7 @@ final class RecordingController: ObservableObject {
             object: session, queue: .main
         ) { [weak self] in self?.handleRouteChange($0) }
         configChangeObserver = NotificationCenter.default.addObserver(
-            forName: AVAudioEngine.configurationChangeNotification,
+            forName: .AVAudioEngineConfigurationChange,
             object: audioEngine, queue: .main
         ) { [weak self] _ in self?.handleConfigurationChange() }
     }

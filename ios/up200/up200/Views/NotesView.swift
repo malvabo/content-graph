@@ -207,7 +207,7 @@ final class NoteDictation: ObservableObject {
 
     private func setupNotifications() {
         configChangeObserver = NotificationCenter.default.addObserver(
-            forName: AVAudioEngine.configurationChangeNotification,
+            forName: .AVAudioEngineConfigurationChange,
             object: audioEngine, queue: .main
         ) { [weak self] _ in self?.handleConfigurationChange() }
     }
