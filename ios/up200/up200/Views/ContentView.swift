@@ -2265,37 +2265,68 @@ private struct SimpleHomeHeader: View {
 /// Bottom chrome in Simple mode: a single floating button parked
 /// at the bottom-right corner. Tapping it opens a new note.
 private struct SimpleCreateBar: View {
-    let onTap: () -> Void
+    let recordingState: RecordingEngineState
+    let onNewNote: () -> Void
+    let onRecordTap: () -> Void
 
     @State private var impact = UIImpactFeedbackGenerator(style: .light)
 
+    private var isRecording: Bool {
+        recordingState == .recordingAll || recordingState == .recordingAudioOnly
+    }
+
+    private var isFinalizing: Bool {
+        recordingState == .finalizing || recordingState == .recovering
+    }
+
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 12) {
             Spacer()
-            captureButton
+            recordButton
+            newNoteButton
         }
     }
 
-    private var captureButton: some View {
+    private var recordButton: some View {
         Button {
             impact.impactOccurred()
-            onTap()
+            onRecordTap()
+        } label: {
+            Image(systemName: isRecording ? "stop.fill" : "mic.fill")
+                .font(.system(size: 19, weight: .semibold))
+                .foregroundColor(isRecording ? .red : AppText.primary)
+                .frame(width: 56, height: 56)
+                .background(controlBackground)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isFinalizing)
+        .accessibilityLabel(isRecording ? "Stop recording" : "Start recording")
+        .onAppear { impact.prepare() }
+    }
+
+    private var newNoteButton: some View {
+        Button {
+            impact.impactOccurred()
+            onNewNote()
         } label: {
             Image(systemName: "square.and.pencil")
                 .font(.system(size: 19, weight: .regular))
                 .foregroundColor(AppText.primary)
                 .frame(width: 56, height: 56)
-                .background(
-                    Circle()
-                        .fill(.regularMaterial)
-                        .overlay(Circle().stroke(AppInk.solid(0.15), lineWidth: 0.5))
-                        .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
-                )
+                .background(controlBackground)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("New note")
         .onAppear { impact.prepare() }
+    }
+
+    private var controlBackground: some View {
+        Circle()
+            .fill(.regularMaterial)
+            .overlay(Circle().stroke(AppInk.solid(0.15), lineWidth: 0.5))
+            .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
     }
 }
 
@@ -2308,6 +2339,7 @@ struct ContentView: View {
     @State private var newNoteTrigger = 0
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
+    @StateObject private var recordingEngine = RecordingEngine.shared
 
     init() {
         UITabBar.appearance().isHidden = true
@@ -2328,10 +2360,14 @@ struct ContentView: View {
                 // outer inset content appears above inner inset content.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     if !keyboardVisible && !chromeController.hideTabBar {
-                        SimpleCreateBar(onTap: {
-                            selectedTab = .notes
-                            newNoteTrigger &+= 1
-                        })
+                        SimpleCreateBar(
+                            recordingState: recordingEngine.state,
+                            onNewNote: {
+                                selectedTab = .notes
+                                newNoteTrigger &+= 1
+                            },
+                            onRecordTap: toggleRecording
+                        )
                         .padding(.horizontal, 16)
                         .padding(.bottom, 6)
                     }
@@ -2376,6 +2412,75 @@ struct ContentView: View {
             newNoteTrigger: newNoteTrigger,
             onProfileTap: { showProfile = true }
         )
+    }
+
+    private func toggleRecording() {
+        Task { @MainActor in
+            switch recordingEngine.state {
+            case .idle, .paused, .error:
+                selectedTab = .notes
+                await recordingEngine.startRecording()
+            case .recordingAll, .recordingAudioOnly:
+                if let result = await recordingEngine.stopRecording() {
+                    await saveRecordingNote(result)
+                }
+            case .finalizing, .recovering:
+                break
+            }
+        }
+    }
+
+    @MainActor
+    private func saveRecordingNote(_ result: RecordingStopResult) async {
+        let transcript = await Task.detached(priority: .utility) {
+            Self.transcriptText(from: result.transcriptFileURL)
+        }.value
+
+        var note = Note()
+        let text = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.isEmpty {
+            let count = result.audioSegmentURLs.count
+            note.body = "Recorded audio\nSaved \(count) audio segment\(count == 1 ? "" : "s") locally."
+        } else {
+            note.body = text
+        }
+        note.updatedAt = Date()
+
+        var notes = NotesStore.load()
+        notes.insert(note, at: 0)
+        NotesStore.save(notes)
+        selectedTab = .notes
+    }
+
+    nonisolated private static func transcriptText(from url: URL?) -> String {
+        guard let url,
+              let contents = try? String(contentsOf: url, encoding: .utf8) else {
+            return ""
+        }
+
+        var finals: [String] = []
+        var latestPartial = ""
+
+        for line in contents.split(separator: "\n") {
+            guard let data = String(line).data(using: .utf8),
+                  let object = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+                  let type = object["type"],
+                  let text = object["text"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !text.isEmpty else {
+                continue
+            }
+
+            if type == "final" {
+                finals.append(text)
+            } else if type == "partial" {
+                latestPartial = text
+            }
+        }
+
+        if finals.isEmpty {
+            return latestPartial
+        }
+        return finals.joined(separator: "\n")
     }
 }
 

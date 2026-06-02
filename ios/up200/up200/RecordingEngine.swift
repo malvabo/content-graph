@@ -8,6 +8,9 @@ enum RecordingEngineState: Equatable, CustomStringConvertible {
     case recordingAll
     case recordingAudioOnly
     case paused
+    case finalizing
+    case recovering
+    case error(String)
 
     var description: String {
         switch self {
@@ -19,8 +22,20 @@ enum RecordingEngineState: Equatable, CustomStringConvertible {
             return "recordingAudioOnly"
         case .paused:
             return "paused"
+        case .finalizing:
+            return "finalizing"
+        case .recovering:
+            return "recovering"
+        case .error(let message):
+            return "error(\(message))"
         }
     }
+}
+
+struct RecordingStopResult {
+    let sessionDirectory: URL?
+    let audioSegmentURLs: [URL]
+    let transcriptFileURL: URL?
 }
 
 @MainActor
@@ -29,6 +44,7 @@ final class RecordingEngine: ObservableObject {
 
     @Published private(set) var state: RecordingEngineState = .idle
     @Published private(set) var activeAudioFileURL: URL?
+    @Published private(set) var activeSessionDirectory: URL?
     @Published private(set) var liveTranscript = "" {
         didSet {
             for continuation in transcriptContinuations.values {
@@ -150,20 +166,45 @@ final class RecordingEngine: ObservableObject {
 
     func start() {
         Task { @MainActor in
-            await startRecordingAll()
+            await startRecording()
         }
     }
 
     func pause() {
-        audioPipeline.stop(reason: "pause requested")
-        transition(to: .paused, reason: "pause requested")
+        Task { @MainActor in
+            transition(to: .finalizing, reason: "pause requested")
+            _ = await audioPipeline.stop(reason: "pause requested")
+            activeAudioFileURL = nil
+            activeSessionDirectory = nil
+            transition(to: .paused, reason: "pause finalized")
+        }
     }
 
     func stop() {
-        audioPipeline.stop(reason: "stop requested")
+        Task { @MainActor in
+            _ = await stopRecording()
+        }
+    }
+
+    @discardableResult
+    func startRecording() async -> Bool {
+        await startRecordingAll()
+    }
+
+    @discardableResult
+    func stopRecording() async -> RecordingStopResult? {
+        guard state == .recordingAll || state == .recordingAudioOnly || state == .paused else {
+            log("stop requested; state remains \(state)")
+            return nil
+        }
+
+        transition(to: .finalizing, reason: "stop requested")
+        let result = await audioPipeline.stop(reason: "stop requested")
         activeAudioFileURL = nil
+        activeSessionDirectory = nil
         liveTranscript = ""
-        transition(to: .idle, reason: "stop requested")
+        transition(to: .idle, reason: "stop finalized")
+        return result
     }
 
     private func sceneDidEnterBackground() {
@@ -220,23 +261,28 @@ final class RecordingEngine: ObservableObject {
         audioPipeline.noteRouteChange(reason: reason)
     }
 
-    private func startRecordingAll() async {
+    private func startRecordingAll() async -> Bool {
         guard state == .idle || state == .paused else {
             log("start requested; state remains \(state)")
-            return
+            return false
         }
 
         do {
             try await requestMicrophoneAccess()
             let fileURL = try audioPipeline.start()
             activeAudioFileURL = fileURL
+            activeSessionDirectory = audioPipeline.currentSessionDirectory
             transition(to: .recordingAll, reason: "audio pipeline started")
             log("writing AAC audio to \(fileURL.path)")
         } catch {
             activeAudioFileURL = nil
+            activeSessionDirectory = nil
             transition(to: .idle, reason: "audio pipeline failed")
             log("audio pipeline error: \(error.localizedDescription)")
+            return false
         }
+
+        return true
     }
 
     private func requestMicrophoneAccess() async throws {
@@ -293,8 +339,9 @@ private enum RecordingEngineError: LocalizedError {
     }
 }
 
-private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
+private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate, @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.up200.recording.audio-pipeline", qos: .userInteractive)
+    private let maintenanceQueue = DispatchQueue(label: "com.up200.recording.audio-maintenance", qos: .utility)
     private let transcriptionPipeline: LiveTranscriptionPipeline
     private let onActiveSegmentChanged: @Sendable (URL?) -> Void
     private let captureSession = AVCaptureSession()
@@ -310,6 +357,13 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
     private var isRunning = false
     private var isInterrupted = false
     private var shouldQueueSegmentsForCatchUp = false
+    private var finalizedSegmentURLs: [URL] = []
+    private var pendingSegmentFinishes = 0
+    private var pendingStopContinuation: CheckedContinuation<RecordingStopResult, Never>?
+
+    var currentSessionDirectory: URL? {
+        queue.sync { sessionDirectory }
+    }
 
     init(
         onTranscript: @escaping @Sendable (String) -> Void,
@@ -330,9 +384,20 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         }
     }
 
-    func stop(reason: String) {
-        queue.async { [weak self] in
-            self?.stopLocked(reason: reason)
+    func stop(reason: String) async -> RecordingStopResult {
+        await withCheckedContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self else {
+                    continuation.resume(returning: RecordingStopResult(
+                        sessionDirectory: nil,
+                        audioSegmentURLs: [],
+                        transcriptFileURL: nil
+                    ))
+                    return
+                }
+
+                self.stopLocked(reason: reason, continuation: continuation)
+            }
         }
     }
 
@@ -340,9 +405,9 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         queue.async { [weak self] in
             guard let self, self.isRunning else { return }
             self.appendManifestEvent("scene_background")
-            self.rotateSegmentLocked(reason: "scene_background", nextStartTime: nil)
             self.shouldQueueSegmentsForCatchUp = true
             self.transcriptionPipeline.pauseForSystem(reason: "scene_background")
+            self.rotateSegmentLocked(reason: "scene_background", nextStartTime: nil)
             self.healthCheckLocked(reason: "scene_background")
         }
     }
@@ -378,7 +443,6 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
             guard let self, self.isRunning else { return }
             self.appendManifestEvent("interruption_ended shouldResume=\(shouldResume)")
             self.isInterrupted = false
-            guard shouldResume else { return }
             self.rebuildCaptureAndWriterLocked(reason: "interruption_ended")
         }
     }
@@ -424,6 +488,10 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         self.sessionDirectory = directory
         self.segmentIndex = 0
         self.isInterrupted = false
+        self.shouldQueueSegmentsForCatchUp = false
+        self.finalizedSegmentURLs = []
+        self.pendingSegmentFinishes = 0
+        self.pendingStopContinuation = nil
 
         try configureCaptureSession()
         let fileURL = try startNewSegmentLocked()
@@ -535,28 +603,35 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         self.hasStartedWriterSession = false
 
         appendManifestEvent("segment_finishing index=\(finishedIndex) reason=\(reason)")
+        pendingSegmentFinishes += 1
         writerToFinish.finishWriting { [weak self] in
             let status = writerToFinish.status
             let file = finishedURL?.lastPathComponent ?? "unknown"
-            self?.queue.async {
-                self?.appendManifestEvent("segment_finished index=\(finishedIndex) status=\(status.rawValue) file=\(file)")
+            self?.queue.async { [weak self] in
+                guard let self else { return }
+                self.pendingSegmentFinishes = max(0, self.pendingSegmentFinishes - 1)
+                self.appendManifestEvent("segment_finished index=\(finishedIndex) status=\(status.rawValue) file=\(file)")
                 if status == .completed, let finishedURL {
-                    self?.transcriptionPipeline.noteSegmentFinalized(
+                    self.finalizedSegmentURLs.append(finishedURL)
+                    self.transcriptionPipeline.noteSegmentFinalized(
                         finishedURL,
                         requiresCatchUp: requiresCatchUp
                     )
                 }
+                self.completeStopIfReadyLocked()
             }
         }
     }
 
-    private func stopLocked(reason: String) {
+    private func stopLocked(reason: String, continuation: CheckedContinuation<RecordingStopResult, Never>) {
         guard isRunning || writer != nil || captureSession.isRunning else {
+            continuation.resume(returning: stopResultLocked())
             return
         }
 
         isRunning = false
         isInterrupted = false
+        pendingStopContinuation = continuation
 
         if captureSession.isRunning {
             captureSession.stopRunning()
@@ -568,6 +643,24 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         shouldQueueSegmentsForCatchUp = false
         appendManifestEvent("capture_stopped reason=\(reason)")
         onActiveSegmentChanged(nil)
+        completeStopIfReadyLocked()
+    }
+
+    private func completeStopIfReadyLocked() {
+        guard !isRunning, pendingSegmentFinishes == 0, let continuation = pendingStopContinuation else {
+            return
+        }
+
+        pendingStopContinuation = nil
+        continuation.resume(returning: stopResultLocked())
+    }
+
+    private func stopResultLocked() -> RecordingStopResult {
+        RecordingStopResult(
+            sessionDirectory: sessionDirectory,
+            audioSegmentURLs: finalizedSegmentURLs.sorted { $0.lastPathComponent < $1.lastPathComponent },
+            transcriptFileURL: sessionDirectory?.appendingPathComponent("transcript.jsonl")
+        )
     }
 
     private func rebuildCaptureAndWriterLocked(reason: String) {
@@ -665,18 +758,20 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         let line = "\(Date().timeIntervalSince1970) \(message)\n"
         let url = sessionDirectory.appendingPathComponent("manifest.log")
 
-        do {
-            if !FileManager.default.fileExists(atPath: url.path) {
-                try Data().write(to: url)
+        maintenanceQueue.async {
+            do {
+                if !FileManager.default.fileExists(atPath: url.path) {
+                    try Data().write(to: url)
+                }
+                let handle = try FileHandle(forWritingTo: url)
+                try handle.seekToEnd()
+                if let data = line.data(using: .utf8) {
+                    try handle.write(contentsOf: data)
+                }
+                try handle.close()
+            } catch {
+                print("[ContinuousAudioTrackPipeline] manifest write failed: \(error.localizedDescription)")
             }
-            let handle = try FileHandle(forWritingTo: url)
-            try handle.seekToEnd()
-            if let data = line.data(using: .utf8) {
-                try handle.write(contentsOf: data)
-            }
-            try handle.close()
-        } catch {
-            print("[ContinuousAudioTrackPipeline] manifest write failed: \(error.localizedDescription)")
         }
     }
 }
@@ -1022,6 +1117,21 @@ private final class LiveTranscriptionPipeline {
         }
     }
 
+    private func rewriteDurableCatchUpBacklogLocked() {
+        guard let catchUpBacklogFileURL else { return }
+
+        let pendingNames = segmentsNeedingCatchUp
+            .filter { !caughtUpSegmentNames.contains($0) }
+            .sorted()
+        let body = pendingNames.isEmpty ? "" : pendingNames.joined(separator: "\n") + "\n"
+
+        do {
+            try body.data(using: .utf8)?.write(to: catchUpBacklogFileURL, options: .atomic)
+        } catch {
+            log("catch-up backlog rewrite failed: \(error.localizedDescription)")
+        }
+    }
+
     private func flushTranscriptEventLocked(type: String, text: String, metadata: [String: String]) {
         guard let transcriptFileURL else { return }
 
@@ -1058,7 +1168,6 @@ private final class LiveTranscriptionPipeline {
         return urls
             .filter { $0.pathExtension == "mp4" && $0.lastPathComponent.hasPrefix("audio-") }
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
-            .dropLast()
     }
 
     private func runCatchUpLocked(segmentURLs: [URL]) {
@@ -1110,11 +1219,21 @@ private final class LiveTranscriptionPipeline {
                     self.onTranscript(self.combinedTranscript(self.recentCommittedTranscript, self.currentPartialTranscript))
                     self.segmentsNeedingCatchUp.remove(segmentName)
                     self.caughtUpSegmentNames.insert(segmentName)
+                    self.rewriteDurableCatchUpBacklogLocked()
                 }
 
                 if error != nil || result?.isFinal == true {
                     self.task = nil
-                    self.runCatchUpLocked(segmentURLs: remainingSegments)
+                    guard !remainingSegments.isEmpty else {
+                        self.runCatchUpLocked(segmentURLs: [])
+                        return
+                    }
+
+                    self.catchUpInFlight = false
+                    self.startRecognitionIfAllowed()
+                    self.queue.asyncAfter(deadline: .now() + self.restartDelay) { [weak self] in
+                        self?.catchUpFromDiskIfNeeded()
+                    }
                 }
             }
         }
