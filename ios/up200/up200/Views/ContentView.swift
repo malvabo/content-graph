@@ -522,8 +522,6 @@ struct ProjectGroupDetailView: View {
             ? aiPreviewVariants[aiPreviewVariantIndex]
             : ""
     }
-    @State private var editTextBeforeDictation: String = ""
-    @StateObject private var dictation = NoteDictation()
     @FocusState private var editorFocused: Bool
     @State private var isEditingBody: Bool = false
     /// Onboarding-only: the fresh result lands in a stroked card with the
@@ -628,14 +626,6 @@ struct ProjectGroupDetailView: View {
     }
 
     private func selectTab(_ index: Int) {
-        // If a dictation is in progress, abandon it before switching tabs;
-        // otherwise the next .onChange(of: dictation.transcript) would
-        // overwrite the new tab's text with the previous tab's pre-dictation
-        // snapshot + the partial transcript.
-        if dictation.isRecording {
-            dictation.cancel()
-            editText = editTextBeforeDictation
-        }
         persistCurrent()
         selectedIndex = index
         if items.indices.contains(index) { editText = bodyText(for: items[index]) }
@@ -805,7 +795,7 @@ struct ProjectGroupDetailView: View {
                                     .padding(.top, inCardPreview ? 4 : 8)
                                     .allowsHitTesting(false)
                             }
-                            if isEditingBody || dictation.isRecording {
+                            if isEditingBody {
                                 TextEditor(text: $editText, selection: $editSelection)
                                     .appReadingBodyText()
                                     .scrollContentBackground(.hidden)
@@ -815,9 +805,7 @@ struct ProjectGroupDetailView: View {
                                     .contentMargins(.bottom, 96, for: .scrollContent)
                                     .focused($editorFocused)
                                     .onChange(of: editorFocused) { _, focused in
-                                        if !focused && !dictation.isRecording {
-                                            isEditingBody = false
-                                        }
+                                        if !focused { isEditingBody = false }
                                     }
                             } else {
                                 ScrollView {
@@ -877,46 +865,12 @@ struct ProjectGroupDetailView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            // Floating mic / dictation row — matches the Notes detail view:
-            // glass-material circle, no opaque bar behind it. Visible whenever
-            // the user is dictating or has the editor focused (the only
-            // moment where there's somewhere for transcribed text to land).
-            if dictation.isRecording || editorFocused {
-                DictationControls(
-                    dictation: dictation,
-                    onStart: {
-                        editTextBeforeDictation = editText
-                        dictation.start()
-                    },
-                    onCancel: {
-                        dictation.cancel()
-                        editText = editTextBeforeDictation
-                    },
-                    onConfirm: {
-                        dictation.stop()
-                    }
-                )
-                .padding(.trailing, 20)
+            aiPillBar
+                .padding(.leading, 20)
                 .padding(.bottom, 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
-            }
-
-            // Floating AI buttons (bottom-leading) — same liquid-glass treatment
-            // as the Notes magic/chat pair so the bar reads as a pair of
-            // pebbles on top of the content rather than a solid toolbar.
-            // Stays mounted during the onboarding card-preview beat too so the
-            // affordance matches the regular generated-content view exactly
-            // (same icons, same screen-edge inset, no 0.9× downscale from the
-            // card transform).
-            if !dictation.isRecording {
-                aiPillBar
-                    .padding(.leading, 20)
-                    .padding(.bottom, 8)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                    .transition(.scale(scale: 0.85).combined(with: .opacity))
-            }
         }
-        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -932,26 +886,6 @@ struct ProjectGroupDetailView: View {
         .onChange(of: projectsData) { rebuildAllProjects() }
         .onChange(of: selectedIndex) {
             if items.indices.contains(selectedIndex) { editText = bodyText(for: items[selectedIndex]) }
-        }
-        .onChange(of: dictation.transcript) { _, newValue in
-            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return }
-            if editTextBeforeDictation.isEmpty {
-                editText = trimmed
-            } else {
-                let needsSeparator = !editTextBeforeDictation.hasSuffix("\n") && !editTextBeforeDictation.hasSuffix(" ")
-                editText = editTextBeforeDictation + (needsSeparator ? " " : "") + trimmed
-            }
-        }
-        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
-            Button("Open Settings") {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Enable Microphone and Speech Recognition in Settings to dictate.")
         }
         .sheet(isPresented: $showAIMenu) {
             AIActionsSheet { label, icon, instruction in
@@ -1073,7 +1007,6 @@ struct ProjectGroupDetailView: View {
             chrome.hideTabBar = false
             aiTransformTask?.cancel()
             copiedResetTask?.cancel()
-            dictation.stop()
         }
     }
 
@@ -1716,12 +1649,10 @@ private struct TemplateEditPage: View {
     @State private var existingSubtitle: String
     @State private var prompt: String
     private let originalFormatIDs: [String]
-    @State private var promptBeforeDictation: String = ""
     @State private var isEnhancing: Bool = false
     @State private var enhanceTask: Task<Void, Never>? = nil
     @State private var enhanceFailed: Bool = false
     @State private var enhanceFailReason: String = ""
-    @StateObject private var dictation = NoteDictation()
 
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focus: Field?
@@ -1902,22 +1833,6 @@ private struct TemplateEditPage: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomBar
         }
-        .onChange(of: dictation.transcript) { _, newValue in
-            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return }
-            if promptBeforeDictation.isEmpty {
-                prompt = trimmed
-            } else {
-                let needsSeparator = !promptBeforeDictation.hasSuffix("\n") && !promptBeforeDictation.hasSuffix(" ")
-                prompt = promptBeforeDictation + (needsSeparator ? " " : "") + trimmed
-            }
-        }
-        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
-            Button("Open Settings") { openSettings() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Enable Microphone and Speech Recognition in Settings to dictate.")
-        }
         .alert("Couldn't enhance prompt", isPresented: $enhanceFailed) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -1929,7 +1844,6 @@ private struct TemplateEditPage: View {
         .swipeBackGesture { dismiss() }
         .onDisappear {
             enhanceTask?.cancel()
-            dictation.stop()
             persist()
         }
     }
@@ -1972,20 +1886,6 @@ private struct TemplateEditPage: View {
 
             Spacer(minLength: 8)
 
-            DictationControls(
-                dictation: dictation,
-                onStart: {
-                    promptBeforeDictation = prompt
-                    dictation.start()
-                },
-                onCancel: {
-                    dictation.cancel()
-                    prompt = promptBeforeDictation
-                },
-                onConfirm: {
-                    dictation.stop()
-                }
-            )
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -2362,12 +2262,8 @@ private struct SimpleHomeHeader: View {
 
 // MARK: - Simple bottom create button
 
-/// Bottom chrome in Simple mode: a single floating capture button parked
-/// at the bottom-right corner. Tapping it begins voice recording right
-/// away — no intermediate menu. Styled as the standard grey glass disc
-/// with a `mic.badge.plus` glyph so it reads as the same recorder the
-/// user already knows from inside a note (DictationControls), rather
-/// than a louder amber variant.
+/// Bottom chrome in Simple mode: a single floating button parked
+/// at the bottom-right corner. Tapping it opens a new note.
 private struct SimpleCreateBar: View {
     let onTap: () -> Void
 
@@ -2385,7 +2281,7 @@ private struct SimpleCreateBar: View {
             impact.impactOccurred()
             onTap()
         } label: {
-            Image(systemName: "mic.badge.plus")
+            Image(systemName: "square.and.pencil")
                 .font(.system(size: 19, weight: .regular))
                 .foregroundColor(AppText.primary)
                 .frame(width: 56, height: 56)
@@ -2398,7 +2294,7 @@ private struct SimpleCreateBar: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Record a note")
+        .accessibilityLabel("New note")
         .onAppear { impact.prepare() }
     }
 }
@@ -2406,15 +2302,12 @@ private struct SimpleCreateBar: View {
 // MARK: - Content View
 
 struct ContentView: View {
-    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: AppTab = .notes
     @State private var keyboardVisible = false
     @State private var showProfile = false
     @State private var newNoteTrigger = 0
-    @State private var recordingPausedForBackground = false
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
-    @StateObject private var recordingController = RecordingController()
 
     init() {
         UITabBar.appearance().isHidden = true
@@ -2425,12 +2318,6 @@ struct ContentView: View {
             tabsLayer
                 .environmentObject(bannerController)
                 .environmentObject(chromeController)
-                .environmentObject(recordingController)
-                .sheet(isPresented: $recordingController.showingSheet,
-                       onDismiss: { recordingController.reconcileDismissal() }) {
-                    NoteVoiceSheet()
-                        .environmentObject(recordingController)
-                }
                 .fullScreenCover(isPresented: $showProfile) {
                     ProfileView(selectedTab: $selectedTab, isModal: true)
                         .environmentObject(chromeController)
@@ -2449,35 +2336,6 @@ struct ContentView: View {
                         .padding(.bottom, 6)
                     }
                 }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                let show = (recordingController.isRecording || recordingController.isPaused) && !recordingController.showingSheet
-                RecordingMiniBar(
-                    onTap: {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        selectedTab = .notes
-                        recordingController.showingSheet = true
-                    },
-                    onStop: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        recordingController.finish()
-                    }
-                )
-                // safeAreaInset content is rendered as a sibling layer to the
-                // modified view, so it does NOT inherit the .environmentObject
-                // applied to the TabView above. Without this explicit forward,
-                // RecordingMiniBar's @EnvironmentObject lookup fatal-errors on
-                // launch ("No ObservableObject of type RecordingController
-                // found").
-                .environmentObject(recordingController)
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
-                .padding(.bottom, 8)
-                .opacity(show ? 1 : 0)
-                .frame(height: show ? nil : 0, alignment: .top)
-                .clipped()
-                .animation(.spring(response: 0.38, dampingFraction: 0.82), value: show)
-                .transaction { $0.disablesAnimations = !show && recordingController.showingSheet }
-            }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 keyboardVisible = true
             }
@@ -2510,22 +2368,6 @@ struct ContentView: View {
             }
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
-        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
-        .onChange(of: scenePhase) { _, phase in
-            switch phase {
-            case .background:
-                if recordingController.isRecording, !recordingController.isPaused {
-                    recordingController.pauseForSystem()
-                    recordingPausedForBackground = true
-                }
-            case .active:
-                if recordingPausedForBackground {
-                    recordingPausedForBackground = false
-                    recordingController.resumeIfSystemPaused()
-                }
-            default: break
-            }
-        }
     }
 
     @ViewBuilder
@@ -2534,91 +2376,6 @@ struct ContentView: View {
             newNoteTrigger: newNoteTrigger,
             onProfileTap: { showProfile = true }
         )
-    }
-}
-
-// MARK: - Recording Mini Bar
-
-private struct RecordingMiniBar: View {
-    @EnvironmentObject private var recording: RecordingController
-    let onTap: () -> Void
-    let onStop: () -> Void
-
-    private let amber = BrandColor.amber
-    @State private var dragOffset: CGSize = .zero
-    @GestureState private var dragTranslation: CGSize = .zero
-
-    private var timeLabel: String {
-        String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)
-    }
-
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                PulsingDot(active: recording.isRecording)
-                    .frame(width: 10, height: 10)
-                Text(recording.isPaused ? "Paused" : "Recording")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(AppText.primary)
-                Text(timeLabel)
-                    .font(.system(size: 13, design: .monospaced))
-                    .foregroundColor(AppText.secondary)
-                Spacer(minLength: 8)
-                Button {
-                    onStop()
-                } label: {
-                    Image(systemName: "stop.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 32, height: 32)
-                        .background(amber)
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.leading, 16)
-            .padding(.trailing, 6)
-            .frame(height: 52)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(AppBackground.capsule)
-                    .shadow(color: Color.black.opacity(0.45), radius: 18, y: 6)
-            )
-        }
-        .buttonStyle(.plain)
-        .offset(
-            x: dragOffset.width + dragTranslation.width,
-            y: dragOffset.height + dragTranslation.height
-        )
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 10)
-                .updating($dragTranslation) { value, state, _ in
-                    state = value.translation
-                }
-                .onEnded { _ in
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                        dragOffset = .zero
-                    }
-                }
-        )
-        .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.86), value: dragTranslation)
-        .accessibilityLabel(recording.isPaused ? "Paused recording" : "Recording in progress")
-        .accessibilityHint("Tap to expand, stop button to finish")
-    }
-}
-
-private struct PulsingDot: View {
-    let active: Bool
-    @State private var pulse: Bool = false
-
-    var body: some View {
-        Circle()
-            .fill(Color.red)
-            .opacity(active && pulse ? 0.45 : 1.0)
-            .scaleEffect(active && pulse ? 1.25 : 1.0)
-            .animation(active ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : .default, value: pulse)
-            .onAppear { pulse = active }
-            .onChange(of: active) { _, newActive in pulse = newActive }
     }
 }
 
