@@ -1,240 +1,6 @@
 import SwiftUI
-import Speech
-import AVFoundation
 import UIKit
 import PencilKit
-
-// MARK: - Voice Dictation
-
-@MainActor
-final class NoteDictation: ObservableObject {
-    @Published var transcript: String = ""
-    @Published var isRecording: Bool = false
-    @Published var permissionDenied: Bool = false
-    @Published var startupError: String? = nil
-    var audioLevel: Float = 0.0  // RMS, ~0...1 — plain var, not @Published; waveforms read it via TimelineView
-
-    private let audioEngine = AVAudioEngine()
-    private let sharedRequest = LockedRequest()
-    private var task: SFSpeechRecognitionTask?
-    private let recognizer = SFSpeechRecognizer(locale: Locale.current)
-        ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-    private var teardownTask: Task<Void, Never>? = nil
-    private var startupTask: Task<Void, Never>? = nil
-    private var activationTask: Task<Void, Never>? = nil
-    private let audioOwnerID = UUID()
-    // Incremented by start() and teardown() so that auth callbacks queued
-    // before a stop() call are silently dropped when they eventually fire.
-    private var startToken: Int = 0
-    private var srRestartCount = 0
-    // Accumulates text from completed SR sessions so transcript is always
-    // the full cumulative text across the ~60-second restart boundaries.
-    private var sessionBase = ""
-
-    func start() {
-        startToken += 1
-        let token = startToken
-        SFSpeechRecognizer.requestAuthorization { [weak self] status in
-            DispatchQueue.main.async {
-                guard let self, self.startToken == token else { return }
-                guard status == .authorized else {
-                    self.permissionDenied = true
-                    return
-                }
-                AVAudioApplication.requestRecordPermission { [weak self] granted in
-                    DispatchQueue.main.async {
-                        guard let self, self.startToken == token else { return }
-                        guard granted else {
-                            self.permissionDenied = true
-                            return
-                        }
-                        Task { @MainActor [weak self] in
-                            guard let self, self.startToken == token else { return }
-                            let acquired = await AudioRecordingCoordinator.shared.acquire(owner: self.audioOwnerID) { [weak self] in
-                                await self?.forceReleaseForAudioCoordinator()
-                            }
-                            guard acquired else { return }
-                            guard self.startToken == token else {
-                                AudioRecordingCoordinator.shared.release(owner: self.audioOwnerID)
-                                return
-                            }
-                            self.transcript = ""
-                            self.sessionBase = ""
-                            self.audioLevel = 0
-                            self.startEngine()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// Stop and keep the transcript that's been emitted.
-    func stop() {
-        teardown()
-    }
-
-    /// Stop and suppress the transcript (so caller can revert the body
-    /// without a late onChange overwriting the rollback).
-    func cancel() {
-        task?.cancel()
-        task = nil
-        transcript = ""
-        sessionBase = ""
-        teardown()
-    }
-
-    private func teardown(releaseOwnership: Bool = true) {
-        if releaseOwnership {
-            AudioRecordingCoordinator.shared.release(owner: audioOwnerID)
-        }
-        startToken += 1   // drop any in-flight start() auth callbacks
-        startupTask?.cancel()
-        startupTask = nil
-        activationTask?.cancel()
-        activationTask = nil
-        isRecording = false
-        audioLevel = 0
-        task?.cancel()
-        task = nil
-        let engine = audioEngine
-        let req = sharedRequest.value
-        sharedRequest.value = nil
-        teardownTask = Task.detached(priority: .userInitiated) {
-            req?.endAudio()
-            engine.stop()
-            engine.inputNode.removeTap(onBus: 0)
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        }
-    }
-
-    func awaitTeardown() async {
-        await teardownTask?.value
-    }
-
-    private func forceReleaseForAudioCoordinator() async {
-        teardown(releaseOwnership: false)
-        await awaitTeardown()
-    }
-
-    private func startEngine() {
-        task?.cancel()
-        task = nil
-        startupError = nil
-        srRestartCount = 0
-        startupTask?.cancel()
-        startupTask = nil
-        activationTask?.cancel()
-        activationTask = nil
-        let token = startToken
-        let prev = teardownTask
-        teardownTask = nil
-        startupTask = Task { @MainActor [weak self] in
-            await prev?.value
-            guard let self, self.startToken == token, !Task.isCancelled else { return }
-            self.activateAndStart(token: token)
-        }
-    }
-
-    private func activateAndStart(token: Int) {
-        activationTask = Task.detached(priority: .userInitiated) { [weak self] in
-            let session = AVAudioSession.sharedInstance()
-            do {
-                try session.setCategory(.playAndRecord, mode: .measurement,
-                                       options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers])
-                try session.setActive(true, options: .notifyOthersOnDeactivation)
-            } catch {
-                await MainActor.run { [weak self] in
-                    guard self?.startToken == token else { return }
-                    self?.startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
-                }
-                return
-            }
-            guard !Task.isCancelled else { return }
-            await MainActor.run { [weak self] in
-                guard self?.startToken == token else { return }
-                self?.continueStartingEngine(token: token)
-            }
-        }
-    }
-
-    private func continueStartingEngine(token: Int) {
-        guard startToken == token, !Task.isCancelled else { return }
-        guard recognizer != nil else {
-            startupError = "Speech recognition isn't available on this device."
-            return
-        }
-
-        let inputNode = audioEngine.inputNode
-        let format = inputNode.outputFormat(forBus: 0)
-        inputNode.removeTap(onBus: 0)
-        var lastLevelDispatch: Double = 0
-        // Dynamic request reference: restartSpeechRecognition() swaps sharedRequest
-        // without reinstalling the tap, so all sessions share the same tap lifetime.
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            self?.sharedRequest.value?.append(buffer)
-            guard let channels = buffer.floatChannelData else { return }
-            let frames = Int(buffer.frameLength)
-            guard frames > 0 else { return }
-            let samples = channels[0]
-            var sum: Float = 0
-            for i in 0..<frames { let s = samples[i]; sum += s * s }
-            let rms = (sum / Float(frames)).squareRoot()
-            let now = CFAbsoluteTimeGetCurrent()
-            guard now - lastLevelDispatch >= 1.0 / 20.0 else { return }
-            lastLevelDispatch = now
-            DispatchQueue.main.async { [weak self] in self?.audioLevel = rms }
-        }
-
-        audioEngine.prepare()
-        do {
-            try audioEngine.start()
-            isRecording = true
-            restartSpeechRecognition()
-        } catch {
-            startupError = "Couldn't start the microphone: \(error.localizedDescription)"
-            inputNode.removeTap(onBus: 0)
-        }
-    }
-
-    private func restartSpeechRecognition() {
-        task?.cancel()
-        task = nil
-        guard isRecording, let rec = recognizer else { return }
-        guard rec.supportsOnDeviceRecognition else {
-            startupError = "On-device speech recognition isn't available for this language."
-            return
-        }
-        guard srRestartCount < 20 else {
-            startupError = "Speech recognition became unavailable. Tap the mic to retry."
-            return
-        }
-        srRestartCount += 1
-        let req = SFSpeechAudioBufferRecognitionRequest()
-        req.shouldReportPartialResults = true
-        req.requiresOnDeviceRecognition = true
-        sharedRequest.value = req
-        task = rec.recognitionTask(with: req) { [weak self] result, error in
-            DispatchQueue.main.async {
-                guard let self, self.isRecording else { return }
-                if let result {
-                    let current = result.bestTranscription.formattedString
-                    self.transcript = self.sessionBase.isEmpty
-                        ? current
-                        : self.sessionBase + " " + current
-                }
-                if result?.isFinal == true {
-                    // Accumulate completed session, restart SR on the same engine.
-                    self.sessionBase = self.transcript
-                    self.restartSpeechRecognition()
-                } else if error != nil, self.isRecording {
-                    self.restartSpeechRecognition()
-                }
-            }
-        }
-    }
-
-}
 
 // MARK: - Storage
 
@@ -439,582 +205,6 @@ private struct NoteListRow: View {
     }
 }
 
-// MARK: - Waveform
-
-private struct Waveform: View {
-    let dictation: NoteDictation
-    private let particleCount = 25
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let level = dictation.audioLevel
-            Canvas { ctx, size in
-                let cy = size.height / 2
-                let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
-                let amplitude = amplified * cy * 0.75
-                for i in 0..<particleCount {
-                    let fi = Double(i)
-                    let progress = fi / Double(particleCount - 1)
-                    let baseX = progress * size.width
-                    let phase1 = t * 3.5 + progress * .pi * 3.0
-                    let phase2 = t * 2.1 + progress * .pi * 6.0
-                    let targetY = cy + sin(phase1) * amplitude * 0.65 + sin(phase2) * amplitude * 0.35
-                    let seed1 = fi * 13.7; let seed2 = fi * 29.1
-                    let scatterY = 1.5 + amplified * 4.0
-                    let jitterX = sin(t * 0.7 + seed1) * 1.5
-                    let jitterY = sin(t * 0.9 + seed2) * scatterY + cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4
-                    let px = baseX + jitterX; let py = targetY + jitterY
-                    let pr = pseudoRandom(i * 3)
-                    let waveMag = (sin(phase1) + 1.0) / 2.0
-                    let radius = 0.8 + pr * 1.2 + waveMag * 1.5 * amplified
-                    let normJitter = abs(jitterY) / max(scatterY * 1.5, 1.0)
-                    let proximityAlpha = max(0.0, 1.0 - normJitter)
-                    let pulse = 0.65 + 0.35 * sin(t * 1.8 + fi * 0.35)
-                    let alpha = proximityAlpha * pulse * (0.40 + amplified * 0.55)
-                    ctx.fill(Path(ellipseIn: CGRect(x: px - radius, y: py - radius,
-                                                    width: radius * 2, height: radius * 2)),
-                             with: .color(BrandColor.amber.opacity(alpha)))
-                }
-            }
-        }
-        .frame(height: 32)
-        .accessibilityHidden(true)
-    }
-
-    private func pseudoRandom(_ n: Int) -> Double {
-        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
-        return v - floor(v)
-    }
-}
-
-// MARK: - Dictation Controls
-
-struct DictationControls: View {
-    @ObservedObject var dictation: NoteDictation
-    let onStart: () -> Void
-    let onCancel: () -> Void
-    let onConfirm: () -> Void
-    /// Outer size of the idle mic button. Minimal mode passes 52 to
-    /// align with its "Ask AI" pill height; other surfaces keep the
-    /// default 56pt glass circle.
-    var idleDiameter: CGFloat = 56
-
-    private let amber = BrandColor.amber
-    private let stroke = AppInk.solid(0.15)
-    private let glassShadow = Color.black.opacity(0.22)
-
-    var body: some View {
-        Group {
-            if dictation.isRecording {
-                recordingRow
-            } else {
-                idleMic
-            }
-        }
-        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
-    }
-
-    private var idleMic: some View {
-        Button {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            onStart()
-        } label: {
-            Image(systemName: "mic.badge.plus")
-                .font(.system(size: 19, weight: .regular))
-                .foregroundColor(AppText.primary)
-                .frame(width: idleDiameter, height: idleDiameter)
-                .background(glassCircle)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Start dictation")
-        .transition(.scale(scale: 0.85).combined(with: .opacity))
-    }
-
-    private var recordingRow: some View {
-        HStack(spacing: 10) {
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                onCancel()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(AppInk.solid(0.65))
-                    .frame(width: 44, height: 44)
-                    .background(glassCircle)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Cancel dictation")
-
-            Waveform(dictation: dictation)
-                .padding(.horizontal, 18)
-                .frame(height: 44)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(.regularMaterial)
-                        .overlay(Capsule().stroke(stroke, lineWidth: 0.5))
-                        .shadow(color: glassShadow, radius: 10, y: 3)
-                )
-
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                onConfirm()
-            } label: {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .background(
-                        Circle()
-                            .fill(amber)
-                            .shadow(color: amber.opacity(0.45), radius: 10, y: 3)
-                    )
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Finish dictation")
-        }
-        .transition(.scale(scale: 0.92).combined(with: .opacity))
-    }
-
-    private var glassCircle: some View {
-        Circle()
-            .fill(.regularMaterial)
-            .overlay(Circle().stroke(stroke, lineWidth: 0.5))
-            .shadow(color: glassShadow, radius: 10, y: 3)
-    }
-}
-
-// MARK: - Voice Start Sheet
-
-struct NoteWaveform: View {
-    @EnvironmentObject private var recording: RecordingController
-    private let particleCount = 55
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let level = recording.audioLevel
-            Canvas { ctx, size in
-                let cy = size.height / 2
-                let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
-                let amplitude = amplified * cy * 0.80
-                for i in 0..<particleCount {
-                    let fi = Double(i)
-                    let progress = fi / Double(particleCount - 1)
-                    let baseX = progress * size.width
-                    let envelope = sin(progress * .pi)
-                    let phase1 = t * 3.5 + progress * .pi * 4.0
-                    let phase2 = t * 2.1 + progress * .pi * 7.0
-                    let targetY = cy + sin(phase1) * amplitude * 0.65 * envelope + sin(phase2) * amplitude * 0.35 * envelope
-                    let seed1 = fi * 13.7; let seed2 = fi * 29.1
-                    let scatterY = 4.0 + amplified * 10.0
-                    let jitterX = sin(t * 0.7 + seed1) * 2.5
-                    let jitterY = sin(t * 0.9 + seed2) * scatterY + cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4
-                    let px = baseX + jitterX; let py = targetY + jitterY
-                    let pr = pseudoRandom(i * 3)
-                    let waveMag = (sin(phase1) + 1.0) / 2.0
-                    // 3× bigger dots
-                    let radius = (1.0 + pr * 1.8 + waveMag * 2.0 * amplified) * 3.0
-                    let normJitter = abs(jitterY) / max(scatterY * 1.5, 1.0)
-                    let proximityAlpha = max(0.0, 1.0 - normJitter) * envelope
-                    let pulse = 0.65 + 0.35 * sin(t * 1.8 + fi * 0.35)
-                    // High contrast: nearly invisible when silent, vivid when speaking
-                    let alpha = proximityAlpha * pulse * (0.10 + amplified * 0.90)
-                    ctx.fill(Path(ellipseIn: CGRect(x: px - radius, y: py - radius,
-                                                    width: radius * 2, height: radius * 2)),
-                             with: .color(BrandColor.amber.opacity(alpha)))
-                }
-            }
-        }
-        .frame(height: 90)
-        .accessibilityHidden(true)
-    }
-
-    private func pseudoRandom(_ n: Int) -> Double {
-        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
-        return v - floor(v)
-    }
-}
-
-struct NoteVoiceSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var recording: RecordingController
-    @State private var selectedDetent: PresentationDetent = .medium
-    @State private var showingComposer: Bool = false
-    // true only when this sheet triggered the pause (not a manual user pause),
-    // so we know to auto-resume on swipe back to medium.
-    @State private var pausedByDetent: Bool = false
-    // stored so it can be cancelled if the user swipes back to large mid-wait
-    @State private var resumeTask: Task<Void, Never>? = nil
-    // Owned here so NoteVoiceSheet can await its teardown before resuming
-    // RecordingController — prevents the setActive(false)/setActive(true) race.
-    @StateObject private var composerDictation = NoteDictation()
-
-    private static let miniDetent: PresentationDetent = .height(88)
-    private let sheetBg = AppBackground.primary
-    private var isMini: Bool { selectedDetent == Self.miniDetent }
-
-    private var timeLabel: String {
-        String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)
-    }
-
-    var body: some View {
-        ZStack {
-            sheetBg.ignoresSafeArea()
-            if showingComposer {
-                NoteComposerSheet(
-                    initialBody: recording.fullTranscript,
-                    dictation: composerDictation,
-                    awaitRecordingTeardown: { await recording.awaitTeardown() },
-                    onSave: { body in
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        recording.finishWithText(body)
-                        dismiss()
-                    },
-                    onCancel: {
-                        recording.cancel()
-                        dismiss()
-                    }
-                )
-            } else if isMini {
-                miniBar
-            } else {
-                voiceUI
-            }
-        }
-        .presentationDetents([Self.miniDetent, .medium, .large], selection: $selectedDetent)
-        .presentationDragIndicator(.visible)
-        .presentationBackground(sheetBg)
-        .presentationCornerRadius(Radius.sheet)
-        .presentationBackgroundInteraction(.enabled(upThrough: Self.miniDetent))
-        .onChange(of: selectedDetent) { _, newDetent in
-            // Only treat a confirmed snap to .large as "expand to editor".
-            // The previous negation (newDetent != .medium) also fired during
-            // the downward-dismiss drag when iOS emits transient non-.medium
-            // values, which triggered recording.pause() → teardownEngine()
-            // on the main thread mid-gesture → hard freeze.
-            let large = (newDetent == .large)
-            if large {
-                // Cancel any pending resume — user is back in large detent.
-                resumeTask?.cancel()
-                resumeTask = nil
-                // Only auto-pause if we're the ones pausing (not already paused
-                // by the user); only then will we auto-resume on the way back.
-                if recording.isRecording && !recording.isPaused {
-                    recording.pause()
-                    pausedByDetent = true
-                }
-            } else if !large && pausedByDetent {
-                // Wait for NoteComposerSheet.onDisappear to fire (animation ~300ms),
-                // then await the dictation teardown so setActive(false) completes
-                // before RecordingController calls setActive(true).
-                let d = composerDictation
-                resumeTask = Task {
-                    // Wait for the ~300ms SwiftUI dismissal animation to complete
-                    // so NoteComposerSheet.onDisappear fires and dictation.stop()
-                    // sets a fresh teardownTask before we await it.
-                    do { try await Task.sleep(nanoseconds: 500_000_000) } catch { return }
-                    await d.awaitTeardown()
-                    await MainActor.run {
-                        guard recording.isPaused, pausedByDetent else { return }
-                        pausedByDetent = false
-                        recording.resume()
-                    }
-                }
-            }
-            withAnimation(AppAnimation.standard) {
-                showingComposer = large
-            }
-        }
-    }
-
-    private func endRecording() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        recording.finish()
-        dismiss()
-    }
-
-    private var miniBar: some View {
-        HStack(spacing: 14) {
-            Circle()
-                .fill(BrandColor.amber)
-                .frame(width: 8, height: 8)
-                .shadow(color: BrandColor.amber.opacity(0.6), radius: 4)
-            Text(timeLabel)
-                .font(.system(size: 17, weight: .medium, design: .monospaced))
-                .foregroundColor(AppText.primary)
-            Text(recording.isPaused ? "Paused" : "Recording")
-                .font(.appSmall)
-                .foregroundColor(AppText.tertiary)
-            Spacer()
-            Button { endRecording() } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "stop.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                    Text("End")
-                        .font(.system(size: 15, weight: .semibold))
-                }
-                .foregroundColor(.black)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Capsule(style: .continuous).fill(Color.white))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var voiceUI: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                Text("Swipe up to type text")
-                    .font(.subheadline)
-                    .foregroundColor(AppText.tertiary)
-                    .frame(maxWidth: .infinity)
-                HStack {
-                    Spacer()
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(AppText.secondary)
-                            .frame(width: 28, height: 28)
-                            .background(AppInk.solid(0.12))
-                            .clipShape(Circle())
-                            .appIconHitArea()
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Dismiss")
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-
-            Spacer(minLength: 24)
-
-            NoteWaveform()
-                .padding(.horizontal, 28)
-
-            Spacer(minLength: 20)
-
-            Text(timeLabel)
-                .font(.system(size: 22, weight: .medium, design: .monospaced))
-                .foregroundColor(AppInk.solid(0.70))
-
-            Spacer(minLength: 16)
-
-            if let err = recording.startupError {
-                Text(err)
-                    .font(.appSmall)
-                    .foregroundColor(.red.opacity(0.75))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-                Spacer(minLength: 16)
-            } else {
-                Spacer(minLength: 8)
-            }
-
-            HStack(spacing: 12) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    if recording.isPaused {
-                        recording.resume()
-                    } else {
-                        recording.pause()
-                    }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: recording.isPaused ? "play.fill" : "pause.fill")
-                            .font(.system(size: 15, weight: .semibold))
-                        Text(recording.isPaused ? "Resume" : "Pause")
-                            .font(.system(size: 17, weight: .semibold))
-                            .frame(minWidth: 60)
-                    }
-                    .foregroundColor(AppText.primary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(AppInk.solid(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
-                }
-                .buttonStyle(.plain)
-
-                Button { endRecording() } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: 15, weight: .semibold))
-                        Text("End")
-                            .font(.system(size: 17, weight: .semibold))
-                    }
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 40)
-        }
-    }
-}
-
-// MARK: - Composer Sheet (large-detent text editor with corner mic)
-
-private struct NoteComposerSheet: View {
-    let initialBody: String
-    let onSave: (String) -> Void
-    let onCancel: () -> Void
-    let awaitRecordingTeardown: () async -> Void
-
-    @ObservedObject var dictation: NoteDictation
-    @State private var noteBody: String
-    @State private var bodyBeforeDictation: String = ""
-    @State private var showDiscardAlert: Bool = false
-    @State private var dictationCancelled: Bool = false
-    @FocusState private var bodyFocused: Bool
-
-    init(initialBody: String, dictation: NoteDictation, awaitRecordingTeardown: @escaping () async -> Void, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
-        self.initialBody = initialBody
-        self.dictation = dictation
-        self.awaitRecordingTeardown = awaitRecordingTeardown
-        self.onSave = onSave
-        self.onCancel = onCancel
-        self._noteBody = State(initialValue: initialBody)
-    }
-
-    private var canSave: Bool { !noteBody.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-    private var isDirty: Bool { noteBody != initialBody }
-
-    private func openSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button {
-                    if isDirty {
-                        showDiscardAlert = true
-                    } else {
-                        dictation.stop()
-                        onCancel()
-                    }
-                } label: {
-                    Text("Cancel")
-                        .font(.appLabel)
-                        .foregroundColor(AppInk.solid(0.50))
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-
-                Text("New Note")
-                    .font(.appBodyBold)
-                    .foregroundColor(AppText.primary)
-
-                Spacer()
-
-                Button {
-                    dictation.stop()
-                    onSave(noteBody)
-                } label: {
-                    Text("Done")
-                        .font(.appLabelBold)
-                        .foregroundColor(canSave ? .white : AppText.disabled)
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSave)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 14)
-
-            Rectangle()
-                .fill(AppInk.solid(0.06))
-                .frame(height: 0.5)
-
-            ZStack(alignment: .bottomTrailing) {
-                ZStack(alignment: .topLeading) {
-                    if noteBody.isEmpty {
-                        Text("Start typing\u{2026}")
-                            .font(.appReadingBody)
-                            .foregroundColor(AppText.muted)
-                            .padding(.horizontal, 24)
-                            .padding(.top, 20)
-                            .allowsHitTesting(false)
-                    }
-                    TextEditor(text: $noteBody)
-                        .font(.appReadingBody)
-                        .lineSpacing(8)
-                        .foregroundColor(AppInk.solid(0.92))
-                        .scrollContentBackground(.hidden)
-                        .background(Color.clear)
-                        .tint(AppText.primary)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .contentMargins(.bottom, 84, for: .scrollContent)
-                        .focused($bodyFocused)
-                }
-
-                DictationControls(
-                    dictation: dictation,
-                    onStart: {
-                        dictationCancelled = false
-                        bodyBeforeDictation = noteBody
-                        dictation.start()
-                    },
-                    onCancel: {
-                        dictationCancelled = true
-                        dictation.cancel()
-                        noteBody = bodyBeforeDictation
-                    },
-                    onConfirm: {
-                        dictation.stop()
-                    }
-                )
-                .padding(.trailing, 20)
-                .padding(.bottom, 20)
-            }
-            .onChange(of: dictation.transcript) { _, newValue in
-                guard !dictationCancelled else { return }
-                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return }
-                if bodyBeforeDictation.isEmpty {
-                    noteBody = trimmed
-                } else {
-                    let needsSeparator = !bodyBeforeDictation.hasSuffix("\n") && !bodyBeforeDictation.hasSuffix(" ")
-                    noteBody = bodyBeforeDictation + (needsSeparator ? " " : "") + trimmed
-                }
-            }
-            .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
-                Button("Open Settings") { openSettings() }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
-            }
-        }
-        .alert("Discard changes?", isPresented: $showDiscardAlert) {
-            Button("Keep Editing", role: .cancel) {}
-            Button("Discard", role: .destructive) {
-                dictation.stop()
-                onCancel()
-            }
-        }
-        .task {
-            // Ensure any in-flight RecordingController teardown (setActive false)
-            // completes before dictation calls setActive true on the same session.
-            await awaitRecordingTeardown()
-            bodyBeforeDictation = noteBody
-            dictation.start()
-        }
-        .onDisappear { dictation.stop() }
-    }
-}
-
 // MARK: - Editor Page (full-page edit for existing notes)
 
 private struct NoteEditorPage: View {
@@ -1024,7 +214,6 @@ private struct NoteEditorPage: View {
     @State private var original: Note
     @State private var title: String
     @State private var noteBody: String
-    @State private var bodyBeforeDictation: String = ""
     @State private var didDelete: Bool = false
     @State private var showChat: Bool = false
     /// Page-scoped restore cache for the chat sheet — keeps an
@@ -1039,12 +228,9 @@ private struct NoteEditorPage: View {
     @State private var pendingSelectionRange: NSRange? = nil
     /// Drives the inline rewrite sheet for the magic-pen action.
     @State private var rewriteRequest: RewriteRequest? = nil
-    @StateObject private var dictation = NoteDictation()
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
-    @EnvironmentObject private var recording: RecordingController
     @FocusState private var focus: Field?
-    @State private var pausedRecordingForDictation = false
 
     private enum Field { case title, body }
 
@@ -1160,7 +346,6 @@ private struct NoteEditorPage: View {
     }
 
     private func performDelete() {
-        dictation.stop()
         didDelete = true
         onDelete()
         dismiss()
@@ -1254,62 +439,17 @@ private struct NoteEditorPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            // Bottom-trailing: chat sits on top, dictation stacks below
-            // it once the user focuses a field. The dictation row stays
-            // for the duration of recording so the user can always
-            // cancel or confirm; chat hides while dictating so the
-            // recording row owns the bottom edge.
             VStack(spacing: 12) {
-                if !dictation.isRecording && focus == nil {
+                if focus == nil {
                     chatButton
                         .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
-                DictationControls(
-                    dictation: dictation,
-                    onStart: {
-                        bodyBeforeDictation = noteBody
-                        // Pause the floating recorder so both don't compete
-                        // for the same AVAudioSession input simultaneously.
-                        if recording.isRecording, !recording.isPaused {
-                            recording.pauseForSystem()
-                            pausedRecordingForDictation = true
-                            Task {
-                                await recording.awaitTeardown()
-                                await MainActor.run { dictation.start() }
-                            }
-                        } else {
-                            dictation.start()
-                        }
-                    },
-                    onCancel: {
-                        dictation.cancel()
-                        noteBody = bodyBeforeDictation
-                        if pausedRecordingForDictation {
-                            pausedRecordingForDictation = false
-                            Task {
-                                await dictation.awaitTeardown()
-                                await MainActor.run { recording.resumeIfSystemPaused() }
-                            }
-                        }
-                    },
-                    onConfirm: {
-                        dictation.stop()
-                        if pausedRecordingForDictation {
-                            pausedRecordingForDictation = false
-                            Task {
-                                await dictation.awaitTeardown()
-                                await MainActor.run { recording.resumeIfSystemPaused() }
-                            }
-                        }
-                    }
-                )
-                .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
             .padding(.trailing, 20)
             .padding(.bottom, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
 
-            if !dictation.isRecording && focus == nil {
+            if focus == nil {
                 magicButton
                     .padding(.leading, 20)
                     .padding(.bottom, 8)
@@ -1317,29 +457,11 @@ private struct NoteEditorPage: View {
                     .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
         }
-        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: focus)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .swipeBackGesture {
-            dictation.stop()
             dismiss()
-        }
-        .onChange(of: dictation.transcript) { _, newValue in
-            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return }
-            if bodyBeforeDictation.isEmpty {
-                noteBody = trimmed
-            } else {
-                let needsSeparator = !bodyBeforeDictation.hasSuffix("\n") && !bodyBeforeDictation.hasSuffix(" ")
-                noteBody = bodyBeforeDictation + (needsSeparator ? " " : "") + trimmed
-            }
-        }
-        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
-            Button("Open Settings") { openSettings() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
         }
         .sheet(isPresented: $showChat, onDismiss: {
             pendingSelectionText = nil
@@ -1373,15 +495,7 @@ private struct NoteEditorPage: View {
         .onAppear { chrome.hideTabBar = true }
         .onDisappear {
             chrome.hideTabBar = false
-            dictation.stop()
             persistIfNeeded()
-            if pausedRecordingForDictation {
-                pausedRecordingForDictation = false
-                Task {
-                    await dictation.awaitTeardown()
-                    await MainActor.run { recording.resumeIfSystemPaused() }
-                }
-            }
         }
     }
 
@@ -1474,7 +588,6 @@ private struct NoteEditorPage: View {
         HStack(spacing: 10) {
             Button {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                dictation.stop()
                 dismiss()
             } label: {
                 Image(systemName: "chevron.left")
@@ -1594,7 +707,6 @@ struct NotesView: View {
     /// pinned section, swipe actions, filter chips, and search overlay
     /// behaviour intact.
     var detailFor: ((Note) -> AnyView)? = nil
-    @EnvironmentObject private var recording: RecordingController
     @EnvironmentObject private var chrome: ChromeController
     @Environment(\.scenePhase) private var scenePhase
     @State private var notes: [Note] = []
@@ -1648,31 +760,12 @@ struct NotesView: View {
         nonmutating set { searchTextBinding.wrappedValue = newValue }
     }
 
-    private func startAudioNote() {
-        recording.begin { transcript in
-            saveRecordedTranscript(transcript)
-        }
-        recording.showingSheet = true
-    }
-
-    private func saveRecordedTranscript(_ transcript: String) {
-        let capturedAt = Date()
-        // Persist immediately so a background/kill during title generation
-        // doesn't lose the transcript. Title is patched in afterwards.
+    private func startNewNote() {
         var note = Note()
-        note.body = transcript
-        note.updatedAt = capturedAt
-        notes.append(note)
+        note.updatedAt = Date()
+        notes.insert(note, at: 0)
         NotesStore.saveInBackground(notes)
-        let noteID = note.id
-        Task {
-            guard let body = await AIService.prependTitleIfMissing(to: transcript) else { return }
-            await MainActor.run {
-                guard let idx = notes.firstIndex(where: { $0.id == noteID }) else { return }
-                notes[idx].body = body
-                NotesStore.saveInBackground(notes)
-            }
-        }
+        editingNote = note
     }
 
     private let builtinTags = ["Talk Copenhagen", "Talk London", "Article"]
@@ -1980,7 +1073,7 @@ struct NotesView: View {
                                 // Classic mode: pencil + search in one pill
                                 TopBarPillButton(systemImage: "square.and.pencil") {
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    startAudioNote()
+                                    startNewNote()
                                 }
                                 .accessibilityLabel("New note")
                                 TopBarPillDivider()
@@ -2180,7 +1273,7 @@ struct NotesView: View {
             if phase == .inactive || phase == .background { flushSave() }
         }
         .onChange(of: newNoteTrigger) { _, _ in
-            startAudioNote()
+            startNewNote()
         }
         .onChange(of: editingNote) { _, note in
             // Guarantee the floating mic button reappears whenever the user

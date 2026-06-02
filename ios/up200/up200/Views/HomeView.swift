@@ -1,15 +1,13 @@
 import SwiftUI
 import PhotosUI
 import UniformTypeIdentifiers
-import Speech
-import AVFoundation
 import PDFKit
 import Vision
 
 // MARK: - Source Item Model
 
 enum SourceType: String, Identifiable {
-    case text, link, file, voice, image, note
+    case text, link, file, image, note
     var id: String { rawValue }
 }
 
@@ -17,7 +15,7 @@ enum SourceType: String, Identifiable {
 // chooser; the others present the input UIs. Files and photos use the
 // system fileImporter / photosPicker and stay on their own Bools.
 enum SourceSheet: Identifiable, Hashable {
-    case picker, text, link, voice, note
+    case picker, text, link, note
     var id: Self { self }
 }
 
@@ -32,7 +30,6 @@ struct SourceItem: Identifiable {
         case .text:  return "text.alignleft"
         case .link:  return "link"
         case .file:  return "doc.text"
-        case .voice: return "mic"
         case .image: return "photo"
         case .note:  return "note.text"
         }
@@ -494,254 +491,6 @@ struct GenerationBanner: View {
     }
 }
 
-// MARK: - Voice Recorder
-
-@MainActor
-final class VoiceRecorder: ObservableObject {
-    @Published var transcript = ""
-    @Published var isRecording = false
-    @Published var permissionDenied = false
-    @Published var startupError: String? = nil
-    var audioLevel: Float = 0.0  // plain var — read inside TimelineView, not @Published
-
-    private let audioEngine = AVAudioEngine()
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionTask: SFSpeechRecognitionTask?
-    private var teardownTask: Task<Void, Never>? = nil
-    private var activationTask: Task<Void, Never>? = nil
-    private let audioOwnerID = UUID()
-    private var startToken: Int = 0
-    private let recognizer = SFSpeechRecognizer(locale: Locale.current)
-        ?? SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-
-    func start() {
-        startToken += 1
-        let token = startToken
-        SFSpeechRecognizer.requestAuthorization { [weak self] status in
-            DispatchQueue.main.async {
-                guard let self, self.startToken == token else { return }
-                guard status == .authorized else {
-                    self.permissionDenied = true
-                    return
-                }
-                AVAudioApplication.requestRecordPermission { [weak self] granted in
-                    DispatchQueue.main.async {
-                        guard let self, self.startToken == token else { return }
-                        guard granted else {
-                            self.permissionDenied = true
-                            return
-                        }
-                        Task { @MainActor [weak self] in
-                            guard let self, self.startToken == token else { return }
-                            let acquired = await AudioRecordingCoordinator.shared.acquire(owner: self.audioOwnerID) { [weak self] in
-                                await self?.forceReleaseForAudioCoordinator()
-                            }
-                            guard acquired else { return }
-                            guard self.startToken == token else {
-                                AudioRecordingCoordinator.shared.release(owner: self.audioOwnerID)
-                                return
-                            }
-                            self.startEngine(token: token)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    func stop() {
-        teardown()
-    }
-
-    private func teardown(releaseOwnership: Bool = true) {
-        if releaseOwnership {
-            AudioRecordingCoordinator.shared.release(owner: audioOwnerID)
-        }
-        startToken += 1
-        activationTask?.cancel()
-        activationTask = nil
-        isRecording = false
-        audioLevel = 0
-        // End the audio buffer synchronously so SFSpeechRecognizer flushes
-        // its final isFinal callback — the last 200-500ms of speech rides
-        // on that result. The previous version called recognitionTask?.cancel()
-        // here, which preempted the flush and silently dropped the user's
-        // last sentence. We release our reference but let the underlying
-        // task live until it self-completes; any orphan is
-        // cancelled by startEngine() at the start of the next recording.
-        recognitionRequest?.endAudio()
-        recognitionTask = nil
-        let engine = audioEngine
-        recognitionRequest = nil
-        teardownTask = Task { @MainActor in
-            engine.stop()
-            engine.inputNode.removeTap(onBus: 0)
-            await Task.detached(priority: .userInitiated) {
-                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-            }.value
-        }
-    }
-
-    private func awaitTeardown() async {
-        await teardownTask?.value
-    }
-
-    private func forceReleaseForAudioCoordinator() async {
-        teardown(releaseOwnership: false)
-        await awaitTeardown()
-    }
-
-    private func startEngine(token: Int) {
-        recognitionTask?.cancel()
-        recognitionTask = nil
-        startupError = nil
-        activationTask?.cancel()
-        activationTask = nil
-        // Await any in-flight teardown before activating the session — the
-        // previous stop()'s setActive(false) runs in a detached task (50-300ms)
-        // and will silently cancel a new setActive(true) that races with it.
-        let prev = teardownTask
-        teardownTask = nil
-        Task { @MainActor [weak self] in
-            await prev?.value
-            guard let self, self.startToken == token else { return }
-            self.activateAndStart(token: token)
-        }
-    }
-
-    private func activateAndStart(token: Int) {
-        activationTask = Task.detached(priority: .userInitiated) { [weak self] in
-            let session = AVAudioSession.sharedInstance()
-            do {
-                try session.setCategory(.record, mode: .measurement, options: .duckOthers)
-                try session.setActive(true, options: .notifyOthersOnDeactivation)
-            } catch {
-                await MainActor.run { [weak self] in
-                    guard self?.startToken == token else { return }
-                    self?.startupError = "Couldn't set up the audio session: \(error.localizedDescription)"
-                }
-                return
-            }
-            guard !Task.isCancelled else { return }
-            await MainActor.run { [weak self] in
-                guard self?.startToken == token else { return }
-                self?.continueStartingEngine(token: token)
-            }
-        }
-    }
-
-    private func continueStartingEngine(token: Int) {
-        guard startToken == token else { return }
-
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        guard let request = recognitionRequest, let rec = recognizer else {
-            startupError = "Speech recognition isn't available on this device."
-            return
-        }
-        guard rec.supportsOnDeviceRecognition else {
-            startupError = "On-device speech recognition isn't available for this language."
-            return
-        }
-        request.shouldReportPartialResults = true
-        request.requiresOnDeviceRecognition = true
-
-        recognitionTask = rec.recognitionTask(with: request) { [weak self] result, error in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                if let result {
-                    self.transcript = result.bestTranscription.formattedString
-                }
-                if (error != nil || (result?.isFinal ?? false)), self.isRecording {
-                    self.stop()
-                }
-            }
-        }
-
-        let inputNode = audioEngine.inputNode
-        let format = inputNode.outputFormat(forBus: 0)
-        inputNode.removeTap(onBus: 0)
-        var lastLevelDispatch: Double = 0
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            request.append(buffer)
-            guard let channelData = buffer.floatChannelData?[0] else { return }
-            let frames = Int(buffer.frameLength)
-            var rms: Float = 0
-            for i in 0..<frames { rms += channelData[i] * channelData[i] }
-            let level = sqrt(rms / Float(max(frames, 1)))
-            let now = CFAbsoluteTimeGetCurrent()
-            guard now - lastLevelDispatch >= 1.0 / 20.0 else { return }
-            lastLevelDispatch = now
-            DispatchQueue.main.async { self?.audioLevel = level }
-        }
-
-        audioEngine.prepare()
-        do {
-            try audioEngine.start()
-            guard startToken == token else {
-                stop()
-                return
-            }
-            isRecording = true
-        } catch {
-            startupError = "Couldn't start the microphone: \(error.localizedDescription)"
-            inputNode.removeTap(onBus: 0)
-        }
-    }
-}
-
-// MARK: - Voice Recorder Waveform
-
-// Reads audioLevel directly inside TimelineView so VoiceRecordSheet doesn't
-// re-render at 20 Hz. Mirrors NoteWaveform but reads from VoiceRecorder
-// (not RecordingController) since VoiceRecordSheet has its own audio stack.
-private struct VoiceRecorderWaveform: View {
-    let recorder: VoiceRecorder
-    private let particleCount = 55
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let level = recorder.audioLevel
-            Canvas { ctx, size in
-                let cy = size.height / 2
-                let amplified = min(1.0, pow(Double(max(level, 0.005)), 0.28) * 2.8)
-                let amplitude = amplified * cy * 0.80
-                for i in 0..<particleCount {
-                    let fi = Double(i)
-                    let progress = fi / Double(particleCount - 1)
-                    let baseX = progress * size.width
-                    let envelope = sin(progress * .pi)
-                    let phase1 = t * 3.5 + progress * .pi * 4.0
-                    let phase2 = t * 2.1 + progress * .pi * 7.0
-                    let targetY = cy + sin(phase1) * amplitude * 0.65 * envelope + sin(phase2) * amplitude * 0.35 * envelope
-                    let seed1 = fi * 13.7; let seed2 = fi * 29.1
-                    let scatterY = 4.0 + amplified * 10.0
-                    let jitterX = sin(t * 0.7 + seed1) * 2.5
-                    let jitterY = sin(t * 0.9 + seed2) * scatterY + cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4
-                    let px = baseX + jitterX; let py = targetY + jitterY
-                    let pr = pseudoRandom(i * 3)
-                    let waveMag = (sin(phase1) + 1.0) / 2.0
-                    let radius = 1.0 + pr * 1.8 + waveMag * 2.0 * amplified
-                    let normJitter = abs(jitterY) / max(scatterY * 1.5, 1.0)
-                    let proximityAlpha = max(0.0, 1.0 - normJitter) * envelope
-                    let pulse = 0.65 + 0.35 * sin(t * 1.8 + fi * 0.35)
-                    let alpha = proximityAlpha * pulse * (0.35 + amplified * 0.60)
-                    ctx.fill(Path(ellipseIn: CGRect(x: px - radius, y: py - radius,
-                                                    width: radius * 2, height: radius * 2)),
-                             with: .color(BrandColor.amber.opacity(alpha)))
-                }
-            }
-        }
-        .frame(height: 75)
-        .accessibilityHidden(true)
-    }
-
-    private func pseudoRandom(_ n: Int) -> Double {
-        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
-        return v - floor(v)
-    }
-}
-
 // MARK: - Animated Lights Button
 
 /// Sun-rays mark — 8 short rays radiating from a centre gap, scaled to the
@@ -871,9 +620,7 @@ private struct TextInputSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var titleText = ""
     @State private var bodyText = ""
-    @State private var bodyBeforeDictation = ""
     @State private var isGenerating = false
-    @StateObject private var dictation = NoteDictation()
     @FocusState private var focusedField: InputField?
 
     private enum InputField { case title, body }
@@ -941,45 +688,9 @@ private struct TextInputSheet: View {
                 }
             }
 
-            DictationControls(
-                dictation: dictation,
-                onStart: {
-                    bodyBeforeDictation = bodyText
-                    focusedField = nil
-                    dictation.start()
-                },
-                onCancel: {
-                    dictation.cancel()
-                    bodyText = bodyBeforeDictation
-                },
-                onConfirm: {
-                    dictation.stop()
-                }
-            )
-            .padding(.trailing, 20)
-            .padding(.bottom, 20)
-            .opacity(isGenerating ? 0 : 1)
-            .allowsHitTesting(!isGenerating)
         }
         .background(sheetBackground.ignoresSafeArea())
         .interactiveDismissDisabled(canSave || isGenerating)
-        .onChange(of: dictation.transcript) { _, newValue in
-            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return }
-            if bodyBeforeDictation.isEmpty {
-                bodyText = trimmed
-            } else {
-                let needsSeparator = !bodyBeforeDictation.hasSuffix("\n") && !bodyBeforeDictation.hasSuffix(" ")
-                bodyText = bodyBeforeDictation + (needsSeparator ? " " : "") + trimmed
-            }
-        }
-        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
-            Button("Open Settings") { openSettings() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
-        }
-        .onDisappear { dictation.stop() }
         .task { focusedField = .title }
     }
 
@@ -1400,243 +1111,6 @@ private struct LinkInputSheet: View {
     }
 }
 
-// MARK: - Voice Record Sheet
-
-struct VoiceRecordSheet: View {
-    var onSave: (String, String) -> Void
-    var autoStart: Bool = false
-    @Environment(\.dismiss) private var dismiss
-    @StateObject private var recorder = VoiceRecorder()
-    @State private var seconds = 0
-    @State private var isGenerating = false
-
-    private let amber = BrandColor.amber
-
-    private var timeLabel: String {
-        String(format: "%d:%02d", seconds / 60, seconds % 60)
-    }
-
-    var body: some View {
-        ZStack {
-            AppBackground.primary.ignoresSafeArea()
-            RadialGradient(
-                colors: [amber.opacity(recorder.isRecording ? 0.16 : 0.0), .clear],
-                center: .center, startRadius: 0, endRadius: 300
-            )
-            .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.6), value: recorder.isRecording)
-
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Spacer()
-                    Text(recorder.isRecording ? "Recording…" : recorder.transcript.isEmpty ? "Voice Note" : "Done recording")
-                        .font(.subheadline)
-                        .foregroundColor(AppText.tertiary)
-                    Spacer()
-                    Button {
-                        guard !isGenerating else { return }
-                        recorder.stop()
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(AppText.secondary)
-                            .frame(width: 44, height: 44)
-                            .background(AppInk.solid(0.12))
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isGenerating)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-
-                Spacer(minLength: 24)
-
-                // Waveform or mic button
-                if recorder.isRecording {
-                    VoiceRecorderWaveform(recorder: recorder)
-                        .padding(.horizontal, 28)
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                } else if !recorder.transcript.isEmpty {
-                    VoiceRecorderWaveform(recorder: recorder)
-                        .padding(.horizontal, 28)
-                        .opacity(0.3)
-                        .transition(.opacity)
-                } else {
-                    Button(action: handleMicTap) {
-                        // 88pt outer hit area around the 76pt visible
-                        // disc. Without it, the Circle()'s default hit
-                        // shape *is* the circle, so taps landing on the
-                        // bounding-box corners (each ~12pt) silently miss.
-                        Circle()
-                            .fill(amber.opacity(0.18))
-                            .frame(width: 76, height: 76)
-                            .overlay(
-                                Image(systemName: "mic.fill")
-                                    .font(.app(size: 28, weight: .medium))
-                                    .foregroundColor(amber)
-                            )
-                            .overlay(Circle().stroke(amber.opacity(0.35), lineWidth: 1))
-                            .frame(width: 88, height: 88)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isGenerating)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                }
-
-                Spacer(minLength: 20)
-
-                // Timer
-                if recorder.isRecording || !recorder.transcript.isEmpty {
-                    Text(timeLabel)
-                        .font(.system(.title2, design: .monospaced))
-                        .fontWeight(.medium)
-                        .foregroundColor(AppInk.solid(0.70))
-                        .transition(.opacity)
-                } else {
-                    Text("Tap to record")
-                        .font(.appBody)
-                        .foregroundColor(AppInk.solid(0.40))
-                        .transition(.opacity)
-                }
-
-                if !recorder.transcript.isEmpty {
-                    ScrollView(showsIndicators: false) {
-                        Text(recorder.transcript)
-                            .font(.appSmall)
-                            .foregroundColor(AppInk.solid(0.50))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 32)
-                            .padding(.top, 16)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .frame(maxHeight: 100)
-                    .transition(.opacity)
-                }
-
-                Spacer(minLength: 24)
-
-                // Bottom buttons
-                if isGenerating {
-                    Label("Generating title\u{2026}", systemImage: "sparkles")
-                        .font(.appSubtext)
-                        .foregroundColor(AppInk.solid(0.50))
-                        .padding(.bottom, 40)
-                        .transition(.opacity)
-                } else if recorder.isRecording {
-                    HStack(spacing: 12) {
-                        Button(action: handleMicTap) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "pause.fill")
-                                    .font(.system(size: 15, weight: .semibold))
-                                Text("Pause")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .frame(minWidth: 60)
-                            }
-                            .foregroundColor(AppText.primary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(AppInk.solid(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-
-                        Button(action: handleDone) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "stop.fill")
-                                    .font(.system(size: 15, weight: .semibold))
-                                Text("End")
-                                    .font(.system(size: 17, weight: .semibold))
-                            }
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 40)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                } else if !recorder.transcript.isEmpty {
-                    Button(action: handleDone) {
-                        Text("Use this")
-                            .font(.appLabelBold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(amber)
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 40)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                } else {
-                    Color.clear.frame(height: 96)
-                }
-            }
-        }
-        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: recorder.isRecording)
-        .animation(.easeOut(duration: 0.2), value: isGenerating)
-        .task {
-            if autoStart { recorder.start() }
-            while true {
-                do { try await Task.sleep(nanoseconds: 1_000_000_000) }
-                catch { break }
-                if recorder.isRecording { seconds += 1 }
-            }
-        }
-        .onDisappear { recorder.stop() }
-        .onChange(of: recorder.isRecording) { _, recording in
-            if recording { seconds = 0 }
-        }
-        .alert("Microphone Access", isPresented: $recorder.permissionDenied) {
-            Button("Open Settings") {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }
-            Button("Cancel", role: .cancel) { dismiss() }
-        } message: {
-            Text("Microphone and speech recognition access is required to record a voice note.")
-        }
-        .interactiveDismissDisabled(recorder.isRecording || !recorder.transcript.isEmpty || isGenerating)
-    }
-
-    private func handleMicTap() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        if recorder.isRecording {
-            recorder.stop()
-        } else {
-            recorder.start()
-        }
-    }
-
-    private func handleDone() {
-        // Snapshot transcript BEFORE stop() — the final isFinal callback from
-        // SFSpeechRecognizer arrives asynchronously after endAudio() and would
-        // race with the synchronous read below, potentially returning "" even
-        // when the user spoke. The snapshot captures the last partial result.
-        let transcript = recorder.transcript
-        recorder.stop()
-        guard !transcript.isEmpty else { dismiss(); return }
-        isGenerating = true
-        Task {
-            let title = await AIService.generateTitle(from: transcript)
-            await MainActor.run {
-                isGenerating = false
-                onSave(title, transcript)
-                dismiss()
-            }
-        }
-    }
-}
-
 // MARK: - Glass Card
 
 private struct GlassCard<Content: View>: View {
@@ -1749,7 +1223,6 @@ private struct SourcesBlock: View {
                         switch type {
                         case .text:  activeSheet = .text
                         case .link:  activeSheet = .link
-                        case .voice: activeSheet = .voice
                         case .note:
                             activeSheet = nil
                             showNotePicker = true
@@ -1771,12 +1244,6 @@ private struct SourcesBlock: View {
                     LinkInputSheet { label, url in
                         withAnimation(.spring(duration: 0.25)) {
                             sources.append(SourceItem(type: .link, label: label, content: url))
-                        }
-                    }
-                case .voice:
-                    VoiceRecordSheet { label, transcript in
-                        withAnimation(.spring(duration: 0.25)) {
-                            sources.append(SourceItem(type: .voice, label: label, content: transcript))
                         }
                     }
                 case .note:

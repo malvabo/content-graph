@@ -24,10 +24,9 @@ private enum OnboardingStep: Int {
 }
 
 private enum CapturePhase {
-    case prompt      // stars drift inside the blurb; "Press and hold to record"
-    case recording   // blurb morphs to a live waveform; "Finish recording" CTA below
-    case choose      // headline question + content-type / save / "something else" options
-    case specify     // user picked "Something else" — second recording for what they want
+    case prompt      // stars drift inside the blurb; "Tap to write your idea"
+    case typing      // text input for the user's idea
+    case choose      // headline question + content-type / save options
     case generating  // user picked a content type — pill with orbiting dots, then exit
 }
 
@@ -45,37 +44,11 @@ struct OnboardingView: View {
     @State private var brandTypedLength: Int = 0
     private let brandFull = "Oula"
 
-    // Capture-step state: which sub-phase the blurb is in, plus a live mic
-    // session driving the waveform during .recording. The recorder is held
-    // here (not constructed lazily on press) so audioLevel can be wired into
-    // the waveform's TimelineView without resubscribing on every transition.
     @State private var capturePhase: CapturePhase = .prompt
-    @StateObject private var captureRecorder = VoiceRecorder()
-    @State private var recordingSeconds: Int = 0
-    @State private var specifySeconds: Int = 0
-    // Wall-clock anchor for each recording so the displayed mm:ss is computed
-    // from Date() at render time rather than from a 1-second .task poll, which
-    // drifts under main-thread pressure (the .generating Canvas can stretch
-    // ticks past their nominal 1.0s interval). The Int seconds counters above
-    // are kept as a backing store for the on-screen text so SwiftUI only
-    // invalidates that subtree when the second actually rolls over.
-    @State private var recordingStartedAt: Date = .distantPast
-    @State private var specifyStartedAt: Date = .distantPast
-    @State private var showCaptureMicAlert: Bool = false
+    @State private var captureText: String = ""
     @State private var chosenContentLabel: String = ""
     @State private var generatingTask: Task<Void, Never>? = nil
-    // The first recording's transcript becomes the source we feed to the
-    // generator. We snapshot it the moment the user finishes recording —
-    // starting a second recording (the "Something else" specify pass)
-    // rewires SFSpeechRecognizer and clobbers `captureRecorder.transcript`
-    // with the new text, so reading it lazily would lose the original idea.
     @State private var firstIdeaTranscript: String = ""
-    // Deferred task that re-snapshots `firstIdeaTranscript` ~700ms after
-    // finishCaptureRecording so the recognizer's final isFinal callback
-    // (which carries the last 200-500ms of speech) lands in our captured
-    // value. Cancelled when a new recording starts so the second pass
-    // can't clobber the first idea.
-    @State private var firstIdeaSnapshotTask: Task<Void, Never>? = nil
     @State private var resultNote: Note? = nil
 
     @State private var generatingStartedAt: Date = .distantPast
@@ -164,7 +137,7 @@ struct OnboardingView: View {
             // SwiftUI transition fires exactly once — on the
             // .constellation → .capture crossing — and the 0.85s delay
             // below applies only to that one entry. In-capture phase
-            // crossings (.recording → .choose etc.) are driven by the
+            // crossings (.typing → .choose etc.) are driven by the
             // .opacity modifier on `starfieldVisible` with a prompt 0.45s
             // curve, so the field reappears under the blob chooser
             // immediately rather than inheriting the entry delay.
@@ -178,21 +151,10 @@ struct OnboardingView: View {
                     // background, not the focal element.
                     .opacity(starfieldVisible ? 0.65 : 0)
                     .contentShape(Rectangle())
-                    // maximumDistance: 80 (was 30) — phones held normally
-                    // wobble enough that a 30pt drift silently cancelled
-                    // the press with no feedback. 80pt still excludes
-                    // intentional swipes but tolerates ordinary hand
-                    // jitter during a 0.3s hold.
-                    .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 80) {
+                    .onTapGesture {
                         guard capturePhase == .prompt else { return }
-                        startCaptureRecording()
+                        startTyping()
                     }
-                    // Hit testing only matters during .prompt — the blob
-                    // buttons in .choose are rendered above in
-                    // `captureOverlay` and would still get tap priority
-                    // either way, but turning off the long-press during
-                    // .choose keeps the gesture from competing for taps
-                    // near the bottom blobs.
                     .allowsHitTesting(capturePhase == .prompt)
                     .animation(.easeInOut(duration: 0.45), value: capturePhase)
                     // Insertion delayed by the cluster's full 0.85s dive
@@ -505,65 +467,9 @@ struct OnboardingView: View {
             insertion: .opacity.animation(.easeOut(duration: 0.40).delay(0.85)),
             removal:   .opacity.animation(.easeOut(duration: 0.22))
         ))
-        .task {
-            // Refresh the displayed mm:ss from the wall-clock anchor each
-            // second the recorder is active. Computing from Date() rather
-            // than incrementing a counter avoids the drift the old loop hit
-            // when Task.sleep ran long under main-thread contention — at the
-            // cost of one extra Date() comparison per tick, which is free.
-            while !Task.isCancelled {
-                do { try await Task.sleep(nanoseconds: 1_000_000_000) }
-                catch { break }
-                guard captureRecorder.isRecording else { continue }
-                switch capturePhase {
-                case .recording:
-                    recordingSeconds = Int(Date().timeIntervalSince(recordingStartedAt))
-                case .specify:
-                    specifySeconds = Int(Date().timeIntervalSince(specifyStartedAt))
-                default:
-                    break
-                }
-            }
-        }
-        .onChange(of: captureRecorder.permissionDenied) { _, denied in
-            if denied {
-                showCaptureMicAlert = true
-                withAnimation(.easeInOut(duration: 0.35)) {
-                    // If the user already cleared the first recording and only
-                    // got blocked on the specify pass, drop them back into the
-                    // choose list rather than restarting the whole flow.
-                    capturePhase = capturePhase == .specify ? .choose : .prompt
-                }
-            }
-        }
-        .alert("Microphone access", isPresented: $showCaptureMicAlert) {
-            Button("Open Settings") {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }
-            Button("Skip", role: .cancel) {
-                // Treat Skip differently per phase. From .prompt the user
-                // never recorded anything, so exit onboarding entirely.
-                // From .choose (denial caught on .specify and bounced
-                // back) keep them on the choose list — they still have a
-                // valid first idea and can pick a content type or save.
-                if capturePhase == .choose {
-                    // Already moved back to .choose by the onChange below.
-                    // Nothing to do; just dismiss the alert.
-                } else {
-                    onGetStarted()
-                }
-            }
-        } message: {
-            Text("Microphone access is needed to capture your first idea. You can also skip and start exploring.")
-        }
         .onDisappear {
-            captureRecorder.stop()
             generatingTask?.cancel()
             generatingTask = nil
-            firstIdeaSnapshotTask?.cancel()
-            firstIdeaSnapshotTask = nil
         }
         // Drop the user straight onto the per-note detail page the app uses
         // for every note — a "Note" tab plus a tab for the generation just
@@ -582,7 +488,7 @@ struct OnboardingView: View {
 
     @ViewBuilder private var captureHeadline: some View {
         switch capturePhase {
-        case .prompt, .recording:
+        case .prompt, .typing:
             Text("Let's capture\nyour first idea")
                 .font(.lora(size: 22, weight: .medium))
                 .kerning(-0.3)
@@ -598,22 +504,11 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .transition(.opacity)
         case .generating:
-            // The "What do you want to create?" question is past — the user
-            // has picked. Keeping just the reassurance line lets the cloud
-            // animation below carry the rest of the message.
             Text("Shaping your first idea\u{2026}")
                 .font(.lora(size: 20, weight: .medium))
                 .kerning(-0.3)
                 .foregroundColor(AppText.primary)
                 .multilineTextAlignment(.center)
-                .transition(.opacity)
-        case .specify:
-            Text("What do you want to\u{2026}?")
-                .font(.lora(size: 22, weight: .medium))
-                .kerning(-0.3)
-                .foregroundColor(AppText.primary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(4)
                 .transition(.opacity)
         }
     }
@@ -622,11 +517,9 @@ struct OnboardingView: View {
         switch capturePhase {
         case .prompt:
             // The cloud itself is rendered as a full-screen background in
-            // the parent ZStack and owns the press-and-hold gesture. This
-            // slot just hosts the visible caption pinned in the middle of
-            // the layout, with hit-testing disabled so taps fall through
-            // to the cloud behind it.
-            Text("Press and hold to start recording\nyour first idea")
+            // The cloud is behind this view and owns the tap-to-type gesture.
+            // This slot shows the caption; hit-testing disabled so taps fall through.
+            Text("Tap to write your first idea")
                 .font(.system(.subheadline, design: .rounded))
                 .foregroundColor(Color.white.opacity(0.62))
                 .multilineTextAlignment(.center)
@@ -634,61 +527,37 @@ struct OnboardingView: View {
                 .allowsHitTesting(false)
                 .transition(.opacity)
 
-        case .recording:
-            // captureRecorder.isRecording becomes true only after the
-            // async mic auth + audio engine start completes (50-500ms
-            // after the long-press fires). The "Listening…" label tells
-            // the user the engine is spinning up so they don't start
-            // speaking into a deaf microphone during the gap.
-            let isLive = captureRecorder.isRecording
-            VStack(spacing: 18) {
-                let waveSize = UIScreen.main.bounds.width * 2 / 3
-                OnboardingRecordingWaveform(recorder: captureRecorder)
-                    .frame(width: waveSize, height: waveSize)
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(Circle())
-
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(Color.white.opacity(0.5))
-                        .frame(width: 7, height: 7)
-                    Text(isLive
-                         ? "Recording  \(formatCaptureTime(recordingSeconds))"
-                         : "Listening\u{2026}")
-                        .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundColor(Color.white.opacity(0.55))
+        case .typing:
+            ZStack(alignment: .topLeading) {
+                if captureText.isEmpty {
+                    Text("Share your idea here\u{2026}")
+                        .font(.system(.body, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.38))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .allowsHitTesting(false)
                 }
+                TextEditor(text: $captureText)
+                    .font(.system(.body, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.88))
+                    .scrollContentBackground(.hidden)
+                    .background(.clear)
+                    .tint(BrandColor.amber)
+                    .frame(minHeight: 100, maxHeight: 160)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
             }
+            .background(Color.white.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+            )
             .transition(.opacity)
 
         case .choose:
             chooseCirclesField
-                // Pure fade-in. The slide directions (.bottom, then .top)
-                // both pulled the eye in a direction; a dissolve is the
-                // calmer "appears" the design ask wants.
                 .transition(.opacity)
-
-        case .specify:
-            let isLive = captureRecorder.isRecording
-            VStack(spacing: 18) {
-                let waveSize = UIScreen.main.bounds.width * 2 / 3
-                OnboardingRecordingWaveform(recorder: captureRecorder)
-                    .frame(width: waveSize, height: waveSize)
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(Circle())
-
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(Color.white.opacity(0.5))
-                        .frame(width: 7, height: 7)
-                    Text(isLive
-                         ? "Recording  \(formatCaptureTime(specifySeconds))"
-                         : "Listening\u{2026}")
-                        .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundColor(Color.white.opacity(0.55))
-                }
-            }
-            .transition(.opacity)
 
         case .generating:
             // Immersive cloud scene: a spherical, slowly-rotating cluster of
@@ -721,36 +590,22 @@ struct OnboardingView: View {
     @ViewBuilder private var captureBottom: some View {
         switch capturePhase {
         case .prompt:
-            // Reserve the CTA slot so the layout doesn't reflow when the
-            // "Finish recording" button appears.
             Color.clear.frame(height: 54)
-        case .recording:
-            Button(action: finishCaptureRecording) {
-                Text("Finish recording")
+        case .typing:
+            let canContinue = !captureText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            Button(action: finishTyping) {
+                Text("Continue")
                     .font(.app(size: 17, weight: .semibold))
-                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07).opacity(canContinue ? 1 : 0.5))
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(Color.white.opacity(0.94))
+                    .background(Color.white.opacity(canContinue ? 0.94 : 0.40))
                     .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
             .buttonStyle(.plain)
+            .disabled(!canContinue)
             .transition(.opacity.combined(with: .move(edge: .bottom)))
-        case .choose:
-            Color.clear.frame(height: 54)
-        case .specify:
-            Button(action: finishSpecifyRecording) {
-                Text("Finish recording")
-                    .font(.app(size: 17, weight: .semibold))
-                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color.white.opacity(0.94))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
-        case .generating:
+        case .choose, .generating:
             Color.clear.frame(height: 54)
         }
     }
@@ -850,88 +705,27 @@ struct OnboardingView: View {
             .contentShape(shape)
     }
 
-    private func startCaptureRecording() {
+    private func startTyping() {
         guard capturePhase == .prompt else { return }
-        // .onChange(of: permissionDenied) below only fires on a *transition*
-        // to true; if the user previously denied mic access in a past session
-        // the flag is already true at view load and no .onChange runs. Catch
-        // that case here so the long-press surfaces the alert instead of
-        // silently flipping into a recording state with no audio.
-        if captureRecorder.permissionDenied {
-            showCaptureMicAlert = true
-            return
-        }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        recordingSeconds = 0
-        recordingStartedAt = Date()
-        captureRecorder.start()
         withAnimation(.easeInOut(duration: 0.45)) {
-            capturePhase = .recording
+            capturePhase = .typing
         }
     }
 
-    private func finishCaptureRecording() {
-        guard capturePhase == .recording else { return }
+    private func finishTyping() {
+        guard capturePhase == .typing else { return }
+        let text = captureText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        // Take an immediate snapshot as a floor, then re-snapshot after a
-        // short delay so the recognizer's final isFinal callback (which
-        // arrives 200-500ms after endAudio()) can land in `transcript`
-        // before we capture it. Without the deferred update, the last
-        // sentence of a user's idea is silently dropped.
-        firstIdeaTranscript = captureRecorder.transcript
-        captureRecorder.stop()
-        firstIdeaSnapshotTask?.cancel()
-        firstIdeaSnapshotTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 800_000_000)
-            guard !Task.isCancelled else { return }
-            // Only overwrite if no second recording has rewired the
-            // recognizer in the meantime (.specify clobbers transcript).
-            if capturePhase == .choose {
-                firstIdeaTranscript = captureRecorder.transcript
-            }
-        }
+        firstIdeaTranscript = text
         withAnimation(.easeInOut(duration: 0.45)) {
             capturePhase = .choose
         }
     }
 
-    private func startSpecifyRecording() {
-        // Same guard as startCaptureRecording — if permission was already
-        // denied (perhaps the user revoked between recordings) surface the
-        // alert instead of pretending to record.
-        if captureRecorder.permissionDenied {
-            showCaptureMicAlert = true
-            return
-        }
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        // Kill the deferred first-idea snapshot — once the recognizer
-        // rewires for the specify pass it'll overwrite `transcript` with
-        // the new utterance, and we don't want the stale Task firing
-        // afterward to copy that into firstIdeaTranscript.
-        firstIdeaSnapshotTask?.cancel()
-        firstIdeaSnapshotTask = nil
-        specifySeconds = 0
-        specifyStartedAt = Date()
-        captureRecorder.start()
-        withAnimation(.easeInOut(duration: 0.45)) {
-            capturePhase = .specify
-        }
-    }
-
-    private func finishSpecifyRecording() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        let specifyText = captureRecorder.transcript
-        captureRecorder.stop()
-        // The spoken intent steers the generator via customPrompt. "blog"
-        // gives the model long-form latitude to honor whatever the user
-        // asked for — the format-specific system prompts are too rigid to
-        // accommodate "write me a poem" or "draft a quick announcement".
-        startGeneration(label: "Your content", formatID: "blog", customPrompt: specifyText)
-    }
-
     private func saveIdeaAndExit() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        captureRecorder.stop()
         let note = saveTranscriptAsNote(firstIdeaTranscript)
         // Title the note in the background so the library shows a 3-word
         // summary rather than the raw first transcript line.
@@ -945,7 +739,6 @@ struct OnboardingView: View {
     private func startGeneration(label: String, formatID: String, customPrompt: String) {
         guard capturePhase == .choose else { return }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        captureRecorder.stop()
         chosenContentLabel = label
         // Stamped so the cloud scene can drive its satellite-firing
         // schedule from t=0 instead of from the TimelineView's first tick,
@@ -994,7 +787,7 @@ struct OnboardingView: View {
         let sourceContent = transcript.isEmpty
             ? "Captured idea (no transcription available)."
             : transcript
-        let source = SourceItem(type: .voice, label: "First idea", content: sourceContent)
+        let source = SourceItem(type: .text, label: "First idea", content: sourceContent)
         let formatLabel = allFormats.first { $0.id == formatID }?.label ?? label
 
         let result = await ContentGenerator.generate(
@@ -1038,18 +831,7 @@ struct OnboardingView: View {
     @discardableResult
     private func saveTranscriptAsNote(_ text: String) -> Note {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Empty input usually means speech recognition produced nothing — mic
-        // worked but the user spoke too quietly, or the recogniser timed out.
-        // Previously we returned silently here, so "Just save my note for
-        // now" with a failed transcription exited onboarding having persisted
-        // nothing. Save a placeholder so the user still finds *a* note in
-        // their library and can investigate (mic / permissions / Siri lang)
-        // instead of thinking the app discarded their idea. The placeholder
-        // already leads with a title line so the note-detail page renders
-        // the rest as the body rather than swallowing it into the heading.
-        let body = trimmed.isEmpty
-            ? "Your first idea\nTranscription was empty — record again from the Notes tab to capture it."
-            : trimmed
+        let body = trimmed.isEmpty ? "Your first idea\nAdd your notes here." : trimmed
 
         var stored = NotesStore.load()
         var note = Note()
@@ -1070,8 +852,7 @@ struct OnboardingView: View {
         let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         let finalBody: String
         if trimmed.isEmpty {
-            // Placeholder note — already saved with a title line.
-            finalBody = "Your first idea\nTranscription was empty — record again from the Notes tab to capture it."
+            finalBody = "Your first idea\nAdd your notes here."
         } else if let titled = await AIService.prependTitleIfMissing(to: trimmed) {
             finalBody = titled
         } else if trimmed.contains("\n") {
@@ -1079,8 +860,6 @@ struct OnboardingView: View {
             // first line already reads as a title — keep it as-is.
             finalBody = trimmed
         } else {
-            // Single paragraph, no AI title available — prepend a generic
-            // heading so the transcript still renders below the tabs.
             finalBody = "Your first idea\n" + trimmed
         }
 
@@ -1103,9 +882,6 @@ struct OnboardingView: View {
         }
     }
 
-    private func formatCaptureTime(_ s: Int) -> String {
-        String(format: "%d:%02d", s / 60, s % 60)
-    }
 }
 
 private final class AppleSignInCoordinator: NSObject, ObservableObject {
@@ -1356,107 +1132,6 @@ private struct WobblyCircle: Shape {
 }
 
 // MARK: - Onboarding recording waveform
-
-/// Persistent per-particle orbital state. Angles are accumulated via dt
-/// each frame so changing orbital speed (which tracks audio level) never
-/// causes a positional jump — only angular velocity changes, not position.
-private final class ParticleOrbitStore: ObservableObject {
-    struct Particle {
-        var angle: Double       // accumulated, radians
-        let baseSpeed: Double   // radians/sec base rate
-        let dir: Double         // +1 or -1
-        let normR: Double       // normalised orbital radius 0–1
-        let pr2: Double         // size seed
-        let pr3: Double         // alpha / isLarge seed
-        let fi: Double          // float index for pulse phases
-    }
-
-    private(set) var particles: [Particle] = []
-    var lastT: Double = -1
-
-    init(count: Int) {
-        for i in 0..<count {
-            let pr0 = Self.prng(i)
-            let pr1 = Self.prng(i + 1000)
-            let pr2 = Self.prng(i + 2000)
-            let pr3 = Self.prng(i + 3000)
-            particles.append(Particle(
-                angle: pr2 * .pi * 2,
-                baseSpeed: 0.10 + (1.0 - pr0) * 0.20,
-                dir: pr1 < 0.5 ? 1.0 : -1.0,
-                normR: 0.08 + pow(pr0, 0.7) * 0.88,
-                pr2: pr2, pr3: pr3,
-                fi: Double(i)
-            ))
-        }
-    }
-
-    func step(t: Double, amplified: Double) {
-        guard lastT > 0 else { lastT = t; return }
-        // Cap dt so the very first tick (or a background-to-foreground resume)
-        // can't produce a giant angle step.
-        let dt = min(t - lastT, 0.067)
-        lastT = t
-        let speedMult = 1.8 + amplified * 6.0
-        for i in particles.indices {
-            particles[i].angle += particles[i].baseSpeed * speedMult * particles[i].dir * dt
-        }
-    }
-
-    private static func prng(_ n: Int) -> Double {
-        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
-        return v - floor(v)
-    }
-}
-
-/// Full-circle orbital particle field driven by the live mic level.
-/// Angle is accumulated via dt — speed changes with audio level
-/// never cause positional discontinuities.
-private struct OnboardingRecordingWaveform: View {
-    let recorder: VoiceRecorder
-    @StateObject private var store = ParticleOrbitStore(count: 200)
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let level = recorder.audioLevel
-            // RMS floor ~0.008 (mic hiss); normal speech 0.02–0.06.
-            // Multiply by 18 so full amber is reached at ~0.063.
-            let amplified = min(1.0, max(0.0, Double(level) - 0.008) * 18.0)
-            Canvas { ctx, size in
-                let cx = size.width / 2
-                let cy = size.height / 2
-                let maxR = min(cx, cy) * 0.88
-                for p in store.particles {
-                    let r = p.normR * maxR
-                    let px = cx + cos(p.angle) * r
-                    let py = cy + sin(p.angle) * r
-                    let pulse = 0.75 + 0.25 * sin(t * 0.35 + p.fi * 0.4)
-                    let isLarge = p.pr3 > 0.90
-                    let dotR = ((isLarge ? 2.6 : 1.1) + p.pr2 * 2.0) * pulse + amplified * 1.8
-                    let alphaPulse = 0.6 + 0.4 * sin(t * 0.28 + p.fi * 0.3)
-                    let alpha = (0.20 + p.pr3 * 0.52) * alphaPulse * (0.32 + amplified * 0.65)
-                    // Interpolate colour: white-grey when silent → amber when speaking
-                    let particleColor = Color(
-                        red:   0.80 + amplified * 0.20,
-                        green: 0.80 - amplified * 0.12,
-                        blue:  0.80 - amplified * 0.60
-                    )
-                    ctx.fill(
-                        Path(ellipseIn: CGRect(x: px - dotR, y: py - dotR,
-                                               width: dotR * 2, height: dotR * 2)),
-                        with: .color(particleColor.opacity(alpha))
-                    )
-                }
-            }
-            .onChange(of: context.date) { _, _ in
-                store.step(t: t, amplified: amplified)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityHidden(true)
-    }
-}
 
 // MARK: - Generating cloud scene
 
