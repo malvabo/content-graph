@@ -631,11 +631,6 @@ private struct TextInputSheet: View {
         !bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func openSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
-    }
-
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {

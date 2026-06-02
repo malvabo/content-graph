@@ -25,7 +25,7 @@ struct WebView: UIViewRepresentable {
         // Keep audio playing through screen lock — the default .soloAmbient
         // category silences playback on lock.
         let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playback, mode: .default, options: .mixWithOthers)
+        try? session.setCategory(.playAndRecord, mode: .default, options: .mixWithOthers)
         try? session.setActive(true)
 
         let config = WKWebViewConfiguration()

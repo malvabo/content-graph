@@ -279,13 +279,12 @@ private struct NoteEditorPage: View {
         !combined.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func openSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
-    }
-
     private func persistIfNeeded() {
         guard !didDelete else { return }
+        if original.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !hasContent {
+            onDelete()
+            return
+        }
         let bodyChanged = (combined != original.body)
         var saved = original
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -764,7 +763,6 @@ struct NotesView: View {
         var note = Note()
         note.updatedAt = Date()
         notes.insert(note, at: 0)
-        NotesStore.saveInBackground(notes)
         editingNote = note
     }
 

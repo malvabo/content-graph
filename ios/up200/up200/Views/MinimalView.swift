@@ -92,9 +92,7 @@ extension Notification.Name {
 /// `MinimalNoteDetailPage` (with generation tabs) instead of the
 /// classic single-note editor.
 struct MinimalHomePage: View {
-    /// Bumped externally (by ContentView when the floating mic capture
-    /// fires) to ask the embedded NotesView to begin a voice note. Same
-    /// hand-off pattern Simple mode uses with `SimpleCreateBar`.
+    /// Bumped externally to ask the embedded NotesView to begin a new note.
     var newNoteTrigger: Int = 0
     var onProfileTap: () -> Void = {}
 
@@ -421,8 +419,8 @@ struct MinimalNoteDetailPage: View {
                 }
 
                 aiChatPill
-                    .opacity(editorFocused || titleFocused ? 0 : 1)
-                    .allowsHitTesting(!editorFocused && !titleFocused)
+                    .opacity((editorFocused && !hasActiveTextSelection) || titleFocused ? 0 : 1)
+                    .allowsHitTesting(!(editorFocused && !hasActiveTextSelection) && !titleFocused)
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)

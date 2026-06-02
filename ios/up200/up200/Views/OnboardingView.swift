@@ -46,7 +46,6 @@ struct OnboardingView: View {
 
     @State private var capturePhase: CapturePhase = .prompt
     @State private var captureText: String = ""
-    @State private var chosenContentLabel: String = ""
     @State private var generatingTask: Task<Void, Never>? = nil
     @State private var firstIdeaTranscript: String = ""
     @State private var resultNote: Note? = nil
@@ -739,7 +738,6 @@ struct OnboardingView: View {
     private func startGeneration(label: String, formatID: String, customPrompt: String) {
         guard capturePhase == .choose else { return }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        chosenContentLabel = label
         // Stamped so the cloud scene can drive its satellite-firing
         // schedule from t=0 instead of from the TimelineView's first tick,
         // which would otherwise start mid-animation on phase entry.
