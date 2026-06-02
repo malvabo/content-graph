@@ -1005,13 +1005,11 @@ final class RecordingController: ObservableObject {
         let engine = audioEngine
         let req = sharedRequest.value
         sharedRequest.value = nil
-        teardownTask = Task { @MainActor in
-            req?.endAudio()  // signal SR before stopping the engine feed
+        teardownTask = Task.detached(priority: .userInitiated) {
+            req?.endAudio()
             engine.stop()
             engine.inputNode.removeTap(onBus: 0)
-            await Task.detached(priority: .userInitiated) {
-                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-            }.value
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
 
