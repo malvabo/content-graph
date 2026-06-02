@@ -294,7 +294,7 @@ private enum RecordingEngineError: LocalizedError {
 }
 
 private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
-    private let queue = DispatchQueue(label: "com.up200.recording.audio-pipeline", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "com.up200.recording.audio-pipeline", qos: .userInteractive)
     private let transcriptionPipeline: LiveTranscriptionPipeline
     private let onActiveSegmentChanged: @Sendable (URL?) -> Void
     private let captureSession = AVCaptureSession()
@@ -525,6 +525,7 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         let writerToFinish = writer
         let finishedURL = currentFileURL
         let finishedIndex = segmentIndex
+        let requiresCatchUp = shouldQueueSegmentsForCatchUp
 
         writerInput?.markAsFinished()
         self.writer = nil
@@ -534,15 +535,17 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         self.hasStartedWriterSession = false
 
         appendManifestEvent("segment_finishing index=\(finishedIndex) reason=\(reason)")
-        if shouldQueueSegmentsForCatchUp, let finishedURL {
-            transcriptionPipeline.noteSegmentNeedsCatchUp(finishedURL)
-        }
-
         writerToFinish.finishWriting { [weak self] in
             let status = writerToFinish.status
             let file = finishedURL?.lastPathComponent ?? "unknown"
             self?.queue.async {
                 self?.appendManifestEvent("segment_finished index=\(finishedIndex) status=\(status.rawValue) file=\(file)")
+                if status == .completed, let finishedURL {
+                    self?.transcriptionPipeline.noteSegmentFinalized(
+                        finishedURL,
+                        requiresCatchUp: requiresCatchUp
+                    )
+                }
             }
         }
     }
@@ -684,30 +687,31 @@ private final class LiveTranscriptionPipeline {
         qos: .utility
     )
     private let restartDelay: TimeInterval = 2
-    private let maxPendingBuffers = 12
     private let maxLiveTranscriptCharacters = 4_000
     private let partialFlushInterval: TimeInterval = 10
     private let taskRotationInterval: TimeInterval = 55
     private let locale = Locale(identifier: "en_US")
     private let onTranscript: @Sendable (String) -> Void
-    private let pendingBufferLock = NSLock()
+    private let pendingBufferSlots = DispatchSemaphore(value: 12)
 
     private var recognizer: SFSpeechRecognizer?
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var authorizationStatus = SFSpeechRecognizerAuthorizationStatus.notDetermined
     private var isAuthorizationRequestInFlight = false
-    private var pendingBufferCount = 0
     private var recentCommittedTranscript = ""
     private var currentPartialTranscript = ""
     private var lastFlushedPartialTranscript = ""
     private var lastPartialFlushDate = Date.distantPast
     private var sessionDirectory: URL?
     private var transcriptFileURL: URL?
+    private var catchUpBacklogFileURL: URL?
     private var catchUpInFlight = false
     private var isPausedForSystem = false
     private var segmentsNeedingCatchUp = Set<String>()
     private var caughtUpSegmentNames = Set<String>()
+    private var liveCoverageHealthy = false
+    private var currentSegmentNeedsCatchUp = false
     private var isRunning = false
     private var isRestartScheduled = false
     private var restartGeneration = 0
@@ -724,13 +728,17 @@ private final class LiveTranscriptionPipeline {
             if self.sessionDirectory != sessionDirectory {
                 self.sessionDirectory = sessionDirectory
                 self.transcriptFileURL = sessionDirectory?.appendingPathComponent("transcript.jsonl")
+                self.catchUpBacklogFileURL = sessionDirectory?.appendingPathComponent("transcription-backlog.txt")
                 self.recentCommittedTranscript = ""
                 self.currentPartialTranscript = ""
                 self.lastFlushedPartialTranscript = ""
                 self.lastPartialFlushDate = .distantPast
                 self.segmentsNeedingCatchUp.removeAll(keepingCapacity: true)
                 self.caughtUpSegmentNames.removeAll(keepingCapacity: true)
+                self.liveCoverageHealthy = false
+                self.currentSegmentNeedsCatchUp = false
                 self.createTranscriptFileIfNeeded()
+                self.createCatchUpBacklogFileIfNeeded()
             }
 
             self.isRunning = true
@@ -753,6 +761,7 @@ private final class LiveTranscriptionPipeline {
             guard let self, self.isRunning else { return }
             self.flushTranscriptEventLocked(type: "system_pause", text: "", metadata: ["reason": reason])
             self.resetRecognitionTaskLocked(endAudio: true)
+            self.markLiveCoverageGapLocked(reason: reason)
             self.isPausedForSystem = true
             self.isRestartScheduled = false
             self.restartGeneration += 1
@@ -760,9 +769,25 @@ private final class LiveTranscriptionPipeline {
         }
     }
 
-    func noteSegmentNeedsCatchUp(_ url: URL) {
+    func noteSegmentFinalized(_ url: URL, requiresCatchUp: Bool) {
         queue.async { [weak self] in
-            self?.segmentsNeedingCatchUp.insert(url.lastPathComponent)
+            guard let self else { return }
+
+            var queuedSegment = false
+            if requiresCatchUp || self.currentSegmentNeedsCatchUp || !self.liveCoverageHealthy {
+                self.queueSegmentForCatchUpLocked(url.lastPathComponent)
+                queuedSegment = true
+                self.flushTranscriptEventLocked(
+                    type: "catch_up_queued",
+                    text: "",
+                    metadata: ["segment": url.lastPathComponent]
+                )
+            }
+
+            self.currentSegmentNeedsCatchUp = !self.liveCoverageHealthy
+            if queuedSegment, !self.isPausedForSystem {
+                self.catchUpFromDiskIfNeeded()
+            }
         }
     }
 
@@ -772,6 +797,7 @@ private final class LiveTranscriptionPipeline {
             guard self.authorizationStatus == .authorized else { return }
             guard let sessionDirectory = self.sessionDirectory else { return }
 
+            self.loadDurableCatchUpBacklogLocked()
             let segmentURLs = self.finishedAudioSegments(in: sessionDirectory)
             let pendingSegments = segmentURLs.filter {
                 self.segmentsNeedingCatchUp.contains($0.lastPathComponent)
@@ -791,13 +817,15 @@ private final class LiveTranscriptionPipeline {
     }
 
     func append(_ sampleBuffer: CMSampleBuffer) {
-        guard reservePendingBufferSlot() else {
-            log("transcription queue full; dropped one sample buffer")
+        guard pendingBufferSlots.wait(timeout: .now()) == .success else {
+            queue.async { [weak self] in
+                self?.markLiveCoverageGapLocked(reason: "transcription_queue_full")
+            }
             return
         }
 
         queue.async { [weak self] in
-            defer { self?.releasePendingBufferSlot() }
+            defer { self?.pendingBufferSlots.signal() }
             guard let self, self.isRunning else {
                 return
             }
@@ -819,6 +847,7 @@ private final class LiveTranscriptionPipeline {
                 if status == .authorized {
                     self.startRecognitionIfAllowed()
                 } else {
+                    self.markLiveCoverageGapLocked(reason: "speech_authorization_\(status.rawValue)")
                     self.log("speech recognition unavailable; authorization status \(status.rawValue)")
                 }
             }
@@ -837,6 +866,7 @@ private final class LiveTranscriptionPipeline {
         }
 
         guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.isAvailable else {
+            markLiveCoverageGapLocked(reason: "speech_recognizer_unavailable")
             scheduleRestart(reason: "speech recognizer unavailable")
             return
         }
@@ -859,6 +889,7 @@ private final class LiveTranscriptionPipeline {
         }
 
         scheduleTaskRotation(generation: generation)
+        liveCoverageHealthy = true
         log("speech recognition task started")
     }
 
@@ -890,6 +921,7 @@ private final class LiveTranscriptionPipeline {
                 text: currentPartialTranscript,
                 metadata: ["error": error.localizedDescription]
             )
+            markLiveCoverageGapLocked(reason: "speech_recognition_error")
             resetRecognitionTaskLocked(endAudio: false)
             scheduleRestart(reason: "speech recognition error")
             return
@@ -942,6 +974,51 @@ private final class LiveTranscriptionPipeline {
             }
         } catch {
             log("transcript cache create failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func createCatchUpBacklogFileIfNeeded() {
+        guard let catchUpBacklogFileURL else { return }
+        do {
+            if !FileManager.default.fileExists(atPath: catchUpBacklogFileURL.path) {
+                try Data().write(to: catchUpBacklogFileURL)
+            }
+        } catch {
+            log("catch-up backlog create failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func queueSegmentForCatchUpLocked(_ segmentName: String) {
+        guard !segmentsNeedingCatchUp.contains(segmentName) else { return }
+
+        segmentsNeedingCatchUp.insert(segmentName)
+        guard let catchUpBacklogFileURL else { return }
+
+        do {
+            if !FileManager.default.fileExists(atPath: catchUpBacklogFileURL.path) {
+                try Data().write(to: catchUpBacklogFileURL)
+            }
+            let handle = try FileHandle(forWritingTo: catchUpBacklogFileURL)
+            try handle.seekToEnd()
+            if let data = "\(segmentName)\n".data(using: .utf8) {
+                try handle.write(contentsOf: data)
+            }
+            try handle.close()
+        } catch {
+            log("catch-up backlog write failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func loadDurableCatchUpBacklogLocked() {
+        guard let catchUpBacklogFileURL,
+              let backlog = try? String(contentsOf: catchUpBacklogFileURL, encoding: .utf8) else {
+            return
+        }
+
+        for segmentName in backlog.split(separator: "\n").map(String.init) {
+            if !caughtUpSegmentNames.contains(segmentName) {
+                segmentsNeedingCatchUp.insert(segmentName)
+            }
         }
     }
 
@@ -1043,24 +1120,6 @@ private final class LiveTranscriptionPipeline {
         }
     }
 
-    private func reservePendingBufferSlot() -> Bool {
-        pendingBufferLock.lock()
-        defer { pendingBufferLock.unlock() }
-
-        guard pendingBufferCount < maxPendingBuffers else {
-            return false
-        }
-
-        pendingBufferCount += 1
-        return true
-    }
-
-    private func releasePendingBufferSlot() {
-        pendingBufferLock.lock()
-        pendingBufferCount = max(0, pendingBufferCount - 1)
-        pendingBufferLock.unlock()
-    }
-
     private func scheduleRestart(reason: String) {
         guard isRunning, !isRestartScheduled else { return }
 
@@ -1103,6 +1162,12 @@ private final class LiveTranscriptionPipeline {
         }
     }
 
+    private func markLiveCoverageGapLocked(reason: String) {
+        liveCoverageHealthy = false
+        currentSegmentNeedsCatchUp = true
+        flushTranscriptEventLocked(type: "coverage_gap", text: "", metadata: ["reason": reason])
+    }
+
     private func resetRecognitionTaskLocked(endAudio: Bool) {
         if endAudio {
             request?.endAudio()
@@ -1111,6 +1176,7 @@ private final class LiveTranscriptionPipeline {
         task = nil
         request = nil
         recognizer = nil
+        liveCoverageHealthy = false
         taskGeneration += 1
     }
 
@@ -1123,6 +1189,8 @@ private final class LiveTranscriptionPipeline {
         catchUpInFlight = false
         isPausedForSystem = false
         isAuthorizationRequestInFlight = false
+        liveCoverageHealthy = false
+        currentSegmentNeedsCatchUp = false
         restartGeneration += 1
         taskGeneration += 1
         currentPartialTranscript = ""
