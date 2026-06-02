@@ -686,6 +686,8 @@ private final class LiveTranscriptionPipeline {
     private let restartDelay: TimeInterval = 2
     private let maxPendingBuffers = 12
     private let maxLiveTranscriptCharacters = 4_000
+    private let partialFlushInterval: TimeInterval = 10
+    private let taskRotationInterval: TimeInterval = 55
     private let locale = Locale(identifier: "en_US")
     private let onTranscript: @Sendable (String) -> Void
     private let pendingBufferLock = NSLock()
@@ -698,6 +700,8 @@ private final class LiveTranscriptionPipeline {
     private var pendingBufferCount = 0
     private var recentCommittedTranscript = ""
     private var currentPartialTranscript = ""
+    private var lastFlushedPartialTranscript = ""
+    private var lastPartialFlushDate = Date.distantPast
     private var sessionDirectory: URL?
     private var transcriptFileURL: URL?
     private var catchUpInFlight = false
@@ -707,6 +711,7 @@ private final class LiveTranscriptionPipeline {
     private var isRunning = false
     private var isRestartScheduled = false
     private var restartGeneration = 0
+    private var taskGeneration = 0
 
     init(onTranscript: @escaping @Sendable (String) -> Void) {
         self.onTranscript = onTranscript
@@ -721,6 +726,8 @@ private final class LiveTranscriptionPipeline {
                 self.transcriptFileURL = sessionDirectory?.appendingPathComponent("transcript.jsonl")
                 self.recentCommittedTranscript = ""
                 self.currentPartialTranscript = ""
+                self.lastFlushedPartialTranscript = ""
+                self.lastPartialFlushDate = .distantPast
                 self.segmentsNeedingCatchUp.removeAll(keepingCapacity: true)
                 self.caughtUpSegmentNames.removeAll(keepingCapacity: true)
                 self.createTranscriptFileIfNeeded()
@@ -749,6 +756,7 @@ private final class LiveTranscriptionPipeline {
             self.isPausedForSystem = true
             self.isRestartScheduled = false
             self.restartGeneration += 1
+            self.taskGeneration += 1
         }
     }
 
@@ -841,6 +849,8 @@ private final class LiveTranscriptionPipeline {
 
         self.recognizer = recognizer
         self.request = request
+        taskGeneration += 1
+        let generation = taskGeneration
 
         task = recognizer.recognitionTask(with: request) { [weak self] result, error in
             self?.queue.async {
@@ -848,6 +858,7 @@ private final class LiveTranscriptionPipeline {
             }
         }
 
+        scheduleTaskRotation(generation: generation)
         log("speech recognition task started")
     }
 
@@ -868,6 +879,7 @@ private final class LiveTranscriptionPipeline {
     private func handleRecognitionUpdate(result: SFSpeechRecognitionResult?, error: Error?) {
         if let result {
             currentPartialTranscript = result.bestTranscription.formattedString
+            flushPartialTranscriptIfNeeded(force: false)
             onTranscript(combinedTranscript(recentCommittedTranscript, currentPartialTranscript))
         }
 
@@ -884,11 +896,13 @@ private final class LiveTranscriptionPipeline {
         }
 
         if result?.isFinal == true {
+            flushPartialTranscriptIfNeeded(force: true)
             flushTranscriptEventLocked(type: "final", text: currentPartialTranscript, metadata: ["source": "live"])
             recentCommittedTranscript = boundedTranscript(
                 combinedTranscript(recentCommittedTranscript, currentPartialTranscript)
             )
             currentPartialTranscript = ""
+            lastFlushedPartialTranscript = ""
             resetRecognitionTaskLocked(endAudio: false)
             scheduleRestart(reason: "final speech result")
         }
@@ -903,6 +917,21 @@ private final class LiveTranscriptionPipeline {
     private func boundedTranscript(_ transcript: String) -> String {
         guard transcript.count > maxLiveTranscriptCharacters else { return transcript }
         return String(transcript.suffix(maxLiveTranscriptCharacters))
+    }
+
+    private func flushPartialTranscriptIfNeeded(force: Bool) {
+        guard !currentPartialTranscript.isEmpty else { return }
+
+        let now = Date()
+        let shouldFlush = force
+            || currentPartialTranscript != lastFlushedPartialTranscript
+                && now.timeIntervalSince(lastPartialFlushDate) >= partialFlushInterval
+
+        guard shouldFlush else { return }
+
+        flushTranscriptEventLocked(type: "partial", text: currentPartialTranscript, metadata: ["source": "live"])
+        lastFlushedPartialTranscript = currentPartialTranscript
+        lastPartialFlushDate = now
     }
 
     private func createTranscriptFileIfNeeded() {
@@ -1052,6 +1081,28 @@ private final class LiveTranscriptionPipeline {
         }
     }
 
+    private func scheduleTaskRotation(generation: Int) {
+        queue.asyncAfter(deadline: .now() + taskRotationInterval) { [weak self] in
+            guard let self,
+                  self.isRunning,
+                  !self.isPausedForSystem,
+                  !self.catchUpInFlight,
+                  self.taskGeneration == generation,
+                  self.request != nil || self.task != nil else {
+                return
+            }
+
+            self.flushPartialTranscriptIfNeeded(force: true)
+            self.flushTranscriptEventLocked(
+                type: "task_rotation",
+                text: "",
+                metadata: ["interval": String(self.taskRotationInterval)]
+            )
+            self.resetRecognitionTaskLocked(endAudio: true)
+            self.scheduleRestart(reason: "speech task rotation")
+        }
+    }
+
     private func resetRecognitionTaskLocked(endAudio: Bool) {
         if endAudio {
             request?.endAudio()
@@ -1060,6 +1111,7 @@ private final class LiveTranscriptionPipeline {
         task = nil
         request = nil
         recognizer = nil
+        taskGeneration += 1
     }
 
     private func stopLocked(reason: String) {
@@ -1072,7 +1124,9 @@ private final class LiveTranscriptionPipeline {
         isPausedForSystem = false
         isAuthorizationRequestInFlight = false
         restartGeneration += 1
+        taskGeneration += 1
         currentPartialTranscript = ""
+        lastFlushedPartialTranscript = ""
         resetRecognitionTaskLocked(endAudio: true)
     }
 
