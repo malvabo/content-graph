@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import Speech
 import UIKit
 
 enum RecordingEngineState: Equatable, CustomStringConvertible {
@@ -28,10 +29,22 @@ final class RecordingEngine: ObservableObject {
 
     @Published private(set) var state: RecordingEngineState = .idle
     @Published private(set) var activeAudioFileURL: URL?
+    @Published private(set) var liveTranscript = "" {
+        didSet {
+            for continuation in transcriptContinuations.values {
+                continuation.yield(liveTranscript)
+            }
+        }
+    }
 
     private let instanceID = UUID()
-    private let audioPipeline = ContinuousAudioTrackPipeline()
+    private lazy var audioPipeline = ContinuousAudioTrackPipeline { [weak self] transcript in
+        Task { @MainActor [weak self] in
+            self?.liveTranscript = transcript
+        }
+    }
     private var observers: [NSObjectProtocol] = []
+    private var transcriptContinuations: [UUID: AsyncStream<String>.Continuation] = [:]
     private var hasStartedObserving = false
 
     private init() {
@@ -39,7 +52,6 @@ final class RecordingEngine: ObservableObject {
     }
 
     deinit {
-        audioPipeline.stop(reason: "engine deinit")
         observers.forEach(NotificationCenter.default.removeObserver)
         print("[RecordingEngine \(instanceID)] deinitialized")
     }
@@ -80,6 +92,19 @@ final class RecordingEngine: ObservableObject {
         log("registered scene lifecycle observers")
     }
 
+    func transcriptionStream() -> AsyncStream<String> {
+        let id = UUID()
+        return AsyncStream { continuation in
+            continuation.yield(liveTranscript)
+            transcriptContinuations[id] = continuation
+            continuation.onTermination = { @Sendable [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.transcriptContinuations.removeValue(forKey: id)
+                }
+            }
+        }
+    }
+
     func start() {
         Task { @MainActor in
             await startRecordingAll()
@@ -94,6 +119,7 @@ final class RecordingEngine: ObservableObject {
     func stop() {
         audioPipeline.stop(reason: "stop requested")
         activeAudioFileURL = nil
+        liveTranscript = ""
         transition(to: .idle, reason: "stop requested")
     }
 
@@ -190,6 +216,7 @@ private enum RecordingEngineError: LocalizedError {
 
 private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
     private let queue = DispatchQueue(label: "com.up200.recording.audio-pipeline")
+    private let transcriptionPipeline: LiveTranscriptionPipeline
     private let captureSession = AVCaptureSession()
     private var audioOutput: AVCaptureAudioDataOutput?
     private var writer: AVAssetWriter?
@@ -197,6 +224,11 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
     private var currentFileURL: URL?
     private var hasStartedWriterSession = false
     private var isRunning = false
+
+    init(onTranscript: @escaping @Sendable (String) -> Void) {
+        self.transcriptionPipeline = LiveTranscriptionPipeline(onTranscript: onTranscript)
+        super.init()
+    }
 
     func start() throws -> URL {
         try queue.sync {
@@ -243,6 +275,8 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
             let message = writer.error?.localizedDescription ?? "unknown append error"
             log("failed to append audio sample buffer: \(message)")
         }
+
+        transcriptionPipeline.append(sampleBuffer)
     }
 
     private func startLocked() throws -> URL {
@@ -277,6 +311,7 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         self.hasStartedWriterSession = false
         self.isRunning = true
 
+        transcriptionPipeline.start()
         captureSession.startRunning()
         log("capture started; fragmented AAC file: \(fileURL.path)")
 
@@ -295,6 +330,7 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
             captureSession.stopRunning()
         }
 
+        transcriptionPipeline.stop(reason: reason)
         audioOutput?.setSampleBufferDelegate(nil, queue: nil)
         writerInput?.markAsFinished()
 
@@ -378,5 +414,226 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
 
     private func log(_ message: String) {
         print("[ContinuousAudioTrackPipeline] \(message)")
+    }
+}
+
+private final class LiveTranscriptionPipeline {
+    private let queue = DispatchQueue(
+        label: "com.up200.recording.transcription",
+        qos: .utility
+    )
+    private let restartDelay: TimeInterval = 2
+    private let maxPendingBuffers = 12
+    private let locale = Locale(identifier: "en_US")
+    private let onTranscript: @Sendable (String) -> Void
+    private let pendingBufferLock = NSLock()
+
+    private var recognizer: SFSpeechRecognizer?
+    private var request: SFSpeechAudioBufferRecognitionRequest?
+    private var task: SFSpeechRecognitionTask?
+    private var authorizationStatus = SFSpeechRecognizerAuthorizationStatus.notDetermined
+    private var isAuthorizationRequestInFlight = false
+    private var pendingBufferCount = 0
+    private var committedTranscript = ""
+    private var currentPartialTranscript = ""
+    private var isRunning = false
+    private var isRestartScheduled = false
+    private var restartGeneration = 0
+
+    init(onTranscript: @escaping @Sendable (String) -> Void) {
+        self.onTranscript = onTranscript
+    }
+
+    func start() {
+        queue.async { [weak self] in
+            guard let self else { return }
+
+            self.committedTranscript = ""
+            self.currentPartialTranscript = ""
+            self.isRunning = true
+            if self.requestSpeechAuthorizationIfNeeded() {
+                return
+            }
+            self.startRecognitionIfAllowed()
+        }
+    }
+
+    func stop(reason: String) {
+        queue.async { [weak self] in
+            self?.stopLocked(reason: reason)
+        }
+    }
+
+    func append(_ sampleBuffer: CMSampleBuffer) {
+        guard reservePendingBufferSlot() else {
+            log("transcription queue full; dropped one sample buffer")
+            return
+        }
+
+        queue.async { [weak self] in
+            defer { self?.releasePendingBufferSlot() }
+            guard let self, self.isRunning else {
+                return
+            }
+
+            self.appendLocked(sampleBuffer)
+        }
+    }
+
+    private func requestSpeechAuthorizationIfNeeded() -> Bool {
+        guard authorizationStatus == .notDetermined else { return false }
+        guard !isAuthorizationRequestInFlight else { return true }
+
+        isAuthorizationRequestInFlight = true
+        SFSpeechRecognizer.requestAuthorization { [weak self] status in
+            self?.queue.async {
+                guard let self else { return }
+                self.isAuthorizationRequestInFlight = false
+                self.authorizationStatus = status
+                if status == .authorized {
+                    self.startRecognitionIfAllowed()
+                } else {
+                    self.log("speech recognition unavailable; authorization status \(status.rawValue)")
+                }
+            }
+        }
+        return true
+    }
+
+    private func startRecognitionIfAllowed() {
+        guard isRunning else { return }
+        guard request == nil, task == nil else { return }
+
+        guard authorizationStatus == .authorized else {
+            log("speech recognition unavailable; authorization status \(authorizationStatus.rawValue)")
+            return
+        }
+
+        guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.isAvailable else {
+            scheduleRestart(reason: "speech recognizer unavailable")
+            return
+        }
+
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        if recognizer.supportsOnDeviceRecognition {
+            request.requiresOnDeviceRecognition = true
+        }
+
+        self.recognizer = recognizer
+        self.request = request
+
+        task = recognizer.recognitionTask(with: request) { [weak self] result, error in
+            self?.queue.async {
+                self?.handleRecognitionUpdate(result: result, error: error)
+            }
+        }
+
+        log("speech recognition task started")
+    }
+
+    private func appendLocked(_ sampleBuffer: CMSampleBuffer) {
+        guard isRunning else { return }
+
+        guard let request else {
+            guard authorizationStatus == .authorized, !isAuthorizationRequestInFlight else {
+                return
+            }
+            startRecognitionIfAllowed()
+            return
+        }
+
+        request.appendAudioSampleBuffer(sampleBuffer)
+    }
+
+    private func handleRecognitionUpdate(result: SFSpeechRecognitionResult?, error: Error?) {
+        if let result {
+            currentPartialTranscript = result.bestTranscription.formattedString
+            onTranscript(combinedTranscript(committedTranscript, currentPartialTranscript))
+        }
+
+        if let error {
+            log("speech recognition error: \(error.localizedDescription)")
+            resetRecognitionTaskLocked(endAudio: false)
+            scheduleRestart(reason: "speech recognition error")
+            return
+        }
+
+        if result?.isFinal == true {
+            committedTranscript = combinedTranscript(committedTranscript, currentPartialTranscript)
+            currentPartialTranscript = ""
+            resetRecognitionTaskLocked(endAudio: false)
+            scheduleRestart(reason: "final speech result")
+        }
+    }
+
+    private func combinedTranscript(_ committed: String, _ partial: String) -> String {
+        if committed.isEmpty { return partial }
+        if partial.isEmpty { return committed }
+        return committed + "\n" + partial
+    }
+
+    private func reservePendingBufferSlot() -> Bool {
+        pendingBufferLock.lock()
+        defer { pendingBufferLock.unlock() }
+
+        guard pendingBufferCount < maxPendingBuffers else {
+            return false
+        }
+
+        pendingBufferCount += 1
+        return true
+    }
+
+    private func releasePendingBufferSlot() {
+        pendingBufferLock.lock()
+        pendingBufferCount = max(0, pendingBufferCount - 1)
+        pendingBufferLock.unlock()
+    }
+
+    private func scheduleRestart(reason: String) {
+        guard isRunning, !isRestartScheduled else { return }
+
+        isRestartScheduled = true
+        restartGeneration += 1
+        let generation = restartGeneration
+        log("scheduling transcription restart: \(reason)")
+
+        queue.asyncAfter(deadline: .now() + restartDelay) { [weak self] in
+            guard let self,
+                  self.isRunning,
+                  self.restartGeneration == generation else {
+                return
+            }
+
+            self.isRestartScheduled = false
+            self.startRecognitionIfAllowed()
+        }
+    }
+
+    private func resetRecognitionTaskLocked(endAudio: Bool) {
+        if endAudio {
+            request?.endAudio()
+        }
+        task?.cancel()
+        task = nil
+        request = nil
+        recognizer = nil
+    }
+
+    private func stopLocked(reason: String) {
+        guard isRunning || task != nil || request != nil else { return }
+
+        log("stopping transcription pipeline: \(reason)")
+        isRunning = false
+        isRestartScheduled = false
+        isAuthorizationRequestInFlight = false
+        restartGeneration += 1
+        currentPartialTranscript = ""
+        resetRecognitionTaskLocked(endAudio: true)
+    }
+
+    private func log(_ message: String) {
+        print("[LiveTranscriptionPipeline] \(message)")
     }
 }

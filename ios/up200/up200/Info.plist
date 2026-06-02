@@ -24,6 +24,8 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Oula needs microphone access to record audio.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Oula uses speech recognition to transcribe audio while recording.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
