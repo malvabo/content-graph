@@ -435,10 +435,13 @@ struct MinimalNoteDetailPage: View {
                 // Keep the pill in the layout (its inner frame(maxWidth:
                 // .infinity) absorbs the slack and pushes DictationControls
                 // to the trailing edge) but fade it out and disable taps
-                // while dictation is live or editor is focused.
+                // while dictation is live or editor is focused without a
+                // selection. When text IS selected in the editor the pill
+                // stays visible so the user can send the highlighted span
+                // straight to chat.
                 aiChatPill
-                    .opacity(dictation.isRecording || editorFocused || titleFocused ? 0 : 1)
-                    .allowsHitTesting(!dictation.isRecording && !editorFocused && !titleFocused)
+                    .opacity(dictation.isRecording || (editorFocused && !hasActiveTextSelection) || titleFocused ? 0 : 1)
+                    .allowsHitTesting(!dictation.isRecording && !(editorFocused && !hasActiveTextSelection) && !titleFocused)
 
                 DictationControls(
                     dictation: dictation,
