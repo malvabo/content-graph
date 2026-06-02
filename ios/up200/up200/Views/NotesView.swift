@@ -100,13 +100,11 @@ final class NoteDictation: ObservableObject {
         let engine = audioEngine
         let req = sharedRequest.value
         sharedRequest.value = nil
-        teardownTask = Task { @MainActor in
-            req?.endAudio()  // signal SR before stopping the engine feed
+        teardownTask = Task.detached(priority: .userInitiated) {
+            req?.endAudio()
             engine.stop()
             engine.inputNode.removeTap(onBus: 0)
-            await Task.detached(priority: .userInitiated) {
-                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-            }.value
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
 
@@ -125,6 +123,7 @@ final class NoteDictation: ObservableObject {
         startupError = nil
         srRestartCount = 0
         startupTask?.cancel()
+        startupTask = nil
         activationTask?.cancel()
         activationTask = nil
         let token = startToken
@@ -666,6 +665,7 @@ struct NoteVoiceSheet: View {
                 NoteComposerSheet(
                     initialBody: recording.fullTranscript,
                     dictation: composerDictation,
+                    awaitRecordingTeardown: { await recording.awaitTeardown() },
                     onSave: { body in
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         recording.finishWithText(body)
@@ -710,6 +710,10 @@ struct NoteVoiceSheet: View {
                 // before RecordingController calls setActive(true).
                 let d = composerDictation
                 resumeTask = Task {
+                    // Wait for the ~300ms SwiftUI dismissal animation to complete
+                    // so NoteComposerSheet.onDisappear fires and dictation.stop()
+                    // sets a fresh teardownTask before we await it.
+                    do { try await Task.sleep(nanoseconds: 500_000_000) } catch { return }
                     await d.awaitTeardown()
                     await MainActor.run {
                         guard recording.isPaused, pausedByDetent else { return }
@@ -808,17 +812,6 @@ struct NoteVoiceSheet: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
                 Spacer(minLength: 16)
-            } else if !recording.fullTranscript.isEmpty {
-                ScrollView {
-                    Text(recording.fullTranscript)
-                        .font(.appBody)
-                        .foregroundColor(AppText.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
-                }
-                .frame(maxHeight: 72)
-                Spacer(minLength: 16)
             } else {
                 Spacer(minLength: 8)
             }
@@ -874,6 +867,7 @@ private struct NoteComposerSheet: View {
     let initialBody: String
     let onSave: (String) -> Void
     let onCancel: () -> Void
+    let awaitRecordingTeardown: () async -> Void
 
     @ObservedObject var dictation: NoteDictation
     @State private var noteBody: String
@@ -882,9 +876,10 @@ private struct NoteComposerSheet: View {
     @State private var dictationCancelled: Bool = false
     @FocusState private var bodyFocused: Bool
 
-    init(initialBody: String, dictation: NoteDictation, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
+    init(initialBody: String, dictation: NoteDictation, awaitRecordingTeardown: @escaping () async -> Void, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
         self.initialBody = initialBody
         self.dictation = dictation
+        self.awaitRecordingTeardown = awaitRecordingTeardown
         self.onSave = onSave
         self.onCancel = onCancel
         self._noteBody = State(initialValue: initialBody)
@@ -1010,6 +1005,9 @@ private struct NoteComposerSheet: View {
             }
         }
         .task {
+            // Ensure any in-flight RecordingController teardown (setActive false)
+            // completes before dictation calls setActive true on the same session.
+            await awaitRecordingTeardown()
             bodyBeforeDictation = noteBody
             dictation.start()
         }
