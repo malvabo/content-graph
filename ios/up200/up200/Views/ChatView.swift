@@ -1988,7 +1988,7 @@ private struct RewriteSuggestionCard: View {
 
             Button(action: onAccept) {
                 HStack(spacing: 8) {
-                    Image(systemName: isApplied ? "checkmark" : "arrow.right")
+                    Image(systemName: "checkmark")
                         .font(.system(size: 13, weight: .semibold))
                     Text(isApplied ? "Applied" : "Accept")
                         .font(.app(size: 15, weight: .semibold))
