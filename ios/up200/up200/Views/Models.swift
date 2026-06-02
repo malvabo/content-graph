@@ -997,6 +997,8 @@ final class RecordingController: ObservableObject {
         stopTimer()
         task?.cancel()
         task = nil
+        startupTask?.cancel()
+        startupTask = nil
         activationTask?.cancel()
         activationTask = nil
         authToken += 1
@@ -1071,6 +1073,7 @@ final class RecordingController: ObservableObject {
         startupError = nil
         srRestartCount = 0
         startupTask?.cancel()
+        startupTask = nil
         activationTask?.cancel()
         activationTask = nil
         let token = authToken
