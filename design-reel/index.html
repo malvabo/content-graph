@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>Product Promo</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=block" rel="stylesheet">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #0a0a0f;
+        font-family: "Inter", sans-serif;
+      }
+      .scene {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .caption-text-wrapper {
+        position: absolute;
+        bottom: 150px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
+        overflow: hidden;
+        padding: 10px 0;
+      }
+      .caption-line {
+        color: white;
+        font-size: 48px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        text-align: center;
+        text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        transform: translateY(100%);
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="20" data-width="1920" data-height="1080">
+      <!-- Scene 1: Logo Intro -->
+      <div id="scene-1" class="scene" data-composition-id="scene1-logo-intro" data-composition-src="compositions/scene1-logo-intro.html" data-start="0" data-duration="1.5" data-track-index="1" data-width="1920" data-height="1080"></div>
+
+      <!-- Scene 2-4: Continuous Canvas -->
+      <div id="scene-2-4" class="scene" data-composition-id="scene2-4-canvas" data-composition-src="compositions/scene2-4-canvas.html" data-start="1.5" data-duration="4.1" data-track-index="1" data-width="1920" data-height="1080"></div>
+
+      <!-- Scene 3: Mobile Onboarding -->
+      <div id="scene-3" class="scene" data-composition-id="scene3-mobile" data-composition-src="compositions/scene3-mobile.html" data-start="5.6" data-duration="8.4" data-track-index="1" data-width="1920" data-height="1080"></div>
+
+      <!-- Scene 5: Logo Outro -->
+      <div id="scene-5" class="scene" data-composition-id="scene5-logo-outro" data-composition-src="compositions/scene5-logo-outro.html" data-start="14" data-duration="6" data-track-index="1" data-width="1920" data-height="1080"></div>
+
+      <!-- Captions -->
+  
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const mainTl = gsap.timeline({ paused: true });
+
+      mainTl.set("#scene-2-4", { scale: 1, filter: "blur(0px)" }, 1.5);
+      mainTl.to(
+        "#scene-2-4",
+        { duration: 0.25, scale: 0.94, filter: "blur(6px)", opacity: 0, ease: "power2.in" },
+        13.75,
+      );
+
+      window.__timelines["main"] = mainTl;
+    </script>
+  </body>
+</html>
