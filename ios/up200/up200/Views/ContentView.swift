@@ -2628,6 +2628,8 @@ private struct RecordingMiniBar: View {
             HStack(spacing: 12) {
                 PulsingDot(active: recording.isRecordingActive)
                     .frame(width: 10, height: 10)
+                RecordingMiniParticleWave(active: recording.isRecordingActive)
+                    .frame(width: 50, height: 24)
                 Text(recording.state == .recordingAudioOnly ? "Recording audio" : "Recording")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
@@ -2681,6 +2683,44 @@ private struct RecordingMiniBar: View {
 
     private static func format(seconds: Int) -> String {
         String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+private struct RecordingMiniParticleWave: View {
+    let active: Bool
+    private let particleCount = 16
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            Canvas { ctx, size in
+                let cy = size.height / 2
+                let amplitude = active ? size.height * 0.30 : size.height * 0.08
+
+                for i in 0..<particleCount {
+                    let progress = Double(i) / Double(max(particleCount - 1, 1))
+                    let x = progress * size.width
+                    let envelope = sin(progress * .pi)
+                    let y = cy
+                        + sin(t * 5.2 + progress * .pi * 3.8) * amplitude * envelope
+                        + cos(t * 2.6 + progress * .pi * 7.2) * amplitude * 0.35 * envelope
+                    let radius = active ? 1.7 + envelope * 1.3 : 1.2
+                    let alpha = active ? 0.45 + envelope * 0.45 : 0.28
+
+                    ctx.fill(
+                        Path(ellipseIn: CGRect(
+                            x: x - radius,
+                            y: y - radius,
+                            width: radius * 2,
+                            height: radius * 2
+                        )),
+                        with: .color(BrandColor.amber.opacity(alpha))
+                    )
+                }
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 
