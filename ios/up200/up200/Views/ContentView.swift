@@ -2261,6 +2261,7 @@ private struct SimpleHomeHeader: View {
 /// at the bottom-right corner. Tapping it opens a new note.
 private struct SimpleCreateBar: View {
     let recordingState: RecordingEngineState
+    var showsNewNoteButton = true
     let onNewNote: () -> Void
     let onRecordTap: () -> Void
 
@@ -2278,7 +2279,9 @@ private struct SimpleCreateBar: View {
         HStack(spacing: 12) {
             Spacer()
             recordButton
-            newNoteButton
+            if showsNewNoteButton {
+                newNoteButton
+            }
         }
     }
 
@@ -2386,9 +2389,10 @@ struct ContentView: View {
                 // This ordering ensures correct visual stacking on all iOS versions:
                 // outer inset content appears above inner inset content.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if !keyboardVisible && !chromeController.hideTabBar && !recordingEngine.isRecordingActive {
+                    if !keyboardVisible && !recordingEngine.isRecordingActive {
                         SimpleCreateBar(
                             recordingState: recordingEngine.state,
+                            showsNewNoteButton: !chromeController.hideTabBar,
                             onNewNote: {
                                 selectedTab = .notes
                                 newNoteTrigger &+= 1
