@@ -2697,100 +2697,62 @@ private struct PulsingDot: View {
 
 // MARK: - Voice Record Sheet
 
-private struct RecordingOrbView: View {
+private struct RecordingParticleWaveform: View {
     var isRecording: Bool
     var level: Double
-    @State private var birthStart: Date?
-    @State private var smoothedSpread: Double = 60
-    @State private var smoothedLevel: Double = 0
-
-    private let green = Color(red: 0.12, green: 0.78, blue: 0.42)
+    private let particleCount = 55
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { tl in
-            let t = tl.date.timeIntervalSinceReferenceDate
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
             Canvas { ctx, size in
-                let cx = size.width / 2
-                let cy = size.height * 0.5
+                let cy = size.height / 2
+                let baseLevel = isRecording ? max(level, 0.22 + (sin(t * 1.35) + 1) * 0.08) : 0.025
+                let amplified = min(1.0, pow(Double(max(baseLevel, 0.005)), 0.28) * 2.8)
+                let amplitude = amplified * cy * 0.80
 
-                if isRecording {
-                    let birthFrac: Double = {
-                        guard let start = birthStart else { return 0 }
-                        return min(1, Date().timeIntervalSince(start) / 0.95)
-                    }()
-                    let birth = pow(birthFrac, 0.45)
-                    let lv = smoothedLevel
-                    let spread = smoothedSpread
-
-                    for i in 0..<4 {
-                        let angle = t * 0.65 + Double(i) * (.pi * 0.5)
-                        let radius = (spread + sin(t * 0.45 + Double(i) * 1.1) * 14) * birth
-                        let px = cx + cos(angle) * radius * 0.88
-                        let py = cy + sin(angle) * radius * 0.72
-                        let size = (95 + sin(t * 0.9 + Double(i) * 0.8) * 22) * (1 + lv * 0.5)
-                        let alpha = (0.34 + lv * 0.34) * birth
-
-                        let stops: [Gradient.Stop] = [
-                            .init(color: Color(red: 0.12, green: 0.78, blue: 0.42).opacity(alpha), location: 0),
-                            .init(color: Color(red: 0.10, green: 0.66, blue: 0.36).opacity(alpha * 0.28), location: 0.5),
-                            .init(color: .clear, location: 1),
-                        ]
-                        let center = CGPoint(x: px, y: py)
-                        let rect = CGRect(x: px - size, y: py - size, width: size * 2, height: size * 2)
-                        ctx.fill(
-                            Path(ellipseIn: rect),
-                            with: .radialGradient(Gradient(stops: stops), center: center, startRadius: 0, endRadius: size)
-                        )
-                    }
-
-                    if lv > 0.05 {
-                        let glow = 75 + lv * 50
-                        let center = CGPoint(x: cx, y: cy)
-                        let stops: [Gradient.Stop] = [
-                            .init(color: green.opacity(lv * 0.32), location: 0),
-                            .init(color: .clear, location: 1),
-                        ]
-                        let rect = CGRect(x: cx - glow, y: cy - glow, width: glow * 2, height: glow * 2)
-                        ctx.fill(
-                            Path(ellipseIn: rect),
-                            with: .radialGradient(Gradient(stops: stops), center: center, startRadius: 0, endRadius: glow)
-                        )
-                    }
-                } else {
-                    let breath = 1 + sin(t * 2 * .pi / 4.5) * 0.04
-                    let orbRadius: Double = 100 * breath
-                    let center = CGPoint(x: cx, y: cy)
-                    let stops: [Gradient.Stop] = [
-                        .init(color: Color(red: 1.0, green: 0.92, blue: 0.82).opacity(0.95), location: 0.0),
-                        .init(color: Color(red: 1.0, green: 0.92, blue: 0.82).opacity(0.70), location: 0.18),
-                        .init(color: Color(red: 1.0, green: 0.92, blue: 0.82).opacity(0.20), location: 0.50),
-                        .init(color: .clear, location: 1.0),
-                    ]
-                    let rect = CGRect(x: cx - orbRadius, y: cy - orbRadius, width: orbRadius * 2, height: orbRadius * 2)
+                for i in 0..<particleCount {
+                    let fi = Double(i)
+                    let progress = fi / Double(particleCount - 1)
+                    let baseX = progress * size.width
+                    let envelope = sin(progress * .pi)
+                    let phase1 = t * 3.5 + progress * .pi * 4.0
+                    let phase2 = t * 2.1 + progress * .pi * 7.0
+                    let targetY = cy + sin(phase1) * amplitude * 0.65 * envelope + sin(phase2) * amplitude * 0.35 * envelope
+                    let seed1 = fi * 13.7
+                    let seed2 = fi * 29.1
+                    let scatterY = 4.0 + amplified * 10.0
+                    let jitterX = sin(t * 0.7 + seed1) * 2.5
+                    let jitterY = sin(t * 0.9 + seed2) * scatterY + cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4
+                    let px = baseX + jitterX
+                    let py = targetY + jitterY
+                    let random = pseudoRandom(i * 3)
+                    let waveMag = (sin(phase1) + 1.0) / 2.0
+                    let radius = 1.0 + random * 1.8 + waveMag * 2.0 * amplified
+                    let normJitter = abs(jitterY) / max(scatterY * 1.5, 1.0)
+                    let proximityAlpha = max(0.0, 1.0 - normJitter) * envelope
+                    let pulse = 0.65 + 0.35 * sin(t * 1.8 + fi * 0.35)
+                    let alpha = proximityAlpha * pulse * (0.35 + amplified * 0.60) * (isRecording ? 1.0 : 0.35)
                     ctx.fill(
-                        Path(ellipseIn: rect),
-                        with: .radialGradient(Gradient(stops: stops), center: center, startRadius: 0, endRadius: orbRadius)
+                        Path(ellipseIn: CGRect(
+                            x: px - radius,
+                            y: py - radius,
+                            width: radius * 2,
+                            height: radius * 2
+                        )),
+                        with: .color(BrandColor.amber.opacity(alpha))
                     )
                 }
             }
-            .blendMode(.screen)
-            .onChange(of: tl.date) { _, _ in
-                let synthesizedLevel = isRecording ? max(level, 0.12 + (sin(t * 2.7) + 1) * 0.08) : 0
-                smoothedLevel += (synthesizedLevel - smoothedLevel) * 0.25
-                let target: Double = synthesizedLevel > 0.12 ? 10 : 60
-                smoothedSpread += (target - smoothedSpread) * 0.04
-            }
         }
-        .onChange(of: isRecording) { _, recording in
-            if recording {
-                birthStart = Date()
-                smoothedSpread = 60
-                smoothedLevel = 0
-            } else {
-                birthStart = nil
-            }
-        }
+        .frame(height: 75)
         .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func pseudoRandom(_ n: Int) -> Double {
+        let value = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
+        return value - floor(value)
     }
 }
 
@@ -2801,8 +2763,7 @@ private struct EngineVoiceRecordSheet: View {
     let onExpand: () -> Void
     let onStop: () -> Void
 
-    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
-    private let green = Color(red: 0.12, green: 0.78, blue: 0.42)
+    private let sheetBg = AppBackground.primary
 
     private var timeLabel: String {
         String(format: "%d:%02d", recording.elapsedSeconds / 60, recording.elapsedSeconds % 60)
@@ -2820,38 +2781,28 @@ private struct EngineVoiceRecordSheet: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
-            RadialGradient(
-                colors: [
-                    (recording.isRecordingActive ? green : amber).opacity(recording.isRecordingActive ? 0.20 : 0.0),
-                    .clear,
-                ],
-                center: .center, startRadius: 0, endRadius: 320
-            )
-            .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.7), value: recording.isRecordingActive)
-
+            sheetBg.ignoresSafeArea()
             VStack(spacing: 0) {
                 header
 
-                Spacer()
+                Spacer(minLength: 24)
 
                 VStack(spacing: 24) {
-                    RecordingOrbView(
+                    RecordingParticleWaveform(
                         isRecording: recording.isRecordingActive,
                         level: 0
                     )
-                    .frame(height: presentation == .full ? 320 : 250)
+                    .padding(.horizontal, presentation == .full ? 36 : 28)
 
                     Text(recording.isRecordingActive ? timeLabel : recording.userFacingFailureMessage)
-                        .font(.system(size: 17, design: recording.isRecordingActive ? .monospaced : .default))
-                        .foregroundColor(Color.white.opacity(recording.isRecordingActive ? 0.80 : 0.45))
+                        .font(.system(size: 22, weight: .medium, design: recording.isRecordingActive ? .monospaced : .default))
+                        .foregroundColor(AppInk.solid(recording.isRecordingActive ? 0.70 : 0.45))
                         .transition(.opacity)
                 }
 
                 transcriptView
 
-                Spacer()
+                Spacer(minLength: 24)
 
                 controls
             }
@@ -2861,49 +2812,54 @@ private struct EngineVoiceRecordSheet: View {
     }
 
     private var header: some View {
-        HStack {
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                onMinimize()
-            } label: {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.55))
-                    .frame(width: 44, height: 44)
-                    .background(Color.white.opacity(0.10))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Minimize recorder")
+        ZStack {
+            Text(presentation == .mid ? "Swipe up to expand" : title)
+                .font(.subheadline)
+                .foregroundColor(AppText.tertiary)
+                .frame(maxWidth: .infinity)
 
-            Spacer()
+            HStack {
+                Spacer()
 
-            Text(title)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
-
-            Spacer()
-
-            if presentation == .mid {
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onExpand()
+                    if presentation == .mid {
+                        onMinimize()
+                    } else {
+                        onMinimize()
+                    }
                 } label: {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.55))
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.10))
+                    Image(systemName: presentation == .mid ? "chevron.down" : "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppText.secondary)
+                        .frame(width: 28, height: 28)
+                        .background(AppInk.solid(0.12))
                         .clipShape(Circle())
+                        .appIconHitArea()
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Open full screen recorder")
-            } else {
-                Color.clear.frame(width: 44, height: 44)
+                .accessibilityLabel(presentation == .mid ? "Minimize recorder" : "Close full screen recorder")
+
+                if presentation == .mid {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        onExpand()
+                    } label: {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(AppText.secondary)
+                            .frame(width: 28, height: 28)
+                            .background(AppInk.solid(0.12))
+                            .clipShape(Circle())
+                            .appIconHitArea()
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Open full screen recorder")
+                }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, presentation == .full ? 18 : 14)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
     }
 
     @ViewBuilder
@@ -2913,19 +2869,16 @@ private struct EngineVoiceRecordSheet: View {
             ScrollView(showsIndicators: false) {
                 Text(transcript)
                     .font(.system(size: 14))
-                    .foregroundColor(Color.white.opacity(0.50))
+                    .foregroundColor(AppText.tertiary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
-                    .padding(.top, 24)
+                    .padding(.top, 18)
                     .frame(maxWidth: .infinity)
             }
             .frame(maxHeight: presentation == .full ? 180 : 110)
             .transition(.opacity)
         } else {
-            Text(recording.isRecordingActive ? "Listening..." : "Ready")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color.white.opacity(0.32))
-                .padding(.top, 24)
+            Color.clear.frame(height: presentation == .full ? 120 : 60)
         }
     }
 
@@ -2944,8 +2897,8 @@ private struct EngineVoiceRecordSheet: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
-                .background(Color.white.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .background(AppInk.solid(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
             }
             .buttonStyle(.plain)
 
@@ -2963,7 +2916,7 @@ private struct EngineVoiceRecordSheet: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
             }
             .buttonStyle(.plain)
             .disabled(recording.state == .finalizing || recording.state == .recovering)
