@@ -183,7 +183,7 @@ struct AIService {
         let trimChars = CharacterSet(charactersIn: "\"'\u{201C}\u{201D}\u{2018}\u{2019}`.,;:!?\u{2014}\u{2013}-")
         t = t.trimmingCharacters(in: trimChars).trimmingCharacters(in: .whitespacesAndNewlines)
         if t.lowercased().hasPrefix("title:") {
-            t = String(t.dropFirst("title:".count)).trimmingCharacters(in: .whitespacesAndNewlines)
+            t = String(t.dropFirst(6)).trimmingCharacters(in: .whitespacesAndNewlines)
         }
         t = t.trimmingCharacters(in: trimChars).trimmingCharacters(in: .whitespacesAndNewlines)
         var words = t.split(whereSeparator: \.isWhitespace).prefix(6).map(String.init)
