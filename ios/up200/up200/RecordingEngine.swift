@@ -442,6 +442,11 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         queue.async { [weak self] in
             guard let self, self.isRunning else { return }
             self.appendManifestEvent("interruption_ended shouldResume=\(shouldResume)")
+            guard shouldResume else {
+                // Audio route not yet ready — stay interrupted; health check or
+                // route-change notification will trigger a rebuild once it is.
+                return
+            }
             self.isInterrupted = false
             self.rebuildCaptureAndWriterLocked(reason: "interruption_ended")
         }
@@ -476,7 +481,13 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
             try appendAudioSampleLocked(sampleBuffer)
         } catch {
             appendManifestEvent("append_error \(error.localizedDescription)")
-            rebuildCaptureAndWriterLocked(reason: "append_error")
+            // Must not call captureSession.stopRunning() synchronously from within the
+            // AVCapture delegate callback — Apple warns this can deadlock. Defer the
+            // rebuild to the next queue turn so we've fully returned from the callback.
+            queue.async { [weak self] in
+                self?.rebuildCaptureAndWriterLocked(reason: "append_error")
+            }
+            return  // don't feed the failed buffer to the transcription pipeline
         }
 
         transcriptionPipeline.append(sampleBuffer)
