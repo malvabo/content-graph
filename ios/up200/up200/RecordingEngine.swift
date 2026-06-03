@@ -269,7 +269,7 @@ final class RecordingEngine: ObservableObject {
 
         do {
             try await requestMicrophoneAccess()
-            let fileURL = try audioPipeline.start()
+            let fileURL = try await audioPipeline.start()
             activeAudioFileURL = fileURL
             activeSessionDirectory = audioPipeline.currentSessionDirectory
             transition(to: .recordingAll, reason: "audio pipeline started")
@@ -374,13 +374,27 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         super.init()
     }
 
-    func start() throws -> URL {
-        try queue.sync {
-            if isRunning, let currentFileURL {
-                return currentFileURL
+    func start() async throws -> URL {
+        // queue.sync from a @MainActor caller runs the block inline on the main
+        // thread — captureSession.startRunning() internally dispatches work back
+        // to the main thread and deadlocks. Use async + continuation so the
+        // block genuinely executes on the background queue.
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async { [weak self] in
+                guard let self else {
+                    continuation.resume(throwing: RecordingEngineError.writerStartFailed)
+                    return
+                }
+                if self.isRunning, let url = self.currentFileURL {
+                    continuation.resume(returning: url)
+                    return
+                }
+                do {
+                    continuation.resume(returning: try self.startLocked())
+                } catch {
+                    continuation.resume(throwing: error)
+                }
             }
-
-            return try startLocked()
         }
     }
 
