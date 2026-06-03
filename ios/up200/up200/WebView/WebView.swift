@@ -1,4 +1,3 @@
-import AVFoundation
 import SwiftUI
 import WebKit
 
@@ -22,12 +21,6 @@ struct WebView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeUIView(context: Context) -> WKWebView {
-        // Keep audio playing through screen lock — the default .soloAmbient
-        // category silences playback on lock.
-        let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.playAndRecord, mode: .default, options: .mixWithOthers)
-        try? session.setActive(true)
-
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
