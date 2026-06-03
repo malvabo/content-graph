@@ -45,6 +45,7 @@ final class RecordingEngine: ObservableObject {
     @Published private(set) var state: RecordingEngineState = .idle
     @Published private(set) var activeAudioFileURL: URL?
     @Published private(set) var activeSessionDirectory: URL?
+    @Published private(set) var elapsedSeconds = 0
     @Published private(set) var liveTranscript = "" {
         didSet {
             for continuation in transcriptContinuations.values {
@@ -69,6 +70,7 @@ final class RecordingEngine: ObservableObject {
     private var observers: [NSObjectProtocol] = []
     private var transcriptContinuations: [UUID: AsyncStream<String>.Continuation] = [:]
     private var hasStartedObserving = false
+    private var elapsedTask: Task<Void, Never>?
     var userFacingFailureMessage: String {
         if case .error(let message) = state {
             return message
@@ -81,6 +83,7 @@ final class RecordingEngine: ObservableObject {
     }
 
     deinit {
+        elapsedTask?.cancel()
         observers.forEach(NotificationCenter.default.removeObserver)
         print("[RecordingEngine \(instanceID)] deinitialized")
     }
@@ -208,6 +211,7 @@ final class RecordingEngine: ObservableObject {
         let result = await audioPipeline.stop(reason: "stop requested")
         activeAudioFileURL = nil
         activeSessionDirectory = nil
+        stopElapsedClock()
         liveTranscript = ""
         transition(to: .idle, reason: "stop finalized")
         return result
@@ -279,16 +283,43 @@ final class RecordingEngine: ObservableObject {
             activeAudioFileURL = fileURL
             activeSessionDirectory = audioPipeline.currentSessionDirectory
             transition(to: .recordingAll, reason: "audio pipeline started")
+            startElapsedClock()
             log("writing AAC audio to \(fileURL.path)")
         } catch {
             activeAudioFileURL = nil
             activeSessionDirectory = nil
+            stopElapsedClock()
             transition(to: .error(error.localizedDescription), reason: "audio pipeline failed")
             log("audio pipeline error: \(error.localizedDescription)")
             return false
         }
 
         return true
+    }
+
+    private func startElapsedClock() {
+        elapsedTask?.cancel()
+        elapsedSeconds = 0
+        elapsedTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                guard let self, !Task.isCancelled else { return }
+                switch self.state {
+                case .recordingAll, .recordingAudioOnly:
+                    self.elapsedSeconds += 1
+                case .paused:
+                    continue
+                case .idle, .finalizing, .recovering, .error:
+                    return
+                }
+            }
+        }
+    }
+
+    private func stopElapsedClock() {
+        elapsedTask?.cancel()
+        elapsedTask = nil
+        elapsedSeconds = 0
     }
 
     private func requestMicrophoneAccess() async throws {

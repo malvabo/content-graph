@@ -2287,16 +2287,16 @@ private struct SimpleCreateBar: View {
             impact.impactOccurred()
             onRecordTap()
         } label: {
-            Image(systemName: isRecording ? "stop.fill" : "mic.fill")
+            Image(systemName: "mic.fill")
                 .font(.system(size: 19, weight: .semibold))
-                .foregroundColor(isRecording ? .red : AppText.primary)
+                .foregroundColor(isRecording ? BrandColor.amber : AppText.primary)
                 .frame(width: 56, height: 56)
                 .background(controlBackground)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .disabled(isFinalizing)
-        .accessibilityLabel(isRecording ? "Stop recording" : "Start recording")
+        .accessibilityLabel(isRecording ? "Open recorder" : "Start recording")
         .onAppear { impact.prepare() }
     }
 
@@ -2336,6 +2336,8 @@ struct ContentView: View {
     @StateObject private var chromeController = ChromeController()
     @StateObject private var recordingEngine = RecordingEngine.shared
     @State private var recordingStatusMessage: String?
+    @State private var showRecorderSheet = false
+    @State private var showRecorderFullScreen = false
 
     init() {
         UITabBar.appearance().isHidden = true
@@ -2350,12 +2352,41 @@ struct ContentView: View {
                     ProfileView(selectedTab: $selectedTab, isModal: true)
                         .environmentObject(chromeController)
                 }
+                .sheet(isPresented: $showRecorderSheet) {
+                    EngineVoiceRecordSheet(
+                        presentation: .mid,
+                        onMinimize: { showRecorderSheet = false },
+                        onExpand: {
+                            showRecorderSheet = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                                showRecorderFullScreen = true
+                            }
+                        },
+                        onStop: stopRecordingAndSave
+                    )
+                    .environmentObject(recordingEngine)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.hidden)
+                    .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
+                }
+                .fullScreenCover(isPresented: $showRecorderFullScreen) {
+                    EngineVoiceRecordSheet(
+                        presentation: .full,
+                        onMinimize: {
+                            showRecorderFullScreen = false
+                            showRecorderSheet = false
+                        },
+                        onExpand: {},
+                        onStop: stopRecordingAndSave
+                    )
+                    .environmentObject(recordingEngine)
+                }
                 // Tab bar is the inner inset (anchored at screen bottom).
                 // Mini bar is the outer inset (stacks above the tab bar naturally).
                 // This ordering ensures correct visual stacking on all iOS versions:
                 // outer inset content appears above inner inset content.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if !keyboardVisible && (!chromeController.hideTabBar || shouldKeepRecordingChromeVisible) {
+                    if !keyboardVisible && !chromeController.hideTabBar && !recordingEngine.isRecordingActive {
                         SimpleCreateBar(
                             recordingState: recordingEngine.state,
                             onNewNote: {
@@ -2407,9 +2438,27 @@ struct ContentView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .zIndex(3)
             }
+
+            if shouldShowRecordingMiniBar {
+                RecordingMiniBar(
+                    onTap: {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        selectedTab = .notes
+                        showRecorderSheet = true
+                    },
+                    onStop: stopRecordingAndSave
+                )
+                .environmentObject(recordingEngine)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 10)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .zIndex(4)
+            }
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingStatusMessage)
+        .animation(.spring(response: 0.38, dampingFraction: 0.82), value: shouldShowRecordingMiniBar)
     }
 
     @ViewBuilder
@@ -2420,13 +2469,8 @@ struct ContentView: View {
         )
     }
 
-    private var shouldKeepRecordingChromeVisible: Bool {
-        switch recordingEngine.state {
-        case .recordingAll, .recordingAudioOnly, .finalizing, .recovering:
-            return true
-        case .idle, .paused, .error:
-            return false
-        }
+    private var shouldShowRecordingMiniBar: Bool {
+        recordingEngine.isRecordingActive && !showRecorderSheet && !showRecorderFullScreen
     }
 
     private func toggleRecording() {
@@ -2435,18 +2479,29 @@ struct ContentView: View {
             case .idle, .paused, .error:
                 selectedTab = .notes
                 let didStart = await recordingEngine.startRecording()
-                showRecordingStatus(
-                    didStart ? "Recording started" : recordingEngine.userFacingFailureMessage
-                )
-            case .recordingAll, .recordingAudioOnly:
-                if let result = await recordingEngine.stopRecording() {
-                    await saveRecordingNote(result)
-                    showRecordingStatus("Recording saved")
+                if didStart {
+                    showRecorderSheet = true
+                    showRecordingStatus("Recording started")
                 } else {
-                    showRecordingStatus("Recording could not be saved")
+                    showRecordingStatus(recordingEngine.userFacingFailureMessage)
                 }
+            case .recordingAll, .recordingAudioOnly:
+                showRecorderSheet = true
             case .finalizing, .recovering:
                 break
+            }
+        }
+    }
+
+    private func stopRecordingAndSave() {
+        Task { @MainActor in
+            showRecorderSheet = false
+            showRecorderFullScreen = false
+            if let result = await recordingEngine.stopRecording() {
+                await saveRecordingNote(result)
+                showRecordingStatus("Recording saved")
+            } else {
+                showRecordingStatus("Recording could not be saved")
             }
         }
     }
@@ -2536,6 +2591,386 @@ private struct RecordingStatusBanner: View {
                 .overlay(Capsule(style: .continuous).stroke(AppInk.solid(0.15), lineWidth: 0.5))
         )
         .shadow(color: Color.black.opacity(0.16), radius: 12, y: 4)
+    }
+}
+
+private enum RecorderPresentation {
+    case mid
+    case full
+}
+
+private extension RecordingEngine {
+    var isRecordingActive: Bool {
+        state == .recordingAll || state == .recordingAudioOnly
+    }
+}
+
+// MARK: - Recording Mini Bar
+
+private struct RecordingMiniBar: View {
+    @EnvironmentObject private var recording: RecordingEngine
+    let onTap: () -> Void
+    let onStop: () -> Void
+
+    @State private var dragOffset: CGSize = .zero
+    @GestureState private var dragTranslation: CGSize = .zero
+
+    private var timeLabel: String {
+        Self.format(seconds: recording.elapsedSeconds)
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                PulsingDot(active: recording.isRecordingActive)
+                    .frame(width: 10, height: 10)
+                Text(recording.state == .recordingAudioOnly ? "Recording audio" : "Recording")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                Text(timeLabel)
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundColor(Color.white.opacity(0.55))
+                Spacer(minLength: 8)
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    onStop()
+                } label: {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 32, height: 32)
+                        .background(BrandColor.amber)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .disabled(recording.state == .finalizing || recording.state == .recovering)
+            }
+            .padding(.leading, 16)
+            .padding(.trailing, 6)
+            .frame(height: 52)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color(red: 0.18, green: 0.14, blue: 0.12))
+                    .shadow(color: Color.black.opacity(0.45), radius: 18, y: 6)
+            )
+        }
+        .buttonStyle(.plain)
+        .offset(
+            x: dragOffset.width + dragTranslation.width,
+            y: dragOffset.height + dragTranslation.height
+        )
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 10)
+                .updating($dragTranslation) { value, state, _ in
+                    state = value.translation
+                }
+                .onEnded { _ in
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                        dragOffset = .zero
+                    }
+                }
+        )
+        .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.86), value: dragTranslation)
+        .accessibilityLabel("Recording in progress")
+        .accessibilityHint("Tap to expand, stop button to finish")
+    }
+
+    private static func format(seconds: Int) -> String {
+        String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+private struct PulsingDot: View {
+    let active: Bool
+    @State private var pulse = false
+
+    var body: some View {
+        Circle()
+            .fill(Color.red)
+            .opacity(active && pulse ? 0.45 : 1.0)
+            .scaleEffect(active && pulse ? 1.25 : 1.0)
+            .animation(active ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : .default, value: pulse)
+            .onAppear { pulse = active }
+            .onChange(of: active) { _, newActive in pulse = newActive }
+    }
+}
+
+// MARK: - Voice Record Sheet
+
+private struct RecordingOrbView: View {
+    var isRecording: Bool
+    var level: Double
+    @State private var birthStart: Date?
+    @State private var smoothedSpread: Double = 60
+    @State private var smoothedLevel: Double = 0
+
+    private let green = Color(red: 0.12, green: 0.78, blue: 0.42)
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: false)) { tl in
+            let t = tl.date.timeIntervalSinceReferenceDate
+            Canvas { ctx, size in
+                let cx = size.width / 2
+                let cy = size.height * 0.5
+
+                if isRecording {
+                    let birthFrac: Double = {
+                        guard let start = birthStart else { return 0 }
+                        return min(1, Date().timeIntervalSince(start) / 0.95)
+                    }()
+                    let birth = pow(birthFrac, 0.45)
+                    let lv = smoothedLevel
+                    let spread = smoothedSpread
+
+                    for i in 0..<4 {
+                        let angle = t * 0.65 + Double(i) * (.pi * 0.5)
+                        let radius = (spread + sin(t * 0.45 + Double(i) * 1.1) * 14) * birth
+                        let px = cx + cos(angle) * radius * 0.88
+                        let py = cy + sin(angle) * radius * 0.72
+                        let size = (95 + sin(t * 0.9 + Double(i) * 0.8) * 22) * (1 + lv * 0.5)
+                        let alpha = (0.34 + lv * 0.34) * birth
+
+                        let stops: [Gradient.Stop] = [
+                            .init(color: Color(red: 0.12, green: 0.78, blue: 0.42).opacity(alpha), location: 0),
+                            .init(color: Color(red: 0.10, green: 0.66, blue: 0.36).opacity(alpha * 0.28), location: 0.5),
+                            .init(color: .clear, location: 1),
+                        ]
+                        let center = CGPoint(x: px, y: py)
+                        let rect = CGRect(x: px - size, y: py - size, width: size * 2, height: size * 2)
+                        ctx.fill(
+                            Path(ellipseIn: rect),
+                            with: .radialGradient(Gradient(stops: stops), center: center, startRadius: 0, endRadius: size)
+                        )
+                    }
+
+                    if lv > 0.05 {
+                        let glow = 75 + lv * 50
+                        let center = CGPoint(x: cx, y: cy)
+                        let stops: [Gradient.Stop] = [
+                            .init(color: green.opacity(lv * 0.32), location: 0),
+                            .init(color: .clear, location: 1),
+                        ]
+                        let rect = CGRect(x: cx - glow, y: cy - glow, width: glow * 2, height: glow * 2)
+                        ctx.fill(
+                            Path(ellipseIn: rect),
+                            with: .radialGradient(Gradient(stops: stops), center: center, startRadius: 0, endRadius: glow)
+                        )
+                    }
+                } else {
+                    let breath = 1 + sin(t * 2 * .pi / 4.5) * 0.04
+                    let orbRadius: Double = 100 * breath
+                    let center = CGPoint(x: cx, y: cy)
+                    let stops: [Gradient.Stop] = [
+                        .init(color: Color(red: 1.0, green: 0.92, blue: 0.82).opacity(0.95), location: 0.0),
+                        .init(color: Color(red: 1.0, green: 0.92, blue: 0.82).opacity(0.70), location: 0.18),
+                        .init(color: Color(red: 1.0, green: 0.92, blue: 0.82).opacity(0.20), location: 0.50),
+                        .init(color: .clear, location: 1.0),
+                    ]
+                    let rect = CGRect(x: cx - orbRadius, y: cy - orbRadius, width: orbRadius * 2, height: orbRadius * 2)
+                    ctx.fill(
+                        Path(ellipseIn: rect),
+                        with: .radialGradient(Gradient(stops: stops), center: center, startRadius: 0, endRadius: orbRadius)
+                    )
+                }
+            }
+            .blendMode(.screen)
+            .onChange(of: tl.date) { _, _ in
+                let synthesizedLevel = isRecording ? max(level, 0.12 + (sin(t * 2.7) + 1) * 0.08) : 0
+                smoothedLevel += (synthesizedLevel - smoothedLevel) * 0.25
+                let target: Double = synthesizedLevel > 0.12 ? 10 : 60
+                smoothedSpread += (target - smoothedSpread) * 0.04
+            }
+        }
+        .onChange(of: isRecording) { _, recording in
+            if recording {
+                birthStart = Date()
+                smoothedSpread = 60
+                smoothedLevel = 0
+            } else {
+                birthStart = nil
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+private struct EngineVoiceRecordSheet: View {
+    @EnvironmentObject private var recording: RecordingEngine
+    let presentation: RecorderPresentation
+    let onMinimize: () -> Void
+    let onExpand: () -> Void
+    let onStop: () -> Void
+
+    private let amber = Color(red: 0.85, green: 0.45, blue: 0.10)
+    private let green = Color(red: 0.12, green: 0.78, blue: 0.42)
+
+    private var timeLabel: String {
+        String(format: "%d:%02d", recording.elapsedSeconds / 60, recording.elapsedSeconds % 60)
+    }
+
+    private var title: String {
+        if recording.state == .finalizing || recording.state == .recovering {
+            return "Saving..."
+        }
+        if recording.state == .recordingAudioOnly {
+            return "Recording Audio"
+        }
+        return "Voice Note"
+    }
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.10, green: 0.08, blue: 0.07).ignoresSafeArea()
+            RadialGradient(
+                colors: [
+                    (recording.isRecordingActive ? green : amber).opacity(recording.isRecordingActive ? 0.20 : 0.0),
+                    .clear,
+                ],
+                center: .center, startRadius: 0, endRadius: 320
+            )
+            .ignoresSafeArea()
+            .animation(.easeInOut(duration: 0.7), value: recording.isRecordingActive)
+
+            VStack(spacing: 0) {
+                header
+
+                Spacer()
+
+                VStack(spacing: 24) {
+                    RecordingOrbView(
+                        isRecording: recording.isRecordingActive,
+                        level: 0
+                    )
+                    .frame(height: presentation == .full ? 320 : 250)
+
+                    Text(recording.isRecordingActive ? timeLabel : recording.userFacingFailureMessage)
+                        .font(.system(size: 17, design: recording.isRecordingActive ? .monospaced : .default))
+                        .foregroundColor(Color.white.opacity(recording.isRecordingActive ? 0.80 : 0.45))
+                        .transition(.opacity)
+                }
+
+                transcriptView
+
+                Spacer()
+
+                controls
+            }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: recording.isRecordingActive)
+        .animation(.easeOut(duration: 0.2), value: recording.liveTranscript)
+    }
+
+    private var header: some View {
+        HStack {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                onMinimize()
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.55))
+                    .frame(width: 44, height: 44)
+                    .background(Color.white.opacity(0.10))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Minimize recorder")
+
+            Spacer()
+
+            Text(title)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+
+            Spacer()
+
+            if presentation == .mid {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onExpand()
+                } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.55))
+                        .frame(width: 44, height: 44)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Open full screen recorder")
+            } else {
+                Color.clear.frame(width: 44, height: 44)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, presentation == .full ? 18 : 14)
+    }
+
+    @ViewBuilder
+    private var transcriptView: some View {
+        let transcript = recording.liveTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !transcript.isEmpty {
+            ScrollView(showsIndicators: false) {
+                Text(transcript)
+                    .font(.system(size: 14))
+                    .foregroundColor(Color.white.opacity(0.50))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .padding(.top, 24)
+                    .frame(maxWidth: .infinity)
+            }
+            .frame(maxHeight: presentation == .full ? 180 : 110)
+            .transition(.opacity)
+        } else {
+            Text(recording.isRecordingActive ? "Listening..." : "Ready")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Color.white.opacity(0.32))
+                .padding(.top, 24)
+        }
+    }
+
+    private var controls: some View {
+        HStack(spacing: 12) {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                onMinimize()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "minus")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("Minimize")
+                        .font(.system(size: 17, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.white.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                onStop()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text(recording.state == .finalizing ? "Saving" : "End")
+                        .font(.system(size: 17, weight: .semibold))
+                }
+                .foregroundColor(.black)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(recording.state == .finalizing || recording.state == .recovering)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, presentation == .full ? 34 : 24)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
 
