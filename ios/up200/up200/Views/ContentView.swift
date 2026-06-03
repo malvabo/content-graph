@@ -2335,6 +2335,7 @@ struct ContentView: View {
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
     @StateObject private var recordingEngine = RecordingEngine.shared
+    @State private var recordingStatusMessage: String?
 
     init() {
         UITabBar.appearance().isHidden = true
@@ -2354,7 +2355,7 @@ struct ContentView: View {
                 // This ordering ensures correct visual stacking on all iOS versions:
                 // outer inset content appears above inner inset content.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if !keyboardVisible && !chromeController.hideTabBar {
+                    if !keyboardVisible && (!chromeController.hideTabBar || shouldKeepRecordingChromeVisible) {
                         SimpleCreateBar(
                             recordingState: recordingEngine.state,
                             onNewNote: {
@@ -2365,6 +2366,7 @@ struct ContentView: View {
                         )
                         .padding(.horizontal, 16)
                         .padding(.bottom, 6)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -2397,8 +2399,17 @@ struct ContentView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .zIndex(2)
             }
+
+            if let recordingStatusMessage {
+                RecordingStatusBanner(message: recordingStatusMessage)
+                    .padding(.horizontal, 16)
+                    .padding(.top, bannerController.isVisible ? 58 : 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(3)
+            }
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
+        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingStatusMessage)
     }
 
     @ViewBuilder
@@ -2409,18 +2420,44 @@ struct ContentView: View {
         )
     }
 
+    private var shouldKeepRecordingChromeVisible: Bool {
+        switch recordingEngine.state {
+        case .recordingAll, .recordingAudioOnly, .finalizing, .recovering:
+            return true
+        case .idle, .paused, .error:
+            return false
+        }
+    }
+
     private func toggleRecording() {
         Task { @MainActor in
             switch recordingEngine.state {
             case .idle, .paused, .error:
                 selectedTab = .notes
-                await recordingEngine.startRecording()
+                let didStart = await recordingEngine.startRecording()
+                showRecordingStatus(
+                    didStart ? "Recording started" : recordingEngine.userFacingFailureMessage
+                )
             case .recordingAll, .recordingAudioOnly:
                 if let result = await recordingEngine.stopRecording() {
                     await saveRecordingNote(result)
+                    showRecordingStatus("Recording saved")
+                } else {
+                    showRecordingStatus("Recording could not be saved")
                 }
             case .finalizing, .recovering:
                 break
+            }
+        }
+    }
+
+    @MainActor
+    private func showRecordingStatus(_ message: String) {
+        recordingStatusMessage = message
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_600_000_000)
+            if recordingStatusMessage == message {
+                recordingStatusMessage = nil
             }
         }
     }
@@ -2476,6 +2513,29 @@ struct ContentView: View {
             return latestPartial
         }
         return finals.joined(separator: "\n")
+    }
+}
+
+private struct RecordingStatusBanner: View {
+    let message: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "waveform")
+                .font(.system(size: 14, weight: .semibold))
+            Text(message)
+                .font(.system(size: 14, weight: .semibold))
+                .lineLimit(2)
+        }
+        .foregroundColor(AppText.primary)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            Capsule(style: .continuous)
+                .fill(.regularMaterial)
+                .overlay(Capsule(style: .continuous).stroke(AppInk.solid(0.15), lineWidth: 0.5))
+        )
+        .shadow(color: Color.black.opacity(0.16), radius: 12, y: 4)
     }
 }
 

@@ -69,6 +69,12 @@ final class RecordingEngine: ObservableObject {
     private var observers: [NSObjectProtocol] = []
     private var transcriptContinuations: [UUID: AsyncStream<String>.Continuation] = [:]
     private var hasStartedObserving = false
+    var userFacingFailureMessage: String {
+        if case .error(let message) = state {
+            return message
+        }
+        return "Recording could not start. Check microphone permission."
+    }
 
     private init() {
         log("initialized")
@@ -277,7 +283,7 @@ final class RecordingEngine: ObservableObject {
         } catch {
             activeAudioFileURL = nil
             activeSessionDirectory = nil
-            transition(to: .idle, reason: "audio pipeline failed")
+            transition(to: .error(error.localizedDescription), reason: "audio pipeline failed")
             log("audio pipeline error: \(error.localizedDescription)")
             return false
         }
@@ -456,12 +462,10 @@ private final class ContinuousAudioTrackPipeline: NSObject, AVCaptureAudioDataOu
         queue.async { [weak self] in
             guard let self, self.isRunning else { return }
             self.appendManifestEvent("interruption_ended shouldResume=\(shouldResume)")
-            guard shouldResume else {
-                // Audio route not yet ready — stay interrupted; health check or
-                // route-change notification will trigger a rebuild once it is.
-                return
-            }
             self.isInterrupted = false
+            if !shouldResume {
+                self.appendManifestEvent("interruption_ended_no_resume_hint rebuilding_anyway")
+            }
             self.rebuildCaptureAndWriterLocked(reason: "interruption_ended")
         }
     }
