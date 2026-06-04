@@ -522,6 +522,8 @@ struct ChatView: View {
     @State private var showSignUpSheet = false
     @State private var appliedRewriteKeys: Set<String> = []
     @State private var rewriteFailed: Bool = false
+    @StateObject private var dictation = NoteDictation()
+    @State private var inputTextBeforeDictation: String = ""
     @State private var inputFocused: Bool = false
     // Cancellable deferred focus assignment fired from .onAppear. A fast
     // dismissal of the chat sheet within the 350ms delay cancels the
@@ -775,6 +777,26 @@ struct ChatView: View {
         } message: {
             Text("The original text in the rewrite wasn't found in any attached source. Try re-attaching the document or note and asking again.")
         }
+        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enable Microphone and Speech Recognition in Settings to dictate.")
+        }
+        .onChange(of: dictation.transcript) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            if inputTextBeforeDictation.isEmpty {
+                inputText = trimmed
+            } else {
+                let needsSeparator = !inputTextBeforeDictation.hasSuffix("\n") && !inputTextBeforeDictation.hasSuffix(" ")
+                inputText = inputTextBeforeDictation + (needsSeparator ? " " : "") + trimmed
+            }
+        }
         .presentationBackground(bg)
         .onDisappear {
             // Flush any network content not yet drain-pumped to the bubble,
@@ -792,6 +814,7 @@ struct ChatView: View {
             streamBuffer = ""
             currentReplyID = nil
             fileImportTask?.cancel()
+            dictation.cancel()
             // Catch any final state the per-turn saves missed — eg. if a
             // rewrite card was applied (which doesn't itself trigger a
             // save) or a tab swap dismissed the sheet mid-edit.
@@ -1197,6 +1220,28 @@ struct ChatView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Mention a note or document")
+
+                    Button {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        if dictation.isRecording {
+                            dictation.stop()
+                        } else {
+                            inputTextBeforeDictation = inputText
+                            inputFocused = false
+                            dictation.start()
+                        }
+                    } label: {
+                        let recording = dictation.isRecording
+                        Image(systemName: recording ? "stop.fill" : "mic.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(recording ? .white : AppInk.solid(0.45))
+                            .frame(width: 32, height: 32)
+                            .background(recording ? BrandColor.amber : Color.clear)
+                            .clipShape(Circle())
+                            .appIconHitArea()
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(dictation.isRecording ? "Stop dictation" : "Start dictation")
 
                     Spacer()
 

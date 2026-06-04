@@ -69,7 +69,6 @@ struct Up200App: App {
             // follows the device's system setting, which may not match the app.
             .onAppear {
                 applyInterfaceStyle()
-                RecordingEngine.shared.bootstrap()
                 Task { await SyncManager.shared.setup() }
             }
             .onChange(of: darkModeEnabled) { _, _ in applyInterfaceStyle() }

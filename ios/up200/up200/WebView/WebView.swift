@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 import WebKit
 
@@ -21,6 +22,15 @@ struct WebView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeUIView(context: Context) -> WKWebView {
+        // Hold the audio session across interruptions and let mic + speaker
+        // coexist. Without this the default .soloAmbient category drops audio
+        // on screen lock and conflicts with simultaneous mic acquisitions.
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playAndRecord,
+                                 mode: .default,
+                                 options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers])
+        try? session.setActive(true)
+
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
