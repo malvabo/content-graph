@@ -50,7 +50,7 @@ async function callAnthropic(_apiKey: string, model: string, system: string, inp
     body: JSON.stringify({ model: getApiModel(model), max_tokens: 2048, system, messages: [{ role: 'user', content: input }] }),
     signal,
   });
-  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || `Anthropic ${res.status}`); }
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || JSON.stringify(e.error) || `Anthropic ${res.status}`); }
   const data = await res.json();
   return data.content?.[0]?.text ?? '';
 }
