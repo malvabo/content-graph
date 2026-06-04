@@ -154,7 +154,6 @@ const SUGGESTION_CHIPS = [
 ];
 
 async function chatEdit(messages: ChatMsg[], currentJson: string, signal?: AbortSignal): Promise<string> {
-  const { anthropicKey, groqKey } = useSettingsStore.getState();
   const system = `You edit infographic content. Return ONLY valid JSON — no explanation, no markdown fences. Do not invent styling. Do not add or remove fields not mentioned.
 
 Schema: { title, subtitle?, footer?, type?: "cards" | "bar" | "pie", points: [{ stat, label, detail?, icon?, max? }] }
@@ -218,8 +217,6 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
   const [editVersion, setEditVersion] = useState(0);
 
   const editing = items.find(i => i.id === editingId) || null;
-  const anthropicKey = useSettingsStore(s => s.anthropicKey);
-  const groqKey = useSettingsStore(s => s.groqKey);
   // Subscribe to brand so SVG previews re-render when colors/fonts change in
   // Settings or when the active library brand (global or per-flow) changes.
   // renderSVG reads via getState(), which isn't reactive on its own.
