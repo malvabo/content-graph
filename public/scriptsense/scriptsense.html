@@ -335,17 +335,6 @@ async function callClaude(prompt) {
 
   const brandedPrompt = brandPromptPrefix() + prompt;
 
-  if (_anthropicKey) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': _anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, messages: [{ role: 'user', content: brandedPrompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
-    });
-    if (!res.ok) throw new Error('Anthropic API error: ' + res.status);
-    const data = await res.json();
-    const text = data.content?.[0]?.text ?? '';
-    return parseResponse(text);
-  }
   if (_groqKey) {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -357,9 +346,16 @@ async function callClaude(prompt) {
     const text = data.choices?.[0]?.message?.content ?? '';
     return parseResponse(text);
   }
-  // No key — return mock as parsed object
-  await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
-  return JSON.parse(MOCK_INSIGHTS);
+
+  const res = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 4096, messages: [{ role: 'user', content: brandedPrompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
+  });
+  if (!res.ok) throw new Error('API error: ' + res.status);
+  const data = await res.json();
+  const text = data.content?.[0]?.text ?? '';
+  return parseResponse(text);
 }
 
 /* ── shared components ── */
