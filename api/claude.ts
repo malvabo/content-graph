@@ -5,6 +5,15 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
 const MAX_TOKENS_CAP = 16384;
 
+const MODEL_ALIASES: Record<string, string> = {
+  'claude-haiku-4': 'claude-haiku-4-5-20251001',
+  'claude-sonnet-4': 'claude-sonnet-4-6',
+  'claude-opus-4': 'claude-opus-4-8',
+  'claude-sonnet-4-20250514': 'claude-sonnet-4-6',
+  'claude-haiku-4-20250414': 'claude-haiku-4-5-20251001',
+  'claude-opus-4-20250514': 'claude-opus-4-8',
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = getAllowedOrigin(req);
   if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
@@ -34,6 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: `max_tokens must be between 1 and ${MAX_TOKENS_CAP}` });
   }
 
+  const resolvedModel = MODEL_ALIASES[model] ?? model;
+
   let upstream: Response;
   try {
     upstream = await fetch(ANTHROPIC_URL, {
@@ -43,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'x-api-key': apiKey,
         'anthropic-version': ANTHROPIC_VERSION,
       },
-      body: JSON.stringify({ model, max_tokens, system, messages, stream }),
+      body: JSON.stringify({ model: resolvedModel, max_tokens, system, messages, stream }),
     });
   } catch (e) {
     const err = e as { message?: string };
