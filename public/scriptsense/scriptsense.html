@@ -292,13 +292,9 @@ const MOCK_INSIGHTS = JSON.stringify({
   ]
 });
 
-let _anthropicKey = '';
-let _groqKey = '';
 window.addEventListener('message', e => {
   const d = e.data;
   if (!d || typeof d !== 'object') return;
-  if (d.type === 'set-api-key')  _anthropicKey = d.key || '';
-  if (d.type === 'set-groq-key') _groqKey      = d.key || '';
   if (d.type === 'set-theme')    setDark(!!d.dark);
   // set-content is the canonical name; set-initial-text kept for back-compat.
   if ((d.type === 'set-content' || d.type === 'set-initial-text') && typeof d.text === 'string') setInitialText(d.text);
@@ -334,18 +330,6 @@ async function callClaude(prompt) {
   }
 
   const brandedPrompt = brandPromptPrefix() + prompt;
-
-  if (_groqKey) {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_groqKey}` },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 4096, messages: [{ role: 'user', content: brandedPrompt + '\n\nRespond with valid JSON only, no markdown.' }] }),
-    });
-    if (!res.ok) throw new Error('Groq API error: ' + res.status);
-    const data = await res.json();
-    const text = data.choices?.[0]?.message?.content ?? '';
-    return parseResponse(text);
-  }
 
   const res = await fetch('/api/claude', {
     method: 'POST',
@@ -834,21 +818,11 @@ ${text}`
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", flex:1, gap:8, padding:40, color:C.mute, textAlign:"center" }}>
                   {insightError ? (
                     <>
-                      <p style={{ fontSize:13, fontWeight:600, color:"#C93030" }}>API Error</p>
+                      <p style={{ fontSize:13, fontWeight:600, color:"#C93030" }}>Something went wrong</p>
                       <p style={{ fontSize:12, color:"#C93030", maxWidth:300 }}>{insightError}</p>
-                      <div style={{ marginTop:12, width:"100%", maxWidth:300 }}>
-                        <p style={{ fontSize:11, fontWeight:600, color:C.sub, marginBottom:6, textAlign:"left" }}>Enter your Anthropic API key:</p>
-                        <input
-                          type="text"
-                          placeholder="sk-ant-..."
-                          defaultValue={window.__CLAUDE_KEY || ""}
-                          onChange={e => { window.__CLAUDE_KEY = e.target.value.trim(); }}
-                          style={{ width:"100%", padding:"8px 12px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:13, outline:"none" }}
-                        />
-                        <button onClick={runAnalysis} style={{ marginTop:8, width:"100%", background:C.accent, color:C.white, border:"none", borderRadius:8, padding:"8px 0", fontSize:12, fontWeight:600, cursor:"pointer" }}>
-                          Retry
-                        </button>
-                      </div>
+                      <button onClick={runAnalysis} style={{ marginTop:12, background:C.accent, color:C.white, border:"none", borderRadius:8, padding:"8px 20px", fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                        Retry
+                      </button>
                     </>
                   ) : (
                     <>
