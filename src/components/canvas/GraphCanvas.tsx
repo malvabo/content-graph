@@ -75,7 +75,7 @@ export default function GraphCanvas() {
     (conn: Connection) => {
       if (!isValidConnection(conn)) return;
       const current = useGraphStore.getState().edges;
-      setEdges(addEdge({ ...conn, id: `e-${conn.source}-${conn.target}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, data: { animating: true } }, current));
+      setEdges(addEdge({ ...conn, id: `e-${conn.source}-${conn.target}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, data: {} }, current));
     },
     [setEdges, isValidConnection]
   );
