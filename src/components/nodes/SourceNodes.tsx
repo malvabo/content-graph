@@ -274,14 +274,14 @@ export function TextSourceInline({ id }: { id: string }) {
             }}>
               {displayTitle}
             </div>
-            {title && text && (
+            {text && (
               <div style={{
                 flex: 1, minHeight: 0, marginTop: 4,
                 fontFamily: 'var(--font-sans)', fontSize: 'var(--text-xs)',
                 color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-snug)',
                 whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'hidden',
-                WebkitMaskImage: 'linear-gradient(to bottom, #000 78%, transparent 100%)',
-                maskImage: 'linear-gradient(to bottom, #000 78%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, #000 70%, transparent 100%)',
+                maskImage: 'linear-gradient(to bottom, #000 70%, transparent 100%)',
               }}>
                 {text}
               </div>
