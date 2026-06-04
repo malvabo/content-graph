@@ -522,6 +522,8 @@ struct ProjectGroupDetailView: View {
             ? aiPreviewVariants[aiPreviewVariantIndex]
             : ""
     }
+    @State private var editTextBeforeDictation: String = ""
+    @StateObject private var dictation = NoteDictation()
     @FocusState private var editorFocused: Bool
     @State private var isEditingBody: Bool = false
     /// Onboarding-only: the fresh result lands in a stroked card with the
@@ -626,6 +628,14 @@ struct ProjectGroupDetailView: View {
     }
 
     private func selectTab(_ index: Int) {
+        // If a dictation is in progress, abandon it before switching tabs;
+        // otherwise the next .onChange(of: dictation.transcript) would
+        // overwrite the new tab's text with the previous tab's pre-dictation
+        // snapshot + the partial transcript.
+        if dictation.isRecording {
+            dictation.cancel()
+            editText = editTextBeforeDictation
+        }
         persistCurrent()
         selectedIndex = index
         if items.indices.contains(index) { editText = bodyText(for: items[index]) }
@@ -795,7 +805,7 @@ struct ProjectGroupDetailView: View {
                                     .padding(.top, inCardPreview ? 4 : 8)
                                     .allowsHitTesting(false)
                             }
-                            if isEditingBody {
+                            if isEditingBody || dictation.isRecording {
                                 TextEditor(text: $editText, selection: $editSelection)
                                     .appReadingBodyText()
                                     .scrollContentBackground(.hidden)
@@ -805,7 +815,9 @@ struct ProjectGroupDetailView: View {
                                     .contentMargins(.bottom, 96, for: .scrollContent)
                                     .focused($editorFocused)
                                     .onChange(of: editorFocused) { _, focused in
-                                        if !focused { isEditingBody = false }
+                                        if !focused && !dictation.isRecording {
+                                            isEditingBody = false
+                                        }
                                     }
                             } else {
                                 ScrollView {
@@ -865,12 +877,46 @@ struct ProjectGroupDetailView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            aiPillBar
-                .padding(.leading, 20)
+            // Floating mic / dictation row — matches the Notes detail view:
+            // glass-material circle, no opaque bar behind it. Visible whenever
+            // the user is dictating or has the editor focused (the only
+            // moment where there's somewhere for transcribed text to land).
+            if dictation.isRecording || editorFocused {
+                DictationControls(
+                    dictation: dictation,
+                    onStart: {
+                        editTextBeforeDictation = editText
+                        dictation.start()
+                    },
+                    onCancel: {
+                        dictation.cancel()
+                        editText = editTextBeforeDictation
+                    },
+                    onConfirm: {
+                        dictation.stop()
+                    }
+                )
+                .padding(.trailing, 20)
                 .padding(.bottom, 8)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
+
+            // Floating AI buttons (bottom-leading) — same liquid-glass treatment
+            // as the Notes magic/chat pair so the bar reads as a pair of
+            // pebbles on top of the content rather than a solid toolbar.
+            // Stays mounted during the onboarding card-preview beat too so the
+            // affordance matches the regular generated-content view exactly
+            // (same icons, same screen-edge inset, no 0.9× downscale from the
+            // card transform).
+            if !dictation.isRecording {
+                aiPillBar
+                    .padding(.leading, 20)
+                    .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
         }
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -886,6 +932,26 @@ struct ProjectGroupDetailView: View {
         .onChange(of: projectsData) { rebuildAllProjects() }
         .onChange(of: selectedIndex) {
             if items.indices.contains(selectedIndex) { editText = bodyText(for: items[selectedIndex]) }
+        }
+        .onChange(of: dictation.transcript) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            if editTextBeforeDictation.isEmpty {
+                editText = trimmed
+            } else {
+                let needsSeparator = !editTextBeforeDictation.hasSuffix("\n") && !editTextBeforeDictation.hasSuffix(" ")
+                editText = editTextBeforeDictation + (needsSeparator ? " " : "") + trimmed
+            }
+        }
+        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enable Microphone and Speech Recognition in Settings to dictate.")
         }
         .sheet(isPresented: $showAIMenu) {
             AIActionsSheet { label, icon, instruction in
@@ -1007,6 +1073,7 @@ struct ProjectGroupDetailView: View {
             chrome.hideTabBar = false
             aiTransformTask?.cancel()
             copiedResetTask?.cancel()
+            dictation.stop()
         }
     }
 
@@ -1649,10 +1716,12 @@ private struct TemplateEditPage: View {
     @State private var existingSubtitle: String
     @State private var prompt: String
     private let originalFormatIDs: [String]
+    @State private var promptBeforeDictation: String = ""
     @State private var isEnhancing: Bool = false
     @State private var enhanceTask: Task<Void, Never>? = nil
     @State private var enhanceFailed: Bool = false
     @State private var enhanceFailReason: String = ""
+    @StateObject private var dictation = NoteDictation()
 
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focus: Field?
@@ -1718,6 +1787,11 @@ private struct TemplateEditPage: View {
             updated.formatIDs = snapshotFormatIDs
             await MainActor.run { save(updated) }
         }
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 
     private func enhancePrompt() {
@@ -1828,6 +1902,22 @@ private struct TemplateEditPage: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomBar
         }
+        .onChange(of: dictation.transcript) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            if promptBeforeDictation.isEmpty {
+                prompt = trimmed
+            } else {
+                let needsSeparator = !promptBeforeDictation.hasSuffix("\n") && !promptBeforeDictation.hasSuffix(" ")
+                prompt = promptBeforeDictation + (needsSeparator ? " " : "") + trimmed
+            }
+        }
+        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+            Button("Open Settings") { openSettings() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enable Microphone and Speech Recognition in Settings to dictate.")
+        }
         .alert("Couldn't enhance prompt", isPresented: $enhanceFailed) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -1839,6 +1929,7 @@ private struct TemplateEditPage: View {
         .swipeBackGesture { dismiss() }
         .onDisappear {
             enhanceTask?.cancel()
+            dictation.stop()
             persist()
         }
     }
@@ -1881,6 +1972,20 @@ private struct TemplateEditPage: View {
 
             Spacer(minLength: 8)
 
+            DictationControls(
+                dictation: dictation,
+                onStart: {
+                    promptBeforeDictation = prompt
+                    dictation.start()
+                },
+                onCancel: {
+                    dictation.cancel()
+                    prompt = promptBeforeDictation
+                },
+                onConfirm: {
+                    dictation.stop()
+                }
+            )
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -2257,90 +2362,59 @@ private struct SimpleHomeHeader: View {
 
 // MARK: - Simple bottom create button
 
-/// Bottom chrome in Simple mode: a single floating button parked
-/// at the bottom-right corner. Tapping it opens a new note.
+/// Bottom chrome in Simple mode: a single floating capture button parked
+/// at the bottom-right corner. Tapping it begins voice recording right
+/// away — no intermediate menu. Styled as the standard grey glass disc
+/// with a `mic.badge.plus` glyph so it reads as the same recorder the
+/// user already knows from inside a note (DictationControls), rather
+/// than a louder amber variant.
 private struct SimpleCreateBar: View {
-    let recordingState: RecordingEngineState
-    var showsNewNoteButton = true
-    let onNewNote: () -> Void
-    let onRecordTap: () -> Void
+    let onTap: () -> Void
 
     @State private var impact = UIImpactFeedbackGenerator(style: .light)
 
-    private var isRecording: Bool {
-        recordingState == .recordingAll || recordingState == .recordingAudioOnly
-    }
-
-    private var isFinalizing: Bool {
-        recordingState == .finalizing || recordingState == .recovering
-    }
-
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 0) {
             Spacer()
-            recordButton
-            if showsNewNoteButton {
-                newNoteButton
-            }
+            captureButton
         }
     }
 
-    private var recordButton: some View {
+    private var captureButton: some View {
         Button {
             impact.impactOccurred()
-            onRecordTap()
+            onTap()
         } label: {
-            Image(systemName: "mic.fill")
-                .font(.system(size: 19, weight: .semibold))
-                .foregroundColor(isRecording ? BrandColor.amber : AppText.primary)
-                .frame(width: 56, height: 56)
-                .background(controlBackground)
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .disabled(isFinalizing)
-        .accessibilityLabel(isRecording ? "Open recorder" : "Start recording")
-        .onAppear { impact.prepare() }
-    }
-
-    private var newNoteButton: some View {
-        Button {
-            impact.impactOccurred()
-            onNewNote()
-        } label: {
-            Image(systemName: "square.and.pencil")
+            Image(systemName: "mic.badge.plus")
                 .font(.system(size: 19, weight: .regular))
                 .foregroundColor(AppText.primary)
                 .frame(width: 56, height: 56)
-                .background(controlBackground)
+                .background(
+                    Circle()
+                        .fill(.regularMaterial)
+                        .overlay(Circle().stroke(AppInk.solid(0.15), lineWidth: 0.5))
+                        .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
+                )
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("New note")
+        .accessibilityLabel("Record a note")
         .onAppear { impact.prepare() }
-    }
-
-    private var controlBackground: some View {
-        Circle()
-            .fill(.regularMaterial)
-            .overlay(Circle().stroke(AppInk.solid(0.15), lineWidth: 0.5))
-            .shadow(color: Color.black.opacity(0.22), radius: 10, y: 3)
     }
 }
 
 // MARK: - Content View
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: AppTab = .notes
     @State private var keyboardVisible = false
     @State private var showProfile = false
     @State private var newNoteTrigger = 0
+    @State private var recordingPausedForBackground = false
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
-    @StateObject private var recordingEngine = RecordingEngine.shared
-    @State private var recordingStatusMessage: String?
-    @State private var showRecorderSheet = false
-    @State private var showRecorderFullScreen = false
+    @StateObject private var recordingController = RecordingController()
 
     init() {
         UITabBar.appearance().isHidden = true
@@ -2351,59 +2425,59 @@ struct ContentView: View {
             tabsLayer
                 .environmentObject(bannerController)
                 .environmentObject(chromeController)
+                .environmentObject(recordingController)
+                .sheet(isPresented: $recordingController.showingSheet,
+                       onDismiss: { recordingController.reconcileDismissal() }) {
+                    NoteVoiceSheet()
+                        .environmentObject(recordingController)
+                }
                 .fullScreenCover(isPresented: $showProfile) {
                     ProfileView(selectedTab: $selectedTab, isModal: true)
                         .environmentObject(chromeController)
-                }
-                .sheet(isPresented: $showRecorderSheet) {
-                    EngineVoiceRecordSheet(
-                        presentation: .mid,
-                        onMinimize: { showRecorderSheet = false },
-                        onExpand: {
-                            showRecorderSheet = false
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-                                showRecorderFullScreen = true
-                            }
-                        },
-                        onStop: stopRecordingAndSave
-                    )
-                    .environmentObject(recordingEngine)
-                    .presentationDetents([.medium, .large])
-                    .presentationDragIndicator(.hidden)
-                    .presentationBackground(Color(red: 0.10, green: 0.08, blue: 0.07))
-                }
-                .fullScreenCover(isPresented: $showRecorderFullScreen) {
-                    EngineVoiceRecordSheet(
-                        presentation: .full,
-                        onMinimize: {
-                            showRecorderFullScreen = false
-                            showRecorderSheet = false
-                        },
-                        onExpand: {},
-                        onStop: stopRecordingAndSave
-                    )
-                    .environmentObject(recordingEngine)
                 }
                 // Tab bar is the inner inset (anchored at screen bottom).
                 // Mini bar is the outer inset (stacks above the tab bar naturally).
                 // This ordering ensures correct visual stacking on all iOS versions:
                 // outer inset content appears above inner inset content.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if !keyboardVisible && !recordingEngine.isRecordingActive {
-                        SimpleCreateBar(
-                            recordingState: recordingEngine.state,
-                            showsNewNoteButton: !chromeController.hideTabBar,
-                            onNewNote: {
-                                selectedTab = .notes
-                                newNoteTrigger &+= 1
-                            },
-                            onRecordTap: toggleRecording
-                        )
+                    if !keyboardVisible && !chromeController.hideTabBar {
+                        SimpleCreateBar(onTap: {
+                            selectedTab = .notes
+                            newNoteTrigger &+= 1
+                        })
                         .padding(.horizontal, 16)
                         .padding(.bottom, 6)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                let show = (recordingController.isRecording || recordingController.isPaused) && !recordingController.showingSheet
+                RecordingMiniBar(
+                    onTap: {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        selectedTab = .notes
+                        recordingController.showingSheet = true
+                    },
+                    onStop: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        recordingController.finish()
+                    }
+                )
+                // safeAreaInset content is rendered as a sibling layer to the
+                // modified view, so it does NOT inherit the .environmentObject
+                // applied to the TabView above. Without this explicit forward,
+                // RecordingMiniBar's @EnvironmentObject lookup fatal-errors on
+                // launch ("No ObservableObject of type RecordingController
+                // found").
+                .environmentObject(recordingController)
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 8)
+                .opacity(show ? 1 : 0)
+                .frame(height: show ? nil : 0, alignment: .top)
+                .clipped()
+                .animation(.spring(response: 0.38, dampingFraction: 0.82), value: show)
+                .transaction { $0.disablesAnimations = !show && recordingController.showingSheet }
+            }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 keyboardVisible = true
             }
@@ -2434,35 +2508,24 @@ struct ContentView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .zIndex(2)
             }
-
-            if let recordingStatusMessage {
-                RecordingStatusBanner(message: recordingStatusMessage)
-                    .padding(.horizontal, 16)
-                    .padding(.top, bannerController.isVisible ? 58 : 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .zIndex(3)
-            }
-
-            if shouldShowRecordingMiniBar {
-                RecordingMiniBar(
-                    onTap: {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        selectedTab = .notes
-                        showRecorderSheet = true
-                    },
-                    onStop: stopRecordingAndSave
-                )
-                .environmentObject(recordingEngine)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 10)
-                .frame(maxHeight: .infinity, alignment: .bottom)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-                .zIndex(4)
-            }
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
-        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingStatusMessage)
-        .animation(.spring(response: 0.38, dampingFraction: 0.82), value: shouldShowRecordingMiniBar)
+        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background:
+                if recordingController.isRecording, !recordingController.isPaused {
+                    recordingController.pauseForSystem()
+                    recordingPausedForBackground = true
+                }
+            case .active:
+                if recordingPausedForBackground {
+                    recordingPausedForBackground = false
+                    recordingController.resumeIfSystemPaused()
+                }
+            default: break
+            }
+        }
     }
 
     @ViewBuilder
@@ -2472,191 +2535,53 @@ struct ContentView: View {
             onProfileTap: { showProfile = true }
         )
     }
-
-    private var shouldShowRecordingMiniBar: Bool {
-        recordingEngine.isRecordingActive && !showRecorderSheet && !showRecorderFullScreen
-    }
-
-    private func toggleRecording() {
-        Task { @MainActor in
-            switch recordingEngine.state {
-            case .idle, .paused, .error:
-                selectedTab = .notes
-                let didStart = await recordingEngine.startRecording()
-                if didStart {
-                    showRecorderSheet = true
-                    showRecordingStatus("Recording started")
-                } else {
-                    showRecordingStatus(recordingEngine.userFacingFailureMessage)
-                }
-            case .recordingAll, .recordingAudioOnly:
-                showRecorderSheet = true
-            case .finalizing, .recovering:
-                break
-            }
-        }
-    }
-
-    private func stopRecordingAndSave() {
-        Task { @MainActor in
-            showRecorderSheet = false
-            showRecorderFullScreen = false
-            if let result = await recordingEngine.stopRecording() {
-                await saveRecordingNote(result)
-                showRecordingStatus("Recording saved")
-            } else {
-                showRecordingStatus("Recording could not be saved")
-            }
-        }
-    }
-
-    @MainActor
-    private func showRecordingStatus(_ message: String) {
-        recordingStatusMessage = message
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 2_600_000_000)
-            if recordingStatusMessage == message {
-                recordingStatusMessage = nil
-            }
-        }
-    }
-
-    @MainActor
-    private func saveRecordingNote(_ result: RecordingStopResult) async {
-        let transcript = await Task.detached(priority: .utility) {
-            Self.transcriptText(from: result.transcriptFileURL)
-        }.value
-
-        var note = Note()
-        let text = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        if text.isEmpty {
-            let count = result.audioSegmentURLs.count
-            note.body = "Recorded audio\nSaved \(count) audio segment\(count == 1 ? "" : "s") locally."
-        } else {
-            note.body = text
-        }
-        note.updatedAt = Date()
-
-        var notes = NotesStore.load()
-        notes.insert(note, at: 0)
-        NotesStore.save(notes)
-        selectedTab = .notes
-    }
-
-    nonisolated private static func transcriptText(from url: URL?) -> String {
-        guard let url,
-              let contents = try? String(contentsOf: url, encoding: .utf8) else {
-            return ""
-        }
-
-        var finals: [String] = []
-        var latestPartial = ""
-
-        for line in contents.split(separator: "\n") {
-            guard let data = String(line).data(using: .utf8),
-                  let object = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-                  let type = object["type"],
-                  let text = object["text"]?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !text.isEmpty else {
-                continue
-            }
-
-            if type == "final" {
-                finals.append(text)
-            } else if type == "partial" {
-                latestPartial = text
-            }
-        }
-
-        if finals.isEmpty {
-            return latestPartial
-        }
-        return finals.joined(separator: "\n")
-    }
-}
-
-private struct RecordingStatusBanner: View {
-    let message: String
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "waveform")
-                .font(.system(size: 14, weight: .semibold))
-            Text(message)
-                .font(.system(size: 14, weight: .semibold))
-                .lineLimit(2)
-        }
-        .foregroundColor(AppText.primary)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            Capsule(style: .continuous)
-                .fill(.regularMaterial)
-                .overlay(Capsule(style: .continuous).stroke(AppInk.solid(0.15), lineWidth: 0.5))
-        )
-        .shadow(color: Color.black.opacity(0.16), radius: 12, y: 4)
-    }
-}
-
-private enum RecorderPresentation {
-    case mid
-    case full
-}
-
-private extension RecordingEngine {
-    var isRecordingActive: Bool {
-        state == .recordingAll || state == .recordingAudioOnly
-    }
 }
 
 // MARK: - Recording Mini Bar
 
 private struct RecordingMiniBar: View {
-    @EnvironmentObject private var recording: RecordingEngine
+    @EnvironmentObject private var recording: RecordingController
     let onTap: () -> Void
     let onStop: () -> Void
 
+    private let amber = BrandColor.amber
     @State private var dragOffset: CGSize = .zero
     @GestureState private var dragTranslation: CGSize = .zero
 
     private var timeLabel: String {
-        Self.format(seconds: recording.elapsedSeconds)
+        String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)
     }
 
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                PulsingDot(active: recording.isRecordingActive)
+                PulsingDot(active: recording.isRecording)
                     .frame(width: 10, height: 10)
-                RecordingMiniParticleWave(active: recording.isRecordingActive)
-                    .frame(width: 50, height: 24)
-                Text(recording.state == .recordingAudioOnly ? "Recording audio" : "Recording")
+                Text(recording.isPaused ? "Paused" : "Recording")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppText.primary)
                 Text(timeLabel)
                     .font(.system(size: 13, design: .monospaced))
-                    .foregroundColor(Color.white.opacity(0.55))
+                    .foregroundColor(AppText.secondary)
                 Spacer(minLength: 8)
                 Button {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     onStop()
                 } label: {
                     Image(systemName: "stop.fill")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(width: 32, height: 32)
-                        .background(BrandColor.amber)
+                        .background(amber)
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .disabled(recording.state == .finalizing || recording.state == .recovering)
             }
             .padding(.leading, 16)
             .padding(.trailing, 6)
             .frame(height: 52)
             .background(
                 Capsule(style: .continuous)
-                    .fill(Color(red: 0.18, green: 0.14, blue: 0.12))
+                    .fill(AppBackground.capsule)
                     .shadow(color: Color.black.opacity(0.45), radius: 18, y: 6)
             )
         }
@@ -2677,56 +2602,14 @@ private struct RecordingMiniBar: View {
                 }
         )
         .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.86), value: dragTranslation)
-        .accessibilityLabel("Recording in progress")
+        .accessibilityLabel(recording.isPaused ? "Paused recording" : "Recording in progress")
         .accessibilityHint("Tap to expand, stop button to finish")
-    }
-
-    private static func format(seconds: Int) -> String {
-        String(format: "%02d:%02d", seconds / 60, seconds % 60)
-    }
-}
-
-private struct RecordingMiniParticleWave: View {
-    let active: Bool
-    private let particleCount = 16
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            Canvas { ctx, size in
-                let cy = size.height / 2
-                let amplitude = active ? size.height * 0.30 : size.height * 0.08
-
-                for i in 0..<particleCount {
-                    let progress = Double(i) / Double(max(particleCount - 1, 1))
-                    let x = progress * size.width
-                    let envelope = sin(progress * .pi)
-                    let y = cy
-                        + sin(t * 5.2 + progress * .pi * 3.8) * amplitude * envelope
-                        + cos(t * 2.6 + progress * .pi * 7.2) * amplitude * 0.35 * envelope
-                    let radius = active ? 1.7 + envelope * 1.3 : 1.2
-                    let alpha = active ? 0.45 + envelope * 0.45 : 0.28
-
-                    ctx.fill(
-                        Path(ellipseIn: CGRect(
-                            x: x - radius,
-                            y: y - radius,
-                            width: radius * 2,
-                            height: radius * 2
-                        )),
-                        with: .color(BrandColor.amber.opacity(alpha))
-                    )
-                }
-            }
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
     }
 }
 
 private struct PulsingDot: View {
     let active: Bool
-    @State private var pulse = false
+    @State private var pulse: Bool = false
 
     var body: some View {
         Circle()
@@ -2736,238 +2619,6 @@ private struct PulsingDot: View {
             .animation(active ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : .default, value: pulse)
             .onAppear { pulse = active }
             .onChange(of: active) { _, newActive in pulse = newActive }
-    }
-}
-
-// MARK: - Voice Record Sheet
-
-private struct RecordingParticleWaveform: View {
-    var isRecording: Bool
-    var level: Double
-    private let particleCount = 55
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            Canvas { ctx, size in
-                let cy = size.height / 2
-                let baseLevel = isRecording ? max(level, 0.22 + (sin(t * 1.35) + 1) * 0.08) : 0.025
-                let amplified = min(1.0, pow(Double(max(baseLevel, 0.005)), 0.28) * 2.8)
-                let amplitude = amplified * cy * 0.80
-
-                for i in 0..<particleCount {
-                    let fi = Double(i)
-                    let progress = fi / Double(particleCount - 1)
-                    let baseX = progress * size.width
-                    let envelope = sin(progress * .pi)
-                    let phase1 = t * 3.5 + progress * .pi * 4.0
-                    let phase2 = t * 2.1 + progress * .pi * 7.0
-                    let targetY = cy + sin(phase1) * amplitude * 0.65 * envelope + sin(phase2) * amplitude * 0.35 * envelope
-                    let seed1 = fi * 13.7
-                    let seed2 = fi * 29.1
-                    let scatterY = 4.0 + amplified * 10.0
-                    let jitterX = sin(t * 0.7 + seed1) * 2.5
-                    let jitterY = sin(t * 0.9 + seed2) * scatterY + cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4
-                    let px = baseX + jitterX
-                    let py = targetY + jitterY
-                    let random = pseudoRandom(i * 3)
-                    let waveMag = (sin(phase1) + 1.0) / 2.0
-                    let radius = 1.0 + random * 1.8 + waveMag * 2.0 * amplified
-                    let normJitter = abs(jitterY) / max(scatterY * 1.5, 1.0)
-                    let proximityAlpha = max(0.0, 1.0 - normJitter) * envelope
-                    let pulse = 0.65 + 0.35 * sin(t * 1.8 + fi * 0.35)
-                    let alpha = proximityAlpha * pulse * (0.35 + amplified * 0.60) * (isRecording ? 1.0 : 0.35)
-                    ctx.fill(
-                        Path(ellipseIn: CGRect(
-                            x: px - radius,
-                            y: py - radius,
-                            width: radius * 2,
-                            height: radius * 2
-                        )),
-                        with: .color(BrandColor.amber.opacity(alpha))
-                    )
-                }
-            }
-        }
-        .frame(height: 75)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-
-    private func pseudoRandom(_ n: Int) -> Double {
-        let value = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
-        return value - floor(value)
-    }
-}
-
-private struct EngineVoiceRecordSheet: View {
-    @EnvironmentObject private var recording: RecordingEngine
-    let presentation: RecorderPresentation
-    let onMinimize: () -> Void
-    let onExpand: () -> Void
-    let onStop: () -> Void
-
-    private let sheetBg = AppBackground.primary
-
-    private var timeLabel: String {
-        String(format: "%d:%02d", recording.elapsedSeconds / 60, recording.elapsedSeconds % 60)
-    }
-
-    private var title: String {
-        if recording.state == .finalizing || recording.state == .recovering {
-            return "Saving..."
-        }
-        if recording.state == .recordingAudioOnly {
-            return "Recording Audio"
-        }
-        return "Voice Note"
-    }
-
-    var body: some View {
-        ZStack {
-            sheetBg.ignoresSafeArea()
-            VStack(spacing: 0) {
-                header
-
-                Spacer(minLength: 24)
-
-                VStack(spacing: 24) {
-                    RecordingParticleWaveform(
-                        isRecording: recording.isRecordingActive,
-                        level: 0
-                    )
-                    .padding(.horizontal, presentation == .full ? 36 : 28)
-
-                    Text(recording.isRecordingActive ? timeLabel : recording.userFacingFailureMessage)
-                        .font(.system(size: 22, weight: .medium, design: recording.isRecordingActive ? .monospaced : .default))
-                        .foregroundColor(AppInk.solid(recording.isRecordingActive ? 0.70 : 0.45))
-                        .transition(.opacity)
-                }
-
-                transcriptView
-
-                Spacer(minLength: 24)
-
-                controls
-            }
-        }
-        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: recording.isRecordingActive)
-        .animation(.easeOut(duration: 0.2), value: recording.liveTranscript)
-    }
-
-    private var header: some View {
-        ZStack {
-            Text(presentation == .mid ? "Swipe up to expand" : title)
-                .font(.subheadline)
-                .foregroundColor(AppText.tertiary)
-                .frame(maxWidth: .infinity)
-
-            HStack {
-                Spacer()
-
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    if presentation == .mid {
-                        onMinimize()
-                    } else {
-                        onMinimize()
-                    }
-                } label: {
-                    Image(systemName: presentation == .mid ? "chevron.down" : "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(AppText.secondary)
-                        .frame(width: 28, height: 28)
-                        .background(AppInk.solid(0.12))
-                        .clipShape(Circle())
-                        .appIconHitArea()
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(presentation == .mid ? "Minimize recorder" : "Close full screen recorder")
-
-                if presentation == .mid {
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        onExpand()
-                    } label: {
-                        Image(systemName: "arrow.up.left.and.arrow.down.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(AppText.secondary)
-                            .frame(width: 28, height: 28)
-                            .background(AppInk.solid(0.12))
-                            .clipShape(Circle())
-                            .appIconHitArea()
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Open full screen recorder")
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
-    }
-
-    @ViewBuilder
-    private var transcriptView: some View {
-        let transcript = recording.liveTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !transcript.isEmpty {
-            ScrollView(showsIndicators: false) {
-                Text(transcript)
-                    .font(.system(size: 14))
-                    .foregroundColor(AppText.tertiary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-                    .padding(.top, 18)
-                    .frame(maxWidth: .infinity)
-            }
-            .frame(maxHeight: presentation == .full ? 180 : 110)
-            .transition(.opacity)
-        } else {
-            Color.clear.frame(height: presentation == .full ? 120 : 60)
-        }
-    }
-
-    private var controls: some View {
-        HStack(spacing: 12) {
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                onMinimize()
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "minus")
-                        .font(.system(size: 15, weight: .semibold))
-                    Text("Minimize")
-                        .font(.system(size: 17, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(AppInk.solid(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                onStop()
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "stop.fill")
-                        .font(.system(size: 15, weight: .semibold))
-                    Text(recording.state == .finalizing ? "Saving" : "End")
-                        .font(.system(size: 17, weight: .semibold))
-                }
-                .foregroundColor(.black)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(.white)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .disabled(recording.state == .finalizing || recording.state == .recovering)
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, presentation == .full ? 34 : 24)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
 

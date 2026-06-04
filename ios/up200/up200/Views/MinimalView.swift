@@ -92,7 +92,9 @@ extension Notification.Name {
 /// `MinimalNoteDetailPage` (with generation tabs) instead of the
 /// classic single-note editor.
 struct MinimalHomePage: View {
-    /// Bumped externally to ask the embedded NotesView to begin a new note.
+    /// Bumped externally (by ContentView when the floating mic capture
+    /// fires) to ask the embedded NotesView to begin a voice note. Same
+    /// hand-off pattern Simple mode uses with `SimpleCreateBar`.
     var newNoteTrigger: Int = 0
     var onProfileTap: () -> Void = {}
 
@@ -255,6 +257,7 @@ struct MinimalNoteDetailPage: View {
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
+    @EnvironmentObject private var recording: RecordingController
 
     @State private var note: Note
     @State private var generations: [MinimalGeneration] = []
@@ -285,6 +288,17 @@ struct MinimalNoteDetailPage: View {
     /// as the user taps a button — without this snapshot the AI flow
     /// would receive an empty range and silently overwrite the whole body.
     @State private var aiSelectionRange: Range<String.Index>? = nil
+
+    /// In-editor dictation. Mirrors NoteEditorPage's pattern: a small
+    /// `mic.badge.plus` glass button parks itself bottom-right whenever
+    /// the editor is focused or recording; tapping it begins live
+    /// transcription that lands at the current insertion point in
+    /// `editText`. `bodyBeforeDictation` snapshots the prefix so an
+    /// interrupted / cancelled dictation reverts cleanly without
+    /// eating any pre-existing body content.
+    @StateObject private var dictation = NoteDictation()
+    @State private var bodyBeforeDictation: String = ""
+    @State private var pausedRecordingForDictation = false
 
     @State private var showCreateModal = false
     @State private var showChat = false
@@ -408,7 +422,7 @@ struct MinimalNoteDetailPage: View {
         // above it — cursor never hides behind the bar.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
-                if !hasActiveTextSelection && !editorFocused && !titleFocused {
+                if !dictation.isRecording && !hasActiveTextSelection && !editorFocused && !titleFocused {
                     if isNoteTab {
                         aiWandButton
                             .transition(.scale(scale: 0.85).combined(with: .opacity))
@@ -418,9 +432,56 @@ struct MinimalNoteDetailPage: View {
                     }
                 }
 
+                // Keep the pill in the layout (its inner frame(maxWidth:
+                // .infinity) absorbs the slack and pushes DictationControls
+                // to the trailing edge) but fade it out and disable taps
+                // while dictation is live or editor is focused without a
+                // selection. When text IS selected in the editor the pill
+                // stays visible so the user can send the highlighted span
+                // straight to chat.
                 aiChatPill
-                    .opacity((editorFocused && !hasActiveTextSelection) || titleFocused ? 0 : 1)
-                    .allowsHitTesting(!(editorFocused && !hasActiveTextSelection) && !titleFocused)
+                    .opacity(dictation.isRecording || (editorFocused && !hasActiveTextSelection) || titleFocused ? 0 : 1)
+                    .allowsHitTesting(!dictation.isRecording && !(editorFocused && !hasActiveTextSelection) && !titleFocused)
+
+                DictationControls(
+                    dictation: dictation,
+                    onStart: {
+                        bodyBeforeDictation = editText
+                        if recording.isRecording && !recording.isPaused {
+                            recording.pauseForSystem()
+                            pausedRecordingForDictation = true
+                            Task {
+                                await recording.awaitTeardown()
+                                await MainActor.run { dictation.start() }
+                            }
+                        } else {
+                            dictation.start()
+                        }
+                    },
+                    onCancel: {
+                        dictation.cancel()
+                        editText = bodyBeforeDictation
+                        if pausedRecordingForDictation {
+                            pausedRecordingForDictation = false
+                            Task {
+                                await dictation.awaitTeardown()
+                                await MainActor.run { recording.resumeIfSystemPaused() }
+                            }
+                        }
+                    },
+                    onConfirm: {
+                        dictation.stop()
+                        if pausedRecordingForDictation {
+                            pausedRecordingForDictation = false
+                            Task {
+                                await dictation.awaitTeardown()
+                                await MainActor.run { recording.resumeIfSystemPaused() }
+                            }
+                        }
+                    },
+                    idleDiameter: 52
+                )
+                .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
@@ -429,12 +490,34 @@ struct MinimalNoteDetailPage: View {
         }
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: editorFocused)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: titleFocused)
+        .animation(.spring(response: 0.36, dampingFraction: 0.82), value: dictation.isRecording)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: hasActiveTextSelection)
         .animation(.spring(response: 0.36, dampingFraction: 0.82), value: isNoteTab)
+        .onChange(of: dictation.transcript) { _, newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            if bodyBeforeDictation.isEmpty {
+                editText = trimmed
+            } else {
+                let needsSeparator = !bodyBeforeDictation.hasSuffix("\n") && !bodyBeforeDictation.hasSuffix(" ")
+                editText = bodyBeforeDictation + (needsSeparator ? " " : "") + trimmed
+            }
+        }
+        .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enable Microphone and Speech Recognition in Settings to dictate.")
+        }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
         .swipeBackGesture {
+            dictation.stop()
             persistCurrent()
             dismiss()
         }
@@ -444,6 +527,7 @@ struct MinimalNoteDetailPage: View {
         }
         .onDisappear {
             chrome.hideTabBar = false
+            dictation.stop()
             persistCurrent()
             maybeGenerateTitle()
             maybeDiscardEmptyNote()
@@ -603,6 +687,7 @@ struct MinimalNoteDetailPage: View {
         HStack(spacing: 10) {
             Button {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                dictation.stop()
                 persistCurrent()
                 dismiss()
             } label: {
@@ -973,6 +1058,14 @@ struct MinimalNoteDetailPage: View {
     // MARK: Tab switching & persistence
 
     private func selectTab(_ index: Int) {
+        // Abandon any in-flight dictation before swapping editText —
+        // otherwise the transcript callback would overwrite the new
+        // tab's text with the previous tab's pre-dictation snapshot +
+        // the partial transcript.
+        if dictation.isRecording {
+            dictation.cancel()
+            editText = bodyBeforeDictation
+        }
         persistCurrent()
         selectedIndex = index
         if index == 0 {
