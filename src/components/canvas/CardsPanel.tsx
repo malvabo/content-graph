@@ -13,7 +13,6 @@ interface ChatMsg { role: 'user' | 'assistant'; text: string }
 
 
 async function chatWithCards(messages: ChatMsg[], cards: Card[], signal?: AbortSignal): Promise<string> {
-  const { anthropicKey, groqKey } = useSettingsStore.getState();
   const cardsJson = JSON.stringify(cards);
   const system = `You are a card editor. The user has a set of content cards. Each card has an id, headline, and body (supports basic HTML: <mark>, <ul>, <li>, <strong>).
 
@@ -33,16 +32,7 @@ Rules:
 
   const msgs = messages.map(m => ({ role: m.role, content: m.text }));
 
-  if (anthropicKey) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST', signal,
-      headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, system, messages: msgs }),
-    });
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    const data = await res.json();
-    return data.content?.[0]?.text ?? '';
-  }
+  const { groqKey } = useSettingsStore.getState();
   if (groqKey) {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST', signal,
@@ -53,7 +43,15 @@ Rules:
     const data = await res.json();
     return data.choices?.[0]?.message?.content ?? '';
   }
-  throw new Error('No API key configured. Add one in Settings.');
+
+  const res = await fetch('/api/claude', {
+    method: 'POST', signal,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 4096, system, messages: msgs }),
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  const data = await res.json();
+  return data.content?.[0]?.text ?? '';
 }
 
 export default function CardsPanel({ setId, onBack }: { setId?: string; onBack?: () => void }) {

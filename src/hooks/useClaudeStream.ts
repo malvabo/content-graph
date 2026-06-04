@@ -1,33 +1,20 @@
 import { useCallback } from 'react';
 import { useExecutionStore } from '../store/executionStore';
 import { useOutputStore } from '../store/outputStore';
-import { useSettingsStore } from '../store/settingsStore';
 
 export function useClaudeStream() {
   const stream = useCallback(
     async (nodeId: string, prompt: string, model = 'claude-sonnet-4', temperature = 0.7, signal?: AbortSignal) => {
-      const apiKey = useSettingsStore.getState().anthropicKey;
-
-      if (!apiKey) {
-        useExecutionStore.getState().setError(nodeId, 'No API key — add one in Settings');
-        return '';
-      }
-
       useExecutionStore.getState().setStatus(nodeId, 'running');
       let accumulated = '';
       let lineBuffer = ''; // #11: buffer partial SSE lines across chunks
 
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
+        const res = await fetch('/api/claude', {
           method: 'POST',
           signal,
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
-          },
-          body: JSON.stringify({ model, max_tokens: 4096, temperature, stream: true, messages: [{ role: 'user', content: prompt }] }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, max_tokens: 4096, stream: true, messages: [{ role: 'user', content: prompt }] }),
         });
 
         if (!res.ok) { useExecutionStore.getState().setError(nodeId, `API error: ${res.status}`); return ''; }

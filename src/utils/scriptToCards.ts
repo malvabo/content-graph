@@ -23,19 +23,9 @@ Script:
 ${script}`;
 
 export async function fetchScriptCards(script: string, signal?: AbortSignal): Promise<string> {
-  const { anthropicKey, groqKey } = useSettingsStore.getState();
+  const { groqKey } = useSettingsStore.getState();
   const prompt = PROMPT(script);
 
-  if (anthropicKey) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST', signal,
-      headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 2048, messages: [{ role: 'user', content: prompt }] }),
-    });
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    const data = await res.json();
-    return data.content?.[0]?.text ?? '';
-  }
   if (groqKey) {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST', signal,
@@ -46,7 +36,15 @@ export async function fetchScriptCards(script: string, signal?: AbortSignal): Pr
     const data = await res.json();
     return data.choices?.[0]?.message?.content ?? '';
   }
-  throw new Error('No API key configured. Add one in Settings.');
+
+  const res = await fetch('/api/claude', {
+    method: 'POST', signal,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2048, messages: [{ role: 'user', content: prompt }] }),
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  const data = await res.json();
+  return data.content?.[0]?.text ?? '';
 }
 
 // `body` ends up in dangerouslySetInnerHTML via CardsPanel, so anything from

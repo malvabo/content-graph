@@ -18,11 +18,10 @@ export async function summarizeBrandType(brand: SavedBrand): Promise<string> {
   const description = describe(brand);
   if (!description) return '';
 
-  const { anthropicKey, groqKey } = useSettingsStore.getState();
+  const { groqKey } = useSettingsStore.getState();
   const prompt = `Summarize the following brand description as a single short label of 1-3 words (a noun or adjective phrase, no punctuation, no quotes). Return ONLY the label.\n\n${description}`;
 
   try {
-    // Prefer Groq (fast + cheap) when available, otherwise Anthropic.
     if (groqKey) {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -33,16 +32,14 @@ export async function summarizeBrandType(brand: SavedBrand): Promise<string> {
       const data = await res.json();
       return clean(data.choices?.[0]?.message?.content ?? '');
     }
-    if (anthropicKey) {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-haiku-4-20250414', max_tokens: 12, messages: [{ role: 'user', content: prompt }] }),
-      });
-      if (!res.ok) return '';
-      const data = await res.json();
-      return clean(data.content?.[0]?.text ?? '');
-    }
+    const res = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 12, messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    return clean(data.content?.[0]?.text ?? '');
   } catch { /* swallow — empty label is fine */ }
   return '';
 }

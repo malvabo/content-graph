@@ -903,13 +903,6 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
 
   const doGenerate = async () => {
     if (!canGenerate) return;
-    const apiKey = useSettingsStore.getState().anthropicKey;
-    if (!apiKey) {
-      setGenError('No Anthropic API key — add one in Settings.');
-      setShowGenSheet(true);
-      return;
-    }
-
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -935,15 +928,10 @@ export default function CreateHome({ onShowOnboarding }: { onShowOnboarding?: ()
     let lineBuffer = '';
     let lastFlush = 0;
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/claude', {
         method: 'POST',
         signal: ctrl.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 8192,

@@ -205,11 +205,6 @@ export default function MobileWorkflow({ onBackToLibrary }: { onBackToLibrary: (
   const [runDone, setRunDone] = useState(false);
 
   const handleRunAll = useCallback(() => {
-    const s = useSettingsStore.getState();
-    if (!s.anthropicKey && !s.openaiKey && !s.googleKey && !s.groqKey) {
-      alert('No API key configured. Go to Settings to add one.');
-      return;
-    }
     setRunDone(false);
     runAll(async (input, config, subtype, meta) => aiExecute(input, config, subtype, meta))
       .then(() => { setRunDone(true); setTimeout(() => setRunDone(false), 3000); });
