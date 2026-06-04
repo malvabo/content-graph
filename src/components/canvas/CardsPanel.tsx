@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
 import { useCardsStore, type Card } from '../../store/cardsStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import FloatingChat from '../ui/FloatingChat';
@@ -31,18 +30,6 @@ Rules:
 - No markdown fences, no explanation outside the JSON`;
 
   const msgs = messages.map(m => ({ role: m.role, content: m.text }));
-
-  const { groqKey } = useSettingsStore.getState();
-  if (groqKey) {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST', signal,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey}` },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 4096, messages: [{ role: 'system', content: system }, ...msgs] }),
-    });
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content ?? '';
-  }
 
   const res = await fetch('/api/claude', {
     method: 'POST', signal,
