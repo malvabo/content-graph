@@ -25,9 +25,9 @@ function getProvider(model: string): 'anthropic' | 'openai' | 'google' | 'groq' 
 
 function getApiModel(model: string): string {
   const map: Record<string, string> = {
-    'claude-haiku-4': 'claude-haiku-4-20250414',
-    'claude-sonnet-4': 'claude-sonnet-4-20250514',
-    'claude-opus-4': 'claude-opus-4-20250514',
+    'claude-haiku-4': 'claude-haiku-4-5-20251001',
+    'claude-sonnet-4': 'claude-sonnet-4-6',
+    'claude-opus-4': 'claude-opus-4-8',
     'gemini-2.0-flash': 'gemini-2.0-flash',
     'gemini-2.5-flash': 'gemini-2.5-flash-preview-04-17',
     'llama-3.3-70b': 'llama-3.3-70b-versatile',
@@ -43,10 +43,10 @@ function sanitizeKey(apiKey: string): string {
   return apiKey.trim().replace(/^['"`]+|['"`]+$/g, '');
 }
 
-async function callAnthropic(apiKey: string, model: string, system: string, input: string, signal?: AbortSignal): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+async function callAnthropic(_apiKey: string, model: string, system: string, input: string, signal?: AbortSignal): Promise<string> {
+  const res = await fetch('/api/claude', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': sanitizeKey(apiKey), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: getApiModel(model), max_tokens: 2048, system, messages: [{ role: 'user', content: input }] }),
     signal,
   });
@@ -101,15 +101,15 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
   const provider = getProvider(model);
   const { anthropicKey, openaiKey, googleKey, groqKey } = useSettingsStore.getState();
 
-  const keys: Record<string, string> = { anthropic: anthropicKey, openai: openaiKey, google: googleKey, groq: groqKey };
+  // Anthropic always available via server proxy; other providers need user keys
+  const keys: Record<string, string> = { anthropic: 'proxy', openai: openaiKey, google: googleKey, groq: groqKey };
   let apiKey = keys[provider];
   let activeProvider = provider;
   let activeModel = model;
 
-  // Fallback: if selected provider has no key, try any available key
+  // Fallback: if selected provider has no key, use Anthropic proxy
   if (!apiKey) {
     const fallbacks: [string, string, string][] = [
-      ['anthropic', anthropicKey, 'claude-sonnet-4'],
       ['groq', groqKey, 'llama-3.3-70b'],
       ['openai', openaiKey, 'gpt-4o-mini'],
       ['google', googleKey, 'gemini-2.0-flash'],
@@ -117,18 +117,17 @@ export async function aiExecute(input: string, config: Record<string, unknown>, 
     for (const [p, k, m] of fallbacks) {
       if (k) { apiKey = k; activeProvider = p as any; activeModel = m; break; }
     }
-    if (!apiKey) throw new Error('No API key set. Go to Settings to add one.');
+    if (!apiKey) { apiKey = 'proxy'; activeProvider = 'anthropic'; activeModel = 'claude-sonnet-4'; }
   }
 
   // Infographic: force claude-sonnet-4 for reliable JSON extraction
   if (subtype === 'infographic') {
-    const { anthropicKey, openaiKey, groqKey, googleKey } = useSettingsStore.getState();
+    const { openaiKey, groqKey, googleKey } = useSettingsStore.getState();
     const sys = SYSTEM_PROMPTS['infographic'];
-    if (anthropicKey) return callAnthropic(anthropicKey, 'claude-sonnet-4', sys, input, signal);
     if (openaiKey) return callOpenAI(openaiKey, 'gpt-4o-mini', sys, input, signal);
     if (groqKey) return callGroq(groqKey, 'llama-3.3-70b', sys + '\n\nYou MUST return valid JSON only. No markdown, no explanation.', input, signal);
     if (googleKey) return callGoogle(googleKey, 'gemini-2.0-flash', sys, input, signal);
-    throw new Error('No API key set. Go to Settings to add one.');
+    return callAnthropic('proxy', 'claude-sonnet-4', sys, input, signal);
   }
 
   let system = SYSTEM_PROMPTS[subtype] || `Generate content based on the input. Node type: ${subtype}. Output only the result.`;

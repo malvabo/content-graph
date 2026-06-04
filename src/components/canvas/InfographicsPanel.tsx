@@ -167,16 +167,7 @@ ${currentJson}`;
 
   const msgs = messages.map(m => ({ role: m.role, content: m.text }));
 
-  if (anthropicKey) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST', signal,
-      headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 2048, system, messages: msgs }),
-    });
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    const data = await res.json();
-    return data.content?.[0]?.text ?? '';
-  }
+  const { groqKey } = useSettingsStore.getState();
   if (groqKey) {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST', signal,
@@ -187,7 +178,15 @@ ${currentJson}`;
     const data = await res.json();
     return data.choices?.[0]?.message?.content ?? '';
   }
-  throw new Error('No API key configured. Add one in Settings.');
+
+  const res = await fetch('/api/claude', {
+    method: 'POST', signal,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2048, system, messages: msgs }),
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  const data = await res.json();
+  return data.content?.[0]?.text ?? '';
 }
 
 const DEFAULT_JSON = JSON.stringify({ title: 'New Infographic', subtitle: 'Edit fields directly or chat for AI changes', points: [{ stat: '0', label: 'Your first data point' }] });
@@ -227,7 +226,7 @@ export default function InfographicsPanel({ initialEditId, onExitEditor }: { ini
   useSettingsStore(s => s.brand);
   useBrandsStore(s => s.activeBrandId);
   useBrandsStore(s => s.brands);
-  const hasApiKey = !!(anthropicKey || groqKey);
+  const hasApiKey = true; // server proxy always available
 
   // If the item being edited is deleted (e.g. via the library grid 3-dot menu),
   // drop back to the home view instead of showing an editor with null data.

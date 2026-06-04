@@ -706,14 +706,6 @@ export default function QuickMode() {
   // ── Run ──
   const doRun = useCallback(async () => {
     if (!canRun) return;
-    const apiKey = useSettingsStore.getState().anthropicKey;
-    if (!apiKey) {
-      setRunError('No API key — add one in Settings');
-      setRunState('error');
-      setView('results');
-      return;
-    }
-
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -735,15 +727,10 @@ export default function QuickMode() {
     let lineBuffer = '';
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('/api/claude', {
         method: 'POST',
         signal: ctrl.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 8192,
