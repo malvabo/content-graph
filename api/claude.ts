@@ -1,12 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { createClient } from '@supabase/supabase-js';
 import { getAllowedOrigin } from './_cors.js';
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
-const parsedLimit = parseInt(process.env.FREE_GENERATION_LIMIT ?? '3', 10);
-const FREE_LIMIT = isNaN(parsedLimit) || parsedLimit < 0 ? 3 : parsedLimit;
 const MAX_TOKENS_CAP = 8192;
 const ALLOWED_MODELS = new Set([
   'claude-haiku-4-5',
@@ -48,32 +45,6 @@ function verifySessionToken(token: string): string | null {
   }
 }
 
-function getSupabase() {
-  const url = process.env.VITE_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-async function checkLimit(sub: string, limit = FREE_LIMIT): Promise<boolean> {
-  const sb = getSupabase();
-  if (!sb) return false; // fail closed — don't allow if rate-limit DB is unavailable
-
-  const { data } = await sb
-    .from('ai_generation_counts')
-    .select('count')
-    .eq('user_sub', sub)
-    .maybeSingle();
-
-  const count = (data as { count: number } | null)?.count ?? 0;
-  return count < limit;
-}
-
-async function incrementUsage(sub: string): Promise<void> {
-  const sb = getSupabase();
-  if (!sb) return;
-  await sb.rpc('increment_ai_usage', { p_sub: sub });
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = getAllowedOrigin(req);
@@ -86,15 +57,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const auth = req.headers.authorization;
   const deviceId = req.headers['x-device-id'];
 
-  let sub: string | null = null;
-  let isAnonymous = false;
-
   if (auth?.startsWith('Bearer ')) {
-    sub = verifySessionToken(auth.slice(7));
+    const sub = verifySessionToken(auth.slice(7));
     if (!sub) return res.status(401).json({ error: 'Invalid or expired session' });
   } else if (typeof deviceId === 'string' && deviceId.length > 0) {
-    sub = `device:${deviceId}`;
-    isAnonymous = true;
+    // anonymous device — allowed
   } else {
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -102,13 +69,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Server misconfigured' });
 
-  const { model, max_tokens, system, messages, stream, is_helper } = req.body as {
+  const { model, max_tokens, system, messages, stream } = req.body as {
     model?: string;
     max_tokens?: number;
     system?: string;
     messages?: unknown[];
     stream?: boolean;
-    is_helper?: boolean;
   };
 
   if (!model || !max_tokens || !messages) {
@@ -119,39 +85,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (typeof max_tokens !== 'number' || max_tokens < 1 || max_tokens > MAX_TOKENS_CAP) {
     return res.status(400).json({ error: `max_tokens must be between 1 and ${MAX_TOKENS_CAP}` });
-  }
-
-  // Helper calls (template title/prompt enhancement) are exempt from the
-  // free-generation limit — they're internal authoring utilities capped at
-  // low token counts, not the user-visible generate/chat/quick-edit features.
-  // Anonymous device sessions are never exempt — they have no trusted identity.
-  const skipLimit = !isAnonymous && is_helper === true && max_tokens <= 1000;
-
-  if (!skipLimit) {
-    const deviceLimit = isAnonymous ? 1 : FREE_LIMIT;
-    const allowed = await checkLimit(sub, deviceLimit);
-    if (!allowed) {
-      if (isAnonymous) {
-        return res.status(402).json({
-          type: 'error',
-          error: {
-            type: 'signup_required',
-            message: 'Sign in with Apple to get 3 free generations.',
-          },
-        });
-      }
-      return res.status(402).json({
-        type: 'error',
-        error: {
-          type: 'limit_exceeded',
-          message: `You've used all ${FREE_LIMIT} free generations.`,
-        },
-      });
-    }
-    // Increment before the upstream call to close the concurrent-request race
-    // window. Without this, multiple simultaneous requests all pass checkLimit
-    // before any of them increments, bypassing the limit entirely.
-    await incrementUsage(sub);
   }
 
   let upstream: Response;
