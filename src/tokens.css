@@ -78,6 +78,7 @@
   --color-interactive-hover: var(--p-neutral-100);
   --color-interactive-active: #E8E8E8;
   --color-interactive-focus: var(--p-green-500);
+  --color-node-selected: var(--p-green-500);
 
   /* Accent */
   --color-accent: var(--p-green-500);
@@ -332,6 +333,7 @@
   --color-accent-hover: rgba(255,255,255,0.95);
   --color-accent-active: rgba(255,255,255,0.70);
   --color-interactive-focus: rgba(255,255,255,0.85);
+  --color-node-selected: rgba(58, 180, 110, 0.75);
   --color-accent-fill: rgba(255,255,255,0.12);
   --color-danger: #f06060;
   --color-danger-hover: #e04040;
