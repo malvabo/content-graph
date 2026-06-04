@@ -770,23 +770,11 @@ ${text}`
 
   const wc = text.split(/\s+/).filter(Boolean).length;
 
-  const brandTag = brand && (brand.name || brand.voice?.personality)
-    ? `Brand: ${brand.name || 'Unnamed'}${brand.voice?.personality ? ` · Tone: ${brand.voice.personality}` : ''}`
-    : null;
 
   return (
     <>
       <style>{fontStyle()}</style>
       <div style={{ height:"100vh", display:"flex", flexDirection:"column", background:C.pageBg, color:C.text }}>
-
-        {brandTag && (
-          <div aria-label="Brand voice active"
-            style={{ padding:"6px 16px", fontSize:11, fontWeight:500, color:C.mute, background:C.surface, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-            <span style={{ width:6, height:6, borderRadius:"50%", background:C.accent, display:"inline-block" }} />
-            {brandTag}
-          </div>
-        )}
-
         {/* ── Split ── */}
         <div style={{ display:"flex", flex:1, minHeight:0 }}>
 
