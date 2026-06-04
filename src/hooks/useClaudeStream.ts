@@ -17,7 +17,12 @@ export function useClaudeStream() {
           body: JSON.stringify({ model, max_tokens: 4096, stream: true, messages: [{ role: 'user', content: prompt }] }),
         });
 
-        if (!res.ok) { useExecutionStore.getState().setError(nodeId, `API error: ${res.status}`); return ''; }
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({})) as { error?: string | { message?: string } };
+          const msg = typeof errBody.error === 'string' ? errBody.error : (errBody.error as { message?: string })?.message ?? `API error ${res.status}`;
+          useExecutionStore.getState().setError(nodeId, msg);
+          return '';
+        }
 
         const reader = res.body?.getReader();
         const decoder = new TextDecoder();
