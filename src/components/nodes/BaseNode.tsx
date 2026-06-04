@@ -274,7 +274,7 @@ function BaseNodeInner({ id, data, selected }: NodeProps<ContentNode>) {
         transition: 'opacity 200ms ease, border-color 150ms ease',
         boxShadow: selected ? 'var(--shadow-md)' : hovered ? 'var(--shadow-sm)' : isRunning ? `0 0 ${20 * glowIntensity}px ${4 * glowIntensity}px rgba(13,191,90,${0.25 * glowIntensity})` : 'none',
         outline: '2px solid',
-        outlineColor: selected ? 'var(--color-accent)' : 'transparent',
+        outlineColor: selected ? 'var(--color-node-selected)' : 'transparent',
         outlineOffset: -2,
       }}
     >
