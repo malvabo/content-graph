@@ -97,36 +97,23 @@ export interface AiExecuteMeta {
 }
 
 export async function aiExecute(input: string, config: Record<string, unknown>, subtype: string, meta?: AiExecuteMeta, signal?: AbortSignal): Promise<string> {
-  const model = (config.model as string) || 'llama-3.3-70b';
+  const model = (config.model as string) || 'claude-sonnet-4';
   const provider = getProvider(model);
-  const { anthropicKey, openaiKey, googleKey, groqKey } = useSettingsStore.getState();
+  const { openaiKey, googleKey, groqKey } = useSettingsStore.getState();
 
-  // Anthropic always available via server proxy; other providers need user keys
-  const keys: Record<string, string> = { anthropic: 'proxy', openai: openaiKey, google: googleKey, groq: groqKey };
-  let apiKey = keys[provider];
-  let activeProvider = provider;
+  // Always use Anthropic proxy unless another provider is explicitly selected with a key
+  let apiKey = 'proxy';
+  let activeProvider: string = 'anthropic';
   let activeModel = model;
 
-  // Fallback: if selected provider has no key, use Anthropic proxy
-  if (!apiKey) {
-    const fallbacks: [string, string, string][] = [
-      ['groq', groqKey, 'llama-3.3-70b'],
-      ['openai', openaiKey, 'gpt-4o-mini'],
-      ['google', googleKey, 'gemini-2.0-flash'],
-    ];
-    for (const [p, k, m] of fallbacks) {
-      if (k) { apiKey = k; activeProvider = p as any; activeModel = m; break; }
-    }
-    if (!apiKey) { apiKey = 'proxy'; activeProvider = 'anthropic'; activeModel = 'claude-sonnet-4'; }
-  }
+  if (provider === 'openai' && openaiKey) { apiKey = openaiKey; activeProvider = 'openai'; }
+  else if (provider === 'google' && googleKey) { apiKey = googleKey; activeProvider = 'google'; }
+  else if (provider === 'groq' && groqKey) { apiKey = groqKey; activeProvider = 'groq'; }
+  else { activeModel = model.startsWith('claude') ? model : 'claude-sonnet-4'; }
 
-  // Infographic: force claude-sonnet-4 for reliable JSON extraction
+  // Infographic: always use Anthropic proxy for reliable JSON extraction
   if (subtype === 'infographic') {
-    const { openaiKey, groqKey, googleKey } = useSettingsStore.getState();
     const sys = SYSTEM_PROMPTS['infographic'];
-    if (openaiKey) return callOpenAI(openaiKey, 'gpt-4o-mini', sys, input, signal);
-    if (groqKey) return callGroq(groqKey, 'llama-3.3-70b', sys + '\n\nYou MUST return valid JSON only. No markdown, no explanation.', input, signal);
-    if (googleKey) return callGoogle(googleKey, 'gemini-2.0-flash', sys, input, signal);
     return callAnthropic('proxy', 'claude-sonnet-4', sys, input, signal);
   }
 

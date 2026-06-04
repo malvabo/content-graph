@@ -1,4 +1,3 @@
-import { useSettingsStore } from '../store/settingsStore';
 import { useCardsStore } from '../store/cardsStore';
 
 const PROMPT = (script: string) => `You are breaking a talk script into memory cards for a speaker.
@@ -23,19 +22,7 @@ Script:
 ${script}`;
 
 export async function fetchScriptCards(script: string, signal?: AbortSignal): Promise<string> {
-  const { groqKey } = useSettingsStore.getState();
   const prompt = PROMPT(script);
-
-  if (groqKey) {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST', signal,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey}` },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 2048, messages: [{ role: 'user', content: prompt }] }),
-    });
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content ?? '';
-  }
 
   const res = await fetch('/api/claude', {
     method: 'POST', signal,

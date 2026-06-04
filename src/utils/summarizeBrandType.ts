@@ -1,4 +1,3 @@
-import { useSettingsStore } from '../store/settingsStore';
 import type { SavedBrand } from '../store/brandsStore';
 
 /** Build a one-line description sent to the LLM. Returns '' when there's nothing worth summarizing. */
@@ -18,20 +17,9 @@ export async function summarizeBrandType(brand: SavedBrand): Promise<string> {
   const description = describe(brand);
   if (!description) return '';
 
-  const { groqKey } = useSettingsStore.getState();
   const prompt = `Summarize the following brand description as a single short label of 1-3 words (a noun or adjective phrase, no punctuation, no quotes). Return ONLY the label.\n\n${description}`;
 
   try {
-    if (groqKey) {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey}` },
-        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 12, messages: [{ role: 'user', content: prompt }] }),
-      });
-      if (!res.ok) return '';
-      const data = await res.json();
-      return clean(data.choices?.[0]?.message?.content ?? '');
-    }
     const res = await fetch('/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
