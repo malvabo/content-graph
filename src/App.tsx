@@ -204,7 +204,7 @@ function AppInner() {
   }, []);
 
 
-  if (showOnboarding) return (
+  const onboardingScreen = (
     <Suspense fallback={null}>
       <OnboardingScreen onFinish={() => {
         localStorage.setItem('onboarding_complete', '1');
@@ -213,6 +213,11 @@ function AppInner() {
     </Suspense>
   );
 
+  // Web shows onboarding before the login gate (existing behavior). In the iOS
+  // app we play it AFTER login instead, so tapping "Continue with Apple" hands
+  // off into the orb/aurora scene — the zoom-out, spheres-forming transition.
+  if (showOnboarding && !IS_IOS_APP) return onboardingScreen;
+
   if (authLoading) return (
     <div role="status" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
       <TypewriterLogo />
@@ -220,6 +225,8 @@ function AppInner() {
   );
 
   if (!user && !guest) return USE_APPLE_AUTH ? <AuthGateApple /> : <AuthGate />;
+
+  if (showOnboarding && IS_IOS_APP) return onboardingScreen;
 
   return (
     <div className="flex flex-col" style={{ height: '100dvh' }}>
