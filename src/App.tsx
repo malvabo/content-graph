@@ -11,10 +11,13 @@ import { supabase } from './lib/supabase';
 import { injectCustomFonts } from './utils/customFonts';
 import AuthGate from './components/auth/AuthGate';
 import AuthGateApple from './components/auth/AuthGateApple';
+import { isIosApp } from './utils/platform';
 
-// Opt-in flag to preview the Apple-login variant of the gate (?auth=apple).
-// The default live login is unaffected until this flag is present in the URL.
-const USE_APPLE_AUTH = new URLSearchParams(window.location.search).get('auth') === 'apple';
+// Show the Apple variant inside the native iOS app (simple, no-login flow), or
+// on the web behind the ?auth=apple flag for previewing. The default web login
+// is unaffected otherwise.
+const IS_IOS_APP = isIosApp();
+const USE_APPLE_AUTH = IS_IOS_APP || new URLSearchParams(window.location.search).get('auth') === 'apple';
 // Heavy view-specific components are lazy-loaded so they don't inflate the
 // initial JS parse cost on startup. Each chunk loads on first navigation.
 import TypewriterLogo from './components/TypewriterLogo';
@@ -220,7 +223,7 @@ function AppInner() {
 
   return (
     <div className="flex flex-col" style={{ height: '100dvh' }}>
-      {guest && !user && (
+      {guest && !user && !IS_IOS_APP && (
         <div style={{ background: 'var(--color-warning-bg)', borderBottom: '1px solid var(--color-warning-border)', padding: '6px 16px', fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--color-warning-text)', textAlign: 'center' }}>
           Guest mode — your work won't be saved. <button style={{ background: 'none', border: 'none', textDecoration: 'underline', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', padding: 0 }} onClick={() => { useAuthStore.setState({ guest: false }); }}>Sign up to save</button>
         </div>
