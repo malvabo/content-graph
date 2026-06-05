@@ -10,6 +10,11 @@ import { useGraphStore, type ContentNode } from './store/graphStore';
 import { supabase } from './lib/supabase';
 import { injectCustomFonts } from './utils/customFonts';
 import AuthGate from './components/auth/AuthGate';
+import AuthGateApple from './components/auth/AuthGateApple';
+
+// Opt-in flag to preview the Apple-login variant of the gate (?auth=apple).
+// The default live login is unaffected until this flag is present in the URL.
+const USE_APPLE_AUTH = new URLSearchParams(window.location.search).get('auth') === 'apple';
 // Heavy view-specific components are lazy-loaded so they don't inflate the
 // initial JS parse cost on startup. Each chunk loads on first navigation.
 import TypewriterLogo from './components/TypewriterLogo';
@@ -211,7 +216,7 @@ function AppInner() {
     </div>
   );
 
-  if (!user && !guest) return <AuthGate />;
+  if (!user && !guest) return USE_APPLE_AUTH ? <AuthGateApple /> : <AuthGate />;
 
   return (
     <div className="flex flex-col" style={{ height: '100dvh' }}>
