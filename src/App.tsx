@@ -80,6 +80,11 @@ function AppInner() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem('onboarding_complete')
   );
+  // iOS plays the onboarding orb scene once per app launch, right after login.
+  // This is in-memory (resets on every cold start) so it does NOT depend on the
+  // persisted onboarding_complete flag — earlier testing may have already set
+  // that, which would otherwise suppress the scene forever.
+  const [iosIntroDone, setIosIntroDone] = useState(false);
 
   const validViews = ['workflow', 'library', 'voice', 'scriptlist', 'scriptsense', 'cardslibrary', 'cards', 'infographics', 'settings', 'intro', 'gradient', 'particles'];
   const getViewFromHash = () => { const h = window.location.hash.slice(1).split(':')[0]; return validViews.includes(h) ? h : 'library'; };
@@ -204,7 +209,9 @@ function AppInner() {
   }, []);
 
 
-  const onboardingScreen = (
+  // Web: onboarding plays before the login gate (existing behavior, gated by
+  // the persisted onboarding_complete flag).
+  if (showOnboarding && !IS_IOS_APP) return (
     <Suspense fallback={null}>
       <OnboardingScreen onFinish={() => {
         localStorage.setItem('onboarding_complete', '1');
@@ -212,11 +219,6 @@ function AppInner() {
       }} />
     </Suspense>
   );
-
-  // Web shows onboarding before the login gate (existing behavior). In the iOS
-  // app we play it AFTER login instead, so tapping "Continue with Apple" hands
-  // off into the orb/aurora scene — the zoom-out, spheres-forming transition.
-  if (showOnboarding && !IS_IOS_APP) return onboardingScreen;
 
   if (authLoading) return (
     <div role="status" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
@@ -226,7 +228,13 @@ function AppInner() {
 
   if (!user && !guest) return USE_APPLE_AUTH ? <AuthGateApple /> : <AuthGate />;
 
-  if (showOnboarding && IS_IOS_APP) return onboardingScreen;
+  // iOS: after login, hand off into the orb/aurora scene (zoom-out, spheres
+  // forming) once per launch. Not gated on onboarding_complete — see above.
+  if (IS_IOS_APP && !iosIntroDone) return (
+    <Suspense fallback={null}>
+      <OnboardingScreen onFinish={() => setIosIntroDone(true)} />
+    </Suspense>
+  );
 
   return (
     <div className="flex flex-col" style={{ height: '100dvh' }}>
