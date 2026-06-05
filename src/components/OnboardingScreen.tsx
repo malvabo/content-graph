@@ -193,11 +193,19 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
     // ---- FOV / projection ----
     const FOV = 52;  // degrees, matching iOS
 
+    // Camera distance. Animated on mount (see tick) for the zoom-out entrance:
+    // the camera starts close (CAM_NEAR) so the dot cloud is large and only its
+    // core is in frame, then pulls back to CAM_SETTLE — the dots draw inward
+    // and the full sphere "forms" as more dots enter the widening view.
+    const CAM_NEAR = 18;
+    const CAM_SETTLE = 38;
+    const INTRO_MS = 1700;
+    let camZ = CAM_NEAR;
+
     const project = (p: { x: number; y: number; z: number }) => {
       const cw = canvas.width / devicePixelRatio;
       const ch = canvas.height / devicePixelRatio;
       const fov = (FOV * Math.PI) / 180;
-      const camZ = 38;
       const dz = camZ - p.z;
       if (dz <= 0) return null;
       const scale = (ch / 2) / Math.tan(fov / 2) / dz;
@@ -217,6 +225,12 @@ export default function OnboardingScreen({ onFinish, onClose }: Props) {
       const dpr = devicePixelRatio;
       const cw = canvas.width / dpr;
       const ch = canvas.height / dpr;
+
+      // Zoom-out entrance: ease the camera from CAM_NEAR back to CAM_SETTLE.
+      // easeOutCubic gives a quick pull that decelerates into the resting frame.
+      const introP = Math.min(1, t / INTRO_MS);
+      const eased = 1 - Math.pow(1 - introP, 3);
+      camZ = CAM_NEAR + (CAM_SETTLE - CAM_NEAR) * eased;
 
       ctx.save();
       ctx.scale(dpr, dpr);
