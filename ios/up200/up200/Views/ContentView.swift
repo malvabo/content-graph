@@ -2431,10 +2431,17 @@ struct ContentView: View {
                     NoteVoiceSheet()
                         .environmentObject(recordingController)
                 }
-                .fullScreenCover(isPresented: $showProfile) {
-                    ProfileView(selectedTab: $selectedTab, isModal: true)
-                        .environmentObject(chromeController)
-                }
+                // Attach the profile cover to a background anchor so two
+                // fullScreenCover modifiers don't chain on the same view —
+                // chaining causes the second to present from within the first
+                // cover's view controller if both happen to be true together.
+                .background(
+                    Color.clear
+                        .fullScreenCover(isPresented: $showProfile) {
+                            ProfileView(selectedTab: $selectedTab, isModal: true)
+                                .environmentObject(chromeController)
+                        }
+                )
                 // Tab bar is the inner inset (anchored at screen bottom).
                 // Mini bar is the outer inset (stacks above the tab bar naturally).
                 // This ordering ensures correct visual stacking on all iOS versions:
