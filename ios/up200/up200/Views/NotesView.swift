@@ -639,20 +639,13 @@ struct NoteWaveform: View {
 struct NoteVoiceSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var recording: RecordingController
-    @State private var selectedDetent: PresentationDetent = .medium
-    @State private var showingComposer: Bool = false
-    // true only when this sheet triggered the pause (not a manual user pause),
-    // so we know to auto-resume on swipe back to medium.
-    @State private var pausedByDetent: Bool = false
-    // stored so it can be cancelled if the user swipes back to large mid-wait
-    @State private var resumeTask: Task<Void, Never>? = nil
-    // Owned here so NoteVoiceSheet can await its teardown before resuming
-    // RecordingController — prevents the setActive(false)/setActive(true) race.
-    @StateObject private var composerDictation = NoteDictation()
+    // Snapshot taken at the moment the user taps Stop so we show the
+    // final transcript rather than a live view that might flicker as
+    // the recognition task sends its last isFinal callback.
+    @State private var transcriptSnapshot: String = ""
+    @State private var showingTranscript = false
 
-    private static let miniDetent: PresentationDetent = .height(88)
     private let sheetBg = AppBackground.primary
-    private var isMini: Bool { selectedDetent == Self.miniDetent }
 
     private var timeLabel: String {
         String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)
@@ -661,133 +654,41 @@ struct NoteVoiceSheet: View {
     var body: some View {
         ZStack {
             sheetBg.ignoresSafeArea()
-            if showingComposer {
-                NoteComposerSheet(
-                    initialBody: recording.fullTranscript,
-                    dictation: composerDictation,
-                    awaitRecordingTeardown: { await recording.awaitTeardown() },
-                    onSave: { body in
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        recording.finishWithText(body)
-                        dismiss()
-                    },
-                    onCancel: {
-                        recording.cancel()
-                        dismiss()
-                    }
-                )
-            } else if isMini {
-                miniBar
+            if showingTranscript {
+                transcriptUI
+                    .transition(.opacity)
             } else {
                 voiceUI
+                    .transition(.opacity)
             }
         }
-        .presentationDetents([Self.miniDetent, .medium, .large], selection: $selectedDetent)
-        .presentationDragIndicator(.visible)
-        .presentationBackground(sheetBg)
-        .presentationCornerRadius(Radius.sheet)
-        .presentationBackgroundInteraction(.enabled(upThrough: Self.miniDetent))
-        .onChange(of: selectedDetent) { _, newDetent in
-            // Only treat a confirmed snap to .large as "expand to editor".
-            // The previous negation (newDetent != .medium) also fired during
-            // the downward-dismiss drag when iOS emits transient non-.medium
-            // values, which triggered recording.pause() → teardownEngine()
-            // on the main thread mid-gesture → hard freeze.
-            let large = (newDetent == .large)
-            if large {
-                // Cancel any pending resume — user is back in large detent.
-                resumeTask?.cancel()
-                resumeTask = nil
-                // Only auto-pause if we're the ones pausing (not already paused
-                // by the user); only then will we auto-resume on the way back.
-                if recording.isRecording && !recording.isPaused {
-                    recording.pause()
-                    pausedByDetent = true
-                }
-            } else if !large && pausedByDetent {
-                // Wait for NoteComposerSheet.onDisappear to fire (animation ~300ms),
-                // then await the dictation teardown so setActive(false) completes
-                // before RecordingController calls setActive(true).
-                let d = composerDictation
-                resumeTask = Task {
-                    // Wait for the ~300ms SwiftUI dismissal animation to complete
-                    // so NoteComposerSheet.onDisappear fires and dictation.stop()
-                    // sets a fresh teardownTask before we await it.
-                    do { try await Task.sleep(nanoseconds: 500_000_000) } catch { return }
-                    await d.awaitTeardown()
-                    await MainActor.run {
-                        guard recording.isPaused, pausedByDetent else { return }
-                        pausedByDetent = false
-                        recording.resume()
-                    }
-                }
-            }
-            withAnimation(AppAnimation.standard) {
-                showingComposer = large
-            }
-        }
+        .animation(.easeInOut(duration: 0.25), value: showingTranscript)
     }
 
-    private func endRecording() {
+    private func handleStop() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        recording.finish()
-        dismiss()
-    }
-
-    private var miniBar: some View {
-        HStack(spacing: 14) {
-            Circle()
-                .fill(BrandColor.amber)
-                .frame(width: 8, height: 8)
-                .shadow(color: BrandColor.amber.opacity(0.6), radius: 4)
-            Text(timeLabel)
-                .font(.system(size: 17, weight: .medium, design: .monospaced))
-                .foregroundColor(AppText.primary)
-            Text(recording.isPaused ? "Paused" : "Recording")
-                .font(.appSmall)
-                .foregroundColor(AppText.tertiary)
-            Spacer()
-            Button { endRecording() } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "stop.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                    Text("End")
-                        .font(.system(size: 15, weight: .semibold))
-                }
-                .foregroundColor(.black)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Capsule(style: .continuous).fill(Color.white))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        transcriptSnapshot = recording.fullTranscript
+        recording.pause()
+        showingTranscript = true
     }
 
     private var voiceUI: some View {
         VStack(spacing: 0) {
-            ZStack {
-                Text("Swipe up to type text")
-                    .font(.subheadline)
-                    .foregroundColor(AppText.tertiary)
-                    .frame(maxWidth: .infinity)
-                HStack {
-                    Spacer()
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(AppText.secondary)
-                            .frame(width: 28, height: 28)
-                            .background(AppInk.solid(0.12))
-                            .clipShape(Circle())
-                            .appIconHitArea()
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Dismiss")
+            HStack {
+                Spacer()
+                Button {
+                    recording.cancel()
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppText.secondary)
+                        .frame(width: 44, height: 44)
+                        .background(AppInk.solid(0.12))
+                        .clipShape(Circle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Cancel recording")
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
@@ -840,11 +741,11 @@ struct NoteVoiceSheet: View {
                 }
                 .buttonStyle(.plain)
 
-                Button { endRecording() } label: {
+                Button(action: handleStop) {
                     HStack(spacing: 8) {
                         Image(systemName: "stop.fill")
                             .font(.system(size: 15, weight: .semibold))
-                        Text("End")
+                        Text("Stop")
                             .font(.system(size: 17, weight: .semibold))
                     }
                     .foregroundColor(.black)
@@ -859,52 +760,15 @@ struct NoteVoiceSheet: View {
             .padding(.bottom, 40)
         }
     }
-}
 
-// MARK: - Composer Sheet (large-detent text editor with corner mic)
-
-private struct NoteComposerSheet: View {
-    let initialBody: String
-    let onSave: (String) -> Void
-    let onCancel: () -> Void
-    let awaitRecordingTeardown: () async -> Void
-
-    @ObservedObject var dictation: NoteDictation
-    @State private var noteBody: String
-    @State private var bodyBeforeDictation: String = ""
-    @State private var showDiscardAlert: Bool = false
-    @State private var dictationCancelled: Bool = false
-    @FocusState private var bodyFocused: Bool
-
-    init(initialBody: String, dictation: NoteDictation, awaitRecordingTeardown: @escaping () async -> Void, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
-        self.initialBody = initialBody
-        self.dictation = dictation
-        self.awaitRecordingTeardown = awaitRecordingTeardown
-        self.onSave = onSave
-        self.onCancel = onCancel
-        self._noteBody = State(initialValue: initialBody)
-    }
-
-    private var canSave: Bool { !noteBody.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-    private var isDirty: Bool { noteBody != initialBody }
-
-    private func openSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
-    }
-
-    var body: some View {
+    private var transcriptUI: some View {
         VStack(spacing: 0) {
             HStack {
                 Button {
-                    if isDirty {
-                        showDiscardAlert = true
-                    } else {
-                        dictation.stop()
-                        onCancel()
-                    }
+                    recording.cancel()
+                    dismiss()
                 } label: {
-                    Text("Cancel")
+                    Text("Discard")
                         .font(.appLabel)
                         .foregroundColor(AppInk.solid(0.50))
                 }
@@ -912,22 +776,23 @@ private struct NoteComposerSheet: View {
 
                 Spacer()
 
-                Text("New Note")
+                Text("Transcript")
                     .font(.appBodyBold)
                     .foregroundColor(AppText.primary)
 
                 Spacer()
 
                 Button {
-                    dictation.stop()
-                    onSave(noteBody)
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    recording.finishWithText(transcriptSnapshot)
+                    dismiss()
                 } label: {
-                    Text("Done")
+                    Text("Save")
                         .font(.appLabelBold)
-                        .foregroundColor(canSave ? .white : AppText.disabled)
+                        .foregroundColor(transcriptSnapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? AppText.disabled : .white)
                 }
                 .buttonStyle(.plain)
-                .disabled(!canSave)
+                .disabled(transcriptSnapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
@@ -937,81 +802,27 @@ private struct NoteComposerSheet: View {
                 .fill(AppInk.solid(0.06))
                 .frame(height: 0.5)
 
-            ZStack(alignment: .bottomTrailing) {
-                ZStack(alignment: .topLeading) {
-                    if noteBody.isEmpty {
-                        Text("Start typing\u{2026}")
-                            .font(.appReadingBody)
-                            .foregroundColor(AppText.muted)
-                            .padding(.horizontal, 24)
-                            .padding(.top, 20)
-                            .allowsHitTesting(false)
-                    }
-                    TextEditor(text: $noteBody)
+            if transcriptSnapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                VStack {
+                    Spacer()
+                    Text("No speech detected")
+                        .font(.appBody)
+                        .foregroundColor(AppText.tertiary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+            } else {
+                ScrollView(showsIndicators: false) {
+                    Text(transcriptSnapshot)
                         .font(.appReadingBody)
-                        .lineSpacing(8)
-                        .foregroundColor(AppInk.solid(0.92))
-                        .scrollContentBackground(.hidden)
-                        .background(Color.clear)
-                        .tint(AppText.primary)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .contentMargins(.bottom, 84, for: .scrollContent)
-                        .focused($bodyFocused)
-                }
-
-                DictationControls(
-                    dictation: dictation,
-                    onStart: {
-                        dictationCancelled = false
-                        bodyBeforeDictation = noteBody
-                        dictation.start()
-                    },
-                    onCancel: {
-                        dictationCancelled = true
-                        dictation.cancel()
-                        noteBody = bodyBeforeDictation
-                    },
-                    onConfirm: {
-                        dictation.stop()
-                    }
-                )
-                .padding(.trailing, 20)
-                .padding(.bottom, 20)
-            }
-            .onChange(of: dictation.transcript) { _, newValue in
-                guard !dictationCancelled else { return }
-                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return }
-                if bodyBeforeDictation.isEmpty {
-                    noteBody = trimmed
-                } else {
-                    let needsSeparator = !bodyBeforeDictation.hasSuffix("\n") && !bodyBeforeDictation.hasSuffix(" ")
-                    noteBody = bodyBeforeDictation + (needsSeparator ? " " : "") + trimmed
+                        .foregroundColor(AppText.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        .padding(.bottom, 40)
                 }
             }
-            .alert("Microphone access denied", isPresented: $dictation.permissionDenied) {
-                Button("Open Settings") { openSettings() }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Enable Microphone and Speech Recognition in Settings to dictate notes.")
-            }
         }
-        .alert("Discard changes?", isPresented: $showDiscardAlert) {
-            Button("Keep Editing", role: .cancel) {}
-            Button("Discard", role: .destructive) {
-                dictation.stop()
-                onCancel()
-            }
-        }
-        .task {
-            // Ensure any in-flight RecordingController teardown (setActive false)
-            // completes before dictation calls setActive true on the same session.
-            await awaitRecordingTeardown()
-            bodyBeforeDictation = noteBody
-            dictation.start()
-        }
-        .onDisappear { dictation.stop() }
     }
 }
 

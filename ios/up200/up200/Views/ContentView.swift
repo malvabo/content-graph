@@ -2426,7 +2426,7 @@ struct ContentView: View {
                 .environmentObject(bannerController)
                 .environmentObject(chromeController)
                 .environmentObject(recordingController)
-                .sheet(isPresented: $recordingController.showingSheet,
+                .fullScreenCover(isPresented: $recordingController.showingSheet,
                        onDismiss: { recordingController.reconcileDismissal() }) {
                     NoteVoiceSheet()
                         .environmentObject(recordingController)
@@ -2449,35 +2449,6 @@ struct ContentView: View {
                         .padding(.bottom, 6)
                     }
                 }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                let show = (recordingController.isRecording || recordingController.isPaused) && !recordingController.showingSheet
-                RecordingMiniBar(
-                    onTap: {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        selectedTab = .notes
-                        recordingController.showingSheet = true
-                    },
-                    onStop: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        recordingController.finish()
-                    }
-                )
-                // safeAreaInset content is rendered as a sibling layer to the
-                // modified view, so it does NOT inherit the .environmentObject
-                // applied to the TabView above. Without this explicit forward,
-                // RecordingMiniBar's @EnvironmentObject lookup fatal-errors on
-                // launch ("No ObservableObject of type RecordingController
-                // found").
-                .environmentObject(recordingController)
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
-                .padding(.bottom, 8)
-                .opacity(show ? 1 : 0)
-                .frame(height: show ? nil : 0, alignment: .top)
-                .clipped()
-                .animation(.spring(response: 0.38, dampingFraction: 0.82), value: show)
-                .transaction { $0.disablesAnimations = !show && recordingController.showingSheet }
-            }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 keyboardVisible = true
             }
@@ -2510,7 +2481,6 @@ struct ContentView: View {
             }
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.85), value: bannerController.isVisible)
-        .animation(.spring(response: 0.42, dampingFraction: 0.85), value: recordingController.isRecording)
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .background:
@@ -2534,91 +2504,6 @@ struct ContentView: View {
             newNoteTrigger: newNoteTrigger,
             onProfileTap: { showProfile = true }
         )
-    }
-}
-
-// MARK: - Recording Mini Bar
-
-private struct RecordingMiniBar: View {
-    @EnvironmentObject private var recording: RecordingController
-    let onTap: () -> Void
-    let onStop: () -> Void
-
-    private let amber = BrandColor.amber
-    @State private var dragOffset: CGSize = .zero
-    @GestureState private var dragTranslation: CGSize = .zero
-
-    private var timeLabel: String {
-        String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)
-    }
-
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                PulsingDot(active: recording.isRecording)
-                    .frame(width: 10, height: 10)
-                Text(recording.isPaused ? "Paused" : "Recording")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(AppText.primary)
-                Text(timeLabel)
-                    .font(.system(size: 13, design: .monospaced))
-                    .foregroundColor(AppText.secondary)
-                Spacer(minLength: 8)
-                Button {
-                    onStop()
-                } label: {
-                    Image(systemName: "stop.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 32, height: 32)
-                        .background(amber)
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.leading, 16)
-            .padding(.trailing, 6)
-            .frame(height: 52)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(AppBackground.capsule)
-                    .shadow(color: Color.black.opacity(0.45), radius: 18, y: 6)
-            )
-        }
-        .buttonStyle(.plain)
-        .offset(
-            x: dragOffset.width + dragTranslation.width,
-            y: dragOffset.height + dragTranslation.height
-        )
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 10)
-                .updating($dragTranslation) { value, state, _ in
-                    state = value.translation
-                }
-                .onEnded { _ in
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                        dragOffset = .zero
-                    }
-                }
-        )
-        .animation(.interactiveSpring(response: 0.28, dampingFraction: 0.86), value: dragTranslation)
-        .accessibilityLabel(recording.isPaused ? "Paused recording" : "Recording in progress")
-        .accessibilityHint("Tap to expand, stop button to finish")
-    }
-}
-
-private struct PulsingDot: View {
-    let active: Bool
-    @State private var pulse: Bool = false
-
-    var body: some View {
-        Circle()
-            .fill(Color.red)
-            .opacity(active && pulse ? 0.45 : 1.0)
-            .scaleEffect(active && pulse ? 1.25 : 1.0)
-            .animation(active ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : .default, value: pulse)
-            .onAppear { pulse = active }
-            .onChange(of: active) { _, newActive in pulse = newActive }
     }
 }
 
