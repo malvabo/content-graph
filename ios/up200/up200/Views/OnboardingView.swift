@@ -312,6 +312,11 @@ struct OnboardingView: View {
                 return
             }
             appleSignIn.handleCredential(credential, nonce: nonce, onSuccess: {
+                // Stamp the clock 1.2s in the future so the first spark
+                // fires after the zoom-in transition settles (~0.85s) rather
+                // than the moment the view appears — the cluster is fully
+                // visible before any dots start flying out to satellites.
+                constellationStartedAt = Date().addingTimeInterval(1.2)
                 withAnimation(.easeOut(duration: 0.85)) {
                     step = .constellation
                 }
