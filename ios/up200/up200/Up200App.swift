@@ -36,7 +36,7 @@ struct Up200App: App {
                         }
                         .task {
                             let hasKey = await Task.detached(priority: .userInitiated) {
-                                KeychainService.load() != nil
+                                !(KeychainService.load() ?? "").isEmpty
                             }.value
                             let hasSession = SessionStore.shared.load() != nil
 
