@@ -5,6 +5,7 @@ import { useGraphStore } from '../../store/graphStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { transcribeWithGroq } from '../../lib/groqTranscribe';
+import { buildTitleContext, cleanGeneratedTitle, fallbackTitle } from '../../utils/titleUtils';
 import RecordButton from './RecordButton';
 
 function syncVoiceSourceOutputs(noteId: string, transcript: string) {
@@ -22,14 +23,17 @@ function pickMimeType(): string | undefined {
 }
 
 async function generateSmartTitle(transcript: string): Promise<string> {
-  const prompt = `Give this spoken transcript a concise 3–6 word title that captures the main topic. Return ONLY the title — no quotes, no punctuation, no explanation.\n\nTranscript: ${transcript.slice(0, 600)}`;
+  const prompt = `Give this spoken transcript a concise 3–6 word title that captures the main topic. Return ONLY the title — no quotes, no punctuation, no explanation.\n\nTranscript: ${buildTitleContext(transcript)}`;
   try {
     const res = await fetch('/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 20, messages: [{ role: 'user', content: prompt }] }),
     });
-    if (res.ok) { const t = (await res.json()).content?.[0]?.text?.trim(); if (t) return t; }
+    if (res.ok) {
+      const t = (await res.json()).content?.[0]?.text?.trim();
+      if (t) return cleanGeneratedTitle(t, transcript);
+    }
   } catch { /* fall through */ }
   return '';
 }
@@ -404,12 +408,16 @@ export default function VoiceLibrary() {
       return;
     }
 
-    const fallbackTitle = transcript ? transcript.split(/\s+/).slice(0, 5).join(' ') : 'Untitled note';
-    updateNote(noteId, { title: fallbackTitle, durationMs: duration, transcript, status: 'ready', errorReason: undefined });
+    const generatedFallbackTitle = transcript ? fallbackTitle(transcript) : 'Untitled note';
+    updateNote(noteId, { title: generatedFallbackTitle, durationMs: duration, transcript, status: 'ready', errorReason: undefined });
     syncVoiceSourceOutputs(noteId, transcript);
     if (transcript) {
+      const transcriptSnapshot = transcript;
       generateSmartTitle(transcript).then(smart => {
-        if (smart) useVoiceStore.getState().updateNote(noteId, { title: smart });
+        if (!smart) return;
+        const note = useVoiceStore.getState().notes.find(n => n.id === noteId);
+        if (!note || note.transcript !== transcriptSnapshot || note.title !== generatedFallbackTitle) return;
+        useVoiceStore.getState().updateNote(noteId, { title: smart });
       }).catch(() => {});
     }
   }, [updateNote]);

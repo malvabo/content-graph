@@ -6,6 +6,7 @@ import { useVoiceStore } from '../../store/voiceStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { transcribeWithGroq } from '../../lib/groqTranscribe';
 import { generateSourceTitle } from '../../utils/sourceUtils';
+import { fallbackTitle } from '../../utils/titleUtils';
 
 export const SAMPLE_VOICE_CONTENT = "Movement in Gemini is not merely decorative; it's an essential guiding element. Each animation has a defined start and end point, creating a sense of directional flow that mirrors user actions. This sense of responsiveness helps users intuitively understand that the system is working with them. Inner activity within the motion conveys thinking, analysis, and intelligence, making Gemini's processing feel more transparent. Motion allows users to see information coming together, visualizing Gemini's conversations and listening abilities.";
 
@@ -276,13 +277,17 @@ export function VoiceSourceInline({ id }: { id: string }) {
       return;
     }
 
-    const fallbackTitle = transcript.split(/\s+/).slice(0, 5).join(' ');
-    updateNote(noteId, { title: fallbackTitle, durationMs: duration, transcript, status: 'ready' });
+    const generatedFallbackTitle = fallbackTitle(transcript);
+    updateNote(noteId, { title: generatedFallbackTitle, durationMs: duration, transcript, status: 'ready' });
     useOutputStore.getState().setOutput(id, { text: transcript });
     updateConfig(id, { voiceNoteId: noteId });
 
+    const transcriptSnapshot = transcript;
     generateSourceTitle(transcript).then(smart => {
-      if (smart) updateNote(noteId, { title: smart });
+      if (!smart) return;
+      const note = useVoiceStore.getState().notes.find(n => n.id === noteId);
+      if (!note || note.transcript !== transcriptSnapshot || note.title !== generatedFallbackTitle) return;
+      updateNote(noteId, { title: smart });
     }).catch(() => {});
   }, [id, updateConfig, updateNote]);
 

@@ -202,6 +202,15 @@ struct AIService {
         "was","were","have","has","had","do","did","will","would","could","should"
     ]
 
+    static func looksLikeTranscriptOpening(_ line: String) -> Bool {
+        let words = line.split { !$0.isLetter && !$0.isNumber }
+            .map { $0.lowercased() }
+        guard let first = words.first else { return false }
+        let openers: Set<String> = ["okay", "ok", "so", "basically", "actually", "just", "like"]
+        if openers.contains(first) { return true }
+        return words.prefix(3).contains("wanted") || words.prefix(3).contains("thinking")
+    }
+
     static func fallback(from text: String) -> String {
         let stop = fallbackStopWords
         let firstLine = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? text
@@ -234,7 +243,8 @@ struct AIService {
         // Keep this threshold in sync with needsTitle() in NotesView.swift.
         let existingFirstLine = trimmed.firstIndex(of: "\n")
             .map { String(trimmed[..<$0]) } ?? trimmed
-        if existingFirstLine.split(whereSeparator: \.isWhitespace).count <= 6 { return nil }
+        if existingFirstLine.split(whereSeparator: \.isWhitespace).count <= 6,
+           !looksLikeTranscriptOpening(existingFirstLine) { return nil }
         let aiTitle = await generateTitle(from: trimmed)
         let cleaned = aiTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty else { return nil }
