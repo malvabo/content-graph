@@ -1365,7 +1365,7 @@ private struct WobblyCircle: Shape {
 /// Persistent per-particle orbital state. Angles are accumulated via dt
 /// each frame so changing orbital speed (which tracks audio level) never
 /// causes a positional jump — only angular velocity changes, not position.
-private final class ParticleOrbitStore: ObservableObject {
+final class ParticleOrbitStore: ObservableObject {
     struct Particle {
         var angle: Double       // accumulated, radians
         let baseSpeed: Double   // radians/sec base rate
@@ -1418,7 +1418,7 @@ private final class ParticleOrbitStore: ObservableObject {
 /// Angle is accumulated via dt — speed changes with audio level
 /// never cause positional discontinuities. The dots stay amber, keep their
 /// current scale, and occasionally glow so the recording state feels alive.
-private struct OnboardingRecordingWaveform: View {
+struct OnboardingRecordingWaveform: View {
     let recorder: VoiceRecorder
     @StateObject private var store = ParticleOrbitStore(count: 200)
     private let amber = Color(red: 1.00, green: 0.63, blue: 0.12)
