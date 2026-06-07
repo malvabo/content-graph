@@ -967,7 +967,7 @@ struct ChatView: View {
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: 12) {
+                LazyVStack(spacing: 22) {
                     ForEach(messages) { msg in
                         renderMessage(msg)
                             .id(msg.id)
@@ -1103,7 +1103,7 @@ struct ChatView: View {
     }
 
     private func contextChip(_ source: ChatContextSource) -> some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .center, spacing: 8) {
             Image(systemName: contextChipIcon(for: source.kind))
                 .font(.system(size: 13, weight: .regular))
                 .foregroundColor(AppInk.solid(0.55))
@@ -1153,7 +1153,7 @@ struct ChatView: View {
     private func attachedContextRow(_ items: [ChatContextSource]) -> some View {
         HStack(spacing: 6) {
             ForEach(items) { source in
-                HStack(spacing: 6) {
+                HStack(alignment: .center, spacing: 6) {
                     Image(systemName: contextChipIcon(for: source.kind))
                         .font(.system(size: 11, weight: .regular))
                         .foregroundColor(AppInk.solid(0.55))
@@ -1944,10 +1944,25 @@ private struct MessageBubble: View {
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         } else {
-            Text(AppMarkdown.render(message.content))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .appBodyText()
-                .textSelection(.enabled)
+            let paragraphs = message.content
+                .components(separatedBy: "\n\n")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            if paragraphs.count <= 1 {
+                Text(AppMarkdown.render(message.content.trimmingCharacters(in: .whitespacesAndNewlines)))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .appBodyText()
+                    .textSelection(.enabled)
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(paragraphs.enumerated()), id: \.offset) { _, para in
+                        Text(AppMarkdown.render(para))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .appBodyText()
+                            .textSelection(.enabled)
+                    }
+                }
+            }
         }
     }
 }
