@@ -1,0 +1,246 @@
+<template id="scene3-psychology-template">
+  <div
+    data-composition-id="scene3-psychology"
+    data-width="1920"
+    data-height="1080"
+    data-duration="6"
+  >
+    <div class="canvas">
+
+      <!-- Mesh gradient background -->
+      <div class="bg"></div>
+      <div class="bg-orb bg-orb-1"></div>
+      <div class="bg-orb bg-orb-2"></div>
+      <div class="bg-orb bg-orb-3"></div>
+
+      <!-- Floating guest message cards — same cards as prev slide but stacked/frantic -->
+      <div class="card card-tl">
+        <div class="card-guest">Guest #42</div>
+        <div class="card-time">8:20am</div>
+        <div class="card-msg">How long is the breakfast hall open?</div>
+      </div>
+
+      <div class="card card-tr">
+        <div class="card-guest">Guest #19</div>
+        <div class="card-time">8:21am</div>
+        <div class="card-msg">Early checkin available?</div>
+      </div>
+
+      <div class="card card-mid card-sm">
+        <div class="card-guest">HF Mantas</div>
+        <div class="card-time">8:22am</div>
+        <div class="card-msg">Hey, I need tea refills right now.</div>
+      </div>
+
+      <div class="card card-mr card-sm">
+        <div class="card-guest">Guest #155</div>
+        <div class="card-time">8:22am</div>
+        <div class="card-msg">The shower has no hot water. Is maintenance available?</div>
+      </div>
+
+      <div class="card card-bl">
+        <div class="card-guest">Guest #34</div>
+        <div class="card-time">8:38am</div>
+        <div class="card-msg">The AC in my room isn't cooling. Can someone take a look tonight?</div>
+      </div>
+
+      <!-- New cards that appear on this slide — the pile grows -->
+      <div class="card card-new card-n1">
+        <div class="card-guest">Guest #67</div>
+        <div class="card-time">8:39am</div>
+        <div class="card-msg">Is late checkout possible? We have a flight at 6pm.</div>
+      </div>
+
+      <div class="card card-new card-n2">
+        <div class="card-guest">Guest #88</div>
+        <div class="card-time">8:40am</div>
+        <div class="card-msg">Room service hasn't arrived yet, it's been 40 minutes.</div>
+      </div>
+
+      <div class="card card-new card-n3 card-sm">
+        <div class="card-guest">Guest #103</div>
+        <div class="card-time">8:41am</div>
+        <div class="card-msg">WiFi password?</div>
+      </div>
+
+      <!-- Centre statement -->
+      <div class="headline">
+        <div class="line line-1">human psychology</div>
+        <div class="line line-2">is not</div>
+      </div>
+
+    </div>
+
+    <style>
+      [data-composition-id="scene3-psychology"] .canvas {
+        width: 1920px;
+        height: 1080px;
+        position: relative;
+        overflow: hidden;
+        font-family: "Inter", sans-serif;
+      }
+
+      /* ── Mesh gradient ── */
+      [data-composition-id="scene3-psychology"] .bg {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #72c4a0 0%, #5aab78 30%, #3a8a60 60%, #6abf8a 100%);
+      }
+
+      [data-composition-id="scene3-psychology"] .bg-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(120px);
+        pointer-events: none;
+      }
+
+      [data-composition-id="scene3-psychology"] .bg-orb-1 {
+        width: 900px; height: 700px;
+        left: -200px; top: -100px;
+        background: rgba(100, 200, 160, 0.6);
+      }
+
+      [data-composition-id="scene3-psychology"] .bg-orb-2 {
+        width: 800px; height: 800px;
+        right: -150px; top: -200px;
+        background: rgba(80, 180, 100, 0.5);
+      }
+
+      [data-composition-id="scene3-psychology"] .bg-orb-3 {
+        width: 700px; height: 600px;
+        left: 400px; bottom: -200px;
+        background: rgba(60, 160, 80, 0.45);
+      }
+
+      /* ── Cards ── */
+      [data-composition-id="scene3-psychology"] .card {
+        position: absolute;
+        background: rgba(255,255,255,0.92);
+        border-radius: 20px;
+        padding: 28px 32px;
+        width: 380px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+        opacity: 0;
+      }
+
+      [data-composition-id="scene3-psychology"] .card.card-sm {
+        width: 280px;
+        padding: 22px 24px;
+        opacity: 0;
+      }
+
+      [data-composition-id="scene3-psychology"] .card-guest {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+      }
+
+      [data-composition-id="scene3-psychology"] .card-time {
+        font-size: 15px;
+        color: #888;
+        margin-bottom: 10px;
+      }
+
+      [data-composition-id="scene3-psychology"] .card-msg {
+        font-size: 20px;
+        font-weight: 500;
+        color: #2a2a2a;
+        line-height: 1.4;
+      }
+
+      [data-composition-id="scene3-psychology"] .card.card-sm .card-guest { font-size: 14px; }
+      [data-composition-id="scene3-psychology"] .card.card-sm .card-time  { font-size: 13px; }
+      [data-composition-id="scene3-psychology"] .card.card-sm .card-msg   { font-size: 16px; }
+
+      /* Positions matching prev slide -->*/
+      [data-composition-id="scene3-psychology"] .card-tl  { left: 40px;   top: 0px; }
+      [data-composition-id="scene3-psychology"] .card-tr  { right: 100px; top: 40px; }
+      [data-composition-id="scene3-psychology"] .card-mid { left: 680px;  top: 140px; }
+      [data-composition-id="scene3-psychology"] .card-mr  { right: 60px;  top: 280px; }
+      [data-composition-id="scene3-psychology"] .card-bl  { left: 480px;  bottom: 60px; }
+
+      /* New cards for this slide */
+      [data-composition-id="scene3-psychology"] .card-n1 { left: 60px;   bottom: 200px; }
+      [data-composition-id="scene3-psychology"] .card-n2 { right: 80px;  bottom: 120px; }
+      [data-composition-id="scene3-psychology"] .card-n3 { left: 900px;  top: 30px; width: 220px; }
+
+      /* ── Headline ── */
+      [data-composition-id="scene3-psychology"] .headline {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        pointer-events: none;
+      }
+
+      [data-composition-id="scene3-psychology"] .line {
+        font-size: 108px;
+        font-weight: 300;
+        color: rgba(255,255,255,0.96);
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        opacity: 0;
+        /* prevent layout shift during animation */
+        display: block;
+      }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        const s = '[data-composition-id="scene3-psychology"]';
+        const tl = gsap.timeline({ paused: true });
+
+        // — carry-over cards fade in instantly (as if continuing from prev slide) —
+        const carryCards = [
+          `${s} .card-tl`, `${s} .card-tr`, `${s} .card-mid`,
+          `${s} .card-mr`, `${s} .card-bl`
+        ];
+        tl.to(carryCards, { opacity: 1, duration: 0.01 }, 0);
+
+        // — headline lines stagger in —
+        tl.fromTo(`${s} .line-1`,
+          { opacity: 0, y: 18 },
+          { opacity: 1, y: 0, duration: 0.85, ease: "power3.out" },
+          0.3
+        );
+        tl.fromTo(`${s} .line-2`,
+          { opacity: 0, y: 18 },
+          { opacity: 1, y: 0, duration: 0.85, ease: "power3.out" },
+          0.65
+        );
+
+        // — new cards pile in one by one, amplifying the overwhelm —
+        tl.fromTo(`${s} .card-n1`,
+          { opacity: 0, y: 30 },
+          { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" },
+          1.4
+        );
+        tl.fromTo(`${s} .card-n2`,
+          { opacity: 0, y: 30 },
+          { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" },
+          1.75
+        );
+        tl.fromTo(`${s} .card-n3`,
+          { opacity: 0, scale: 0.9 },
+          { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.4)" },
+          2.1
+        );
+
+        // — existing cards drift very slightly, creating unease —
+        tl.to(carryCards, {
+          y: "random(-8, 8)",
+          x: "random(-5, 5)",
+          duration: 3,
+          ease: "sine.inOut",
+          stagger: 0.15
+        }, 1.0);
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["scene3-psychology"] = tl;
+      })();
+    </script>
+  </div>
+</template>
