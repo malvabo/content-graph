@@ -536,6 +536,9 @@ struct MinimalNoteDetailPage: View {
         .onReceive(NotificationCenter.default.publisher(for: .minimalGenStoreDidChange)) { _ in
             reloadGenerations()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .notesStoreDidChange)) { _ in
+            refreshNoteFromStoreIfUnedited()
+        }
         .sheet(isPresented: $showChat, onDismiss: {
             reloadGenerations()
             // Don't let a stale chat range leak into a subsequent
@@ -1131,6 +1134,17 @@ struct MinimalNoteDetailPage: View {
         } else {
             editText = currentTextForTab(selectedIndex)
         }
+    }
+
+    private func refreshNoteFromStoreIfUnedited() {
+        guard isNoteTab, !editorFocused, !titleFocused, !dictation.isRecording else { return }
+        guard titleBodyCombined() == note.body else { return }
+        guard let fresh = NotesStore.load().first(where: { $0.id == note.id }) else { return }
+        guard fresh != note else { return }
+        note = fresh
+        let (t, b) = Self.splitTitleBody(fresh.body)
+        editTitle = t
+        editText = b
     }
 
     private func performDelete() {

@@ -639,11 +639,6 @@ struct NoteWaveform: View {
 struct NoteVoiceSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var recording: RecordingController
-    // Snapshot taken at the moment the user taps Stop so we show the
-    // final transcript rather than a live view that might flicker as
-    // the recognition task sends its last isFinal callback.
-    @State private var transcriptSnapshot: String = ""
-    @State private var showingTranscript = false
 
     private let sheetBg = AppBackground.primary
 
@@ -654,22 +649,14 @@ struct NoteVoiceSheet: View {
     var body: some View {
         ZStack {
             sheetBg.ignoresSafeArea()
-            if showingTranscript {
-                transcriptUI
-                    .transition(.opacity)
-            } else {
-                voiceUI
-                    .transition(.opacity)
-            }
+            voiceUI
         }
-        .animation(.easeInOut(duration: 0.25), value: showingTranscript)
     }
 
     private func handleStop() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        transcriptSnapshot = recording.fullTranscript
-        recording.pause()
-        showingTranscript = true
+        recording.finish()
+        dismiss()
     }
 
     private var voiceUI: some View {
@@ -758,70 +745,6 @@ struct NoteVoiceSheet: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
-        }
-    }
-
-    private var transcriptUI: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button {
-                    recording.cancel()
-                    dismiss()
-                } label: {
-                    Text("Discard")
-                        .font(.appLabel)
-                        .foregroundColor(AppInk.solid(0.50))
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-
-                Text("Transcript")
-                    .font(.appBodyBold)
-                    .foregroundColor(AppText.primary)
-
-                Spacer()
-
-                Button {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    recording.finishWithText(transcriptSnapshot)
-                    dismiss()
-                } label: {
-                    Text("Save")
-                        .font(.appLabelBold)
-                        .foregroundColor(transcriptSnapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? AppText.disabled : .white)
-                }
-                .buttonStyle(.plain)
-                .disabled(transcriptSnapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 14)
-
-            Rectangle()
-                .fill(AppInk.solid(0.06))
-                .frame(height: 0.5)
-
-            if transcriptSnapshot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                VStack {
-                    Spacer()
-                    Text("No speech detected")
-                        .font(.appBody)
-                        .foregroundColor(AppText.tertiary)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-            } else {
-                ScrollView(showsIndicators: false) {
-                    Text(transcriptSnapshot)
-                        .font(.appReadingBody)
-                        .foregroundColor(AppText.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                        .padding(.bottom, 40)
-                }
-            }
         }
     }
 }
@@ -1469,19 +1392,27 @@ struct NotesView: View {
     private func saveRecordedTranscript(_ transcript: String) {
         let capturedAt = Date()
         // Persist immediately so a background/kill during title generation
-        // doesn't lose the transcript. Title is patched in afterwards.
+        // doesn't lose the transcript. Seed a local fallback title so opening
+        // the note immediately still renders the transcript as body text.
+        let fallbackTitle = AIService.fallback(from: transcript)
+        let initialBody = fallbackTitle + "\n" + transcript
         var note = Note()
-        note.body = transcript
+        note.body = initialBody
         note.updatedAt = capturedAt
         notes.append(note)
         NotesStore.saveInBackground(notes)
         let noteID = note.id
+        editingNote = note
         Task {
             guard let body = await AIService.prependTitleIfMissing(to: transcript) else { return }
             await MainActor.run {
                 guard let idx = notes.firstIndex(where: { $0.id == noteID }) else { return }
+                guard notes[idx].body == initialBody else { return }
                 notes[idx].body = body
                 NotesStore.saveInBackground(notes)
+                if editingNote?.id == noteID {
+                    editingNote = notes[idx]
+                }
             }
         }
     }
