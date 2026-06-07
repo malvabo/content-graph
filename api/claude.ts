@@ -13,6 +13,11 @@ const MODEL_ALIASES: Record<string, string> = {
   'claude-haiku-4-20250414': 'claude-haiku-4-5-20251001',
   'claude-opus-4-20250514': 'claude-opus-4-8',
 };
+// Derived allowlist: every alias key + every resolved model name.
+const ALLOWED_MODELS = new Set([
+  ...Object.keys(MODEL_ALIASES),
+  ...Object.values(MODEL_ALIASES),
+]);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = getAllowedOrigin(req);
@@ -36,8 +41,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!model || !max_tokens || !messages) {
     return res.status(400).json({ error: 'model, max_tokens, and messages are required' });
   }
-  if (!model.startsWith('claude')) {
-    return res.status(400).json({ error: 'Only Claude models are supported' });
+  if (!ALLOWED_MODELS.has(model)) {
+    return res.status(400).json({ error: 'Unsupported model' });
   }
   if (typeof max_tokens !== 'number' || max_tokens < 1 || max_tokens > MAX_TOKENS_CAP) {
     return res.status(400).json({ error: `max_tokens must be between 1 and ${MAX_TOKENS_CAP}` });
