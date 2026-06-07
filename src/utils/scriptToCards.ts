@@ -43,7 +43,13 @@ function escapeHtml(s: string): string {
 
 export function parseScriptCards(raw: string) {
   const cleaned = raw.replace(/```[a-z]*\n?/g, '').trim();
-  const parsed: { title?: string; anchor?: string; keywords?: string }[] = JSON.parse(cleaned);
+  let parsed: { title?: string; anchor?: string; keywords?: string }[];
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
   return parsed.map((item, i) => ({
     id: `c${Date.now().toString(36)}-${i}`,
     headline: item.title ?? `Card ${i + 1}`,
