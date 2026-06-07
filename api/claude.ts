@@ -85,6 +85,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (done) break;
         res.write(value);
       }
+    } catch {
+      reader.cancel().catch(() => undefined);
     } finally {
       res.end();
     }
