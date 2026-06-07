@@ -85,6 +85,8 @@ private let allTemplates: [ContentTemplate] = [
 // MARK: - AI Title Service
 
 struct AIService {
+    private static var apiKey: String { KeychainService.load() ?? "" }
+
     /// Treat an AI-generated title as redundant when it just rephrases
     /// the body's first line — exact match, one containing the other,
     /// or matching once case and punctuation are stripped. Without this
@@ -109,7 +111,7 @@ struct AIService {
     static func generateTitle(from text: String) async -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return "Untitled" }
-        if AnthropicClient.isConfigured, let title = await callAnthropic(text: trimmed), !title.isEmpty {
+        if !apiKey.isEmpty, let title = await callAnthropic(text: trimmed), !title.isEmpty {
             return title
         }
         return fallback(from: trimmed)
@@ -647,7 +649,6 @@ final class VoiceRecorder: ObservableObject {
             return
         }
         guard rec.supportsOnDeviceRecognition else {
-            recognitionRequest = nil
             startupError = "On-device speech recognition isn't available for this language."
             return
         }
@@ -1418,9 +1419,6 @@ struct VoiceRecordSheet: View {
     @StateObject private var recorder = VoiceRecorder()
     @State private var seconds = 0
     @State private var isGenerating = false
-    @State private var isTypingMode = false
-    @State private var typedText = ""
-    @FocusState private var textFieldFocused: Bool
 
     private let amber = BrandColor.amber
 
@@ -1432,7 +1430,7 @@ struct VoiceRecordSheet: View {
         ZStack {
             AppBackground.primary.ignoresSafeArea()
             RadialGradient(
-                colors: [amber.opacity((!isTypingMode && recorder.isRecording) ? 0.16 : 0.0), .clear],
+                colors: [amber.opacity(recorder.isRecording ? 0.16 : 0.0), .clear],
                 center: .center, startRadius: 0, endRadius: 300
             )
             .ignoresSafeArea()
@@ -1442,7 +1440,7 @@ struct VoiceRecordSheet: View {
                 // Header
                 HStack {
                     Spacer()
-                    Text(isTypingMode ? "Type Note" : recorder.isRecording ? "Recording…" : recorder.transcript.isEmpty ? "Voice Note" : "Done recording")
+                    Text(recorder.isRecording ? "Recording…" : recorder.transcript.isEmpty ? "Voice Note" : "Done recording")
                         .font(.subheadline)
                         .foregroundColor(AppText.tertiary)
                     Spacer()
@@ -1466,107 +1464,69 @@ struct VoiceRecordSheet: View {
 
                 Spacer(minLength: 24)
 
-                if isTypingMode {
-                    // Text editor replaces the mic orb
-                    ZStack(alignment: .topLeading) {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(AppInk.solid(0.06))
-                        if typedText.isEmpty {
-                            Text("What's on your mind?")
-                                .font(.appBody)
-                                .foregroundColor(AppInk.solid(0.30))
-                                .padding(.horizontal, 14)
-                                .padding(.top, 12)
-                                .allowsHitTesting(false)
-                        }
-                        TextEditor(text: $typedText)
-                            .font(.appBody)
-                            .foregroundColor(AppText.primary)
-                            .scrollContentBackground(.hidden)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .focused($textFieldFocused)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.horizontal, 20)
-                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
-                } else {
-                    // Waveform or mic button
-                    if recorder.isRecording {
-                        VoiceRecorderWaveform(recorder: recorder)
-                            .padding(.horizontal, 28)
-                            .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    } else if !recorder.transcript.isEmpty {
-                        VoiceRecorderWaveform(recorder: recorder)
-                            .padding(.horizontal, 28)
-                            .opacity(0.3)
-                            .transition(.opacity)
-                    } else {
-                        Button(action: handleMicTap) {
-                            // 88pt outer hit area around the 76pt visible
-                            // disc. Without it, the Circle()'s default hit
-                            // shape *is* the circle, so taps landing on the
-                            // bounding-box corners (each ~12pt) silently miss.
-                            Circle()
-                                .fill(amber.opacity(0.18))
-                                .frame(width: 76, height: 76)
-                                .overlay(
-                                    Image(systemName: "mic.fill")
-                                        .font(.app(size: 28, weight: .medium))
-                                        .foregroundColor(amber)
-                                )
-                                .overlay(Circle().stroke(amber.opacity(0.35), lineWidth: 1))
-                                .frame(width: 88, height: 88)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(isGenerating)
+                // Waveform or mic button
+                if recorder.isRecording {
+                    let orbitSize = UIScreen.main.bounds.width * 2 / 3
+                    OnboardingRecordingWaveform(recorder: recorder)
+                        .frame(width: orbitSize, height: orbitSize)
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    }
-
-                    Spacer(minLength: 20)
-
-                    // Timer or hint
-                    if recorder.isRecording || !recorder.transcript.isEmpty {
-                        Text(timeLabel)
-                            .font(.system(.title2, design: .monospaced))
-                            .fontWeight(.medium)
-                            .foregroundColor(AppInk.solid(0.70))
-                            .transition(.opacity)
-                    } else {
-                        VStack(spacing: 10) {
-                            Text("Tap to record")
-                                .font(.appBody)
-                                .foregroundColor(AppInk.solid(0.40))
-                            Button {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    isTypingMode = true
-                                }
-                                textFieldFocused = true
-                            } label: {
-                                Text("Type note instead")
-                                    .font(.appSubtext)
-                                    .foregroundColor(AppInk.solid(0.35))
-                                    .underline()
-                            }
-                            .buttonStyle(.plain)
-                        }
+                } else if !recorder.transcript.isEmpty {
+                    let orbitSize = UIScreen.main.bounds.width * 2 / 3
+                    OnboardingRecordingWaveform(recorder: recorder)
+                        .frame(width: orbitSize, height: orbitSize)
+                        .opacity(0.3)
                         .transition(.opacity)
+                } else {
+                    Button(action: handleMicTap) {
+                        // 88pt outer hit area around the 76pt visible
+                        // disc. Without it, the Circle()'s default hit
+                        // shape *is* the circle, so taps landing on the
+                        // bounding-box corners (each ~12pt) silently miss.
+                        Circle()
+                            .fill(amber.opacity(0.18))
+                            .frame(width: 76, height: 76)
+                            .overlay(
+                                Image(systemName: "mic.fill")
+                                    .font(.app(size: 28, weight: .medium))
+                                    .foregroundColor(amber)
+                            )
+                            .overlay(Circle().stroke(amber.opacity(0.35), lineWidth: 1))
+                            .frame(width: 88, height: 88)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .disabled(isGenerating)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                }
 
-                    if !recorder.transcript.isEmpty {
-                        ScrollView(showsIndicators: false) {
-                            Text(recorder.transcript)
-                                .font(.appSmall)
-                                .foregroundColor(AppInk.solid(0.50))
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 32)
-                                .padding(.top, 16)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .frame(maxHeight: 100)
+                Spacer(minLength: 20)
+
+                // Timer
+                if recorder.isRecording || !recorder.transcript.isEmpty {
+                    Text(timeLabel)
+                        .font(.system(.title2, design: .monospaced))
+                        .fontWeight(.medium)
+                        .foregroundColor(AppInk.solid(0.70))
                         .transition(.opacity)
+                } else {
+                    Text("Tap to record")
+                        .font(.appBody)
+                        .foregroundColor(AppInk.solid(0.40))
+                        .transition(.opacity)
+                }
+
+                if !recorder.transcript.isEmpty {
+                    ScrollView(showsIndicators: false) {
+                        Text(recorder.transcript)
+                            .font(.appSmall)
+                            .foregroundColor(AppInk.solid(0.50))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                            .padding(.top, 16)
+                            .frame(maxWidth: .infinity)
                     }
+                    .frame(maxHeight: 100)
+                    .transition(.opacity)
                 }
 
                 Spacer(minLength: 24)
@@ -1578,35 +1538,6 @@ struct VoiceRecordSheet: View {
                         .foregroundColor(AppInk.solid(0.50))
                         .padding(.bottom, 40)
                         .transition(.opacity)
-                } else if isTypingMode {
-                    VStack(spacing: 10) {
-                        Button(action: handleTypedSave) {
-                            Text("Save note")
-                                .font(.appLabelBold)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(typedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? amber.opacity(0.4) : amber)
-                                .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(typedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                        Button {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                isTypingMode = false
-                                typedText = ""
-                            }
-                        } label: {
-                            Text("Record instead")
-                                .font(.appSubtext)
-                                .foregroundColor(AppInk.solid(0.45))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 40)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else if recorder.isRecording {
                     HStack(spacing: 12) {
                         Button(action: handleMicTap) {
@@ -1663,7 +1594,6 @@ struct VoiceRecordSheet: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: recorder.isRecording)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isTypingMode)
         .animation(.easeOut(duration: 0.2), value: isGenerating)
         .task {
             if autoStart { recorder.start() }
@@ -1687,7 +1617,7 @@ struct VoiceRecordSheet: View {
         } message: {
             Text("Microphone and speech recognition access is required to record a voice note.")
         }
-        .interactiveDismissDisabled(recorder.isRecording || !recorder.transcript.isEmpty || isGenerating || (isTypingMode && !typedText.isEmpty))
+        .interactiveDismissDisabled(recorder.isRecording || !recorder.transcript.isEmpty || isGenerating)
     }
 
     private func handleMicTap() {
@@ -1713,20 +1643,6 @@ struct VoiceRecordSheet: View {
             await MainActor.run {
                 isGenerating = false
                 onSave(title, transcript)
-                dismiss()
-            }
-        }
-    }
-
-    private func handleTypedSave() {
-        let text = typedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-        isGenerating = true
-        Task {
-            let title = await AIService.generateTitle(from: text)
-            await MainActor.run {
-                isGenerating = false
-                onSave(title, text)
                 dismiss()
             }
         }
