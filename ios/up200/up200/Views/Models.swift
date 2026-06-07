@@ -935,20 +935,13 @@ final class RecordingController: ObservableObject {
         reset()
     }
 
-    /// Reconcile a cover-driven dismissal. If the cover is dismissed without
-    /// the user tapping Save or Discard, `showingSheet` flips to false but
-    /// `saveHandler` (and any running engine) lingers. When the user is in the
-    /// transcript-review phase (isPaused), save the accumulated text rather
-    /// than discarding it — the user already tapped Stop and expects the note
-    /// to land. When still recording (not paused), treat the dismissal as a
-    /// cancel. Call this from the cover's `onDismiss`.
+    /// Reconcile a cover-driven dismissal. Explicit Stop already calls
+    /// `finish()` before dismissing, so any lingering handler here means the
+    /// sheet went away without confirmation (including while manually paused).
+    /// Treat that as cancel so a swipe-down does not unexpectedly create a note.
     func reconcileDismissal() {
         guard saveHandler != nil else { return }
-        if isPaused {
-            finish()
-        } else {
-            cancel()
-        }
+        cancel()
     }
 
     /// Pause on behalf of the system (interruption, route change, background).

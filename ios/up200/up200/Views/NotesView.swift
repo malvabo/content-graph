@@ -1404,11 +1404,14 @@ struct NotesView: View {
         let noteID = note.id
         editingNote = note
         Task {
-            guard let body = await AIService.prependTitleIfMissing(to: transcript) else { return }
+            let aiTitle = await AIService.generateTitle(from: transcript)
+            let cleaned = aiTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !cleaned.isEmpty else { return }
+            let titledBody = cleaned + "\n" + transcript
             await MainActor.run {
                 guard let idx = notes.firstIndex(where: { $0.id == noteID }) else { return }
                 guard notes[idx].body == initialBody else { return }
-                notes[idx].body = body
+                notes[idx].body = titledBody
                 NotesStore.saveInBackground(notes)
                 if editingNote?.id == noteID {
                     editingNote = notes[idx]
