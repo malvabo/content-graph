@@ -176,7 +176,7 @@ function ThemeGroup() {
       />
       {open && (
         <>
-          {(['default', 'light', 'dark'] as Theme[]).map((t, i, arr) => (
+          {(['default', 'light', 'dark'] as Theme[]).map((t) => (
             <React.Fragment key={t}>
               <RowDivider indent={44} />
               <div

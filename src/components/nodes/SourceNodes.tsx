@@ -234,7 +234,6 @@ export function TextSourceInline({ id }: { id: string }) {
   const updateConfig = useGraphStore((s) => s.updateNodeConfig);
   const setOutput = useOutputStore((s) => s.setOutput);
   const text = (config?.text as string) ?? '';
-  const title = (config?.title as string) ?? '';
   const [open, setOpen] = useState(false);
 
   const handleSave = useCallback(async (newText: string) => {
@@ -247,7 +246,6 @@ export function TextSourceInline({ id }: { id: string }) {
     }
   }, [id, updateConfig, setOutput]);
 
-  const displayTitle = title || (text ? text.trim().split(/\s+/).slice(0, 5).join(' ') : '');
   const wordCount = text ? text.trim().split(/\s+/).filter(Boolean).length : 0;
 
   return (

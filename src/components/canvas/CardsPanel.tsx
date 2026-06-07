@@ -1,5 +1,5 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useCardsStore, type Card } from '../../store/cardsStore';
-import { useSettingsStore } from '../../store/settingsStore';
 import FloatingChat from '../ui/FloatingChat';
 
 const BackIcon = () => (

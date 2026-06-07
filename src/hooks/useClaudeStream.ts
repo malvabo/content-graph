@@ -14,7 +14,7 @@ export function useClaudeStream() {
           method: 'POST',
           signal,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, max_tokens: 4096, stream: true, messages: [{ role: 'user', content: prompt }] }),
+          body: JSON.stringify({ model, max_tokens: 4096, temperature, stream: true, messages: [{ role: 'user', content: prompt }] }),
         });
 
         if (!res.ok) {

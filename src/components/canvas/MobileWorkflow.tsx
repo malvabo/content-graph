@@ -5,7 +5,6 @@ import { useExecutionStore } from '../../store/executionStore';
 import { useOutputStore } from '../../store/outputStore';
 import { useNodeExecution } from '../../hooks/useNodeExecution';
 import { aiExecute } from '../../utils/aiExecutor';
-import { useSettingsStore } from '../../store/settingsStore';
 import { NODE_DEFS_BY_SUBTYPE, BADGE_COLORS } from '../../utils/nodeDefs';
 import { NODE_ICONS } from '../../utils/nodeIcons';
 import ContentModal from '../modals/ContentModal';

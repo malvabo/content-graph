@@ -1,6 +1,5 @@
 import { useRef, useState, useCallback, useEffect, memo, type ReactElement } from 'react';
 import { useQuickModeStore, type SourceType } from '../../store/quickModeStore';
-import { useSettingsStore } from '../../store/settingsStore';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -342,7 +341,7 @@ function VoiceInput() {
     onresult: ((event: SpeechRecognitionEvent) => void) | null;
     onend: (() => void) | null;
     onerror: (() => void) | null;
-    start(): void; stop(): void;
+    start(): void; stop(): void; abort(): void;
   }
   type SRConstructor = new () => SRInstance;
   const recRef = useRef<SRInstance | null>(null);

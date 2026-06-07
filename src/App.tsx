@@ -21,7 +21,6 @@ const USE_APPLE_AUTH = IS_IOS_APP || new URLSearchParams(window.location.search)
 // Heavy view-specific components are lazy-loaded so they don't inflate the
 // initial JS parse cost on startup. Each chunk loads on first navigation.
 import TypewriterLogo from './components/TypewriterLogo';
-import SmartGradient from './components/SmartGradient';
 import GradientPreview from './components/GradientPreview';
 import ParticleField from './components/ParticleField';
 
@@ -284,14 +283,7 @@ function AppInner() {
 
         {activeView === 'library' && <WorkflowLibraryView onOpen={() => setActiveView('workflow')} />}
 
-        {activeView === 'voice' && <VoiceLibrary onUseInWorkflow={() => setActiveView('workflow')} onSendToScript={(t) => {
-          // ScriptSensePanel buffers non-empty initialText into a ref and blanks
-          // it after flushing to the iframe, so clearing here is safe and
-          // prevents this transcript from re-firing on later unrelated renders.
-          setVoiceTranscript(t);
-          setActiveView('scriptsense');
-          setVoiceTranscript('');
-        }} />}
+        {activeView === 'voice' && <VoiceLibrary />}
 
         {activeView === 'scriptlist' && <ScriptLibrary onOpenScript={(id, content) => {
           setActiveScriptId(id);

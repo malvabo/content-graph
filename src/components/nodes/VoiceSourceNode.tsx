@@ -211,7 +211,9 @@ export function VoiceSourceInline({ id }: { id: string }) {
       mediaRef.current = stream;
       const mime = pickMimeType();
       const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
+      const localChunks: BlobPart[] = [];
+      chunksRef.current = localChunks;
+      mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) localChunks.push(e.data); };
       mr.start(1000);
       recorderRef.current = mr;
     } catch {
@@ -252,9 +254,10 @@ export function VoiceSourceInline({ id }: { id: string }) {
     const duration = Date.now() - startTimeRef.current;
     let transcript = [finalRef.current.trim(), interimRef.current.trim()].filter(Boolean).join(' ').trim();
 
-    const mimeType = (chunksRef.current[0] as Blob | undefined)?.type || 'audio/webm';
-    const blob = chunksRef.current.length ? new Blob(chunksRef.current, { type: mimeType }) : null;
+    const recordedChunks = chunksRef.current;
     chunksRef.current = [];
+    const mimeType = (recordedChunks[0] as Blob | undefined)?.type || 'audio/webm';
+    const blob = recordedChunks.length ? new Blob(recordedChunks, { type: mimeType }) : null;
 
     setRecording(false);
 

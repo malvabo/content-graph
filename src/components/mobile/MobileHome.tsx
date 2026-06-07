@@ -2832,7 +2832,9 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     const mime = pickMimeType();
     detectedMimeRef.current = mime ?? 'audio/mp4';
     const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-    mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
+    const localChunks: BlobPart[] = [];
+    chunksRef.current = localChunks;
+    mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) localChunks.push(e.data); };
     mr.start(1000);
     recorderRef.current = mr;
 
@@ -2906,9 +2908,10 @@ export default function MobileHome({ onAddPost }: MobileHomeProps = {}) {
     const duration = Date.now() - startTimeRef.current;
     let transcript = [finalRef.current.trim(), interimRef.current.trim()].filter(Boolean).join(' ').trim();
 
-    const mimeType = chunksRef.current.find(c => (c as Blob).type)?.type || detectedMimeRef.current;
-    const blob = chunksRef.current.length ? new Blob(chunksRef.current, { type: mimeType }) : null;
+    const recordedChunks = chunksRef.current;
     chunksRef.current = [];
+    const mimeType = recordedChunks.find((c): c is Blob => c instanceof Blob && Boolean(c.type))?.type || detectedMimeRef.current;
+    const blob = recordedChunks.length ? new Blob(recordedChunks, { type: mimeType }) : null;
     setRecording(false);
     setActiveStream(null);
 

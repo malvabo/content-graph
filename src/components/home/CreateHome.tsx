@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useSettingsStore } from '../../store/settingsStore';
 import { useGenerationsStore } from '../../store/generationsStore';
-import { usePresetsStore, type FormatPreset } from '../../store/presetsStore';
+import { usePresetsStore } from '../../store/presetsStore';
 
 // ─── Models ────────────────────────────────────────────────────────────────
 
@@ -32,18 +31,6 @@ const popularTemplates: FormatTemplate[] = [
   { id: 'blog',        label: 'Blog post',    formatIDs: ['blog'] },
   { id: 'video',       label: 'Video script', formatIDs: ['youtube', 'video'] },
   { id: 'research',    label: 'Research pack', formatIDs: ['newsletter', 'blog', 'twitter'] },
-];
-
-interface FormatTemplate2 { id: string; name: string; description: string; formatIDs: string[] }
-const allTemplates: FormatTemplate2[] = [
-  { id: 'newsletter',   name: 'Newsletter',    description: 'Digest with key takeaways from your source',     formatIDs: ['newsletter'] },
-  { id: 'social-pack',  name: 'Social Pack',   description: 'LinkedIn post + Twitter thread from one source', formatIDs: ['linkedin', 'twitter'] },
-  { id: 'blog',         name: 'Blog Post',     description: 'Long-form SEO-friendly article',                 formatIDs: ['blog'] },
-  { id: 'video-script', name: 'Video Script',  description: 'Hook, body & CTA for YouTube or Reels',          formatIDs: ['youtube', 'video'] },
-  { id: 'email',        name: 'Email',         description: 'Concise campaign or outreach email',             formatIDs: ['email'] },
-  { id: 'podcast',      name: 'Podcast',       description: 'Episode outline and talking points',             formatIDs: ['podcast'] },
-  { id: 'press',        name: 'Press Release', description: 'Formal media announcement',                     formatIDs: ['press'] },
-  { id: 'landing',      name: 'Landing Page',  description: 'Headline, sections and CTA copy',               formatIDs: ['landing'] },
 ];
 
 const BG = '#1A1513';
