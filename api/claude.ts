@@ -14,6 +14,18 @@ const MODEL_ALIASES: Record<string, string> = {
   'claude-opus-4-20250514': 'claude-opus-4-8',
 };
 
+// Canonical model IDs that may be passed directly (no alias needed).
+const CANONICAL_MODELS = new Set([
+  'claude-haiku-4-5-20251001',
+  'claude-haiku-4-5',
+  'claude-sonnet-4-5-20251001',
+  'claude-sonnet-4-5',
+  'claude-sonnet-4-6',
+  'claude-opus-4-8',
+]);
+
+const ALLOWED_MODELS = new Set([...Object.keys(MODEL_ALIASES), ...CANONICAL_MODELS]);
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = getAllowedOrigin(req);
   if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
@@ -36,8 +48,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!model || !max_tokens || !messages) {
     return res.status(400).json({ error: 'model, max_tokens, and messages are required' });
   }
-  if (!model.startsWith('claude')) {
-    return res.status(400).json({ error: 'Only Claude models are supported' });
+  if (!ALLOWED_MODELS.has(model)) {
+    return res.status(400).json({ error: 'Unsupported model' });
   }
   if (typeof max_tokens !== 'number' || max_tokens < 1 || max_tokens > MAX_TOKENS_CAP) {
     return res.status(400).json({ error: `max_tokens must be between 1 and ${MAX_TOKENS_CAP}` });
