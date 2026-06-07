@@ -1798,14 +1798,16 @@ struct ChatView: View {
                 let target = buf.count
                 guard shown < target else { continue }
                 let gap = target - shown
-                let step = min(gap, 5)
+                let step = min(gap, max(8, gap / 6))
                 shown = min(shown + step, target)
                 // Don't show partial <rewrite> XML — wait until the closing
                 // tag has been drained so the card appears atomically.
                 let candidate = String(buf.prefix(shown))
                 let newContent = Self.drainSafeContent(candidate)
                 if let idx = messages.firstIndex(where: { $0.id == replyID }) {
-                    messages[idx].content = newContent
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        messages[idx].content = newContent
+                    }
                 }
             }
         }
@@ -1953,6 +1955,7 @@ private struct MessageBubble: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .appBodyText()
                     .textSelection(.enabled)
+                    .contentTransition(.opacity)
             } else {
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(Array(paragraphs.enumerated()), id: \.offset) { _, para in
@@ -1960,8 +1963,11 @@ private struct MessageBubble: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .appBodyText()
                             .textSelection(.enabled)
+                            .contentTransition(.opacity)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
                     }
                 }
+                .animation(.easeOut(duration: 0.25), value: paragraphs.count)
             }
         }
     }
