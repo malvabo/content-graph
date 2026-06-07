@@ -1,0 +1,188 @@
+<template id="scene1-hospitality-intro-template">
+  <div
+    data-composition-id="scene1-hospitality-intro"
+    data-width="1920"
+    data-height="1080"
+    data-duration="7"
+  >
+    <div class="canvas">
+
+      <!-- Image stack — replace src attributes with actual image paths -->
+      <div class="img-stack">
+        <!-- Top strip: slides down from above -->
+        <div class="img-strip img-top" style="background-image: url('../../assets/img-strip-top.jpg')"></div>
+        <!-- Main center image: appears first -->
+        <div class="img-main" style="background-image: url('../../assets/img-main.jpg')"></div>
+        <!-- Bottom strip: slides up from below -->
+        <div class="img-strip img-bottom" style="background-image: url('../../assets/img-strip-bottom.jpg')"></div>
+      </div>
+
+      <!-- Words -->
+      <div class="word word-left">Hospitality</div>
+      <div class="word word-right">is changing</div>
+
+      <!-- White flash overlay for zoom-out -->
+      <div class="flash"></div>
+    </div>
+
+    <style>
+      [data-composition-id="scene1-hospitality-intro"] .canvas {
+        width: 1920px;
+        height: 1080px;
+        background: #ffffff;
+        position: relative;
+        overflow: hidden;
+        font-family: "Inter", sans-serif;
+      }
+
+      /* ── Image stack ── */
+      [data-composition-id="scene1-hospitality-intro"] .img-stack {
+        position: absolute;
+        /* centered on canvas */
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 0;
+        height: 0;
+      }
+
+      [data-composition-id="scene1-hospitality-intro"] .img-main {
+        position: absolute;
+        width: 520px;
+        height: 460px;
+        left: -260px;
+        top: -250px;
+        background-size: cover;
+        background-position: center;
+        /* Fallback gradient — remove when real image is in */
+        background-color: #c8b89a;
+        background-image: linear-gradient(160deg, #d4c4a0 0%, #8a9e7a 60%, #5a7a6a 100%);
+        opacity: 0;
+      }
+
+      [data-composition-id="scene1-hospitality-intro"] .img-strip {
+        position: absolute;
+        width: 380px;
+        height: 185px;
+        left: -250px; /* slightly offset left of center */
+        background-size: cover;
+        background-position: center;
+        opacity: 0;
+      }
+
+      [data-composition-id="scene1-hospitality-intro"] .img-top {
+        /* sits above main image, overlaps slightly */
+        top: -420px;
+        /* fallback */
+        background-color: #b8a882;
+        background-image: linear-gradient(170deg, #c9b48a 0%, #a8906a 100%);
+      }
+
+      [data-composition-id="scene1-hospitality-intro"] .img-bottom {
+        /* sits below main image, overlaps slightly */
+        top: 225px;
+        /* fallback — pool water tones */
+        background-color: #5a8a8a;
+        background-image: linear-gradient(10deg, #3a6a70 0%, #6aacac 60%, #4a8a88 100%);
+      }
+
+      /* ── Words ── */
+      [data-composition-id="scene1-hospitality-intro"] .word {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 80px;
+        font-weight: 300;
+        color: #1a1a1a;
+        letter-spacing: -0.01em;
+        opacity: 0;
+        white-space: nowrap;
+      }
+
+      [data-composition-id="scene1-hospitality-intro"] .word-left {
+        left: 168px;
+      }
+
+      [data-composition-id="scene1-hospitality-intro"] .word-right {
+        right: 152px;
+      }
+
+      /* ── Flash overlay ── */
+      [data-composition-id="scene1-hospitality-intro"] .flash {
+        position: absolute;
+        inset: 0;
+        background: #ffffff;
+        opacity: 0;
+        pointer-events: none;
+        z-index: 10;
+      }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        const s = '[data-composition-id="scene1-hospitality-intro"]';
+        const tl = gsap.timeline({ paused: true });
+
+        // 1. Main center image fades + scales in
+        tl.fromTo(`${s} .img-main`,
+          { opacity: 0, scale: 0.92 },
+          { opacity: 1, scale: 1, duration: 0.9, ease: "power3.out" },
+          0.2
+        );
+
+        // 2. Top strip slides down from above
+        tl.fromTo(`${s} .img-top`,
+          { opacity: 0, y: -80 },
+          { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" },
+          0.95
+        );
+
+        // 3. Bottom strip slides up from below
+        tl.fromTo(`${s} .img-bottom`,
+          { opacity: 0, y: 80 },
+          { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" },
+          1.05
+        );
+
+        // 4. "Hospitality" slides in from left
+        tl.fromTo(`${s} .word-left`,
+          { opacity: 0, x: -60 },
+          { opacity: 1, x: 0, duration: 0.75, ease: "power3.out" },
+          1.7
+        );
+
+        // 5. "is changing" slides in from right
+        tl.fromTo(`${s} .word-right`,
+          { opacity: 0, x: 60 },
+          { opacity: 1, x: 0, duration: 0.75, ease: "power3.out" },
+          1.85
+        );
+
+        // — hold at 3.6s —
+
+        // 6. Text fades out before zoom
+        tl.to(`${s} .word-left`, { opacity: 0, duration: 0.4, ease: "power2.in" }, 3.6);
+        tl.to(`${s} .word-right`, { opacity: 0, duration: 0.4, ease: "power2.in" }, 3.65);
+
+        // 7. Zoom fly-in: scale the whole img-stack up, images get huge
+        tl.to(`${s} .img-stack`, {
+          scale: 14,
+          duration: 1.6,
+          ease: "power4.in",
+          transformOrigin: "0px 0px" // center of stack = center of canvas
+        }, 3.9);
+
+        // 8. White flash as zoom peaks
+        tl.to(`${s} .flash`, {
+          opacity: 1,
+          duration: 0.5,
+          ease: "power2.in"
+        }, 4.9);
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["scene1-hospitality-intro"] = tl;
+      })();
+    </script>
+  </div>
+</template>
