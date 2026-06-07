@@ -85,8 +85,6 @@ private let allTemplates: [ContentTemplate] = [
 // MARK: - AI Title Service
 
 struct AIService {
-    private static var apiKey: String { KeychainService.load() ?? "" }
-
     /// Treat an AI-generated title as redundant when it just rephrases
     /// the body's first line — exact match, one containing the other,
     /// or matching once case and punctuation are stripped. Without this
@@ -111,7 +109,7 @@ struct AIService {
     static func generateTitle(from text: String) async -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return "Untitled" }
-        if !apiKey.isEmpty, let title = await callAnthropic(text: trimmed), !title.isEmpty {
+        if AnthropicClient.isConfigured, let title = await callAnthropic(text: trimmed), !title.isEmpty {
             return title
         }
         return fallback(from: trimmed)
