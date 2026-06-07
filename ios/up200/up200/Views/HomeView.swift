@@ -649,6 +649,7 @@ final class VoiceRecorder: ObservableObject {
             return
         }
         guard rec.supportsOnDeviceRecognition else {
+            recognitionRequest = nil
             startupError = "On-device speech recognition isn't available for this language."
             return
         }
