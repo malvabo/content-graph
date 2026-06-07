@@ -734,7 +734,11 @@ struct ChatView: View {
                         documents: documentSources,
                         notes: noteSources,
                         onSelect: { source in attachMention(source) },
-                        onDismiss: { showMentionPicker = false }
+                        onDismiss: {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                                showMentionPicker = false
+                            }
+                        }
                     )
                     .padding(.horizontal, 12)
                     .padding(.bottom, 4)
@@ -742,7 +746,6 @@ struct ChatView: View {
                 }
             }
         }
-        .animation(.spring(response: 0.28, dampingFraction: 0.82), value: showMentionPicker)
         .sheet(isPresented: $showSavedChatsPicker) {
             SavedChatsSheet(
                 currentChatID: activeSavedChatID,
@@ -1284,7 +1287,9 @@ struct ChatView: View {
 
     private func presentMentionPicker() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        showMentionPicker.toggle()
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+            showMentionPicker.toggle()
+        }
     }
 
     private func presentSavedChatsPicker() {
@@ -1402,7 +1407,9 @@ struct ChatView: View {
         if inputText.hasSuffix("@") {
             inputText.removeLast()
         }
-        showMentionPicker = false
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+            showMentionPicker = false
+        }
         inputFocused = true
     }
 
@@ -2448,15 +2455,23 @@ private struct MentionTextView: UIViewRepresentable {
         var suppressEcho = false
         var lastReportedFocused: Bool = false
         var focusGeneration: Int = 0
+        var prevText: String = ""
         init(_ parent: MentionTextView) { self.parent = parent }
 
         func textViewDidChange(_ tv: UITextView) {
             guard !suppressEcho else { return }
             let newText = tv.text ?? ""
             if parent.text != newText { parent.text = newText }
-            let sel = tv.selectedRange
-            tv.attributedText = parent.buildAttributed(newText)
-            tv.selectedRange = sel
+            // Only rebuild the full attributedText when @-mentions may be
+            // present or were recently present. For plain keystrokes with no
+            // @ this avoids a full UITextView re-layout on every character,
+            // which was causing cursor flicker and spring-animation bleed.
+            if newText.contains("@") || prevText.contains("@") {
+                let sel = tv.selectedRange
+                tv.attributedText = parent.buildAttributed(newText)
+                tv.selectedRange = sel
+            }
+            prevText = newText
             let ctv = tv as? ChatComposerUITextView
             ctv?.refreshPlaceholderVisibility()
             ctv?.invalidateHeight()
