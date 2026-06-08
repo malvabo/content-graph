@@ -716,16 +716,22 @@ struct NoteVoiceSheet: View {
                     dismiss()
                     switchToWriting()
                 } label: {
-                    Text("Switch to writing")
-                        .font(.app(size: 18, weight: .semibold))
-                        .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 62)
-                        .background(Color.white.opacity(0.94))
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    HStack(spacing: 6) {
+                        Text("Switch to writing")
+                            .font(.app(size: 15, weight: .medium))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(Color.white.opacity(0.78))
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                    )
                 }
                 .buttonStyle(.plain)
-                .padding(.horizontal, 20)
                 .padding(.bottom, 10)
             }
 
