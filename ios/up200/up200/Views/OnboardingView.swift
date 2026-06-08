@@ -1437,7 +1437,7 @@ private struct GeneratingCloudScene: View {
     ]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 40.0)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let now = frozenAt ?? context.date
             let elapsed = now.timeIntervalSince(generationStartedAt)
             Canvas { ctx, size in
@@ -1495,20 +1495,11 @@ private struct GeneratingCloudScene: View {
                         var line = Path()
                         line.move(to: CGPoint(x: startX, y: startY))
                         line.addLine(to: CGPoint(x: endX, y: endY))
-                        let lineGradient = Gradient(stops: [
-                            .init(color: amber.opacity(0.08 * lineAlpha), location: 0.0),
-                            .init(color: amber.opacity(0.30 * lineAlpha), location: 0.5),
-                            .init(color: amber.opacity(0.08 * lineAlpha), location: 1.0)
-                        ])
                         ctx.stroke(
                             line,
-                            with: .linearGradient(
-                                lineGradient,
-                                startPoint: CGPoint(x: startX, y: startY),
-                                endPoint: CGPoint(x: endX, y: endY)
-                            ),
+                            with: .color(amber.opacity(0.22 * lineAlpha)),
                             style: StrokeStyle(
-                                lineWidth: 1.4,
+                                lineWidth: 1.2,
                                 lineCap: .round,
                                 dash: [0.01, 4]
                             )
@@ -1524,6 +1515,7 @@ private struct GeneratingCloudScene: View {
                     // the centre stays visible on top of the cluster.
                     if progress > 0.7 {
                         let bloom = (progress - 0.7) / 0.3
+                        guard bloom > 0.05 else { continue }
                         drawSphere(in: ctx,
                                    cx: satX, cy: satY,
                                    r: coreRadius * sat.sizeFactor * bloom,
