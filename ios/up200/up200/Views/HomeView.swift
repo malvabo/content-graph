@@ -2483,12 +2483,12 @@ private struct FormatsBlock: View {
                         LinearGradient(
                             stops: [
                                 .init(color: .black, location: 0.0),
-                                .init(color: .clear, location: 0.55)
+                                .init(color: .clear, location: 0.75)
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
-                        .frame(width: 72)
+                        .frame(width: 120)
                     }
                 )
 
