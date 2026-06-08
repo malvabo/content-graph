@@ -312,7 +312,10 @@ struct OnboardingView: View {
                 return
             }
             appleSignIn.handleCredential(credential, nonce: nonce, onSuccess: {
-                onLogin()
+                constellationStartedAt = Date().addingTimeInterval(1.2)
+                withAnimation(.easeOut(duration: 0.85)) {
+                    step = .constellation
+                }
             }) { error in
                 authError = error.localizedDescription
             }
