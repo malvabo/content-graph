@@ -19,15 +19,6 @@ struct RecordingWaveformView: View {
                 let cy = size.height / 2
                 let maxR = min(cx, cy)
 
-                // Gray boundary stroke
-                let strokeR = maxR - 1
-                ctx.stroke(
-                    Path(ellipseIn: CGRect(x: cx - strokeR, y: cy - strokeR,
-                                           width: strokeR * 2, height: strokeR * 2)),
-                    with: .color(Color(white: 0.38, opacity: 0.55)),
-                    lineWidth: 1.5
-                )
-
                 for i in 0..<starCount {
                     let rx = prng(i * 3)
                     let ry = prng(i * 3 + 1)
@@ -40,9 +31,10 @@ struct RecordingWaveformView: View {
                     let x = rx * size.width + dx
                     let y = ry * size.height + dy
 
-                    // Clip particles to circle
+                    // Skip particles clearly outside the field (perf guard only —
+                    // visual clipping is handled by clipShape(Circle()) at the call site)
                     let distX = x - cx, distY = y - cy
-                    guard distX * distX + distY * distY <= strokeR * strokeR else { continue }
+                    guard distX * distX + distY * distY <= maxR * maxR else { continue }
 
                     let pulse = 0.65 + 0.35 * sin(t * 1.6 + Double(i) * 0.31)
                     let radius = (1.5 + ra * 2.4) * (1.0 + amplified * 0.45)

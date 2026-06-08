@@ -686,6 +686,9 @@ struct NoteVoiceSheet: View {
             let waveSize = UIScreen.main.bounds.width * 2 / 3
             RecordingWaveformView(audioLevel: { recording.audioLevel })
                 .frame(width: waveSize, height: waveSize)
+                .background(Color.white.opacity(0.09))
+                .clipShape(Circle())
+                .overlay(Circle().stroke(Color(white: 0.38, opacity: 0.55), lineWidth: 1.5))
 
             Spacer(minLength: 20)
 
@@ -713,16 +716,17 @@ struct NoteVoiceSheet: View {
                     dismiss()
                     switchToWriting()
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "keyboard")
-                            .font(.system(size: 13, weight: .medium))
-                        Text("Switch to writing")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .foregroundColor(AppInk.solid(0.50))
+                    Text("Switch to writing")
+                        .font(.app(size: 18, weight: .semibold))
+                        .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 62)
+                        .background(Color.white.opacity(0.94))
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .padding(.bottom, 4)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 10)
             }
 
             HStack(spacing: 12) {
@@ -765,7 +769,7 @@ struct NoteVoiceSheet: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 40)
+            .padding(.bottom, 16)
         }
     }
 }

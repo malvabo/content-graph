@@ -1470,6 +1470,7 @@ struct VoiceRecordSheet: View {
                         .frame(width: orbitSize, height: orbitSize)
                         .background(Color.white.opacity(0.09))
                         .clipShape(Circle())
+                        .overlay(Circle().stroke(Color(white: 0.38, opacity: 0.55), lineWidth: 1.5))
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 } else if !recorder.transcript.isEmpty {
                     let orbitSize = UIScreen.main.bounds.width * 2 / 3
@@ -1477,6 +1478,7 @@ struct VoiceRecordSheet: View {
                         .frame(width: orbitSize, height: orbitSize)
                         .background(Color.white.opacity(0.09))
                         .clipShape(Circle())
+                        .overlay(Circle().stroke(Color(white: 0.38, opacity: 0.55), lineWidth: 1.5))
                         .opacity(0.3)
                         .transition(.opacity)
                 } else {
