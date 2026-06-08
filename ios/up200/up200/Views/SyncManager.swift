@@ -342,7 +342,7 @@ actor SyncManager {
         await MainActor.run { MinimalGenStore.deleteAll(forNoteID: noteId) }
         for gen in gens {
             DeletedGenTombstones.insert(gen.id)
-            if SessionStore.shared.load() != nil {
+            if SessionStore.shared.load().map({ !$0.accessToken.isEmpty }) == true {
                 let url = gensURL.appendingPathComponent(gen.id.uuidString)
                 do { _ = try await AuthClient.shared.delete(url) }
                 catch { logger.warning("deleteAllGenerations server call failed for \(gen.id): \(error.localizedDescription)") }
