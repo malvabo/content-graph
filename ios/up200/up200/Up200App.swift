@@ -38,7 +38,7 @@ struct Up200App: App {
                             let (hasKey, hasSession) = await Task.detached(priority: .userInitiated) {
                                 let key = !(KeychainService.load() ?? "").isEmpty
                                     || SessionTokenService.load() != nil
-                                let session = SessionStore.shared.load().map { !$0.accessToken.isEmpty } ?? false
+                                let session = SessionStore.shared.hasValidSession
                                 return (key, session)
                             }.value
 

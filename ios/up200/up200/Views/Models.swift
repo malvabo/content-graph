@@ -639,10 +639,21 @@ enum AnthropicClient {
         return req
     }
 
+    /// True when the user has any usable AI credential (API key, HMAC session
+    /// token, or Supabase access token). Used to gate AI feature availability.
     static var isConfigured: Bool {
         SessionTokenService.load() != nil
             || !(KeychainService.load() ?? "").isEmpty
-            || (SessionStore.shared.load()?.accessToken.isEmpty == false)
+            || SessionStore.shared.hasValidSession
+    }
+
+    /// True when the user has an explicit Anthropic API key or HMAC session
+    /// token — i.e. a credential they actively configured. Does NOT include
+    /// a Supabase/Apple session, which is transparent infrastructure. Use this
+    /// for error messages that say "check your API key" so Apple-session users
+    /// aren't told to update a key they never set.
+    static var isAPIKeyConfigured: Bool {
+        SessionTokenService.load() != nil || !(KeychainService.load() ?? "").isEmpty
     }
 }
 
