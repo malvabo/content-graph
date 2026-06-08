@@ -1522,14 +1522,15 @@ private struct GeneratingCloudScene: View {
                     // the centre stays visible on top of the cluster.
                     if progress > 0.7 {
                         let bloom = (progress - 0.7) / 0.3
-                        guard bloom > 0.05 else { continue }
+                        let bloomFade = min(1.0, bloom / 0.25)
                         drawSphere(in: ctx,
                                    cx: satX, cy: satY,
                                    r: coreRadius * sat.sizeFactor * bloom,
                                    t: elapsed + Double(i) * 1.7,
                                    count: sat.starCount,
                                    sizeScale: 0.85,
-                                   rotationSpeed: 0.15)
+                                   rotationSpeed: 0.15,
+                                   alphaScale: bloomFade)
                     }
 
                     // Settled spark glow — breathing amber bead once the
@@ -1557,7 +1558,8 @@ private struct GeneratingCloudScene: View {
                             t: Double,
                             count: Int,
                             sizeScale: Double,
-                            rotationSpeed: Double) {
+                            rotationSpeed: Double,
+                            alphaScale: Double = 1.0) {
         let rotation = t * rotationSpeed
         let golden = .pi * (1 + sqrt(5.0))
         for i in 0..<count {
@@ -1581,7 +1583,7 @@ private struct GeneratingCloudScene: View {
             let sy = cy + y * (0.85 + 0.15 * perspective)
 
             let dotSize = (1.0 + pseudoRandom(i * 5) * 1.5) * perspective * sizeScale
-            let alpha = (0.30 + pseudoRandom(i * 7) * 0.55) * perspective
+            let alpha = (0.30 + pseudoRandom(i * 7) * 0.55) * perspective * alphaScale
 
             ctx.fill(
                 Path(ellipseIn: CGRect(x: sx - dotSize, y: sy - dotSize,
