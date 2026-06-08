@@ -319,8 +319,9 @@ struct MinimalNoteDetailPage: View {
 
     private static let maxPreviewVariants = 5
 
-    init(initialNote: Note, initialTabIndex: Int = 0) {
+    init(initialNote: Note, initialTabIndex: Int = 0, onDismiss: (() -> Void)? = nil) {
         self.initialNote = initialNote
+        self.onDismiss = onDismiss
         let migrated = Note.migrated(initialNote)
         self._note = State(initialValue: migrated)
         let (t, b) = Self.splitTitleBody(migrated.body)
