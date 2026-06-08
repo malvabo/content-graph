@@ -2438,8 +2438,11 @@ struct ContentView: View {
                 .environmentObject(recordingController)
                 .fullScreenCover(isPresented: $recordingController.showingSheet,
                        onDismiss: { recordingController.reconcileDismissal() }) {
-                    NoteVoiceSheet()
-                        .environmentObject(recordingController)
+                    NoteVoiceSheet(onSwitchToWriting: {
+                        selectedTab = .notes
+                        newNoteTrigger &+= 1
+                    })
+                    .environmentObject(recordingController)
                 }
                 // Attach the profile cover to a background anchor so two
                 // fullScreenCover modifiers don't chain on the same view —
