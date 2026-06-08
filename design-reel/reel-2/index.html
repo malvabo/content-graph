@@ -1196,9 +1196,10 @@
       gsap.set("#s1a .inspection-dot, #s1a .inspection-meta", { autoAlpha: 0 });
       gsap.set("#s1a .inspection-title-burst", { autoAlpha: 1 });
       gsap.set("#s1a-design, #s1a-changing", { autoAlpha: 1, y: 0, filter: "blur(0px)" });
-      gsap.set("#s1a .inspection-tunnel", { autoAlpha: 0.45, scale: 0.72, rotation: 0 });
+      gsap.set("#s1a .inspection-tunnel", { autoAlpha: 0, scale: 0.5, rotation: 0 });
       tl.set("#s1a", { autoAlpha: 1 }, 0);
-      tl.to("#s1a .inspection-tunnel", { autoAlpha: 1, scale: 1.9, duration: 2.5, ease: "power3.in" }, 0.06);
+      tl.to("#s1a .inspection-tunnel", { autoAlpha: 0.72, scale: 0.78, duration: 0.34, ease: "power2.out" }, 0.62);
+      tl.to("#s1a .inspection-tunnel", { autoAlpha: 1, scale: 1.9, duration: 1.86, ease: "power3.in" }, 0.96);
       // Dots stream OUTWARD from the centre and get left behind — a star-warp fly-through.
       // Each starts clustered at screen centre (x0/y0 = offset from its CSS rest pos to 960,540)
       // and accelerates out past its rest position (x1/y1 = 0.8× beyond), scaling up then fading.
@@ -1211,7 +1212,7 @@
         ["f",  360, -300, -288,  240],
       ].forEach(function (d) {
         var sel = "#s1a .tunnel-dot-" + d[0];
-        [0.16, 1.42].forEach(function (t0) {
+        [0.72, 1.48].forEach(function (t0) {
           var t = t0 + (d[0].charCodeAt(0) - 97) * 0.05;
           tl.fromTo(sel,
             { autoAlpha: 0, scale: 0.18, x: d[1], y: d[2] },
@@ -1219,9 +1220,9 @@
           tl.to(sel, { autoAlpha: 0, duration: 0.18, ease: "power1.in" }, t + 0.46);
         });
       });
-      tl.to("#s1a .inspection-meta", { autoAlpha: 1, duration: 0.24, ease: "power2.out", stagger: 0.035 }, 0.12);
-      tl.to("#s1a-design", { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.34, ease: "power3.out" }, 0.16);
-      tl.to("#s1a-changing", { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.34, ease: "power3.out" }, 0.58);
+      tl.to("#s1a .inspection-meta", { autoAlpha: 1, duration: 0.24, ease: "power2.out", stagger: 0.035 }, 0.72);
+      tl.to("#s1a-design", { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.34, ease: "power3.out" }, 0);
+      tl.to("#s1a-changing", { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.34, ease: "power3.out" }, 0.16);
       tl.to("#s1a .inspection-progress", { scaleX: 1, duration: 2.58, ease: "none" }, 0.18);
       tl.to("#s1a .inspection-title-burst", { autoAlpha: 0, duration: 0.14, ease: "power2.in" }, 2.76);
       tl.to("#s1a .inspection-tunnel", { scale: 2.55, autoAlpha: 0, duration: 0.28, ease: "power2.in", overwrite: "auto" }, 2.62);
@@ -1232,7 +1233,7 @@
       // Reset the tunnel back to its small resting scale once it's hidden — otherwise
       // it lingers at scale 2.2 (~4562px) as an invisible-but-huge box that overflows
       // into the s1c handoff right before 4.6s.
-      tl.set("#s1a .inspection-tunnel", { autoAlpha: 0, scale: 0.72 }, 2.94);
+      tl.set("#s1a .inspection-tunnel", { autoAlpha: 0, scale: 0.5 }, 2.94);
       tl.set("#s1a", { autoAlpha: 0 }, 3);
 
       // ════════════════════════════════════════
