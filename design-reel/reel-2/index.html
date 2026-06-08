@@ -447,7 +447,7 @@
 
       .clip-label {
         position: absolute; bottom: 80px; right: 160px;
-        display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+        display: none !important; flex-direction: column; align-items: flex-end; gap: 8px;
         z-index: 4;
       }
       .clip-label span {
@@ -911,7 +911,7 @@
            S2 · 3 phones from right — straight, equal spacing (4–8s)
            Non-anchor
       ══════════════════════════════════════════ -->
-      <div class="scene clip" id="s2" data-start="13.846" data-duration="5" data-track-index="20" style="visibility:hidden;z-index:70;">
+      <div class="scene clip" id="s2" data-start="15.77" data-duration="3.23" data-track-index="20" data-layout-allow-overflow style="visibility:hidden;z-index:70;">
         <div class="grain"></div>
         <div class="vignette"></div>
         <div class="flash" id="s2-flash"></div>
@@ -925,7 +925,7 @@
         <div id="s2-ph-l" style="position:absolute;top:140px;left:188px;z-index:2;">
           <div class="phone" style="border-color:#1c1c1c;background:#0d0d0d;">
             <div class="phone-notch" style="background:#0d0d0d;"></div>
-            <video id="v-s2-left" src="assets/mobile-01.mov" data-start="13.846" data-duration="5" data-track-index="3" muted playsinline></video>
+            <video id="v-s2-left" src="assets/mobile-01.mov" data-start="15.77" data-duration="3.23" data-track-index="3" muted playsinline></video>
           </div>
         </div>
 
@@ -933,15 +933,15 @@
         <div id="s2-ph-c" style="position:absolute;top:140px;left:766px;z-index:60;">
           <div class="phone" style="border-color:#1c1c1c;background:#0d0d0d;">
             <div class="phone-notch" style="background:#0d0d0d;"></div>
-            <video id="v-s2" src="assets/mobile-02.MOV" data-start="14.177" data-duration="4.669" data-track-index="24" muted playsinline></video>
+            <video id="v-s2" src="assets/mobile-02.MOV" data-start="15.77" data-duration="3.23" data-track-index="24" muted playsinline></video>
           </div>
         </div>
 
         <!-- Right phone · left:1344px -->
-        <div id="s2-ph-r" style="position:absolute;top:140px;left:1344px;z-index:60;">
+        <div id="s2-ph-r" data-layout-allow-overflow style="position:absolute;top:140px;left:1344px;z-index:60;">
           <div class="phone" style="border-color:#1c1c1c;background:#0d0d0d;">
             <div class="phone-notch" style="background:#0d0d0d;"></div>
-            <video id="v-s2-right" src="assets/mobile-03.MP4" data-start="14.177" data-duration="4.669" data-track-index="25" muted playsinline></video>
+            <video id="v-s2-right" src="assets/mobile-03.MP4" data-start="15.77" data-duration="3.23" data-track-index="25" muted playsinline></video>
           </div>
         </div>
 
@@ -1296,11 +1296,9 @@
       tl.set("#s-mdw", { autoAlpha: 0 }, 9.946);
       tl.set("#s10", { autoAlpha: 1 }, 9.946);
       tl.set("#s10", { autoAlpha: 0 }, 15.77);
-      // S2 comes up at 13.0 — while the S10 hero is still gliding left — so the
-      // two new screens slide in *during* the move, not after it lands.
-      tl.set("#s2",  { autoAlpha: 1 }, 13.846);
-      // Left slot stays empty while the gliding hero fills it; swap only after S10 is gone.
-      tl.set("#s2-ph-l", { autoAlpha: 0 }, 13.846);
+      // S2 starts only after the S10 hero is gone, avoiding a double-device overlap.
+      tl.set("#s2",  { autoAlpha: 1 }, 15.77);
+      tl.set("#s2-ph-l", { autoAlpha: 0 }, 15.77);
       tl.set("#s2-ph-l", { autoAlpha: 1 }, 15.77);
       tl.to("#s2-bg-img, #s2-bg-wash", { autoAlpha: 1, duration: 0.154, ease: "power2.out" }, 15.77);
       // S2 → S7 cross-dissolve: S2 eases out + lifts away while S7 fades up underneath
@@ -1440,9 +1438,9 @@
       // S2 (15.5–19.5s) · 3 phones slide in from right
       // ════════════════════════════════════════
       // Same instant, duration, and easing as the S10 hero move so all three phones travel together.
-      tl.to("#s2-ph-r", { x: 0, autoAlpha: 1, duration: 0.769, ease: "power2.inOut" }, 14.177);
-      tl.to("#s2-ph-c", { x: 0, autoAlpha: 1, duration: 0.769, ease: "power2.inOut" }, 14.177);
-      tl.from("#s2-lbl",  { x: 20, autoAlpha: 0, duration: 0.269, ease: "power2.out" }, 14.677);
+      tl.to("#s2-ph-r", { x: 0, autoAlpha: 1, duration: 0.769, ease: "power2.inOut" }, 15.77);
+      tl.to("#s2-ph-c", { x: 0, autoAlpha: 1, duration: 0.769, ease: "power2.inOut" }, 15.77);
+      tl.from("#s2-lbl",  { x: 20, autoAlpha: 0, duration: 0.269, ease: "power2.out" }, 16.27);
 
       // ════════════════════════════════════════
       // S4 (19.5–25.5s) · Bottom-crop close-up · slow push-in · [shader anchor — first]
