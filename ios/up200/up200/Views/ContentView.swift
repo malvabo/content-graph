@@ -1539,7 +1539,9 @@ struct ProfileView: View {
     }
 
     private func refreshAPIKeyState() {
-        apiKeyActive = AnthropicClient.isConfigured
+        // Only reflect explicit key/token credentials — not an Apple session — so
+        // the "Anthropic API key" row doesn't show "Active" for session-only users.
+        apiKeyActive = SessionTokenService.load() != nil || !(KeychainService.load() ?? "").isEmpty
     }
 
     private func performDeleteAccount() async {

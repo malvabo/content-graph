@@ -35,10 +35,11 @@ struct Up200App: App {
                             }
                         }
                         .task {
-                            let hasKey = await Task.detached(priority: .userInitiated) {
-                                !(KeychainService.load() ?? "").isEmpty
+                            let (hasKey, hasSession) = await Task.detached(priority: .userInitiated) {
+                                let key = !(KeychainService.load() ?? "").isEmpty
+                                let session = SessionStore.shared.load().map { !$0.accessToken.isEmpty } ?? false
+                                return (key, session)
                             }.value
-                            let hasSession = SessionStore.shared.load().map { !$0.accessToken.isEmpty } ?? false
 
                             guard hasKey || hasSession else {
                                 // No usable credential — send back to onboarding.

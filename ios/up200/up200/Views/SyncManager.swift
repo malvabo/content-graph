@@ -208,7 +208,7 @@ actor SyncManager {
     /// Downloads all server data and merges it into local stores.
     /// Call after sign-in and on app foreground when authenticated.
     func pull() async {
-        guard SessionStore.shared.load() != nil else { return }
+        guard SessionStore.shared.load().map({ !$0.accessToken.isEmpty }) == true else { return }
         await pullNotes()
         await pullGenerations()
     }
@@ -241,7 +241,7 @@ actor SyncManager {
     /// Uploads all current local data. Called with a 2-second debounce
     /// after every store change.
     func push() async {
-        guard SessionStore.shared.load() != nil else { return }
+        guard SessionStore.shared.load().map({ !$0.accessToken.isEmpty }) == true else { return }
         var pushError: String?
 
         do { try await pushNotes() }
@@ -307,7 +307,7 @@ actor SyncManager {
 
         await deleteAllGenerations(forNoteID: id)
 
-        guard SessionStore.shared.load() != nil else { return }
+        guard SessionStore.shared.load().map({ !$0.accessToken.isEmpty }) == true else { return }
         let url = notesURL.appendingPathComponent(id.uuidString)
         do {
             _ = try await AuthClient.shared.delete(url)
@@ -325,7 +325,7 @@ actor SyncManager {
         }
         DeletedGenTombstones.insert(id)
 
-        guard SessionStore.shared.load() != nil else { return }
+        guard SessionStore.shared.load().map({ !$0.accessToken.isEmpty }) == true else { return }
         let url = gensURL.appendingPathComponent(id.uuidString)
         do {
             _ = try await AuthClient.shared.delete(url)
