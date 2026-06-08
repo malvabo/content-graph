@@ -816,11 +816,11 @@
           <div class="inspection-meta bottom-left">Additive</div>
           <div class="inspection-meta bottom-right">Release</div>
           <div class="photo-field" data-layout-allow-overflow>
-            <div class="psy-photo" style="--w:320px;--h:320px;--r:0deg;"><img src="assets/psych-woman-blue-tank.jpg" alt="" style="object-position:50% 30%;"></div>
-            <div class="psy-photo" style="--w:320px;--h:320px;--r:0deg;"><img src="assets/psych-smiling-closeup.jpg" alt="" style="object-position:50% 25%;"></div>
-            <div class="psy-photo" style="--w:320px;--h:320px;--r:0deg;"><img src="assets/psych-women-high-fiving.jpg" alt="" style="object-position:50% 30%;"></div>
-            <div class="psy-photo" style="--w:320px;--h:320px;--r:0deg;"><img src="assets/psych-girl-white-red.jpg" alt="" style="object-position:50% 20%;"></div>
-            <div class="psy-photo" style="--w:320px;--h:320px;--r:0deg;"><img src="assets/psych-man-woman-rain.jpg" alt="" style="object-position:50% 40%;"></div>
+            <div class="psy-photo" style="--x:92px;--y:86px;--w:500px;--h:300px;--r:-5deg;"><img src="assets/psych-woman-blue-tank.jpg" alt=""></div>
+            <div class="psy-photo" style="--x:702px;--y:42px;--w:520px;--h:288px;--r:3deg;"><img src="assets/psych-smiling-closeup.jpg" alt=""></div>
+            <div class="psy-photo" style="--x:1294px;--y:82px;--w:480px;--h:300px;--r:5deg;"><img src="assets/psych-women-high-fiving.jpg" alt=""></div>
+            <div class="psy-photo" style="--x:164px;--y:640px;--w:560px;--h:336px;--r:4deg;"><img src="assets/psych-girl-white-red.jpg" alt=""></div>
+            <div class="psy-photo" style="--x:1508px;--y:410px;--w:330px;--h:430px;--r:4deg;"><img src="assets/psych-man-woman-rain.jpg" alt=""></div>
           </div>
           <div class="eye-photo-veil"></div>
           <div class="eye-frame"></div>
@@ -1241,71 +1241,36 @@
       // ════════════════════════════════════════
       // S1C · Eye inspection · "human psychology is not"
       // ════════════════════════════════════════
-      gsap.set("#s1c .inspection-meta", { opacity: 0, visibility: "visible" });
-      gsap.set("#s1c .eye-frame, #s1c .eye-cross-x, #s1c .eye-cross-y, #s1c .eye-shape, #s1c .eye-box, #s1c .eye-ring, #s1c .eye-photo-veil", { opacity: 0, visibility: "hidden" });
+      gsap.set("#s1c .inspection-meta, #s1c .eye-frame, #s1c .eye-cross-x, #s1c .eye-cross-y", { opacity: 0, visibility: "visible" });
+      gsap.set("#s1c .eye-shape, #s1c .eye-box, #s1c .eye-ring", { opacity: 0, visibility: "hidden" });
+      gsap.set("#s1c .eye-photo-veil", { opacity: 0, visibility: "hidden" });
       gsap.set("#s1c .eye-title", { opacity: 0, visibility: "visible", filter: "blur(10px)", scale: 0.96 });
-      gsap.set("#s1c .psy-photo", { opacity: 0, visibility: "visible", x: 0, y: 0, scale: 0.22, rotation: 0, filter: "none" });
+      gsap.set("#s1c .psy-photo", { opacity: 0, visibility: "visible", x: 0, y: 0, scale: 0.28, rotation: -6 });
       tl.set("#s1c", { autoAlpha: 1 }, 3);
-      // Text resolves in and stays throughout
       tl.to("#s1c .eye-title", { opacity: 1, filter: "blur(0px)", scale: 1, duration: 0.4, ease: "power3.out" }, 3.08);
-      // First photo pops in at centre
-      tl.to("#s1c .psy-photo:nth-child(1)", { opacity: 0.9, scale: 0.48, rotation: -5, duration: 0.28, ease: "back.out(1.8)" }, 3.12);
+      tl.to("#s1c .psy-photo:first-child", { opacity: 1, scale: 0.34, rotation: 0, duration: 0.34, ease: "power3.out" }, 3.18);
       (function () {
-        var DEG = Math.PI / 180;
-        var rx = 510, ry = 270;
-        // 5 evenly-spaced positions starting from top (-90°), clockwise
-        var angles  = [-90, -18, 54, 126, 198];
-        var scales  = [0.80, 0.74, 0.78, 0.72, 0.76];
-        var rots    = [-6, 5, -4, 8, -5];
-        var photos  = Array.from(document.querySelectorAll("#s1c .psy-photo"));
-        var orbitStart  = 4.0;
-        var orbitDur    = 1.75;
-        var collapseAt  = orbitStart + orbitDur + 0.05;
-
-        // Each photo flies from centre to its ring position, staggered
-        angles.forEach(function (a, i) {
-          var tx = rx * Math.cos(a * DEG);
-          var ty = ry * Math.sin(a * DEG);
-          tl.to(photos[i], {
-            x: tx, y: ty, scale: scales[i], rotation: rots[i], opacity: 0.92,
-            duration: 0.52, ease: "power3.out"
-          }, 3.28 + i * 0.10);
-        });
-
-        // Blue/grey wash fades in as orbit begins
-        tl.to("#s1c .psy-photo", {
-          filter: "grayscale(0.5) hue-rotate(195deg) saturate(0.65) brightness(0.8)",
-          duration: 0.45, ease: "power2.out"
-        }, orbitStart);
-
-        // All 5 photos orbit together — each angle state tweened inside the main tl
-        angles.forEach(function (a0, i) {
-          var state = { a: a0 };
-          var el = photos[i];
-          tl.to(state, {
-            a: a0 + 240,
-            duration: orbitDur,
-            ease: "sine.inOut",
-            onUpdate: function () {
-              var rad = state.a * DEG;
-              gsap.set(el, {
-                x: rx * Math.cos(rad),
-                y: ry * Math.sin(rad),
-                rotation: rots[i] + (state.a - a0) * 0.15
-              });
-            }
-          }, orbitStart + i * 0.012);
-        });
-
-        // Colour wash lifts as photos near collapse
-        tl.to("#s1c .psy-photo", {
-          filter: "grayscale(0) hue-rotate(0deg) saturate(1) brightness(1)",
-          duration: 0.28, ease: "power2.out"
-        }, collapseAt - 0.2);
-
-        // All collapse to centre simultaneously
-        photos.forEach(function (el, i) {
-          tl.to(el, { x: 0, y: 0, scale: 0.06, opacity: 0, rotation: 0, duration: 0.46, ease: "power3.in" }, collapseAt + i * 0.016);
+        var orbit = [
+          { sel: "#s1c .psy-photo:nth-child(1)", a0: -92,  a1: 268, w: 500, h: 300, s: 0.78 },
+          { sel: "#s1c .psy-photo:nth-child(2)", a0: -42,  a1: 318, w: 520, h: 288, s: 0.76 },
+          { sel: "#s1c .psy-photo:nth-child(3)", a0:  18,  a1: 378, w: 480, h: 300, s: 0.74 },
+          { sel: "#s1c .psy-photo:nth-child(4)", a0: 154,  a1: 514, w: 560, h: 336, s: 0.68 },
+          { sel: "#s1c .psy-photo:nth-child(5)", a0: 220,  a1: 580, w: 330, h: 430, s: 0.76 }
+        ];
+        var rx = 575;
+        var ry = 330;
+        var toRad = Math.PI / 180;
+        orbit.forEach(function (p, i) {
+          var start = 3.42 + i * 0.09;
+          var mid = 4.25 + i * 0.02;
+          var end = 5.82 + i * 0.035;
+          var x0 = Math.cos(p.a0 * toRad) * rx;
+          var y0 = Math.sin(p.a0 * toRad) * ry;
+          var x1 = Math.cos(p.a1 * toRad) * rx;
+          var y1 = Math.sin(p.a1 * toRad) * ry;
+          tl.to(p.sel, { opacity: 0.94, x: x0, y: y0, scale: p.s, rotation: p.a0 * 0.08, duration: 0.58, ease: "power3.out" }, start);
+          tl.to(p.sel, { x: x1, y: y1, rotation: "+=34", duration: 1.55, ease: "sine.inOut" }, mid);
+          tl.to(p.sel, { x: 0, y: 0, scale: 0.18, rotation: "+=28", opacity: 0, duration: 0.56, ease: "power3.in" }, end);
         });
       })();
       tl.to("#s1c .inspection-meta", { opacity: 1, duration: 0.24, ease: "power2.out", stagger: 0.035 }, 3.86);
