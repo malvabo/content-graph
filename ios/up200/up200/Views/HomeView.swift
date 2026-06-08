@@ -1468,11 +1468,15 @@ struct VoiceRecordSheet: View {
                     let orbitSize = UIScreen.main.bounds.width * 2 / 3
                     RecordingWaveformView(audioLevel: { recorder.audioLevel })
                         .frame(width: orbitSize, height: orbitSize)
+                        .background(Color.white.opacity(0.09))
+                        .clipShape(Circle())
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 } else if !recorder.transcript.isEmpty {
                     let orbitSize = UIScreen.main.bounds.width * 2 / 3
                     RecordingWaveformView(audioLevel: { recorder.audioLevel })
                         .frame(width: orbitSize, height: orbitSize)
+                        .background(Color.white.opacity(0.09))
+                        .clipShape(Circle())
                         .opacity(0.3)
                         .transition(.opacity)
                 } else {
@@ -1547,10 +1551,10 @@ struct VoiceRecordSheet: View {
                                 switchToWriting()
                             } label: {
                                 Text("Switch to writing")
-                                    .font(.app(size: 17, weight: .semibold))
+                                    .font(.app(size: 18, weight: .semibold))
                                     .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
                                     .frame(maxWidth: .infinity)
-                                    .frame(height: 54)
+                                    .frame(height: 62)
                                     .background(Color.white.opacity(0.94))
                                     .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                             }
@@ -1595,7 +1599,7 @@ struct VoiceRecordSheet: View {
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 16)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else if !recorder.transcript.isEmpty {
                     Button(action: handleDone) {
@@ -1609,7 +1613,7 @@ struct VoiceRecordSheet: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 16)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else {
                     Color.clear.frame(height: 96)
