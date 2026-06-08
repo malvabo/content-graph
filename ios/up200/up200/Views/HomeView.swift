@@ -1546,13 +1546,13 @@ struct VoiceRecordSheet: View {
                                 dismiss()
                                 switchToWriting()
                             } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "keyboard")
-                                        .font(.system(size: 13, weight: .medium))
-                                    Text("Switch to writing")
-                                        .font(.system(size: 14, weight: .medium))
-                                }
-                                .foregroundColor(AppInk.solid(0.50))
+                                Text("Switch to writing")
+                                    .font(.app(size: 17, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 54)
+                                    .background(Color.white.opacity(0.94))
+                                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                             }
                             .buttonStyle(.plain)
                         }
