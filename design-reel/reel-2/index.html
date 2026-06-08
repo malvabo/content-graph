@@ -1375,6 +1375,7 @@
         var line = document.querySelector("#s1b-line");
         var w1e = document.querySelector("#w1");
         var w2e = document.querySelector("#w2");
+        var w3e = document.querySelector("#w3");
         var W  = line.offsetWidth;
         var r1 = w1e.offsetLeft + w1e.offsetWidth;          // right edge after word 1
         var r2 = w2e.offsetLeft + w2e.offsetWidth;          // right edge after word 2
@@ -1387,15 +1388,19 @@
         gsap.set("#s1b-line", { xPercent: -50, yPercent: -50, x: x1, scale: S1 });
         gsap.set("#s1b-line .w", { autoAlpha: 0, y: 12, color: "#9aa3ad" });
 
-        // Centre each flash image on SCREEN centre, not under its own word.
-        // The line is translated by x1/x2/x3 when each word shows, so the line-local
-        // left that lands the image at the canvas centre is (W/2 - x_i - imgW/2).
+        // Centre each flash image on the word it illustrates, so the image travels with that word.
         var imgW = 190, imgH = 240, gap = 30;
         var centerY = line.offsetHeight / 2;
         var glyphHalf = 29;                       // ~0.4 × 72px font — half visible glyph height
-        [["#s1b-i1", x1], ["#s1b-i2", x2], ["#s1b-i3", x3]].forEach(function (pair) {
+        [
+          ["#s1b-i1", w1e],
+          ["#s1b-i2", w2e],
+          ["#s1b-i3", w3e]
+        ].forEach(function (pair) {
           var img = document.querySelector(pair[0]);
-          img.style.left = (W / 2 - pair[1] - imgW / 2) + "px";
+          var word = pair[1];
+          var wordCenter = word.offsetLeft + word.offsetWidth / 2;
+          img.style.left = (wordCenter - imgW / 2) + "px";
           img.style.top  = img.dataset.pos === "above"
             ? (centerY - glyphHalf - gap - imgH) + "px"
             : (centerY + glyphHalf + gap) + "px";
