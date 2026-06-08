@@ -285,10 +285,16 @@ struct OnboardingView: View {
                     }
                 } label: {
                     Text("Explore")
-                        .font(.app(size: 15, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.55))
+                        .font(.app(size: 17, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.78))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 44)
+                        .frame(height: 50)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.20), lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
             }
