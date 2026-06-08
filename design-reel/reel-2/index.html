@@ -1408,7 +1408,7 @@
         // word 2 — line flows + zooms to fit while the word eases in
         tl.to("#s1b-line", { x: x2, scale: S2, duration: 0.442, ease: FLOW }, 7.443);
         tl.to("#w2",       { autoAlpha: 1, y: 0, color: "#fff", duration: 0.423, ease: "expo.out" }, 7.5);
-        // word 3 — restored original timing so the section resolves before the next card
+        // word 3 — line flows + zooms to final fit
         tl.to("#s1b-line", { x: x3, scale: S3, duration: 0.442, ease: FLOW }, 7.981);
         tl.to("#w3",       { autoAlpha: 1, y: 0, color: "#fff", duration: 0.423, ease: "expo.out" }, 8.039);
 
@@ -1425,8 +1425,8 @@
         tl.to("#s1b-i3", { autoAlpha: 0, duration: 0.138, ease: "power2.in" }, 8.462);
 
         // smooth exit — whole line fades before the next screen (same size)
-        tl.to("#s1b-line", { autoAlpha: 0, duration: 0.18, ease: "power2.inOut" }, 8.5);
-        tl.set("#s1b-line, #s1b-i1, #s1b-i2, #s1b-i3", { autoAlpha: 0 }, 8.72);
+        tl.to("#s1b-line", { autoAlpha: 0, duration: 0.231, ease: "power2.inOut" }, 8.616);
+        tl.set("#s1b-line, #s1b-i1, #s1b-i2, #s1b-i3", { autoAlpha: 0 }, 8.846);
       })();
 
       // ════════════════════════════════════════
