@@ -1532,7 +1532,11 @@ struct NotesView: View {
         guard !body.isEmpty else { return false }
         let firstLine = body.split(whereSeparator: \.isNewline).first.map(String.init) ?? body
         let wordCount = firstLine.split(whereSeparator: \.isWhitespace).count
-        return wordCount > 6
+        // Mirror prependTitleIfMissing: a short first line that looks like a
+        // transcript opening (e.g. a fallback title starting with "okay") still
+        // qualifies — without this, notes stuck with a fallback title are never retried.
+        if wordCount > 6 { return true }
+        return AIService.looksLikeTranscriptOpening(firstLine)
     }
 
     private func scheduleSave() {
