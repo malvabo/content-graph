@@ -17,6 +17,11 @@ struct AppSession: Codable {
         let secondsUntilExpiry = TimeInterval(expiresAt) - Date().timeIntervalSince1970
         return secondsUntilExpiry < 300
     }
+
+    /// True when this session carries a non-empty access token and can be
+    /// used for authenticated requests. An empty token indicates a partially-
+    /// written or corrupt Keychain entry.
+    var isValid: Bool { !accessToken.isEmpty }
 }
 
 // MARK: - Keychain-backed session store
@@ -71,4 +76,7 @@ final class SessionStore {
         ]
         SecItemDelete(query as CFDictionary)
     }
+
+    /// True when a valid (non-empty-token) session is stored in the Keychain.
+    var hasValidSession: Bool { load()?.isValid == true }
 }

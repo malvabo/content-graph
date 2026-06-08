@@ -1224,9 +1224,11 @@ struct ProjectGroupDetailView: View {
                     if !showAIPreview { showAIPreview = true }
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 case .failure(let err):
-                    aiFailReason = AITransformService.isKeyConfigured
-                        ? err.userMessage
-                        : "Add your Anthropic API key in Profile first."
+                    if case .http(401, _) = err, !AITransformService.isKeyConfigured {
+                        aiFailReason = "Add your Anthropic API key in Profile first."
+                    } else {
+                        aiFailReason = err.userMessage
+                    }
                     aiFailed = true
                 }
             }
@@ -1539,7 +1541,15 @@ struct ProfileView: View {
     }
 
     private func refreshAPIKeyState() {
-        apiKeyActive = AnthropicClient.isConfigured
+        // Only reflect explicit key/token credentials — not an Apple session — so
+        // the "Anthropic API key" row doesn't show "Active" for session-only users.
+        // Reads happen off the main thread (SecItemCopyMatching is blocking I/O).
+        Task {
+            let active = await Task.detached(priority: .userInitiated) {
+                AnthropicClient.isAPIKeyConfigured
+            }.value
+            apiKeyActive = active
+        }
     }
 
     private func performDeleteAccount() async {
@@ -2882,7 +2892,7 @@ struct SearchOverlay<Results: View>: View {
 // MARK: - AI transform service
 
 struct AITransformService {
-    static var isKeyConfigured: Bool { AnthropicClient.isConfigured }
+    static var isKeyConfigured: Bool { AnthropicClient.isAPIKeyConfigured }
 
     static func transform(text: String, instruction: String) async -> Result<String, APICallError> {
         let system = "You rewrite the user's text following their instruction. Preserve formatting, structure, and tone unless the instruction asks to change them. Output only the rewritten text, no preamble, no commentary, no quotes around the output."

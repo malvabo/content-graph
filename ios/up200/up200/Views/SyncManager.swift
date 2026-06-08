@@ -208,7 +208,7 @@ actor SyncManager {
     /// Downloads all server data and merges it into local stores.
     /// Call after sign-in and on app foreground when authenticated.
     func pull() async {
-        guard SessionStore.shared.load() != nil else { return }
+        guard SessionStore.shared.hasValidSession else { return }
         await pullNotes()
         await pullGenerations()
     }
@@ -241,7 +241,7 @@ actor SyncManager {
     /// Uploads all current local data. Called with a 2-second debounce
     /// after every store change.
     func push() async {
-        guard SessionStore.shared.load() != nil else { return }
+        guard SessionStore.shared.hasValidSession else { return }
         var pushError: String?
 
         do { try await pushNotes() }
@@ -307,7 +307,7 @@ actor SyncManager {
 
         await deleteAllGenerations(forNoteID: id)
 
-        guard SessionStore.shared.load() != nil else { return }
+        guard SessionStore.shared.hasValidSession else { return }
         let url = notesURL.appendingPathComponent(id.uuidString)
         do {
             _ = try await AuthClient.shared.delete(url)
@@ -325,7 +325,7 @@ actor SyncManager {
         }
         DeletedGenTombstones.insert(id)
 
-        guard SessionStore.shared.load() != nil else { return }
+        guard SessionStore.shared.hasValidSession else { return }
         let url = gensURL.appendingPathComponent(id.uuidString)
         do {
             _ = try await AuthClient.shared.delete(url)
@@ -340,9 +340,10 @@ actor SyncManager {
     func deleteAllGenerations(forNoteID noteId: UUID) async {
         let gens = await MainActor.run { MinimalGenStore.load().filter { $0.noteId == noteId } }
         await MainActor.run { MinimalGenStore.deleteAll(forNoteID: noteId) }
+        let authenticated = SessionStore.shared.hasValidSession
         for gen in gens {
             DeletedGenTombstones.insert(gen.id)
-            if SessionStore.shared.load() != nil {
+            if authenticated {
                 let url = gensURL.appendingPathComponent(gen.id.uuidString)
                 do { _ = try await AuthClient.shared.delete(url) }
                 catch { logger.warning("deleteAllGenerations server call failed for \(gen.id): \(error.localizedDescription)") }
