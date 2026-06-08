@@ -1533,16 +1533,10 @@ private struct GeneratingCloudScene: View {
                                    rotationSpeed: 0.45)
                     }
 
-                    // Travelling spark — bright while in flight, leaves a
-                    // short fading tail back toward the origin. Once it
-                    // settles, the breathing glow stays on top of the
-                    // mini-cluster as the satellite's "seed" marker.
-                    if progress < 1 {
-                        drawSparkInFlight(in: ctx,
-                                          from: CGPoint(x: cx, y: cy),
-                                          to: CGPoint(x: satX, y: satY),
-                                          eased: eased)
-                    } else {
+                    // Settled spark glow — breathing amber bead once the
+                    // satellite has arrived. No travelling spark so there's
+                    // no isolated dot floating across the screen mid-flight.
+                    if progress >= 1 {
                         drawSettledSparkGlow(in: ctx,
                                              at: CGPoint(x: satX, y: satY),
                                              phase: Double(i),
