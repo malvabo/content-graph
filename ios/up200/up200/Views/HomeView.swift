@@ -1575,17 +1575,21 @@ struct VoiceRecordSheet: View {
                             .buttonStyle(.plain)
 
                             Button(action: handleDone) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "stop.fill")
-                                        .font(.system(size: 15, weight: .semibold))
+                                HStack(spacing: 6) {
                                     Text("End")
-                                        .font(.system(size: 17, weight: .semibold))
+                                        .font(.app(size: 15, weight: .medium))
+                                    Image(systemName: "arrow.right")
+                                        .font(.system(size: 13, weight: .semibold))
                                 }
-                                .foregroundColor(.black)
+                                .foregroundColor(Color.white.opacity(0.78))
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 56)
-                                .background(.white)
+                                .background(Color.white.opacity(0.08))
                                 .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: Radius.pill, style: .continuous)
+                                        .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+                                )
                             }
                             .buttonStyle(.plain)
                         }
