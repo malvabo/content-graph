@@ -73,25 +73,25 @@ struct RecordingWaveformView: View {
                 let cx = size.width / 2
                 let cy = size.height / 2
                 let maxR = min(cx, cy) * 0.88
+
+                // Circle boundary stroke
+                let strokeR = maxR + 4
+                ctx.stroke(
+                    Path(ellipseIn: CGRect(x: cx - strokeR, y: cy - strokeR,
+                                           width: strokeR * 2, height: strokeR * 2)),
+                    with: .color(Color(white: 0.38, opacity: 0.55)),
+                    lineWidth: 1.5
+                )
+
                 for p in store.particles {
                     let radialBreath = 1.0 + sin(t * 0.45 + p.fi * 0.19) * 0.018
                     let r = p.normR * maxR * radialBreath
                     let px = cx + cos(p.angle) * r
                     let py = cy + sin(p.angle) * r
                     let pulse = 0.88 + 0.12 * sin(t * 0.35 + p.fi * 0.4)
-                    let dotR = (1.0 + p.pr2 * 1.4) * pulse + amplified * 0.8
+                    let dotR = ((1.0 + p.pr2 * 1.4) * pulse + amplified * 0.8) * 3.0
                     let alphaPulse = 0.80 + 0.20 * sin(t * 0.28 + p.fi * 0.3)
                     let alpha = (0.50 + p.pr3 * 0.35) * alphaPulse * (0.65 + amplified * 0.35)
-                    let glowWave = max(0.0, sin(t * 1.4 + p.fi * 1.1 + p.pr2 * Double.pi * 2.0))
-                    let glow = pow(glowWave, 5.0) * (0.5 + amplified * 0.5)
-                    if glow > 0.02 {
-                        let glowR = dotR * (3.0 + p.pr2 * 2.0)
-                        ctx.fill(
-                            Path(ellipseIn: CGRect(x: px - glowR, y: py - glowR,
-                                                   width: glowR * 2, height: glowR * 2)),
-                            with: .color(amber.opacity(0.18 * glow))
-                        )
-                    }
                     ctx.fill(
                         Path(ellipseIn: CGRect(x: px - dotR, y: py - dotR,
                                                width: dotR * 2, height: dotR * 2)),
