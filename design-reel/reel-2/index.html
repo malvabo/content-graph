@@ -3,77 +3,1718 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1920, height=1080">
-    <title>Mary Borysova — Portfolio Reel</title>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=block" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@hyperframes/core/dist/hyperframe.runtime.iife.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@hyperframes/shader-transitions/dist/index.global.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;400;900&family=DM+Mono:wght@400;500&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --bg:      #07070e;
+        --ink:     #eeedf8;
+        --muted:   #4a4a62;
+        --accent:  #9b86ff;
+        --accent2: #ff6eb0;
+        --accent3: #2fffb8;
+        --font-display: "DM Sans", sans-serif;
+        --font-data:    "DM Mono", monospace;
+      }
+
       * { margin: 0; padding: 0; box-sizing: border-box; }
+
       html, body {
+        width: 1920px; height: 1080px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--ink);
+      }
+      html.local-preview-root {
+        width: 100vw;
+        min-height: 100vh;
+        height: auto;
+        overflow: auto;
+      }
+      html.poster-preview-root {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+      body.local-preview,
+      body.poster-preview {
+        width: 100vw;
+        min-height: 100vh;
+        height: auto;
+        overflow: auto;
+        background: #050507;
+      }
+      body.poster-preview {
+        overflow: hidden;
+      }
+      #main {
+        position: relative;
         width: 1920px;
         height: 1080px;
         overflow: hidden;
-        background: #ffffff;
-        font-family: "Inter", sans-serif;
+        background: #000;
       }
-      .scene {
+      .local-stage {
+        position: relative;
+        margin: 18px auto 18px;
+        background: #000;
+        box-shadow: 0 24px 90px rgba(0,0,0,0.55);
+      }
+      body.poster-preview .local-stage {
+        margin: 0;
+        box-shadow: none;
+      }
+      .local-stage > #main {
         position: absolute;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
+        left: 0;
+        top: 0;
+        transform-origin: 0 0;
       }
+      .local-storyboard {
+        width: min(1480px, calc(100vw - 48px));
+        margin: 0 auto 44px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 18px;
+      }
+      .local-controls {
+        width: min(1480px, calc(100vw - 48px));
+        margin: 0 auto 18px;
+        display: grid;
+        grid-template-columns: auto auto 1fr auto;
+        gap: 12px;
+        align-items: center;
+        font-family: var(--font-data), "DM Mono", monospace;
+      }
+      .local-controls button {
+        height: 36px;
+        padding: 0 14px;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 6px;
+        background: #15151b;
+        color: #fff;
+        font: inherit;
+        cursor: pointer;
+      }
+      .local-controls input[type="range"] {
+        width: 100%;
+        accent-color: #fff;
+      }
+      .local-controls .local-time {
+        color: rgba(255,255,255,0.72);
+        font-size: 12px;
+        min-width: 88px;
+        text-align: right;
+      }
+      .local-card {
+        background: #111116;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .local-card iframe {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border: 0;
+        background: #000;
+      }
+      .local-card span {
+        display: block;
+        padding: 10px 12px 12px;
+        font-family: var(--font-data), "DM Mono", monospace;
+        font-size: 12px;
+        color: rgba(255,255,255,0.72);
+      }
+
+      .scene {
+        position: absolute; top: 0; left: 0;
+        width: 1920px; height: 1080px;
+        overflow: hidden;
+      }
+      .clip {}
+
+      /* ── Grain + vignette ── */
+      .grain {
+        position: absolute; inset: 0; pointer-events: none; z-index: 50; opacity: 0.13;
+        background-image:
+          radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1.2px),
+          radial-gradient(rgba(0,0,0,0.18) 1px, transparent 1.2px);
+        background-size: 3px 3px, 5px 5px;
+        background-position: 0 0, 1px 2px;
+        mix-blend-mode: overlay;
+      }
+      .vignette {
+        position: absolute; inset: 0; pointer-events: none; z-index: 49;
+        background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.72) 100%);
+      }
+
+      /* ── Perspective stage ── */
+      .stage {
+        position: absolute; inset: 0;
+        perspective: 1400px;
+        perspective-origin: 50% 42%;
+        display: flex; align-items: center; justify-content: center;
+        z-index: 2;
+      }
+
+      /* ── Phone shell ── */
+      .phone {
+        width: 390px; height: 800px;
+        border-radius: 52px;
+        background: #0e0e1e;
+        border: 9px solid #22223a;
+        box-shadow:
+          0 60px 160px rgba(0,0,0,0.75),
+          0 0 0 1px rgba(255,255,255,0.05),
+          inset 0 0 0 1px rgba(255,255,255,0.03);
+        overflow: hidden;
+        position: relative;
+        transform-origin: center center;
+      }
+      .phone-notch {
+        position: absolute; top: 12px; left: 50%;
+        transform: translateX(-50%);
+        width: 100px; height: 26px;
+        background: #0e0e1e; border-radius: 18px; z-index: 10;
+      }
+      .phone video {
+        width: 100%; height: 100%; object-fit: cover; display: block;
+      }
+      /* dim all surrounding S9 phones 20%, leaving centre unaffected */
+      .s9-surround .phone::after {
+        content: ''; position: absolute; inset: 0;
+        background: rgba(0,0,0,0.25); pointer-events: none; z-index: 5;
+      }
+      /* dim all S7 desktop cards except the featured centre one */
+      #s7-grid .g-card:not(.g-card--featured)::after {
+        content: ''; position: absolute; inset: 0;
+        background: rgba(0,0,0,0.6); pointer-events: none; z-index: 10;
+      }
+      /* S7 frames — neutral dark, not blue/navy */
+      #s7-grid .g-card--main { background: #0a0a0c; }
+      #s7-grid .desktop-chrome { background: #101013; }
+      /* featured desktop video — knock back the cool/blue cast a touch */
+      #s7-grid .g-card--featured video { filter: brightness(0.94) saturate(0.85); }
+
+      /* ── Table-surface glow (flat shadow beneath angled phone) ── */
+      .table-glow {
+        position: absolute; left: 50%; top: 52%;
+        transform: translateX(-50%);
+        border-radius: 50%; filter: blur(60px);
+        pointer-events: none; z-index: 1;
+      }
+
+      /* ── Desktop shell — ultra-thin premium ── */
+      .desktop {
+        width: 1400px; height: 860px;
+        border-radius: 12px 12px 0 0;
+        background: #08080f;
+        border: 4px solid #26263e;
+        border-bottom: none;
+        box-shadow:
+          0 50px 140px rgba(0,0,0,0.8),
+          0 0 0 1px rgba(255,255,255,0.07),
+          inset 0 0 0 1px rgba(255,255,255,0.03);
+        overflow: hidden; position: relative;
+      }
+
+      /* ── Monitor back-glow ── */
+      .monitor-glow {
+        position: absolute;
+        width: 1460px; height: 900px;
+        border-radius: 18px;
+        pointer-events: none;
+        background: radial-gradient(ellipse at 50% 50%,
+          rgba(155,134,255,0.16) 0%,
+          rgba(47,255,184,0.06) 45%,
+          transparent 70%);
+        filter: blur(48px);
+        z-index: 0;
+      }
+
+      /* ── Laptop chin/base ── */
+      .laptop-keyboard {
+        width: 1400px; height: 52px;
+        background: linear-gradient(180deg, #141428 0%, #0c0c1a 100%);
+        border-radius: 0 0 10px 10px;
+        border: 4px solid #26263e;
+        border-top: 2px solid #1a1a30;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 10px 30px rgba(0,0,0,0.4);
+        position: relative; overflow: hidden;
+      }
+      .laptop-keyboard::before {
+        content: '';
+        position: absolute;
+        top: 9px; left: 50px; right: 50px; height: 6px;
+        background: repeating-linear-gradient(90deg,
+          rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 18px,
+          transparent 18px, transparent 22px);
+        border-radius: 2px;
+      }
+      .laptop-keyboard::after {
+        content: '';
+        position: absolute;
+        top: 21px; left: 68px; right: 68px; height: 6px;
+        background: repeating-linear-gradient(90deg,
+          rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 22px,
+          transparent 22px, transparent 26px);
+        border-radius: 2px;
+      }
+      .desktop-chrome {
+        position: absolute; top: 0; left: 0; right: 0; height: 34px;
+        background: #14142a;
+        display: flex; align-items: center; padding: 0 12px; gap: 7px; z-index: 5;
+      }
+      .dot { width: 10px; height: 10px; border-radius: 50%; }
+      .desktop video {
+        position: absolute; top: 34px; left: 0; right: 0; bottom: 0;
+        width: 100%; height: calc(100% - 34px); object-fit: cover;
+      }
+
+      /* ── S0 bento photo tiles ── */
+      .s0-tile {
+        position: absolute; overflow: hidden;
+        border-radius: 8px; z-index: 3;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      }
+      .s0-tile img {
+        width: 100%; height: 100%;
+        object-fit: cover; object-position: 50% 50%;
+        display: block;
+      }
+
+      /* ── S0 tagline ── */
+      #s0-tagline {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        white-space: nowrap; text-align: center;
+        font-family: 'Geist', 'DM Sans', sans-serif;
+        font-size: 60px; font-weight: 400; line-height: 1.2;
+        color: #fff; letter-spacing: -0.02em; z-index: 6;
+      }
+      /* inline word container */
+      #s0-swap {
+        position: relative; display: inline-block;
+        vertical-align: baseline;
+      }
+      #s0-complex {
+        display: inline-block; white-space: nowrap;
+      }
+      /* all three words must be inline-block so the y transform applies to each
+         uniformly — otherwise only the inline-block middle word visibly moves */
+      #s0-tagline .s0-word {
+        display: inline-block; vertical-align: baseline;
+      }
+
+      /* ── S1 manifesto ── */
+      #s1-text {
+        position: absolute; left: 50%; top: 50%;
+        white-space: nowrap; text-align: center;
+        font-family: 'Geist', 'DM Sans', sans-serif;
+        font-size: 66px; font-weight: 400; line-height: 1.2;
+        color: #fff; letter-spacing: -0.02em; z-index: 6;
+      }
+      #s1-text .s1-w { display: inline-block; }
+      /* soft gradient backdrop for the intro text slides */
+      .text-grad {
+        position: absolute; inset: 0; z-index: 0; pointer-events: none;
+        background:
+          /* violet glow top-left */
+          radial-gradient(ellipse 95% 72% at 24% 16%, rgba(150,126,255,0.34) 0%, transparent 58%),
+          /* soft lilac/magenta accent bottom-right */
+          radial-gradient(ellipse 90% 72% at 82% 88%, rgba(196,128,255,0.24) 0%, transparent 58%),
+          /* deep indigo body for richness */
+          radial-gradient(ellipse 130% 100% at 50% 52%, rgba(64,46,122,0.26) 0%, transparent 72%),
+          #07060e;
+      }
+      /* ── Intro title card ── */
+      #intro-card {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        text-align: center; z-index: 6;
+        font-family: 'Geist', 'DM Sans', sans-serif;
+      }
+      #intro-name {
+        font-size: 56px; font-weight: 400; color: #fff;
+        letter-spacing: -0.035em; line-height: 1.06;
+        text-shadow: 0 2px 54px rgba(74,50,150,0.55);
+      }
+      #intro-role {
+        margin-top: 44px;
+        font-size: 78px; font-weight: 400; color: #fff;
+        letter-spacing: -0.035em; line-height: 1.06;
+        text-shadow: 0 2px 54px rgba(74,50,150,0.45);
+      }
+      .type-line {
+        display: block;
+        width: max-content;
+        max-width: 1440px;
+        margin: 0 auto;
+        white-space: nowrap;
+        padding-right: 10px;
+      }
+      /* each word resolves from blurry+muted to sharp white */
+      .intro-word {
+        display: inline-block;
+        will-change: filter, opacity, transform;
+      }
+      /* premium soft violet halo behind the intro title */
+      .intro-glow {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        width: 1340px; height: 640px; z-index: 1; pointer-events: none;
+        background: radial-gradient(ellipse at center,
+          rgba(158,132,255,0.22) 0%,
+          rgba(122,94,224,0.09) 40%,
+          transparent 68%);
+        filter: blur(46px);
+      }
+      /* ── "Make design feel like magic" statement card ── */
+      .mdw-bg {
+        position: absolute; inset: 0;
+        width: 100%; height: 100%;
+        object-fit: cover;
+        object-position: 50% 50%;
+        z-index: 0;
+      }
+      .mdw-veil {
+        position: absolute; inset: 0;
+        background: rgba(255,255,255,0.24);
+        z-index: 1;
+      }
+      #mdw-text {
+        position: absolute; left: 50%; top: 50%;
+        font-family: 'Geist', 'DM Sans', sans-serif;
+        font-size: 72px; font-weight: 400; letter-spacing: -0.02em;
+        color: #111116; white-space: nowrap; z-index: 6;
+      }
+      #mdw-base { display: inline-block; }
+      #mdw-text .mw { display: inline-block; }
+      #mw-magic {
+        display: inline-block;
+        margin-left: 0.18em;
+        font-family: 'DM Sans', 'Geist', sans-serif;
+        font-style: italic;
+        font-weight: 200;
+        letter-spacing: 0;
+        transform-origin: 50% 50%;
+      }
+      /* ── S1a manifesto line 2 ── */
+      #s1a-text, #s11-text {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        width: 1100px; text-align: center;
+        font-family: 'Geist', 'DM Sans', sans-serif;
+        font-size: 72px; font-weight: 400; line-height: 1.25;
+        color: #fff; letter-spacing: -0.02em; z-index: 6;
+      }
+      #s11-text .s1a-line { display: block; }
+      #s11-attr { font-size: 40px; color: #9aa3ad; margin-top: 30px; }
+      /* two sequential beats stacked at centre — hug text so the wipe aligns to the words */
+      #s1a-text .s1a-beat {
+        position: absolute; left: 50%; top: 50%;
+        text-align: center; white-space: nowrap;
+      }
+      .s1-img {
+        position: absolute; overflow: hidden; border-radius: 3px; z-index: 4;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+      }
+      .s1-img img {
+        width: 100%; height: 100%; object-fit: cover; display: block;
+      }
+
+      /* ── S1b three-word cascade ── */
+      #s1b-line {
+        position: absolute; left: 50%; top: 50%;
+        white-space: nowrap;
+        font-family: 'Geist', 'DM Sans', sans-serif;
+        font-size: 72px; font-weight: 400; letter-spacing: -0.02em;
+        color: #fff; z-index: 6;
+      }
+      #s1b-line .w { display: inline-block; }
+      /* per-word flash image — centred horizontally, sits above/below the line */
+      .s1b-img {
+        position: absolute;            /* left/top set in JS, per word */
+        width: 190px; height: 240px; object-fit: cover;
+        border-radius: 10px; z-index: 7;
+        box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+      }
+
+      /* ── Clip label ── */
+      /* Scene number + clip label hidden everywhere */
+      .snum, .clip-label { display: none !important; }
+
+      .clip-label {
+        position: absolute; bottom: 80px; right: 160px;
+        display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+        z-index: 4;
+      }
+      .clip-label span {
+        font-family: var(--font-data); font-size: 15px;
+        letter-spacing: 0.14em; text-transform: uppercase;
+        color: rgba(255,255,255,0.28);
+      }
+      .clip-label-bar {
+        width: 36px; height: 2px;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        border-radius: 2px;
+      }
+
+      /* ── Scene number watermark ── */
+      .snum {
+        position: absolute; bottom: 70px; left: 140px;
+        font-family: var(--font-data); font-size: 130px;
+        color: rgba(255,255,255,0.025); line-height: 1;
+        z-index: 1; user-select: none;
+      }
+
+      /* ── Flash overlay (scale flash transition helper) ── */
+      .flash {
+        position: absolute; inset: 0;
+        background: #fff; z-index: 60;
+        pointer-events: none; opacity: 0;
+      }
+
+      /* ── Multi-screen gallery cards (s7) ── */
+      .g-card {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+      }
+      .g-card--white  { background: #10101e; }
+      .g-card--accent { background: rgba(155,134,255,0.22); border: 1px solid rgba(155,134,255,0.35); }
+      .g-card--accent2{ background: rgba(255,110,176,0.18); border: 1px solid rgba(255,110,176,0.30); }
+      .g-card--light  { background: #17172c; }
+      .g-card--main   { background: #0d0d1c; position: relative; }
+      .g-card--main video {
+        position: absolute; top: 34px; left: 0; right: 0; bottom: 0;
+        width: 100%; height: calc(100% - 34px);
+        object-fit: cover; display: block;
+      }
+
+      /* Inspection-style opening slides */
+      .inspection-canvas {
+        width: 1920px;
+        height: 1080px;
+        background: #000;
+        position: relative;
+        overflow: hidden;
+        font-family: "Inter", "DM Sans", sans-serif;
+        color: #fff;
+      }
+      .inspection-meta {
+        position: absolute;
+        z-index: 6;
+        font-family: var(--font-data), "DM Mono", monospace;
+        font-size: 12px;
+        color: rgba(255,255,255,0.32);
+        letter-spacing: -0.01em;
+      }
+      .inspection-meta.top-left { left: 22px; top: 18px; }
+      .inspection-meta.top-right { right: 32px; top: 24px; }
+      .inspection-meta.bottom-left { left: 22px; bottom: 16px; }
+      .inspection-meta.bottom-right { right: 22px; bottom: 16px; }
+      .inspection-dot {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: #fff;
+        box-shadow: 0 0 10px rgba(255,255,255,0.62);
+        z-index: 4;
+      }
+      .inspection-reticle {
+        position: absolute;
+        left: 520px;
+        top: 760px;
+        width: 132px;
+        height: 132px;
+        border: 1px dashed rgba(255,255,255,0.14);
+        border-radius: 999px;
+        z-index: 3;
+      }
+      .inspection-reticle::after {
+        content: "inf_02_4321";
+        position: absolute;
+        left: -4px;
+        bottom: -22px;
+        font-family: var(--font-data), "DM Mono", monospace;
+        font-size: 11px;
+        color: rgba(255,255,255,0.36);
+      }
+      .inspection-title {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 86px;
+        line-height: 0.96;
+        font-weight: 400;
+        letter-spacing: -0.045em;
+        z-index: 5;
+      }
+      .inspection-title .dim {
+        color: rgba(255,255,255,0.11);
+      }
+      .inspection-title .bright {
+        color: #fff;
+      }
+      .inspection-tunnel {
+        position: absolute;
+        inset: -4%;
+        opacity: 0;
+        z-index: 1;
+        overflow: hidden;
+        transform-origin: 50% 50%;
+        background:
+          radial-gradient(circle at 50% 50%, #000 0 7%, transparent 17%),
+          repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0.6) 0deg 0.22deg, transparent 0.5deg 2deg);
+        filter: contrast(1.2);
+        /* Rasterise once and GPU-scale — stops the conic gradient re-rendering every frame. */
+        will-change: transform;
+        backface-visibility: hidden;
+      }
+      .inspection-tunnel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 50% 50%, #000 0 11%, transparent 18%, rgba(0,0,0,0.18) 48%, rgba(0,0,0,0.74) 100%);
+        z-index: 2;
+        pointer-events: none;
+      }
+      .inspection-tunnel::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at 50% 50%, transparent 0 58%, rgba(0,0,0,0.55) 82%, #000 100%);
+        z-index: 3;
+        pointer-events: none;
+      }
+      .tunnel-ring { display: none; }
+      .tunnel-dot {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: #fff;
+        box-shadow: 0 0 13px rgba(255,255,255,0.85);
+        z-index: 5;
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.4);
+      }
+      .inspection-burst {
+        position: absolute;
+        inset: -18%;
+        opacity: 0;
+        transform-origin: 50% 50%;
+        z-index: 1;
+      }
+      .inspection-burst::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 50% 50%, transparent 0 16%, rgba(0,0,0,0.16) 42%, rgba(0,0,0,0.55) 100%);
+      }
+      .inspection-progress {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 10px;
+        background: rgba(255,255,255,0.34);
+        transform-origin: 0 50%;
+        transform: scaleX(0);
+        z-index: 8;
+      }
+
+      .eye-canvas {
+        width: 1920px;
+        height: 1080px;
+        position: relative;
+        overflow: hidden;
+        background: #000;
+        font-family: "Inter", "DM Sans", sans-serif;
+        color: #fff;
+      }
+      .photo-field {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+      }
+      .psy-photo {
+        position: absolute;
+        width: var(--w);
+        height: var(--h);
+        left: var(--x);
+        top: var(--y);
+        border-radius: 8px;
+        overflow: hidden;
+        opacity: 0;
+        transform: rotate(var(--r)) scale(0.92);
+        box-shadow: 0 30px 90px rgba(0,0,0,0.44), 0 0 0 1px rgba(255,255,255,0.14);
+        background: #101010;
+      }
+      .psy-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        filter: none;
+      }
+      .eye-photo-veil {
+        position: absolute;
+        inset: 0;
+        background: none;
+        opacity: 0;
+        z-index: 3;
+      }
+      .eye-frame {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 16% 20%, rgba(255,255,255,0.06), transparent 14%),
+          radial-gradient(circle at 84% 73%, rgba(255,255,255,0.05), transparent 18%);
+        opacity: 0;
+        z-index: 4;
+      }
+      .eye-shape {
+        position: absolute;
+        left: 492px;
+        top: 298px;
+        width: 936px;
+        height: 420px;
+        border-radius: 58% 42% 54% 46% / 50% 50% 50% 50%;
+        background:
+          radial-gradient(circle at 50% 50%, rgba(255,255,255,0.88) 0 3%, rgba(255,255,255,0.24) 6%, transparent 15%),
+          radial-gradient(circle at 50% 50%, #020202 0 11%, rgba(230,230,230,0.62) 12% 18%, rgba(70,70,70,0.7) 19% 28%, rgba(255,255,255,0.22) 29% 35%, transparent 36%),
+          radial-gradient(ellipse at 50% 52%, rgba(255,255,255,0.42), rgba(255,255,255,0.09) 48%, transparent 65%);
+        box-shadow: inset 0 0 90px rgba(0,0,0,0.85), 0 0 140px rgba(255,255,255,0.08);
+        opacity: 0;
+        transform: scale(0.96);
+      }
+      .eye-shape::before,
+      .eye-shape::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 48%;
+        background: #000;
+        filter: blur(18px);
+      }
+      .eye-shape::before { top: -18%; transform: rotate(-3deg); }
+      .eye-shape::after { bottom: -20%; transform: rotate(3deg); }
+      .eye-cross-x,
+      .eye-cross-y,
+      .eye-box,
+      .eye-ring {
+        position: absolute;
+        pointer-events: none;
+        opacity: 0;
+      }
+      .eye-cross-x {
+        left: 0;
+        top: 540px;
+        width: 1920px;
+        border-top: 1px dashed rgba(255,255,255,0.26);
+      }
+      .eye-cross-y {
+        left: 960px;
+        top: 0;
+        height: 1080px;
+        border-left: 1px dashed rgba(255,255,255,0.16);
+      }
+      .eye-box {
+        left: 660px;
+        top: 372px;
+        width: 600px;
+        height: 264px;
+        border: 1px dashed rgba(255,255,255,0.22);
+      }
+      .eye-box::before,
+      .eye-box::after {
+        content: "";
+        position: absolute;
+        top: 130px;
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: #fff;
+        box-shadow: 0 0 12px rgba(255,255,255,0.7);
+      }
+      .eye-box::before { left: -6px; }
+      .eye-box::after { right: -6px; }
+      .eye-ring {
+        left: 462px;
+        top: 40px;
+        width: 996px;
+        height: 996px;
+        border: 1px dashed rgba(255,255,255,0.08);
+        border-radius: 999px;
+      }
+      .eye-title {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        z-index: 8;
+        font-size: 76px;
+        line-height: 0.96;
+        letter-spacing: -0.045em;
+        font-weight: 400;
+        opacity: 0;
+        filter: blur(10px);
+      }
+      .eye-title .muted { color: #fff; }
+      .eye-title .bright { color: #fff; }
     </style>
   </head>
   <body>
-    <div
-      id="root"
-      data-composition-id="main"
-      data-start="0"
-      data-duration="19"
-      data-width="1920"
-      data-height="1080"
-    >
-      <!-- Scene 1: Hospitality Is Changing — image stack + zoom -->
-      <div
-        id="scene-1"
-        class="scene"
-        data-composition-id="scene1-hospitality-intro"
-        data-composition-src="compositions/scene1-hospitality-intro.html"
-        data-start="0"
-        data-duration="7"
-        data-track-index="1"
-        data-width="1920"
-        data-height="1080"
-      ></div>
+    <div id="main" data-composition-id="reel-2" data-width="1920" data-height="1080" data-start="0" data-duration="48.077">
 
-      <!-- Scene 2: My Design Philosophy — title card -->
-      <div
-        id="scene-2"
-        class="scene"
-        data-composition-id="scene2-philosophy-title"
-        data-composition-src="compositions/scene2-philosophy-title.html"
-        data-start="7"
-        data-duration="6"
-        data-track-index="1"
-        data-width="1920"
-        data-height="1080"
-      ></div>
-      <!-- Scene 3: Human Psychology Is Not — green cards + headline -->
-      <div
-        id="scene-3"
-        class="scene"
-        data-composition-id="scene3-psychology"
-        data-composition-src="compositions/scene3-psychology.html"
-        data-start="13"
-        data-duration="6"
-        data-track-index="1"
-        data-width="1920"
-        data-height="1080"
-      ></div>
-    </div>
+      <!-- ══════════════════════════════════════════
+           S1A · Separate inspection burst slide
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s1a" data-start="0" data-duration="3" data-track-index="30" style="visibility:visible; opacity:1; z-index:79;">
+        <div class="inspection-canvas">
+          <div class="inspection-tunnel" data-layout-allow-overflow>
+            <div class="tunnel-ring" style="--size:420px;--z:-520px;--alpha:0.22;--blur:1.4px;"></div>
+            <div class="tunnel-ring" style="--size:620px;--z:-420px;--alpha:0.30;--blur:1.1px;"></div>
+            <div class="tunnel-ring" style="--size:860px;--z:-320px;--alpha:0.42;--blur:0.8px;"></div>
+            <div class="tunnel-ring" style="--size:1140px;--z:-220px;--alpha:0.56;--blur:0.55px;"></div>
+            <div class="tunnel-ring" style="--size:1480px;--z:-120px;--alpha:0.70;--blur:0.35px;"></div>
+            <div class="tunnel-ring" style="--size:1880px;--z:-20px;--alpha:0.82;--blur:0.2px;"></div>
+          </div>
+          <div class="inspection-meta top-left">Inspecting</div>
+          <div class="inspection-meta bottom-left">Additive</div>
+          <div class="inspection-meta bottom-right">Refiner</div>
+          <div class="inspection-dot tunnel-dot-a" data-layout-allow-overflow style="left:160px;top:540px;"></div>
+          <div class="inspection-dot tunnel-dot-b" data-layout-allow-overflow style="left:470px;top:220px;"></div>
+          <div class="inspection-dot tunnel-dot-c" data-layout-allow-overflow style="left:920px;top:118px;"></div>
+          <div class="inspection-dot tunnel-dot-d" data-layout-allow-overflow style="left:1510px;top:430px;"></div>
+          <div class="inspection-dot tunnel-dot-e" data-layout-allow-overflow style="left:1805px;top:680px;"></div>
+          <div class="inspection-dot tunnel-dot-f" data-layout-allow-overflow style="left:600px;top:840px;"></div>
+          <div class="inspection-title inspection-title-burst"><span style="display:inline-block;text-align:center;"><span class="bright" id="s1a-design" style="display:inline-block;">Technology</span><br><span class="bright" id="s1a-changing" style="display:inline-block;">is changing</span></span></div>
+          <div class="inspection-progress"></div>
+        </div>
+      </div>
+
+
+      <!-- ══════════════════════════════════════════
+           S1C · Eye inspection · "human psychology is not"
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s1c" data-start="3" data-duration="3.923" data-track-index="31" style="visibility:hidden; z-index:90;">
+        <div class="eye-canvas">
+          <div class="inspection-meta top-left">Active</div>
+          <div class="inspection-meta bottom-left">Additive</div>
+          <div class="inspection-meta bottom-right">Release</div>
+          <div class="photo-field" data-layout-allow-overflow>
+            <div class="psy-photo" style="--x:92px;--y:86px;--w:500px;--h:300px;--r:-5deg;"><img src="assets/psych-woman-blue-tank.jpg" alt=""></div>
+            <div class="psy-photo" style="--x:702px;--y:42px;--w:520px;--h:288px;--r:3deg;"><img src="assets/psych-smiling-closeup.jpg" alt=""></div>
+            <div class="psy-photo" style="--x:1294px;--y:82px;--w:480px;--h:300px;--r:5deg;"><img src="assets/psych-women-high-fiving.jpg" alt=""></div>
+            <div class="psy-photo" style="--x:164px;--y:640px;--w:560px;--h:336px;--r:4deg;"><img src="assets/psych-girl-white-red.jpg" alt=""></div>
+            <div class="psy-photo" style="--x:1508px;--y:410px;--w:330px;--h:430px;--r:4deg;"><img src="assets/psych-man-woman-rain.jpg" alt=""></div>
+          </div>
+          <div class="eye-photo-veil"></div>
+          <div class="eye-frame"></div>
+          <div class="eye-ring"></div>
+          <div class="eye-cross-x"></div>
+          <div class="eye-cross-y"></div>
+          <div class="eye-shape"></div>
+          <div class="eye-box"></div>
+          <div class="eye-title"><span><span class="muted">Human psychology</span><br><span class="bright">does not</span></span></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           S0 · Intro · big text (stage 1) → photo collage centred (stage 2)
+           small=230×230 gap=14 · hero=474×474 (2×230+14)
+           group 962×718 centred at (479,181) on 1920×1080
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s0" data-start="28.808" data-duration="2.532" data-track-index="22" style="visibility:hidden; z-index:55; background:#07070e;">
+        <div class="grain"></div>
+
+        <!-- Peripheral frame — photos hug the canvas edges, open centre -->
+        <div id="s0-cam" data-layout-allow-overflow style="position:absolute;inset:0;z-index:3;">
+        <div class="s0-tile" style="left:-50px;top:690px;width:560px;height:400px;">
+          <img src="assets/s0-cargo.png" style="object-position:50% 45%;">
+        </div>
+
+        <div class="s0-tile" id="s0-hero" style="left:-60px;top:-50px;width:640px;height:410px;z-index:5;">
+          <img src="assets/s0-doctor.jpg" style="object-position:50% 38%;">
+        </div>
+
+        <div class="s0-tile" style="left:1400px;top:-40px;width:580px;height:340px;">
+          <img src="assets/s0-lab.jpg" style="object-position:50% 42%;">
+        </div>
+        <div class="s0-tile" style="left:1510px;top:376px;width:450px;height:300px;">
+          <img src="assets/s0-van.jpg" style="object-position:60% 35%;">
+        </div>
+        <div class="s0-tile" style="left:720px;top:738px;width:560px;height:342px;">
+          <img src="assets/s0-shelf.png" style="object-position:50% 40%;">
+        </div>
+        </div><!-- #s0-cam -->
+
+        <!-- Tagline — left half, vertically centred -->
+        <div id="s0-tagline"><span class="s0-word" id="sw-making">...or</span> <span id="s0-swap"><span id="s0-complex" class="s0-word">it's</span></span> <span class="s0-word" id="sw-systems">not</span> <span class="s0-word" id="sw-simple">done.</span></div>
+
+        <div class="snum">00</div>
+        <div class="clip-label" id="s0-lbl"><span>intro</span><div class="clip-label-bar"></div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           S1 · Manifesto line · images burst from centre then drift radially (6–11s)
+           Non-anchor
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s1" data-start="27.308" data-duration="1.923" data-track-index="11" style="z-index:55; background:#0a0a0f;">
+        <div class="text-grad"></div>
+        <div class="grain"></div>
+        <div class="vignette"></div>
+
+        <div id="s1-text"><span class="s1-w">Even</span> <span class="s1-w">complex</span> <span class="s1-w">design</span> <span class="s1-w">should</span> <span class="s1-w">be</span> <span class="s1-w">effortless</span></div>
+
+        <div class="snum">01</div>
+        <div class="clip-label" id="s1-lbl"><span>intro</span><div class="clip-label-bar"></div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           S1b · Three words cascade · line re-centres + scales to fit (11–16s)
+           Non-anchor
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s1b" data-start="6.923" data-duration="1.923" data-track-index="0" style="visibility:hidden;">
+        <div class="text-grad"></div>
+        <div class="grain"></div>
+        <div class="vignette"></div>
+
+        <!-- per-word flash images live INSIDE the line so they ride with each word -->
+        <div id="s1b-line"><span class="w" id="w1">Simplicity</span><span class="w" id="w2">, joy</span><span class="w" id="w3">, clarify</span><img class="s1b-img" id="s1b-i1" data-pos="below" src="assets/simplicity-swan.jpg" style="object-position:28% 58%;" alt=""><img class="s1b-img" id="s1b-i2" data-pos="above" src="assets/joy-flowers.jpg" style="object-position:50% 48%;" alt=""><img class="s1b-img" id="s1b-i3" data-pos="below" src="assets/clarity-mountain.jpg" style="object-position:50% 76%;" alt=""></div>
+
+        <div class="snum">01</div>
+        <div class="clip-label" id="s1b-lbl"><span>intro</span><div class="clip-label-bar"></div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           S-MDW · Statement card · "Make design feel like magic" (11–13.5s)
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s-mdw" data-start="8.846" data-duration="1.1" data-track-index="0" style="z-index:44;background:#fff;">
+        <img class="mdw-bg" src="assets/clouds-bg.jpg" alt="">
+        <div class="mdw-veil"></div>
+        <div id="mdw-text"><span id="mdw-base">Make design feel like</span><span id="mw-magic">magic.</span></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           S2 · 3 phones from right — straight, equal spacing (4–8s)
+           Non-anchor
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s2" data-start="13.846" data-duration="5" data-track-index="20" style="visibility:hidden;z-index:70;">
+        <div class="grain"></div>
+        <div class="vignette"></div>
+        <div class="flash" id="s2-flash"></div>
+        <img id="s2-bg-img" src="assets/starry-night-bg.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 46%;z-index:0;">
+        <div id="s2-bg-wash" style="position:absolute;inset:0;z-index:1;pointer-events:none;
+          background:
+            radial-gradient(ellipse at 50% 40%,rgba(155,134,255,0.12) 0%,transparent 55%),
+            rgba(0,0,0,0.22);"></div>
+
+        <!-- Left phone belongs only to S2; keep it out of the S10 hero close-up. -->
+        <div id="s2-ph-l" style="position:absolute;top:140px;left:188px;z-index:2;">
+          <div class="phone" style="border-color:#1c1c1c;background:#0d0d0d;">
+            <div class="phone-notch" style="background:#0d0d0d;"></div>
+            <video id="v-s2-left" src="assets/mobile-01.mov" data-start="13.846" data-duration="5" data-track-index="3" muted playsinline></video>
+          </div>
+        </div>
+
+        <!-- Center phone · left:766px -->
+        <div id="s2-ph-c" style="position:absolute;top:140px;left:766px;z-index:60;">
+          <div class="phone" style="border-color:#1c1c1c;background:#0d0d0d;">
+            <div class="phone-notch" style="background:#0d0d0d;"></div>
+            <video id="v-s2" src="assets/mobile-02.MOV" data-start="14.177" data-duration="4.669" data-track-index="24" muted playsinline></video>
+          </div>
+        </div>
+
+        <!-- Right phone · left:1344px -->
+        <div id="s2-ph-r" style="position:absolute;top:140px;left:1344px;z-index:60;">
+          <div class="phone" style="border-color:#1c1c1c;background:#0d0d0d;">
+            <div class="phone-notch" style="background:#0d0d0d;"></div>
+            <video id="v-s2-right" src="assets/mobile-03.MP4" data-start="14.177" data-duration="4.669" data-track-index="25" muted playsinline></video>
+          </div>
+        </div>
+
+        <div class="snum">02</div>
+        <div class="clip-label" id="s2-lbl"><span>mobile</span><div class="clip-label-bar"></div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           S3 · Push — desktop on left shoved by phone section from right (33–37s)
+           Non-anchor
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s3" data-layout-ignore data-layout-allow-overflow data-start="31.34" data-duration="7.122" data-track-index="0" style="visibility:hidden;">
+        <div style="position:absolute;inset:0;z-index:0;background:#07070e;"></div>
+        <div class="grain"></div>
+        <div class="vignette"></div>
+
+        <!-- Push track — both panels translate together; GSAP shifts #s3-track x -->
+        <div id="s3-track" data-layout-allow-overflow style="position:absolute;top:0;left:0;height:1080px;z-index:2;
+          display:flex;align-items:center;">
+
+          <!-- Desktop panel (left) -->
+          <div style="flex:none;margin-left:60px;">
+            <div class="desktop" style="width:1300px;height:800px;border-radius:16px;border-bottom:8px solid #1c1c30;">
+              <div class="desktop-chrome">
+                <div class="dot" style="background:#ff5f57;"></div>
+                <div class="dot" style="background:#febc2e;"></div>
+                <div class="dot" style="background:#28c840;"></div>
+              </div>
+              <video id="v-s3" src="assets/info.mov" data-start="31.539" data-duration="6.923" data-track-index="2" muted playsinline></video>
+            </div>
+          </div>
+
+          <!-- Phone mockup section (bigger, right) — previous S6 mobile design, plays from start -->
+          <div style="flex:none;margin-left:90px;">
+            <div class="phone" style="transform:scale(1.2);transform-origin:center center;
+              box-shadow:0 60px 160px rgba(20,40,90,0.5),0 0 0 1px rgba(255,255,255,0.12);">
+              <div class="phone-notch"></div>
+              <video id="v-s3-phone" class="clip" src="assets/s6-fast.mp4" data-start="31.539" data-duration="6.923" data-track-index="4" muted playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+            </div>
+          </div>
+
+          <!-- Desktop panel (right) — S6 scriptsense video, same pattern as first desktop -->
+          <div style="flex:none;margin-left:90px;">
+            <div class="desktop" style="width:1300px;height:800px;border-radius:16px;border-bottom:8px solid #1c1c30;">
+              <div class="desktop-chrome">
+                <div class="dot" style="background:#ff5f57;"></div>
+                <div class="dot" style="background:#febc2e;"></div>
+                <div class="dot" style="background:#28c840;"></div>
+              </div>
+              <video id="v-s3-desk2" src="assets/scriptsense.mp4" data-start="31.539" data-duration="6.923" data-track-index="6" muted playsinline></video>
+            </div>
+          </div>
+        </div>
+
+        <div class="snum">03</div>
+        <div class="clip-label" id="s3-lbl"><span>multi-device</span><div class="clip-label-bar"></div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           S4 · Bottom-crop straight close-up (12–16.5s)
+           SHADER ANCHOR — first in group [s4…s8]
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s4" data-start="22.808" data-duration="6.423" data-track-index="21" style="opacity:0;">
+        <div class="grain"></div>
+        <div class="vignette"></div>
+
+        <img src="assets/starry-night-bg.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 46%;z-index:0;">
+        <div style="position:absolute;inset:0;z-index:1;pointer-events:none;
+          background:
+            radial-gradient(ellipse at 50% 40%,rgba(155,134,255,0.12) 0%,transparent 55%),
+            rgba(0,0,0,0.22);"></div>
+
+        <!-- Camera group — slow top-centre push-in -->
+        <div id="s4-cam" style="position:absolute;inset:0;z-index:2;">
+          <!-- Phone: centered horizontally, scaled 1.45× — top slightly above canvas, bottom cropped -->
+          <div id="s4-pw" style="position:absolute;top:-28px;left:765px;z-index:3;">
+            <div style="transform:scale(1.45);transform-origin:top center;">
+              <div class="phone" style="border-color:#484848;background:#111;">
+                <div class="phone-notch" style="background:#111;"></div>
+                <video id="v-s4" src="assets/movile-07.mov" data-start="23.077" data-duration="4.615" data-track-index="2" muted playsinline></video>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="snum">04</div>
+        <div class="clip-label" id="s4-lbl"><span>mobile</span><div class="clip-label-bar"></div></div>
+      </div>
+
+      <!-- S6 removed -->
+
+      <!-- ══════════════════════════════════════════
+           S7 · Multi-screen gallery → zoom (25.5–31s)
+           SHADER ANCHOR
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s7" data-start="18.846" data-duration="4.231" data-track-index="0" style="visibility:hidden;">
+        <div style="position:absolute;inset:0;z-index:0;background:#07070e;"></div>
+        <div class="grain"></div>
+        <div class="vignette"></div>
+
+        <!-- 3×3 grid, 700×460 cards, 24px gap — all cells are desktop mockups -->
+        <div id="s7-grid" style="
+          position:absolute; top:50%; left:50%; z-index:2;
+          display:grid;
+          grid-template-columns: repeat(3,700px);
+          grid-template-rows: repeat(3,460px);
+          gap: 24px;
+        ">
+          <!-- chrome snippet reused across all cards -->
+          <!-- Row 1 — partially cropped at top -->
+          <div class="g-card g-card--main"><div class="desktop-chrome"><div class="dot" style="background:#ff5f57;"></div><div class="dot" style="background:#febc2e;"></div><div class="dot" style="background:#28c840;"></div></div><img src="assets/s7-img5.jpg" style="position:absolute;top:34px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 34px);object-fit:cover;object-position:top left;display:block;"></div>
+          <div class="g-card g-card--main"><div class="desktop-chrome"><div class="dot" style="background:#ff5f57;"></div><div class="dot" style="background:#febc2e;"></div><div class="dot" style="background:#28c840;"></div></div><img src="assets/s7-img2.png" style="position:absolute;top:34px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 34px);object-fit:cover;object-position:top left;display:block;"></div>
+          <div class="g-card g-card--main"><div class="desktop-chrome"><div class="dot" style="background:#ff5f57;"></div><div class="dot" style="background:#febc2e;"></div><div class="dot" style="background:#28c840;"></div></div><img src="assets/s7-img3.png" style="position:absolute;top:34px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 34px);object-fit:cover;object-position:top left;display:block;"></div>
+          <!-- Row 2 — fully visible, centre is the video -->
+          <div class="g-card g-card--main"><div class="desktop-chrome"><div class="dot" style="background:#ff5f57;"></div><div class="dot" style="background:#febc2e;"></div><div class="dot" style="background:#28c840;"></div></div><img src="assets/s7-img4.png" style="position:absolute;top:34px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 34px);object-fit:cover;object-position:top left;display:block;"></div>
+          <div class="g-card g-card--main g-card--featured"><div class="desktop-chrome"><div class="dot" style="background:#ff5f57;"></div><div class="dot" style="background:#febc2e;"></div><div class="dot" style="background:#28c840;"></div></div><video id="v-s7" src="assets/desktop-01.mov" data-start="18.846" data-duration="4.231" data-track-index="2" muted playsinline></video></div>
+          <div class="g-card g-card--main"><div class="desktop-chrome"><div class="dot" style="background:#ff5f57;"></div><div class="dot" style="background:#febc2e;"></div><div class="dot" style="background:#28c840;"></div></div><img src="assets/s7-img1.png" style="position:absolute;top:34px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 34px);object-fit:cover;object-position:top left;display:block;"></div>
+          <!-- Row 3 — partially cropped at bottom -->
+          <div class="g-card g-card--main"><div class="desktop-chrome"><div class="dot" style="background:#ff5f57;"></div><div class="dot" style="background:#febc2e;"></div><div class="dot" style="background:#28c840;"></div></div><img src="assets/s7-img3.png" style="position:absolute;top:34px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 34px);object-fit:cover;object-position:top left;display:block;"></div>
+          <div class="g-card g-card--main"><div class="desktop-chrome"><div class="dot" style="background:#ff5f57;"></div><div class="dot" style="background:#febc2e;"></div><div class="dot" style="background:#28c840;"></div></div><img src="assets/s7-img5.jpg" style="position:absolute;top:34px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 34px);object-fit:cover;object-position:top left;display:block;"></div>
+          <div class="g-card g-card--main"><div class="desktop-chrome"><div class="dot" style="background:#ff5f57;"></div><div class="dot" style="background:#febc2e;"></div><div class="dot" style="background:#28c840;"></div></div><img src="assets/s7-img2.png" style="position:absolute;top:34px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 34px);object-fit:cover;object-position:top left;display:block;"></div>
+        </div>
+
+        <div class="snum">07</div>
+        <div class="clip-label" id="s7-lbl"><span>desktop</span><div class="clip-label-bar"></div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           S8 · Continuous left conveyor — 5 phones flow left, centre one grows (33–39s)
+           SHADER ANCHOR — last in group [s4…s8]
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s8" data-start="37.308" data-duration="4.615" data-track-index="9" style="opacity:0;overflow:hidden;">
+        <div class="grain"></div>
+        <!-- dark bg -->
+        <div style="position:absolute;inset:0;z-index:0;background:#0b0b14;"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;z-index:1;
+          background:radial-gradient(ellipse at center,rgba(155,134,255,0.10) 0%,transparent 55%,rgba(0,0,0,0.6) 100%);"></div>
+
+        <!-- Flex track · 4 phones · width 430 · gap 170 → step 600 · bigger, uncut.
+             Screens 05/06/10/11. Rounded + shadow so bare screens read as phones. -->
+        <div id="s8-row" style="position:absolute;top:50%;left:0;z-index:2;display:flex;gap:170px;align-items:center;">
+          <div id="s8-p0" style="flex:none;"><img src="assets/mobile-05.png" style="width:430px;height:auto;display:block;border-radius:36px;box-shadow:0 40px 120px rgba(0,0,0,0.6);"></div>
+          <div id="s8-p1" style="flex:none;"><img src="assets/mobile-06.png" style="width:430px;height:auto;display:block;border-radius:36px;box-shadow:0 40px 120px rgba(0,0,0,0.6);"></div>
+          <div id="s8-p2" style="flex:none;"><img src="assets/mobile-10.png" style="width:430px;height:auto;display:block;border-radius:36px;box-shadow:0 40px 120px rgba(0,0,0,0.6);"></div>
+          <div id="s8-p3" style="flex:none;"><img src="assets/mobile-11.png" style="width:430px;height:auto;display:block;border-radius:36px;box-shadow:0 40px 120px rgba(0,0,0,0.6);"></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           S9 · Diagonal phone · camera zoom-out (37–41s)
+           Non-anchor
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s9" data-start="38.462" data-duration="5.385" data-track-index="0" style="visibility:hidden;">
+        <!-- explicit bg so S6's light scene doesn't bleed through -->
+        <div style="position:absolute;inset:0;z-index:0;background:#07070e;"></div>
+        <div class="grain"></div>
+        <div class="vignette"></div>
+
+        <!-- soft back-glow centred on main phone -->
+        <div style="position:absolute;inset:0;z-index:0;pointer-events:none;
+          background:radial-gradient(ellipse at 50% 50%,rgba(47,114,255,0.14) 0%,transparent 58%);"></div>
+
+        <!-- Camera group — scale 3→1 from canvas centre (960,540) -->
+        <div id="s9-cam" style="position:absolute;inset:0;z-index:2;">
+
+          <!-- ── TOP ROW — shifted 120px left, step=540px (gap=150px), top=-772 ── -->
+          <div class="s9-surround" style="position:absolute;left:-435px;top:-772px;z-index:2;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-05.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+          <div class="s9-surround" style="position:absolute;left:105px;top:-772px;z-index:3;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-10.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+          <div class="s9-surround" style="position:absolute;left:645px;top:-772px;z-index:3;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-10.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+          <div class="s9-surround" style="position:absolute;left:1185px;top:-772px;z-index:3;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-06.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+          <div class="s9-surround" style="position:absolute;left:1725px;top:-772px;z-index:2;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-04.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+
+          <!-- ── MIDDLE ROW — centred at 960px, step=540px (gap=150px) ── -->
+          <div class="s9-surround" style="position:absolute;left:-315px;top:140px;z-index:2;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-05.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+          <div class="s9-surround" style="position:absolute;left:225px;top:140px;z-index:3;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-10.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+          <div id="s9-pw" style="position:absolute;left:765px;top:140px;z-index:4;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><video id="v-s9c" class="clip" src="assets/s9-center.mov" data-start="38.462" data-duration="5.385" data-track-index="2" muted playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video></div></div>
+          <div class="s9-surround" style="position:absolute;left:1305px;top:140px;z-index:3;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/s9-center.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+          <div class="s9-surround" style="position:absolute;left:1845px;top:140px;z-index:2;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-06.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+
+          <!-- ── BOTTOM ROW — shifted 120px right, step=540px, top=1052 ── -->
+          <div class="s9-surround" style="position:absolute;left:-195px;top:1052px;z-index:2;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-05.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+          <div class="s9-surround" style="position:absolute;left:345px;top:1052px;z-index:3;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-10.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+          <div class="s9-surround" style="position:absolute;left:885px;top:1052px;z-index:3;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-06.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+          <div class="s9-surround" style="position:absolute;left:1425px;top:1052px;z-index:3;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-04.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+          <div class="s9-surround" style="position:absolute;left:1965px;top:1052px;z-index:2;"><div class="phone" style="border-color:#484848;background:#111;"><div class="phone-notch" style="background:#111;"></div><img src="assets/mobile-05.png" style="width:100%;height:100%;object-fit:cover;display:block;"></div></div>
+        </div>
+
+        <div class="snum">09</div>
+        <div class="clip-label" id="s9-lbl"><span>mobile</span><div class="clip-label-bar"></div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           S11 · Closing manifesto · "We used to dream…" (62.3–67.8)
+           Non-anchor, final — exit ok
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s11" data-start="43.846" data-duration="7.692" data-track-index="23" style="visibility:hidden;">
+        <div class="text-grad"></div>
+        <div class="grain"></div>
+        <div class="vignette"></div>
+
+        <div id="s11-text"><span class="s1a-line">We used to dream about this stuff.</span><span class="s1a-line">Now we get to build it.</span><span class="s1a-line">It's pretty great.</span><span class="s1a-line" id="s11-attr">— Steve Jobs</span></div>
+
+        <div class="snum">10</div>
+        <div class="clip-label" id="s11-lbl"><span>outro</span><div class="clip-label-bar"></div></div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           S10 · Upright hero close · Drift to black (41–45s)
+           Non-anchor, final — exit ok
+      ══════════════════════════════════════════ -->
+      <div class="scene clip" id="s10" data-start="9.946" data-duration="5.823" data-track-index="0">
+        <img src="assets/starry-night-bg.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 46%;z-index:0;">
+        <div style="position:absolute;inset:0;z-index:1;pointer-events:none;background:rgba(0,0,0,0.22);"></div>
+        <div class="grain"></div>
+        <div class="vignette"></div>
+
+        <div style="position:absolute;inset:0;z-index:1;
+          background:radial-gradient(ellipse at 50% 55%,rgba(155,134,255,0.16) 0%,transparent 60%);
+          pointer-events:none;" id="s10-glow" data-layout-allow-overflow></div>
+
+        <div class="stage">
+          <div id="s10-pw">
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <video id="v-s10" src="assets/mobile-01.mov" data-start="9.946" data-duration="11.208" data-track-index="26" muted playsinline></video>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Background music - starts 10s into Shapes & Shapes (Midnight Parallax Remix). -->
+      <audio id="bg-music" src="assets/shapes-shapes-midnight-parallax-remix.mp3" data-start="0" data-duration="48.077" data-media-start="10" data-track-index="15" data-volume="0.75"></audio>
+
+    </div><!-- #main -->
 
     <script>
       window.__timelines = window.__timelines || {};
-      const mainTl = gsap.timeline({ paused: true });
-      window.__timelines["main"] = mainTl;
+      var tl = gsap.timeline({ paused: true });
+
+      // All embedded screen recordings play 1.3x faster to match the compressed reel timing.
+      (function () {
+        document.querySelectorAll("video").forEach(function (video) {
+          var rate = video.id === "v-s9c" ? 1.5 : 1.3;
+          video.defaultPlaybackRate = rate;
+          video.playbackRate = rate;
+        });
+      })();
+
+      // ════════════════════════════════════════
+      // S1A · Separate inspection burst slide
+      // ════════════════════════════════════════
+      gsap.set("#s1a .inspection-dot, #s1a .inspection-meta", { autoAlpha: 0 });
+      gsap.set("#s1a .inspection-title-burst", { autoAlpha: 1 });
+      gsap.set("#s1a-design, #s1a-changing", { autoAlpha: 1, y: 0, filter: "blur(0px)" });
+      gsap.set("#s1a .inspection-tunnel", { autoAlpha: 0.45, scale: 0.72, rotation: 0 });
+      tl.set("#s1a", { autoAlpha: 1 }, 0);
+      tl.to("#s1a .inspection-tunnel", { autoAlpha: 1, scale: 1.9, duration: 2.5, ease: "power3.in" }, 0.06);
+      // Dots stream OUTWARD from the centre and get left behind — a star-warp fly-through.
+      // Each starts clustered at screen centre (x0/y0 = offset from its CSS rest pos to 960,540)
+      // and accelerates out past its rest position (x1/y1 = 0.8× beyond), scaling up then fading.
+      [
+        ["a",  800,    0, -640,    0],
+        ["b",  490,  320, -392, -256],
+        ["c",   40,  422,  -32, -338],
+        ["d", -550,  110,  440,  -88],
+        ["e", -845, -140,  676,  112],
+        ["f",  360, -300, -288,  240],
+      ].forEach(function (d) {
+        var sel = "#s1a .tunnel-dot-" + d[0];
+        [0.16, 1.42].forEach(function (t0) {
+          var t = t0 + (d[0].charCodeAt(0) - 97) * 0.05;
+          tl.fromTo(sel,
+            { autoAlpha: 0, scale: 0.18, x: d[1], y: d[2] },
+            { autoAlpha: 0.95, scale: 2.7, x: d[3], y: d[4], duration: 0.62, ease: "power2.in" }, t);
+          tl.to(sel, { autoAlpha: 0, duration: 0.18, ease: "power1.in" }, t + 0.46);
+        });
+      });
+      tl.to("#s1a .inspection-meta", { autoAlpha: 1, duration: 0.24, ease: "power2.out", stagger: 0.035 }, 0.12);
+      tl.to("#s1a-design", { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.34, ease: "power3.out" }, 0.16);
+      tl.to("#s1a-changing", { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.34, ease: "power3.out" }, 0.58);
+      tl.to("#s1a .inspection-progress", { scaleX: 1, duration: 2.58, ease: "none" }, 0.18);
+      tl.to("#s1a .inspection-title-burst", { autoAlpha: 0, duration: 0.14, ease: "power2.in" }, 2.76);
+      tl.to("#s1a .inspection-tunnel", { scale: 2.55, autoAlpha: 0, duration: 0.28, ease: "power2.in", overwrite: "auto" }, 2.62);
+      tl.set("#s1a .inspection-title-burst, #s1a .inspection-meta", { autoAlpha: 0 }, 2.94);
+      // Reset the streaked dots back to rest (transform clears) so no off-canvas ghost
+      // geometry lingers into the s1c handoff.
+      tl.set("#s1a .inspection-dot", { autoAlpha: 0, x: 0, y: 0, scale: 1 }, 2.94);
+      // Reset the tunnel back to its small resting scale once it's hidden — otherwise
+      // it lingers at scale 2.2 (~4562px) as an invisible-but-huge box that overflows
+      // into the s1c handoff right before 4.6s.
+      tl.set("#s1a .inspection-tunnel", { autoAlpha: 0, scale: 0.72 }, 2.94);
+      tl.set("#s1a", { autoAlpha: 0 }, 3);
+
+      // ════════════════════════════════════════
+      // S1C · Eye inspection · "human psychology is not"
+      // ════════════════════════════════════════
+      gsap.set("#s1c .inspection-meta, #s1c .psy-photo, #s1c .eye-frame, #s1c .eye-cross-x, #s1c .eye-cross-y", { opacity: 0, visibility: "visible" });
+      gsap.set("#s1c .eye-shape, #s1c .eye-box, #s1c .eye-ring", { opacity: 0, visibility: "hidden" });
+      gsap.set("#s1c .eye-photo-veil", { opacity: 0, visibility: "hidden" });
+      gsap.set("#s1c .eye-title", { opacity: 0, visibility: "visible", filter: "blur(10px)", scale: 0.96 });
+      tl.set("#s1c", { autoAlpha: 1 }, 3);
+      tl.to("#s1c .psy-photo", { opacity: 1, scale: 1, duration: 0.56, ease: "power3.out", stagger: 0.11 }, 3.06);
+      tl.to("#s1c .eye-frame", { opacity: 1, duration: 0.42, ease: "power2.out" }, 3.18);
+      tl.to("#s1c .eye-cross-x, #s1c .eye-cross-y", { opacity: 1, duration: 0.38, ease: "power2.out", stagger: 0.04 }, 3.34);
+      tl.to("#s1c .inspection-meta", { opacity: 1, duration: 0.3, ease: "power2.out", stagger: 0.04 }, 3.44);
+      tl.to("#s1c .eye-title", { opacity: 1, filter: "blur(0px)", scale: 1, duration: 0.44, ease: "power3.out" }, 3.6);
+      tl.to("#s1c .eye-title", { opacity: 0, duration: 0.24, ease: "power2.in" }, 6.55);
+      tl.set("#s1c", { autoAlpha: 0 }, 6.923);
+
+      // ════════════════════════════════════════
+      // S-MDW (11–13.5s) · "Make design feel like magic" statement card
+      // ════════════════════════════════════════
+      tl.set("#s-mdw", { autoAlpha: 1 }, 8.846);
+      gsap.set("#mdw-text", { xPercent: -50, yPercent: -50, autoAlpha: 1 });
+      gsap.set("#mdw-base", { autoAlpha: 1, x: -34, clipPath: "inset(0 100% 0 0)" });
+      gsap.set("#mw-magic", { autoAlpha: 0, letterSpacing: "0px" });
+      tl.to("#mdw-base", { x: 0, clipPath: "inset(0 0% 0 0)", duration: 0.423, ease: "power3.out" }, 8.846);
+      tl.set("#mw-magic", { autoAlpha: 1, letterSpacing: "0px" }, 9.293);
+      tl.to("#mw-magic", { letterSpacing: "25px", autoAlpha: 0, duration: 0.654, ease: "power1.in" }, 9.293);
+      tl.set("#mw-magic", { autoAlpha: 0 }, 9.946);
+      tl.set("#s-mdw", { autoAlpha: 0 }, 9.946);
+
+      // Own centering via GSAP (avoids CSS/GSAP transform conflict)
+      gsap.set("#s7-grid", { xPercent: -50, yPercent: -50 });
+      // S8 conveyor — 4 phones, step 600 → p_i centred when track x = 745 - i*600.
+      // Start with p1 centred (3 visible: p0 left, p1 centre, p2 right).
+      gsap.set("#s8-row", { x: 145, yPercent: -50 });
+      gsap.set("#s8-p0", { scale: 0.80 });
+      gsap.set("#s8-p1", { scale: 1.12 }); // centred at start
+      gsap.set("#s8-p2", { scale: 0.78 });
+      gsap.set("#s8-p3", { scale: 0.78 });
+      // S9 camera starts zoomed into the chart — pushed down 30% so the graphic shows fully
+      gsap.set("#s9-cam",  { scale: 3.0, y: 324, transformOrigin: "50% 50%" });
+      gsap.set("#s2",      { transformOrigin: "50% 50%" });
+      gsap.set("#s2-ph-r, #s2-ph-c", { x: 960, autoAlpha: 0 });
+      gsap.set("#s2-bg-img, #s2-bg-wash", { autoAlpha: 0 });
+      // S4: top-centre push-in for bottom-crop close-up
+      gsap.set("#s4-cam",  { scale: 1.07, transformOrigin: "50% 28%" });
+
+      // ─── Visibility toggles ───
+      // S0(0-6) → S10(6-10) → S7(10-15.5) → S2(15.5-19.5) → shader[S4→S6](19.5-41) → S3(41-45) → S9(45-49)
+      tl.set("#s10", { autoAlpha: 0 }, 0);
+      tl.set("#s7",  { autoAlpha: 0 }, 0);
+      tl.set("#s0",  { autoAlpha: 0 }, 0);
+      tl.set("#s1c", { autoAlpha: 0 }, 0);
+      tl.set("#s1b", { autoAlpha: 0 }, 0);
+      tl.set("#s-mdw", { autoAlpha: 0 }, 0);
+      tl.set("#s1",  { autoAlpha: 1 }, 27.308);
+      tl.set("#s1",  { autoAlpha: 0 }, 28.808);
+      tl.set("#s1b", { autoAlpha: 1 }, 6.923);
+      tl.set("#s1b", { autoAlpha: 0 }, 8.846);
+      tl.set("#s-mdw", { autoAlpha: 0 }, 9.946);
+      tl.set("#s10", { autoAlpha: 1 }, 9.946);
+      tl.set("#s10", { autoAlpha: 0 }, 15.77);
+      // S2 comes up at 13.0 — while the S10 hero is still gliding left — so the
+      // two new screens slide in *during* the move, not after it lands.
+      tl.set("#s2",  { autoAlpha: 1 }, 13.846);
+      // Left slot stays empty while the gliding hero fills it; swap only after S10 is gone.
+      tl.set("#s2-ph-l", { autoAlpha: 0 }, 13.846);
+      tl.set("#s2-ph-l", { autoAlpha: 1 }, 15.77);
+      tl.to("#s2-bg-img, #s2-bg-wash", { autoAlpha: 1, duration: 0.154, ease: "power2.out" }, 15.77);
+      // S2 → S7 cross-dissolve: S2 eases out + lifts away while S7 fades up underneath
+      tl.set("#s7",  { autoAlpha: 1 }, 18.385);
+      tl.to("#s2",   { autoAlpha: 0, scale: 1.08, duration: 0.538, ease: "power2.inOut" }, 18.385);
+      tl.set("#s2",  { autoAlpha: 0 }, 19);
+      tl.to("#s7",   { autoAlpha: 0, duration: 0.346, ease: "power2.inOut" }, 22.808);
+      tl.to("#s4",   { opacity: 1, duration: 0.423, ease: "power2.inOut" }, 22.808);  // soft handoff into S4
+      // S0 bento scene plays after S4, then dissolves into the s4→s6 zoom
+      tl.set("#s0",  { autoAlpha: 1 }, 28.808);
+      tl.to("#s0",   { autoAlpha: 0, duration: 0.123, ease: "power2.in" }, 31.539);
+      // S6→S3 smooth fade: S3 fades in while S6 is still visible
+      tl.set("#s4",  { opacity: 0 }, 32);  // hide S4 (no shader) before S3
+      tl.to("#s3",   { autoAlpha: 1, duration: 0.24, ease: "power2.out" }, 31.34);
+      tl.set("#s3",  { autoAlpha: 0 }, 38.462);
+      tl.set("#s9",  { autoAlpha: 1 }, 38.462);
+      // S9 → S11 closing fade
+      tl.to("#s9",   { autoAlpha: 0, duration: 0.385, ease: "power2.in" }, 43.462);
+      tl.set("#s9", { autoAlpha: 0 }, 43.847);
+      tl.set("#s11", { autoAlpha: 1 }, 43.846);
+
+      // ════════════════════════════════════════
+      // S0 · Stage 1: text only → Stage 2: photos pop around it → fast camera dive
+      // ════════════════════════════════════════
+      // ── S0 setup ──
+      gsap.set("#s0-tagline",  { autoAlpha: 1 });
+      gsap.set(".s0-word",     { autoAlpha: 0, filter: "blur(16px)", color: "#9aa3b4", y: 10 });
+      gsap.set("#s0 .s0-tile", { autoAlpha: 0, scale: 1, transformOrigin: "50% 50%" });
+      gsap.set("#s0-cam", { scale: 1, transformOrigin: "50% 50%" });
+
+      // — Clean opening: no edge photos at first. Then tiles pop in one-by-one in a split second. —
+      tl.to("#s0 .s0-tile", { autoAlpha: 1, duration: 0.092, ease: "power2.out", stagger: 0.055 }, 29.231);
+
+      // — Text "Making complex simple" — same blur-in/focus-in as the first slide:
+      //   each word resolves from muted grey + blur into sharp white —
+      tl.to(".s0-word", { autoAlpha: 1, filter: "blur(0px)", color: "#ffffff", y: 0, duration: 0.423, ease: "power3.out", stagger: 0.22 }, 28.846);
+      // — Text exits while the whole frame dives into the open centre. —
+      tl.to(".s0-word", { autoAlpha: 0, y: -8, duration: 0.138, ease: "power2.in", stagger: 0.012 }, 30.77);
+      tl.to("#s0-cam", { scale: 1.9, duration: 0.54, ease: "power2.in" }, 30.77);
+      tl.to("#s0", { autoAlpha: 0, duration: 0.16, ease: "power2.in" }, 31.34);
+      tl.set("#s0", { autoAlpha: 0 }, 31.5);
+
+      // ════════════════════════════════════════
+      // S1 (6–11s) · Manifesto · text wipes in left→right, smooth & quick
+      // ════════════════════════════════════════
+      gsap.set("#s1-text", { xPercent: -50, yPercent: -50, autoAlpha: 1, clipPath: "inset(0 100% 0 0)", x: -60 });
+      gsap.set("#s1-text .s1-w", { autoAlpha: 1, y: 0 });
+
+      // smooth single-line swipe-in: reveal + glide into place
+      tl.to("#s1-text", { clipPath: "inset(0 0% 0 0)", x: 0, duration: 0.692, ease: "power3.out" }, 27.308);
+      // soft exit
+      tl.to("#s1-text", { autoAlpha: 0, duration: 0.185, ease: "power2.in" }, 28.623);
+      tl.set("#s1-text", { autoAlpha: 0 }, 28.808);
+
+
+      // ════════════════════════════════════════
+      // S11 (62.3–67.8s) · Closing manifesto · sentences reveal one after another
+      // ════════════════════════════════════════
+      // Last slide echoes the first: each line resolves from muted-grey + blurry into sharp focus
+      gsap.set("#s11-text", { autoAlpha: 1 });
+      gsap.set("#s11-text .s1a-line", { autoAlpha: 0, filter: "blur(16px)", y: 10 });
+      gsap.set("#s11-text .s1a-line:not(#s11-attr)", { color: "#9aa3b4" });
+      // three quote lines: grey → white, blurry → sharp (0.7s stagger preserved)
+      tl.to("#s11-text .s1a-line:not(#s11-attr)", { autoAlpha: 1, filter: "blur(0px)", color: "#ffffff", y: 0, duration: 0.538, ease: "power3.out", stagger: 0.7 }, 44.077);
+      // attribution focuses in too, but stays muted grey
+      tl.to("#s11-attr", { autoAlpha: 1, filter: "blur(0px)", y: 0, duration: 0.538, ease: "power3.out" }, 45.693);
+
+      // ════════════════════════════════════════
+      // S1b (11–16s) · Three words cascade — line re-centres + scales to fit
+      // ════════════════════════════════════════
+      // Keep every word in layout (no reflow jumps); glide the line's x + scale
+      // so the *visible* words stay centred. Measure once at build time.
+      (function () {
+        var line = document.querySelector("#s1b-line");
+        var w1e = document.querySelector("#w1");
+        var w2e = document.querySelector("#w2");
+        var W  = line.offsetWidth;
+        var r1 = w1e.offsetLeft + w1e.offsetWidth;          // right edge after word 1
+        var r2 = w2e.offsetLeft + w2e.offsetWidth;          // right edge after word 2
+        var S1 = 1, S2 = 1, S3 = 1;                          // no scaling — always same size
+        var x1 = (W - r1) / 2;                               // centre visible span
+        var x2 = (W - r2) / 2;
+        var x3 = 0;
+        var FLOW = "power3.inOut";                           // smooth bezier glide
+
+        gsap.set("#s1b-line", { xPercent: -50, yPercent: -50, x: x1, scale: S1 });
+        gsap.set("#s1b-line .w", { autoAlpha: 0, y: 12, color: "#9aa3ad" });
+
+        // Centre each flash image on SCREEN centre, not under its own word.
+        // The line is translated by x1/x2/x3 when each word shows, so the line-local
+        // left that lands the image at the canvas centre is (W/2 - x_i - imgW/2).
+        var imgW = 190, imgH = 240, gap = 30;
+        var centerY = line.offsetHeight / 2;
+        var glyphHalf = 29;                       // ~0.4 × 72px font — half visible glyph height
+        [["#s1b-i1", x1], ["#s1b-i2", x2], ["#s1b-i3", x3]].forEach(function (pair) {
+          var img = document.querySelector(pair[0]);
+          img.style.left = (W / 2 - pair[1] - imgW / 2) + "px";
+          img.style.top  = img.dataset.pos === "above"
+            ? (centerY - glyphHalf - gap - imgH) + "px"
+            : (centerY + glyphHalf + gap) + "px";
+        });
+
+        // word 1 — big, centred, eases up
+        tl.to("#w1", { autoAlpha: 1, y: 0, color: "#fff", duration: 0.423, ease: "expo.out" }, 6.923);
+        // word 2 — line flows + zooms to fit while the word eases in
+        tl.to("#s1b-line", { x: x2, scale: S2, duration: 0.442, ease: FLOW }, 7.443);
+        tl.to("#w2",       { autoAlpha: 1, y: 0, color: "#fff", duration: 0.423, ease: "expo.out" }, 7.5);
+        // word 3 — restored original timing so the section resolves before the next card
+        tl.to("#s1b-line", { x: x3, scale: S3, duration: 0.442, ease: FLOW }, 7.981);
+        tl.to("#w3",       { autoAlpha: 1, y: 0, color: "#fff", duration: 0.423, ease: "expo.out" }, 8.039);
+
+        // — per-word flash images — appear ~0.2s after each word, vanish as the next word lands —
+        gsap.set("#s1b-i1, #s1b-i2, #s1b-i3", { autoAlpha: 0, scale: 0.92 });
+        // word 1 → image below
+        tl.to("#s1b-i1", { autoAlpha: 1, scale: 1, duration: 0.138, ease: "power2.out" }, 7.093);
+        tl.to("#s1b-i1", { autoAlpha: 0, duration: 0.138, ease: "power2.in" }, 7.616);
+        // word 2 → image above
+        tl.to("#s1b-i2", { autoAlpha: 1, scale: 1, duration: 0.138, ease: "power2.out" }, 7.654);
+        tl.to("#s1b-i2", { autoAlpha: 0, duration: 0.138, ease: "power2.in" }, 8.17);
+        // word 3 → image below
+        tl.to("#s1b-i3", { autoAlpha: 1, scale: 1, duration: 0.138, ease: "power2.out" }, 8.193);
+        tl.to("#s1b-i3", { autoAlpha: 0, duration: 0.138, ease: "power2.in" }, 8.462);
+
+        // smooth exit — whole line fades before the next screen (same size)
+        tl.to("#s1b-line", { autoAlpha: 0, duration: 0.18, ease: "power2.inOut" }, 8.5);
+        tl.set("#s1b-line, #s1b-i1, #s1b-i2, #s1b-i3", { autoAlpha: 0 }, 8.72);
+      })();
+
+      // ════════════════════════════════════════
+      // S7 (10–15.5s) · Gallery → zoom
+      // ════════════════════════════════════════
+      tl.from("#s7-grid", { scale: 0.92, autoAlpha: 0, duration: 0.538, ease: "power2.out" }, 18.462);
+      tl.from("#s7-lbl",  { x: 20, autoAlpha: 0, duration: 0.308, ease: "power2.out" }, 19);
+      tl.to("#s7-grid",   { scale: 2.5, duration: 3.308, ease: "power2.inOut" }, 19.616);
+
+      // ════════════════════════════════════════
+      // S2 (15.5–19.5s) · 3 phones slide in from right
+      // ════════════════════════════════════════
+      // Same instant, duration, and easing as the S10 hero move so all three phones travel together.
+      tl.to("#s2-ph-r", { x: 0, autoAlpha: 1, duration: 0.769, ease: "power2.inOut" }, 14.177);
+      tl.to("#s2-ph-c", { x: 0, autoAlpha: 1, duration: 0.769, ease: "power2.inOut" }, 14.177);
+      tl.from("#s2-lbl",  { x: 20, autoAlpha: 0, duration: 0.269, ease: "power2.out" }, 14.677);
+
+      // ════════════════════════════════════════
+      // S4 (19.5–25.5s) · Bottom-crop close-up · slow push-in · [shader anchor — first]
+      // ════════════════════════════════════════
+      tl.to("#s4-cam",   { scale: 1.10, duration: 4.615, ease: "power1.out" }, 23.077);
+      tl.from("#s4-pw",  { autoAlpha: 0, duration: 0.423, ease: "power2.out" }, 23.231);
+      tl.to("#s4-pw",    { y: -28, duration: 4.615, ease: "power1.inOut" }, 23.077);
+      tl.to("#s4-pw",    { autoAlpha: 0, duration: 0.346, ease: "power2.in" }, 27.231);
+      tl.set("#s4", { autoAlpha: 0 }, 29.0);
+
+      // S6 removed
+      // S8 removed — scenes used in S9 instead
+
+      // ════════════════════════════════════════
+      // S3 (42.5–46.5s) · Push — desktop shoved left by phone section from right
+      // ════════════════════════════════════════
+      gsap.set("#s3-track", { x: 250 });
+      tl.to("#s3-track", { x: -685, duration: 1.385, ease: "power2.inOut" }, 32.693);
+      tl.to("#s3-track", { x: -1620, duration: 1.385, ease: "power2.inOut" }, 35.616);
+      tl.from("#s3-lbl",  { x: 20, autoAlpha: 0, duration: 0.269, ease: "power2.out" }, 31.693);
+
+      // ════════════════════════════════════════
+      // S9 (46.5–50.5s) · Chart close-up → zoom out revealing surrounding phones
+      // ════════════════════════════════════════
+      gsap.set(".s9-surround", { autoAlpha: 0 });
+      // Hold zoomed on the central video for the first 4s, then ease the camera out
+      tl.to("#s9-cam", { scale: 0.8, y: 0, duration: 4.923, ease: "power2.inOut" }, 38.462);
+      tl.to(".s9-surround", { autoAlpha: 1, duration: 0.538, ease: "power2.out", stagger: 0.12 }, 38.846);
+      tl.from("#s9-lbl",  { x: 20, autoAlpha: 0, duration: 0.269, ease: "power2.out" }, 40.77);
+
+      // ════════════════════════════════════════
+      // S10 (6–10s) · hero · emerges from black
+      // ════════════════════════════════════════
+      tl.from("#s10-pw",  { scale: 0.88, autoAlpha: 0, duration: 0.692, ease: "expo.out" }, 9.946);
+      tl.to("#s10-glow",  { scale: 1.3, duration: 1.692, ease: "power1.out" }, 9.985);
+      tl.to("#s10-pw",    { y: -20, duration: 1.923, ease: "power1.inOut" }, 10.331);
+      tl.to("#s10-glow",  { autoAlpha: 0, duration: 0.308, ease: "power2.in" }, 14.177);
+      tl.to("#s10-pw",    { x: -577, y: 0, duration: 0.769, ease: "power2.inOut" }, 14.177);
+
+      // Shader removed along with S6 — S4 now renders as a normal DOM scene,
+      // shown under S0 (which fades directly into S3).
+
+      window.__timelines["reel-2"] = tl;
+
+      (function bindLocalPreview() {
+        if (window.parent !== window) return;
+
+        var params = new URLSearchParams(window.location.search);
+        var posterTime = params.get("poster");
+        var isPoster = posterTime !== null;
+        var isLocal = window.location.protocol === "file:" || /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname);
+        if (!isLocal) return;
+
+        var main = document.getElementById("main");
+        if (!main) return;
+
+        document.documentElement.classList.add(isPoster ? "poster-preview-root" : "local-preview-root");
+        document.body.classList.add(isPoster ? "poster-preview" : "local-preview");
+
+        var stage = document.createElement("div");
+        stage.className = "local-stage";
+        main.parentNode.insertBefore(stage, main);
+        stage.appendChild(main);
+
+        function fitStage() {
+          var maxW = window.innerWidth - (isPoster ? 0 : 48);
+          var maxH = isPoster ? window.innerHeight : window.innerHeight * 0.58;
+          var scale = Math.min(maxW / 1920, maxH / 1080);
+          if (!Number.isFinite(scale) || scale <= 0) scale = 1;
+          stage.style.width = (1920 * scale) + "px";
+          stage.style.height = (1080 * scale) + "px";
+          main.style.transform = "scale(" + scale + ")";
+        }
+
+        fitStage();
+        window.addEventListener("resize", fitStage);
+
+        if (isPoster) {
+          tl.time(Math.max(0, Math.min(tl.duration(), parseFloat(posterTime) || 0))).pause();
+          return;
+        }
+
+        tl.pause(0);
+
+        var controls = document.createElement("div");
+        controls.className = "local-controls";
+        var playButton = document.createElement("button");
+        playButton.type = "button";
+        playButton.textContent = "Play";
+        var restartButton = document.createElement("button");
+        restartButton.type = "button";
+        restartButton.textContent = "Restart";
+        var scrubber = document.createElement("input");
+        scrubber.type = "range";
+        scrubber.min = "0";
+        scrubber.max = String(tl.duration());
+        scrubber.step = "0.01";
+        scrubber.value = "0";
+        var timeLabel = document.createElement("span");
+        timeLabel.className = "local-time";
+        controls.appendChild(playButton);
+        controls.appendChild(restartButton);
+        controls.appendChild(scrubber);
+        controls.appendChild(timeLabel);
+        stage.insertAdjacentElement("afterend", controls);
+
+        function formatTime(value) {
+          return value.toFixed(2) + "s / " + tl.duration().toFixed(2) + "s";
+        }
+
+        function updateControls() {
+          scrubber.value = String(tl.time());
+          timeLabel.textContent = formatTime(tl.time());
+          playButton.textContent = tl.paused() ? "Play" : "Pause";
+        }
+
+        playButton.addEventListener("click", function () {
+          if (tl.paused()) {
+            if (tl.time() >= tl.duration() - 0.01) tl.time(0);
+            tl.play();
+          } else {
+            tl.pause();
+          }
+          updateControls();
+        });
+
+        restartButton.addEventListener("click", function () {
+          tl.restart();
+          updateControls();
+        });
+
+        scrubber.addEventListener("input", function () {
+          tl.pause(Number(scrubber.value));
+          updateControls();
+        });
+
+        stage.addEventListener("click", function () {
+          playButton.click();
+        });
+
+        tl.eventCallback("onUpdate", updateControls);
+        tl.eventCallback("onComplete", updateControls);
+        updateControls();
+
+        var storyboard = document.createElement("div");
+        storyboard.className = "local-storyboard";
+        var slides = [
+          ["0.6", "Technology is changing"],
+          ["3.8", "Human psychology does not"],
+          ["7.5", "Simplicity, joy, clarify"],
+          ["9.3", "Make design feel like magic"],
+          ["11.8", "Hero mobile"],
+          ["16.0", "Three devices"],
+          ["20.5", "Desktop gallery"],
+          ["24.8", "Mobile detail"],
+          ["29.8", "Photo system"],
+          ["33.2", "Desktop + phone"],
+          ["39.5", "Surround phones"],
+          ["44.8", "Closing quote"]
+        ];
+        var base = window.location.href.split("#")[0].split("?")[0];
+
+        slides.forEach(function (slide) {
+          var card = document.createElement("div");
+          card.className = "local-card";
+          var iframe = document.createElement("iframe");
+          iframe.src = base + "?poster=" + encodeURIComponent(slide[0]);
+          iframe.loading = "lazy";
+          var label = document.createElement("span");
+          label.textContent = slide[0] + "s · " + slide[1];
+          card.appendChild(iframe);
+          card.appendChild(label);
+          storyboard.appendChild(card);
+        });
+
+        document.body.appendChild(storyboard);
+      })();
+
+      (function bindStudioPreviewSync() {
+        if (window.parent === window) return;
+
+        var playTime = null;
+        var lastApplied = -1;
+        var studioTarget = null;
+
+        function clampTime(value) {
+          if (!Number.isFinite(value)) return null;
+          return Math.max(0, Math.min(tl.duration(), value));
+        }
+
+        function hashTime() {
+          try {
+            var match = window.parent.location.hash.match(/[?&]t=([0-9.]+)/);
+            return match ? clampTime(parseFloat(match[1])) : null;
+          } catch (error) {
+            return null;
+          }
+        }
+
+        function timecodeTime() {
+          try {
+            var text = window.parent.document.body.innerText || "";
+            var match = text.match(/\b(\d+):(\d{2})\/0:48\b/);
+            return match ? clampTime(Number(match[1]) * 60 + Number(match[2])) : null;
+          } catch (error) {
+            return null;
+          }
+        }
+
+        function studioIsPlaying() {
+          try {
+            return !!window.parent.document.querySelector('button[aria-label="Pause"]');
+          } catch (error) {
+            return false;
+          }
+        }
+
+        function applyTime(time) {
+          time = clampTime(time);
+          if (time === null) return;
+          studioTarget = time;
+          syncClipVisibility(time);
+          if (Math.abs(time - lastApplied) < 0.01 && Math.abs(tl.time() - time) < 0.01) return;
+          lastApplied = time;
+          tl.pause();
+          tl.totalTime(time, false);
+        }
+
+        function syncClipVisibility(time) {
+          document.querySelectorAll(".scene.clip[data-start][data-duration]").forEach(function (clip) {
+            var start = Number(clip.getAttribute("data-start"));
+            var duration = Number(clip.getAttribute("data-duration"));
+            if (!Number.isFinite(start) || !Number.isFinite(duration)) return;
+            var active = time >= start && time < start + duration;
+            clip.style.visibility = active ? "visible" : "hidden";
+          });
+        }
+
+        function tick() {
+          var urlTime = hashTime();
+          var labelTime = timecodeTime();
+
+          if (studioIsPlaying()) {
+            if (playTime === null) {
+              playTime = labelTime !== null ? labelTime : (urlTime !== null ? urlTime : tl.time());
+            } else {
+              playTime += 1 / 30;
+            }
+            applyTime(playTime);
+          } else {
+            playTime = null;
+            applyTime(urlTime !== null ? urlTime : labelTime);
+          }
+
+        }
+
+        var nativeTotalTime = tl.totalTime.bind(tl);
+        tl.totalTime = function (value, suppressEvents) {
+          if (arguments.length && studioTarget !== null) {
+            var requested = clampTime(value);
+            if (requested !== null && Math.abs(requested - studioTarget) > 0.05) {
+              return nativeTotalTime(studioTarget, suppressEvents);
+            }
+          }
+          return arguments.length ? nativeTotalTime(value, suppressEvents) : nativeTotalTime();
+        };
+
+        tick();
+        setInterval(function () {
+          tick();
+        }, 33);
+      })();
     </script>
   </body>
 </html>
