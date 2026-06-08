@@ -277,6 +277,20 @@ struct OnboardingView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 4)
                 }
+
+                Button {
+                    constellationStartedAt = Date().addingTimeInterval(1.2)
+                    withAnimation(.easeOut(duration: 0.85)) {
+                        step = .constellation
+                    }
+                } label: {
+                    Text("Explore")
+                        .font(.app(size: 15, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.55))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 28)
             .opacity(appeared ? 1 : 0)
