@@ -239,23 +239,31 @@ const SOCIAL_PATHS: Record<string, React.ReactNode> = {
 };
 
 
-function RecordingCanvas({ onStop }: { onStop: () => void }) {
+export function RecordingCanvas({ onStop, stream: externalStream, interactive = true }: { onStop: () => void; stream?: MediaStream | null; interactive?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const levelRef  = useRef(0);
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
     let t = 0, spread = 88, raf: number;
-    let analyser: AnalyserNode | null = null, audioCtx: AudioContext | null = null, stream: MediaStream | null = null;
+    let analyser: AnalyserNode | null = null, audioCtx: AudioContext | null = null, ownStream: MediaStream | null = null;
     let cancelled = false;
     const arr = new Uint8Array(128);
     const resize = () => { const dpr = devicePixelRatio||1; canvas.width=innerWidth*dpr; canvas.height=innerHeight*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); };
     resize(); addEventListener('resize', resize);
-    navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(s=>{
-      if (cancelled) { s.getTracks().forEach(tr=>tr.stop()); return; }
-      stream=s; audioCtx=new AudioContext(); audioCtx.resume().catch(()=>{}); analyser=audioCtx.createAnalyser(); analyser.fftSize=256; analyser.smoothingTimeConstant=0.88;
-      audioCtx.createMediaStreamSource(stream).connect(analyser);
-    }).catch(()=>{});
+    const setupAudio = (s: MediaStream) => {
+      if (cancelled) return;
+      audioCtx=new AudioContext(); audioCtx.resume().catch(()=>{}); analyser=audioCtx.createAnalyser(); analyser.fftSize=256; analyser.smoothingTimeConstant=0.88;
+      audioCtx.createMediaStreamSource(s).connect(analyser);
+    };
+    if (externalStream) {
+      setupAudio(externalStream);
+    } else {
+      navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(s=>{
+        if (cancelled) { s.getTracks().forEach(tr=>tr.stop()); return; }
+        ownStream=s; setupAudio(s);
+      }).catch(()=>{});
+    }
     const birthStart = Date.now();
     const BIRTH_MS = 950;
     const draw = () => {
@@ -278,9 +286,9 @@ function RecordingCanvas({ onStop }: { onStop: () => void }) {
       t+=0.010; raf=requestAnimationFrame(draw);
     };
     draw();
-    return ()=>{ cancelled = true; cancelAnimationFrame(raf); removeEventListener('resize',resize); stream?.getTracks().forEach(tr=>tr.stop()); audioCtx?.close().catch(()=>{}); };
-  }, []);
-  return <canvas ref={canvasRef} onClick={onStop} style={{position:'absolute',inset:0,width:'100%',height:'100%',cursor:'pointer',zIndex:20,touchAction:'none'}} />;
+    return ()=>{ cancelled = true; cancelAnimationFrame(raf); removeEventListener('resize',resize); ownStream?.getTracks().forEach(tr=>tr.stop()); audioCtx?.close().catch(()=>{}); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return <canvas ref={canvasRef} onClick={interactive ? onStop : undefined} style={{position:'absolute',inset:0,width:'100%',height:'100%',cursor:interactive?'pointer':'default',zIndex:20,touchAction:'none',pointerEvents:interactive?'auto':'none'}} />;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────

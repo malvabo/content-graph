@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { transcribeWithGroq } from '../../lib/groqTranscribe';
 import { aiExecute } from '../../utils/aiExecutor';
 import TypewriterLogo from '../TypewriterLogo';
+import { RecordingCanvas } from './MobileOnboarding';
 
 type AssetKind = 'linkedin-post' | 'twitter-thread' | 'twitter-single';
 
@@ -314,141 +315,56 @@ function RecordingOverlay({ onStop, onCancel, startTime, liveText, stream }: {
   onStop: () => void; onCancel: () => void; startTime: number; liveText: string; stream: MediaStream | null;
 }) {
   const [elapsed, setElapsed] = useState(0);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const audioLevelRef = useRef(0);
-  const liveTextRef = useRef(liveText);
-  useEffect(() => { liveTextRef.current = liveText; }, [liveText]);
-
   useEffect(() => {
     const iv = setInterval(() => setElapsed(Date.now() - startTime), 200);
     return () => clearInterval(iv);
   }, [startTime]);
-
-  // AudioContext → live audio level
-  useEffect(() => {
-    if (!stream) return;
-    let actx: AudioContext | null = null;
-    let raf: number;
-    try {
-      actx = new AudioContext();
-      actx.resume().catch(() => {});
-      const analyser = actx.createAnalyser();
-      analyser.fftSize = 256;
-      actx.createMediaStreamSource(stream).connect(analyser);
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
-        analyser.getByteFrequencyData(data);
-        audioLevelRef.current = data.reduce((a, b) => a + b, 0) / (data.length * 255);
-        raf = requestAnimationFrame(tick);
-      };
-      tick();
-    } catch { /* AudioContext blocked */ }
-    return () => { cancelAnimationFrame(raf); actx?.close().catch(() => {}); audioLevelRef.current = 0; };
-  }, [stream]);
-
-  // Amber particle circle canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d')!;
-    let raf: number;
-    const N = 70;
-    let cachedW = 0, cachedH = 0;
-    const ro = new ResizeObserver(() => {
-      const dpr = window.devicePixelRatio || 1;
-      const r = canvas.getBoundingClientRect();
-      cachedW = r.width; cachedH = r.height;
-      canvas.width = r.width * dpr;
-      canvas.height = r.height * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    });
-    ro.observe(canvas);
-    const draw = () => {
-      const w = cachedW, h = cachedH;
-      if (!w || !h) { raf = requestAnimationFrame(draw); return; }
-      const t = performance.now() / 1000;
-      const level = audioLevelRef.current;
-      ctx.clearRect(0, 0, w, h);
-      const amplified = Math.min(1.0, 0.12 + Math.max(0, level - 0.03) * 7.0);
-      ctx.fillStyle = '#f6b93b';
-      for (let i = 0; i < N; i++) {
-        const seed1 = i * 13.7, seed2 = i * 29.1;
-        const homeX = pseudoRandom(i * 2) * w;
-        const homeY = pseudoRandom(i * 2 + 1) * h;
-        const phase1 = t * 3.5 + i * 0.4;
-        const scatter = 3.5 + amplified * 10.0;
-        const jX = Math.sin(t * 0.7 + seed1) * scatter;
-        const jY = Math.sin(t * 0.9 + seed2) * scatter + Math.cos(t * 1.3 + seed1 * 0.5) * scatter * 0.4;
-        const px = homeX + jX;
-        const py = homeY + jY;
-        const pr = pseudoRandom(i * 3);
-        const waveMag = (Math.sin(phase1) + 1.0) / 2.0;
-        const radius = 1.5 + pr * 2.5 + waveMag * 2.5 * amplified;
-        const pulse = 0.65 + 0.35 * Math.sin(t * 1.8 + i * 0.35);
-        const alpha = pulse * (0.35 + amplified * 0.60);
-        ctx.globalAlpha = alpha;
-        ctx.beginPath();
-        ctx.arc(px, py, radius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      raf = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, []);
 
   const mm = String(Math.floor(elapsed / 60000)).padStart(2, '0');
   const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
   const tail = liveText ? liveText.slice(-120) : '';
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#080910', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#080910' }}>
       <style>{`@keyframes rec-cursor { 0%,49%{opacity:1} 50%,100%{opacity:0} }`}</style>
 
-      {/* Timer */}
-      <div style={{ paddingTop: 'max(60px, calc(env(safe-area-inset-top, 0px) + 20px))', textAlign: 'center' }}>
-        <div style={{ fontSize: 76, fontWeight: 200, fontFamily: 'var(--font-sans)', color: '#ffffff', letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-          {mm}:{ss}
-        </div>
-      </div>
+      {/* Same canvas as onboarding recording screen */}
+      <RecordingCanvas stream={stream} onStop={onStop} interactive={false} />
 
-      {/* Big amber particle circle */}
-      <div style={{
-        width: 280, height: 280, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
-        background: 'rgba(14,12,22,0.95)',
-        border: '1px solid rgba(246,185,59,0.18)',
-        boxShadow: '0 0 80px rgba(246,185,59,0.14), 0 0 160px rgba(246,185,59,0.07)',
-      }}>
-        <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} aria-hidden />
-      </div>
-
-      {/* Transcript + stop controls */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, paddingBottom: 'calc(44px + env(safe-area-inset-bottom, 0px))' }}>
-        <div aria-live="polite" style={{ fontSize: 'var(--text-body)', fontFamily: 'var(--font-sans)', color: 'rgba(246,185,59,0.82)', textAlign: 'center', lineHeight: 1.55, minHeight: 22, maxWidth: 300, padding: '0 32px' }}>
-          {tail
-            ? <>{tail}<span aria-hidden style={{ animation: 'rec-cursor 1.2s step-end infinite', marginLeft: 1 }}>|</span></>
-            : <span style={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.30)' }}>Listening…</span>
-          }
+      {/* UI overlay */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 21, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none' }}>
+        <div style={{ paddingTop: 'max(60px, calc(env(safe-area-inset-top, 0px) + 20px))', textAlign: 'center' }}>
+          <div style={{ fontSize: 76, fontWeight: 200, fontFamily: 'var(--font-sans)', color: '#ffffff', letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+            {mm}:{ss}
+          </div>
         </div>
-        <button
-          onClick={onStop}
-          aria-label="Stop and save recording"
-          style={{
-            width: 64, height: 64, borderRadius: '50%', border: 'none',
-            background: 'rgba(246,185,59,0.88)', color: '#000', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 0 36px rgba(246,185,59,0.30), 0 4px 16px rgba(0,0,0,0.35)',
-          }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-        </button>
-        <div style={{ fontSize: 'var(--text-tag)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.02em' }}>
-          Tap to stop
+        <div style={{ flex: 1 }} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, paddingBottom: 'calc(44px + env(safe-area-inset-bottom, 0px))', pointerEvents: 'auto' }}>
+          <div aria-live="polite" style={{ fontSize: 'var(--text-body)', fontFamily: 'var(--font-sans)', color: 'rgba(246,185,59,0.82)', textAlign: 'center', lineHeight: 1.55, minHeight: 22, maxWidth: 300, padding: '0 32px' }}>
+            {tail
+              ? <>{tail}<span aria-hidden style={{ animation: 'rec-cursor 1.2s step-end infinite', marginLeft: 1 }}>|</span></>
+              : <span style={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.30)' }}>Listening…</span>
+            }
+          </div>
+          <button
+            onClick={onStop}
+            aria-label="Stop and save recording"
+            style={{
+              width: 64, height: 64, borderRadius: '50%', border: 'none',
+              background: 'rgba(246,185,59,0.88)', color: '#000', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 36px rgba(246,185,59,0.30), 0 4px 16px rgba(0,0,0,0.35)',
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+          </button>
+          <div style={{ fontSize: 'var(--text-tag)', fontFamily: 'var(--font-sans)', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.02em' }}>
+            Tap to stop
+          </div>
+          <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', cursor: 'pointer', padding: '10px 32px', minHeight: 44 }}>
+            Discard
+          </button>
         </div>
-        <button onClick={onCancel} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-body)', cursor: 'pointer', padding: '10px 32px', minHeight: 44 }}>
-          Discard
-        </button>
       </div>
     </div>,
     document.body,
