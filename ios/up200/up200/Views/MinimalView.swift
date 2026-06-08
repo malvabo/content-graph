@@ -1334,9 +1334,11 @@ struct MinimalNoteDetailPage: View {
                     if !showAIPreview { showAIPreview = true }
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 case .failure(let err):
-                    aiFailReason = AITransformService.isKeyConfigured
-                        ? err.userMessage
-                        : "Add your Anthropic API key in Profile first."
+                    if case .http(401, _) = err, !AITransformService.isKeyConfigured {
+                        aiFailReason = "Add your Anthropic API key in Profile first."
+                    } else {
+                        aiFailReason = err.userMessage
+                    }
                     aiFailed = true
                 }
             }
