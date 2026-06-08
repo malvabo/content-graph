@@ -218,6 +218,21 @@ struct OnboardingView: View {
             case .constellation: constellationOverlay
             case .capture:       captureOverlay
             }
+
+            if let note = resultNote {
+                MinimalNoteDetailPage(initialNote: note, initialTabIndex: 1,
+                                      onDismiss: {
+                    withAnimation(.easeOut(duration: 0.25)) { resultNote = nil }
+                    generatingTask?.cancel()
+                    generatingTask = nil
+                    onGetStarted()
+                })
+                .environmentObject(ChromeController())
+                .environmentObject(RecordingController())
+                .preferredColorScheme(.dark)
+                .transition(.opacity)
+                .zIndex(10)
+            }
         }
         .onAppear { appeared = true }
     }
@@ -591,14 +606,6 @@ struct OnboardingView: View {
         // produced. When they dismiss it, fall through to onGetStarted so
         // onboarding exits: they've now seen both the create flow and the
         // notes-and-generations surface they'll live in.
-        .sheet(item: $resultNote, onDismiss: {
-            generatingTask?.cancel()
-            generatingTask = nil
-            onGetStarted()
-        }) { note in
-            MinimalNoteDetailPage(initialNote: note, initialTabIndex: 1)
-                .preferredColorScheme(.dark)
-        }
     }
 
     @ViewBuilder private var captureHeadline: some View {
@@ -1044,7 +1051,7 @@ struct OnboardingView: View {
                 date: Date()
             )
             MinimalGenStore.insertBatch([generation])
-            resultNote = displayNote
+            withAnimation(.easeIn(duration: 0.35)) { resultNote = displayNote }
         case .failure:
             // Note is already saved — quietly exit into the app rather than
             // stranding the user on the generating pill. A failure banner

@@ -254,6 +254,7 @@ struct MinimalHomePage: View {
 
 struct MinimalNoteDetailPage: View {
     let initialNote: Note
+    var onDismiss: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var chrome: ChromeController
@@ -519,6 +520,7 @@ struct MinimalNoteDetailPage: View {
         .swipeBackGesture {
             dictation.stop()
             persistCurrent()
+            onDismiss?()
             dismiss()
         }
         .onAppear {
