@@ -1434,13 +1434,13 @@ private struct GeneratingCloudScene: View {
     // edge in each satellite's direction.
     private let satellites: [Satellite] = [
         Satellite(delay: 0.55, angle: -2.30,   // upper-left
-                  edgeFraction: 0.68, sizeFactor: 0.70, starCount: 36),
+                  edgeFraction: 0.68, sizeFactor: 0.70, starCount: 22),
         Satellite(delay: 1.75, angle: -0.85,   // upper-right
-                  edgeFraction: 0.72, sizeFactor: 0.60, starCount: 28),
+                  edgeFraction: 0.72, sizeFactor: 0.60, starCount: 18),
         Satellite(delay: 2.95, angle:  0.55,   // right-lower
-                  edgeFraction: 0.68, sizeFactor: 0.65, starCount: 32),
+                  edgeFraction: 0.68, sizeFactor: 0.65, starCount: 20),
         Satellite(delay: 4.15, angle:  2.30,   // left-lower
-                  edgeFraction: 0.65, sizeFactor: 0.55, starCount: 24),
+                  edgeFraction: 0.65, sizeFactor: 0.55, starCount: 16),
     ]
 
     var body: some View {
@@ -1529,7 +1529,7 @@ private struct GeneratingCloudScene: View {
                                    t: elapsed + Double(i) * 1.7,
                                    count: sat.starCount,
                                    sizeScale: 0.85,
-                                   rotationSpeed: 0.45)
+                                   rotationSpeed: 0.15)
                     }
 
                     // Settled spark glow — breathing amber bead once the
@@ -1575,7 +1575,7 @@ private struct GeneratingCloudScene: View {
             // Fake perspective: z is depth, range roughly [-r, +r].
             // Map to a 0.6-1.4 scale so back-of-sphere stars shrink/dim.
             let depth = (z + r) / (2 * r)
-            let perspective = 0.6 + depth * 0.8
+            let perspective = 0.75 + depth * 0.50
 
             let sx = cx + x * (0.85 + 0.15 * perspective)
             let sy = cy + y * (0.85 + 0.15 * perspective)
