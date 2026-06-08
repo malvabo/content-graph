@@ -1414,7 +1414,7 @@ private struct GeneratingCloudScene: View {
     // this scene unchanged.
     var frozenAt: Date? = nil
 
-    private let centralStarCount = 120
+    private let centralStarCount = 72
     private let amber = Color(red: 1.00, green: 0.68, blue: 0.20)
 
     private struct Satellite {
@@ -1461,7 +1461,7 @@ private struct GeneratingCloudScene: View {
                            t: elapsed,
                            count: centralStarCount,
                            sizeScale: 1.0,
-                           rotationSpeed: 0.32)
+                           rotationSpeed: 0.18)
 
                 for (i, sat) in satellites.enumerated() {
                     let progress = max(0.0, min(1.0, (elapsed - sat.delay) / 1.4))
@@ -1581,8 +1581,7 @@ private struct GeneratingCloudScene: View {
             let sy = cy + y * (0.85 + 0.15 * perspective)
 
             let dotSize = (1.0 + pseudoRandom(i * 5) * 1.5) * perspective * sizeScale
-            let pulse = 0.78 + 0.22 * sin(t * 1.6 + Double(i) * 0.31)
-            let alpha = (0.30 + pseudoRandom(i * 7) * 0.55) * perspective * pulse
+            let alpha = (0.30 + pseudoRandom(i * 7) * 0.55) * perspective
 
             ctx.fill(
                 Path(ellipseIn: CGRect(x: sx - dotSize, y: sy - dotSize,
