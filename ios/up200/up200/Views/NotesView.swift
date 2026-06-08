@@ -637,6 +637,7 @@ struct NoteWaveform: View {
 }
 
 struct NoteVoiceSheet: View {
+    var onSwitchToWriting: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var recording: RecordingController
 
@@ -682,8 +683,9 @@ struct NoteVoiceSheet: View {
 
             Spacer(minLength: 24)
 
-            NoteWaveform()
-                .padding(.horizontal, 28)
+            let waveSize = UIScreen.main.bounds.width * 2 / 3
+            RecordingWaveformView(audioLevel: { recording.audioLevel })
+                .frame(width: waveSize, height: waveSize)
 
             Spacer(minLength: 20)
 
@@ -702,6 +704,25 @@ struct NoteVoiceSheet: View {
                 Spacer(minLength: 16)
             } else {
                 Spacer(minLength: 8)
+            }
+
+            if let switchToWriting = onSwitchToWriting {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    recording.cancel()
+                    dismiss()
+                    switchToWriting()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "keyboard")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("Switch to writing")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundColor(AppInk.solid(0.50))
+                }
+                .buttonStyle(.plain)
+                .padding(.bottom, 4)
             }
 
             HStack(spacing: 12) {
