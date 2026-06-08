@@ -1392,7 +1392,9 @@ struct ChatView: View {
         isLoading = false
         chatFailed = false
         rewriteFailed = false
-        showMentionPicker = false
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+            showMentionPicker = false
+        }
         showSavedChatsPicker = false
     }
 
@@ -2426,6 +2428,7 @@ private struct MentionTextView: UIViewRepresentable {
                 length: min(sel.length, max(0, len - sel.location))
             )
             coordinator.suppressEcho = false
+            coordinator.prevText = text
             tv.invalidateHeight()
         }
         if tv.placeholder != placeholder {

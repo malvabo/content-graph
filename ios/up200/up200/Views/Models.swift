@@ -640,7 +640,9 @@ enum AnthropicClient {
     }
 
     static var isConfigured: Bool {
-        SessionTokenService.load() != nil || !(KeychainService.load() ?? "").isEmpty
+        SessionTokenService.load() != nil
+            || !(KeychainService.load() ?? "").isEmpty
+            || (SessionStore.shared.load()?.accessToken.isEmpty == false)
     }
 }
 
