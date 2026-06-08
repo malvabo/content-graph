@@ -522,7 +522,7 @@ function DictationBar({ onConfirm, onCancel, transcriptSink }: { onConfirm: (tra
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
     let raf: number;
-    const N = 25;
+    const N = 35;
     let cachedW = 0, cachedH = 0;
     const ro = new ResizeObserver(() => {
       const dpr = window.devicePixelRatio || 1;
@@ -538,32 +538,27 @@ function DictationBar({ onConfirm, onCancel, transcriptSink }: { onConfirm: (tra
       if (!w || !h) { raf = requestAnimationFrame(draw); return; }
       const t = performance.now() / 1000;
       const level = audioLevelRef.current;
-      const cy = h / 2;
       ctx.clearRect(0, 0, w, h);
       const amplified = Math.min(1.0, 0.12 + Math.max(0, level - 0.03) * 7.0);
-      const amplitude = amplified * cy * 0.75;
       ctx.fillStyle = '#f6b93b';
       for (let i = 0; i < N; i++) {
-        const progress = i / (N - 1);
-        const baseX = progress * w;
-        const phase1 = t * 3.5 + progress * Math.PI * 3.0;
-        const phase2 = t * 2.1 + progress * Math.PI * 6.0;
-        const targetY = cy + Math.sin(phase1) * amplitude * 0.65 + Math.sin(phase2) * amplitude * 0.35;
         const seed1 = i * 13.7, seed2 = i * 29.1;
-        const scatterY = 1.5 + amplified * 4.0;
-        const jX = Math.sin(t * 0.7 + seed1) * 1.5;
-        const jY = Math.sin(t * 0.9 + seed2) * scatterY + Math.cos(t * 1.3 + seed1 * 0.5) * scatterY * 0.4;
-        const px = baseX + jX, py = targetY + jY;
+        const homeX = pseudoRandom(i * 2) * w;
+        const homeY = pseudoRandom(i * 2 + 1) * h;
+        const phase1 = t * 3.5 + i * 0.4;
+        const scatter = 2.5 + amplified * 5.0;
+        const jX = Math.sin(t * 0.7 + seed1) * scatter;
+        const jY = Math.sin(t * 0.9 + seed2) * scatter + Math.cos(t * 1.3 + seed1 * 0.5) * scatter * 0.4;
+        const px = homeX + jX;
+        const py = homeY + jY;
         const pr = pseudoRandom(i * 3);
         const waveMag = (Math.sin(phase1) + 1.0) / 2.0;
-        const radius = 0.8 + pr * 1.2 + waveMag * 1.5 * amplified;
-        const normJitter = Math.abs(jY) / Math.max(scatterY * 1.5, 1.0);
-        const proxAlpha = Math.max(0.0, 1.0 - normJitter);
+        const radius = 1.0 + pr * 1.5 + waveMag * 1.5 * amplified;
         const pulse = 0.65 + 0.35 * Math.sin(t * 1.8 + i * 0.35);
-        const alpha = proxAlpha * pulse * (0.40 + amplified * 0.55);
+        const alpha = pulse * (0.40 + amplified * 0.55);
         ctx.globalAlpha = alpha;
         ctx.beginPath();
-        ctx.ellipse(px, py, radius, radius, 0, 0, Math.PI * 2);
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -590,9 +585,8 @@ function DictationBar({ onConfirm, onCancel, transcriptSink }: { onConfirm: (tra
         </svg>
       </button>
       <div style={{
-        flex: 1, height: 44, borderRadius: 999, overflow: 'hidden',
+        width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
         background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
-        padding: '0 16px', boxSizing: 'border-box',
       }}>
         <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} aria-hidden />
       </div>
