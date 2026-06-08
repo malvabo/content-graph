@@ -1414,14 +1414,14 @@ final class ParticleOrbitStore: ObservableObject {
 struct OnboardingRecordingWaveform: View {
     let recorder: VoiceRecorder
     @StateObject private var store = ParticleOrbitStore(count: 200)
-    private let amber = Color(red: 1.00, green: 0.63, blue: 0.12)
+    private let amber = Color(red: 0.92, green: 0.54, blue: 0.08)
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let level = recorder.audioLevel
             // RMS floor ~0.008 (mic hiss); normal speech 0.02–0.06.
-            // Multiply by 18 so full amber is reached at ~0.063.
+            // Multiply by 18 so full drive is reached at ~0.063.
             let amplified = min(1.0, max(0.0, Double(level) - 0.008) * 18.0)
             Canvas { ctx, size in
                 let cx = size.width / 2
@@ -1432,19 +1432,22 @@ struct OnboardingRecordingWaveform: View {
                     let r = p.normR * maxR * radialBreath
                     let px = cx + cos(p.angle) * r
                     let py = cy + sin(p.angle) * r
-                    let pulse = 0.75 + 0.25 * sin(t * 0.35 + p.fi * 0.4)
-                    let isLarge = p.pr3 > 0.90
-                    let dotR = ((isLarge ? 2.6 : 1.1) + p.pr2 * 2.0) * pulse + amplified * 1.8
-                    let alphaPulse = 0.6 + 0.4 * sin(t * 0.28 + p.fi * 0.3)
-                    let alpha = (0.20 + p.pr3 * 0.52) * alphaPulse * (0.42 + amplified * 0.58)
-                    let glowWave = max(0.0, sin(t * 1.15 + p.fi * 0.83 + p.pr2 * Double.pi * 2.0))
-                    let glow = pow(glowWave, 7.0) * (0.45 + p.pr3 * 0.55)
-                    if glow > 0.015 {
-                        let glowR = dotR * (4.5 + p.pr2 * 3.0 + amplified * 1.5)
+                    let pulse = 0.88 + 0.12 * sin(t * 0.35 + p.fi * 0.4)
+                    // Uniform small dots — no oversized outliers.
+                    let dotR = (1.0 + p.pr2 * 1.4) * pulse + amplified * 0.8
+                    // Bright base alpha so dots are clearly visible at rest.
+                    let alphaPulse = 0.80 + 0.20 * sin(t * 0.28 + p.fi * 0.3)
+                    let alpha = (0.50 + p.pr3 * 0.35) * alphaPulse * (0.65 + amplified * 0.35)
+                    // Random per-particle glow fires more frequently and
+                    // brighter when the user is speaking.
+                    let glowWave = max(0.0, sin(t * 1.4 + p.fi * 1.1 + p.pr2 * Double.pi * 2.0))
+                    let glow = pow(glowWave, 5.0) * (0.5 + amplified * 0.5)
+                    if glow > 0.02 {
+                        let glowR = dotR * (3.0 + p.pr2 * 2.0)
                         ctx.fill(
                             Path(ellipseIn: CGRect(x: px - glowR, y: py - glowR,
                                                    width: glowR * 2, height: glowR * 2)),
-                            with: .color(amber.opacity(0.12 * glow))
+                            with: .color(amber.opacity(0.18 * glow))
                         )
                     }
                     ctx.fill(
