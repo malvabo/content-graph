@@ -124,78 +124,34 @@ struct OnboardingView: View {
                     .transition(.opacity)
             }
 
-            if step == .constellation {
+            if step == .constellation || (step == .capture && captureCloudVisible) {
+                let isCaptureBackground = step == .capture
                 GeneratingCloudScene(generationStartedAt: constellationStartedAt,
-                                     frozenAt: diveStartedAt)
+                                     frozenAt: diveStartedAt,
+                                     showsContentGraph: !isCaptureBackground)
                     .ignoresSafeArea()
-                    .allowsHitTesting(false)
+                    .scaleEffect(isCaptureBackground ? 3.5 : 1)
+                    .opacity(isCaptureBackground ? 0.65 : 1)
+                    .contentShape(Rectangle())
+                    .gesture(DragGesture(minimumDistance: 0).onChanged { _ in
+                        guard capturePhase == .prompt else { return }
+                        startCaptureRecording()
+                    })
+                    .allowsHitTesting(step == .capture && capturePhase == .prompt)
+                    .animation(.easeIn(duration: 0.85), value: step)
+                    .animation(.easeInOut(duration: 0.45), value: capturePhase)
                     // Insertion (.intro → .constellation): fade only. Scaling
                     // the dense central dot field down during phone screen
                     // recording causes subpixel aliasing that reads as random
                     // trembling while the cloud settles into place.
                     //
                     // Removal (.constellation → .capture): the cluster
-                    // scales past the camera and fades — the user is
-                    // *flying into* the cloud rather than cutting to a new
-                    // screen. 3.5× is enough to read as "past the camera"
-                    // without the corners shearing.
+                    // is no longer removed. It enlarges and dims in place,
+                    // becoming the capture-step background instead of sitting
+                    // over a separate starfield layer.
                     .transition(
                         .asymmetric(
                             insertion: .opacity,
-                            removal: .scale(scale: 3.5).combined(with: .opacity)
-                        )
-                    )
-            }
-
-            // Step 4: the starfield is the visual continuity between the
-            // .prompt → .choose beats. .prompt owns the long-press to start
-            // recording; .choose keeps the field as a passive backdrop so
-            // the four blob options sit in the same cloud the user just
-            // pressed-and-held, rather than a flat black screen. Hit
-            // testing is disabled outside .prompt so the blob buttons
-            // (rendered above in `captureOverlay`) still receive taps.
-            //
-            // Held alive throughout the entire .capture step (rather than
-            // being inserted/removed on each active sub-phase) so the
-            // SwiftUI transition fires exactly once — on the
-            // .constellation → .capture crossing — and the entry delay
-            // below applies only to that one entry. In-capture phase
-            // crossings (.recording → .choose etc.) are driven by the
-            // .opacity modifier on `starfieldVisible` with a prompt 0.45s
-            // curve, so the field reappears under the blob chooser
-            // immediately rather than inheriting the entry delay.
-            if step == .capture {
-                let starfieldVisible = capturePhase == .prompt || capturePhase == .choose
-                StarfieldBlurb(active: starfieldVisible)
-                    .ignoresSafeArea()
-                    // Held at a permanent dim so the captureOverlay headline
-                    // ("Let's capture your first idea") and the press-and-hold
-                    // caption read cleanly on top — the blurb is the destination
-                    // background, not the focal element.
-                    .opacity(starfieldVisible ? 0.65 : 0)
-                    .contentShape(Rectangle())
-                    // Start on touch-down. The previous long-press recognizer
-                    // waited before firing, so screen recordings showed the
-                    // prompt text lingering after the user pressed.
-                    .gesture(DragGesture(minimumDistance: 0).onChanged { _ in
-                        guard capturePhase == .prompt else { return }
-                        startCaptureRecording()
-                    })
-                    // Hit testing only matters during .prompt — the blob
-                    // buttons in .choose are rendered above in
-                    // `captureOverlay` and would still get tap priority
-                    // either way, but turning off the long-press during
-                    // .choose keeps the gesture from competing for taps
-                    // near the bottom blobs.
-                    .allowsHitTesting(capturePhase == .prompt)
-                    .animation(.easeInOut(duration: 0.45), value: capturePhase)
-                    // Short delay keeps the capture prompt responsive after
-                    // Continue while avoiding a hard cut over the outgoing
-                    // constellation cloud. Removal stays as a plain fade so
-                    // leaving .capture (no path today, but defensive) is calm.
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity.animation(.easeOut(duration: 0.35).delay(0.25)),
                             removal: .opacity
                         )
                     )
@@ -223,6 +179,10 @@ struct OnboardingView: View {
             }
         }
         .onAppear { appeared = true }
+    }
+
+    private var captureCloudVisible: Bool {
+        capturePhase == .prompt || capturePhase == .choose
     }
 
     // MARK: Step 1 — wide constellation
@@ -1395,6 +1355,10 @@ private struct GeneratingCloudScene: View {
     // 3.5× scale. Default nil keeps the long-running .generating use of
     // this scene unchanged.
     var frozenAt: Date? = nil
+    // The constellation beat shows satellites/connectors forming out of the
+    // center. The capture prompt reuses only the central cloud enlarged as
+    // the background, so the user doesn't see a second particle layer fade in.
+    var showsContentGraph: Bool = true
 
     private let centralStarCount = 96
     private let amber = Color(red: 1.00, green: 0.68, blue: 0.20)
@@ -1451,6 +1415,8 @@ private struct GeneratingCloudScene: View {
                     let cx = size.width / 2
                     let cy = size.height / 2
                     let coreRadius = min(size.width, size.height) * 0.20
+
+                    guard showsContentGraph else { return }
 
                     for (i, sat) in satellites.enumerated() {
                         let progress = max(0.0, min(1.0, (elapsed - sat.delay) / satelliteTravelDuration))
