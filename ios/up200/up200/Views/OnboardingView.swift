@@ -129,14 +129,10 @@ struct OnboardingView: View {
                                      frozenAt: diveStartedAt)
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
-                    // Insertion (.intro → .constellation): the cloud appears
-                    // at 1.7× and contracts to its final size while fading
-                    // in, so the eye reads the crossing as the camera
-                    // *pulling back* from the wide constellation to reveal
-                    // the cloud as a discrete object — not a hard cut. Plain
-                    // opacity here was the source of the "abrupt change"
-                    // feedback; the spatial motion gives the transition
-                    // somewhere to land.
+                    // Insertion (.intro → .constellation): fade only. Scaling
+                    // the dense central dot field down during phone screen
+                    // recording causes subpixel aliasing that reads as random
+                    // trembling while the cloud settles into place.
                     //
                     // Removal (.constellation → .capture): the cluster
                     // scales past the camera and fades — the user is
@@ -145,7 +141,7 @@ struct OnboardingView: View {
                     // without the corners shearing.
                     .transition(
                         .asymmetric(
-                            insertion: .scale(scale: 1.7).combined(with: .opacity),
+                            insertion: .opacity,
                             removal: .scale(scale: 3.5).combined(with: .opacity)
                         )
                     )
