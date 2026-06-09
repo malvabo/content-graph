@@ -174,15 +174,13 @@ struct OnboardingView: View {
                     // background, not the focal element.
                     .opacity(starfieldVisible ? 0.65 : 0)
                     .contentShape(Rectangle())
-                    // maximumDistance: 80 (was 30) — phones held normally
-                    // wobble enough that a 30pt drift silently cancelled
-                    // the press with no feedback. 80pt still excludes
-                    // intentional swipes but tolerates ordinary hand
-                    // jitter during the press.
-                    .onLongPressGesture(minimumDuration: 0.08, maximumDistance: 80) {
+                    // Start on touch-down. The previous long-press recognizer
+                    // waited before firing, so screen recordings showed the
+                    // prompt text lingering after the user pressed.
+                    .gesture(DragGesture(minimumDistance: 0).onChanged { _ in
                         guard capturePhase == .prompt else { return }
                         startCaptureRecording()
-                    }
+                    })
                     // Hit testing only matters during .prompt — the blob
                     // buttons in .choose are rendered above in
                     // `captureOverlay` and would still get tap priority
@@ -515,7 +513,7 @@ struct OnboardingView: View {
         // `Color.clear` placeholder would each carve a strip of the
         // screen where the long-press silently fails to fire.
         .allowsHitTesting(capturePhase != .prompt)
-        .animation(.easeInOut(duration: 0.45), value: capturePhase)
+        .animation(.easeOut(duration: 0.18), value: capturePhase)
         // Enter with the same short delay as the starfield so the capture
         // prompt feels responsive after Continue without cutting in abruptly.
         // Exit: not actually used today (.capture is terminal in
@@ -876,10 +874,10 @@ struct OnboardingView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         recordingSeconds = 0
         recordingStartedAt = Date()
-        captureRecorder.start()
-        withAnimation(.easeOut(duration: 0.22)) {
+        withAnimation(.easeOut(duration: 0.16)) {
             capturePhase = .recording
         }
+        captureRecorder.start()
     }
 
     private func finishCaptureRecording() {
