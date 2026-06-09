@@ -1405,7 +1405,8 @@ private struct GeneratingCloudScene: View {
     private let centralStarCount = 96
     private let amber = Color(red: 1.00, green: 0.68, blue: 0.20)
     private let satelliteTravelDuration: Double = 1.65
-    private let satelliteBloomStartProgress: Double = 0.82
+    private let connectorStartProgress: Double = 0.70
+    private let satelliteBloomStartProgress: Double = 0.58
 
     private struct Satellite {
         let delay: Double
@@ -1424,13 +1425,13 @@ private struct GeneratingCloudScene: View {
     // edge in each satellite's direction.
     private let satellites: [Satellite] = [
         Satellite(delay: 0.45, angle: -2.30,   // upper-left
-                  edgeFraction: 0.68, sizeFactor: 0.70, starCount: 22),
+                  edgeFraction: 0.68, sizeFactor: 0.70, starCount: 16),
         Satellite(delay: 1.55, angle: -0.85,   // upper-right
-                  edgeFraction: 0.72, sizeFactor: 0.60, starCount: 18),
+                  edgeFraction: 0.72, sizeFactor: 0.60, starCount: 14),
         Satellite(delay: 2.65, angle:  0.55,   // right-lower
-                  edgeFraction: 0.68, sizeFactor: 0.65, starCount: 20),
+                  edgeFraction: 0.68, sizeFactor: 0.65, starCount: 16),
         Satellite(delay: 3.75, angle:  2.30,   // left-lower
-                  edgeFraction: 0.65, sizeFactor: 0.55, starCount: 16),
+                  edgeFraction: 0.65, sizeFactor: 0.55, starCount: 13),
     ]
 
     var body: some View {
@@ -1456,7 +1457,7 @@ private struct GeneratingCloudScene: View {
                 for (i, sat) in satellites.enumerated() {
                     let progress = max(0.0, min(1.0, (elapsed - sat.delay) / satelliteTravelDuration))
                     guard progress > 0 else { continue }
-                    let eased = smoothstep(progress)
+                    let travel = smoothstep(min(1.0, progress / 0.72))
 
                     // Distance to screen edge in this satellite's direction,
                     // then travel edgeFraction of that — fills all four
@@ -1466,17 +1467,16 @@ private struct GeneratingCloudScene: View {
                                    : sa < 1e-9 ? cx
                                    : min(cx / ca, cy / sa)
                     let satDistance = distToEdge * sat.edgeFraction
-                    let satX = cx + cos(sat.angle) * satDistance * eased
-                    let satY = cy + sin(sat.angle) * satDistance * eased
+                    let satX = cx + cos(sat.angle) * satDistance * travel
+                    let satY = cy + sin(sat.angle) * satDistance * travel
 
-                    // Connector appears only after this satellite has fully
-                    // settled. Drawing a bright dotted line while the first
-                    // and second clouds are still forming changes the central
-                    // cloud's bright-pixel silhouette in phone recordings and
-                    // reads as trembling, even though the core itself is fixed.
-                    let settledElapsed = elapsed - sat.delay - satelliteTravelDuration
-                    if settledElapsed >= 0 {
-                        let lineAlpha = smoothstep(settledElapsed / 0.35)
+                    // Connector links the central cloud to the peripheral
+                    // cloud while keeping clear of the central dot mass. The
+                    // peripheral cloud itself reaches its anchor before it
+                    // blooms, so the line reads as a relationship rather than
+                    // a bright moving stroke pulling pixels out of the core.
+                    if progress > connectorStartProgress {
+                        let lineAlpha = smoothstep((progress - connectorStartProgress) / (1 - connectorStartProgress))
                         let startX = cx + cos(sat.angle) * coreRadius * 1.22
                         let startY = cy + sin(sat.angle) * coreRadius * 1.22
                         let satEdge = coreRadius * sat.sizeFactor * 0.9
@@ -1505,13 +1505,13 @@ private struct GeneratingCloudScene: View {
                     // the centre stays visible on top of the cluster.
                     if progress > satelliteBloomStartProgress {
                         let bloom = smoothstep((progress - satelliteBloomStartProgress) / (1 - satelliteBloomStartProgress))
-                        let bloomFade = min(1.0, bloom / 0.45)
+                        let bloomFade = min(1.0, bloom / 0.65)
                         drawSphere(in: ctx,
                                    cx: satX, cy: satY,
                                    r: coreRadius * sat.sizeFactor * bloom,
                                    t: Double(i) * 1.7,
                                    count: sat.starCount,
-                                   sizeScale: 0.85,
+                                   sizeScale: 0.78,
                                    rotationSpeed: 0,
                                    alphaScale: bloomFade)
                     }
