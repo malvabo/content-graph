@@ -1416,7 +1416,7 @@ private struct GeneratingCloudScene: View {
     private let centralStarCount = 96
     private let amber = Color(red: 1.00, green: 0.68, blue: 0.20)
     private let satelliteTravelDuration: Double = 1.65
-    private let connectorStartProgress: Double = 0.78
+    private let connectorStartProgress: Double = 0.74
     private let satelliteBloomStartProgress: Double = 0.82
 
     private struct Satellite {
@@ -1506,11 +1506,11 @@ private struct GeneratingCloudScene: View {
                         line.addLine(to: CGPoint(x: endX, y: endY))
                         ctx.stroke(
                             line,
-                            with: .color(amber.opacity(0.14 * lineAlpha)),
+                            with: .color(amber.opacity(0.24 * lineAlpha)),
                             style: StrokeStyle(
-                                lineWidth: 0.9,
+                                lineWidth: 1.35,
                                 lineCap: .round,
-                                dash: [0.01, 5]
+                                dash: [0.01, 4]
                             )
                         )
                     }
