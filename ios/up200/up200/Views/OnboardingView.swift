@@ -162,7 +162,7 @@ struct OnboardingView: View {
             // Held alive throughout the entire .capture step (rather than
             // being inserted/removed on each active sub-phase) so the
             // SwiftUI transition fires exactly once — on the
-            // .constellation → .capture crossing — and the 0.85s delay
+            // .constellation → .capture crossing — and the entry delay
             // below applies only to that one entry. In-capture phase
             // crossings (.recording → .choose etc.) are driven by the
             // .opacity modifier on `starfieldVisible` with a prompt 0.45s
@@ -195,19 +195,13 @@ struct OnboardingView: View {
                     // near the bottom blobs.
                     .allowsHitTesting(capturePhase == .prompt)
                     .animation(.easeInOut(duration: 0.45), value: capturePhase)
-                    // Insertion delayed by the cluster's full 0.85s dive
-                    // duration so the starfield only begins fading in
-                    // *after* the cluster has scaled past the camera and
-                    // cleared the frame. Without the delay, the new
-                    // full-screen blurb fades up at 0% over a still-
-                    // dispersing structured cluster, and the eye reads the
-                    // two layers as overlapping starfields instead of one
-                    // continuous "fly through the cloud into open space"
-                    // beat. Removal stays as a plain fade so leaving
-                    // .capture (no path today, but defensive) is calm.
+                    // Short delay keeps the capture prompt responsive after
+                    // Continue while avoiding a hard cut over the outgoing
+                    // constellation cloud. Removal stays as a plain fade so
+                    // leaving .capture (no path today, but defensive) is calm.
                     .transition(
                         .asymmetric(
-                            insertion: .opacity.animation(.easeOut(duration: 0.40).delay(0.85)),
+                            insertion: .opacity.animation(.easeOut(duration: 0.35).delay(0.25)),
                             removal: .opacity
                         )
                     )
@@ -526,18 +520,13 @@ struct OnboardingView: View {
         // screen where the long-press silently fails to fire.
         .allowsHitTesting(capturePhase != .prompt)
         .animation(.easeInOut(duration: 0.45), value: capturePhase)
-        // Enter: hold the headline back until the cluster's 0.85s dive
-        // has fully resolved, so the copy lands on the same beat as the
-        // starfield blurb behind it rather than 0.35s ahead. Previous
-        // 0.50 delay had the headline appear mid-dive on top of a still-
-        // dispersing cluster; matching the starfield's 0.85 delay keeps
-        // the entire new screen — background + copy — arriving as one
-        // coherent beat after the cluster is gone.
+        // Enter with the same short delay as the starfield so the capture
+        // prompt feels responsive after Continue without cutting in abruptly.
         // Exit: not actually used today (.capture is terminal in
         // onboarding) but mirror the pattern so it's correct if the flow
         // ever reverses.
         .transition(.asymmetric(
-            insertion: .opacity.animation(.easeOut(duration: 0.40).delay(0.85)),
+            insertion: .opacity.animation(.easeOut(duration: 0.35).delay(0.25)),
             removal:   .opacity.animation(.easeOut(duration: 0.22))
         ))
         .task {
@@ -1416,7 +1405,6 @@ private struct GeneratingCloudScene: View {
     private let centralStarCount = 96
     private let amber = Color(red: 1.00, green: 0.68, blue: 0.20)
     private let satelliteTravelDuration: Double = 1.65
-    private let connectorStartProgress: Double = 0.74
     private let satelliteBloomStartProgress: Double = 0.82
 
     private struct Satellite {
@@ -1446,7 +1434,7 @@ private struct GeneratingCloudScene: View {
     ]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let now = frozenAt ?? context.date
             let elapsed = max(0, now.timeIntervalSince(generationStartedAt))
             Canvas { ctx, size in
@@ -1481,21 +1469,14 @@ private struct GeneratingCloudScene: View {
                     let satX = cx + cos(sat.angle) * satDistance * eased
                     let satY = cy + sin(sat.angle) * satDistance * eased
 
-                    // Connector line fades in once the spark has covered
-                    // most of its travel. Start point sits on the central
-                    // sphere's surface (rather than its dead centre) and
-                    // end point sits just shy of the satellite's surface,
-                    // so the line emerges *from* the cluster's edge rather
-                    // than slicing through every dot in the core.
-                    //
-                    // Stroked as a dotted line — zero-length dashes drawn
-                    // with a round line cap render as small circular dots
-                    // spaced 4pt apart — and shaded by a linear gradient
-                    // that brightens through the middle and softens at
-                    // both ends, so the connector reads as a gentle "spark
-                    // trail" rather than a hard 100% filled-in stroke.
-                    if progress > connectorStartProgress {
-                        let lineAlpha = smoothstep((progress - connectorStartProgress) / (1 - connectorStartProgress))
+                    // Connector appears only after this satellite has fully
+                    // settled. Drawing a bright dotted line while the first
+                    // and second clouds are still forming changes the central
+                    // cloud's bright-pixel silhouette in phone recordings and
+                    // reads as trembling, even though the core itself is fixed.
+                    let settledElapsed = elapsed - sat.delay - satelliteTravelDuration
+                    if settledElapsed >= 0 {
+                        let lineAlpha = smoothstep(settledElapsed / 0.35)
                         let startX = cx + cos(sat.angle) * coreRadius * 1.22
                         let startY = cy + sin(sat.angle) * coreRadius * 1.22
                         let satEdge = coreRadius * sat.sizeFactor * 0.9
