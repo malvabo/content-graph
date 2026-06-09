@@ -20,7 +20,7 @@ private struct OnboardingSceneView: UIViewControllerRepresentable {
 private enum OnboardingStep: Int {
     case intro = 0          // wide constellation + brand mark + Get started / Log in
     case constellation = 2  // central bulb + 4 satellite bulbs joined by dot arcs + final CTA
-    case capture = 3        // starfield "blurb" → press-and-hold record → transform / expand
+    case capture = 3        // cloud background → press-and-hold record → transform / expand
 }
 
 private enum CapturePhase {
@@ -131,7 +131,7 @@ struct OnboardingView: View {
                                      showsContentGraph: !isCaptureBackground)
                     .ignoresSafeArea()
                     .scaleEffect(isCaptureBackground ? 3.5 : 1)
-                    .opacity(isCaptureBackground ? 0.65 : 1)
+                    .opacity(isCaptureBackground ? captureCloudOpacity : 1)
                     .contentShape(Rectangle())
                     .gesture(DragGesture(minimumDistance: 0).onChanged { _ in
                         guard capturePhase == .prompt else { return }
@@ -182,7 +182,25 @@ struct OnboardingView: View {
     }
 
     private var captureCloudVisible: Bool {
-        capturePhase == .prompt || capturePhase == .choose
+        switch capturePhase {
+        case .prompt, .recording, .choose, .specify:
+            true
+        case .generating:
+            false
+        }
+    }
+
+    private var captureCloudOpacity: Double {
+        switch capturePhase {
+        case .prompt:
+            0.65
+        case .recording, .specify:
+            0.30
+        case .choose:
+            0.56
+        case .generating:
+            0
+        }
     }
 
     // MARK: Step 1 — wide constellation
@@ -431,14 +449,13 @@ struct OnboardingView: View {
         }
     }
 
-    // MARK: Step 4 — Capture (starfield blurb → record → choose)
+    // MARK: Step 4 — Capture (cloud background → record → choose)
 
     /// Closing onboarding beat. The story so far is "one idea → graph of
-    /// content"; step 4 asks the user to make that idea real. A rectangular
-    /// blurb hosts the same starfield language as the SceneKit cluster, the
-    /// user presses-and-holds it to start a real mic recording, the blurb
-    /// morphs into a live waveform, and finishing reveals three transform
-    /// options (LinkedIn / article / Twitter) that exit onboarding.
+    /// content"; step 4 asks the user to make that idea real. The same
+    /// central cloud becomes the full-screen press-and-hold surface, then
+    /// dims behind recording and choose states so the visual thread stays
+    /// continuous instead of swapping to a separate background.
     private var captureOverlay: some View {
         VStack(spacing: 0) {
             Spacer().frame(height: 24)
@@ -467,20 +484,20 @@ struct OnboardingView: View {
             Spacer().frame(height: 52)
         }
         // During .prompt the entire overlay is decorative — the only
-        // interactive element is the full-screen StarfieldBlurb behind
+        // interactive element is the full-screen cloud behind
         // it, which owns the press-and-hold gesture. Without this
         // allowsHitTesting flip, the headline text and the bottom
         // `Color.clear` placeholder would each carve a strip of the
         // screen where the long-press silently fails to fire.
         .allowsHitTesting(capturePhase != .prompt)
         .animation(.easeOut(duration: 0.18), value: capturePhase)
-        // Enter with the same short delay as the starfield so the capture
-        // prompt feels responsive after Continue without cutting in abruptly.
+        // Enter with the transformed cloud so the prompt and background land
+        // as one composed scene after Continue.
         // Exit: not actually used today (.capture is terminal in
         // onboarding) but mirror the pattern so it's correct if the flow
         // ever reverses.
         .transition(.asymmetric(
-            insertion: .opacity.animation(.easeOut(duration: 0.35).delay(0.25)),
+            insertion: .opacity.animation(.easeOut(duration: 0.30)),
             removal:   .opacity.animation(.easeOut(duration: 0.22))
         ))
         .task {
@@ -727,7 +744,7 @@ struct OnboardingView: View {
 
     /// The four `.choose` options rendered as glowing semi-transparent circles
     /// in a 2×2 grid. Each circle has a blurred halo overlay for a soft glow
-    /// effect, plus a sharp stroke edge, against the starfield background.
+    /// effect, plus a sharp stroke edge, against the cloud background.
     private var chooseCirclesField: some View {
         struct ChooseOption {
             let label: String
@@ -1234,63 +1251,6 @@ private struct AppleAuthErrorResponse: Decodable {
     let error: String
 }
 
-// MARK: - Starfield blurb
-
-/// Self-contained animated starfield rendered with SwiftUI Canvas. Uses the
-/// same particle vocabulary as the SceneKit cluster (soft white dots, gentle
-/// drift, slow brightness pulse) so the blurb reads as a continuation of the
-/// constellation story rather than a separate UI surface. Stays at a fixed
-/// star count and seeded layout so the field looks stable across redraws.
-private struct StarfieldBlurb: View {
-    let active: Bool
-    // Higher density + larger stars than the "viewed-through-a-window"
-    // version this replaced. The user reads themselves as inside the
-    // cloud now: more stars per square point, each one noticeably bigger,
-    // with a wider drift radius that makes the nearer stars feel like
-    // they're orbiting the camera rather than dotting a distant field.
-    private let starCount = 160
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            Canvas { ctx, size in
-                for i in 0..<starCount {
-                    let rx = pseudoRandom(i * 3)
-                    let ry = pseudoRandom(i * 3 + 1)
-                    let ra = pseudoRandom(i * 3 + 2)
-
-                    // Each star drifts on its own lazy ellipse — phases are
-                    // index-offset so the field never moves in unison.
-                    // Amplitude and rate are dialled up enough that the
-                    // motion is clearly visible behind the .choose circles
-                    // (the field used to read as static at conversational
-                    // viewing distance).
-                    let phase = t * 0.38 + Double(i) * 0.41
-                    let dx = sin(phase) * 16.0
-                    let dy = cos(phase * 1.27) * 11.0
-
-                    let x = rx * size.width + dx
-                    let y = ry * size.height + dy
-
-                    let pulse = 0.65 + 0.35 * sin(t * 1.6 + Double(i) * 0.31)
-                    let radius = (1.5 + ra * 2.4) * (active ? 1.0 : 0.85)
-                    let alpha = (0.38 + ra * 0.55) * pulse * (active ? 1.0 : 0.5)
-
-                    let rect = CGRect(x: x - radius, y: y - radius,
-                                      width: radius * 2, height: radius * 2)
-                    ctx.fill(Path(ellipseIn: rect), with: .color(.white.opacity(alpha)))
-                }
-            }
-        }
-        .accessibilityHidden(true)
-    }
-
-    private func pseudoRandom(_ n: Int) -> Double {
-        let v = sin(Double(n) * 12.9898 + 78.233) * 43758.5453
-        return v - floor(v)
-    }
-}
-
 // MARK: - Onboarding recording waveform
 
 // MARK: - Wobbly circle shape
@@ -1394,20 +1354,6 @@ private struct GeneratingCloudScene: View {
 
     var body: some View {
         ZStack {
-            // Static central cloud: separate from the animated Timeline layer
-            // so phone recordings do not see the central dot field re-rasterize
-            // every time the peripheral clouds update.
-            Canvas { ctx, size in
-                drawSphere(in: ctx,
-                           cx: size.width / 2,
-                           cy: size.height / 2,
-                           r: min(size.width, size.height) * 0.20,
-                           t: 0,
-                           count: centralStarCount,
-                           sizeScale: 1.0,
-                           rotationSpeed: 0)
-            }
-
             TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
                 let now = frozenAt ?? context.date
                 let elapsed = max(0, now.timeIntervalSince(generationStartedAt))
@@ -1415,6 +1361,23 @@ private struct GeneratingCloudScene: View {
                     let cx = size.width / 2
                     let cy = size.height / 2
                     let coreRadius = min(size.width, size.height) * 0.20
+
+                    // The constellation beat keeps the central cloud visually
+                    // stable while satellites form. Capture-background mode
+                    // gets a barely-there drift so the enlarged cloud feels
+                    // environmental, not like a frozen overlay.
+                    let backgroundDrift = showsContentGraph ? 0 : elapsed
+                    let backgroundBreath = showsContentGraph
+                        ? 1.0
+                        : 0.97 + 0.03 * sin(elapsed * 0.55)
+                    drawSphere(in: ctx,
+                               cx: cx,
+                               cy: cy,
+                               r: coreRadius * backgroundBreath,
+                               t: backgroundDrift,
+                               count: centralStarCount,
+                               sizeScale: 1.0,
+                               rotationSpeed: showsContentGraph ? 0 : 0.025)
 
                     guard showsContentGraph else { return }
 
