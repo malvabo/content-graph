@@ -97,7 +97,7 @@ struct OnboardingView: View {
     // users skip the remaining ~5s before the auto-dive fires.
     @State private var constellationContinueArmed = false
     // Idempotency latch on the .constellation → .capture dive — either the
-    // 6.5s auto-task or the manual Continue button can drive it, but only
+    // auto-task or the manual Continue button can drive it, but only
     // one of them should actually flip the step.
     @State private var diveInFlight = false
 
@@ -294,7 +294,7 @@ struct OnboardingView: View {
                 }
 
                 Button {
-                    constellationStartedAt = Date().addingTimeInterval(1.2)
+                    constellationStartedAt = Date().addingTimeInterval(0.45)
                     withAnimation(.easeOut(duration: 0.85)) {
                         step = .constellation
                     }
@@ -347,7 +347,7 @@ struct OnboardingView: View {
                 return
             }
             appleSignIn.handleCredential(credential, nonce: nonce, onSuccess: {
-                constellationStartedAt = Date().addingTimeInterval(1.2)
+                constellationStartedAt = Date().addingTimeInterval(0.45)
                 withAnimation(.easeOut(duration: 0.85)) {
                     step = .constellation
                 }
@@ -393,9 +393,9 @@ struct OnboardingView: View {
                 .allowsHitTesting(false)
 
             // Continue affordance — appears after ~2.5s so the user has
-            // seen at least two satellites bloom (the gesture reads as
-            // intentional rather than mid-animation) and lets impatient
-            // users skip the remaining ~4s of the hold.
+            // seen the first satellite bloom and the second in flight
+            // (the gesture reads as intentional rather than mid-animation)
+            // and lets impatient users skip the remaining hold.
             Button(action: triggerDiveNow) {
                 HStack(spacing: 6) {
                     Text("Continue")
@@ -429,23 +429,22 @@ struct OnboardingView: View {
         ))
         // Hold long enough for the cluster to bloom out into its
         // satellites and read as a finished gesture before the camera
-        // dives into it. The constellation clock is stamped 1.2s in
-        // the future when entering this step, so the spark schedule
-        // is shifted later; the hold tracks that shift to keep the
-        // four firings on screen instead of being clipped by the dive.
+        // dives into it. The constellation clock is stamped slightly in
+        // the future when entering this step, so the first satellite waits
+        // for the scene transition to settle without leaving a long empty
+        // beat before generation starts.
         .task {
             // Arm the Continue button after 2.5s — by that point the
-            // cluster has bloomed two satellites and the headline has
-            // fully faded in, so the button reads as part of the same
-            // settled scene rather than competing with mid-animation.
+            // first satellite has bloomed, the second is forming, and the
+            // headline has fully faded in, so the button reads as part of
+            // the same scene rather than competing with the opening beat.
             try? await Task.sleep(nanoseconds: 2_500_000_000)
             guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.5)) {
                 constellationContinueArmed = true
             }
             // Auto-dive after the remaining 4s if the user hasn't tapped
-            // Continue. Total hold ≈ 6.5s — same as before for users who
-            // want to watch the whole bloom.
+            // Continue. Total hold still leaves the whole bloom visible.
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             guard !Task.isCancelled else { return }
             triggerDiveNow()
@@ -1434,13 +1433,13 @@ private struct GeneratingCloudScene: View {
     // edgeFraction targets 65–72% of the distance to the nearest screen
     // edge in each satellite's direction.
     private let satellites: [Satellite] = [
-        Satellite(delay: 1.00, angle: -2.30,   // upper-left
+        Satellite(delay: 0.45, angle: -2.30,   // upper-left
                   edgeFraction: 0.68, sizeFactor: 0.70, starCount: 22),
-        Satellite(delay: 2.15, angle: -0.85,   // upper-right
+        Satellite(delay: 1.55, angle: -0.85,   // upper-right
                   edgeFraction: 0.72, sizeFactor: 0.60, starCount: 18),
-        Satellite(delay: 3.30, angle:  0.55,   // right-lower
+        Satellite(delay: 2.65, angle:  0.55,   // right-lower
                   edgeFraction: 0.68, sizeFactor: 0.65, starCount: 20),
-        Satellite(delay: 4.45, angle:  2.30,   // left-lower
+        Satellite(delay: 3.75, angle:  2.30,   // left-lower
                   edgeFraction: 0.65, sizeFactor: 0.55, starCount: 16),
     ]
 
@@ -1459,10 +1458,10 @@ private struct GeneratingCloudScene: View {
                 drawSphere(in: ctx,
                            cx: cx, cy: cy,
                            r: coreRadius,
-                           t: elapsed,
+                           t: 0,
                            count: centralStarCount,
                            sizeScale: 1.0,
-                           rotationSpeed: 0.045)
+                           rotationSpeed: 0)
 
                 for (i, sat) in satellites.enumerated() {
                     let progress = max(0.0, min(1.0, (elapsed - sat.delay) / satelliteTravelDuration))
