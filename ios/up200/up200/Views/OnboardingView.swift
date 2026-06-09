@@ -1416,6 +1416,8 @@ private struct GeneratingCloudScene: View {
     private let centralStarCount = 96
     private let amber = Color(red: 1.00, green: 0.68, blue: 0.20)
     private let satelliteTravelDuration: Double = 1.65
+    private let connectorStartProgress: Double = 0.78
+    private let satelliteBloomStartProgress: Double = 0.82
 
     private struct Satellite {
         let delay: Double
@@ -1455,6 +1457,14 @@ private struct GeneratingCloudScene: View {
                 // rather than a small dot lost in negative space.
                 let coreRadius = min(size.width, size.height) * 0.20
 
+                drawSphere(in: ctx,
+                           cx: cx, cy: cy,
+                           r: coreRadius,
+                           t: 0,
+                           count: centralStarCount,
+                           sizeScale: 1.0,
+                           rotationSpeed: 0)
+
                 for (i, sat) in satellites.enumerated() {
                     let progress = max(0.0, min(1.0, (elapsed - sat.delay) / satelliteTravelDuration))
                     guard progress > 0 else { continue }
@@ -1484,10 +1494,10 @@ private struct GeneratingCloudScene: View {
                     // that brightens through the middle and softens at
                     // both ends, so the connector reads as a gentle "spark
                     // trail" rather than a hard 100% filled-in stroke.
-                    if progress > 0.6 {
-                        let lineAlpha = (progress - 0.6) / 0.4
-                        let startX = cx + cos(sat.angle) * coreRadius * 0.95
-                        let startY = cy + sin(sat.angle) * coreRadius * 0.95
+                    if progress > connectorStartProgress {
+                        let lineAlpha = smoothstep((progress - connectorStartProgress) / (1 - connectorStartProgress))
+                        let startX = cx + cos(sat.angle) * coreRadius * 1.22
+                        let startY = cy + sin(sat.angle) * coreRadius * 1.22
                         let satEdge = coreRadius * sat.sizeFactor * 0.9
                         let endX = satX - cos(sat.angle) * satEdge
                         let endY = satY - sin(sat.angle) * satEdge
@@ -1496,11 +1506,11 @@ private struct GeneratingCloudScene: View {
                         line.addLine(to: CGPoint(x: endX, y: endY))
                         ctx.stroke(
                             line,
-                            with: .color(amber.opacity(0.22 * lineAlpha)),
+                            with: .color(amber.opacity(0.14 * lineAlpha)),
                             style: StrokeStyle(
-                                lineWidth: 1.2,
+                                lineWidth: 0.9,
                                 lineCap: .round,
-                                dash: [0.01, 4]
+                                dash: [0.01, 5]
                             )
                         )
                     }
@@ -1512,16 +1522,16 @@ private struct GeneratingCloudScene: View {
                     // variety rather than four identical clones. Drawn
                     // before the spark/glow so the bright amber dot at
                     // the centre stays visible on top of the cluster.
-                    if progress > 0.7 {
-                        let bloom = (progress - 0.7) / 0.3
-                        let bloomFade = min(1.0, bloom / 0.25)
+                    if progress > satelliteBloomStartProgress {
+                        let bloom = smoothstep((progress - satelliteBloomStartProgress) / (1 - satelliteBloomStartProgress))
+                        let bloomFade = min(1.0, bloom / 0.45)
                         drawSphere(in: ctx,
                                    cx: satX, cy: satY,
                                    r: coreRadius * sat.sizeFactor * bloom,
-                                   t: elapsed + Double(i) * 1.7,
+                                   t: Double(i) * 1.7,
                                    count: sat.starCount,
                                    sizeScale: 0.85,
-                                   rotationSpeed: 0.15,
+                                   rotationSpeed: 0,
                                    alphaScale: bloomFade)
                     }
 
@@ -1535,21 +1545,6 @@ private struct GeneratingCloudScene: View {
                                              t: elapsed)
                     }
                 }
-
-                // Draw the central cloud last. The outgoing satellite paths
-                // begin at the core edge; painting them above the core makes
-                // the bright-pixel mass change shape frame-to-frame in screen
-                // recordings, which reads as central-cloud trembling even
-                // though the center point is fixed. Repainting the static core
-                // on top keeps it visually anchored while satellites bloom
-                // from behind it.
-                drawSphere(in: ctx,
-                           cx: cx, cy: cy,
-                           r: coreRadius,
-                           t: 0,
-                           count: centralStarCount,
-                           sizeScale: 1.0,
-                           rotationSpeed: 0)
             }
         }
         .accessibilityLabel("Creating your content")
