@@ -684,7 +684,7 @@ struct NoteVoiceSheet: View {
             Spacer(minLength: 40)
 
             let waveSize = UIScreen.main.bounds.width * 2 / 3
-            VStack(spacing: 18) {
+            VStack(spacing: 14) {
                 RecordingWaveformView(audioLevel: { recording.audioLevel })
                     .frame(width: waveSize, height: waveSize)
                     .background(Color.white.opacity(0.05))
@@ -700,6 +700,30 @@ struct NoteVoiceSheet: View {
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
                         .foregroundColor(Color.white.opacity(0.55))
                 }
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    if recording.isPaused {
+                        recording.resume()
+                    } else {
+                        recording.pause()
+                    }
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: recording.isPaused ? "play.fill" : "pause.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(recording.isPaused ? "Resume" : "Pause")
+                            .font(.app(size: 13, weight: .medium))
+                    }
+                    .foregroundColor(Color.white.opacity(0.62))
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.055))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(recording.isPaused ? "Resume recording" : "Pause recording")
+                .padding(.top, 2)
             }
 
             Spacer(minLength: 24)
@@ -715,30 +739,10 @@ struct NoteVoiceSheet: View {
                 Spacer(minLength: 8)
             }
 
-            HStack(spacing: 10) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    if recording.isPaused {
-                        recording.resume()
-                    } else {
-                        recording.pause()
-                    }
-                } label: {
-                    Image(systemName: recording.isPaused ? "play.fill" : "pause.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.76))
-                        .frame(width: 40, height: 40)
-                        .background(Color.white.opacity(0.08))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(recording.isPaused ? "Resume recording" : "Pause recording")
-
-                if let switchToWriting = onSwitchToWriting {
-                    switchToWritingButton(action: switchToWriting)
-                }
+            if let switchToWriting = onSwitchToWriting {
+                switchToWritingButton(action: switchToWriting)
+                    .padding(.bottom, 16)
             }
-            .padding(.bottom, 14)
 
             Button(action: handleStop) {
                 Text("Finish recording")
@@ -762,20 +766,12 @@ struct NoteVoiceSheet: View {
             dismiss()
             switchToWriting()
         } label: {
-            HStack(spacing: 6) {
-                Text("Switch to writing")
-                    .font(.app(size: 15, weight: .medium))
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 13, weight: .semibold))
-            }
-            .foregroundColor(Color.white.opacity(0.78))
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(Color.white.opacity(0.08))
-            .clipShape(Capsule())
-            .overlay(
-                Capsule().stroke(Color.white.opacity(0.14), lineWidth: 0.5)
-            )
+            Text("Switch to writing")
+                .font(.app(size: 15, weight: .medium))
+                .foregroundColor(Color.white.opacity(0.68))
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -1341,8 +1337,14 @@ private struct FilterChip: View {
 
 // MARK: - Notes View
 
+enum NoteCreateMode: Equatable {
+    case audio
+    case writing
+}
+
 struct NotesView: View {
     var newNoteTrigger: Int = 0
+    var newNoteMode: NoteCreateMode = .audio
     var onProfileTap: (() -> Void)? = nil
     /// When true, the view is hosted inside another container (the Simple
     /// home page) that owns the NavigationStack, title, and profile pill —
@@ -1419,6 +1421,10 @@ struct NotesView: View {
             saveRecordedTranscript(transcript)
         }
         recording.showingSheet = true
+    }
+
+    private func startWritingNote() {
+        editingNote = Note()
     }
 
     private func saveRecordedTranscript(_ transcript: String) {
@@ -1961,7 +1967,12 @@ struct NotesView: View {
             if phase == .inactive || phase == .background { flushSave() }
         }
         .onChange(of: newNoteTrigger) { _, _ in
-            startAudioNote()
+            switch newNoteMode {
+            case .audio:
+                startAudioNote()
+            case .writing:
+                startWritingNote()
+            }
         }
         .onChange(of: editingNote) { _, note in
             // Guarantee the floating mic button reappears whenever the user

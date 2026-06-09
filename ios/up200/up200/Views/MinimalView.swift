@@ -93,9 +93,10 @@ extension Notification.Name {
 /// classic single-note editor.
 struct MinimalHomePage: View {
     /// Bumped externally (by ContentView when the floating mic capture
-    /// fires) to ask the embedded NotesView to begin a voice note. Same
-    /// hand-off pattern Simple mode uses with `SimpleCreateBar`.
+    /// fires or the recording sheet switches to writing) to ask the
+    /// embedded NotesView to create a new note.
     var newNoteTrigger: Int = 0
+    var newNoteMode: NoteCreateMode = .audio
     var onProfileTap: () -> Void = {}
 
     @State private var showSearch = false
@@ -116,6 +117,7 @@ struct MinimalHomePage: View {
 
                     NotesView(
                         newNoteTrigger: newNoteTrigger,
+                        newNoteMode: newNoteMode,
                         embedded: true,
                         externalShowSearch: $showSearch,
                         externalSearchText: $searchText,

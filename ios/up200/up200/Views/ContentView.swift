@@ -2224,6 +2224,7 @@ private struct ClassicAppTabBar: View {
 /// or LibraryView below. The bottom bar contributes only the plus button.
 private struct SimpleHomePage: View {
     var newNoteTrigger: Int = 0
+    var newNoteMode: NoteCreateMode = .audio
     var onProfileTap: () -> Void = {}
 
     @State private var showSearch = false
@@ -2273,6 +2274,7 @@ private struct SimpleHomePage: View {
 
                     NotesView(
                         newNoteTrigger: newNoteTrigger,
+                        newNoteMode: newNoteMode,
                         embedded: true,
                         externalShowSearch: $showSearch,
                         externalSearchText: $searchText
@@ -2421,6 +2423,7 @@ struct ContentView: View {
     @State private var keyboardVisible = false
     @State private var showProfile = false
     @State private var newNoteTrigger = 0
+    @State private var newNoteMode: NoteCreateMode = .audio
     @State private var recordingPausedForBackground = false
     @StateObject private var bannerController = BannerController()
     @StateObject private var chromeController = ChromeController()
@@ -2440,7 +2443,10 @@ struct ContentView: View {
                        onDismiss: { recordingController.reconcileDismissal() }) {
                     NoteVoiceSheet(onSwitchToWriting: {
                         selectedTab = .notes
-                        newNoteTrigger &+= 1
+                        newNoteMode = .writing
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            newNoteTrigger &+= 1
+                        }
                     })
                     .environmentObject(recordingController)
                 }
@@ -2463,6 +2469,7 @@ struct ContentView: View {
                     if !keyboardVisible && !chromeController.hideTabBar {
                         SimpleCreateBar(onTap: {
                             selectedTab = .notes
+                            newNoteMode = .audio
                             newNoteTrigger &+= 1
                         })
                         .padding(.horizontal, 16)
@@ -2522,6 +2529,7 @@ struct ContentView: View {
     private var tabsLayer: some View {
         MinimalHomePage(
             newNoteTrigger: newNoteTrigger,
+            newNoteMode: newNoteMode,
             onProfileTap: { showProfile = true }
         )
     }
