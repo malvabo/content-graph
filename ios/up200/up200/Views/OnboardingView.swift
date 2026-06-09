@@ -182,8 +182,8 @@ struct OnboardingView: View {
                     // wobble enough that a 30pt drift silently cancelled
                     // the press with no feedback. 80pt still excludes
                     // intentional swipes but tolerates ordinary hand
-                    // jitter during a 0.3s hold.
-                    .onLongPressGesture(minimumDuration: 0.3, maximumDistance: 80) {
+                    // jitter during the press.
+                    .onLongPressGesture(minimumDuration: 0.08, maximumDistance: 80) {
                         guard capturePhase == .prompt else { return }
                         startCaptureRecording()
                     }
@@ -881,7 +881,7 @@ struct OnboardingView: View {
         recordingSeconds = 0
         recordingStartedAt = Date()
         captureRecorder.start()
-        withAnimation(.easeInOut(duration: 0.45)) {
+        withAnimation(.easeOut(duration: 0.22)) {
             capturePhase = .recording
         }
     }
@@ -1457,7 +1457,6 @@ private struct GeneratingCloudScene: View {
                 for (i, sat) in satellites.enumerated() {
                     let progress = max(0.0, min(1.0, (elapsed - sat.delay) / satelliteTravelDuration))
                     guard progress > 0 else { continue }
-                    let travel = smoothstep(min(1.0, progress / 0.72))
 
                     // Distance to screen edge in this satellite's direction,
                     // then travel edgeFraction of that — fills all four
@@ -1467,14 +1466,11 @@ private struct GeneratingCloudScene: View {
                                    : sa < 1e-9 ? cx
                                    : min(cx / ca, cy / sa)
                     let satDistance = distToEdge * sat.edgeFraction
-                    let satX = cx + cos(sat.angle) * satDistance * travel
-                    let satY = cy + sin(sat.angle) * satDistance * travel
+                    let satX = cx + cos(sat.angle) * satDistance
+                    let satY = cy + sin(sat.angle) * satDistance
 
                     // Connector links the central cloud to the peripheral
-                    // cloud while keeping clear of the central dot mass. The
-                    // peripheral cloud itself reaches its anchor before it
-                    // blooms, so the line reads as a relationship rather than
-                    // a bright moving stroke pulling pixels out of the core.
+                    // cloud while keeping clear of the central dot mass.
                     if progress > connectorStartProgress {
                         let lineAlpha = smoothstep((progress - connectorStartProgress) / (1 - connectorStartProgress))
                         let startX = cx + cos(sat.angle) * coreRadius * 1.22
@@ -1496,19 +1492,15 @@ private struct GeneratingCloudScene: View {
                         )
                     }
 
-                    // Satellite mini-cluster blooms after the spark
-                    // arrives. Its radius scales with bloom progress so
-                    // it appears to grow out of the spark; per-satellite
-                    // sizeFactor / starCount give the composition organic
-                    // variety rather than four identical clones. Drawn
-                    // before the spark/glow so the bright amber dot at
-                    // the centre stays visible on top of the cluster.
+                    // Satellite mini-cluster fades in at its final anchor.
+                    // Keeping dot positions and radius stable avoids the
+                    // first cloud flicker that screen recording introduced
+                    // when the cluster was moving and growing at once.
                     if progress > satelliteBloomStartProgress {
-                        let bloom = smoothstep((progress - satelliteBloomStartProgress) / (1 - satelliteBloomStartProgress))
-                        let bloomFade = min(1.0, bloom / 0.65)
+                        let bloomFade = smoothstep((progress - satelliteBloomStartProgress) / (1 - satelliteBloomStartProgress))
                         drawSphere(in: ctx,
                                    cx: satX, cy: satY,
-                                   r: coreRadius * sat.sizeFactor * bloom,
+                                   r: coreRadius * sat.sizeFactor,
                                    t: Double(i) * 1.7,
                                    count: sat.starCount,
                                    sizeScale: 0.78,
