@@ -1492,12 +1492,11 @@ private struct GeneratingCloudScene: View {
                         )
                     }
 
-                    // Satellite mini-cluster fades in at its final anchor.
-                    // Keeping dot positions and radius stable avoids the
-                    // first cloud flicker that screen recording introduced
-                    // when the cluster was moving and growing at once.
+                    // Satellite mini-cluster appears at its final anchor with
+                    // stable dot brightness. Screen recording turns gradual
+                    // fades of tiny dots into visible flicker, so the cloud
+                    // itself does not animate once it is introduced.
                     if progress > satelliteBloomStartProgress {
-                        let bloomFade = smoothstep((progress - satelliteBloomStartProgress) / (1 - satelliteBloomStartProgress))
                         drawSphere(in: ctx,
                                    cx: satX, cy: satY,
                                    r: coreRadius * sat.sizeFactor,
@@ -1505,7 +1504,7 @@ private struct GeneratingCloudScene: View {
                                    count: sat.starCount,
                                    sizeScale: 0.78,
                                    rotationSpeed: 0,
-                                   alphaScale: bloomFade)
+                                   alphaScale: 1)
                     }
 
                     // Settled spark glow — breathing amber bead once the
