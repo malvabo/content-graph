@@ -1414,8 +1414,9 @@ private struct GeneratingCloudScene: View {
     // this scene unchanged.
     var frozenAt: Date? = nil
 
-    private let centralStarCount = 72
+    private let centralStarCount = 96
     private let amber = Color(red: 1.00, green: 0.68, blue: 0.20)
+    private let satelliteTravelDuration: Double = 1.65
 
     private struct Satellite {
         let delay: Double
@@ -1433,20 +1434,20 @@ private struct GeneratingCloudScene: View {
     // edgeFraction targets 65–72% of the distance to the nearest screen
     // edge in each satellite's direction.
     private let satellites: [Satellite] = [
-        Satellite(delay: 0.55, angle: -2.30,   // upper-left
+        Satellite(delay: 1.00, angle: -2.30,   // upper-left
                   edgeFraction: 0.68, sizeFactor: 0.70, starCount: 22),
-        Satellite(delay: 1.75, angle: -0.85,   // upper-right
+        Satellite(delay: 2.15, angle: -0.85,   // upper-right
                   edgeFraction: 0.72, sizeFactor: 0.60, starCount: 18),
-        Satellite(delay: 2.95, angle:  0.55,   // right-lower
+        Satellite(delay: 3.30, angle:  0.55,   // right-lower
                   edgeFraction: 0.68, sizeFactor: 0.65, starCount: 20),
-        Satellite(delay: 4.15, angle:  2.30,   // left-lower
+        Satellite(delay: 4.45, angle:  2.30,   // left-lower
                   edgeFraction: 0.65, sizeFactor: 0.55, starCount: 16),
     ]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
             let now = frozenAt ?? context.date
-            let elapsed = now.timeIntervalSince(generationStartedAt)
+            let elapsed = max(0, now.timeIntervalSince(generationStartedAt))
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
@@ -1461,12 +1462,12 @@ private struct GeneratingCloudScene: View {
                            t: elapsed,
                            count: centralStarCount,
                            sizeScale: 1.0,
-                           rotationSpeed: 0.18)
+                           rotationSpeed: 0.045)
 
                 for (i, sat) in satellites.enumerated() {
-                    let progress = max(0.0, min(1.0, (elapsed - sat.delay) / 1.4))
+                    let progress = max(0.0, min(1.0, (elapsed - sat.delay) / satelliteTravelDuration))
                     guard progress > 0 else { continue }
-                    let eased = 1 - pow(1 - progress, 3)
+                    let eased = smoothstep(progress)
 
                     // Distance to screen edge in this satellite's direction,
                     // then travel edgeFraction of that — fills all four
@@ -1591,6 +1592,11 @@ private struct GeneratingCloudScene: View {
                 with: .color(.white.opacity(alpha))
             )
         }
+    }
+
+    private func smoothstep(_ value: Double) -> Double {
+        let x = max(0.0, min(1.0, value))
+        return x * x * (3 - 2 * x)
     }
 
     /// Bright amber dot somewhere along the (origin → target) line at
