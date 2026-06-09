@@ -1444,7 +1444,7 @@ private struct GeneratingCloudScene: View {
     ]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { context in
             let now = frozenAt ?? context.date
             let elapsed = max(0, now.timeIntervalSince(generationStartedAt))
             Canvas { ctx, size in
@@ -1454,14 +1454,6 @@ private struct GeneratingCloudScene: View {
                 // cloud reads as the focal element of the composition
                 // rather than a small dot lost in negative space.
                 let coreRadius = min(size.width, size.height) * 0.20
-
-                drawSphere(in: ctx,
-                           cx: cx, cy: cy,
-                           r: coreRadius,
-                           t: 0,
-                           count: centralStarCount,
-                           sizeScale: 1.0,
-                           rotationSpeed: 0)
 
                 for (i, sat) in satellites.enumerated() {
                     let progress = max(0.0, min(1.0, (elapsed - sat.delay) / satelliteTravelDuration))
@@ -1543,6 +1535,21 @@ private struct GeneratingCloudScene: View {
                                              t: elapsed)
                     }
                 }
+
+                // Draw the central cloud last. The outgoing satellite paths
+                // begin at the core edge; painting them above the core makes
+                // the bright-pixel mass change shape frame-to-frame in screen
+                // recordings, which reads as central-cloud trembling even
+                // though the center point is fixed. Repainting the static core
+                // on top keeps it visually anchored while satellites bloom
+                // from behind it.
+                drawSphere(in: ctx,
+                           cx: cx, cy: cy,
+                           r: coreRadius,
+                           t: 0,
+                           count: centralStarCount,
+                           sizeScale: 1.0,
+                           rotationSpeed: 0)
             }
         }
         .accessibilityLabel("Creating your content")
