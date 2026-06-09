@@ -641,7 +641,7 @@ struct NoteVoiceSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var recording: RecordingController
 
-    private let sheetBg = AppBackground.primary
+    private let sheetBg = Color.black
 
     private var timeLabel: String {
         String(format: "%02d:%02d", recording.seconds / 60, recording.seconds % 60)
@@ -670,9 +670,9 @@ struct NoteVoiceSheet: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(AppText.secondary)
+                        .foregroundColor(Color.white.opacity(0.72))
                         .frame(width: 44, height: 44)
-                        .background(AppInk.solid(0.12))
+                        .background(Color.white.opacity(0.12))
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
@@ -681,22 +681,28 @@ struct NoteVoiceSheet: View {
             .padding(.horizontal, 20)
             .padding(.top, 16)
 
-            Spacer(minLength: 24)
+            Spacer(minLength: 40)
 
             let waveSize = UIScreen.main.bounds.width * 2 / 3
-            RecordingWaveformView(audioLevel: { recording.audioLevel })
-                .frame(width: waveSize, height: waveSize)
-                .background(Color.white.opacity(0.09))
-                .clipShape(Circle())
-                .overlay(Circle().stroke(Color(white: 0.38, opacity: 0.55), lineWidth: 1.5))
+            VStack(spacing: 18) {
+                RecordingWaveformView(audioLevel: { recording.audioLevel })
+                    .frame(width: waveSize, height: waveSize)
+                    .background(Color.white.opacity(0.05))
+                    .clipShape(Circle())
+                    .scaleEffect(recording.isPaused ? 0.985 : 1.0)
+                    .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: recording.isPaused)
 
-            Spacer(minLength: 20)
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.white.opacity(recording.isPaused ? 0.28 : 0.5))
+                        .frame(width: 7, height: 7)
+                    Text(recording.isPaused ? "Paused  \(timeLabel)" : "Recording  \(timeLabel)")
+                        .font(.system(size: 14, weight: .medium, design: .monospaced))
+                        .foregroundColor(Color.white.opacity(0.55))
+                }
+            }
 
-            Text(timeLabel)
-                .font(.system(size: 22, weight: .medium, design: .monospaced))
-                .foregroundColor(AppInk.solid(0.70))
-
-            Spacer(minLength: 16)
+            Spacer(minLength: 24)
 
             if let err = recording.startupError {
                 Text(err)
@@ -709,33 +715,7 @@ struct NoteVoiceSheet: View {
                 Spacer(minLength: 8)
             }
 
-            if let switchToWriting = onSwitchToWriting {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    recording.cancel()
-                    dismiss()
-                    switchToWriting()
-                } label: {
-                    HStack(spacing: 6) {
-                        Text("Switch to writing")
-                            .font(.app(size: 15, weight: .medium))
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundColor(Color.white.opacity(0.78))
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule().stroke(Color.white.opacity(0.14), lineWidth: 0.5)
-                    )
-                }
-                .buttonStyle(.plain)
-                .padding(.bottom, 10)
-            }
-
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     if recording.isPaused {
@@ -744,39 +724,60 @@ struct NoteVoiceSheet: View {
                         recording.pause()
                     }
                 } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: recording.isPaused ? "play.fill" : "pause.fill")
-                            .font(.system(size: 15, weight: .semibold))
-                        Text(recording.isPaused ? "Resume" : "Pause")
-                            .font(.system(size: 17, weight: .semibold))
-                            .frame(minWidth: 60)
-                    }
-                    .foregroundColor(AppText.primary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(AppInk.solid(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
+                    Image(systemName: recording.isPaused ? "play.fill" : "pause.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.76))
+                        .frame(width: 40, height: 40)
+                        .background(Color.white.opacity(0.08))
+                        .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(recording.isPaused ? "Resume recording" : "Pause recording")
 
-                Button(action: handleStop) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: 15, weight: .semibold))
-                        Text("Stop")
-                            .font(.system(size: 17, weight: .semibold))
-                    }
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.pill, style: .continuous))
+                if let switchToWriting = onSwitchToWriting {
+                    switchToWritingButton(action: switchToWriting)
                 }
-                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
+            .padding(.bottom, 14)
+
+            Button(action: handleStop) {
+                Text("Finish recording")
+                    .font(.app(size: 17, weight: .semibold))
+                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.white.opacity(0.94))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 28)
+            .padding(.bottom, 34)
         }
+    }
+
+    private func switchToWritingButton(action switchToWriting: @escaping () -> Void) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            recording.cancel()
+            dismiss()
+            switchToWriting()
+        } label: {
+            HStack(spacing: 6) {
+                Text("Switch to writing")
+                    .font(.app(size: 15, weight: .medium))
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            .foregroundColor(Color.white.opacity(0.78))
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color.white.opacity(0.08))
+            .clipShape(Capsule())
+            .overlay(
+                Capsule().stroke(Color.white.opacity(0.14), lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
