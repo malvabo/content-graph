@@ -195,7 +195,7 @@ struct OnboardingView: View {
         case .prompt:
             0.65
         case .recording, .specify:
-            0.30
+            0.60
         case .choose:
             0.56
         case .generating:
@@ -446,17 +446,9 @@ struct OnboardingView: View {
             withAnimation(.easeIn(duration: 0.85)) {
                 self.step = .capture
             }
-            // After the dive animation completes, unfreeze the cloud so its
-            // breathing/drift animations are live again during recording.
-            // Adjust constellationStartedAt so elapsed time is continuous —
-            // the sphere resumes from exactly the frozen angle, no jump.
-            try? await Task.sleep(nanoseconds: 950_000_000)
-            guard !Task.isCancelled else { return }
-            if let frozenAt = self.diveStartedAt {
-                let frozenElapsed = frozenAt.timeIntervalSince(self.constellationStartedAt)
-                self.constellationStartedAt = Date().addingTimeInterval(-frozenElapsed)
-                self.diveStartedAt = nil
-            }
+            // Cloud stays frozen for the entire capture phase so the enlarged
+            // background remains pixel-stable during recording — no drift or
+            // breathing motion behind the waveform circle.
         }
     }
 
