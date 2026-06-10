@@ -446,6 +446,17 @@ struct OnboardingView: View {
             withAnimation(.easeIn(duration: 0.85)) {
                 self.step = .capture
             }
+            // After the dive animation completes, unfreeze the cloud so its
+            // breathing/drift animations are live again during recording.
+            // Adjust constellationStartedAt so elapsed time is continuous —
+            // the sphere resumes from exactly the frozen angle, no jump.
+            try? await Task.sleep(nanoseconds: 950_000_000)
+            guard !Task.isCancelled else { return }
+            if let frozenAt = self.diveStartedAt {
+                let frozenElapsed = frozenAt.timeIntervalSince(self.constellationStartedAt)
+                self.constellationStartedAt = Date().addingTimeInterval(-frozenElapsed)
+                self.diveStartedAt = nil
+            }
         }
     }
 
@@ -648,6 +659,8 @@ struct OnboardingView: View {
                          : "Listening\u{2026}")
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
                         .foregroundColor(Color.white.opacity(0.55))
+                        .contentTransition(.opacity)
+                        .animation(.easeIn(duration: 0.35), value: isLive)
                 }
             }
             .transition(.opacity)
@@ -855,7 +868,7 @@ struct OnboardingView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         recordingSeconds = 0
         recordingStartedAt = Date()
-        withAnimation(.easeOut(duration: 0.16)) {
+        withAnimation(.easeOut(duration: 0.30)) {
             capturePhase = .recording
         }
         captureRecorder.start()
@@ -1358,7 +1371,7 @@ private struct GeneratingCloudScene: View {
 
     var body: some View {
         ZStack {
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+            TimelineView(.animation(minimumInterval: showsContentGraph ? 1.0 / 30.0 : 1.0 / 10.0)) { context in
                 let now = frozenAt ?? context.date
                 let elapsed = max(0, now.timeIntervalSince(generationStartedAt))
                 Canvas { ctx, size in

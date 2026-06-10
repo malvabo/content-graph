@@ -13,7 +13,6 @@ struct RecordingWaveformView: View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let level = audioLevel()
-            let amplified = min(1.0, max(0.0, Double(level) - 0.008) * 18.0)
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
@@ -26,6 +25,9 @@ struct RecordingWaveformView: View {
                     let angle = prng(i * 3) * 2 * .pi
                     let baseR = sqrt(prng(i * 3 + 1)) * (maxR - 20)
                     let ra = prng(i * 3 + 2)
+                    // Per-particle threshold prevents all 160 stars firing
+                    // simultaneously — denser stars react first, sparse ones later.
+                    let amplified = min(1.0, max(0.0, Double(level) - (0.004 + ra * 0.016)) * 18.0)
 
                     let phase = t * 0.38 + Double(i) * 0.41
                     let dx = sin(phase) * 13.0
