@@ -474,6 +474,10 @@ struct OnboardingView: View {
             Spacer(minLength: 24)
 
             captureCenter
+                // Reserve the waveform circle height even during .prompt so
+                // the layout doesn't reflow (and shift all surrounding
+                // elements) when the waveform fades in on recording start.
+                .frame(minHeight: UIScreen.main.bounds.width * 2 / 3)
                 .padding(.horizontal, 24)
 
             Spacer(minLength: 24)
