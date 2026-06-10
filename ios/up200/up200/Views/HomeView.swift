@@ -679,7 +679,7 @@ final class VoiceRecorder: ObservableObject {
             let now = CFAbsoluteTimeGetCurrent()
             guard now - lastLevelDispatch >= 1.0 / 20.0 else { return }
             lastLevelDispatch = now
-            DispatchQueue.main.async { self?.audioLevel = level }
+            DispatchQueue.main.async { self?.audioLevel = (self?.audioLevel ?? 0) * 0.70 + level * 0.30 }
         }
 
         audioEngine.prepare()

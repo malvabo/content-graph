@@ -20,21 +20,19 @@ struct RecordingWaveformView: View {
                 let maxR = min(cx, cy)
 
                 for i in 0..<starCount {
-                    let rx = prng(i * 3)
-                    let ry = prng(i * 3 + 1)
+                    // Distribute particles in a circle rather than a square so
+                    // no particle drifts across the clip boundary and flickers.
+                    // Polar coordinates with sqrt-radius give uniform area density.
+                    let angle = prng(i * 3) * 2 * .pi
+                    let baseR = sqrt(prng(i * 3 + 1)) * (maxR - 20)
                     let ra = prng(i * 3 + 2)
 
                     let phase = t * 0.38 + Double(i) * 0.41
-                    let dx = sin(phase) * 16.0
-                    let dy = cos(phase * 1.27) * 11.0
+                    let dx = sin(phase) * 13.0
+                    let dy = cos(phase * 1.27) * 9.0
 
-                    let x = rx * size.width + dx
-                    let y = ry * size.height + dy
-
-                    // Skip particles clearly outside the field (perf guard only —
-                    // visual clipping is handled by clipShape(Circle()) at the call site)
-                    let distX = x - cx, distY = y - cy
-                    guard distX * distX + distY * distY <= maxR * maxR else { continue }
+                    let x = cx + baseR * cos(angle) + dx
+                    let y = cy + baseR * sin(angle) + dy
 
                     let pulse = 0.65 + 0.35 * sin(t * 1.6 + Double(i) * 0.31)
                     let radius = (1.5 + ra * 2.4) * (1.0 + amplified * 0.45)
