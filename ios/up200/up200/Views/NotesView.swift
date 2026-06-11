@@ -259,6 +259,7 @@ extension Notification.Name {
 
 struct NotesStore {
     static let key = "notes_v1"
+    private static let removedFirstIdeaPlaceholdersKey = "notes_removed_first_idea_placeholders_v1"
     private static let saveQueue = DispatchQueue(label: "com.up200.notes.save", qos: .utility)
 
     static func load() -> [Note] {
@@ -267,7 +268,7 @@ struct NotesStore {
         case .empty:
             return []
         case .ok(let raw):
-            return raw.map(Note.migrated)
+            return scrubOnboardingFirstIdeaPlaceholdersIfNeeded(raw.map(Note.migrated))
         case .corrupt:
             // Bytes exist but can't decode. Return empty so the UI renders,
             // but `save` will refuse to overwrite — preserving the original
@@ -299,6 +300,36 @@ struct NotesStore {
     static func saveInBackground(_ notes: [Note]) {
         let snapshot = notes
         saveQueue.async { save(snapshot) }
+    }
+
+    private static func scrubOnboardingFirstIdeaPlaceholdersIfNeeded(_ notes: [Note]) -> [Note] {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: removedFirstIdeaPlaceholdersKey) else { return notes }
+
+        let scrubbed = notes.filter { !isOnboardingFirstIdeaPlaceholder($0) }
+        defaults.set(true, forKey: removedFirstIdeaPlaceholdersKey)
+
+        if scrubbed.count != notes.count,
+           let data = try? JSONEncoder().encode(scrubbed) {
+            defaults.set(data, forKey: key)
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .notesStoreDidChange, object: nil)
+            }
+        }
+
+        return scrubbed
+    }
+
+    private static func isOnboardingFirstIdeaPlaceholder(_ note: Note) -> Bool {
+        guard note.kind == .text, note.tags.isEmpty, !note.isPinned else { return false }
+        let firstLine = note.body
+            .split(whereSeparator: \.isNewline)
+            .first
+            .map(String.init)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        return firstLine == "your first idea" || firstLine == "my first idea"
     }
 }
 

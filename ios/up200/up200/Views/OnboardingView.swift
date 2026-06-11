@@ -1101,8 +1101,9 @@ struct OnboardingView: View {
             finalBody = trimmed
         } else {
             // Single paragraph, no AI title available — prepend a generic
-            // heading so the transcript still renders below the tabs.
-            finalBody = "Your first idea\n" + trimmed
+            // transcript-derived heading so the note doesn't pile up as
+            // another indistinguishable first-idea row.
+            finalBody = AIService.fallback(from: trimmed) + "\n" + trimmed
         }
 
         var latest = NotesStore.load()
