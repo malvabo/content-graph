@@ -167,6 +167,16 @@ struct OnboardingView: View {
                     .transition(.asymmetric(insertion: .opacity, removal: .opacity))
             }
 
+            if step == .capture && capturePhase == .recording {
+                AppBackground.primary.ignoresSafeArea()
+                RadialGradient(
+                    colors: [BrandColor.amber.opacity(0.16), .clear],
+                    center: .center, startRadius: 0, endRadius: 300
+                )
+                .ignoresSafeArea()
+                .transition(.opacity)
+            }
+
             switch step {
             case .intro:         introOverlay
             case .constellation: constellationOverlay
