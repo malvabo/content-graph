@@ -140,6 +140,7 @@ struct OnboardingView: View {
             if step == .capture && captureCloudVisible {
                 RecordingWaveformView(audioLevel: { captureRecorder.audioLevel })
                     .ignoresSafeArea()
+                    .scaleEffect(captureCloudScale)
                     .opacity(captureCloudOpacity)
                     .contentShape(Rectangle())
                     .gesture(DragGesture(minimumDistance: 0).onChanged { _ in
@@ -190,11 +191,26 @@ struct OnboardingView: View {
         case .prompt:
             1.0
         case .recording, .specify:
-            0.12
+            // Fully hidden while recording — every visible particle lives
+            // inside the center circle; nothing shows behind it.
+            0
         case .choose:
             0.56
         case .generating:
             0
+        }
+    }
+
+    /// While recording, the full-screen field contracts toward the center
+    /// circle as it fades, so the particles read as gathering into the
+    /// circle rather than simply disappearing. 2/3 matches the circle's
+    /// diameter relative to the field's screen-width diameter.
+    private var captureCloudScale: Double {
+        switch capturePhase {
+        case .recording, .specify:
+            2.0 / 3.0
+        case .prompt, .choose, .generating:
+            1.0
         }
     }
 
