@@ -36,9 +36,9 @@ struct RecordingWaveformView: View {
                     let x = cx + baseR * cos(angle) + dx
                     let y = cy + baseR * sin(angle) + dy
 
-                    let pulse = 0.65 + 0.35 * sin(t * 1.6 + Double(i) * 0.31)
-                    let radius = (1.5 + ra * 2.4) * (1.0 + amplified * 0.45)
-                    let alpha = min(1.0, (0.38 + ra * 0.55) * pulse * (1.0 + amplified * 0.35))
+                    let pulse = 0.75 + 0.25 * sin(t * 1.6 + Double(i) * 0.31)
+                    let radius = (2.0 + ra * 3.2) * (1.0 + amplified * 0.45)
+                    let alpha = min(1.0, (0.55 + ra * 0.45) * pulse * (1.0 + amplified * 0.35))
 
                     ctx.fill(
                         Path(ellipseIn: CGRect(x: x - radius, y: y - radius,
