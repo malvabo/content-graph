@@ -30,7 +30,7 @@ struct RecordingWaveformView: View {
     @StateObject private var envelope = RecordingWaveformEnvelope()
     @State private var startedAt = Date()
 
-    private let starCount = 160
+    private let starCount = 190
     private let goldenAngle = Double.pi * (1 + sqrt(5.0))
 
     var body: some View {
@@ -50,7 +50,8 @@ struct RecordingWaveformView: View {
                     let n = Double(i) + 0.5
                     let phi = acos(1 - 2 * n / Double(starCount))
                     let theta = goldenAngle * Double(i) + rotation
-                    let jitter = 0.80 + prng(i * 3) * 0.20
+                    let fill = pow(prng(i * 13 + 2), 0.58)
+                    let jitter = 0.12 + fill * 0.88
                     let breath = 1.0 + sin(t * 0.08 + Double(i) * 0.23) * (0.002 + audio * 0.004)
                     let r = sphereR * jitter * breath
                     let x3 = r * sin(phi) * cos(theta)
