@@ -694,36 +694,10 @@ struct NoteVoiceSheet: View {
                     Circle()
                         .fill(Color.white.opacity(0.5))
                         .frame(width: 7, height: 7)
-                    Text(recording.isPaused ? "Paused  \(timeLabel)" : "Recording  \(timeLabel)")
+                    Text(timeLabel)
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
                         .foregroundColor(Color.white.opacity(0.55))
-                        .contentTransition(.opacity)
-                        .animation(.easeIn(duration: 0.35), value: recording.isPaused)
                 }
-
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    if recording.isPaused {
-                        recording.resume()
-                    } else {
-                        recording.pause()
-                    }
-                } label: {
-                    HStack(spacing: 7) {
-                        Image(systemName: recording.isPaused ? "play.fill" : "pause.fill")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text(recording.isPaused ? "Resume" : "Pause")
-                            .font(.app(size: 13, weight: .medium))
-                    }
-                    .foregroundColor(Color.white.opacity(0.62))
-                    .padding(.horizontal, 13)
-                    .padding(.vertical, 8)
-                    .background(Color.white.opacity(0.055))
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(recording.isPaused ? "Resume recording" : "Pause recording")
-                .padding(.top, 2)
             }
 
             Spacer(minLength: 24)
