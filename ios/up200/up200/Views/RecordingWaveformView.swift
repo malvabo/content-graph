@@ -26,11 +26,11 @@ struct RecordingWaveformView: View {
                     let baseR = sqrt(prng(i * 3 + 1)) * (maxR - 18)
                     let ra    = prng(i * 3 + 2)
 
-                    // Drift speed rises subtly when speaking (+35% at full audio)
-                    let speed = 0.22 + audio * 0.08
+                    // Very gentle drift — particles barely float in place
+                    let speed = 0.14 + audio * 0.03
                     let phase = t * speed + Double(i) * 0.41
-                    let x = cx + baseR * cos(angle) + sin(phase)        * 11.0
-                    let y = cy + baseR * sin(angle) + cos(phase * 1.27) *  8.0
+                    let x = cx + baseR * cos(angle) + sin(phase)        * 3.5
+                    let y = cy + baseR * sin(angle) + cos(phase * 1.27) * 2.5
 
                     // Per-particle glow cycle — slow (3–8 s period), staggered
                     // so no two particles sync. glow is zero half the time,
