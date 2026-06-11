@@ -134,3 +134,72 @@ struct RecordingCloudView: View {
         }
     }
 }
+
+// MARK: - Active recording page
+
+/// The single, canonical "recording in progress" screen used everywhere a
+/// recording is happening (home Voice Note, onboarding first capture). It owns
+/// the background, the amber glow, the orbiting cloud, and the time label so
+/// these can never drift between surfaces — which is exactly what made the
+/// onboarding screen read "orange" while the home screen looked correct.
+///
+/// Callers vary only what legitimately differs: the title, whether there's a
+/// close button, and the bottom CTA. Everything visual is fixed here. This is
+/// the stable base — extend it through its parameters, not by re-implementing
+/// the chrome at the call site.
+struct ActiveRecordingPageView<Bottom: View>: View {
+    let title: String
+    let audioLevel: () -> Float
+    let timeLabel: String
+    var onClose: (() -> Void)? = nil
+    @ViewBuilder var bottom: () -> Bottom
+
+    var body: some View {
+        ZStack {
+            AppBackground.primary.ignoresSafeArea()
+            RadialGradient(
+                colors: [BrandColor.amber.opacity(0.16), .clear],
+                center: .center, startRadius: 0, endRadius: 300
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Title centered; optional close button overlaid trailing so
+                // the title stays centered whether or not a close is shown.
+                ZStack {
+                    Text(title)
+                        .font(.subheadline)
+                        .foregroundColor(AppText.tertiary)
+                        .multilineTextAlignment(.center)
+
+                    if let onClose {
+                        HStack {
+                            Spacer()
+                            Button(action: onClose) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(AppText.secondary)
+                                    .frame(width: 44, height: 44)
+                                    .background(AppInk.solid(0.12))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+
+                Spacer(minLength: 24)
+
+                RecordingCloudView(audioLevel: audioLevel, timeLabel: timeLabel)
+
+                Spacer(minLength: 24)
+
+                bottom()
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
+            }
+        }
+    }
+}

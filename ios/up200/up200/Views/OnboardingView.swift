@@ -167,20 +167,36 @@ struct OnboardingView: View {
                     .transition(.asymmetric(insertion: .opacity, removal: .opacity))
             }
 
-            if step == .capture && capturePhase == .recording {
-                AppBackground.primary.ignoresSafeArea()
-                RadialGradient(
-                    colors: [BrandColor.amber.opacity(0.16), .clear],
-                    center: .center, startRadius: 0, endRadius: 300
-                )
-                .ignoresSafeArea()
-                .transition(.opacity)
-            }
-
             switch step {
             case .intro:         introOverlay
             case .constellation: constellationOverlay
             case .capture:       captureOverlay
+            }
+
+            // Recording uses the shared, canonical recording page — the exact
+            // same component the home Voice Note screen renders — so the two
+            // can never diverge. Onboarding differs only in the title (no
+            // close button) and the "Finish recording" CTA. Rendered on top of
+            // captureOverlay (whose .recording slots are intentionally empty)
+            // so it owns the full screen during capture.
+            if step == .capture && capturePhase == .recording {
+                ActiveRecordingPageView(
+                    title: "Let's capture\nyour first idea",
+                    audioLevel: { captureRecorder.audioLevel },
+                    timeLabel: formatCaptureTime(recordingSeconds)
+                ) {
+                    Button(action: finishCaptureRecording) {
+                        Text("Finish recording")
+                            .font(.app(size: 17, weight: .semibold))
+                            .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(Color.white.opacity(0.94))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .transition(.opacity)
             }
 
             if let note = resultNote {
@@ -594,7 +610,7 @@ struct OnboardingView: View {
 
     @ViewBuilder private var captureHeadline: some View {
         switch capturePhase {
-        case .prompt, .recording:
+        case .prompt:
             Text("Let's capture\nyour first idea")
                 .font(.lora(size: 22, weight: .medium))
                 .kerning(-0.3)
@@ -602,6 +618,9 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
                 .transition(.opacity)
+        case .recording:
+            // The shared ActiveRecordingPageView owns the recording title.
+            EmptyView()
         case .choose:
             Text("What do you want to create?")
                 .font(.lora(size: 20, weight: .medium))
@@ -659,21 +678,9 @@ struct OnboardingView: View {
                 .transition(.opacity)
 
         case .recording:
-            // captureRecorder.isRecording becomes true only after the
-            // async mic auth + audio engine start completes (50-500ms
-            // after the long-press fires). The "Listening…" label tells
-            // the user the engine is spinning up so they don't start
-            // speaking into a deaf microphone during the gap.
-            RecordingCloudView(audioLevel: { captureRecorder.audioLevel },
-                               timeLabel: formatCaptureTime(recordingSeconds))
-            // Circle appears immediately as the background field dims; the
-            // short settle avoids a visible blank beat after touch-down.
-            .transition(.asymmetric(
-                insertion: .scale(scale: 1.025)
-                    .combined(with: .opacity)
-                    .animation(.easeOut(duration: 0.16)),
-                removal: .opacity
-            ))
+            // The shared ActiveRecordingPageView (rendered full-screen in the
+            // parent ZStack) owns the recording cloud and time label.
+            EmptyView()
 
         case .choose:
             chooseCirclesField
@@ -737,17 +744,8 @@ struct OnboardingView: View {
             // "Finish recording" button appears.
             Color.clear.frame(height: 54)
         case .recording:
-            Button(action: finishCaptureRecording) {
-                Text("Finish recording")
-                    .font(.app(size: 17, weight: .semibold))
-                    .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color.white.opacity(0.94))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
+            // The shared ActiveRecordingPageView owns the "Finish recording" CTA.
+            EmptyView()
         case .choose:
             Color.clear.frame(height: 54)
         case .specify:
