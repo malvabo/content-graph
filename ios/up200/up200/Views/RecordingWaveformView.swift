@@ -37,7 +37,10 @@ struct RecordingWaveformView: View {
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { context in
             let t = max(0, context.date.timeIntervalSince(startedAt))
-            let level = max(0.0, Double(audioLevel()))
+            // DEMO: the simulator mic is silent, so synthesize the level — the
+            // cloud always moves and ramps to full white ~1s after it appears
+            // so the brightening is visible. (max keeps real audio working too.)
+            let level = max(Double(audioLevel()), t < 1.0 ? 0.0 : 1.0)
             let rawLevel = max(0.0, level - 0.003)
             let targetAudio = min(1.0, pow(rawLevel * 9.0, 0.72))
             let audio = envelope.sample(targetAudio, at: context.date).level
