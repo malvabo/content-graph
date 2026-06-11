@@ -104,3 +104,26 @@ struct RecordingWaveformView: View {
         return v - floor(v)
     }
 }
+
+struct RecordingCloudView: View {
+    let audioLevel: () -> Float
+    let timeLabel: String
+    var isDimmed = false
+
+    var body: some View {
+        VStack(spacing: 20) {
+            let orbitSize = UIScreen.main.bounds.width * 2 / 3
+            RecordingWaveformView(audioLevel: audioLevel, individualParticleMotion: true)
+                .frame(width: orbitSize, height: orbitSize)
+                .background(Color.white.opacity(0.09))
+                .clipShape(Circle())
+                .overlay(Circle().stroke(Color(white: 0.38, opacity: 0.55), lineWidth: 1.5))
+                .opacity(isDimmed ? 0.3 : 1)
+
+            Text(timeLabel)
+                .font(.system(.title2, design: .monospaced))
+                .fontWeight(.medium)
+                .foregroundColor(AppInk.solid(0.70))
+        }
+    }
+}

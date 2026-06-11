@@ -1465,21 +1465,10 @@ struct VoiceRecordSheet: View {
 
                 // Waveform or mic button
                 if recorder.isRecording {
-                    let orbitSize = UIScreen.main.bounds.width * 2 / 3
-                    RecordingWaveformView(audioLevel: { recorder.audioLevel }, individualParticleMotion: true)
-                        .frame(width: orbitSize, height: orbitSize)
-                        .background(Color.white.opacity(0.09))
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(Color(white: 0.38, opacity: 0.55), lineWidth: 1.5))
+                    RecordingCloudView(audioLevel: { recorder.audioLevel }, timeLabel: timeLabel)
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 } else if !recorder.transcript.isEmpty {
-                    let orbitSize = UIScreen.main.bounds.width * 2 / 3
-                    RecordingWaveformView(audioLevel: { recorder.audioLevel }, individualParticleMotion: true)
-                        .frame(width: orbitSize, height: orbitSize)
-                        .background(Color.white.opacity(0.09))
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(Color(white: 0.38, opacity: 0.55), lineWidth: 1.5))
-                        .opacity(0.3)
+                    RecordingCloudView(audioLevel: { recorder.audioLevel }, timeLabel: timeLabel, isDimmed: true)
                         .transition(.opacity)
                 } else {
                     Button(action: handleMicTap) {
@@ -1504,20 +1493,16 @@ struct VoiceRecordSheet: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 }
 
-                Spacer(minLength: 20)
-
                 // Timer
-                if recorder.isRecording || !recorder.transcript.isEmpty {
-                    Text(timeLabel)
-                        .font(.system(.title2, design: .monospaced))
-                        .fontWeight(.medium)
-                        .foregroundColor(AppInk.solid(0.70))
-                        .transition(.opacity)
-                } else {
+                if !recorder.isRecording && recorder.transcript.isEmpty {
+                    Spacer(minLength: 20)
+
                     Text("Tap to record")
                         .font(.appBody)
                         .foregroundColor(AppInk.solid(0.40))
                         .transition(.opacity)
+                } else {
+                    Spacer(minLength: 24)
                 }
 
                 if !recorder.transcript.isEmpty {

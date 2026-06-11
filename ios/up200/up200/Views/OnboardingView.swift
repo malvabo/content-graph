@@ -654,19 +654,8 @@ struct OnboardingView: View {
             // after the long-press fires). The "Listening…" label tells
             // the user the engine is spinning up so they don't start
             // speaking into a deaf microphone during the gap.
-            VStack(spacing: 20) {
-                let waveSize = UIScreen.main.bounds.width * 2 / 3
-                RecordingWaveformView(audioLevel: { captureRecorder.audioLevel }, individualParticleMotion: true)
-                    .frame(width: waveSize, height: waveSize)
-                    .background(Color.white.opacity(0.09))
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color(white: 0.38, opacity: 0.55), lineWidth: 1.5))
-
-                Text(formatCaptureTime(recordingSeconds))
-                    .font(.system(.title2, design: .monospaced))
-                    .fontWeight(.medium)
-                    .foregroundColor(AppInk.solid(0.70))
-            }
+            RecordingCloudView(audioLevel: { captureRecorder.audioLevel },
+                               timeLabel: formatCaptureTime(recordingSeconds))
             // Circle appears immediately as the background field dims; the
             // short settle avoids a visible blank beat after touch-down.
             .transition(.asymmetric(
