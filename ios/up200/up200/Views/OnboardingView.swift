@@ -471,6 +471,7 @@ struct OnboardingView: View {
         if capturePhase == .recording {
             ActiveRecordingPageView(audioLevel: { captureRecorder.audioLevel },
                                     timeLabel: formatCaptureTime(recordingSeconds),
+                                    showsAmberGlow: false,
                                     title: {
                 Text("Let's capture\nyour first idea")
                     .font(.lora(size: 22, weight: .medium))
