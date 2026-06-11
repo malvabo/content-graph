@@ -640,7 +640,6 @@ struct NoteVoiceSheet: View {
     var onSwitchToWriting: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var recording: RecordingController
-    @State private var recDotPulsed = false
 
     private let sheetBg = Color.black
 
@@ -682,44 +681,26 @@ struct NoteVoiceSheet: View {
             .padding(.horizontal, 20)
             .padding(.top, 16)
 
-            Spacer(minLength: 40)
+            Spacer(minLength: 24)
 
             let waveSize = UIScreen.main.bounds.width * 2 / 3
             VStack(spacing: 18) {
-                RecordingWaveformView(audioLevel: { recording.audioLevel }, isPaused: recording.isPaused)
+                RecordingWaveformView(audioLevel: { recording.audioLevel })
                     .frame(width: waveSize, height: waveSize)
                     .background(Color.white.opacity(0.05))
                     .clipShape(Circle())
-                    .overlay {
-                        Circle()
-                            .strokeBorder(Color.white.opacity(recording.isPaused ? 0.08 : 0.13), lineWidth: 1.0)
-                    }
-                    .shadow(color: Color.white.opacity(recording.isPaused ? 0 : 0.07), radius: 24, x: 0, y: 0)
-                    .scaleEffect(recording.isPaused ? 0.985 : 1.0)
-                    .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: recording.isPaused)
 
-                // Recording status
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(recording.isPaused
-                              ? Color.white.opacity(0.22)
-                              : Color(red: 1.0, green: 0.27, blue: 0.24))
+                        .fill(Color.white.opacity(0.5))
                         .frame(width: 7, height: 7)
-                        .opacity(recording.isPaused ? 0.4 : (recDotPulsed ? 0.28 : 1.0))
-                    Text(recording.isPaused ? "Paused" : "Recording")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color.white.opacity(0.6))
-                    Text(timeLabel)
-                        .font(.system(size: 13, weight: .regular, design: .monospaced))
-                        .foregroundColor(Color.white.opacity(0.38))
-                }
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 0.85).repeatForever(autoreverses: true)) {
-                        recDotPulsed = true
-                    }
+                    Text(recording.isPaused ? "Paused  \(timeLabel)" : "Recording  \(timeLabel)")
+                        .font(.system(size: 14, weight: .medium, design: .monospaced))
+                        .foregroundColor(Color.white.opacity(0.55))
+                        .contentTransition(.opacity)
+                        .animation(.easeIn(duration: 0.35), value: recording.isPaused)
                 }
 
-                // Pause / Resume
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     if recording.isPaused {
@@ -732,16 +713,17 @@ struct NoteVoiceSheet: View {
                         Image(systemName: recording.isPaused ? "play.fill" : "pause.fill")
                             .font(.system(size: 11, weight: .semibold))
                         Text(recording.isPaused ? "Resume" : "Pause")
-                            .font(.app(size: 14, weight: .medium))
+                            .font(.app(size: 13, weight: .medium))
                     }
-                    .foregroundColor(Color.white.opacity(0.75))
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
-                    .background(Color.white.opacity(0.09))
+                    .foregroundColor(Color.white.opacity(0.62))
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.055))
                     .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(recording.isPaused ? "Resume recording" : "Pause recording")
+                .padding(.top, 2)
             }
 
             Spacer(minLength: 24)
@@ -752,12 +734,14 @@ struct NoteVoiceSheet: View {
                     .foregroundColor(.red.opacity(0.75))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 12)
+                Spacer(minLength: 16)
+            } else {
+                Spacer(minLength: 8)
             }
 
             if let switchToWriting = onSwitchToWriting {
                 switchToWritingButton(action: switchToWriting)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 16)
             }
 
             Button(action: handleStop) {
@@ -766,7 +750,7 @@ struct NoteVoiceSheet: View {
                     .foregroundColor(Color(red: 0.10, green: 0.08, blue: 0.07))
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(Color(red: 0.97, green: 0.96, blue: 0.94))
+                    .background(Color.white.opacity(0.94))
                     .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
             }
             .buttonStyle(.plain)
