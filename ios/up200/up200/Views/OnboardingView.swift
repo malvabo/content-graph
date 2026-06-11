@@ -278,11 +278,11 @@ struct OnboardingView: View {
                         .foregroundColor(Color.white.opacity(0.78))
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(Color.white.opacity(0.10))
+                        .background(Color.white.opacity(0.05))
                         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                                .strokeBorder(Color.white.opacity(0.20), lineWidth: 1)
+                                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
                         )
                 }
                 .buttonStyle(.plain)
@@ -471,7 +471,6 @@ struct OnboardingView: View {
         if capturePhase == .recording {
             ActiveRecordingPageView(audioLevel: { captureRecorder.audioLevel },
                                     timeLabel: formatCaptureTime(recordingSeconds),
-                                    showsAmberGlow: false,
                                     title: {
                 Text("Let's capture\nyour first idea")
                     .font(.lora(size: 22, weight: .medium))
