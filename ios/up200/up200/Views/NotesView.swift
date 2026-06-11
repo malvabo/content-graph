@@ -698,22 +698,7 @@ struct NoteVoiceSheet: View {
 
             Spacer(minLength: 24)
 
-            let waveSize = UIScreen.main.bounds.width * 2 / 3
-            VStack(spacing: 18) {
-                RecordingWaveformView(audioLevel: { recording.audioLevel })
-                    .frame(width: waveSize, height: waveSize)
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(Circle())
-
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(Color.white.opacity(0.5))
-                        .frame(width: 7, height: 7)
-                    Text(timeLabel)
-                        .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundColor(Color.white.opacity(0.55))
-                }
-            }
+            RecordingCloudView(audioLevel: { recording.audioLevel }, timeLabel: timeLabel)
 
             Spacer(minLength: 24)
 
