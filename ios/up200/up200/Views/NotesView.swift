@@ -201,10 +201,6 @@ final class NoteDictation: ObservableObject {
         task?.cancel()
         task = nil
         guard isRecording, let rec = recognizer else { return }
-        guard rec.supportsOnDeviceRecognition else {
-            startupError = "On-device speech recognition isn't available for this language."
-            return
-        }
         guard srRestartCount < 20 else {
             startupError = "Speech recognition became unavailable. Tap the mic to retry."
             return
@@ -212,7 +208,12 @@ final class NoteDictation: ObservableObject {
         srRestartCount += 1
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
-        req.requiresOnDeviceRecognition = true
+        // Do NOT force on-device recognition — `supportsOnDeviceRecognition`
+        // can report true while the language asset is unavailable, making the
+        // request error out instantly and exhaust the restart budget with no
+        // transcript. Leaving this false lets the system fall back to the
+        // server recogniser, which reliably returns partial and final results.
+        req.requiresOnDeviceRecognition = false
         sharedRequest.value = req
         task = rec.recognitionTask(with: req) { [weak self] result, error in
             DispatchQueue.main.async {
@@ -222,15 +223,29 @@ final class NoteDictation: ObservableObject {
                     self.transcript = self.sessionBase.isEmpty
                         ? current
                         : self.sessionBase + " " + current
+                    // A real result means the recogniser is healthy — clear the
+                    // restart budget so a long session never trips the cap.
+                    self.srRestartCount = 0
                 }
                 if result?.isFinal == true {
                     // Accumulate completed session, restart SR on the same engine.
                     self.sessionBase = self.transcript
                     self.restartSpeechRecognition()
                 } else if error != nil, self.isRecording {
-                    self.restartSpeechRecognition()
+                    // Back off briefly so a persistent failure decays the budget
+                    // over seconds instead of milliseconds.
+                    self.scheduleRestartAfterError()
                 }
             }
+        }
+    }
+
+    /// Restart the recogniser a short beat after a failure so a persistent SR
+    /// error backs off instead of exhausting `srRestartCount` instantly.
+    private func scheduleRestartAfterError() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            guard let self, self.isRecording else { return }
+            self.restartSpeechRecognition()
         }
     }
 
