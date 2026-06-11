@@ -947,7 +947,11 @@ final class RecordingController: ObservableObject {
     func pauseForSystem() {
         guard isRecording, !isPaused else { return }
         pausedBySystem = true
-        pause()
+        accumulated = fullTranscript
+        transcript = ""
+        teardownEngine()
+        stopTimer()
+        isPaused = true
     }
 
     /// Resume only if the most recent pause was system-initiated.
