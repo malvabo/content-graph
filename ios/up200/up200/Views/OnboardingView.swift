@@ -163,7 +163,7 @@ struct OnboardingView: View {
                     })
                     .allowsHitTesting(capturePhase == .prompt)
                     .animation(.easeIn(duration: 0.85), value: step)
-                    .animation(.easeOut(duration: 0.45), value: capturePhase)
+                    .animation(.easeOut(duration: 0.18), value: capturePhase)
                     .transition(.asymmetric(insertion: .opacity, removal: .opacity))
             }
 
@@ -205,9 +205,9 @@ struct OnboardingView: View {
         case .prompt:
             1.0
         case .recording, .specify:
-            // Fully hidden while recording — every visible particle lives
-            // inside the center circle; nothing shows behind it.
-            0
+            // Keep a faint field during the handoff into the center circle so
+            // the tap-to-record transition never drops to a blank frame.
+            0.18
         case .choose:
             0.56
         case .generating:
@@ -509,7 +509,7 @@ struct OnboardingView: View {
         // `Color.clear` placeholder would each carve a strip of the
         // screen where the long-press silently fails to fire.
         .allowsHitTesting(capturePhase != .prompt)
-        .animation(.easeOut(duration: 0.18), value: capturePhase)
+        .animation(.easeOut(duration: 0.14), value: capturePhase)
         // Enter with the transformed cloud so the prompt and background land
         // as one composed scene after Continue.
         // Exit: not actually used today (.capture is terminal in
@@ -674,13 +674,12 @@ struct OnboardingView: View {
                         .foregroundColor(Color.white.opacity(0.55))
                 }
             }
-            // Circle fades in simultaneously with the background field
-            // fading out — no delay, no gap. The subtle scale settle
-            // (1.06→1.0) gives the circle a sense of weight arriving.
+            // Circle appears immediately as the background field dims; the
+            // short settle avoids a visible blank beat after touch-down.
             .transition(.asymmetric(
-                insertion: .scale(scale: 1.06)
+                insertion: .scale(scale: 1.025)
                     .combined(with: .opacity)
-                    .animation(.easeOut(duration: 0.40)),
+                    .animation(.easeOut(duration: 0.16)),
                 removal: .opacity
             ))
 
@@ -884,7 +883,7 @@ struct OnboardingView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         recordingSeconds = 0
         recordingStartedAt = Date()
-        withAnimation(.easeOut(duration: 0.30)) {
+        withAnimation(.easeOut(duration: 0.14)) {
             capturePhase = .recording
         }
         captureRecorder.start()
