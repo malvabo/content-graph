@@ -27,6 +27,10 @@ private final class RecordingWaveformEnvelope: ObservableObject {
 struct RecordingWaveformView: View {
     let audioLevel: () -> Float
     var individualParticleMotion = false
+    var collapseStartedAt: Date? = nil
+    var collapseDuration: TimeInterval = 0.72
+    var collapsedDiameter: CGFloat? = nil
+    var collapsedCenterYOffset: CGFloat = 0
 
     @StateObject private var envelope = RecordingWaveformEnvelope()
     @State private var startedAt = Date()
@@ -45,10 +49,44 @@ struct RecordingWaveformView: View {
             let targetAudio = min(1.0, pow(rawLevel * 9.0, 0.72))
             let audio = envelope.sample(targetAudio, at: context.date).level
             let rotation = envelope.rotation
-            Canvas { ctx, size in
+            waveformCanvas(t: t,
+                           audio: audio,
+                           rotation: rotation,
+                           collapseProgress: collapseProgress(at: context.date))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityHidden(true)
+    }
+
+    private func collapseProgress(at date: Date) -> Double {
+        guard let collapseStartedAt else { return 0 }
+        let elapsed = date.timeIntervalSince(collapseStartedAt)
+        let raw = Swift.max(0, Swift.min(1, elapsed / Swift.max(0.001, collapseDuration)))
+        return raw * raw * (3 - 2 * raw)
+    }
+
+    private func waveformCanvas(t: Double,
+                                audio: Double,
+                                rotation: Double,
+                                collapseProgress: Double) -> some View {
+        Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
                 let sphereR = min(cx, cy) - 3
+                let targetDiameter = collapsedDiameter ?? min(size.width, size.height) * 2 / 3
+                let collapsedRadius = targetDiameter / 2
+                let collapsedCenter = CGPoint(x: cx, y: cy + collapsedCenterYOffset)
+
+                if collapseProgress > 0.02 {
+                    let discOpacity = min(0.06, collapseProgress * 0.06)
+                    ctx.fill(
+                        Path(ellipseIn: CGRect(x: collapsedCenter.x - collapsedRadius,
+                                               y: collapsedCenter.y - collapsedRadius,
+                                               width: targetDiameter,
+                                               height: targetDiameter)),
+                        with: .color(Color.white.opacity(discOpacity))
+                    )
+                }
 
                 let driftTime = t * (1.0 + audio * 0.45)
 
@@ -84,12 +122,23 @@ struct RecordingWaveformView: View {
                     let perspective = 0.62 + depth * 0.50
                     var x = cx + x3 * (0.86 + 0.14 * perspective)
                     var y = cy + y3 * (0.86 + 0.14 * perspective)
+                    let collapsedScale = collapsedRadius / max(1, sphereR)
+                    var collapsedX = collapsedCenter.x + x3 * collapsedScale * (0.86 + 0.14 * perspective)
+                    var collapsedY = collapsedCenter.y + y3 * collapsedScale * (0.86 + 0.14 * perspective)
 
                     if individualParticleMotion {
                         let orbit = (1.8 + prng(i * 41 + 5) * 4.8) * (0.75 + audio * 0.55)
                         let localT = driftTime * (0.55 + prng(i * 43 + 9) * 0.35)
                         x += cos(localT + seedA) * orbit
                         y += sin(localT * (0.82 + prng(i * 47 + 13) * 0.18) + seedB) * orbit
+                        collapsedX += cos(localT + seedA) * orbit
+                        collapsedY += sin(localT * (0.82 + prng(i * 47 + 13) * 0.18) + seedB) * orbit
+                    }
+
+                    if collapseProgress > 0 {
+                        let pull = collapseProgress
+                        x = x + (collapsedX - x) * pull
+                        y = y + (collapsedY - y) * pull
                     }
 
                     let sensitivity = 0.75 + prng(i * 5 + 1) * 0.75
@@ -104,9 +153,6 @@ struct RecordingWaveformView: View {
                     )
                 }
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityHidden(true)
     }
 
     private func prng(_ n: Int) -> Double {

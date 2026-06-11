@@ -61,6 +61,7 @@ struct OnboardingView: View {
     // invalidates that subtree when the second actually rolls over.
     @State private var recordingStartedAt: Date = .distantPast
     @State private var specifyStartedAt: Date = .distantPast
+    @State private var captureCollapseStartedAt: Date? = nil
     @State private var showCaptureMicAlert: Bool = false
     @State private var chosenContentLabel: String = ""
     @State private var generatingTask: Task<Void, Never>? = nil
@@ -153,7 +154,11 @@ struct OnboardingView: View {
             // circular clip, no sphere boundary. Crossfades in as the
             // constellation cloud crossfades out during the dive.
             if step == .capture && captureCloudVisible {
-                RecordingWaveformView(audioLevel: { captureRecorder.audioLevel })
+                RecordingWaveformView(audioLevel: { captureRecorder.audioLevel },
+                                      individualParticleMotion: capturePhase == .recording,
+                                      collapseStartedAt: capturePhase == .recording ? captureCollapseStartedAt : nil,
+                                      collapsedDiameter: recordingOrbitSize,
+                                      collapsedCenterYOffset: captureRecordingCircleYOffset)
                     .ignoresSafeArea()
                     .opacity(captureCloudOpacity)
                     .contentShape(Rectangle())
@@ -193,22 +198,30 @@ struct OnboardingView: View {
 
     private var captureCloudVisible: Bool {
         switch capturePhase {
-        case .prompt, .choose:
+        case .prompt, .recording, .choose:
             true
-        case .recording, .specify, .generating:
+        case .specify, .generating:
             false
         }
     }
 
     private var captureCloudOpacity: Double {
         switch capturePhase {
-        case .prompt:
+        case .prompt, .recording:
             1.0
         case .choose:
             0.56
-        case .recording, .specify, .generating:
+        case .specify, .generating:
             0
         }
+    }
+
+    private var recordingOrbitSize: CGFloat {
+        UIScreen.main.bounds.width * 2 / 3
+    }
+
+    private var captureRecordingCircleYOffset: CGFloat {
+        -34
     }
 
     // MARK: Step 1 — wide constellation
@@ -649,16 +662,21 @@ struct OnboardingView: View {
             // after the long-press fires). The "Listening…" label tells
             // the user the engine is spinning up so they don't start
             // speaking into a deaf microphone during the gap.
-            RecordingCloudView(audioLevel: { captureRecorder.audioLevel },
-                               timeLabel: formatCaptureTime(recordingSeconds))
-            // Circle appears immediately as the background field dims; the
-            // short settle avoids a visible blank beat after touch-down.
-            .transition(.asymmetric(
-                insertion: .scale(scale: 0.96)
-                    .combined(with: .opacity)
-                    .animation(.easeOut(duration: 0.32)),
-                removal: .opacity
-            ))
+            VStack(spacing: 18) {
+                Color.clear
+                    .frame(width: recordingOrbitSize, height: recordingOrbitSize)
+
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.white.opacity(0.5))
+                        .frame(width: 7, height: 7)
+                    Text(formatCaptureTime(recordingSeconds))
+                        .font(.system(size: 14, weight: .medium, design: .monospaced))
+                        .foregroundColor(Color.white.opacity(0.55))
+                }
+            }
+            .offset(y: captureRecordingCircleYOffset)
+            .transition(.opacity.animation(.easeOut(duration: 0.30).delay(0.18)))
 
         case .choose:
             chooseCirclesField
@@ -861,6 +879,7 @@ struct OnboardingView: View {
         }
         recordingSeconds = 0
         recordingStartedAt = Date()
+        captureCollapseStartedAt = recordingStartedAt
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         withAnimation(.easeOut(duration: 0.14)) {
             capturePhase = .recording
@@ -878,6 +897,7 @@ struct OnboardingView: View {
         // sentence of a user's idea is silently dropped.
         firstIdeaTranscript = captureRecorder.transcript
         captureRecorder.stop()
+        captureCollapseStartedAt = nil
         firstIdeaSnapshotTask?.cancel()
         firstIdeaSnapshotTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 800_000_000)
@@ -930,6 +950,7 @@ struct OnboardingView: View {
     private func saveIdeaAndExit() {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         captureRecorder.stop()
+        captureCollapseStartedAt = nil
         let note = saveTranscriptAsNote(firstIdeaTranscript)
         // Title the note in the background so the library shows a 3-word
         // summary rather than the raw first transcript line.
