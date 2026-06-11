@@ -14,7 +14,7 @@ struct RecordingWaveformView: View {
             let t = context.date.timeIntervalSinceReferenceDate
             let level = max(0.0, Double(audioLevel()))
             let rawLevel = max(0.0, level - 0.003)
-            let audio = min(1.0, pow(rawLevel * 14.0, 0.62))
+            let audio = min(1.0, pow(rawLevel * 10.0, 0.70))
             Canvas { ctx, size in
                 let cx = size.width / 2
                 let cy = size.height / 2
@@ -25,19 +25,18 @@ struct RecordingWaveformView: View {
                     let baseR = sqrt(prng(i * 3 + 1)) * (maxR - 18)
                     let ra    = prng(i * 3 + 2)
 
-                    let direction = prng(i * 11 + 9) > 0.5 ? 1.0 : -1.0
-                    let orbitSpeed = (0.010 + ra * 0.010 + audio * 0.010) * direction
+                    let orbitSpeed = 0.0045 + ra * 0.0025 + audio * 0.0035
                     let angle = baseAngle + t * orbitSpeed
-                    let phase = t * (0.055 + ra * 0.025 + audio * 0.020) + Double(i) * 0.41
-                    let radialBreath = sin(phase) * (0.75 + audio * 0.35)
+                    let phase = t * (0.035 + ra * 0.012 + audio * 0.008) + Double(i) * 0.41
+                    let radialBreath = sin(phase) * (0.42 + audio * 0.18)
                     let r = baseR + radialBreath
-                    let drift = 0.65 + audio * 0.45
+                    let drift = 0.38 + audio * 0.18
                     let x = cx + r * cos(angle) + sin(phase * 0.9) * drift
                     let y = cy + r * sin(angle) + cos(phase * 1.1) * drift
 
                     let sensitivity = 0.65 + prng(i * 5 + 1) * 1.05
                     let audioLift = min(1.0, audio * sensitivity)
-                    let alpha = min(0.86, (0.11 + ra * 0.13) + audioLift * 0.50)
+                    let alpha = min(0.80, (0.11 + ra * 0.13) + audioLift * 0.42)
                     let radius = 1.35 + ra * 2.15
 
                     ctx.fill(
